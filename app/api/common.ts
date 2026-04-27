@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSideConfig } from "../config/server";
-import { OPENAI_BASE_URL, ServiceProvider } from "../constant";
+import { OPENAI_BASE_URL, OpenaiPath, ServiceProvider } from "../constant";
 import { cloudflareAIGatewayUrl } from "../utils/cloudflare";
 import { getModelProvider, isModelAvailableInServer } from "../utils/model";
 
@@ -30,7 +30,11 @@ export async function requestOpenai(req: NextRequest) {
   let path = `${req.nextUrl.pathname}`.replaceAll("/api/openai/", "");
 
   let baseUrl =
-    (isAzure ? serverConfig.azureUrl : serverConfig.baseUrl) || OPENAI_BASE_URL;
+    (isAzure
+      ? serverConfig.azureUrl
+      : path === OpenaiPath.ResponsesPath
+      ? serverConfig.openaiResponsesUrl || serverConfig.baseUrl
+      : serverConfig.baseUrl) || OPENAI_BASE_URL;
 
   if (!baseUrl.startsWith("http")) {
     baseUrl = `https://${baseUrl}`;
@@ -88,7 +92,11 @@ export async function requestOpenai(req: NextRequest) {
     }
   }
 
-  const fetchUrl = cloudflareAIGatewayUrl(`${baseUrl}/${path}`);
+  const fetchUrl =
+    path === OpenaiPath.ResponsesPath &&
+    baseUrl.toLowerCase().endsWith(`/${OpenaiPath.ResponsesPath}`)
+      ? cloudflareAIGatewayUrl(baseUrl)
+      : cloudflareAIGatewayUrl(`${baseUrl}/${path}`);
   console.log("fetchUrl", fetchUrl);
   const fetchOptions: RequestInit = {
     headers: {

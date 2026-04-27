@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSideConfig } from "@/app/config/server";
+import { OPENAI_BASE_URL, OpenaiPath } from "@/app/constant";
 import { ModelTestResult } from "@/app/utils/model-test";
+import { shouldUseOpenAIResponses } from "@/app/utils/openai-responses";
 
 // 测试单个模型
 async function testModel(
   model: string,
-  baseUrl: string,
+  serverConfig: ReturnType<typeof getServerSideConfig>,
   apiKey: string,
   timeoutSeconds: number = 5,
 ): Promise<ModelTestResult> {
@@ -19,21 +21,56 @@ async function testModel(
       timeoutSeconds * 1000,
     );
 
-    // 构建请求URL
-    const url = `${baseUrl}/v1/chat/completions`;
+    const useResponses = shouldUseOpenAIResponses({
+      enabled: serverConfig.openaiResponsesMode,
+      model,
+      providerName: "OpenAI",
+    });
+
+    let baseUrl =
+      (useResponses
+        ? serverConfig.openaiResponsesUrl || serverConfig.baseUrl
+        : serverConfig.baseUrl) || OPENAI_BASE_URL;
+    if (!baseUrl.startsWith("http")) {
+      baseUrl = `https://${baseUrl}`;
+    }
+    if (baseUrl.endsWith("/")) {
+      baseUrl = baseUrl.slice(0, -1);
+    }
+
+    const url =
+      useResponses &&
+      baseUrl.toLowerCase().endsWith(`/${OpenaiPath.ResponsesPath}`)
+        ? baseUrl
+        : `${baseUrl}/${
+            useResponses ? OpenaiPath.ResponsesPath : OpenaiPath.ChatPath
+          }`;
 
     // 构建请求体
-    const requestBody = {
-      model: model,
-      messages: [
-        {
-          role: "user",
-          content: "Hello!",
-        },
-      ],
-      max_tokens: 1,
-      stream: false,
-    };
+    const requestBody = useResponses
+      ? {
+          model,
+          input: "Hello!",
+          max_output_tokens: 16,
+          reasoning: {
+            effort: serverConfig.openaiReasoningEffort,
+          },
+          text: {
+            verbosity: serverConfig.openaiTextVerbosity,
+          },
+          stream: false,
+        }
+      : {
+          model: model,
+          messages: [
+            {
+              role: "user",
+              content: "Hello!",
+            },
+          ],
+          max_tokens: 1,
+          stream: false,
+        };
 
     // 发送请求
     const response = await fetch(url, {
@@ -98,7 +135,6 @@ export async function POST(req: NextRequest) {
     // 获取服务端配置
     const serverConfig = getServerSideConfig();
     const apiKey = serverConfig.apiKey;
-    const baseUrl = serverConfig.baseUrl || "https://api.openai.com";
 
     if (!apiKey) {
       return NextResponse.json(
@@ -112,7 +148,12 @@ export async function POST(req: NextRequest) {
 
     // 逐个测试模型
     for (const model of models) {
-      results[model] = await testModel(model, baseUrl, apiKey, timeoutSeconds);
+      results[model] = await testModel(
+        model,
+        serverConfig,
+        apiKey,
+        timeoutSeconds,
+      );
     }
 
     return NextResponse.json({ results });

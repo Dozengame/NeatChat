@@ -1,5 +1,12 @@
 import md5 from "spark-md5";
 import { DEFAULT_MODELS, DEFAULT_GA_ID } from "../constant";
+import {
+  OPENAI_RESPONSES_DEFAULT_MODEL,
+  OPENAI_RESPONSES_DEFAULT_TEMPERATURE,
+  parseOpenAIResponsesMode,
+  parseOpenAIResponsesReasoningEffort,
+  parseOpenAIResponsesTextVerbosity,
+} from "../utils/openai-responses";
 
 declare global {
   namespace NodeJS {
@@ -11,6 +18,11 @@ declare global {
 
       BASE_URL?: string;
       OPENAI_ORG_ID?: string; // openai only
+      OPENAI_RESPONSES_MODE?: string; // enable responses api mode for gpt-5 and newer
+      RESPONSES_MODE?: string; // alias for OPENAI_RESPONSES_MODE
+      OPENAI_RESPONSES_URL?: string; // custom responses endpoint
+      OPENAI_REASONING_EFFORT?: string; // responses api reasoning effort
+      OPENAI_TEXT_VERBOSITY?: string; // responses api text verbosity
 
       VERCEL?: string;
       BUILD_MODE?: "standalone" | "export";
@@ -22,6 +34,7 @@ declare global {
       DISABLE_FAST_LINK?: string; // disallow parse settings from url or not
       CUSTOM_MODELS?: string; // to control custom models
       DEFAULT_MODEL?: string; // to control default model in every new chat window
+      OPENAI_TEMPERATURE?: string; // to control default temperature in every new chat window
 
       // stability only
       STABILITY_URL?: string;
@@ -107,13 +120,24 @@ function getApiKey(keys?: string) {
   const apiKey = apiKeys[randomIndex];
   if (apiKey) {
     console.log(
-      `[Server Config] using ${randomIndex + 1} of ${
-        apiKeys.length
-      } api key - ${apiKey}`,
+      `[Server Config] using ${randomIndex + 1} of ${apiKeys.length} api key`,
     );
   }
 
   return apiKey;
+}
+
+export function parseDefaultTemperature(value?: string) {
+  if (!value?.trim()) {
+    return undefined;
+  }
+
+  const temperature = Number(value);
+  if (!Number.isFinite(temperature)) {
+    return undefined;
+  }
+
+  return Math.min(2, Math.max(0, temperature));
 }
 
 export const getServerSideConfig = () => {
@@ -124,8 +148,22 @@ export const getServerSideConfig = () => {
   }
 
   const disableGPT4 = !!process.env.DISABLE_GPT4;
+  const openaiResponsesMode = parseOpenAIResponsesMode(
+    process.env.OPENAI_RESPONSES_MODE ?? process.env.RESPONSES_MODE,
+  );
   let customModels = process.env.CUSTOM_MODELS ?? "";
-  let defaultModel = process.env.DEFAULT_MODEL ?? "";
+  let defaultModel =
+    process.env.DEFAULT_MODEL?.trim() ||
+    (openaiResponsesMode ? OPENAI_RESPONSES_DEFAULT_MODEL : "");
+  const defaultTemperature =
+    parseDefaultTemperature(process.env.OPENAI_TEMPERATURE) ??
+    (openaiResponsesMode ? OPENAI_RESPONSES_DEFAULT_TEMPERATURE : undefined);
+  const openaiReasoningEffort = parseOpenAIResponsesReasoningEffort(
+    process.env.OPENAI_REASONING_EFFORT,
+  );
+  const openaiTextVerbosity = parseOpenAIResponsesTextVerbosity(
+    process.env.OPENAI_TEXT_VERBOSITY,
+  );
 
   if (disableGPT4) {
     if (customModels) customModels += ",";
@@ -177,6 +215,10 @@ export const getServerSideConfig = () => {
     baseUrl: process.env.BASE_URL,
     apiKey: getApiKey(process.env.OPENAI_API_KEY),
     openaiOrgId: process.env.OPENAI_ORG_ID,
+    openaiResponsesMode,
+    openaiResponsesUrl: process.env.OPENAI_RESPONSES_URL,
+    openaiReasoningEffort,
+    openaiTextVerbosity,
 
     isStability,
     stabilityUrl: process.env.STABILITY_URL,
@@ -252,6 +294,7 @@ export const getServerSideConfig = () => {
     disableFastLink: !!process.env.DISABLE_FAST_LINK,
     customModels,
     defaultModel,
+    defaultTemperature,
     allowedWebDavEndpoints,
     enableMcp: process.env.ENABLE_MCP === "true",
   };

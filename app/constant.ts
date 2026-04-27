@@ -164,6 +164,7 @@ export const Anthropic = {
 
 export const OpenaiPath = {
   ChatPath: "v1/chat/completions",
+  ResponsesPath: "v1/responses",
   SpeechPath: "v1/audio/speech",
   ImagePath: "v1/images/generations",
   UsagePath: "dashboard/billing/usage",
@@ -260,6 +261,11 @@ Latex block: $$e=mc^2$$
 
 export const KnowledgeCutOffDate: Record<string, string> = {
   default: "2021-09",
+  "gpt-5.5": "2025-12-01",
+  "gpt-5.4": "2025-08-31",
+  "gpt-5.4-mini": "2025-08-31",
+  "gpt-5.4-nano": "2025-08-31",
+  "gpt-5": "2024-09-30",
   "gpt-4-turbo": "2023-12",
   "gpt-4-turbo-2024-04-09": "2023-12",
   "gpt-4-turbo-preview": "2023-12",
@@ -294,6 +300,11 @@ export const DEFAULT_TTS_VOICES = [
 ];
 
 const openaiModels = [
+  "gpt-5.5",
+  "gpt-5.4",
+  "gpt-5.4-mini",
+  "gpt-5.4-nano",
+  "gpt-5",
   "gpt-3.5-turbo",
   "gpt-3.5-turbo-1106",
   "gpt-3.5-turbo-0125",

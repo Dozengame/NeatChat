@@ -25,6 +25,13 @@ import {
 } from "@/app/utils/chat";
 import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
 import { DalleSize, DalleQuality, DalleStyle } from "@/app/typing";
+import {
+  OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
+  OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY,
+  OpenAIResponsesReasoningEffort,
+  OpenAIResponsesTextVerbosity,
+  shouldUseOpenAIResponses,
+} from "@/app/utils/openai-responses";
 
 import {
   ChatOptions,
@@ -44,6 +51,8 @@ import {
   getMessageTextContentWithoutThinking,
 } from "@/app/utils";
 import { fetch } from "@/app/utils/stream";
+
+const OPENAI_RESPONSES_TIMEOUT_MS = REQUEST_TIMEOUT_MS * 10;
 
 export interface OpenAIListModelResponse {
   object: string;
@@ -77,6 +86,130 @@ export interface DalleRequestPayload {
   size: DalleSize;
   quality: DalleQuality;
   style: DalleStyle;
+}
+
+type ResponsesInputContent =
+  | {
+      type: "input_text";
+      text: string;
+    }
+  | {
+      type: "input_image";
+      image_url: string;
+    };
+
+export interface ResponsesRequestPayload {
+  input:
+    | string
+    | {
+        role: "user" | "assistant";
+        content: string | ResponsesInputContent[];
+      }[];
+  instructions?: string;
+  stream?: boolean;
+  model: string;
+  temperature?: number;
+  top_p?: number;
+  max_output_tokens?: number;
+  reasoning?: {
+    effort: OpenAIResponsesReasoningEffort;
+  };
+  text?: {
+    verbosity: OpenAIResponsesTextVerbosity;
+  };
+}
+
+function contentToText(content: string | MultimodalContent[]) {
+  if (typeof content === "string") {
+    return content;
+  }
+
+  return content
+    .map((part) => (part.type === "text" ? part.text ?? "" : ""))
+    .filter(Boolean)
+    .join("\n");
+}
+
+function toResponsesContent(content: string | MultimodalContent[]) {
+  if (typeof content === "string") {
+    return content;
+  }
+
+  const parts = content
+    .map((part) => {
+      if (part.type === "text") {
+        return {
+          type: "input_text" as const,
+          text: part.text ?? "",
+        };
+      }
+
+      if (part.type === "image_url" && part.image_url?.url) {
+        return {
+          type: "input_image" as const,
+          image_url: part.image_url.url,
+        };
+      }
+
+      return undefined;
+    })
+    .filter(Boolean) as ResponsesInputContent[];
+
+  return parts.length > 0 ? parts : "";
+}
+
+function toResponsesInput(messages: ChatOptions["messages"]) {
+  const instructions = messages
+    .filter((message) => message.role === "system")
+    .map((message) => contentToText(message.content))
+    .filter(Boolean)
+    .join("\n\n");
+
+  const input = messages
+    .filter((message) => message.role !== "system")
+    .map((message) => ({
+      role: message.role as "user" | "assistant",
+      content: toResponsesContent(message.content),
+    }));
+
+  return {
+    instructions: instructions || undefined,
+    input: input.length > 0 ? input : "",
+  };
+}
+
+export function extractResponsesText(res: any) {
+  if (typeof res?.output_text === "string") {
+    return res.output_text;
+  }
+
+  const parts: string[] = [];
+  for (const output of res?.output ?? []) {
+    if (Array.isArray(output?.content)) {
+      for (const content of output.content) {
+        if (content?.type === "output_text" && content.text) {
+          parts.push(content.text);
+        }
+      }
+    }
+  }
+
+  return parts.join("");
+}
+
+export function parseResponsesSSE(text: string) {
+  const json = JSON.parse(text);
+
+  if (
+    json.type === "response.output_text.delta" ||
+    json.type === "response.refusal.delta"
+  ) {
+    return json.delta as string | undefined;
+  }
+
+  if (json.type === "response.error" && json.error) {
+    return "```\n" + JSON.stringify(json.error, null, 4) + "\n```";
+  }
 }
 
 export class ChatGPTApi implements LLMApi {
@@ -124,6 +257,10 @@ export class ChatGPTApi implements LLMApi {
   async extractMessage(res: any) {
     if (res.error) {
       return "```\n" + JSON.stringify(res, null, 4) + "\n```";
+    }
+    const responsesText = extractResponsesText(res);
+    if (responsesText) {
+      return responsesText;
     }
     // dalle3 model return url, using url create image message
     if (res.data) {
@@ -192,8 +329,17 @@ export class ChatGPTApi implements LLMApi {
         providerName: options.config.providerName,
       },
     };
+    const accessStore = useAccessStore.getState();
+    const useResponses = shouldUseOpenAIResponses({
+      enabled: accessStore.openaiResponsesMode,
+      model: modelConfig.model,
+      providerName: modelConfig.providerName,
+    });
 
-    let requestPayload: RequestPayload | DalleRequestPayload;
+    let requestPayload:
+      | RequestPayload
+      | ResponsesRequestPayload
+      | DalleRequestPayload;
 
     const isDalle3 = _isDalle3(options.config.model);
     const isO1 = options.config.model.startsWith("o1");
@@ -215,40 +361,74 @@ export class ChatGPTApi implements LLMApi {
       const visionModel = isVisionModel(options.config.model);
       const messages: ChatOptions["messages"] = [];
       for (const v of options.messages) {
-        const content = visionModel
-          ? await preProcessImageContent(v.content)
-          : v.role === "assistant" // 如果 role 是 assistant
-          ? getMessageTextContentWithoutThinking(v) // 调用 getMessageTextContentWithoutThinking
-          : getMessageTextContent(v); // 否则调用 getMessageTextContent
+        const content =
+          visionModel || Array.isArray(v.content)
+            ? await preProcessImageContent(v.content)
+            : v.role === "assistant" // 如果 role 是 assistant
+            ? getMessageTextContentWithoutThinking(v) // 调用 getMessageTextContentWithoutThinking
+            : getMessageTextContent(v); // 否则调用 getMessageTextContent
         if (!(isO1 && v.role === "system"))
           messages.push({ role: v.role, content });
       }
 
-      // O1 not support image, tools (plugin in ChatGPTNextWeb) and system, stream, logprobs, temperature, top_p, n, presence_penalty, frequency_penalty yet.
-      requestPayload = {
-        messages,
-        stream: options.config.stream,
-        model: modelConfig.model,
-        temperature: !isO1 ? modelConfig.temperature : 1,
-        presence_penalty: !isO1 ? modelConfig.presence_penalty : 0,
-        frequency_penalty: !isO1 ? modelConfig.frequency_penalty : 0,
-        top_p: !isO1 ? modelConfig.top_p : 1,
-        // max_tokens: Math.max(modelConfig.max_tokens, 1024),
-        // Please do not ask me why not send max_tokens, no reason, this param is just shit, I dont want to explain anymore.
-      };
+      if (useResponses) {
+        const responsesInput = toResponsesInput(messages);
+        requestPayload = {
+          ...responsesInput,
+          stream: options.config.stream,
+          model: modelConfig.model,
+          temperature: modelConfig.temperature,
+          max_output_tokens:
+            modelConfig.max_tokens > 0 ? modelConfig.max_tokens : undefined,
+          reasoning: {
+            effort: (accessStore.openaiReasoningEffort ||
+              OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT) as OpenAIResponsesReasoningEffort,
+          },
+          text: {
+            verbosity: (accessStore.openaiTextVerbosity ||
+              OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY) as OpenAIResponsesTextVerbosity,
+          },
+        };
+
+        if (modelConfig.top_p !== 1) {
+          requestPayload.top_p = modelConfig.top_p;
+        }
+      } else {
+        // O1 not support image, tools (plugin in ChatGPTNextWeb) and system, stream, logprobs, temperature, top_p, n, presence_penalty, frequency_penalty yet.
+        requestPayload = {
+          messages,
+          stream: options.config.stream,
+          model: modelConfig.model,
+          temperature: !isO1 ? modelConfig.temperature : 1,
+          presence_penalty: !isO1 ? modelConfig.presence_penalty : 0,
+          frequency_penalty: !isO1 ? modelConfig.frequency_penalty : 0,
+          top_p: !isO1 ? modelConfig.top_p : 1,
+          // max_tokens: Math.max(modelConfig.max_tokens, 1024),
+          // Please do not ask me why not send max_tokens, no reason, this param is just shit, I dont want to explain anymore.
+        };
+      }
 
       // O1 使用 max_completion_tokens 控制token数 (https://platform.openai.com/docs/guides/reasoning#controlling-costs)
-      if (isO1) {
-        requestPayload["max_completion_tokens"] = modelConfig.max_tokens;
+      if (!useResponses && isO1) {
+        (requestPayload as RequestPayload).max_completion_tokens =
+          modelConfig.max_tokens;
       }
 
       // add max_tokens to vision model
-      if (visionModel) {
-        requestPayload["max_tokens"] = Math.max(modelConfig.max_tokens, 4000);
+      if (!useResponses && visionModel) {
+        (requestPayload as RequestPayload).max_tokens = Math.max(
+          modelConfig.max_tokens,
+          4000,
+        );
       }
     }
 
-    console.log("[Request] openai payload: ", requestPayload);
+    console.log(
+      useResponses
+        ? "[Request] openai responses payload: "
+        : "[Request] openai payload: ",
+      requestPayload,
+    );
 
     const shouldStream = !isDalle3 && !!options.config.stream;
     const controller = new AbortController();
@@ -283,7 +463,11 @@ export class ChatGPTApi implements LLMApi {
         );
       } else {
         chatPath = this.path(
-          isDalle3 ? OpenaiPath.ImagePath : OpenaiPath.ChatPath,
+          isDalle3
+            ? OpenaiPath.ImagePath
+            : useResponses
+            ? OpenaiPath.ResponsesPath
+            : OpenaiPath.ChatPath,
         );
       }
       if (shouldStream) {
@@ -310,19 +494,20 @@ export class ChatGPTApi implements LLMApi {
         const useGoogleSearch = session.mask?.plugin?.includes("googleSearch");
         const isGeminiFlash = modelConfig.model === "gemini-2.0-flash-exp";
 
-        const tools =
-          isGeminiFlash && useGoogleSearch
-            ? [
-                {
-                  type: "function",
-                  function: {
-                    name: "googleSearch",
-                  },
+        const tools = useResponses
+          ? []
+          : isGeminiFlash && useGoogleSearch
+          ? [
+              {
+                type: "function",
+                function: {
+                  name: "googleSearch",
                 },
-              ]
-            : Array.isArray(allTools)
-            ? allTools
-            : [];
+              },
+            ]
+          : Array.isArray(allTools)
+          ? allTools
+          : [];
 
         stream(
           chatPath,
@@ -336,6 +521,10 @@ export class ChatGPTApi implements LLMApi {
           controller,
           // parseSSE
           (text: string, runTools: ChatMessageTool[]) => {
+            if (useResponses) {
+              return parseResponsesSSE(text);
+            }
+
             // console.log("parseSSE", text, runTools);
             const json = JSON.parse(text);
             const choices = json.choices as Array<{
@@ -408,6 +597,7 @@ export class ChatGPTApi implements LLMApi {
             );
           },
           options,
+          useResponses ? OPENAI_RESPONSES_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
         );
       } else {
         const chatPayload = {
@@ -420,7 +610,11 @@ export class ChatGPTApi implements LLMApi {
         // make a fetch request
         const requestTimeoutId = setTimeout(
           () => controller.abort(),
-          isDalle3 || isO1 ? REQUEST_TIMEOUT_MS * 4 : REQUEST_TIMEOUT_MS, // dalle3 using b64_json is slow.
+          useResponses
+            ? OPENAI_RESPONSES_TIMEOUT_MS
+            : isDalle3 || isO1
+            ? REQUEST_TIMEOUT_MS * 4
+            : REQUEST_TIMEOUT_MS, // dalle3 using b64_json is slow.
         );
 
         const res = await fetch(chatPath, chatPayload);

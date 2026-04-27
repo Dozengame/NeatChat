@@ -20,8 +20,9 @@ import { getHeaders } from "../client/api";
 import { getClientConfig } from "../config/client";
 import { createPersistStore } from "../utils/store";
 import { ensure } from "../utils/clone";
-import { DEFAULT_CONFIG } from "./config";
+import { DEFAULT_CONFIG, ModalConfigValidator, useAppConfig } from "./config";
 import { getModelProvider } from "../utils/model";
+import { useChatStore } from "./chat";
 
 let fetchState = 0; // 0 not fetch, 1 fetching, 2 done
 
@@ -124,10 +125,67 @@ const DEFAULT_ACCESS_STATE = {
   disableFastLink: false,
   customModels: "",
   defaultModel: "",
+  openaiResponsesMode: false,
+  openaiReasoningEffort: "medium",
+  openaiTextVerbosity: "medium",
 
   // tts config
   edgeTTSVoiceName: "zh-CN-YunxiNeural",
 };
+
+function applyServerModelDefaults(config: {
+  defaultModel?: string;
+  defaultTemperature?: number;
+}) {
+  const modelConfig = {} as Partial<typeof DEFAULT_CONFIG.modelConfig>;
+
+  if (config.defaultModel) {
+    const [model, providerName] = getModelProvider(config.defaultModel);
+    modelConfig.model = model;
+    if (providerName) {
+      modelConfig.providerName = providerName as ServiceProvider;
+    }
+  }
+
+  if (typeof config.defaultTemperature === "number") {
+    modelConfig.temperature = ModalConfigValidator.temperature(
+      config.defaultTemperature,
+    );
+  }
+
+  if (Object.keys(modelConfig).length === 0) {
+    return;
+  }
+
+  DEFAULT_CONFIG.modelConfig = {
+    ...DEFAULT_CONFIG.modelConfig,
+    ...modelConfig,
+  };
+  useAppConfig.setState((state) => ({
+    modelConfig: {
+      ...state.modelConfig,
+      ...modelConfig,
+    },
+  }));
+  useChatStore.setState((state) => ({
+    sessions: state.sessions.map((session) => {
+      if (!session.mask.syncGlobalConfig) {
+        return session;
+      }
+
+      return {
+        ...session,
+        mask: {
+          ...session.mask,
+          modelConfig: {
+            ...session.mask.modelConfig,
+            ...modelConfig,
+          },
+        },
+      };
+    }),
+  }));
+}
 
 export const useAccessStore = createPersistStore(
   { ...DEFAULT_ACCESS_STATE },
@@ -225,12 +283,7 @@ export const useAccessStore = createPersistStore(
       })
         .then((res) => res.json())
         .then((res) => {
-          const defaultModel = res.defaultModel ?? "";
-          if (defaultModel !== "") {
-            const [model, providerName] = getModelProvider(defaultModel);
-            DEFAULT_CONFIG.modelConfig.model = model;
-            DEFAULT_CONFIG.modelConfig.providerName = providerName as any;
-          }
+          applyServerModelDefaults(res);
 
           return res;
         })
