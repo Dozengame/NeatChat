@@ -9,6 +9,7 @@ import {
   parseOpenAIResponsesTextVerbosity,
   shouldUseOpenAIResponses,
 } from "../app/utils/openai-responses";
+import { resolveServerModelConfig } from "../app/utils/server-model-defaults";
 
 describe("parseDefaultTemperature", () => {
   test("returns undefined when OPENAI_TEMPERATURE is empty or invalid", () => {
@@ -99,5 +100,32 @@ describe("OpenAI Responses config", () => {
     expect(config.defaultTemperature).toBe(1);
     expect(config.openaiReasoningEffort).toBe("medium");
     expect(config.openaiTextVerbosity).toBe("medium");
+  });
+
+  test("forces provider together with server default model", () => {
+    expect(
+      resolveServerModelConfig({
+        defaultModel: "gpt-5.5",
+      }),
+    ).toMatchObject({
+      model: "gpt-5.5",
+      providerName: "OpenAI",
+    });
+    expect(
+      resolveServerModelConfig({
+        defaultModel: "gemini-2.0-flash-exp",
+      }),
+    ).toMatchObject({
+      model: "gemini-2.0-flash-exp",
+      providerName: "Google",
+    });
+    expect(
+      resolveServerModelConfig({
+        defaultModel: "custom-model@Moonshot",
+      }),
+    ).toMatchObject({
+      model: "custom-model",
+      providerName: "Moonshot",
+    });
   });
 });

@@ -20,9 +20,12 @@ import { getHeaders } from "../client/api";
 import { getClientConfig } from "../config/client";
 import { createPersistStore } from "../utils/store";
 import { ensure } from "../utils/clone";
-import { DEFAULT_CONFIG, ModalConfigValidator, useAppConfig } from "./config";
-import { getModelProvider } from "../utils/model";
+import { DEFAULT_CONFIG, useAppConfig } from "./config";
 import { useChatStore } from "./chat";
+import {
+  resolveServerModelConfig,
+  ServerModelDefaults,
+} from "../utils/server-model-defaults";
 
 let fetchState = 0; // 0 not fetch, 1 fetching, 2 done
 
@@ -133,29 +136,12 @@ const DEFAULT_ACCESS_STATE = {
   edgeTTSVoiceName: "zh-CN-YunxiNeural",
 };
 
-function applyServerModelDefaults(config: {
-  defaultModel?: string;
-  defaultTemperature?: number;
-}) {
-  const modelConfig = {} as Partial<typeof DEFAULT_CONFIG.modelConfig>;
+function applyServerModelDefaults(config: ServerModelDefaults) {
+  const modelConfig = resolveServerModelConfig(config) as Partial<
+    typeof DEFAULT_CONFIG.modelConfig
+  >;
 
-  if (config.defaultModel) {
-    const [model, providerName] = getModelProvider(config.defaultModel);
-    modelConfig.model = model;
-    if (providerName) {
-      modelConfig.providerName = providerName as ServiceProvider;
-    }
-  }
-
-  if (typeof config.defaultTemperature === "number") {
-    modelConfig.temperature = ModalConfigValidator.temperature(
-      config.defaultTemperature,
-    );
-  }
-
-  if (Object.keys(modelConfig).length === 0) {
-    return;
-  }
+  if (Object.keys(modelConfig).length === 0) return;
 
   DEFAULT_CONFIG.modelConfig = {
     ...DEFAULT_CONFIG.modelConfig,
@@ -185,6 +171,32 @@ function applyServerModelDefaults(config: {
       };
     }),
   }));
+}
+
+function runAfterStoreHydration(callback: () => void) {
+  const stores = [useAccessStore, useAppConfig, useChatStore];
+  let unsubscribes: Array<() => void> = [];
+  let finished = false;
+
+  const isReady = () =>
+    stores.every((store) => store.getState()._hasHydrated === true);
+
+  const finish = () => {
+    if (finished || !isReady()) return;
+    finished = true;
+    unsubscribes.forEach((unsubscribe) => unsubscribe());
+    callback();
+  };
+
+  unsubscribes = stores.map((store) => store.subscribe(finish));
+  finish();
+}
+
+function applyServerConfig(config: Partial<typeof DEFAULT_ACCESS_STATE>) {
+  runAfterStoreHydration(() => {
+    applyServerModelDefaults(config);
+    useAccessStore.setState(() => ({ ...config }));
+  });
 }
 
 export const useAccessStore = createPersistStore(
@@ -283,13 +295,12 @@ export const useAccessStore = createPersistStore(
       })
         .then((res) => res.json())
         .then((res) => {
-          applyServerModelDefaults(res);
+          applyServerConfig(res);
 
           return res;
         })
         .then((res: DangerConfig) => {
           console.log("[Config] got config from server", res);
-          set(() => ({ ...res }));
         })
         .catch(() => {
           console.error("[Config] failed to fetch config");
