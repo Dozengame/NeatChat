@@ -1,6 +1,6 @@
 export const OPENAI_RESPONSES_DEFAULT_MODEL = "gpt-5.5";
 export const OPENAI_RESPONSES_DEFAULT_TEMPERATURE = 1;
-export const OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT = "medium";
+export const OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT = "low";
 export const OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY = "medium";
 
 export type OpenAIResponsesReasoningEffort =
@@ -8,6 +8,11 @@ export type OpenAIResponsesReasoningEffort =
   | "medium"
   | "high"
   | "xhigh";
+
+export type OpenAIChatReasoningEffort = Extract<
+  OpenAIResponsesReasoningEffort,
+  "low" | "medium" | "high"
+>;
 
 export type OpenAIResponsesTextVerbosity = "low" | "medium" | "high";
 
@@ -48,6 +53,13 @@ export function isGpt5OrNewerModel(model?: string) {
   }
 
   return Number(match[1]) >= 5;
+}
+
+export function isOpenAIGpt5OrNewerModelConfig(params: {
+  model?: string;
+  providerName?: string;
+}) {
+  return params.providerName === "OpenAI" && isGpt5OrNewerModel(params.model);
 }
 
 export function shouldUseOpenAIResponses(params: {

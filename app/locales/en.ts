@@ -607,6 +607,13 @@ const en: LocaleType = {
       Title: "Top P",
       SubTitle: "Do not alter this value together with temperature",
     },
+    ReasoningEffort: {
+      Title: "Reasoning Effort",
+      SubTitle: "Used by GPT-5.x and newer models",
+      Low: "Standard",
+      Medium: "Advanced",
+      High: "Deep",
+    },
     MaxTokens: {
       Title: "Max Tokens",
       SubTitle: "Maximum length of input tokens and generated tokens",

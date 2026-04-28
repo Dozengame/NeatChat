@@ -8,6 +8,11 @@ import { useAllModels } from "../utils/hooks";
 import { groupBy } from "lodash-es";
 import styles from "./model-config.module.scss";
 import { getModelProvider } from "../utils/model";
+import {
+  isOpenAIGpt5OrNewerModelConfig,
+  OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
+  OpenAIChatReasoningEffort,
+} from "../utils/openai-responses";
 
 export function ModelConfigList(props: {
   modelConfig: ModelConfig;
@@ -20,6 +25,18 @@ export function ModelConfigList(props: {
   );
   const value = `${props.modelConfig.model}@${props.modelConfig?.providerName}`;
   const compressModelValue = `${props.modelConfig.compressModel}@${props.modelConfig?.compressProviderName}`;
+  const isOpenAIGpt5OrNewer = isOpenAIGpt5OrNewerModelConfig({
+    model: props.modelConfig.model,
+    providerName: props.modelConfig?.providerName,
+  });
+  const reasoningEffort =
+    (props.modelConfig.reasoningEffort ??
+      OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT) as OpenAIChatReasoningEffort;
+  const reasoningLabels: Record<OpenAIChatReasoningEffort, string> = {
+    low: Locale.Settings.ReasoningEffort.Low,
+    medium: Locale.Settings.ReasoningEffort.Medium,
+    high: Locale.Settings.ReasoningEffort.High,
+  };
 
   return (
     <>
@@ -49,46 +66,72 @@ export function ModelConfigList(props: {
           ))}
         </Select>
       </ListItem>
-      <ListItem
-        title={Locale.Settings.Temperature.Title}
-        subTitle={Locale.Settings.Temperature.SubTitle}
-      >
-        <InputRange
-          aria={Locale.Settings.Temperature.Title}
-          value={props.modelConfig.temperature?.toFixed(1)}
-          min="0"
-          max="1" // lets limit it to 0-1
-          step="0.1"
-          onChange={(e) => {
-            props.updateConfig(
-              (config) =>
-                (config.temperature = ModalConfigValidator.temperature(
-                  e.currentTarget.valueAsNumber,
-                )),
-            );
-          }}
-        ></InputRange>
-      </ListItem>
-      <ListItem
-        title={Locale.Settings.TopP.Title}
-        subTitle={Locale.Settings.TopP.SubTitle}
-      >
-        <InputRange
-          aria={Locale.Settings.TopP.Title}
-          value={(props.modelConfig.top_p ?? 1).toFixed(1)}
-          min="0"
-          max="1"
-          step="0.1"
-          onChange={(e) => {
-            props.updateConfig(
-              (config) =>
-                (config.top_p = ModalConfigValidator.top_p(
-                  e.currentTarget.valueAsNumber,
-                )),
-            );
-          }}
-        ></InputRange>
-      </ListItem>
+      {isOpenAIGpt5OrNewer ? (
+        <ListItem
+          title={Locale.Settings.ReasoningEffort.Title}
+          subTitle={Locale.Settings.ReasoningEffort.SubTitle}
+        >
+          <Select
+            aria-label={Locale.Settings.ReasoningEffort.Title}
+            value={reasoningEffort}
+            onChange={(e) => {
+              props.updateConfig((config) => {
+                config.reasoningEffort = e.currentTarget
+                  .value as OpenAIChatReasoningEffort;
+              });
+            }}
+          >
+            {(["low", "medium", "high"] as const).map((effort) => (
+              <option value={effort} key={effort}>
+                {reasoningLabels[effort]}
+              </option>
+            ))}
+          </Select>
+        </ListItem>
+      ) : (
+        <>
+          <ListItem
+            title={Locale.Settings.Temperature.Title}
+            subTitle={Locale.Settings.Temperature.SubTitle}
+          >
+            <InputRange
+              aria={Locale.Settings.Temperature.Title}
+              value={props.modelConfig.temperature?.toFixed(1)}
+              min="0"
+              max="1" // lets limit it to 0-1
+              step="0.1"
+              onChange={(e) => {
+                props.updateConfig(
+                  (config) =>
+                    (config.temperature = ModalConfigValidator.temperature(
+                      e.currentTarget.valueAsNumber,
+                    )),
+                );
+              }}
+            ></InputRange>
+          </ListItem>
+          <ListItem
+            title={Locale.Settings.TopP.Title}
+            subTitle={Locale.Settings.TopP.SubTitle}
+          >
+            <InputRange
+              aria={Locale.Settings.TopP.Title}
+              value={(props.modelConfig.top_p ?? 1).toFixed(1)}
+              min="0"
+              max="1"
+              step="0.1"
+              onChange={(e) => {
+                props.updateConfig(
+                  (config) =>
+                    (config.top_p = ModalConfigValidator.top_p(
+                      e.currentTarget.valueAsNumber,
+                    )),
+                );
+              }}
+            ></InputRange>
+          </ListItem>
+        </>
+      )}
       <ListItem
         title={Locale.Settings.MaxTokens.Title}
         subTitle={Locale.Settings.MaxTokens.SubTitle}
@@ -112,49 +155,53 @@ export function ModelConfigList(props: {
 
       {props.modelConfig?.providerName == ServiceProvider.Google ? null : (
         <>
-          <ListItem
-            title={Locale.Settings.PresencePenalty.Title}
-            subTitle={Locale.Settings.PresencePenalty.SubTitle}
-          >
-            <InputRange
-              aria={Locale.Settings.PresencePenalty.Title}
-              value={props.modelConfig.presence_penalty?.toFixed(1)}
-              min="-2"
-              max="2"
-              step="0.1"
-              onChange={(e) => {
-                props.updateConfig(
-                  (config) =>
-                    (config.presence_penalty =
-                      ModalConfigValidator.presence_penalty(
-                        e.currentTarget.valueAsNumber,
-                      )),
-                );
-              }}
-            ></InputRange>
-          </ListItem>
+          {!isOpenAIGpt5OrNewer && (
+            <>
+              <ListItem
+                title={Locale.Settings.PresencePenalty.Title}
+                subTitle={Locale.Settings.PresencePenalty.SubTitle}
+              >
+                <InputRange
+                  aria={Locale.Settings.PresencePenalty.Title}
+                  value={props.modelConfig.presence_penalty?.toFixed(1)}
+                  min="-2"
+                  max="2"
+                  step="0.1"
+                  onChange={(e) => {
+                    props.updateConfig(
+                      (config) =>
+                        (config.presence_penalty =
+                          ModalConfigValidator.presence_penalty(
+                            e.currentTarget.valueAsNumber,
+                          )),
+                    );
+                  }}
+                ></InputRange>
+              </ListItem>
 
-          <ListItem
-            title={Locale.Settings.FrequencyPenalty.Title}
-            subTitle={Locale.Settings.FrequencyPenalty.SubTitle}
-          >
-            <InputRange
-              aria={Locale.Settings.FrequencyPenalty.Title}
-              value={props.modelConfig.frequency_penalty?.toFixed(1)}
-              min="-2"
-              max="2"
-              step="0.1"
-              onChange={(e) => {
-                props.updateConfig(
-                  (config) =>
-                    (config.frequency_penalty =
-                      ModalConfigValidator.frequency_penalty(
-                        e.currentTarget.valueAsNumber,
-                      )),
-                );
-              }}
-            ></InputRange>
-          </ListItem>
+              <ListItem
+                title={Locale.Settings.FrequencyPenalty.Title}
+                subTitle={Locale.Settings.FrequencyPenalty.SubTitle}
+              >
+                <InputRange
+                  aria={Locale.Settings.FrequencyPenalty.Title}
+                  value={props.modelConfig.frequency_penalty?.toFixed(1)}
+                  min="-2"
+                  max="2"
+                  step="0.1"
+                  onChange={(e) => {
+                    props.updateConfig(
+                      (config) =>
+                        (config.frequency_penalty =
+                          ModalConfigValidator.frequency_penalty(
+                            e.currentTarget.valueAsNumber,
+                          )),
+                    );
+                  }}
+                ></InputRange>
+              </ListItem>
+            </>
+          )}
 
           <ListItem
             title={Locale.Settings.InjectSystemPrompts.Title}

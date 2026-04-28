@@ -3,6 +3,7 @@ import {
   parseDefaultTemperature,
 } from "../app/config/server";
 import {
+  isOpenAIGpt5OrNewerModelConfig,
   isGpt5OrNewerModel,
   parseOpenAIResponsesMode,
   parseOpenAIResponsesReasoningEffort,
@@ -79,9 +80,30 @@ describe("OpenAI Responses config", () => {
     ).toBe(false);
   });
 
+  test("detects OpenAI GPT-5 and newer model configs for settings controls", () => {
+    expect(
+      isOpenAIGpt5OrNewerModelConfig({
+        model: "gpt-5.5",
+        providerName: "OpenAI",
+      }),
+    ).toBe(true);
+    expect(
+      isOpenAIGpt5OrNewerModelConfig({
+        model: "gpt-4.1",
+        providerName: "OpenAI",
+      }),
+    ).toBe(false);
+    expect(
+      isOpenAIGpt5OrNewerModelConfig({
+        model: "gpt-5.5",
+        providerName: "Azure",
+      }),
+    ).toBe(false);
+  });
+
   test("falls back to recommended Responses settings", () => {
     expect(parseOpenAIResponsesReasoningEffort("xhigh")).toBe("xhigh");
-    expect(parseOpenAIResponsesReasoningEffort("bad")).toBe("medium");
+    expect(parseOpenAIResponsesReasoningEffort("bad")).toBe("low");
     expect(parseOpenAIResponsesTextVerbosity("low")).toBe("low");
     expect(parseOpenAIResponsesTextVerbosity("bad")).toBe("medium");
   });
@@ -98,7 +120,7 @@ describe("OpenAI Responses config", () => {
     expect(config.openaiResponsesMode).toBe(true);
     expect(config.defaultModel).toBe("gpt-5.5");
     expect(config.defaultTemperature).toBe(1);
-    expect(config.openaiReasoningEffort).toBe("medium");
+    expect(config.openaiReasoningEffort).toBe("low");
     expect(config.openaiTextVerbosity).toBe("medium");
   });
 

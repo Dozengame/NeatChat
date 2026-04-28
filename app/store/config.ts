@@ -16,6 +16,7 @@ import {
 } from "../constant";
 import { createPersistStore } from "../utils/store";
 import type { Voice } from "rt-client";
+import type { OpenAIChatReasoningEffort } from "../utils/openai-responses";
 
 export type ModelType = (typeof DEFAULT_MODELS)[number]["name"];
 export type TTSModelType = (typeof DEFAULT_TTS_MODELS)[number];
@@ -53,6 +54,7 @@ export type ModelConfig = {
   compressProviderName: string;
   enableInjectSystemPrompts: boolean;
   template: string;
+  reasoningEffort?: OpenAIChatReasoningEffort;
   size: DalleSize;
   quality: DalleQuality;
   style: DalleStyle;
@@ -120,6 +122,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     compressProviderName: "",
     enableInjectSystemPrompts: true,
     template: config?.template ?? DEFAULT_INPUT_TEMPLATE,
+    reasoningEffort: "low",
     size: "1024x1024" as DalleSize,
     quality: "standard" as DalleQuality,
     style: "vivid" as DalleStyle,

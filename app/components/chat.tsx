@@ -114,6 +114,11 @@ import { ExportMessageModal } from "./exporter";
 import { getClientConfig } from "../config/client";
 import { useAllModels } from "../utils/hooks";
 import { MultimodalContent } from "../client/api";
+import {
+  OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
+  OpenAIChatReasoningEffort,
+  shouldUseOpenAIResponses,
+} from "../utils/openai-responses";
 
 import { ClientApi } from "../client/api";
 import { createTTSPlayer } from "../utils/audio";
@@ -813,6 +818,70 @@ export function ChatActions(props: {
         )}
       </div>
     </div>
+  );
+}
+
+function ChatInputReasoningAction() {
+  const accessStore = useAccessStore();
+  const chatStore = useChatStore();
+  const session = chatStore.currentSession();
+  const currentModel = session.mask.modelConfig.model;
+  const currentProviderName =
+    session.mask.modelConfig?.providerName || ServiceProvider.OpenAI;
+  const currentReasoningEffort =
+    session.mask.modelConfig?.reasoningEffort ??
+    (OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT as OpenAIChatReasoningEffort);
+  const [showReasoningSelectorModal, setShowReasoningSelectorModal] =
+    useState(false);
+  const reasoningLabels: Record<OpenAIChatReasoningEffort, string> = {
+    low: "标准",
+    medium: "进阶",
+    high: "深入",
+  };
+  const showReasoningSelector = shouldUseOpenAIResponses({
+    enabled: accessStore.openaiResponsesMode,
+    model: currentModel,
+    providerName: currentProviderName,
+  });
+
+  if (!showReasoningSelector) return null;
+
+  return (
+    <>
+      <button
+        type="button"
+        className={styles["chat-input-reasoning"]}
+        onClick={(event) => {
+          event.preventDefault();
+          setShowReasoningSelectorModal(true);
+        }}
+      >
+        <BrainIcon />
+        <span>{reasoningLabels[currentReasoningEffort]}</span>
+        <span className={styles["chat-input-reasoning-arrow"]}>⌄</span>
+      </button>
+      {showReasoningSelectorModal && (
+        <Selector
+          defaultSelectedValue={currentReasoningEffort}
+          items={(["low", "medium", "high"] as const).map((effort) => ({
+            title: reasoningLabels[effort],
+            value: effort,
+            icon: <BrainIcon />,
+          }))}
+          onClose={() => setShowReasoningSelectorModal(false)}
+          onSelection={(selection) => {
+            const reasoningEffort = selection[0];
+            if (!reasoningEffort) return;
+            chatStore.updateTargetSession(session, (session) => {
+              session.mask.modelConfig.reasoningEffort = reasoningEffort;
+              session.mask.syncGlobalConfig = false;
+            });
+            showToast(reasoningLabels[reasoningEffort]);
+          }}
+          showSearch={false}
+        />
+      )}
+    </>
   );
 }
 
@@ -1908,6 +1977,11 @@ function _Chat() {
   const [editingImageMessageId, setEditingImageMessageId] = useState<
     string | null
   >(null);
+  const showInputReasoningAction = shouldUseOpenAIResponses({
+    enabled: accessStore.openaiResponsesMode,
+    model: session.mask.modelConfig.model,
+    providerName: session.mask.modelConfig.providerName,
+  });
 
   return (
     <div
@@ -2294,6 +2368,8 @@ function _Chat() {
               className={clsx(styles["chat-input-panel-inner"], {
                 [styles["chat-input-panel-inner-attach"]]:
                   attachImages.length !== 0 || attachedFiles.length !== 0,
+                [styles["chat-input-panel-inner-reasoning"]]:
+                  showInputReasoningAction,
               })}
               htmlFor="chat-input"
             >
@@ -2319,6 +2395,8 @@ function _Chat() {
                   fontFamily: config.fontFamily,
                 }}
               />
+
+              <ChatInputReasoningAction />
 
               {/* 附件容器（包含图片和文件） */}
               {(attachImages.length > 0 || attachedFiles.length > 0) && (

@@ -161,7 +161,10 @@ export function stream(
   tools: any[],
   funcs: Record<string, Function>,
   controller: AbortController,
-  parseSSE: (text: string, runTools: any[]) => string | undefined,
+  parseSSE: (
+    text: string,
+    runTools: any[],
+  ) => string | { content: string; replace?: boolean } | undefined,
   processToolMessage: (
     requestPayload: any,
     toolCallMessage: any,
@@ -345,7 +348,15 @@ export function stream(
         try {
           const chunk = parseSSE(msg.data, runTools);
           if (chunk) {
-            remainText += chunk;
+            if (typeof chunk === "string") {
+              remainText += chunk;
+            } else {
+              if (chunk.replace) {
+                responseText = "";
+                remainText = "";
+              }
+              remainText += chunk.content;
+            }
           }
         } catch (e) {
           console.error("[Request] parse error", text, msg, e);

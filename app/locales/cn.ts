@@ -603,6 +603,13 @@ const cn = {
       Title: "核采样 (top_p)",
       SubTitle: "与随机性类似，但不要和随机性一起更改",
     },
+    ReasoningEffort: {
+      Title: "思考深度",
+      SubTitle: "适用于 GPT-5.x 及以上模型",
+      Low: "标准",
+      Medium: "进阶",
+      High: "深入",
+    },
     MaxTokens: {
       Title: "单次回复限制 (max_tokens)",
       SubTitle: "单次交互所用的最大 Token 数",

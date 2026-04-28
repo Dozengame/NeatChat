@@ -108,11 +108,10 @@ export interface ResponsesRequestPayload {
   instructions?: string;
   stream?: boolean;
   model: string;
-  temperature?: number;
-  top_p?: number;
   max_output_tokens?: number;
   reasoning?: {
     effort: OpenAIResponsesReasoningEffort;
+    summary?: "auto" | "concise" | "detailed";
   };
   text?: {
     verbosity: OpenAIResponsesTextVerbosity;
@@ -205,6 +204,19 @@ export function parseResponsesSSE(text: string) {
     json.type === "response.refusal.delta"
   ) {
     return json.delta as string | undefined;
+  }
+
+  if (json.type === "response.reasoning_summary_text.delta") {
+    return json.delta as string | undefined;
+  }
+
+  if (
+    json.type === "response.created" ||
+    json.type === "response.queued" ||
+    json.type === "response.in_progress" ||
+    json.type === "response.reasoning_summary_part.added"
+  ) {
+    return "<think>\n正在推理...";
   }
 
   if (json.type === "response.error" && json.error) {
@@ -377,22 +389,18 @@ export class ChatGPTApi implements LLMApi {
           ...responsesInput,
           stream: options.config.stream,
           model: modelConfig.model,
-          temperature: modelConfig.temperature,
           max_output_tokens:
             modelConfig.max_tokens > 0 ? modelConfig.max_tokens : undefined,
           reasoning: {
-            effort: (accessStore.openaiReasoningEffort ||
+            effort: (modelConfig.reasoningEffort ||
               OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT) as OpenAIResponsesReasoningEffort,
+            summary: "auto",
           },
           text: {
             verbosity: (accessStore.openaiTextVerbosity ||
               OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY) as OpenAIResponsesTextVerbosity,
           },
         };
-
-        if (modelConfig.top_p !== 1) {
-          requestPayload.top_p = modelConfig.top_p;
-        }
       } else {
         // O1 not support image, tools (plugin in ChatGPTNextWeb) and system, stream, logprobs, temperature, top_p, n, presence_penalty, frequency_penalty yet.
         requestPayload = {
@@ -473,6 +481,7 @@ export class ChatGPTApi implements LLMApi {
       if (shouldStream) {
         let index = -1;
         let isInThinking = false;
+        let hasResponsesOutput = false;
         const session = useChatStore.getState().currentSession();
 
         // 获取所有插件工具
@@ -522,6 +531,51 @@ export class ChatGPTApi implements LLMApi {
           // parseSSE
           (text: string, runTools: ChatMessageTool[]) => {
             if (useResponses) {
+              const json = JSON.parse(text);
+              if (
+                json.type === "response.output_text.delta" ||
+                json.type === "response.refusal.delta"
+              ) {
+                const chunk = json.delta as string | undefined;
+                if (!chunk) return;
+                const replace = !hasResponsesOutput;
+                hasResponsesOutput = true;
+                isInThinking = false;
+                return { content: chunk, replace };
+              }
+
+              if (json.type === "response.reasoning_summary_text.delta") {
+                const reasoning = json.delta as string | undefined;
+                if (!reasoning) return;
+                if (!isInThinking) {
+                  isInThinking = true;
+                  return "<think>\n" + reasoning;
+                }
+                return reasoning;
+              }
+
+              if (
+                !hasResponsesOutput &&
+                (json.type === "response.created" ||
+                  json.type === "response.queued" ||
+                  json.type === "response.in_progress" ||
+                  json.type === "response.reasoning_summary_part.added")
+              ) {
+                if (!isInThinking) {
+                  isInThinking = true;
+                  return "<think>\n正在推理...";
+                }
+                return;
+              }
+
+              if (json.type === "response.error" && json.error) {
+                return {
+                  content:
+                    "```\n" + JSON.stringify(json.error, null, 4) + "\n```",
+                  replace: true,
+                };
+              }
+
               return parseResponsesSSE(text);
             }
 

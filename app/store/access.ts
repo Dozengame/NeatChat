@@ -129,7 +129,7 @@ const DEFAULT_ACCESS_STATE = {
   customModels: "",
   defaultModel: "",
   openaiResponsesMode: false,
-  openaiReasoningEffort: "medium",
+  openaiReasoningEffort: "low",
   openaiTextVerbosity: "medium",
 
   // tts config
