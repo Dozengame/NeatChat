@@ -106,7 +106,7 @@ declare global {
   }
 }
 
-const ACCESS_CODES = (function getAccessCodes(): Set<string> {
+export function getAccessCodes(): Set<string> {
   const code = process.env.CODE;
 
   try {
@@ -117,7 +117,7 @@ const ACCESS_CODES = (function getAccessCodes(): Set<string> {
   } catch (e) {
     return new Set();
   }
-})();
+}
 
 function getApiKey(keys?: string) {
   const apiKeyEnvVar = keys ?? "";
@@ -306,9 +306,9 @@ export const getServerSideConfig = () => {
     gtmId: process.env.GTM_ID,
     gaId: process.env.GA_ID || DEFAULT_GA_ID,
 
-    needCode: ACCESS_CODES.size > 0,
+    needCode: getAccessCodes().size > 0,
     code: process.env.CODE,
-    codes: ACCESS_CODES,
+    codes: getAccessCodes(),
 
     proxyUrl: process.env.PROXY_URL,
     isVercel: !!process.env.VERCEL,

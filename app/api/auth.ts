@@ -24,6 +24,14 @@ function parseApiKey(bearToken: string) {
   };
 }
 
+export function validateAccessCode(accessCode: string) {
+  const serverConfig = getServerSideConfig();
+  if (!serverConfig.needCode) return true;
+
+  const hashedCode = md5.hash(accessCode ?? "").trim();
+  return serverConfig.codes.has(hashedCode);
+}
+
 export function auth(req: NextRequest, modelProvider: ModelProvider) {
   const authToken = req.headers.get("Authorization") ?? "";
 
@@ -39,7 +47,7 @@ export function auth(req: NextRequest, modelProvider: ModelProvider) {
   console.log("[User IP] ", getIP(req));
   console.log("[Time] ", new Date().toLocaleString());
 
-  if (serverConfig.needCode && !serverConfig.codes.has(hashedCode) && !apiKey) {
+  if (serverConfig.needCode && !validateAccessCode(accessCode) && !apiKey) {
     return {
       error: true,
       msg: !accessCode ? "empty access code" : "wrong access code",

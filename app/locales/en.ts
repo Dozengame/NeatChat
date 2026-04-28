@@ -8,20 +8,17 @@ const en: LocaleType = {
   WIP: "Coming Soon...",
   Error: {
     Unauthorized: isApp
-      ? `😆 Oops, there's an issue. No worries:
-     \\ 1️⃣ Want to use your own API resources? [Click here](/#/settings) to change settings ⚙️`
-      : `😆 Oops, there's an issue. Let's fix it:
-     \ 1️⃣ [Click here](/#/auth) to enter your key 🔑
-     \ 2️⃣ Want to use your own API resources? [Click here](/#/settings) to change settings ⚙️
-     `,
+      ? "Invalid access code. Please enter it again."
+      : "Invalid access code. Please enter it again.",
   },
   Auth: {
     Return: "Return",
     Title: "Need Access Code",
     Tips: "Please enter access code below",
-    SubTips: "Or enter your OpenAI or Google API Key",
     Input: "access code",
     Confirm: "Confirm",
+    Validating: "Validating...",
+    Invalid: "Invalid access code. Please enter it again.",
     Later: "Later",
   },
   ChatItem: {
@@ -321,7 +318,7 @@ const en: LocaleType = {
       },
       IsChecking: "Checking...",
       Check: "Check",
-      NoAccess: "Enter API Key to check balance",
+      NoAccess: "Enter access code to check balance",
     },
     Access: {
       AccessCode: {
@@ -369,8 +366,7 @@ const en: LocaleType = {
       Anthropic: {
         ApiKey: {
           Title: "Anthropic API Key",
-          SubTitle:
-            "Use a custom Anthropic Key to bypass password access restrictions",
+          SubTitle: "Use a custom Anthropic API key",
           Placeholder: "Anthropic API Key",
         },
 

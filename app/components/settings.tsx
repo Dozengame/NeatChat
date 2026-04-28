@@ -630,6 +630,8 @@ export function Settings() {
   const [shouldShowPromptModal, setShowPromptModal] = useState(false);
 
   const showUsage = accessStore.isAuthorized();
+  const apiResourceLocked =
+    accessStore.hideUserApiKey || accessStore.lockedFields?.includes("apiKey");
   useEffect(() => {
     showUsage && checkUsage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -667,9 +669,11 @@ export function Settings() {
         type="text"
         placeholder={Locale.Settings.Access.AccessCode.Placeholder}
         onChange={(e) => {
-          accessStore.update(
-            (access) => (access.accessCode = e.currentTarget.value),
-          );
+          accessStore.update((access) => {
+            access.accessCode = e.currentTarget.value;
+            access.validatedAccessCode = "";
+            access.accessCodeValidatedAt = 0;
+          });
         }}
       />
     </ListItem>
@@ -1738,7 +1742,7 @@ export function Settings() {
         <List id={SlotID.CustomModel}>
           {accessCodeComponent}
 
-          {!accessStore.hideUserApiKey && (
+          {!apiResourceLocked && (
             <>
               {useCustomConfigComponent}
 

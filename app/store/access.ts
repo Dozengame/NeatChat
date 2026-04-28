@@ -37,6 +37,7 @@ import {
 } from "../utils/public-app-config";
 
 let isFetchingConfig = false;
+const accessValidationSessionStartedAt = Date.now();
 
 const isApp = getClientConfig()?.buildMode === "export";
 
@@ -66,6 +67,9 @@ const DEFAULT_CHATGLM_URL = isApp ? CHATGLM_BASE_URL : ApiPath.ChatGLM;
 
 const DEFAULT_ACCESS_STATE = {
   accessCode: "",
+  validatedAccessCode: "",
+  accessCodeValidatedAt: 0,
+  isValidatingAccessCode: false,
   useCustomConfig: false,
 
   provider: ServiceProvider.OpenAI,
@@ -569,25 +573,92 @@ export const useAccessStore = createPersistStore(
       return ensure(get(), ["chatglmApiKey"]);
     },
 
+    setAccessCode(accessCode: string) {
+      set({
+        accessCode,
+        validatedAccessCode: "",
+        accessCodeValidatedAt: 0,
+        lastUpdateTime: Date.now(),
+      } as Partial<ReturnType<typeof get>>);
+    },
+
+    clearAccessCode() {
+      set({
+        accessCode: "",
+        validatedAccessCode: "",
+        accessCodeValidatedAt: 0,
+        lastUpdateTime: Date.now(),
+      } as Partial<ReturnType<typeof get>>);
+    },
+
+    hasValidAccessCode() {
+      const state = get();
+      return (
+        ensure(state, ["accessCode"]) &&
+        state.validatedAccessCode === state.accessCode &&
+        state.accessCodeValidatedAt >= accessValidationSessionStartedAt
+      );
+    },
+
+    async validateAccessCode() {
+      const accessCode = get().accessCode.trim();
+      if (!accessCode) {
+        set({
+          accessCode: "",
+          validatedAccessCode: "",
+          accessCodeValidatedAt: 0,
+          isValidatingAccessCode: false,
+          lastUpdateTime: Date.now(),
+        } as Partial<ReturnType<typeof get>>);
+        return false;
+      }
+
+      set({ isValidatingAccessCode: true } as Partial<ReturnType<typeof get>>);
+      try {
+        const res = await fetch("/api/access-code", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({ accessCode }),
+        });
+        const body = (await res.json().catch(() => ({}))) as { ok?: boolean };
+        const ok = res.ok && body.ok === true;
+
+        if (ok) {
+          set({
+            validatedAccessCode: accessCode,
+            accessCodeValidatedAt: Date.now(),
+            isValidatingAccessCode: false,
+            lastUpdateTime: Date.now(),
+          } as Partial<ReturnType<typeof get>>);
+          return true;
+        }
+
+        set({
+          accessCode: "",
+          validatedAccessCode: "",
+          accessCodeValidatedAt: 0,
+          isValidatingAccessCode: false,
+          lastUpdateTime: Date.now(),
+        } as Partial<ReturnType<typeof get>>);
+        return false;
+      } catch {
+        set({ isValidatingAccessCode: false } as Partial<
+          ReturnType<typeof get>
+        >);
+        return false;
+      }
+    },
+
     isAuthorized() {
       this.fetch();
 
-      // has token or has code or disabled access control
+      // disabled access control or a server-verified access code
       return (
-        this.isValidOpenAI() ||
-        this.isValidAzure() ||
-        this.isValidGoogle() ||
-        this.isValidAnthropic() ||
-        this.isValidBaidu() ||
-        this.isValidByteDance() ||
-        this.isValidAlibaba() ||
-        this.isValidTencent() ||
-        this.isValidMoonshot() ||
-        this.isValidIflytek() ||
-        this.isValidXAI() ||
-        this.isValidChatGLM() ||
         !this.enabledAccessControl() ||
-        (this.enabledAccessControl() && ensure(get(), ["accessCode"]))
+        (this.enabledAccessControl() && this.hasValidAccessCode())
       );
     },
     fetch() {

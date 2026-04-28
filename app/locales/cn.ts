@@ -7,20 +7,17 @@ const cn = {
   WIP: "该功能仍在开发中……",
   Error: {
     Unauthorized: isApp
-      ? `😆 对话遇到了一些问题，不用慌:
-       \\ 1️⃣ 如果你想消耗自己的 API 资源，点击[这里](/#/settings)修改设置 ⚙️`
-      : `😆 对话遇到了一些问题，不用慌:
-       \ 1️⃣ 点击[这里](/#/auth)输入访问秘钥 🔑
-       \ 2️⃣ 如果你想消耗自己的 API 资源，点击[这里](/#/settings)修改设置 ⚙️
-       `,
+      ? "访问密码无效，请重新输入。"
+      : "访问密码无效，请重新输入。",
   },
   Auth: {
     Return: "返回",
     Title: "需要密码",
     Tips: "管理员开启了密码验证，请在下方填入访问码",
-    SubTips: "或者输入你的 OpenAI 或 Google AI 密钥",
     Input: "在此处填写访问码",
     Confirm: "确认",
+    Validating: "验证中…",
+    Invalid: "访问码不正确，请重新输入",
     Later: "稍后再说",
   },
   ChatItem: {
@@ -317,7 +314,7 @@ const cn = {
       },
       IsChecking: "正在检查…",
       Check: "重新检查",
-      NoAccess: "输入 API Key 或访问密码查看余额",
+      NoAccess: "输入访问密码后查看余额",
     },
 
     Access: {
@@ -337,7 +334,7 @@ const cn = {
       OpenAI: {
         ApiKey: {
           Title: "API Key",
-          SubTitle: "使用自定义 OpenAI Key 绕过密码访问限制",
+          SubTitle: "使用自定义 OpenAI Key",
           Placeholder: "OpenAI API Key",
         },
 
@@ -349,7 +346,7 @@ const cn = {
       Azure: {
         ApiKey: {
           Title: "接口密钥",
-          SubTitle: "使用自定义 Azure Key 绕过密码访问限制",
+          SubTitle: "使用自定义 Azure Key",
           Placeholder: "Azure API Key",
         },
 
@@ -366,7 +363,7 @@ const cn = {
       Anthropic: {
         ApiKey: {
           Title: "接口密钥",
-          SubTitle: "使用自定义 Anthropic Key 绕过密码访问限制",
+          SubTitle: "使用自定义 Anthropic Key",
           Placeholder: "Anthropic API Key",
         },
 

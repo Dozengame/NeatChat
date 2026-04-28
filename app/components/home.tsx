@@ -165,16 +165,54 @@ function Screen() {
   const isAuth = location.pathname === Path.Auth;
   const isSd = location.pathname === Path.Sd;
   const isSdNew = location.pathname === Path.SdNew;
+  const clientConfig = getClientConfig();
+  const accessStore = useAccessStore();
+  const {
+    accessCode,
+    accessCodeValidatedAt,
+    validatedAccessCode,
+    isValidatingAccessCode,
+    validateAccessCode,
+  } = accessStore;
+  const isAccessControlled =
+    !clientConfig?.isApp && accessStore.enabledAccessControl();
+  const shouldRequireAccessCode =
+    accessStore._hasHydrated &&
+    isAccessControlled &&
+    !accessStore.hasValidAccessCode();
 
   const isMobileScreen = useMobileScreen();
   const shouldTightBorder =
-    getClientConfig()?.isApp || (config.tightBorder && !isMobileScreen);
+    clientConfig?.isApp || (config.tightBorder && !isMobileScreen);
 
   useEffect(() => {
     loadAsyncGoogleFont();
   }, []);
 
-  if (isArtifact) {
+  useEffect(() => {
+    if (
+      shouldRequireAccessCode &&
+      accessCode &&
+      accessCodeValidatedAt > 0 &&
+      validatedAccessCode === accessCode &&
+      !isValidatingAccessCode
+    ) {
+      validateAccessCode();
+    }
+  }, [
+    shouldRequireAccessCode,
+    accessCode,
+    accessCodeValidatedAt,
+    validatedAccessCode,
+    isValidatingAccessCode,
+    validateAccessCode,
+  ]);
+
+  if (!accessStore._hasHydrated) {
+    return <Loading />;
+  }
+
+  if (isArtifact && !shouldRequireAccessCode) {
     return (
       <Routes>
         <Route path="/artifacts/:id" element={<Artifacts />} />
@@ -182,6 +220,7 @@ function Screen() {
     );
   }
   const renderContent = () => {
+    if (shouldRequireAccessCode) return <AuthPage />;
     if (isAuth) return <AuthPage />;
     if (isSd) return <Sd />;
     if (isSdNew) return <Sd />;
@@ -222,16 +261,26 @@ function Screen() {
 
 export function useLoadData() {
   const config = useAppConfig();
+  const accessStore = useAccessStore();
+  const clientConfig = getClientConfig();
 
   const api: ClientApi = getClientApi(config.modelConfig.providerName);
 
   useEffect(() => {
+    if (
+      !clientConfig?.isApp &&
+      accessStore.enabledAccessControl() &&
+      !accessStore.hasValidAccessCode()
+    ) {
+      return;
+    }
+
     (async () => {
       const models = await api.llm.models();
       config.mergeModels(models);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [accessStore.accessCodeValidatedAt, accessStore.needCode]);
 }
 
 export function Home() {

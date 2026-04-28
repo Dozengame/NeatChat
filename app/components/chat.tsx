@@ -1645,7 +1645,7 @@ function _Chat() {
       console.log("[Command] got code from url: ", text);
       showConfirm(Locale.URLCommand.Code + `code = ${text}`).then((res) => {
         if (res) {
-          accessStore.update((access) => (access.accessCode = text));
+          accessStore.setAccessCode(text);
         }
       });
     },

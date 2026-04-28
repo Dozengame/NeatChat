@@ -1,46 +1,28 @@
 import styles from "./auth.module.scss";
 import { IconButton } from "./button";
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Path } from "../constant";
 import { useAccessStore } from "../store";
 import Locale from "../locales";
 import NeatIcon from "../icons/neat.svg";
-import { getClientConfig } from "../config/client";
 import { PasswordInput } from "./ui-lib";
-import LeftIcon from "@/app/icons/left.svg";
 import clsx from "clsx";
+import { showToast } from "./ui-lib";
 
 export function AuthPage() {
   const navigate = useNavigate();
   const accessStore = useAccessStore();
-  const goChat = () => navigate(Path.Chat);
-  const openAIKeyLocked =
-    accessStore.hideUserApiKey || accessStore.lockedFields?.includes("apiKey");
-
-  const resetAccessCode = () => {
-    accessStore.update((access) => {
-      access.openaiApiKey = "";
-      access.accessCode = "";
-    });
-  };
-
-  useEffect(() => {
-    if (getClientConfig()?.isApp) {
-      navigate(Path.Settings);
+  const confirmAccessCode = async () => {
+    const ok = await accessStore.validateAccessCode();
+    if (ok) {
+      navigate(Path.Chat);
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    showToast(Locale.Auth.Invalid);
+  };
 
   return (
     <div className={styles["auth-page"]}>
-      <div className={styles["auth-header"]}>
-        <IconButton
-          icon={<LeftIcon />}
-          text={Locale.Auth.Return}
-          onClick={() => navigate(Path.Home)}
-        ></IconButton>
-      </div>
       <div className={clsx("no-dark", styles["auth-logo"])}>
         <NeatIcon width={30} height={30} />
       </div>
@@ -56,49 +38,20 @@ export function AuthPage() {
         type="text"
         placeholder={Locale.Auth.Input}
         onChange={(e) => {
-          accessStore.update(
-            (access) => (access.accessCode = e.currentTarget.value),
-          );
+          accessStore.setAccessCode(e.currentTarget.value);
         }}
       />
 
-      {!openAIKeyLocked ? (
-        <>
-          <div className={styles["auth-tips"]}>{Locale.Auth.SubTips}</div>
-          <PasswordInput
-            style={{ marginTop: "3vh", marginBottom: "3vh" }}
-            aria={Locale.Settings.ShowPassword}
-            aria-label={Locale.Settings.Access.OpenAI.ApiKey.Placeholder}
-            value={accessStore.openaiApiKey}
-            type="text"
-            placeholder={Locale.Settings.Access.OpenAI.ApiKey.Placeholder}
-            onChange={(e) => {
-              accessStore.update(
-                (access) => (access.openaiApiKey = e.currentTarget.value),
-              );
-            }}
-          />
-          <PasswordInput
-            style={{ marginTop: "3vh", marginBottom: "3vh" }}
-            aria={Locale.Settings.ShowPassword}
-            aria-label={Locale.Settings.Access.Google.ApiKey.Placeholder}
-            value={accessStore.googleApiKey}
-            type="text"
-            placeholder={Locale.Settings.Access.Google.ApiKey.Placeholder}
-            onChange={(e) => {
-              accessStore.update(
-                (access) => (access.googleApiKey = e.currentTarget.value),
-              );
-            }}
-          />
-        </>
-      ) : null}
-
       <div className={styles["auth-actions"]}>
         <IconButton
-          text={Locale.Auth.Confirm}
+          text={
+            accessStore.isValidatingAccessCode
+              ? Locale.Auth.Validating
+              : Locale.Auth.Confirm
+          }
           type="primary"
-          onClick={goChat}
+          disabled={accessStore.isValidatingAccessCode}
+          onClick={confirmAccessCode}
         />
       </div>
     </div>
