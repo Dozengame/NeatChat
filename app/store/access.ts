@@ -35,9 +35,9 @@ import {
   splitModelRef,
   type PublicAppConfig,
 } from "../utils/public-app-config";
+import { isAccessCodeValidatedToday } from "../utils/access-code-validation";
 
 let isFetchingConfig = false;
-const accessValidationSessionStartedAt = Date.now();
 
 const isApp = getClientConfig()?.buildMode === "export";
 
@@ -599,7 +599,7 @@ export const useAccessStore = createPersistStore(
       return (
         ensure(state, ["accessCode"]) &&
         state.validatedAccessCode === state.accessCode &&
-        state.accessCodeValidatedAt >= accessValidationSessionStartedAt
+        isAccessCodeValidatedToday(state.accessCodeValidatedAt)
       );
     },
 
