@@ -2,7 +2,9 @@ export const OPENAI_RESPONSES_DEFAULT_MODEL = "gpt-5.5";
 export const OPENAI_RESPONSES_DEFAULT_TEMPERATURE = 1;
 export const OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT = "low";
 export const OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY = "medium";
+export const OPENAI_RESPONSES_DEFAULT_COMPRESS_MESSAGE_LENGTH_THRESHOLD = 1000;
 export const OPENAI_RESPONSES_REASONING_MAX_OUTPUT_TOKENS = {
+  none: 10000,
   low: 10000,
   medium: 20000,
   high: 30000,
@@ -10,6 +12,7 @@ export const OPENAI_RESPONSES_REASONING_MAX_OUTPUT_TOKENS = {
 } as const;
 
 export type OpenAIResponsesReasoningEffort =
+  | "none"
   | "low"
   | "medium"
   | "high"
@@ -22,7 +25,7 @@ export type OpenAIChatReasoningEffort = Extract<
 
 export type OpenAIResponsesTextVerbosity = "low" | "medium" | "high";
 
-const REASONING_EFFORTS = new Set(["low", "medium", "high", "xhigh"]);
+const REASONING_EFFORTS = new Set(["none", "low", "medium", "high", "xhigh"]);
 
 const TEXT_VERBOSITIES = new Set(["low", "medium", "high"]);
 
@@ -58,6 +61,20 @@ export function parseOpenAIResponsesTextVerbosity(value?: string) {
   }
 
   return OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY;
+}
+
+export function parseOpenAICompressMessageLengthThreshold(value?: string) {
+  const normalized = value?.trim().toLowerCase();
+  if (!normalized) {
+    return undefined;
+  }
+
+  const threshold = Number(normalized);
+  if (!Number.isFinite(threshold)) {
+    return undefined;
+  }
+
+  return Math.floor(Math.min(4000, Math.max(500, threshold)));
 }
 
 export function getMaxOutputTokensForReasoningEffort(
@@ -99,4 +116,21 @@ export function shouldUseOpenAIResponses(params: {
   providerName?: string;
 }) {
   return params.providerName !== "Azure";
+}
+
+export function supportsOpenAIResponsesSampling(model?: string) {
+  const normalized = model?.trim().toLowerCase() ?? "";
+
+  if (/^o\d/.test(normalized)) {
+    return false;
+  }
+
+  if (
+    /^gpt-5($|[-.])/.test(normalized) &&
+    !/^gpt-5\.(4|5)($|[-.])/.test(normalized)
+  ) {
+    return false;
+  }
+
+  return true;
 }

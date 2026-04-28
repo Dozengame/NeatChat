@@ -20,9 +20,21 @@ import {
   getMaxOutputTokensForReasoningEffort,
   OPENAI_RESPONSES_DEFAULT_MODEL,
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
+  OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY,
   OPENAI_RESPONSES_DEFAULT_TEMPERATURE,
   type OpenAIChatReasoningEffort,
+  type OpenAIResponsesTextVerbosity,
 } from "../utils/openai-responses";
+import type {
+  ModelConfigMeta,
+  PublicAppConfig,
+} from "../utils/public-app-config";
+export type {
+  ConfigFieldMeta,
+  ConfigSource,
+  ModelConfigMeta,
+  PublicAppConfig,
+} from "../utils/public-app-config";
 
 export type ModelType = (typeof DEFAULT_MODELS)[number]["name"];
 export type TTSModelType = (typeof DEFAULT_TTS_MODELS)[number];
@@ -61,6 +73,7 @@ export type ModelConfig = {
   enableInjectSystemPrompts: boolean;
   template: string;
   reasoningEffort?: OpenAIChatReasoningEffort;
+  textVerbosity?: OpenAIResponsesTextVerbosity;
   size: DalleSize;
   quality: DalleQuality;
   style: DalleStyle;
@@ -85,6 +98,8 @@ export type AppConfig = {
   customModels: string;
   models: LLMModel[];
   modelConfig: ModelConfig;
+  modelConfigMeta?: ModelConfigMeta;
+  serverConfigSnapshot?: PublicAppConfig;
   ttsConfig: TTSConfig;
   realtimeConfig: RealtimeConfig;
   enableModelSearch: boolean;
@@ -113,6 +128,8 @@ export const DEFAULT_CONFIG: AppConfig = {
   hideBuiltinMasks: false,
   customModels: "",
   models: DEFAULT_MODELS as any as LLMModel[],
+  modelConfigMeta: {},
+  serverConfigSnapshot: undefined,
   modelConfig: {
     model: OPENAI_RESPONSES_DEFAULT_MODEL as ModelType,
     providerName: "OpenAI" as ServiceProvider,
@@ -131,6 +148,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     enableInjectSystemPrompts: true,
     template: config?.template ?? DEFAULT_INPUT_TEMPLATE,
     reasoningEffort: OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
+    textVerbosity: OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY,
     size: "1024x1024" as DalleSize,
     quality: "standard" as DalleQuality,
     style: "vivid" as DalleStyle,
@@ -222,6 +240,9 @@ export const ModalConfigValidator = {
   max_output_tokens(x: number) {
     return limitNumber(x, 0, 512000, 1024);
   },
+  compressMessageLengthThreshold(x: number) {
+    return limitNumber(x, 500, 4000, 1000);
+  },
   presence_penalty(x: number) {
     return limitNumber(x, -2, 2, 0);
   },
@@ -233,6 +254,11 @@ export const ModalConfigValidator = {
   },
   top_p(x: number) {
     return limitNumber(x, 0, 1, 1);
+  },
+  textVerbosity(x: string) {
+    return ["low", "medium", "high"].includes(x)
+      ? (x as OpenAIResponsesTextVerbosity)
+      : OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY;
   },
 };
 
@@ -270,7 +296,7 @@ export const useAppConfig = createPersistStore(
   }),
   {
     name: StoreKey.Config,
-    version: 4.2,
+    version: 4.3,
 
     merge(persistedState, currentState) {
       const state = persistedState as ChatConfig | undefined;
@@ -333,16 +359,21 @@ export const useAppConfig = createPersistStore(
           DEFAULT_CONFIG.modelConfig.compressProviderName;
       }
 
-      if (
-        version < 4.2 &&
-        typeof modelConfig.max_output_tokens !== "number"
-      ) {
+      if (version < 4.2 && typeof modelConfig.max_output_tokens !== "number") {
         modelConfig.max_output_tokens =
           typeof modelConfig.max_tokens === "number"
             ? modelConfig.max_tokens
             : DEFAULT_CONFIG.modelConfig.max_output_tokens;
       }
       delete modelConfig.max_tokens;
+
+      if (version < 4.3) {
+        state.modelConfig.textVerbosity =
+          state.modelConfig.textVerbosity ??
+          DEFAULT_CONFIG.modelConfig.textVerbosity;
+        state.modelConfigMeta = state.modelConfigMeta ?? {};
+        state.serverConfigSnapshot = state.serverConfigSnapshot ?? undefined;
+      }
 
       return state as any;
     },

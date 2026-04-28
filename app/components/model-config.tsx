@@ -1,5 +1,6 @@
 import { ServiceProvider } from "@/app/constant";
-import { ModalConfigValidator, ModelConfig, useAccessStore } from "../store";
+import { ModalConfigValidator, useAccessStore, useAppConfig } from "../store";
+import type { ConfigSource, ModelConfig, ModelConfigMeta } from "../store";
 
 import Locale from "../locales";
 import { InputRange } from "./input-range";
@@ -12,17 +13,61 @@ import {
   getMaxOutputTokensForReasoningEffort,
   isOpenAIGpt5OrNewerModelConfig,
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
-  OpenAIChatReasoningEffort,
+  OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY,
 } from "../utils/openai-responses";
+import type {
+  OpenAIChatReasoningEffort,
+  OpenAIResponsesTextVerbosity,
+} from "../utils/openai-responses";
+
+const SOURCE_LABELS: Record<ConfigSource, string> = {
+  admin_forced: "管理员锁定",
+  server_default: "管理员默认",
+  user_override: "个人设置",
+  conversation_override: "当前会话",
+  fallback: "系统默认",
+};
 
 export function ModelConfigList(props: {
   modelConfig: ModelConfig;
   updateConfig: (updater: (config: ModelConfig) => void) => void;
+  modelConfigMeta?: ModelConfigMeta;
+  markOverride?: (fields: string[]) => void;
 }) {
   const accessStore = useAccessStore();
+  const appConfig = useAppConfig();
+  const modelConfigMeta =
+    props.modelConfigMeta ?? appConfig.modelConfigMeta ?? {};
+  const lockedFields = new Set(accessStore.lockedFields ?? []);
+  const allowedModels = new Set(accessStore.allowedModels ?? []);
+  const isLocked = (field: string) =>
+    modelConfigMeta[field]?.locked ||
+    lockedFields.has(field) ||
+    (field === "model" && lockedFields.has("customModels")) ||
+    (field === "providerName" && lockedFields.has("customModels"));
+  const sourceText = (field: string) => {
+    const source = isLocked(field)
+      ? "admin_forced"
+      : modelConfigMeta[field]?.source ?? "fallback";
+    const text = `来源：${SOURCE_LABELS[source]}`;
+    return isLocked(field) ? `${text}。该项已由管理员锁定` : text;
+  };
+  const updateUnlocked = (
+    fields: string[],
+    updater: (config: ModelConfig) => void,
+  ) => {
+    if (fields.some((field) => isLocked(field))) return;
+    props.updateConfig(updater);
+    props.markOverride?.(fields);
+  };
   const allModels = useAllModels();
   const groupModels = groupBy(
-    allModels.filter((v) => v.available),
+    allModels.filter(
+      (v) =>
+        v.available &&
+        (allowedModels.size === 0 ||
+          allowedModels.has(`${v.name}@${v.provider?.providerName}`)),
+    ),
     "provider.providerName",
   );
   const value = `${props.modelConfig.model}@${props.modelConfig?.providerName}`;
@@ -31,9 +76,8 @@ export function ModelConfigList(props: {
     model: props.modelConfig.model,
     providerName: props.modelConfig?.providerName,
   });
-  const reasoningEffort =
-    (props.modelConfig.reasoningEffort ??
-      OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT) as OpenAIChatReasoningEffort;
+  const reasoningEffort = (props.modelConfig.reasoningEffort ??
+    OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT) as OpenAIChatReasoningEffort;
   const reasoningLabels: Record<OpenAIChatReasoningEffort, string> = {
     low: Locale.Settings.ReasoningEffort.Low,
     medium: Locale.Settings.ReasoningEffort.Medium,
@@ -46,26 +90,37 @@ export function ModelConfigList(props: {
     typeof accessStore.openaiMaxOutputTokens === "number";
   const maxOutputTokensValue =
     accessStore.openaiMaxOutputTokens ?? props.modelConfig.max_output_tokens;
+  const textVerbosity = (props.modelConfig.textVerbosity ||
+    accessStore.openaiTextVerbosity ||
+    OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY) as OpenAIResponsesTextVerbosity;
+  const textVerbosityLabels: Record<OpenAIResponsesTextVerbosity, string> = {
+    low: "简洁",
+    medium: "适中",
+    high: "详细",
+  };
 
   return (
     <>
-      <ListItem title={Locale.Settings.Model}>
+      <ListItem title={Locale.Settings.Model} subTitle={sourceText("model")}>
         <Select
           aria-label={Locale.Settings.Model}
           value={value}
           align="left"
+          disabled={isLocked("model") || isLocked("providerName")}
           onChange={(e) => {
+            if (isLocked("model") || isLocked("providerName")) return;
             const [model, providerName] = getModelProvider(
               e.currentTarget.value,
             );
-            props.updateConfig((config) => {
+            updateUnlocked(["model", "providerName"], (config) => {
               config.model = ModalConfigValidator.model(model);
               config.providerName = providerName as ServiceProvider;
               if (
                 isOpenAIGpt5OrNewerModelConfig({
                   model: config.model,
                   providerName: config.providerName,
-                })
+                }) &&
+                !isLocked("max_output_tokens")
               ) {
                 const effort =
                   config.reasoningEffort ??
@@ -86,55 +141,93 @@ export function ModelConfigList(props: {
           ))}
         </Select>
       </ListItem>
+
       {isOpenAIGpt5OrNewer ? (
-        <ListItem
-          title={Locale.Settings.ReasoningEffort.Title}
-          subTitle={Locale.Settings.ReasoningEffort.SubTitle}
-        >
-          <Select
-            aria-label={Locale.Settings.ReasoningEffort.Title}
-            value={reasoningEffort}
-            onChange={(e) => {
-              props.updateConfig((config) => {
-                const effort = e.currentTarget
-                  .value as OpenAIChatReasoningEffort;
-                config.reasoningEffort = effort;
-                config.max_output_tokens = getReasoningMaxOutputTokens(effort);
-              });
-            }}
+        <>
+          <ListItem
+            title={Locale.Settings.ReasoningEffort.Title}
+            subTitle={`${
+              Locale.Settings.ReasoningEffort.SubTitle
+            }。${sourceText("reasoningEffort")}`}
           >
-            {(["low", "medium", "high"] as const).map((effort) => (
-              <option value={effort} key={effort}>
-                {reasoningLabels[effort]}
-              </option>
-            ))}
-          </Select>
-        </ListItem>
+            <Select
+              aria-label={Locale.Settings.ReasoningEffort.Title}
+              value={reasoningEffort}
+              disabled={isLocked("reasoningEffort")}
+              onChange={(e) => {
+                updateUnlocked(["reasoningEffort"], (config) => {
+                  const effort = e.currentTarget
+                    .value as OpenAIChatReasoningEffort;
+                  config.reasoningEffort = effort;
+                  if (!isLocked("max_output_tokens")) {
+                    config.max_output_tokens =
+                      getReasoningMaxOutputTokens(effort);
+                  }
+                });
+              }}
+            >
+              {(["low", "medium", "high"] as const).map((effort) => (
+                <option value={effort} key={effort}>
+                  {reasoningLabels[effort]}
+                </option>
+              ))}
+            </Select>
+          </ListItem>
+          <ListItem
+            title="回答详细程度 (text.verbosity)"
+            subTitle={`控制 Responses API 的回答详略。${sourceText(
+              "textVerbosity",
+            )}`}
+          >
+            <Select
+              aria-label="回答详细程度 (text.verbosity)"
+              value={textVerbosity}
+              disabled={isLocked("textVerbosity")}
+              onChange={(e) => {
+                updateUnlocked(["textVerbosity"], (config) => {
+                  config.textVerbosity = ModalConfigValidator.textVerbosity(
+                    e.currentTarget.value,
+                  );
+                });
+              }}
+            >
+              {(["low", "medium", "high"] as const).map((verbosity) => (
+                <option value={verbosity} key={verbosity}>
+                  {textVerbosityLabels[verbosity]}
+                </option>
+              ))}
+            </Select>
+          </ListItem>
+        </>
       ) : (
         <>
           <ListItem
             title={Locale.Settings.Temperature.Title}
-            subTitle={Locale.Settings.Temperature.SubTitle}
+            subTitle={`${Locale.Settings.Temperature.SubTitle}。${sourceText(
+              "temperature",
+            )}`}
           >
             <InputRange
               aria={Locale.Settings.Temperature.Title}
               value={props.modelConfig.temperature?.toFixed(1)}
               min="0"
-              max="1" // lets limit it to 0-1
+              max="1"
               step="0.1"
+              disabled={isLocked("temperature")}
               onChange={(e) => {
-                props.updateConfig(
-                  (config) =>
-                    (config.temperature = ModalConfigValidator.temperature(
-                      e.currentTarget.valueAsNumber,
-                    )),
-                );
+                updateUnlocked(["temperature"], (config) => {
+                  config.temperature = ModalConfigValidator.temperature(
+                    e.currentTarget.valueAsNumber,
+                  );
+                });
               }}
-            ></InputRange>
+            />
           </ListItem>
           <ListItem
             title={Locale.Settings.TopP.Title}
-            subTitle={Locale.Settings.TopP.SubTitle}
+            subTitle={`${Locale.Settings.TopP.SubTitle}。${sourceText(
+              "top_p",
+            )}`}
           >
             <InputRange
               aria={Locale.Settings.TopP.Title}
@@ -143,20 +236,22 @@ export function ModelConfigList(props: {
               max="1"
               step="0.1"
               onChange={(e) => {
-                props.updateConfig(
-                  (config) =>
-                    (config.top_p = ModalConfigValidator.top_p(
-                      e.currentTarget.valueAsNumber,
-                    )),
-                );
+                updateUnlocked(["top_p"], (config) => {
+                  config.top_p = ModalConfigValidator.top_p(
+                    e.currentTarget.valueAsNumber,
+                  );
+                });
               }}
-            ></InputRange>
+            />
           </ListItem>
         </>
       )}
+
       <ListItem
         title={Locale.Settings.MaxTokens.Title}
-        subTitle={Locale.Settings.MaxTokens.SubTitle}
+        subTitle={`${Locale.Settings.MaxTokens.SubTitle}。${sourceText(
+          "max_output_tokens",
+        )}`}
       >
         <input
           aria-label={Locale.Settings.MaxTokens.Title}
@@ -164,18 +259,16 @@ export function ModelConfigList(props: {
           min={1024}
           max={512000}
           value={maxOutputTokensValue}
-          disabled={forcedMaxOutputTokens}
+          disabled={forcedMaxOutputTokens || isLocked("max_output_tokens")}
           onChange={(e) => {
-            if (forcedMaxOutputTokens) return;
-            props.updateConfig(
-              (config) =>
-                (config.max_output_tokens =
-                  ModalConfigValidator.max_output_tokens(
-                    e.currentTarget.valueAsNumber,
-                  )),
-            );
+            if (forcedMaxOutputTokens || isLocked("max_output_tokens")) return;
+            updateUnlocked(["max_output_tokens"], (config) => {
+              config.max_output_tokens = ModalConfigValidator.max_output_tokens(
+                e.currentTarget.valueAsNumber,
+              );
+            });
           }}
-        ></input>
+        />
       </ListItem>
 
       {props.modelConfig?.providerName == ServiceProvider.Google ? null : (
@@ -193,15 +286,15 @@ export function ModelConfigList(props: {
                   max="2"
                   step="0.1"
                   onChange={(e) => {
-                    props.updateConfig(
-                      (config) =>
-                        (config.presence_penalty =
-                          ModalConfigValidator.presence_penalty(
-                            e.currentTarget.valueAsNumber,
-                          )),
-                    );
+                    props.updateConfig((config) => {
+                      config.presence_penalty =
+                        ModalConfigValidator.presence_penalty(
+                          e.currentTarget.valueAsNumber,
+                        );
+                    });
+                    props.markOverride?.(["presence_penalty"]);
                   }}
-                ></InputRange>
+                />
               </ListItem>
 
               <ListItem
@@ -215,57 +308,62 @@ export function ModelConfigList(props: {
                   max="2"
                   step="0.1"
                   onChange={(e) => {
-                    props.updateConfig(
-                      (config) =>
-                        (config.frequency_penalty =
-                          ModalConfigValidator.frequency_penalty(
-                            e.currentTarget.valueAsNumber,
-                          )),
-                    );
+                    props.updateConfig((config) => {
+                      config.frequency_penalty =
+                        ModalConfigValidator.frequency_penalty(
+                          e.currentTarget.valueAsNumber,
+                        );
+                    });
+                    props.markOverride?.(["frequency_penalty"]);
                   }}
-                ></InputRange>
+                />
               </ListItem>
             </>
           )}
 
           <ListItem
             title={Locale.Settings.InjectSystemPrompts.Title}
-            subTitle={Locale.Settings.InjectSystemPrompts.SubTitle}
+            subTitle={`${
+              Locale.Settings.InjectSystemPrompts.SubTitle
+            }。${sourceText("enableInjectSystemPrompts")}`}
           >
             <input
               aria-label={Locale.Settings.InjectSystemPrompts.Title}
               type="checkbox"
               checked={props.modelConfig.enableInjectSystemPrompts}
-              onChange={(e) =>
-                props.updateConfig(
-                  (config) =>
-                    (config.enableInjectSystemPrompts =
-                      e.currentTarget.checked),
-                )
-              }
-            ></input>
+              onChange={(e) => {
+                updateUnlocked(["enableInjectSystemPrompts"], (config) => {
+                  config.enableInjectSystemPrompts = e.currentTarget.checked;
+                });
+              }}
+            />
           </ListItem>
 
           <ListItem
             title={Locale.Settings.InputTemplate.Title}
-            subTitle={Locale.Settings.InputTemplate.SubTitle}
+            subTitle={`${Locale.Settings.InputTemplate.SubTitle}。${sourceText(
+              "template",
+            )}`}
           >
             <input
               aria-label={Locale.Settings.InputTemplate.Title}
               type="text"
               value={props.modelConfig.template}
-              onChange={(e) =>
-                props.updateConfig(
-                  (config) => (config.template = e.currentTarget.value),
-                )
-              }
-            ></input>
+              onChange={(e) => {
+                updateUnlocked(["template"], (config) => {
+                  config.template = e.currentTarget.value;
+                });
+              }}
+            />
           </ListItem>
         </>
       )}
+
       <ListItem
         title={Locale.Settings.HistoryCount.Title}
-        subTitle={Locale.Settings.HistoryCount.SubTitle}
+        subTitle={`${Locale.Settings.HistoryCount.SubTitle}。${sourceText(
+          "historyMessageCount",
+        )}`}
       >
         <InputRange
           aria={Locale.Settings.HistoryCount.Title}
@@ -274,17 +372,19 @@ export function ModelConfigList(props: {
           min="0"
           max="64"
           step="1"
-          onChange={(e) =>
-            props.updateConfig(
-              (config) => (config.historyMessageCount = e.target.valueAsNumber),
-            )
-          }
-        ></InputRange>
+          onChange={(e) => {
+            updateUnlocked(["historyMessageCount"], (config) => {
+              config.historyMessageCount = e.target.valueAsNumber;
+            });
+          }}
+        />
       </ListItem>
 
       <ListItem
         title={Locale.Settings.CompressThreshold.Title}
-        subTitle={Locale.Settings.CompressThreshold.SubTitle}
+        subTitle={`${Locale.Settings.CompressThreshold.SubTitle}。${sourceText(
+          "compressMessageLengthThreshold",
+        )}`}
       >
         <input
           aria-label={Locale.Settings.CompressThreshold.Title}
@@ -292,27 +392,34 @@ export function ModelConfigList(props: {
           min={500}
           max={4000}
           value={props.modelConfig.compressMessageLengthThreshold}
-          onChange={(e) =>
-            props.updateConfig(
-              (config) =>
-                (config.compressMessageLengthThreshold =
-                  e.currentTarget.valueAsNumber),
-            )
-          }
-        ></input>
+          disabled={isLocked("compressMessageLengthThreshold")}
+          onChange={(e) => {
+            updateUnlocked(["compressMessageLengthThreshold"], (config) => {
+              config.compressMessageLengthThreshold =
+                ModalConfigValidator.compressMessageLengthThreshold(
+                  e.currentTarget.valueAsNumber,
+                );
+            });
+          }}
+        />
       </ListItem>
-      <ListItem title={Locale.Memory.Title} subTitle={Locale.Memory.Send}>
+
+      <ListItem
+        title={Locale.Memory.Title}
+        subTitle={`${Locale.Memory.Send}。${sourceText("sendMemory")}`}
+      >
         <input
           aria-label={Locale.Memory.Title}
           type="checkbox"
           checked={props.modelConfig.sendMemory}
-          onChange={(e) =>
-            props.updateConfig(
-              (config) => (config.sendMemory = e.currentTarget.checked),
-            )
-          }
-        ></input>
+          onChange={(e) => {
+            updateUnlocked(["sendMemory"], (config) => {
+              config.sendMemory = e.currentTarget.checked;
+            });
+          }}
+        />
       </ListItem>
+
       <ListItem
         title={Locale.Settings.CompressModel.Title}
         subTitle={Locale.Settings.CompressModel.SubTitle}
@@ -329,6 +436,7 @@ export function ModelConfigList(props: {
               config.compressModel = ModalConfigValidator.model(model);
               config.compressProviderName = providerName as ServiceProvider;
             });
+            props.markOverride?.(["compressModel", "compressProviderName"]);
           }}
         >
           {allModels

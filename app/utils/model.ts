@@ -91,13 +91,15 @@ export function collectModelTable(
       } else {
         // 1. find model by name, and set available value
         const [customModelName, customProviderName] = getModelProvider(name);
+        const normalizedCustomProviderName = customProviderName?.toLowerCase();
         let count = 0;
         for (const fullName in modelTable) {
           const [modelName, providerName] = getModelProvider(fullName);
+          const normalizedProviderName = providerName?.toLowerCase();
           if (
             customModelName == modelName &&
             (customProviderName === undefined ||
-              customProviderName === providerName)
+              normalizedCustomProviderName === normalizedProviderName)
           ) {
             count += 1;
             modelTable[fullName]["available"] = available;
@@ -198,7 +200,18 @@ export function isModelAvailableInServer(
   modelName: string,
   providerName: string,
 ) {
-  const fullName = `${modelName}@${providerName}`;
   const modelTable = collectModelTable(DEFAULT_MODELS, customModels);
-  return modelTable[fullName]?.available === false;
+  const normalizedProviderName = providerName.toLowerCase();
+  const matchingModels = Object.values(modelTable).filter(
+    (model) =>
+      model.name === modelName &&
+      (model.provider?.providerName?.toLowerCase() === normalizedProviderName ||
+        model.provider?.id?.toLowerCase() === normalizedProviderName),
+  );
+
+  if (matchingModels.some((model) => model.available)) {
+    return false;
+  }
+
+  return matchingModels.some((model) => model.available === false);
 }

@@ -20,14 +20,23 @@ import { getHeaders } from "../client/api";
 import { getClientConfig } from "../config/client";
 import { createPersistStore } from "../utils/store";
 import { ensure } from "../utils/clone";
-import { DEFAULT_CONFIG, useAppConfig } from "./config";
+import {
+  DEFAULT_CONFIG,
+  ModelConfig,
+  ModelConfigMeta,
+  useAppConfig,
+} from "./config";
 import { useChatStore } from "./chat";
 import {
-  resolveServerModelConfig,
-  ServerModelDefaults,
-} from "../utils/server-model-defaults";
+  createConfigFieldMeta,
+  isPublicConfigFieldLocked,
+  normalizeModelRef,
+  resolveAllowedModelRef,
+  splitModelRef,
+  type PublicAppConfig,
+} from "../utils/public-app-config";
 
-let fetchState = 0; // 0 not fetch, 1 fetching, 2 done
+let isFetchingConfig = false;
 
 const isApp = getClientConfig()?.buildMode === "export";
 
@@ -128,62 +137,348 @@ const DEFAULT_ACCESS_STATE = {
   disableFastLink: false,
   customModels: "",
   defaultModel: "",
+  defaultTemperature: DEFAULT_CONFIG.modelConfig.temperature,
   openaiReasoningEffort: "low",
   openaiMaxOutputTokens: undefined as number | undefined,
   openaiTextVerbosity: "medium",
+  openaiCompressMessageLengthThreshold:
+    DEFAULT_CONFIG.modelConfig.compressMessageLengthThreshold,
+  allowedModels: [] as string[],
+  lockedFields: [] as string[],
+  serverConfigSnapshot: undefined as PublicAppConfig | undefined,
 
   // tts config
   edgeTTSVoiceName: "zh-CN-YunxiNeural",
 };
 
-function applyServerModelDefaults(config: ServerModelDefaults) {
-  const modelConfig = resolveServerModelConfig(config) as Partial<
-    typeof DEFAULT_CONFIG.modelConfig
-  >;
+const MODEL_CONFIG_FIELDS = [
+  "model",
+  "providerName",
+  "temperature",
+  "max_output_tokens",
+  "reasoningEffort",
+  "textVerbosity",
+  "compressMessageLengthThreshold",
+  "historyMessageCount",
+  "sendMemory",
+  "enableInjectSystemPrompts",
+  "template",
+] as const;
 
-  if (Object.keys(modelConfig).length === 0) return;
-
-  DEFAULT_CONFIG.modelConfig = {
-    ...DEFAULT_CONFIG.modelConfig,
-    ...modelConfig,
+function publicConfigToAccessState(config: PublicAppConfig) {
+  return {
+    needCode: config.serverFlags.needCode,
+    hideUserApiKey: config.serverFlags.hideUserApiKey,
+    hideBalanceQuery: config.serverFlags.hideBalanceQuery,
+    disableGPT4: config.serverFlags.disableGPT4,
+    disableFastLink: config.serverFlags.disableFastLink,
+    customModels: config.legacy.customModels,
+    defaultModel: config.legacy.defaultModel ?? "",
+    defaultTemperature: config.legacy.defaultTemperature,
+    openaiReasoningEffort: config.legacy.openaiReasoningEffort ?? "low",
+    openaiMaxOutputTokens: config.legacy.openaiMaxOutputTokens,
+    openaiTextVerbosity: config.legacy.openaiTextVerbosity ?? "medium",
+    openaiCompressMessageLengthThreshold:
+      config.legacy.compressMessageLengthThreshold,
+    allowedModels: config.allowedModels,
+    lockedFields: config.lockedFields,
+    serverConfigSnapshot: config,
   };
-  useAppConfig.setState((state) => ({
-    modelConfig: {
-      ...state.modelConfig,
-      ...modelConfig,
-    },
-  }));
-  useChatStore.setState((state) => ({
-    temporarySession:
-      state.temporarySession && state.temporarySession.mask.syncGlobalConfig
-        ? {
-            ...state.temporarySession,
-            mask: {
-              ...state.temporarySession.mask,
-              modelConfig: {
-                ...state.temporarySession.mask.modelConfig,
-                ...modelConfig,
-              },
-            },
-          }
-        : state.temporarySession,
-    sessions: state.sessions.map((session) => {
-      if (!session.mask.syncGlobalConfig) {
-        return session;
+}
+
+function getServerModelConfig(publicConfig: PublicAppConfig) {
+  const modelRef = resolveAllowedModelRef({
+    model: publicConfig.forced.model ?? publicConfig.defaults.model,
+    providerName:
+      publicConfig.forced.providerName ?? publicConfig.defaults.providerName,
+    allowedModels: publicConfig.allowedModels,
+    fallbackModelRef: "gpt-5.5@OpenAI",
+  });
+  const [model, providerName] = splitModelRef(modelRef);
+
+  return {
+    model,
+    providerName,
+    temperature:
+      publicConfig.forced.temperature ?? publicConfig.defaults.temperature,
+    max_output_tokens:
+      publicConfig.forced.max_output_tokens ??
+      publicConfig.defaults.max_output_tokens,
+    reasoningEffort:
+      publicConfig.forced.reasoningEffort ??
+      publicConfig.defaults.reasoningEffort,
+    textVerbosity:
+      publicConfig.forced.textVerbosity ?? publicConfig.defaults.textVerbosity,
+    compressMessageLengthThreshold:
+      publicConfig.defaults.compressMessageLengthThreshold,
+    historyMessageCount: publicConfig.defaults.historyMessageCount,
+    sendMemory: publicConfig.defaults.sendMemory,
+    enableInjectSystemPrompts: publicConfig.defaults.enableInjectSystemPrompts,
+    template: publicConfig.defaults.template,
+  } as Partial<ModelConfig>;
+}
+
+function setFieldMeta(
+  meta: ModelConfigMeta | undefined,
+  field: string,
+  publicConfig: PublicAppConfig,
+  source: "server_default" | "admin_forced" | "conversation_override",
+  locked = false,
+) {
+  return {
+    ...(meta ?? {}),
+    [field]: createConfigFieldMeta({
+      source,
+      publicConfig,
+      locked,
+    }),
+  };
+}
+
+function fieldHasUserOverride(
+  meta: ModelConfigMeta | undefined,
+  field: string,
+) {
+  return meta?.[field]?.source === "user_override";
+}
+
+function fullModelRef(modelConfig: Partial<ModelConfig>) {
+  return normalizeModelRef(
+    modelConfig.providerName
+      ? `${modelConfig.model}@${modelConfig.providerName}`
+      : modelConfig.model,
+  );
+}
+
+function isAllowedModel(
+  modelConfig: Partial<ModelConfig>,
+  publicConfig: PublicAppConfig,
+) {
+  if (!publicConfig.allowedModels.length) {
+    return true;
+  }
+
+  const ref = fullModelRef(modelConfig);
+  return !!ref && publicConfig.allowedModels.includes(ref);
+}
+
+export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
+  const oldSnapshot = useAppConfig.getState().serverConfigSnapshot;
+  if (oldSnapshot?.configHash === publicConfig.configHash) {
+    useAccessStore.setState(() => publicConfigToAccessState(publicConfig));
+    return;
+  }
+
+  const serverModelConfig = getServerModelConfig(publicConfig);
+
+  useAppConfig.setState((state) => {
+    let modelConfig = { ...state.modelConfig };
+    let modelConfigMeta = { ...(state.modelConfigMeta ?? {}) };
+
+    for (const field of MODEL_CONFIG_FIELDS) {
+      const serverValue = serverModelConfig[field];
+      if (serverValue === undefined) continue;
+
+      const locked =
+        isPublicConfigFieldLocked(publicConfig, field) ||
+        (field === "model" &&
+          isPublicConfigFieldLocked(publicConfig, "customModels")) ||
+        (field === "providerName" &&
+          isPublicConfigFieldLocked(publicConfig, "customModels"));
+
+      if (locked) {
+        modelConfig = {
+          ...modelConfig,
+          [field]: serverValue,
+        };
+        modelConfigMeta = setFieldMeta(
+          modelConfigMeta,
+          field,
+          publicConfig,
+          "admin_forced",
+          true,
+        );
+        continue;
+      }
+
+      if (fieldHasUserOverride(modelConfigMeta, field)) {
+        continue;
+      }
+
+      const codeDefault = DEFAULT_CONFIG.modelConfig[field];
+      const currentValue = modelConfig[field];
+      const oldServerValue =
+        oldSnapshot?.forced?.[field as keyof PublicAppConfig["forced"]] ??
+        oldSnapshot?.defaults?.[field as keyof PublicAppConfig["defaults"]];
+      if (
+        modelConfigMeta[field] === undefined &&
+        currentValue !== undefined &&
+        codeDefault !== undefined &&
+        currentValue !== codeDefault &&
+        currentValue !== oldServerValue
+      ) {
+        modelConfigMeta = {
+          ...modelConfigMeta,
+          [field]: createConfigFieldMeta({
+            source: "user_override",
+          }),
+        };
+        continue;
+      }
+
+      modelConfig = {
+        ...modelConfig,
+        [field]: serverValue,
+      };
+      modelConfigMeta = setFieldMeta(
+        modelConfigMeta,
+        field,
+        publicConfig,
+        "server_default",
+      );
+    }
+
+    if (!isAllowedModel(modelConfig, publicConfig)) {
+      const modelRef = resolveAllowedModelRef({
+        model: modelConfig.model,
+        providerName: modelConfig.providerName,
+        allowedModels: publicConfig.allowedModels,
+        fallbackModelRef: fullModelRef(serverModelConfig),
+      });
+      const [model, providerName] = splitModelRef(modelRef);
+      modelConfig = {
+        ...modelConfig,
+        model: model as ModelConfig["model"],
+        providerName: providerName as ModelConfig["providerName"],
+      };
+      modelConfigMeta = setFieldMeta(
+        setFieldMeta(
+          modelConfigMeta,
+          "model",
+          publicConfig,
+          "admin_forced",
+          true,
+        ),
+        "providerName",
+        publicConfig,
+        "admin_forced",
+        true,
+      );
+    }
+
+    return {
+      customModels: publicConfig.legacy.customModels,
+      serverConfigSnapshot: publicConfig,
+      modelConfig,
+      modelConfigMeta,
+    };
+  });
+
+  const globalConfig = useAppConfig.getState();
+
+  useChatStore.setState((state) => {
+    const applyToSession = (session: typeof state.temporarySession) => {
+      if (!session) return session;
+
+      let modelConfig = { ...session.mask.modelConfig };
+      let modelConfigMeta = { ...(session.mask.modelConfigMeta ?? {}) };
+
+      for (const field of MODEL_CONFIG_FIELDS) {
+        const serverValue = serverModelConfig[field];
+        if (serverValue === undefined) continue;
+
+        const locked =
+          isPublicConfigFieldLocked(publicConfig, field) ||
+          (field === "model" &&
+            isPublicConfigFieldLocked(publicConfig, "customModels")) ||
+          (field === "providerName" &&
+            isPublicConfigFieldLocked(publicConfig, "customModels"));
+
+        if (locked) {
+          modelConfig = {
+            ...modelConfig,
+            [field]: serverValue,
+          };
+          modelConfigMeta = setFieldMeta(
+            modelConfigMeta,
+            field,
+            publicConfig,
+            "admin_forced",
+            true,
+          );
+          continue;
+        }
+
+        if (!session.mask.syncGlobalConfig) {
+          modelConfigMeta = setFieldMeta(
+            modelConfigMeta,
+            field,
+            publicConfig,
+            "conversation_override",
+          );
+          continue;
+        }
+
+        modelConfig = {
+          ...modelConfig,
+          [field]: globalConfig.modelConfig[field],
+        };
+        modelConfigMeta = {
+          ...modelConfigMeta,
+          [field]:
+            globalConfig.modelConfigMeta?.[field] ??
+            createConfigFieldMeta({
+              source: "server_default",
+              publicConfig,
+            }),
+        };
+      }
+
+      if (!isAllowedModel(modelConfig, publicConfig)) {
+        const modelRef = resolveAllowedModelRef({
+          model: modelConfig.model,
+          providerName: modelConfig.providerName,
+          allowedModels: publicConfig.allowedModels,
+          fallbackModelRef: fullModelRef(serverModelConfig),
+        });
+        const [model, providerName] = splitModelRef(modelRef);
+        modelConfig = {
+          ...modelConfig,
+          model: model as ModelConfig["model"],
+          providerName: providerName as ModelConfig["providerName"],
+        };
+        modelConfigMeta = setFieldMeta(
+          setFieldMeta(
+            modelConfigMeta,
+            "model",
+            publicConfig,
+            "admin_forced",
+            true,
+          ),
+          "providerName",
+          publicConfig,
+          "admin_forced",
+          true,
+        );
       }
 
       return {
         ...session,
         mask: {
           ...session.mask,
-          modelConfig: {
-            ...session.mask.modelConfig,
-            ...modelConfig,
-          },
+          modelConfig,
+          modelConfigMeta,
         },
       };
-    }),
-  }));
+    };
+
+    return {
+      temporarySession: applyToSession(state.temporarySession),
+      sessions: state.sessions.map((session) => applyToSession(session)!),
+    };
+  });
+
+  useAccessStore.setState(() => publicConfigToAccessState(publicConfig));
 }
 
 function runAfterStoreHydration(callback: () => void) {
@@ -205,15 +500,9 @@ function runAfterStoreHydration(callback: () => void) {
   finish();
 }
 
-function applyServerConfig(config: Partial<typeof DEFAULT_ACCESS_STATE>) {
+function applyServerConfig(config: PublicAppConfig) {
   runAfterStoreHydration(() => {
-    applyServerModelDefaults(config);
-    if (typeof config.customModels === "string") {
-      useAppConfig.setState(() => ({
-        customModels: config.customModels,
-      }));
-    }
-    useAccessStore.setState(() => ({ ...config }));
+    applyPublicAppConfig(config);
   });
 }
 
@@ -302,8 +591,8 @@ export const useAccessStore = createPersistStore(
       );
     },
     fetch() {
-      if (fetchState > 0 || getClientConfig()?.buildMode === "export") return;
-      fetchState = 1;
+      if (isFetchingConfig || getClientConfig()?.buildMode === "export") return;
+      isFetchingConfig = true;
       fetch("/api/config", {
         method: "post",
         body: null,
@@ -324,7 +613,7 @@ export const useAccessStore = createPersistStore(
           console.error("[Config] failed to fetch config");
         })
         .finally(() => {
-          fetchState = 2;
+          isFetchingConfig = false;
         });
     },
   }),

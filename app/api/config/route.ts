@@ -1,33 +1,16 @@
 import { NextResponse } from "next/server";
 
-import { getServerSideConfig } from "../../config/server";
-
-const serverConfig = getServerSideConfig();
-
-// Danger! Do not hard code any secret value here!
-// 警告！不要在这里写入任何敏感信息！
-const DANGER_CONFIG = {
-  needCode: serverConfig.needCode,
-  hideUserApiKey: serverConfig.hideUserApiKey,
-  disableGPT4: serverConfig.disableGPT4,
-  hideBalanceQuery: serverConfig.hideBalanceQuery,
-  disableFastLink: serverConfig.disableFastLink,
-  customModels: serverConfig.customModels || process.env.CUSTOM_MODELS || "",
-  defaultModel: serverConfig.defaultModel,
-  defaultTemperature: serverConfig.defaultTemperature,
-  openaiReasoningEffort: serverConfig.openaiReasoningEffort,
-  openaiMaxOutputTokens: serverConfig.openaiMaxOutputTokens,
-  openaiTextVerbosity: serverConfig.openaiTextVerbosity,
-  baseUrl: process.env.BASE_URL || "https://api.openai.com",
-  apiKey: process.env.OPENAI_API_KEY ? "已设置" : "",
-};
+import { buildPublicAppConfig, publicConfigHeaders } from "../../config/public";
 
 declare global {
-  type DangerConfig = typeof DANGER_CONFIG;
+  type PublicAppConfig = ReturnType<typeof buildPublicAppConfig>;
+  type DangerConfig = PublicAppConfig;
 }
 
 async function handle() {
-  return NextResponse.json(DANGER_CONFIG);
+  return NextResponse.json(buildPublicAppConfig(), {
+    headers: publicConfigHeaders(),
+  });
 }
 
 export const GET = handle;

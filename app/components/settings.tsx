@@ -76,8 +76,7 @@ import { useSyncStore } from "../store/sync";
 import { nanoid } from "nanoid";
 import { useMaskStore } from "../store/mask";
 import { ProviderType } from "../utils/cloud";
-import { TTSConfigList } from "./tts-config";
-import { RealtimeConfigList } from "./realtime-chat/realtime-config";
+import { createConfigFieldMeta } from "../utils/public-app-config";
 
 function EditPromptModal(props: { id: string; onClose: () => void }) {
   const promptStore = usePromptStore();
@@ -575,6 +574,17 @@ export function Settings() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const config = useAppConfig();
   const updateConfig = config.update;
+  const markModelConfigOverride = (fields: string[]) => {
+    updateConfig((config) => {
+      config.modelConfigMeta = { ...(config.modelConfigMeta ?? {}) };
+      fields.forEach((field) => {
+        config.modelConfigMeta![field] = createConfigFieldMeta({
+          source: "user_override",
+          publicConfig: config.serverConfigSnapshot,
+        });
+      });
+    });
+  };
 
   const updateStore = useUpdateStore();
   const accessStore = useAccessStore();
@@ -669,17 +679,23 @@ export function Settings() {
     !clientConfig?.isApp && ( // only show if isApp is false
       <ListItem
         title={Locale.Settings.Access.CustomEndpoint.Title}
-        subTitle={Locale.Settings.Access.CustomEndpoint.SubTitle}
+        subTitle={
+          accessStore.lockedFields?.includes("baseUrl")
+            ? "该项已由管理员锁定"
+            : Locale.Settings.Access.CustomEndpoint.SubTitle
+        }
       >
         <input
           aria-label={Locale.Settings.Access.CustomEndpoint.Title}
           type="checkbox"
           checked={accessStore.useCustomConfig}
-          onChange={(e) =>
+          disabled={accessStore.lockedFields?.includes("baseUrl")}
+          onChange={(e) => {
+            if (accessStore.lockedFields?.includes("baseUrl")) return;
             accessStore.update(
               (access) => (access.useCustomConfig = e.currentTarget.checked),
-            )
-          }
+            );
+          }}
         ></input>
       </ListItem>
     );
@@ -696,11 +712,13 @@ export function Settings() {
           type="text"
           value={accessStore.openaiUrl}
           placeholder={OPENAI_BASE_URL}
-          onChange={(e) =>
+          disabled={accessStore.lockedFields?.includes("baseUrl")}
+          onChange={(e) => {
+            if (accessStore.lockedFields?.includes("baseUrl")) return;
             accessStore.update(
               (access) => (access.openaiUrl = e.currentTarget.value),
-            )
-          }
+            );
+          }}
         ></input>
       </ListItem>
       <ListItem
@@ -713,7 +731,17 @@ export function Settings() {
           value={accessStore.openaiApiKey}
           type="text"
           placeholder={Locale.Settings.Access.OpenAI.ApiKey.Placeholder}
+          disabled={
+            accessStore.hideUserApiKey ||
+            accessStore.lockedFields?.includes("apiKey")
+          }
           onChange={(e) => {
+            if (
+              accessStore.hideUserApiKey ||
+              accessStore.lockedFields?.includes("apiKey")
+            ) {
+              return;
+            }
             accessStore.update(
               (access) => (access.openaiApiKey = e.currentTarget.value),
             );
@@ -1742,6 +1770,8 @@ export function Settings() {
         <List>
           <ModelConfigList
             modelConfig={config.modelConfig}
+            modelConfigMeta={config.modelConfigMeta}
+            markOverride={markModelConfigOverride}
             updateConfig={(updater) => {
               const modelConfig = { ...config.modelConfig };
               updater(modelConfig);
@@ -1753,28 +1783,6 @@ export function Settings() {
         {shouldShowPromptModal && (
           <UserPromptModal onClose={() => setShowPromptModal(false)} />
         )}
-        <List>
-          <RealtimeConfigList
-            realtimeConfig={config.realtimeConfig}
-            updateConfig={(updater) => {
-              const realtimeConfig = { ...config.realtimeConfig };
-              updater(realtimeConfig);
-              config.update(
-                (config) => (config.realtimeConfig = realtimeConfig),
-              );
-            }}
-          />
-        </List>
-        <List>
-          <TTSConfigList
-            ttsConfig={config.ttsConfig}
-            updateConfig={(updater) => {
-              const ttsConfig = { ...config.ttsConfig };
-              updater(ttsConfig);
-              config.update((config) => (config.ttsConfig = ttsConfig));
-            }}
-          />
-        </List>
 
         <DangerItems />
       </div>

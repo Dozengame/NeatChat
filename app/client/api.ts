@@ -272,6 +272,9 @@ export function getHeaders(ignoreHeaders: boolean = false) {
       ? accessStore.iflytekApiKey && accessStore.iflytekApiSecret
         ? accessStore.iflytekApiKey + ":" + accessStore.iflytekApiSecret
         : ""
+      : accessStore.hideUserApiKey ||
+        accessStore.lockedFields?.includes("apiKey")
+      ? ""
       : accessStore.openaiApiKey;
     return {
       isGoogle,

@@ -107,6 +107,9 @@ export const REQUEST_TIMEOUT_MS = 60000;
 
 export const EXPORT_MESSAGE_CLASS_NAME = "export-markdown";
 
+export const ENABLE_REALTIME_CHAT = false;
+export const ENABLE_TEXT_TO_SPEECH = false;
+
 export enum ServiceProvider {
   OpenAI = "OpenAI",
   Azure = "Azure",

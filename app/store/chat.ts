@@ -144,6 +144,10 @@ function createSession(mask?: Mask): ChatSession {
         ...globalModelConfig,
         ...mask.modelConfig,
       },
+      modelConfigMeta: {
+        ...(config.modelConfigMeta ?? {}),
+        ...(mask.modelConfigMeta ?? {}),
+      },
     };
     session.topic = mask.name;
   }
@@ -336,6 +340,9 @@ export const useChatStore = createPersistStore(
           ...currentSession.mask,
           modelConfig: {
             ...currentSession.mask.modelConfig,
+          },
+          modelConfigMeta: {
+            ...(currentSession.mask.modelConfigMeta ?? {}),
           },
         };
 

@@ -125,16 +125,14 @@ export async function requestOpenai(req: NextRequest) {
       const jsonBody = JSON.parse(clonedBody) as { model?: string };
 
       // not undefined and is false
+      const providerName = isAzure
+        ? ServiceProvider.Azure
+        : ServiceProvider.OpenAI;
       if (
         isModelAvailableInServer(
           serverConfig.customModels,
           jsonBody?.model as string,
-          ServiceProvider.OpenAI as string,
-        ) ||
-        isModelAvailableInServer(
-          serverConfig.customModels,
-          jsonBody?.model as string,
-          ServiceProvider.Azure as string,
+          providerName as string,
         )
       ) {
         return NextResponse.json(

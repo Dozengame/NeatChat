@@ -10,12 +10,25 @@ export function useAllModels() {
       ? configStore.customModels
       : accessStore.customModels || "";
 
-    return collectModelsWithDefaultModel(
+    const allowedModels = new Set(accessStore.allowedModels ?? []);
+    const models = collectModelsWithDefaultModel(
       configStore.models,
       customModelsString,
       accessStore.defaultModel,
     );
+
+    if (allowedModels.size === 0) {
+      return models;
+    }
+
+    return models.map((model) => ({
+      ...model,
+      available:
+        model.available &&
+        allowedModels.has(`${model.name}@${model.provider?.providerName}`),
+    }));
   }, [
+    accessStore.allowedModels,
     accessStore.customModels,
     accessStore.defaultModel,
     configStore.customModels,

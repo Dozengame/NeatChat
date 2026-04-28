@@ -6,11 +6,17 @@ import {
   getMaxOutputTokensForReasoningEffort,
   isOpenAIGpt5OrNewerModelConfig,
   isGpt5OrNewerModel,
+  parseOpenAICompressMessageLengthThreshold,
   parseOpenAIMaxOutputTokens,
   parseOpenAIResponsesReasoningEffort,
   parseOpenAIResponsesTextVerbosity,
   shouldUseOpenAIResponses,
 } from "../app/utils/openai-responses";
+import {
+  buildPublicAppConfig,
+  publicConfigHeaders,
+} from "../app/config/public";
+import { deriveAllowedModels } from "../app/utils/public-app-config";
 import { resolveServerModelConfig } from "../app/utils/server-model-defaults";
 
 describe("parseDefaultTemperature", () => {
@@ -118,6 +124,14 @@ describe("OpenAI Responses config", () => {
     expect(parseOpenAIMaxOutputTokens("-1")).toBe(0);
   });
 
+  test("parses compression threshold overrides", () => {
+    expect(parseOpenAICompressMessageLengthThreshold()).toBeUndefined();
+    expect(parseOpenAICompressMessageLengthThreshold("abc")).toBeUndefined();
+    expect(parseOpenAICompressMessageLengthThreshold("1200")).toBe(1200);
+    expect(parseOpenAICompressMessageLengthThreshold("10")).toBe(500);
+    expect(parseOpenAICompressMessageLengthThreshold("9999")).toBe(4000);
+  });
+
   test("uses GPT-5.5 Responses defaults", () => {
     process.env.DEFAULT_MODEL = "";
     process.env.OPENAI_TEMPERATURE = "";
@@ -132,6 +146,64 @@ describe("OpenAI Responses config", () => {
     expect(config.openaiReasoningEffort).toBe("low");
     expect(config.openaiMaxOutputTokens).toBeUndefined();
     expect(config.openaiTextVerbosity).toBe("medium");
+  });
+
+  test("supports hide balance and hide user api key env flags", () => {
+    process.env.HIDE_BALANCE_QUERY = "1";
+    process.env.HIDE_USER_API_KEY = "1";
+
+    const config = getServerSideConfig();
+
+    expect(config.hideBalanceQuery).toBe(true);
+    expect(config.hideUserApiKey).toBe(true);
+  });
+
+  test("keeps ENABLE_BALANCE_QUERY compatibility", () => {
+    delete process.env.HIDE_BALANCE_QUERY;
+    process.env.ENABLE_BALANCE_QUERY = "1";
+
+    expect(getServerSideConfig().hideBalanceQuery).toBe(false);
+  });
+
+  test("derives allowed models from CUSTOM_MODELS", () => {
+    expect(
+      deriveAllowedModels({
+        customModels: "-all,gpt-5.5@openai",
+      }),
+    ).toEqual(["gpt-5.5@OpenAI"]);
+  });
+
+  test("builds public config without secrets and no-store headers", async () => {
+    process.env.CUSTOM_MODELS = "-all,gpt-5.5@openai";
+    process.env.DEFAULT_MODEL = "gpt-5.5";
+    process.env.OPENAI_API_KEY = "test-api-key-value";
+    process.env.CODE = "test-access-code";
+    process.env.HIDE_USER_API_KEY = "1";
+    process.env.HIDE_BALANCE_QUERY = "1";
+    process.env.OPENAI_TEMPERATURE = "1";
+    process.env.OPENAI_MAX_OUTPUT_TOKENS = "30000";
+    process.env.OPENAI_REASONING_EFFORT = "low";
+    process.env.OPENAI_TEXT_VERBOSITY = "low";
+    process.env.OPENAI_COMPRESS_MESSAGE_LENGTH_THRESHOLD = "1200";
+
+    const publicConfig = buildPublicAppConfig(
+      new Date("2026-04-28T00:00:00.000Z"),
+    );
+
+    expect(publicConfig.configHash).toBeTruthy();
+    expect(publicConfig.configVersion).toBeTruthy();
+    expect(publicConfig.allowedModels).toEqual(["gpt-5.5@OpenAI"]);
+    expect(publicConfig.lockedFields).toContain("max_output_tokens");
+    expect(publicConfig.lockedFields).not.toContain("reasoningEffort");
+    expect(publicConfig.serverFlags.hideUserApiKey).toBe(true);
+    expect(publicConfig.serverFlags.hideBalanceQuery).toBe(true);
+    expect(JSON.stringify(publicConfig)).not.toContain("test-api-key-value");
+    expect(JSON.stringify(publicConfig)).not.toContain("test-access-code");
+
+    const headers = publicConfigHeaders();
+    expect(headers["Cache-Control"]).toContain("no-store");
+    expect(headers.Pragma).toBe("no-cache");
+    expect(headers.Expires).toBe("0");
   });
 
   test("forces provider together with server default model", () => {

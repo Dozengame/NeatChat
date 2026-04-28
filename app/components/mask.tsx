@@ -56,6 +56,7 @@ import {
 } from "@hello-pangea/dnd";
 import { getMessageTextContent } from "../utils";
 import clsx from "clsx";
+import { createConfigFieldMeta } from "../utils/public-app-config";
 
 // drag and drop helper function
 function reorder<T>(list: T[], startIndex: number, endIndex: number): T[] {
@@ -91,6 +92,17 @@ export function MaskConfig(props: {
       mask.modelConfig = config;
       // if user changed current session mask, it will disable auto sync
       mask.syncGlobalConfig = false;
+    });
+  };
+  const markModelConfigOverride = (fields: string[]) => {
+    props.updateMask((mask) => {
+      mask.modelConfigMeta = { ...(mask.modelConfigMeta ?? {}) };
+      fields.forEach((field) => {
+        mask.modelConfigMeta![field] = createConfigFieldMeta({
+          source: "conversation_override",
+          publicConfig: globalConfig.serverConfigSnapshot,
+        });
+      });
     });
   };
 
@@ -234,6 +246,9 @@ export function MaskConfig(props: {
                   props.updateMask((mask) => {
                     mask.syncGlobalConfig = checked;
                     mask.modelConfig = { ...globalConfig.modelConfig };
+                    mask.modelConfigMeta = {
+                      ...(globalConfig.modelConfigMeta ?? {}),
+                    };
                   });
                 } else if (!checked) {
                   props.updateMask((mask) => {
@@ -249,6 +264,8 @@ export function MaskConfig(props: {
       <List>
         <ModelConfigList
           modelConfig={{ ...props.mask.modelConfig }}
+          modelConfigMeta={props.mask.modelConfigMeta}
+          markOverride={markModelConfigOverride}
           updateConfig={updateConfig}
         />
         {props.extraListItems}

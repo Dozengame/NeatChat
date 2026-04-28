@@ -15,6 +15,8 @@ export function AuthPage() {
   const navigate = useNavigate();
   const accessStore = useAccessStore();
   const goChat = () => navigate(Path.Chat);
+  const openAIKeyLocked =
+    accessStore.hideUserApiKey || accessStore.lockedFields?.includes("apiKey");
 
   const resetAccessCode = () => {
     accessStore.update((access) => {
@@ -60,7 +62,7 @@ export function AuthPage() {
         }}
       />
 
-      {!accessStore.hideUserApiKey ? (
+      {!openAIKeyLocked ? (
         <>
           <div className={styles["auth-tips"]}>{Locale.Auth.SubTips}</div>
           <PasswordInput

@@ -25,13 +25,11 @@ import {
 } from "@/app/utils/chat";
 import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
 import { DalleSize, DalleQuality, DalleStyle } from "@/app/typing";
+import { shouldUseOpenAIResponses } from "@/app/utils/openai-responses";
 import {
-  OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
-  OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY,
-  OpenAIResponsesReasoningEffort,
-  OpenAIResponsesTextVerbosity,
-  shouldUseOpenAIResponses,
-} from "@/app/utils/openai-responses";
+  buildOpenAIResponsesPayload,
+  ResponsesRequestPayload,
+} from "./openai-responses-builder";
 
 import {
   ChatOptions,
@@ -86,95 +84,6 @@ export interface DalleRequestPayload {
   size: DalleSize;
   quality: DalleQuality;
   style: DalleStyle;
-}
-
-type ResponsesInputContent =
-  | {
-      type: "input_text";
-      text: string;
-    }
-  | {
-      type: "input_image";
-      image_url: string;
-    };
-
-export interface ResponsesRequestPayload {
-  input:
-    | string
-    | {
-        role: "user" | "assistant";
-        content: string | ResponsesInputContent[];
-      }[];
-  instructions?: string;
-  stream?: boolean;
-  model: string;
-  max_output_tokens?: number;
-  reasoning?: {
-    effort: OpenAIResponsesReasoningEffort;
-    summary?: "auto" | "concise" | "detailed";
-  };
-  text?: {
-    verbosity: OpenAIResponsesTextVerbosity;
-  };
-}
-
-function contentToText(content: string | MultimodalContent[]) {
-  if (typeof content === "string") {
-    return content;
-  }
-
-  return content
-    .map((part) => (part.type === "text" ? part.text ?? "" : ""))
-    .filter(Boolean)
-    .join("\n");
-}
-
-function toResponsesContent(content: string | MultimodalContent[]) {
-  if (typeof content === "string") {
-    return content;
-  }
-
-  const parts = content
-    .map((part) => {
-      if (part.type === "text") {
-        return {
-          type: "input_text" as const,
-          text: part.text ?? "",
-        };
-      }
-
-      if (part.type === "image_url" && part.image_url?.url) {
-        return {
-          type: "input_image" as const,
-          image_url: part.image_url.url,
-        };
-      }
-
-      return undefined;
-    })
-    .filter(Boolean) as ResponsesInputContent[];
-
-  return parts.length > 0 ? parts : "";
-}
-
-function toResponsesInput(messages: ChatOptions["messages"]) {
-  const instructions = messages
-    .filter((message) => message.role === "system")
-    .map((message) => contentToText(message.content))
-    .filter(Boolean)
-    .join("\n\n");
-
-  const input = messages
-    .filter((message) => message.role !== "system")
-    .map((message) => ({
-      role: message.role as "user" | "assistant",
-      content: toResponsesContent(message.content),
-    }));
-
-  return {
-    instructions: instructions || undefined,
-    input: input.length > 0 ? input : "",
-  };
 }
 
 export function extractResponsesText(res: any) {
@@ -233,7 +142,11 @@ export class ChatGPTApi implements LLMApi {
     let baseUrl = "";
 
     const isAzure = path.includes("deployments");
-    if (accessStore.useCustomConfig) {
+    const openAIEndpointLocked =
+      !isAzure &&
+      (accessStore.hideUserApiKey ||
+        accessStore.lockedFields?.includes("baseUrl"));
+    if (accessStore.useCustomConfig && !openAIEndpointLocked) {
       if (isAzure && !accessStore.isValidAzure()) {
         throw Error(
           "incomplete azure config, please check it in your settings page",
@@ -349,9 +262,6 @@ export class ChatGPTApi implements LLMApi {
         model: modelConfig.model,
         providerName: modelConfig.providerName,
       });
-    const maxOutputTokens =
-      accessStore.openaiMaxOutputTokens ?? modelConfig.max_output_tokens;
-
     let requestPayload:
       | AzureChatRequestPayload
       | ResponsesRequestPayload
@@ -385,22 +295,24 @@ export class ChatGPTApi implements LLMApi {
       }
 
       if (useResponses) {
-        const responsesInput = toResponsesInput(messages);
-        requestPayload = {
-          ...responsesInput,
+        requestPayload = buildOpenAIResponsesPayload({
+          messages,
+          modelConfig: {
+            ...modelConfig,
+            providerName: (modelConfig.providerName ||
+              ServiceProvider.OpenAI) as ServiceProvider,
+            max_output_tokens:
+              accessStore.openaiMaxOutputTokens ??
+              modelConfig.max_output_tokens,
+            textVerbosity:
+              modelConfig.textVerbosity ??
+              (accessStore.openaiTextVerbosity as any),
+          },
           stream: options.config.stream,
-          model: modelConfig.model,
-          max_output_tokens: maxOutputTokens > 0 ? maxOutputTokens : undefined,
-          reasoning: {
-            effort: (modelConfig.reasoningEffort ||
-              OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT) as OpenAIResponsesReasoningEffort,
-            summary: "auto",
-          },
-          text: {
-            verbosity: (accessStore.openaiTextVerbosity ||
-              OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY) as OpenAIResponsesTextVerbosity,
-          },
-        };
+          reasoningSummary: "auto",
+          truncation: "disabled",
+          store: false,
+        });
       } else {
         requestPayload = {
           messages,

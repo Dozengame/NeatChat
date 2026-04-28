@@ -1,8 +1,10 @@
 import md5 from "spark-md5";
 import { DEFAULT_MODELS, DEFAULT_GA_ID } from "../constant";
 import {
+  OPENAI_RESPONSES_DEFAULT_COMPRESS_MESSAGE_LENGTH_THRESHOLD,
   OPENAI_RESPONSES_DEFAULT_MODEL,
   OPENAI_RESPONSES_DEFAULT_TEMPERATURE,
+  parseOpenAICompressMessageLengthThreshold,
   parseOpenAIMaxOutputTokens,
   parseOpenAIResponsesReasoningEffort,
   parseOpenAIResponsesTextVerbosity,
@@ -22,12 +24,17 @@ declare global {
       OPENAI_REASONING_EFFORT?: string; // responses api reasoning effort
       OPENAI_MAX_OUTPUT_TOKENS?: string; // responses api max_output_tokens
       OPENAI_TEXT_VERBOSITY?: string; // responses api text verbosity
+      OPENAI_COMPRESS_MESSAGE_LENGTH_THRESHOLD?: string; // default history compression threshold
+      WEBUI_CONFIG_VERSION?: string; // public config version
+      WEBUI_LOCKED_FIELDS?: string; // comma separated locked fields
+      WEBUI_ALLOWED_MODELS?: string; // comma separated model@Provider list
 
       VERCEL?: string;
       BUILD_MODE?: "standalone" | "export";
       BUILD_APP?: string; // is building desktop app
 
       HIDE_USER_API_KEY?: string; // disable user's api key input
+      HIDE_BALANCE_QUERY?: string; // hide balance query
       DISABLE_GPT4?: string; // allow user to use gpt-4 or not
       ENABLE_BALANCE_QUERY?: string; // allow user to query balance or not
       DISABLE_FAST_LINK?: string; // disallow parse settings from url or not
@@ -139,6 +146,14 @@ export function parseDefaultTemperature(value?: string) {
   return Math.min(2, Math.max(0, temperature));
 }
 
+function parseEnvBoolean(value?: string) {
+  if (!value?.trim()) {
+    return false;
+  }
+
+  return !["0", "false", "no", "off"].includes(value.trim().toLowerCase());
+}
+
 export const getServerSideConfig = () => {
   if (typeof process === "undefined") {
     throw Error(
@@ -162,6 +177,10 @@ export const getServerSideConfig = () => {
   const openaiTextVerbosity = parseOpenAIResponsesTextVerbosity(
     process.env.OPENAI_TEXT_VERBOSITY,
   );
+  const openaiCompressMessageLengthThreshold =
+    parseOpenAICompressMessageLengthThreshold(
+      process.env.OPENAI_COMPRESS_MESSAGE_LENGTH_THRESHOLD,
+    ) ?? OPENAI_RESPONSES_DEFAULT_COMPRESS_MESSAGE_LENGTH_THRESHOLD;
 
   if (disableGPT4) {
     if (customModels) customModels += ",";
@@ -209,6 +228,10 @@ export const getServerSideConfig = () => {
     process.env.WHITE_WEBDAV_ENDPOINTS ?? ""
   ).split(",");
 
+  const hideBalanceQuery = process.env.HIDE_BALANCE_QUERY
+    ? parseEnvBoolean(process.env.HIDE_BALANCE_QUERY)
+    : !parseEnvBoolean(process.env.ENABLE_BALANCE_QUERY);
+
   return {
     baseUrl: process.env.BASE_URL,
     apiKey: getApiKey(process.env.OPENAI_API_KEY),
@@ -217,6 +240,10 @@ export const getServerSideConfig = () => {
     openaiReasoningEffort,
     openaiMaxOutputTokens,
     openaiTextVerbosity,
+    openaiCompressMessageLengthThreshold,
+    webuiConfigVersion: process.env.WEBUI_CONFIG_VERSION?.trim() || undefined,
+    webuiLockedFields: process.env.WEBUI_LOCKED_FIELDS,
+    webuiAllowedModels: process.env.WEBUI_ALLOWED_MODELS,
 
     isStability,
     stabilityUrl: process.env.STABILITY_URL,
@@ -288,7 +315,7 @@ export const getServerSideConfig = () => {
 
     hideUserApiKey: !!process.env.HIDE_USER_API_KEY,
     disableGPT4,
-    hideBalanceQuery: !process.env.ENABLE_BALANCE_QUERY,
+    hideBalanceQuery,
     disableFastLink: !!process.env.DISABLE_FAST_LINK,
     customModels,
     defaultModel,

@@ -99,6 +99,8 @@ import { useNavigate } from "react-router-dom";
 import {
   CHAT_PAGE_SIZE,
   DEFAULT_TTS_ENGINE,
+  ENABLE_REALTIME_CHAT,
+  ENABLE_TEXT_TO_SPEECH,
   ModelProvider,
   Path,
   REQUEST_TIMEOUT_MS,
@@ -136,6 +138,7 @@ import {
   readFileAsText,
 } from "../utils/file";
 import { getAvailableClientsCount, isMcpEnabled } from "../mcp/actions";
+import { createConfigFieldMeta } from "../utils/public-app-config";
 
 import { ImageEditor } from "./image-editor";
 
@@ -481,6 +484,7 @@ export function ChatActions(props: {
   setShowChatSidePanel: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const config = useAppConfig();
+  const accessStore = useAccessStore();
   const navigate = useNavigate();
   const chatStore = useChatStore();
   const pluginStore = usePluginStore();
@@ -508,6 +512,10 @@ export function ChatActions(props: {
   const models = useMemo(() => {
     return allModels.filter((m) => m.available);
   }, [allModels]);
+  const modelLocked =
+    accessStore.lockedFields?.includes("model") ||
+    accessStore.lockedFields?.includes("providerName") ||
+    accessStore.lockedFields?.includes("customModels");
   const currentModelName = useMemo(() => {
     const model = models.find(
       (m) =>
@@ -542,7 +550,11 @@ export function ChatActions(props: {
 
     // if current model is not available
     // switch to first available model
-    const isUnavailableModel = !models.some((m) => m.name === currentModel);
+    const isUnavailableModel = !models.some(
+      (m) =>
+        m.name === currentModel &&
+        m?.provider?.providerName === currentProviderName,
+    );
     if (isUnavailableModel && models.length > 0) {
       // show next model to default model if exist
       let nextModel = models.find((model) => model.isDefault) || models[0];
@@ -550,6 +562,19 @@ export function ChatActions(props: {
         session.mask.modelConfig.model = nextModel.name;
         session.mask.modelConfig.providerName = nextModel?.provider
           ?.providerName as ServiceProvider;
+        session.mask.modelConfigMeta = {
+          ...(session.mask.modelConfigMeta ?? {}),
+          model: createConfigFieldMeta({
+            source: "admin_forced",
+            publicConfig: config.serverConfigSnapshot,
+            locked: true,
+          }),
+          providerName: createConfigFieldMeta({
+            source: "admin_forced",
+            publicConfig: config.serverConfigSnapshot,
+            locked: true,
+          }),
+        };
       });
       showToast(
         nextModel?.provider?.providerName == "ByteDance"
@@ -557,7 +582,14 @@ export function ChatActions(props: {
           : nextModel.name,
       );
     }
-  }, [chatStore, currentModel, models, session]);
+  }, [
+    chatStore,
+    config.serverConfigSnapshot,
+    currentModel,
+    currentProviderName,
+    models,
+    session,
+  ]);
 
   const showModelSearchOption = config.enableModelSearch ?? false;
 
@@ -636,7 +668,13 @@ export function ChatActions(props: {
         )}
 
         <ChatAction
-          onClick={() => setShowModelSelector(true)}
+          onClick={() => {
+            if (modelLocked) {
+              showToast("该项已由管理员锁定");
+              return;
+            }
+            setShowModelSelector(true);
+          }}
           text={currentModelName}
           icon={<RobotIcon />}
         />
@@ -657,12 +695,24 @@ export function ChatActions(props: {
             }))}
             onClose={() => setShowModelSelector(false)}
             onSelection={(m) => {
+              if (modelLocked) return;
               if (m.length === 0) return;
               const [model, providerName] = getModelProvider(m[0]);
               chatStore.updateTargetSession(session, (session) => {
                 session.mask.modelConfig.model = model as ModelType;
                 session.mask.modelConfig.providerName =
                   providerName as ServiceProvider;
+                session.mask.modelConfigMeta = {
+                  ...(session.mask.modelConfigMeta ?? {}),
+                  model: createConfigFieldMeta({
+                    source: "conversation_override",
+                    publicConfig: config.serverConfigSnapshot,
+                  }),
+                  providerName: createConfigFieldMeta({
+                    source: "conversation_override",
+                    publicConfig: config.serverConfigSnapshot,
+                  }),
+                };
                 session.mask.syncGlobalConfig = false;
                 // 如果切换到非 gemini-2.0-flash-exp 模型，清除插件选择
                 if (model !== "gemini-2.0-flash-exp") {
@@ -810,7 +860,7 @@ export function ChatActions(props: {
         )}
       </>
       <div className={styles["chat-input-actions-end"]}>
-        {config.realtimeConfig.enable && (
+        {ENABLE_REALTIME_CHAT && config.realtimeConfig.enable && (
           <ChatAction
             onClick={() => props.setShowChatSidePanel(true)}
             text={"Realtime Chat"}
@@ -839,6 +889,9 @@ function ChatInputReasoningAction() {
     medium: "进阶",
     high: "深入",
   };
+  const reasoningLocked =
+    accessStore.lockedFields?.includes("reasoningEffort") ||
+    session.mask.modelConfigMeta?.reasoningEffort?.locked;
   const showReasoningSelector = isOpenAIGpt5OrNewerModelConfig({
     model: currentModel,
     providerName: currentProviderName,
@@ -856,8 +909,13 @@ function ChatInputReasoningAction() {
         className={styles["chat-input-reasoning"]}
         onClick={(event) => {
           event.preventDefault();
+          if (reasoningLocked) {
+            showToast("该项已由管理员锁定");
+            return;
+          }
           setShowReasoningSelectorModal(true);
         }}
+        disabled={reasoningLocked}
       >
         <BrainIcon />
         <span>{reasoningLabels[currentReasoningEffort]}</span>
@@ -873,12 +931,24 @@ function ChatInputReasoningAction() {
           }))}
           onClose={() => setShowReasoningSelectorModal(false)}
           onSelection={(selection) => {
+            if (reasoningLocked) return;
             const reasoningEffort = selection[0];
             if (!reasoningEffort) return;
             chatStore.updateTargetSession(session, (session) => {
               session.mask.modelConfig.reasoningEffort = reasoningEffort;
               session.mask.modelConfig.max_output_tokens =
                 getReasoningMaxOutputTokens(reasoningEffort);
+              session.mask.modelConfigMeta = {
+                ...(session.mask.modelConfigMeta ?? {}),
+                reasoningEffort: createConfigFieldMeta({
+                  source: "conversation_override",
+                  publicConfig: useAppConfig.getState().serverConfigSnapshot,
+                }),
+                max_output_tokens: createConfigFieldMeta({
+                  source: "conversation_override",
+                  publicConfig: useAppConfig.getState().serverConfigSnapshot,
+                }),
+              };
               session.mask.syncGlobalConfig = false;
             });
             showToast(reasoningLabels[reasoningEffort]);
@@ -1597,15 +1667,21 @@ function _Chat() {
               `\n${JSON.stringify(payload, null, 4)}`,
           ).then((res) => {
             if (!res) return;
-            if (payload.key) {
+            const apiKeyLocked =
+              accessStore.hideUserApiKey ||
+              accessStore.lockedFields?.includes("apiKey");
+            const baseUrlLocked = accessStore.lockedFields?.includes("baseUrl");
+            if (payload.key && !apiKeyLocked) {
               accessStore.update(
                 (access) => (access.openaiApiKey = payload.key!),
               );
             }
-            if (payload.url) {
+            if (payload.url && !baseUrlLocked) {
               accessStore.update((access) => (access.openaiUrl = payload.url!));
             }
-            accessStore.update((access) => (access.useCustomConfig = true));
+            if (!apiKeyLocked && !baseUrlLocked) {
+              accessStore.update((access) => (access.useCustomConfig = true));
+            }
           });
         }
       } catch {
@@ -2309,25 +2385,28 @@ function _Chat() {
                                   )
                                 }
                               />
-                              {config.ttsConfig.enable && (
-                                <ChatAction
-                                  text={
-                                    speechStatus
-                                      ? Locale.Chat.Actions.StopSpeech
-                                      : Locale.Chat.Actions.Speech
-                                  }
-                                  icon={
-                                    speechStatus ? (
-                                      <SpeakStopIcon />
-                                    ) : (
-                                      <SpeakIcon />
-                                    )
-                                  }
-                                  onClick={() =>
-                                    openaiSpeech(getMessageTextContent(message))
-                                  }
-                                />
-                              )}
+                              {ENABLE_TEXT_TO_SPEECH &&
+                                config.ttsConfig.enable && (
+                                  <ChatAction
+                                    text={
+                                      speechStatus
+                                        ? Locale.Chat.Actions.StopSpeech
+                                        : Locale.Chat.Actions.Speech
+                                    }
+                                    icon={
+                                      speechStatus ? (
+                                        <SpeakStopIcon />
+                                      ) : (
+                                        <SpeakIcon />
+                                      )
+                                    }
+                                    onClick={() =>
+                                      openaiSpeech(
+                                        getMessageTextContent(message),
+                                      )
+                                    }
+                                  />
+                                )}
                             </>
                           </div>
                         </div>
@@ -2507,7 +2586,7 @@ function _Chat() {
             [styles["chat-side-panel-show"]]: showChatSidePanel,
           })}
         >
-          {showChatSidePanel && (
+          {ENABLE_REALTIME_CHAT && showChatSidePanel && (
             <RealtimeChat
               onClose={() => {
                 setShowChatSidePanel(false);
