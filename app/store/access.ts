@@ -70,6 +70,7 @@ const DEFAULT_ACCESS_STATE = {
   validatedAccessCode: "",
   accessCodeValidatedAt: 0,
   isValidatingAccessCode: false,
+  accessCodeError: "",
   useCustomConfig: false,
 
   provider: ServiceProvider.OpenAI,
@@ -578,6 +579,7 @@ export const useAccessStore = createPersistStore(
         accessCode,
         validatedAccessCode: "",
         accessCodeValidatedAt: 0,
+        accessCodeError: "",
         lastUpdateTime: Date.now(),
       } as Partial<ReturnType<typeof get>>);
     },
@@ -587,6 +589,7 @@ export const useAccessStore = createPersistStore(
         accessCode: "",
         validatedAccessCode: "",
         accessCodeValidatedAt: 0,
+        accessCodeError: "",
         lastUpdateTime: Date.now(),
       } as Partial<ReturnType<typeof get>>);
     },
@@ -608,6 +611,7 @@ export const useAccessStore = createPersistStore(
           validatedAccessCode: "",
           accessCodeValidatedAt: 0,
           isValidatingAccessCode: false,
+          accessCodeError: "invalid",
           lastUpdateTime: Date.now(),
         } as Partial<ReturnType<typeof get>>);
         return false;
@@ -631,6 +635,7 @@ export const useAccessStore = createPersistStore(
             validatedAccessCode: accessCode,
             accessCodeValidatedAt: Date.now(),
             isValidatingAccessCode: false,
+            accessCodeError: "",
             lastUpdateTime: Date.now(),
           } as Partial<ReturnType<typeof get>>);
           return true;
@@ -641,13 +646,15 @@ export const useAccessStore = createPersistStore(
           validatedAccessCode: "",
           accessCodeValidatedAt: 0,
           isValidatingAccessCode: false,
+          accessCodeError: res.status === 429 ? "rate_limited" : "invalid",
           lastUpdateTime: Date.now(),
         } as Partial<ReturnType<typeof get>>);
         return false;
       } catch {
-        set({ isValidatingAccessCode: false } as Partial<
-          ReturnType<typeof get>
-        >);
+        set({
+          isValidatingAccessCode: false,
+          accessCodeError: "invalid",
+        } as Partial<ReturnType<typeof get>>);
         return false;
       }
     },

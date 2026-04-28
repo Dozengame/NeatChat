@@ -19,6 +19,7 @@ const en: LocaleType = {
     Confirm: "Confirm",
     Validating: "Validating...",
     Invalid: "Invalid access code. Please enter it again.",
+    RateLimited: "Too many attempts. Please try again later.",
     Later: "Later",
   },
   ChatItem: {

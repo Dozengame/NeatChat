@@ -18,6 +18,7 @@ const cn = {
     Confirm: "确认",
     Validating: "验证中…",
     Invalid: "访问码不正确，请重新输入",
+    RateLimited: "尝试次数过多，请稍后再试",
     Later: "稍后再说",
   },
   ChatItem: {

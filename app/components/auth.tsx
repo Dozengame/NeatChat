@@ -18,7 +18,11 @@ export function AuthPage() {
       navigate(Path.Chat);
       return;
     }
-    showToast(Locale.Auth.Invalid);
+    showToast(
+      accessStore.accessCodeError === "rate_limited"
+        ? Locale.Auth.RateLimited
+        : Locale.Auth.Invalid,
+    );
   };
 
   return (
