@@ -1617,6 +1617,51 @@ export function Settings() {
           </ListItem>
         </List>
 
+        <List>
+          <ListItem
+            title={Locale.Settings.CustomInstructions.Enable.Title}
+            subTitle={Locale.Settings.CustomInstructions.Enable.SubTitle}
+          >
+            <input
+              aria-label={Locale.Settings.CustomInstructions.Enable.Title}
+              type="checkbox"
+              checked={config.enableCustomInstructions}
+              onChange={(e) =>
+                updateConfig(
+                  (config) =>
+                    (config.enableCustomInstructions = e.currentTarget.checked),
+                )
+              }
+            />
+          </ListItem>
+
+          <ListItem
+            title={Locale.Settings.CustomInstructions.Content.Title}
+            subTitle={Locale.Settings.CustomInstructions.Content.SubTitle(
+              config.customInstructions.length,
+            )}
+            vertical
+          >
+            <Input
+              aria-label={Locale.Settings.CustomInstructions.Content.Title}
+              className={styles["custom-instructions-input"]}
+              value={config.customInstructions}
+              maxLength={1500}
+              rows={6}
+              disabled={!config.enableCustomInstructions}
+              placeholder={
+                Locale.Settings.CustomInstructions.Content.Placeholder
+              }
+              onInput={(e) =>
+                updateConfig(
+                  (config) =>
+                    (config.customInstructions = e.currentTarget.value),
+                )
+              }
+            />
+          </ListItem>
+        </List>
+
         <SyncItems />
 
         <List>

@@ -195,6 +195,18 @@ const cn = {
       Title: "用户输入预处理",
       SubTitle: "用户最新的一条消息会填充到此模板",
     },
+    CustomInstructions: {
+      Enable: {
+        Title: "启用自定义指令",
+        SubTitle: "开启后，之后新建的对话都会带上这段要求",
+      },
+      Content: {
+        Title: "自定义指令",
+        SubTitle: (count: number) => `${count}/1500`,
+        Placeholder:
+          "写下你希望助手在新对话中始终遵守的要求，例如回答风格、身份背景、输出格式。",
+      },
+    },
 
     Update: {
       Version: (x: string) => `当前版本：${x}`,

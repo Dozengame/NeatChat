@@ -197,6 +197,19 @@ const en: LocaleType = {
       Title: "Input Template",
       SubTitle: "Newest message will be filled to this template",
     },
+    CustomInstructions: {
+      Enable: {
+        Title: "Enable Custom Instructions",
+        SubTitle:
+          "When enabled, future new chats will include these instructions",
+      },
+      Content: {
+        Title: "Custom Instructions",
+        SubTitle: (count: number) => `${count}/1500`,
+        Placeholder:
+          "Describe what the assistant should always follow in new chats, such as response style, context, or output format.",
+      },
+    },
 
     Update: {
       Version: (x: string) => `Version: ${x}`,

@@ -92,6 +92,8 @@ export type AppConfig = {
   sidebarWidth: number;
   enableArtifacts: boolean;
   enableCodeFold: boolean;
+  enableCustomInstructions: boolean;
+  customInstructions: string;
   disablePromptHint: boolean;
   dontShowMaskSplashScreen: boolean;
   hideBuiltinMasks: boolean;
@@ -123,6 +125,8 @@ export const DEFAULT_CONFIG: AppConfig = {
   sidebarWidth: DEFAULT_SIDEBAR_WIDTH,
   enableArtifacts: true,
   enableCodeFold: true,
+  enableCustomInstructions: false,
+  customInstructions: "",
   disablePromptHint: false,
   dontShowMaskSplashScreen: true,
   hideBuiltinMasks: false,
@@ -204,6 +208,19 @@ export type RealtimeConfig = {
   temperature: number;
   voice: Voice;
 };
+
+export type CustomInstructionsConfig = Pick<
+  AppConfig,
+  "enableCustomInstructions" | "customInstructions"
+>;
+
+export function getEnabledCustomInstructions(config: CustomInstructionsConfig) {
+  if (!config.enableCustomInstructions) {
+    return "";
+  }
+
+  return config.customInstructions.trim();
+}
 
 export function limitNumber(
   x: number,
@@ -296,7 +313,7 @@ export const useAppConfig = createPersistStore(
   }),
   {
     name: StoreKey.Config,
-    version: 4.3,
+    version: 4.4,
 
     merge(persistedState, currentState) {
       const state = persistedState as ChatConfig | undefined;
@@ -373,6 +390,14 @@ export const useAppConfig = createPersistStore(
           DEFAULT_CONFIG.modelConfig.textVerbosity;
         state.modelConfigMeta = state.modelConfigMeta ?? {};
         state.serverConfigSnapshot = state.serverConfigSnapshot ?? undefined;
+      }
+
+      if (version < 4.4) {
+        state.enableCustomInstructions =
+          state.enableCustomInstructions ??
+          DEFAULT_CONFIG.enableCustomInstructions;
+        state.customInstructions =
+          state.customInstructions ?? DEFAULT_CONFIG.customInstructions;
       }
 
       return state as any;

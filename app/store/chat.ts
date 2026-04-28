@@ -31,7 +31,12 @@ import Locale, { getLang } from "../locales";
 import { prettyObject } from "../utils/format";
 import { createPersistStore } from "../utils/store";
 import { estimateTokenLength } from "../utils/token";
-import { ModelConfig, ModelType, useAppConfig } from "./config";
+import {
+  getEnabledCustomInstructions,
+  ModelConfig,
+  ModelType,
+  useAppConfig,
+} from "./config";
 import { createEmptyMask, Mask } from "./mask";
 import {
   executeMcpAction,
@@ -88,6 +93,7 @@ export interface ChatSession {
   topic: string;
 
   memoryPrompt: string;
+  customInstructions?: string;
   messages: ChatMessage[];
   stat: ChatStat;
   lastUpdate: number;
@@ -103,11 +109,22 @@ export const BOT_HELLO: ChatMessage = createMessage({
   content: Locale.Store.BotHello,
 });
 
+function getCurrentCustomInstructions() {
+  return getEnabledCustomInstructions(useAppConfig.getState()) || undefined;
+}
+
+function refreshEmptySessionCustomInstructions(session: ChatSession) {
+  if (session.messages.length === 0) {
+    session.customInstructions = getCurrentCustomInstructions();
+  }
+}
+
 function createEmptySession(): ChatSession {
   return {
     id: nanoid(),
     topic: DEFAULT_TOPIC,
     memoryPrompt: "",
+    customInstructions: getCurrentCustomInstructions(),
     messages: [],
     stat: {
       tokenCount: 0,
@@ -331,6 +348,7 @@ export const useChatStore = createPersistStore(
         const newSession = createEmptySession();
 
         newSession.topic = currentSession.topic;
+        newSession.customInstructions = currentSession.customInstructions;
         // 深拷贝消息
         newSession.messages = currentSession.messages.map((msg) => ({
           ...msg,
@@ -499,6 +517,7 @@ export const useChatStore = createPersistStore(
 
       ensureCurrentSessionSaved() {
         const session = get().currentSession();
+        refreshEmptySessionCustomInstructions(session);
 
         if (get().currentSessionIndex !== TEMPORARY_SESSION_INDEX) {
           return session;
@@ -688,6 +707,7 @@ export const useChatStore = createPersistStore(
         // 直接使用缓存的MCP状态
         const mcpEnabled = mcpCache.enabled;
         const mcpSystemPrompt = mcpEnabled ? mcpCache.systemPrompt : "";
+        const customInstructions = session.customInstructions?.trim() ?? "";
 
         var systemPrompts: ChatMessage[] = [];
 
@@ -723,6 +743,15 @@ export const useChatStore = createPersistStore(
             systemPrompts.at(0)?.content ?? "empty",
           );
         }
+
+        const customInstructionPrompts = customInstructions
+          ? [
+              createMessage({
+                role: "system",
+                content: customInstructions,
+              }),
+            ]
+          : [];
 
         const memoryPrompt = get().getMemoryPrompt();
         // long term memory
@@ -769,6 +798,7 @@ export const useChatStore = createPersistStore(
         // concat all messages
         const recentMessages = [
           ...systemPrompts,
+          ...customInstructionPrompts,
           ...longTermMemoryPrompts,
           ...contextPrompts,
           ...reversedRecentMessages.reverse(),

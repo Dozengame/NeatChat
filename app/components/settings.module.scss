@@ -96,6 +96,14 @@
   }
 }
 
+.custom-instructions-input {
+  width: 100%;
+  max-width: unset;
+  box-sizing: border-box;
+  line-height: 1.6;
+  margin-top: 6px;
+}
+
 @media (max-width: 600px) {
   .settings {
     button {
