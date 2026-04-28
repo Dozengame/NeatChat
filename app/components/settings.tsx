@@ -577,16 +577,13 @@ function SyncItems() {
 // 添加一个函数来从服务端获取 CUSTOM_MODELS 环境变量
 function useServerCustomModels() {
   const [serverCustomModels, setServerCustomModels] = useState("");
-  const config = useAppConfig();
 
   useEffect(() => {
     // 从服务端获取 CUSTOM_MODELS 环境变量
     fetch("/api/config")
       .then((res) => res.json())
       .then((data) => {
-        if (data.customModels && !config.customModels) {
-          // 只有当客户端没有设置自定义模型时，才使用服务端的设置
-          config.update((config) => (config.customModels = data.customModels));
+        if (typeof data.customModels === "string") {
           setServerCustomModels(data.customModels);
         }
       })

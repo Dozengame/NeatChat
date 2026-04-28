@@ -722,8 +722,8 @@
   gap: 5px;
   padding: 0 10px;
   border-radius: 15px;
-  border: var(--border-in-light);
-  background-color: rgba(29, 147, 171, 0.12);
+  border: 1px solid rgba(49, 94, 248, 0.28);
+  background-color: rgba(49, 94, 248, 0.12);
   color: var(--primary);
   cursor: pointer;
   font-size: 13px;
@@ -732,6 +732,30 @@
   svg {
     width: 15px;
     height: 15px;
+  }
+}
+
+:global(.dark) .chat-input-reasoning {
+  border-color: rgba(118, 168, 255, 0.48);
+  background-color: rgba(49, 94, 248, 0.26);
+  color: rgb(125, 174, 255);
+
+  svg {
+    filter: none;
+    color: rgb(125, 174, 255);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .chat-input-reasoning {
+    border-color: rgba(118, 168, 255, 0.48);
+    background-color: rgba(49, 94, 248, 0.26);
+    color: rgb(125, 174, 255);
+
+    svg {
+      filter: none;
+      color: rgb(125, 174, 255);
+    }
   }
 }
 

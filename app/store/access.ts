@@ -195,6 +195,11 @@ function runAfterStoreHydration(callback: () => void) {
 function applyServerConfig(config: Partial<typeof DEFAULT_ACCESS_STATE>) {
   runAfterStoreHydration(() => {
     applyServerModelDefaults(config);
+    if (typeof config.customModels === "string") {
+      useAppConfig.setState(() => ({
+        customModels: config.customModels,
+      }));
+    }
     useAccessStore.setState(() => ({ ...config }));
   });
 }
