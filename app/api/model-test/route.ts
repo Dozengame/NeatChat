@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSideConfig } from "@/app/config/server";
 import { OPENAI_BASE_URL, OpenaiPath } from "@/app/constant";
 import { ModelTestResult } from "@/app/utils/model-test";
-import { shouldUseOpenAIResponses } from "@/app/utils/openai-responses";
 
 // 测试单个模型
 async function testModel(
@@ -21,16 +20,8 @@ async function testModel(
       timeoutSeconds * 1000,
     );
 
-    const useResponses = shouldUseOpenAIResponses({
-      enabled: serverConfig.openaiResponsesMode,
-      model,
-      providerName: "OpenAI",
-    });
-
     let baseUrl =
-      (useResponses
-        ? serverConfig.openaiResponsesUrl || serverConfig.baseUrl
-        : serverConfig.baseUrl) || OPENAI_BASE_URL;
+      serverConfig.openaiResponsesUrl || serverConfig.baseUrl || OPENAI_BASE_URL;
     if (!baseUrl.startsWith("http")) {
       baseUrl = `https://${baseUrl}`;
     }
@@ -39,38 +30,23 @@ async function testModel(
     }
 
     const url =
-      useResponses &&
       baseUrl.toLowerCase().endsWith(`/${OpenaiPath.ResponsesPath}`)
         ? baseUrl
-        : `${baseUrl}/${
-            useResponses ? OpenaiPath.ResponsesPath : OpenaiPath.ChatPath
-          }`;
+        : `${baseUrl}/${OpenaiPath.ResponsesPath}`;
 
     // 构建请求体
-    const requestBody = useResponses
-      ? {
-          model,
-          input: "Hello!",
-          max_output_tokens: 16,
-          reasoning: {
-            effort: serverConfig.openaiReasoningEffort,
-          },
-          text: {
-            verbosity: serverConfig.openaiTextVerbosity,
-          },
-          stream: false,
-        }
-      : {
-          model: model,
-          messages: [
-            {
-              role: "user",
-              content: "Hello!",
-            },
-          ],
-          max_tokens: 1,
-          stream: false,
-        };
+    const requestBody = {
+      model,
+      input: "Hello!",
+      max_output_tokens: serverConfig.openaiMaxOutputTokens ?? 16,
+      reasoning: {
+        effort: serverConfig.openaiReasoningEffort,
+      },
+      text: {
+        verbosity: serverConfig.openaiTextVerbosity,
+      },
+      stream: false,
+    };
 
     // 发送请求
     const response = await fetch(url, {

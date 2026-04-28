@@ -113,7 +113,7 @@ export class QwenApi implements LLMApi {
         result_format: "message",
         incremental_output: shouldStream,
         temperature: modelConfig.temperature,
-        // max_tokens: modelConfig.max_tokens,
+        // Provider-specific output limits are intentionally not sent here.
         top_p: modelConfig.top_p === 1 ? 0.99 : modelConfig.top_p, // qwen top_p is should be < 1
       },
     };

@@ -2,6 +2,12 @@ export const OPENAI_RESPONSES_DEFAULT_MODEL = "gpt-5.5";
 export const OPENAI_RESPONSES_DEFAULT_TEMPERATURE = 1;
 export const OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT = "low";
 export const OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY = "medium";
+export const OPENAI_RESPONSES_REASONING_MAX_OUTPUT_TOKENS = {
+  low: 10000,
+  medium: 20000,
+  high: 30000,
+  xhigh: 30000,
+} as const;
 
 export type OpenAIResponsesReasoningEffort =
   | "low"
@@ -20,9 +26,20 @@ const REASONING_EFFORTS = new Set(["low", "medium", "high", "xhigh"]);
 
 const TEXT_VERBOSITIES = new Set(["low", "medium", "high"]);
 
-export function parseOpenAIResponsesMode(value?: string) {
+const OPENAI_PROVIDER_NAMES = new Set(["openai", "chatgpt"]);
+
+export function parseOpenAIMaxOutputTokens(value?: string) {
   const normalized = value?.trim().toLowerCase();
-  return normalized === "1" || normalized === "true";
+  if (!normalized) {
+    return undefined;
+  }
+
+  const maxOutputTokens = Number(normalized);
+  if (!Number.isFinite(maxOutputTokens)) {
+    return undefined;
+  }
+
+  return Math.floor(Math.min(512000, Math.max(0, maxOutputTokens)));
 }
 
 export function parseOpenAIResponsesReasoningEffort(value?: string) {
@@ -43,6 +60,16 @@ export function parseOpenAIResponsesTextVerbosity(value?: string) {
   return OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY;
 }
 
+export function getMaxOutputTokensForReasoningEffort(
+  effort?: OpenAIResponsesReasoningEffort,
+) {
+  return (
+    OPENAI_RESPONSES_REASONING_MAX_OUTPUT_TOKENS[
+      effort ?? OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT
+    ] ?? OPENAI_RESPONSES_REASONING_MAX_OUTPUT_TOKENS.low
+  );
+}
+
 export function isGpt5OrNewerModel(model?: string) {
   const match = model
     ?.trim()
@@ -59,7 +86,11 @@ export function isOpenAIGpt5OrNewerModelConfig(params: {
   model?: string;
   providerName?: string;
 }) {
-  return params.providerName === "OpenAI" && isGpt5OrNewerModel(params.model);
+  const providerName = params.providerName?.trim().toLowerCase();
+  return (
+    (!providerName || OPENAI_PROVIDER_NAMES.has(providerName)) &&
+    isGpt5OrNewerModel(params.model)
+  );
 }
 
 export function shouldUseOpenAIResponses(params: {
@@ -67,9 +98,5 @@ export function shouldUseOpenAIResponses(params: {
   model?: string;
   providerName?: string;
 }) {
-  return (
-    !!params.enabled &&
-    params.providerName !== "Azure" &&
-    isGpt5OrNewerModel(params.model)
-  );
+  return params.providerName !== "Azure";
 }

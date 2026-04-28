@@ -615,8 +615,8 @@ const en: LocaleType = {
       High: "Deep",
     },
     MaxTokens: {
-      Title: "Max Tokens",
-      SubTitle: "Maximum length of input tokens and generated tokens",
+      Title: "Max Output Tokens",
+      SubTitle: "Maximum output tokens per response, including reasoning",
     },
     PresencePenalty: {
       Title: "Presence Penalty",

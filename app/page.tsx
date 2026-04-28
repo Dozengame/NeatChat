@@ -11,9 +11,17 @@ import { getServerSideConfig } from "./config/server";
 const serverConfig = getServerSideConfig();
 
 export default function App() {
+  const chatStoreHydrated = useChatStore((state) => state._hasHydrated);
+
   useEffect(() => {
     useChatStore.getState().initMcp();
   }, []);
+
+  useEffect(() => {
+    if (chatStoreHydrated) {
+      useChatStore.getState().newSession();
+    }
+  }, [chatStoreHydrated]);
 
   return (
     <>

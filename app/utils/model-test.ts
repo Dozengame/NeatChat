@@ -41,18 +41,18 @@ export async function testModel(
     }
 
     // 构建请求URL
-    const url = `${baseUrl}/v1/chat/completions`;
+    const normalizedBaseUrl = baseUrl.endsWith("/")
+      ? baseUrl.slice(0, -1)
+      : baseUrl;
+    const url = normalizedBaseUrl.toLowerCase().endsWith("/v1/responses")
+      ? normalizedBaseUrl
+      : `${normalizedBaseUrl}/v1/responses`;
 
     // 构建请求体
     const requestBody = {
       model: model,
-      messages: [
-        {
-          role: "user",
-          content: "Hello!",
-        },
-      ],
-      max_tokens: 1,
+      input: "Hello!",
+      max_output_tokens: 16,
       stream: false,
     };
 

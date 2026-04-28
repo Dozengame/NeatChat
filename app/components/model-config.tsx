@@ -1,5 +1,5 @@
 import { ServiceProvider } from "@/app/constant";
-import { ModalConfigValidator, ModelConfig } from "../store";
+import { ModalConfigValidator, ModelConfig, useAccessStore } from "../store";
 
 import Locale from "../locales";
 import { InputRange } from "./input-range";
@@ -9,6 +9,7 @@ import { groupBy } from "lodash-es";
 import styles from "./model-config.module.scss";
 import { getModelProvider } from "../utils/model";
 import {
+  getMaxOutputTokensForReasoningEffort,
   isOpenAIGpt5OrNewerModelConfig,
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
   OpenAIChatReasoningEffort,
@@ -18,6 +19,7 @@ export function ModelConfigList(props: {
   modelConfig: ModelConfig;
   updateConfig: (updater: (config: ModelConfig) => void) => void;
 }) {
+  const accessStore = useAccessStore();
   const allModels = useAllModels();
   const groupModels = groupBy(
     allModels.filter((v) => v.available),
@@ -37,6 +39,13 @@ export function ModelConfigList(props: {
     medium: Locale.Settings.ReasoningEffort.Medium,
     high: Locale.Settings.ReasoningEffort.High,
   };
+  const getReasoningMaxOutputTokens = (effort: OpenAIChatReasoningEffort) =>
+    accessStore.openaiMaxOutputTokens ??
+    getMaxOutputTokensForReasoningEffort(effort);
+  const forcedMaxOutputTokens =
+    typeof accessStore.openaiMaxOutputTokens === "number";
+  const maxOutputTokensValue =
+    accessStore.openaiMaxOutputTokens ?? props.modelConfig.max_output_tokens;
 
   return (
     <>
@@ -52,6 +61,17 @@ export function ModelConfigList(props: {
             props.updateConfig((config) => {
               config.model = ModalConfigValidator.model(model);
               config.providerName = providerName as ServiceProvider;
+              if (
+                isOpenAIGpt5OrNewerModelConfig({
+                  model: config.model,
+                  providerName: config.providerName,
+                })
+              ) {
+                const effort =
+                  config.reasoningEffort ??
+                  OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT;
+                config.max_output_tokens = getReasoningMaxOutputTokens(effort);
+              }
             });
           }}
         >
@@ -76,8 +96,10 @@ export function ModelConfigList(props: {
             value={reasoningEffort}
             onChange={(e) => {
               props.updateConfig((config) => {
-                config.reasoningEffort = e.currentTarget
+                const effort = e.currentTarget
                   .value as OpenAIChatReasoningEffort;
+                config.reasoningEffort = effort;
+                config.max_output_tokens = getReasoningMaxOutputTokens(effort);
               });
             }}
           >
@@ -141,15 +163,18 @@ export function ModelConfigList(props: {
           type="number"
           min={1024}
           max={512000}
-          value={props.modelConfig.max_tokens}
-          onChange={(e) =>
+          value={maxOutputTokensValue}
+          disabled={forcedMaxOutputTokens}
+          onChange={(e) => {
+            if (forcedMaxOutputTokens) return;
             props.updateConfig(
               (config) =>
-                (config.max_tokens = ModalConfigValidator.max_tokens(
-                  e.currentTarget.valueAsNumber,
-                )),
-            )
-          }
+                (config.max_output_tokens =
+                  ModalConfigValidator.max_output_tokens(
+                    e.currentTarget.valueAsNumber,
+                  )),
+            );
+          }}
         ></input>
       </ListItem>
 

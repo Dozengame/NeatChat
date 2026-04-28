@@ -128,8 +128,8 @@ const DEFAULT_ACCESS_STATE = {
   disableFastLink: false,
   customModels: "",
   defaultModel: "",
-  openaiResponsesMode: false,
   openaiReasoningEffort: "low",
+  openaiMaxOutputTokens: undefined as number | undefined,
   openaiTextVerbosity: "medium",
 
   // tts config
@@ -154,6 +154,19 @@ function applyServerModelDefaults(config: ServerModelDefaults) {
     },
   }));
   useChatStore.setState((state) => ({
+    temporarySession:
+      state.temporarySession && state.temporarySession.mask.syncGlobalConfig
+        ? {
+            ...state.temporarySession,
+            mask: {
+              ...state.temporarySession.mask,
+              modelConfig: {
+                ...state.temporarySession.mask.modelConfig,
+                ...modelConfig,
+              },
+            },
+          }
+        : state.temporarySession,
     sessions: state.sessions.map((session) => {
       if (!session.mask.syncGlobalConfig) {
         return session;

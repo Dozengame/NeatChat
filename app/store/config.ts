@@ -16,7 +16,13 @@ import {
 } from "../constant";
 import { createPersistStore } from "../utils/store";
 import type { Voice } from "rt-client";
-import type { OpenAIChatReasoningEffort } from "../utils/openai-responses";
+import {
+  getMaxOutputTokensForReasoningEffort,
+  OPENAI_RESPONSES_DEFAULT_MODEL,
+  OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
+  OPENAI_RESPONSES_DEFAULT_TEMPERATURE,
+  type OpenAIChatReasoningEffort,
+} from "../utils/openai-responses";
 
 export type ModelType = (typeof DEFAULT_MODELS)[number]["name"];
 export type TTSModelType = (typeof DEFAULT_TTS_MODELS)[number];
@@ -44,7 +50,7 @@ export type ModelConfig = {
   providerName: ServiceProvider;
   temperature: number;
   top_p: number;
-  max_tokens: number;
+  max_output_tokens: number;
   presence_penalty: number;
   frequency_penalty: number;
   sendMemory: boolean;
@@ -108,11 +114,13 @@ export const DEFAULT_CONFIG: AppConfig = {
   customModels: "",
   models: DEFAULT_MODELS as any as LLMModel[],
   modelConfig: {
-    model: "gpt-4o-mini" as ModelType,
+    model: OPENAI_RESPONSES_DEFAULT_MODEL as ModelType,
     providerName: "OpenAI" as ServiceProvider,
-    temperature: 0.5,
+    temperature: OPENAI_RESPONSES_DEFAULT_TEMPERATURE,
     top_p: 1,
-    max_tokens: 4000,
+    max_output_tokens: getMaxOutputTokensForReasoningEffort(
+      OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
+    ),
     presence_penalty: 0,
     frequency_penalty: 0,
     sendMemory: true,
@@ -122,7 +130,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     compressProviderName: "",
     enableInjectSystemPrompts: true,
     template: config?.template ?? DEFAULT_INPUT_TEMPLATE,
-    reasoningEffort: "low",
+    reasoningEffort: OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
     size: "1024x1024" as DalleSize,
     quality: "standard" as DalleQuality,
     style: "vivid" as DalleStyle,
@@ -211,7 +219,7 @@ export const ModalConfigValidator = {
   model(x: string) {
     return x as ModelType;
   },
-  max_tokens(x: number) {
+  max_output_tokens(x: number) {
     return limitNumber(x, 0, 512000, 1024);
   },
   presence_penalty(x: number) {
@@ -262,7 +270,7 @@ export const useAppConfig = createPersistStore(
   }),
   {
     name: StoreKey.Config,
-    version: 4.1,
+    version: 4.2,
 
     merge(persistedState, currentState) {
       const state = persistedState as ChatConfig | undefined;
@@ -280,6 +288,9 @@ export const useAppConfig = createPersistStore(
 
     migrate(persistedState, version) {
       const state = persistedState as ChatConfig;
+      const modelConfig = state.modelConfig as ModelConfig & {
+        max_tokens?: number;
+      };
 
       if (version < 3.4) {
         state.modelConfig.sendMemory = true;
@@ -321,6 +332,17 @@ export const useAppConfig = createPersistStore(
         state.modelConfig.compressProviderName =
           DEFAULT_CONFIG.modelConfig.compressProviderName;
       }
+
+      if (
+        version < 4.2 &&
+        typeof modelConfig.max_output_tokens !== "number"
+      ) {
+        modelConfig.max_output_tokens =
+          typeof modelConfig.max_tokens === "number"
+            ? modelConfig.max_tokens
+            : DEFAULT_CONFIG.modelConfig.max_output_tokens;
+      }
+      delete modelConfig.max_tokens;
 
       return state as any;
     },

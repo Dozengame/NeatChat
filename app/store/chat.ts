@@ -121,6 +121,36 @@ function createEmptySession(): ChatSession {
   };
 }
 
+const TEMPORARY_SESSION_INDEX = -1;
+
+function isSavedSession(session: ChatSession) {
+  return session.messages.length > 0;
+}
+
+function pruneEmptySessions(sessions: ChatSession[]) {
+  return sessions.filter(isSavedSession);
+}
+
+function createSession(mask?: Mask): ChatSession {
+  const session = createEmptySession();
+
+  if (mask) {
+    const config = useAppConfig.getState();
+    const globalModelConfig = config.modelConfig;
+
+    session.mask = {
+      ...mask,
+      modelConfig: {
+        ...globalModelConfig,
+        ...mask.modelConfig,
+      },
+    };
+    session.topic = mask.name;
+  }
+
+  return session;
+}
+
 function getSummarizeModel(
   currentModel: string,
   providerName: string,
@@ -268,8 +298,9 @@ function resetMcpCache() {
 }
 
 const DEFAULT_CHAT_STATE = {
-  sessions: [createEmptySession()],
-  currentSessionIndex: 0,
+  sessions: [] as ChatSession[],
+  temporarySession: createEmptySession() as ChatSession | undefined,
+  currentSessionIndex: TEMPORARY_SESSION_INDEX,
   lastInput: "",
 };
 
@@ -288,6 +319,10 @@ export const useChatStore = createPersistStore(
         // 获取当前会话
         const currentSession = get().currentSession();
         if (!currentSession) return;
+        if (currentSession.messages.length === 0) {
+          get().newSession(currentSession.mask);
+          return;
+        }
 
         const newSession = createEmptySession();
 
@@ -312,14 +347,16 @@ export const useChatStore = createPersistStore(
 
       clearSessions() {
         set(() => ({
-          sessions: [createEmptySession()],
-          currentSessionIndex: 0,
+          sessions: [],
+          temporarySession: createEmptySession(),
+          currentSessionIndex: TEMPORARY_SESSION_INDEX,
         }));
       },
 
       selectSession(index: number) {
         set({
           currentSessionIndex: index,
+          temporarySession: undefined,
         });
       },
 
@@ -349,36 +386,34 @@ export const useChatStore = createPersistStore(
       },
 
       newSession(mask?: Mask) {
-        const session = createEmptySession();
-
-        if (mask) {
-          const config = useAppConfig.getState();
-          const globalModelConfig = config.modelConfig;
-
-          session.mask = {
-            ...mask,
-            modelConfig: {
-              ...globalModelConfig,
-              ...mask.modelConfig,
-            },
-          };
-          session.topic = mask.name;
-        }
-
+        const session = createSession(mask);
         set((state) => ({
-          currentSessionIndex: 0,
-          sessions: [session].concat(state.sessions),
+          currentSessionIndex: TEMPORARY_SESSION_INDEX,
+          temporarySession: session,
+          sessions: pruneEmptySessions(state.sessions),
         }));
       },
 
       nextSession(delta: number) {
         const n = get().sessions.length;
+        if (n === 0) {
+          get().newSession();
+          return;
+        }
         const limit = (x: number) => (x + n) % n;
-        const i = get().currentSessionIndex;
+        const i =
+          get().currentSessionIndex === TEMPORARY_SESSION_INDEX
+            ? 0
+            : get().currentSessionIndex;
         get().selectSession(limit(i + delta));
       },
 
       deleteSession(index: number) {
+        if (index === TEMPORARY_SESSION_INDEX) {
+          get().newSession();
+          return;
+        }
+
         const deletingLastSession = get().sessions.length === 1;
         const deletedSession = get().sessions.at(index);
 
@@ -394,8 +429,7 @@ export const useChatStore = createPersistStore(
         );
 
         if (deletingLastSession) {
-          nextIndex = 0;
-          sessions.push(createEmptySession());
+          nextIndex = TEMPORARY_SESSION_INDEX;
         }
 
         // for undo delete action
@@ -406,6 +440,9 @@ export const useChatStore = createPersistStore(
 
         set(() => ({
           currentSessionIndex: nextIndex,
+          temporarySession: deletingLastSession
+            ? createEmptySession()
+            : get().temporarySession,
           sessions,
         }));
 
@@ -425,12 +462,46 @@ export const useChatStore = createPersistStore(
         let index = get().currentSessionIndex;
         const sessions = get().sessions;
 
+        if (index === TEMPORARY_SESSION_INDEX) {
+          let session = get().temporarySession;
+          if (!session) {
+            session = createEmptySession();
+            set(() => ({ temporarySession: session }));
+          }
+          return session;
+        }
+
+        if (sessions.length === 0) {
+          const session = createEmptySession();
+          set(() => ({
+            currentSessionIndex: TEMPORARY_SESSION_INDEX,
+            temporarySession: session,
+          }));
+          return session;
+        }
+
         if (index < 0 || index >= sessions.length) {
           index = Math.min(sessions.length - 1, Math.max(0, index));
           set(() => ({ currentSessionIndex: index }));
         }
 
         const session = sessions[index];
+
+        return session;
+      },
+
+      ensureCurrentSessionSaved() {
+        const session = get().currentSession();
+
+        if (get().currentSessionIndex !== TEMPORARY_SESSION_INDEX) {
+          return session;
+        }
+
+        set((state) => ({
+          currentSessionIndex: 0,
+          temporarySession: undefined,
+          sessions: [session, ...pruneEmptySessions(state.sessions)],
+        }));
 
         return session;
       },
@@ -456,7 +527,7 @@ export const useChatStore = createPersistStore(
         attachImages?: string[],
         isMcpResponse?: boolean,
       ) {
-        const session = get().currentSession();
+        const session = get().ensureCurrentSessionSaved();
         const modelConfig = session.mask.modelConfig;
 
         // MCP Response no need to fill template
@@ -674,7 +745,7 @@ export const useChatStore = createPersistStore(
           : shortTermMemoryStartIndex;
         // and if user has cleared history messages, we should exclude the memory too.
         const contextStartIndex = Math.max(clearContextIndex, memoryStartIndex);
-        const maxTokenThreshold = modelConfig.max_tokens;
+        const maxTokenThreshold = modelConfig.max_output_tokens;
 
         // get recent messages as much as possible
         const reversedRecentMessages = [];
@@ -801,7 +872,7 @@ export const useChatStore = createPersistStore(
 
         const historyMsgLength = countMessages(toBeSummarizedMsgs);
 
-        if (historyMsgLength > (modelConfig?.max_tokens || 4000)) {
+        if (historyMsgLength > (modelConfig?.max_output_tokens || 4000)) {
           const n = toBeSummarizedMsgs.length;
           toBeSummarizedMsgs = toBeSummarizedMsgs.slice(
             Math.max(0, n - modelConfig.historyMessageCount),
@@ -826,10 +897,8 @@ export const useChatStore = createPersistStore(
           historyMsgLength > modelConfig.compressMessageLengthThreshold &&
           modelConfig.sendMemory
         ) {
-          /** Destruct max_tokens while summarizing
-           * this param is just shit
-           **/
-          const { max_tokens, ...modelcfg } = modelConfig;
+          // Keep summary requests from inheriting the active response budget.
+          const { max_output_tokens, ...modelcfg } = modelConfig;
           api.llm.chat({
             messages: toBeSummarizedMsgs.concat(
               createMessage({
@@ -873,6 +942,13 @@ export const useChatStore = createPersistStore(
         targetSession: ChatSession,
         updater: (session: ChatSession) => void,
       ) {
+        const temporarySession = get().temporarySession;
+        if (temporarySession?.id === targetSession.id) {
+          updater(temporarySession);
+          set(() => ({ temporarySession }));
+          return;
+        }
+
         const sessions = get().sessions;
         const index = sessions.findIndex((s) => s.id === targetSession.id);
         if (index < 0) return;
@@ -935,7 +1011,24 @@ export const useChatStore = createPersistStore(
   },
   {
     name: StoreKey.Chat,
-    version: 3.3,
+    version: 3.5,
+    partialize(state) {
+      const { temporarySession, ...persistedState } = state as any;
+      const sessions = pruneEmptySessions(persistedState.sessions ?? []);
+      const currentSessionIndex =
+        typeof persistedState.currentSessionIndex === "number"
+          ? persistedState.currentSessionIndex
+          : 0;
+      return {
+        ...persistedState,
+        currentSessionIndex:
+          currentSessionIndex === TEMPORARY_SESSION_INDEX ||
+          sessions.length === 0
+            ? 0
+            : Math.min(currentSessionIndex, sessions.length - 1),
+        sessions,
+      };
+    },
     migrate(persistedState, version) {
       const state = persistedState as any;
       const newState = JSON.parse(
@@ -997,6 +1090,36 @@ export const useChatStore = createPersistStore(
           const config = useAppConfig.getState();
           s.mask.modelConfig.compressModel = "";
           s.mask.modelConfig.compressProviderName = "";
+        });
+      }
+
+      if (version < 3.4) {
+        newState.sessions = pruneEmptySessions(newState.sessions);
+        if (newState.sessions.length === 0) {
+          newState.currentSessionIndex = TEMPORARY_SESSION_INDEX;
+          newState.temporarySession = createEmptySession();
+        } else {
+          newState.currentSessionIndex = Math.min(
+            Math.max(0, newState.currentSessionIndex ?? 0),
+            newState.sessions.length - 1,
+          );
+          newState.temporarySession = undefined;
+        }
+      }
+
+      if (version < 3.5) {
+        newState.sessions.forEach((session) => {
+          const modelConfig = session.mask?.modelConfig as
+            | (ModelConfig & { max_tokens?: number })
+            | undefined;
+          if (!modelConfig) return;
+          if (typeof modelConfig.max_output_tokens !== "number") {
+            modelConfig.max_output_tokens =
+              typeof modelConfig.max_tokens === "number"
+                ? modelConfig.max_tokens
+                : useAppConfig.getState().modelConfig.max_output_tokens;
+          }
+          delete modelConfig.max_tokens;
         });
       }
 

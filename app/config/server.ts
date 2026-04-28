@@ -3,7 +3,7 @@ import { DEFAULT_MODELS, DEFAULT_GA_ID } from "../constant";
 import {
   OPENAI_RESPONSES_DEFAULT_MODEL,
   OPENAI_RESPONSES_DEFAULT_TEMPERATURE,
-  parseOpenAIResponsesMode,
+  parseOpenAIMaxOutputTokens,
   parseOpenAIResponsesReasoningEffort,
   parseOpenAIResponsesTextVerbosity,
 } from "../utils/openai-responses";
@@ -18,10 +18,9 @@ declare global {
 
       BASE_URL?: string;
       OPENAI_ORG_ID?: string; // openai only
-      OPENAI_RESPONSES_MODE?: string; // enable responses api mode for gpt-5 and newer
-      RESPONSES_MODE?: string; // alias for OPENAI_RESPONSES_MODE
       OPENAI_RESPONSES_URL?: string; // custom responses endpoint
       OPENAI_REASONING_EFFORT?: string; // responses api reasoning effort
+      OPENAI_MAX_OUTPUT_TOKENS?: string; // responses api max_output_tokens
       OPENAI_TEXT_VERBOSITY?: string; // responses api text verbosity
 
       VERCEL?: string;
@@ -148,18 +147,17 @@ export const getServerSideConfig = () => {
   }
 
   const disableGPT4 = !!process.env.DISABLE_GPT4;
-  const openaiResponsesMode = parseOpenAIResponsesMode(
-    process.env.OPENAI_RESPONSES_MODE ?? process.env.RESPONSES_MODE,
-  );
   let customModels = process.env.CUSTOM_MODELS ?? "";
   let defaultModel =
-    process.env.DEFAULT_MODEL?.trim() ||
-    (openaiResponsesMode ? OPENAI_RESPONSES_DEFAULT_MODEL : "");
+    process.env.DEFAULT_MODEL?.trim() || OPENAI_RESPONSES_DEFAULT_MODEL;
   const defaultTemperature =
     parseDefaultTemperature(process.env.OPENAI_TEMPERATURE) ??
-    (openaiResponsesMode ? OPENAI_RESPONSES_DEFAULT_TEMPERATURE : undefined);
+    OPENAI_RESPONSES_DEFAULT_TEMPERATURE;
   const openaiReasoningEffort = parseOpenAIResponsesReasoningEffort(
     process.env.OPENAI_REASONING_EFFORT,
+  );
+  const openaiMaxOutputTokens = parseOpenAIMaxOutputTokens(
+    process.env.OPENAI_MAX_OUTPUT_TOKENS,
   );
   const openaiTextVerbosity = parseOpenAIResponsesTextVerbosity(
     process.env.OPENAI_TEXT_VERBOSITY,
@@ -215,9 +213,9 @@ export const getServerSideConfig = () => {
     baseUrl: process.env.BASE_URL,
     apiKey: getApiKey(process.env.OPENAI_API_KEY),
     openaiOrgId: process.env.OPENAI_ORG_ID,
-    openaiResponsesMode,
     openaiResponsesUrl: process.env.OPENAI_RESPONSES_URL,
     openaiReasoningEffort,
+    openaiMaxOutputTokens,
     openaiTextVerbosity,
 
     isStability,

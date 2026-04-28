@@ -63,7 +63,9 @@ export interface OpenAIListModelResponse {
   }>;
 }
 
-export interface RequestPayload {
+export type RequestPayload = Record<string, any>;
+
+export interface AzureChatRequestPayload {
   messages: {
     role: "system" | "user" | "assistant";
     content: string | MultimodalContent[];
@@ -74,8 +76,6 @@ export interface RequestPayload {
   presence_penalty: number;
   frequency_penalty: number;
   top_p: number;
-  max_tokens?: number;
-  max_completion_tokens?: number;
 }
 
 export interface DalleRequestPayload {
@@ -342,19 +342,21 @@ export class ChatGPTApi implements LLMApi {
       },
     };
     const accessStore = useAccessStore.getState();
-    const useResponses = shouldUseOpenAIResponses({
-      enabled: accessStore.openaiResponsesMode,
-      model: modelConfig.model,
-      providerName: modelConfig.providerName,
-    });
+    const isDalle3 = _isDalle3(options.config.model);
+    const useResponses =
+      !isDalle3 &&
+      shouldUseOpenAIResponses({
+        model: modelConfig.model,
+        providerName: modelConfig.providerName,
+      });
+    const maxOutputTokens =
+      accessStore.openaiMaxOutputTokens ?? modelConfig.max_output_tokens;
 
     let requestPayload:
-      | RequestPayload
+      | AzureChatRequestPayload
       | ResponsesRequestPayload
       | DalleRequestPayload;
 
-    const isDalle3 = _isDalle3(options.config.model);
-    const isO1 = options.config.model.startsWith("o1");
     if (isDalle3) {
       const prompt = getMessageTextContent(
         options.messages.slice(-1)?.pop() as any,
@@ -379,8 +381,7 @@ export class ChatGPTApi implements LLMApi {
             : v.role === "assistant" // 如果 role 是 assistant
             ? getMessageTextContentWithoutThinking(v) // 调用 getMessageTextContentWithoutThinking
             : getMessageTextContent(v); // 否则调用 getMessageTextContent
-        if (!(isO1 && v.role === "system"))
-          messages.push({ role: v.role, content });
+        messages.push({ role: v.role, content });
       }
 
       if (useResponses) {
@@ -389,8 +390,7 @@ export class ChatGPTApi implements LLMApi {
           ...responsesInput,
           stream: options.config.stream,
           model: modelConfig.model,
-          max_output_tokens:
-            modelConfig.max_tokens > 0 ? modelConfig.max_tokens : undefined,
+          max_output_tokens: maxOutputTokens > 0 ? maxOutputTokens : undefined,
           reasoning: {
             effort: (modelConfig.reasoningEffort ||
               OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT) as OpenAIResponsesReasoningEffort,
@@ -402,32 +402,15 @@ export class ChatGPTApi implements LLMApi {
           },
         };
       } else {
-        // O1 not support image, tools (plugin in ChatGPTNextWeb) and system, stream, logprobs, temperature, top_p, n, presence_penalty, frequency_penalty yet.
         requestPayload = {
           messages,
           stream: options.config.stream,
           model: modelConfig.model,
-          temperature: !isO1 ? modelConfig.temperature : 1,
-          presence_penalty: !isO1 ? modelConfig.presence_penalty : 0,
-          frequency_penalty: !isO1 ? modelConfig.frequency_penalty : 0,
-          top_p: !isO1 ? modelConfig.top_p : 1,
-          // max_tokens: Math.max(modelConfig.max_tokens, 1024),
-          // Please do not ask me why not send max_tokens, no reason, this param is just shit, I dont want to explain anymore.
+          temperature: modelConfig.temperature,
+          presence_penalty: modelConfig.presence_penalty,
+          frequency_penalty: modelConfig.frequency_penalty,
+          top_p: modelConfig.top_p,
         };
-      }
-
-      // O1 使用 max_completion_tokens 控制token数 (https://platform.openai.com/docs/guides/reasoning#controlling-costs)
-      if (!useResponses && isO1) {
-        (requestPayload as RequestPayload).max_completion_tokens =
-          modelConfig.max_tokens;
-      }
-
-      // add max_tokens to vision model
-      if (!useResponses && visionModel) {
-        (requestPayload as RequestPayload).max_tokens = Math.max(
-          modelConfig.max_tokens,
-          4000,
-        );
       }
     }
 
@@ -471,11 +454,7 @@ export class ChatGPTApi implements LLMApi {
         );
       } else {
         chatPath = this.path(
-          isDalle3
-            ? OpenaiPath.ImagePath
-            : useResponses
-            ? OpenaiPath.ResponsesPath
-            : OpenaiPath.ChatPath,
+          isDalle3 ? OpenaiPath.ImagePath : OpenaiPath.ResponsesPath,
         );
       }
       if (shouldStream) {
@@ -635,7 +614,7 @@ export class ChatGPTApi implements LLMApi {
           },
           // processToolMessage, include tool_calls message and tool call results
           (
-            requestPayload: RequestPayload,
+            requestPayload: AzureChatRequestPayload,
             toolCallMessage: any,
             toolCallResult: any[],
           ) => {
@@ -666,7 +645,7 @@ export class ChatGPTApi implements LLMApi {
           () => controller.abort(),
           useResponses
             ? OPENAI_RESPONSES_TIMEOUT_MS
-            : isDalle3 || isO1
+            : isDalle3
             ? REQUEST_TIMEOUT_MS * 4
             : REQUEST_TIMEOUT_MS, // dalle3 using b64_json is slow.
         );

@@ -115,9 +115,10 @@ import { getClientConfig } from "../config/client";
 import { useAllModels } from "../utils/hooks";
 import { MultimodalContent } from "../client/api";
 import {
+  getMaxOutputTokensForReasoningEffort,
+  isOpenAIGpt5OrNewerModelConfig,
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
   OpenAIChatReasoningEffort,
-  shouldUseOpenAIResponses,
 } from "../utils/openai-responses";
 
 import { ClientApi } from "../client/api";
@@ -838,11 +839,13 @@ function ChatInputReasoningAction() {
     medium: "进阶",
     high: "深入",
   };
-  const showReasoningSelector = shouldUseOpenAIResponses({
-    enabled: accessStore.openaiResponsesMode,
+  const showReasoningSelector = isOpenAIGpt5OrNewerModelConfig({
     model: currentModel,
     providerName: currentProviderName,
   });
+  const getReasoningMaxOutputTokens = (effort: OpenAIChatReasoningEffort) =>
+    accessStore.openaiMaxOutputTokens ??
+    getMaxOutputTokensForReasoningEffort(effort);
 
   if (!showReasoningSelector) return null;
 
@@ -874,6 +877,8 @@ function ChatInputReasoningAction() {
             if (!reasoningEffort) return;
             chatStore.updateTargetSession(session, (session) => {
               session.mask.modelConfig.reasoningEffort = reasoningEffort;
+              session.mask.modelConfig.max_output_tokens =
+                getReasoningMaxOutputTokens(reasoningEffort);
               session.mask.syncGlobalConfig = false;
             });
             showToast(reasoningLabels[reasoningEffort]);
@@ -1977,8 +1982,7 @@ function _Chat() {
   const [editingImageMessageId, setEditingImageMessageId] = useState<
     string | null
   >(null);
-  const showInputReasoningAction = shouldUseOpenAIResponses({
-    enabled: accessStore.openaiResponsesMode,
+  const showInputReasoningAction = isOpenAIGpt5OrNewerModelConfig({
     model: session.mask.modelConfig.model,
     providerName: session.mask.modelConfig.providerName,
   });

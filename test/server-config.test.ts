@@ -3,9 +3,10 @@ import {
   parseDefaultTemperature,
 } from "../app/config/server";
 import {
+  getMaxOutputTokensForReasoningEffort,
   isOpenAIGpt5OrNewerModelConfig,
   isGpt5OrNewerModel,
-  parseOpenAIResponsesMode,
+  parseOpenAIMaxOutputTokens,
   parseOpenAIResponsesReasoningEffort,
   parseOpenAIResponsesTextVerbosity,
   shouldUseOpenAIResponses,
@@ -41,13 +42,6 @@ describe("OpenAI Responses config", () => {
     process.env = originalEnv;
   });
 
-  test("parses Responses mode flags", () => {
-    expect(parseOpenAIResponsesMode("1")).toBe(true);
-    expect(parseOpenAIResponsesMode("true")).toBe(true);
-    expect(parseOpenAIResponsesMode("0")).toBe(false);
-    expect(parseOpenAIResponsesMode("")).toBe(false);
-  });
-
   test("detects GPT-5 and newer model names", () => {
     expect(isGpt5OrNewerModel("gpt-5")).toBe(true);
     expect(isGpt5OrNewerModel("gpt-5.5")).toBe(true);
@@ -56,28 +50,25 @@ describe("OpenAI Responses config", () => {
     expect(isGpt5OrNewerModel("o1-preview")).toBe(false);
   });
 
-  test("uses Responses only for enabled OpenAI GPT-5+ models", () => {
+  test("uses Responses for OpenAI and keeps Azure separate", () => {
     expect(
       shouldUseOpenAIResponses({
-        enabled: true,
         model: "gpt-5.5",
         providerName: "OpenAI",
       }),
     ).toBe(true);
     expect(
       shouldUseOpenAIResponses({
-        enabled: true,
         model: "gpt-5.5",
         providerName: "Azure",
       }),
     ).toBe(false);
     expect(
       shouldUseOpenAIResponses({
-        enabled: false,
-        model: "gpt-5.5",
+        model: "gpt-4o",
         providerName: "OpenAI",
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   test("detects OpenAI GPT-5 and newer model configs for settings controls", () => {
@@ -85,6 +76,12 @@ describe("OpenAI Responses config", () => {
       isOpenAIGpt5OrNewerModelConfig({
         model: "gpt-5.5",
         providerName: "OpenAI",
+      }),
+    ).toBe(true);
+    expect(
+      isOpenAIGpt5OrNewerModelConfig({
+        model: "gpt-5.5",
+        providerName: "ChatGPT",
       }),
     ).toBe(true);
     expect(
@@ -108,19 +105,32 @@ describe("OpenAI Responses config", () => {
     expect(parseOpenAIResponsesTextVerbosity("bad")).toBe("medium");
   });
 
-  test("uses GPT-5.5 defaults when Responses mode is enabled", () => {
-    process.env.OPENAI_RESPONSES_MODE = "1";
+  test("maps reasoning effort to enough output budget", () => {
+    expect(getMaxOutputTokensForReasoningEffort("low")).toBe(10000);
+    expect(getMaxOutputTokensForReasoningEffort("medium")).toBe(20000);
+    expect(getMaxOutputTokensForReasoningEffort("high")).toBe(30000);
+  });
+
+  test("parses max_output_tokens overrides", () => {
+    expect(parseOpenAIMaxOutputTokens()).toBeUndefined();
+    expect(parseOpenAIMaxOutputTokens("abc")).toBeUndefined();
+    expect(parseOpenAIMaxOutputTokens("20000")).toBe(20000);
+    expect(parseOpenAIMaxOutputTokens("-1")).toBe(0);
+  });
+
+  test("uses GPT-5.5 Responses defaults", () => {
     process.env.DEFAULT_MODEL = "";
     process.env.OPENAI_TEMPERATURE = "";
     process.env.OPENAI_REASONING_EFFORT = "";
+    process.env.OPENAI_MAX_OUTPUT_TOKENS = "";
     process.env.OPENAI_TEXT_VERBOSITY = "";
 
     const config = getServerSideConfig();
 
-    expect(config.openaiResponsesMode).toBe(true);
     expect(config.defaultModel).toBe("gpt-5.5");
     expect(config.defaultTemperature).toBe(1);
     expect(config.openaiReasoningEffort).toBe("low");
+    expect(config.openaiMaxOutputTokens).toBeUndefined();
     expect(config.openaiTextVerbosity).toBe("medium");
   });
 
@@ -148,6 +158,29 @@ describe("OpenAI Responses config", () => {
     ).toMatchObject({
       model: "custom-model",
       providerName: "Moonshot",
+    });
+    expect(
+      resolveServerModelConfig({
+        defaultModel: "gpt-5.5",
+        openaiReasoningEffort: "high",
+      }),
+    ).toMatchObject({
+      model: "gpt-5.5",
+      providerName: "OpenAI",
+      reasoningEffort: "high",
+      max_output_tokens: 30000,
+    });
+    expect(
+      resolveServerModelConfig({
+        defaultModel: "gpt-5.5",
+        openaiReasoningEffort: "medium",
+        openaiMaxOutputTokens: 12000,
+      }),
+    ).toMatchObject({
+      model: "gpt-5.5",
+      providerName: "OpenAI",
+      reasoningEffort: "medium",
+      max_output_tokens: 12000,
     });
   });
 });

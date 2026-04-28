@@ -611,8 +611,8 @@ const cn = {
       High: "深入",
     },
     MaxTokens: {
-      Title: "单次回复限制 (max_tokens)",
-      SubTitle: "单次交互所用的最大 Token 数",
+      Title: "输出上限 (max_output_tokens)",
+      SubTitle: "单次回复可用的最大输出 Token 数（包含思考）",
     },
     PresencePenalty: {
       Title: "话题新鲜度 (presence_penalty)",

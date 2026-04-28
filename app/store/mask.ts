@@ -114,7 +114,7 @@ export const useMaskStore = createPersistStore(
   }),
   {
     name: StoreKey.Mask,
-    version: 3.1,
+    version: 3.2,
 
     migrate(state, version) {
       const newState = JSON.parse(JSON.stringify(state)) as MaskState;
@@ -130,6 +130,22 @@ export const useMaskStore = createPersistStore(
           updatedMasks[m.id] = m;
         });
         newState.masks = updatedMasks;
+      }
+
+      if (version < 3.2) {
+        Object.values(newState.masks).forEach((m) => {
+          const modelConfig = m.modelConfig as
+            | (ModelConfig & { max_tokens?: number })
+            | undefined;
+          if (!modelConfig) return;
+          if (typeof modelConfig.max_output_tokens !== "number") {
+            modelConfig.max_output_tokens =
+              typeof modelConfig.max_tokens === "number"
+                ? modelConfig.max_tokens
+                : useAppConfig.getState().modelConfig.max_output_tokens;
+          }
+          delete modelConfig.max_tokens;
+        });
       }
 
       return newState as any;
