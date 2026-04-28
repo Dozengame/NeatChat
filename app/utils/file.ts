@@ -30,6 +30,141 @@ export interface FileInfo {
   originalFile: File;
 }
 
+const MAX_ATTACHMENT_TEXT_LENGTH = 100000;
+
+const SAFE_ATTACHMENT_EXTENSIONS = new Set([
+  "txt",
+  "md",
+  "js",
+  "mjs",
+  "cjs",
+  "lua",
+  "luau",
+  "as",
+  "py",
+  "html",
+  "css",
+  "json",
+  "csv",
+  "xml",
+  "log",
+  "docx",
+  "doc",
+  "pptx",
+  "ppt",
+  "pdf",
+  "sh",
+  "bash",
+  "zsh",
+  "sql",
+  "ini",
+  "conf",
+  "yaml",
+  "yml",
+  "toml",
+  "tex",
+  "c",
+  "cpp",
+  "h",
+  "hpp",
+  "java",
+  "cs",
+  "go",
+  "rs",
+  "php",
+  "rb",
+  "pl",
+  "swift",
+  "kt",
+  "ts",
+  "jsx",
+  "tsx",
+  "vue",
+  "scss",
+  "less",
+  "laya",
+  "ls",
+  "lh",
+  "lmat",
+  "ltc",
+  "atlas",
+  "ani",
+  "sk",
+  "part",
+  "prefab",
+  "scene",
+  "fire",
+  "cocos",
+  "cc",
+  "meta",
+  "plist",
+  "fnt",
+  "r",
+  "m",
+  "ipynb",
+  "zip",
+  "xlsx",
+  "xls",
+  "svg",
+]);
+
+const IMAGE_ATTACHMENT_EXTENSIONS = new Set([
+  "png",
+  "jpg",
+  "jpeg",
+  "webp",
+  "heic",
+  "heif",
+]);
+
+export const ATTACHMENT_ACCEPT =
+  "image/png,image/jpeg,image/webp,image/heic,image/heif,.png,.jpg,.jpeg,.webp,.heic,.heif,.txt,.md,.js,.mjs,.cjs,.lua,.luau,.as,.py,.html,.css,.json,.csv,.xml,.log,.docx,.doc,.pptx,.ppt,.pdf,.sh,.bash,.zsh,.sql,.ini,.conf,.yaml,.yml,.toml,.tex,.c,.cpp,.h,.hpp,.java,.cs,.go,.rs,.php,.rb,.pl,.swift,.kt,.ts,.jsx,.tsx,.vue,.scss,.less,.laya,.ls,.lh,.lmat,.ltc,.atlas,.ani,.sk,.part,.prefab,.scene,.fire,.cocos,.cc,.meta,.plist,.fnt,.r,.m,.ipynb,.zip,.xlsx,.xls,.svg,Dockerfile";
+
+export const TEXT_ATTACHMENT_ACCEPT =
+  ".txt,.md,.js,.mjs,.cjs,.lua,.luau,.as,.py,.html,.css,.json,.csv,.xml,.log,.sh,.bash,.zsh,.sql,.ini,.conf,.yaml,.yml,.toml,.tex,.c,.cpp,.h,.hpp,.java,.cs,.go,.rs,.php,.rb,.pl,.swift,.kt,.ts,.jsx,.tsx,.vue,.scss,.less,.laya,.ls,.lh,.lmat,.ltc,.atlas,.ani,.sk,.part,.prefab,.scene,.fire,.cocos,.cc,.meta,.plist,.fnt,.r,.m,.ipynb,.svg,Dockerfile";
+
+const PASTED_DATA_IMAGE_PATTERN =
+  /data:image\/(?:png|jpe?g|webp|heic|heif);base64,[a-z0-9+/=]+/gi;
+
+export function isPasteableImageUrl(url?: string | null) {
+  if (!url) return false;
+  const normalized = url.trim();
+  return (
+    /^data:image\/(?:png|jpe?g|webp|heic|heif);base64,/i.test(normalized) ||
+    /^https?:\/\//i.test(normalized)
+  );
+}
+
+export function extractClipboardImageUrls(clipboardData: DataTransfer) {
+  const imageUrls: string[] = [];
+  const seen = new Set<string>();
+  const addImageUrl = (url?: string | null) => {
+    const normalized = url?.trim();
+    if (!isPasteableImageUrl(normalized) || seen.has(normalized!)) {
+      return;
+    }
+    seen.add(normalized!);
+    imageUrls.push(normalized!);
+  };
+
+  const html = clipboardData.getData("text/html");
+  if (html) {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    doc.querySelectorAll("img").forEach((img) => {
+      addImageUrl(img.getAttribute("src"));
+    });
+  }
+
+  const text = clipboardData.getData("text/plain");
+  if (text) {
+    for (const match of text.matchAll(PASTED_DATA_IMAGE_PATTERN)) {
+      addImageUrl(match[0]);
+    }
+  }
+
+  return imageUrls;
+}
+
 /**
  * 导入 mammoth 库
  */
@@ -575,6 +710,11 @@ export async function readZipFile(file: File): Promise<string> {
                   "txt",
                   "md",
                   "js",
+                  "mjs",
+                  "cjs",
+                  "lua",
+                  "luau",
+                  "as",
                   "py",
                   "html",
                   "css",
@@ -610,6 +750,23 @@ export async function readZipFile(file: File): Promise<string> {
                   "vue",
                   "scss",
                   "less",
+                  "laya",
+                  "ls",
+                  "lh",
+                  "lmat",
+                  "ltc",
+                  "atlas",
+                  "ani",
+                  "sk",
+                  "part",
+                  "prefab",
+                  "scene",
+                  "fire",
+                  "cocos",
+                  "cc",
+                  "meta",
+                  "plist",
+                  "fnt",
                 ];
 
                 if (ext && textExtensions.includes(ext)) {
@@ -953,6 +1110,137 @@ export async function uploadImageRemote(file: File): Promise<string> {
   }
 }
 
+function getFileExtension(fileName: string) {
+  const normalized = fileName.trim().toLowerCase();
+  if (!normalized || !normalized.includes(".")) {
+    return "";
+  }
+
+  return normalized.split(".").pop() ?? "";
+}
+
+function hasFileExtension(file: File, extensions: string[]) {
+  const ext = getFileExtension(file.name);
+  return extensions.includes(ext);
+}
+
+function isSvgFile(file: File) {
+  return (
+    hasFileExtension(file, ["svg"]) || file.type.toLowerCase().includes("svg")
+  );
+}
+
+export function isAttachmentImage(file: File) {
+  return (
+    (file.type.startsWith("image/") ||
+      IMAGE_ATTACHMENT_EXTENSIONS.has(getFileExtension(file.name))) &&
+    !isSvgFile(file)
+  );
+}
+
+export function isSupportedAttachmentFile(file: File) {
+  if (isAttachmentImage(file)) {
+    return true;
+  }
+
+  const fileName = file.name.trim().toLowerCase();
+  if (fileName === "dockerfile") {
+    return true;
+  }
+
+  const ext = getFileExtension(fileName);
+  if (ext && SAFE_ATTACHMENT_EXTENSIONS.has(ext)) {
+    return true;
+  }
+  if (ext) {
+    return false;
+  }
+
+  const type = file.type.toLowerCase();
+  return (
+    type.startsWith("text/") ||
+    type.includes("json") ||
+    type.includes("xml") ||
+    type.includes("pdf") ||
+    type.includes("msword") ||
+    type.includes("officedocument") ||
+    type.includes("spreadsheet") ||
+    type.includes("presentation")
+  );
+}
+
+function truncateAttachmentText(text: string) {
+  return text.length > MAX_ATTACHMENT_TEXT_LENGTH
+    ? text.substring(0, MAX_ATTACHMENT_TEXT_LENGTH) +
+        `\n\n[文件过大，已截断。原文件大小: ${text.length} 字符]`
+    : text;
+}
+
+export async function readAttachmentFile(file: File): Promise<FileInfo> {
+  const lowerName = file.name.toLowerCase();
+  const type = file.type.toLowerCase();
+  let text = "";
+
+  if (isSvgFile(file)) {
+    text = await readFileAsText(file);
+  } else if (hasFileExtension(file, ["docx", "doc"]) || type.includes("word")) {
+    text = await readWordFile(file);
+  } else if (
+    hasFileExtension(file, ["pptx", "ppt"]) ||
+    type.includes("presentation") ||
+    type.includes("powerpoint")
+  ) {
+    text = await readPowerPointFile(file);
+  } else if (hasFileExtension(file, ["pdf"]) || type.includes("pdf")) {
+    text = await readPdfFile(file);
+  } else if (hasFileExtension(file, ["zip"]) || type.includes("zip")) {
+    text = await readZipFile(file);
+  } else if (
+    hasFileExtension(file, ["xlsx", "xls"]) ||
+    type.includes("spreadsheet") ||
+    type.includes("excel")
+  ) {
+    text = await readExcelFile(file);
+  } else if (lowerName === "dockerfile" || isSupportedAttachmentFile(file)) {
+    text = await readFileAsText(file);
+  } else {
+    throw new Error("不支持的文件类型");
+  }
+
+  return {
+    name: file.name || "粘贴的文件.txt",
+    type: file.type || getFileTypeByExtension(file.name),
+    size: file.size,
+    content: truncateAttachmentText(text),
+    originalFile: file,
+  };
+}
+
+export async function processAttachmentFiles(files: File[]) {
+  const fileInfos: FileInfo[] = [];
+  const imageUrls: string[] = [];
+
+  for (const file of files) {
+    try {
+      if (!isSupportedAttachmentFile(file)) {
+        showToast(`${file.name || "该文件"} 类型不支持`);
+        continue;
+      }
+
+      if (isAttachmentImage(file)) {
+        imageUrls.push(await uploadImageRemote(file));
+      } else {
+        fileInfos.push(await readAttachmentFile(file));
+      }
+    } catch (error: any) {
+      console.error(`读取文件 ${file.name} 失败:`, error);
+      showToast(`读取文件 ${file.name} 失败: ${error.message || "未知错误"}`);
+    }
+  }
+
+  return { fileInfos, imageUrls };
+}
+
 /**
  * 上传附件（包括图片和文件）
  * @param onStart 开始上传时的回调
@@ -968,8 +1256,7 @@ export function uploadAttachments(
 ): void {
   const fileInput = document.createElement("input");
   fileInput.type = "file";
-  fileInput.accept =
-    "image/png, image/jpeg, image/webp, image/heic, image/heif, .txt,.md,.js,.py,.html,.css,.json,.csv,.xml,.log,.docx,.doc,.pptx,.ppt,.pdf,.sh,.bash,.zsh,.sql,.ini,.conf,.yaml,.yml,.toml,.tex,.c,.cpp,.h,.hpp,.java,.cs,.go,.rs,.php,.rb,.pl,.swift,.kt,.ts,.jsx,.tsx,.vue,.scss,.less,.bat,.ps1,.r,.m,.ipynb,.zip,.csr,.key,.pem,.crt,.cer,.xlsx,.xls,.rdp,.svg,Dockerfile";
+  fileInput.accept = ATTACHMENT_ACCEPT;
   fileInput.multiple = true;
 
   fileInput.onchange = async (event: any) => {
@@ -981,70 +1268,9 @@ export function uploadAttachments(
 
     onStart();
     try {
-      const fileInfos: FileInfo[] = [];
-      const imageUrls: string[] = [];
-
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        try {
-          // 检查是否为图片文件
-          if (file.type.startsWith("image/") && !file.name.endsWith(".svg")) {
-            const imageUrl = await uploadImageRemote(file);
-            imageUrls.push(imageUrl);
-          } else {
-            // 处理文本文件，包括SVG
-            let text = "";
-
-            // SVG文件特殊处理
-            if (file.name.endsWith(".svg")) {
-              text = await readFileAsText(file);
-            } else if (
-              file.name.endsWith(".docx") ||
-              file.name.endsWith(".doc")
-            ) {
-              text = await readWordFile(file);
-            } else if (
-              file.name.endsWith(".pptx") ||
-              file.name.endsWith(".ppt")
-            ) {
-              text = await readPowerPointFile(file);
-            } else if (file.name.endsWith(".pdf")) {
-              text = await readPdfFile(file);
-            } else if (file.name.endsWith(".zip")) {
-              text = await readZipFile(file);
-            } else if (
-              file.name.endsWith(".xlsx") ||
-              file.name.endsWith(".xls")
-            ) {
-              text = await readExcelFile(file);
-            } else {
-              text = await readFileAsText(file);
-            }
-
-            // 限制文件大小，防止过大
-            const maxLength = 100000;
-            const truncatedText =
-              text.length > maxLength
-                ? text.substring(0, maxLength) +
-                  `\n\n[文件过大，已截断。原文件大小: ${text.length} 字符]`
-                : text;
-
-            // 构建文件信息对象
-            fileInfos.push({
-              name: file.name,
-              type: file.type || getFileTypeByExtension(file.name),
-              size: file.size,
-              content: truncatedText,
-              originalFile: file,
-            });
-          }
-        } catch (error: any) {
-          console.error(`读取文件 ${file.name} 失败:`, error);
-          showToast(
-            `读取文件 ${file.name} 失败: ${error.message || "未知错误"}`,
-          );
-        }
-      }
+      const { fileInfos, imageUrls } = await processAttachmentFiles(
+        Array.from(files),
+      );
 
       if (fileInfos.length > 0 || imageUrls.length > 0) {
         onSuccess(fileInfos, imageUrls);
@@ -1067,7 +1293,7 @@ export function uploadAttachments(
  * @param filename 文件名
  * @returns 文件类型
  */
-function getFileTypeByExtension(filename: string): string {
+export function getFileTypeByExtension(filename: string): string {
   // 特殊处理 Dockerfile（没有扩展名）
   if (filename.toLowerCase() === "dockerfile") {
     return "text/x-dockerfile";
@@ -1087,7 +1313,15 @@ function getFileTypeByExtension(filename: string): string {
     case "html":
       return "text/html";
     case "js":
+    case "mjs":
+    case "cjs":
       return "application/javascript";
+    case "lua":
+      return "text/x-lua";
+    case "luau":
+      return "text/x-luau";
+    case "as":
+      return "text/x-actionscript";
     case "css":
       return "text/css";
     case "json":
@@ -1152,6 +1386,25 @@ function getFileTypeByExtension(filename: string): string {
     case "scss":
     case "less":
       return "text/x-scss";
+    case "laya":
+    case "ls":
+    case "lh":
+    case "lmat":
+    case "ltc":
+      return "text/x-laya";
+    case "atlas":
+    case "ani":
+    case "sk":
+    case "part":
+    case "prefab":
+    case "scene":
+    case "fire":
+    case "cocos":
+    case "cc":
+    case "meta":
+    case "plist":
+    case "fnt":
+      return "text/x-game-asset";
     case "r":
       return "text/x-r";
     case "m":
@@ -1193,8 +1446,7 @@ export function uploadTextFile(
 ): void {
   const fileInput = document.createElement("input");
   fileInput.type = "file";
-  fileInput.accept =
-    ".txt,.md,.js,.py,.html,.css,.json,.csv,.xml,.log,.sh,.bash,.zsh,.sql,.ini,.conf,.yaml,.yml,.toml,.tex,.c,.cpp,.h,.hpp,.java,.cs,.go,.rs,.php,.rb,.pl,.swift,.kt,.ts,.jsx,.tsx,.vue,.scss,.less,.bat,.ps1,.r,.m,.ipynb,.csr,.key,.pem,.crt,.cer,.rdp,.svg,Dockerfile";
+  fileInput.accept = TEXT_ATTACHMENT_ACCEPT;
 
   fileInput.onchange = async (event: any) => {
     const file = event.target.files[0];
@@ -1292,12 +1544,16 @@ export function getFileIconClass(fileType: string): string {
   if (type.includes("x-php")) return "file-php";
   if (type.includes("x-ruby")) return "file-rb";
   if (type.includes("x-perl")) return "file-pl";
+  if (type.includes("x-lua") || type.includes("luau")) return "file-game-code";
+  if (type.includes("actionscript")) return "file-game-code";
   if (type.includes("x-swift")) return "file-swift";
   if (type.includes("x-kotlin")) return "file-kt";
   if (type.includes("x-typescript")) return "file-ts";
   if (type.includes("x-jsx")) return "file-jsx";
   if (type.includes("x-vue")) return "file-vue";
   if (type.includes("x-scss") || type.includes("less")) return "file-scss";
+  if (type.includes("x-laya") || type.includes("x-game-asset"))
+    return "file-game-code";
   if (type.includes("x-r")) return "file-r";
   if (type.includes("x-matlab")) return "file-m";
   if (type.includes("x-tex")) return "file-tex";

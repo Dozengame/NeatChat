@@ -73,8 +73,6 @@ import {
   safeLocalStorage,
 } from "../utils";
 
-import { uploadImage as uploadImageRemote } from "@/app/utils/chat";
-
 import dynamic from "next/dynamic";
 
 import { ChatControllerPool } from "../client/controller";
@@ -133,9 +131,10 @@ import { RealtimeChat } from "@/app/components/realtime-chat";
 import clsx from "clsx";
 import {
   FileInfo,
+  extractClipboardImageUrls,
   getFileIconClass,
+  processAttachmentFiles,
   uploadAttachments,
-  readFileAsText,
 } from "../utils/file";
 import { getAvailableClientsCount, isMcpEnabled } from "../mcp/actions";
 import { createConfigFieldMeta } from "../utils/public-app-config";
@@ -1256,6 +1255,7 @@ function _Chat() {
 
     // 检查是否有长文本需要转换为文件
     let finalUserInput = userInput;
+    const filesToSend = [...attachedFiles];
     const MAX_TEXT_LENGTH = 3000; // 最大文本长度
 
     if (userInput.length > MAX_TEXT_LENGTH) {
@@ -1270,8 +1270,7 @@ function _Chat() {
         }),
       };
 
-      // 添加到文件附件列表
-      setAttachedFiles([...attachedFiles, longTextFile]);
+      filesToSend.push(longTextFile);
 
       // 替换用户输入为提示信息
       finalUserInput = "我发送了一个长文本文件，内容已自动转换为附件。";
@@ -1281,8 +1280,8 @@ function _Chat() {
     }
 
     // 如果有附加文件，将文件信息添加到用户输入
-    if (attachedFiles.length > 0) {
-      const fileInfosText = attachedFiles
+    if (filesToSend.length > 0) {
+      const fileInfosText = filesToSend
         .map(
           (file) =>
             `文件名: ${file.name}\n类型: ${file.type}\n大小: ${(
@@ -1710,87 +1709,75 @@ function _Chat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function appendAttachments(fileInfos: FileInfo[], imageUrls: string[]) {
+    const messages: string[] = [];
+
+    if (fileInfos.length > 0) {
+      const remainingFileSlots = Math.max(0, 5 - attachedFiles.length);
+      const filesToAdd = fileInfos.slice(0, remainingFileSlots);
+
+      if (filesToAdd.length > 0) {
+        setAttachedFiles([...attachedFiles, ...filesToAdd]);
+        messages.push(`已添加 ${filesToAdd.length} 个文件`);
+      }
+
+      if (fileInfos.length > remainingFileSlots) {
+        messages.push("最多只能上传5个文件，已保留前5个");
+      }
+    }
+
+    if (imageUrls.length > 0) {
+      const remainingImageSlots = Math.max(0, 3 - attachImages.length);
+      const imagesToAdd = imageUrls.slice(0, remainingImageSlots);
+
+      if (imagesToAdd.length > 0) {
+        setAttachImages([...attachImages, ...imagesToAdd]);
+        messages.push(`已添加 ${imagesToAdd.length} 张图片`);
+      }
+
+      if (imageUrls.length > remainingImageSlots) {
+        messages.push("最多只能上传3张图片，已保留前3张");
+      }
+    }
+
+    if (messages.length > 0) {
+      showToast(messages.join("，"));
+    }
+  }
+
   const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    if (e.clipboardData && e.clipboardData.files.length > 0) {
-      // 处理粘贴的文件
-      e.preventDefault();
-
-      // 检查是否为图片
-      const imageFiles = Array.from(e.clipboardData.files).filter((file) =>
-        file.type.startsWith("image/"),
+    const clipboardData = e.clipboardData;
+    const filesFromList = Array.from(clipboardData?.files ?? []);
+    const filesFromItems = Array.from(clipboardData?.items ?? [])
+      .map((item) => (item.kind === "file" ? item.getAsFile() : null))
+      .filter((file): file is File => !!file);
+    const seenFiles = new Set<string>();
+    const pastedFiles = [...filesFromList, ...filesFromItems].filter((file) => {
+      const key = [file.name, file.type, file.size, file.lastModified].join(
+        ":",
       );
-
-      // 处理图片文件
-      if (imageFiles.length > 0) {
-        // 检查图片数量限制
-        if (attachImages.length >= 3) {
-          showToast("最多只能上传3张图片");
-          return;
-        }
-
-        setUploading(true);
-        try {
-          for (const file of imageFiles) {
-            if (attachImages.length < 3) {
-              const dataUrl = await uploadImageRemote(file);
-              setAttachImages([...attachImages, dataUrl]);
-            } else {
-              break; // 达到3张图片限制
-            }
-          }
-        } catch (error) {
-          console.error("上传图片失败:", error);
-          showToast("上传图片失败");
-        } finally {
-          setUploading(false);
-        }
-        return;
+      if (seenFiles.has(key)) {
+        return false;
       }
+      seenFiles.add(key);
+      return true;
+    });
+    const pastedImageUrls = extractClipboardImageUrls(clipboardData);
 
-      // 处理其他类型文件
-      const textFiles = Array.from(e.clipboardData.files);
-      if (textFiles.length > 0) {
-        // 检查文件数量限制
-        if (attachedFiles.length >= 5) {
-          showToast("最多只能上传5个文件");
-          return;
-        }
-
-        setUploading(true);
-        try {
-          for (const file of textFiles) {
-            if (attachedFiles.length < 5) {
-              // 读取文件内容
-              const text = await readFileAsText(file);
-              const maxLength = 100000;
-              const truncatedText =
-                text.length > maxLength
-                  ? text.substring(0, maxLength) +
-                    `\n\n[文件过大，已截断。原文件大小: ${text.length} 字符]`
-                  : text;
-
-              // 添加到附件列表
-              setAttachedFiles([
-                ...attachedFiles,
-                {
-                  name: file.name || "粘贴的文件.txt",
-                  type: file.type || "text/plain",
-                  size: file.size,
-                  content: truncatedText,
-                  originalFile: file,
-                },
-              ]);
-            } else {
-              break; // 达到5个文件限制
-            }
-          }
-        } catch (error) {
-          console.error("读取文件失败:", error);
-          showToast("读取文件失败");
-        } finally {
-          setUploading(false);
-        }
+    if (pastedFiles.length > 0 || pastedImageUrls.length > 0) {
+      e.preventDefault();
+      setUploading(true);
+      try {
+        const { fileInfos, imageUrls } =
+          await processAttachmentFiles(pastedFiles);
+        appendAttachments(fileInfos, [...imageUrls, ...pastedImageUrls]);
+      } catch (error) {
+        console.error("读取粘贴附件失败:", error);
+        showToast("读取粘贴附件失败");
+      } finally {
+        setUploading(false);
       }
+      return;
     } else {
       // 处理粘贴的文本
       const text = e.clipboardData.getData("text/plain");
@@ -1830,34 +1817,6 @@ function _Chat() {
     }
   };
 
-  async function uploadImage(file: File) {
-    const images: string[] = [];
-    images.push(...attachImages);
-
-    images.push(
-      ...(await new Promise<string[]>((res, rej) => {
-        setUploading(true);
-        const imagesData: string[] = [];
-        uploadImageRemote(file)
-          .then((dataUrl) => {
-            imagesData.push(dataUrl);
-            setUploading(false);
-            res(imagesData);
-          })
-          .catch((e) => {
-            setUploading(false);
-            rej(e);
-          });
-      })),
-    );
-
-    const imagesLength = images.length;
-    if (imagesLength > 3) {
-      images.splice(3, imagesLength - 3);
-    }
-    setAttachImages(images);
-  }
-
   // 修改上传附件的处理函数
   async function handleUploadAttachments() {
     // 从file.ts导入的新函数
@@ -1868,46 +1827,7 @@ function _Chat() {
       },
       // 上传成功
       (fileInfos, imageUrls) => {
-        let messages = [];
-
-        // 处理文件
-        if (fileInfos.length > 0) {
-          // 合并新上传的文件和已有的文件，最多保留5个
-          const updatedFiles = [...attachedFiles, ...fileInfos];
-          let actualFileCount = fileInfos.length;
-
-          if (updatedFiles.length > 5) {
-            actualFileCount = Math.max(0, 5 - attachedFiles.length);
-            updatedFiles.splice(5, updatedFiles.length - 5);
-            messages.push(`最多只能上传5个文件，已保留前5个`);
-          } else if (actualFileCount > 0) {
-            messages.push(`已上传 ${actualFileCount} 个文件`);
-          }
-          setAttachedFiles(updatedFiles);
-        }
-
-        // 处理图片
-        if (imageUrls.length > 0) {
-          const images = [...attachImages];
-          let actualImageCount = imageUrls.length;
-
-          images.push(...imageUrls);
-
-          // 最多保留3张图片
-          if (images.length > 3) {
-            actualImageCount = Math.max(0, 3 - attachImages.length);
-            images.splice(3, images.length - 3);
-            messages.push(`最多只能上传3张图片，已保留前3张`);
-          } else if (actualImageCount > 0) {
-            messages.push(`已上传 ${actualImageCount} 张图片`);
-          }
-          setAttachImages(images);
-        }
-
-        // 显示合并后的消息
-        if (messages.length > 0) {
-          showToast(messages.join("，"));
-        }
+        appendAttachments(fileInfos, imageUrls);
       },
       // 上传失败
       (error) => {

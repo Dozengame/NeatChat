@@ -39,7 +39,7 @@ describe("buildOpenAIResponsesPayload", () => {
       },
       {
         role: "assistant",
-        content: [{ type: "input_text", text: "Hi" }],
+        content: [{ type: "output_text", text: "Hi" }],
       },
     ]);
     expect(payload.max_output_tokens).toBe(12345);
@@ -57,7 +57,10 @@ describe("buildOpenAIResponsesPayload", () => {
           role: "user",
           content: [
             { type: "text", text: "Describe this" },
-            { type: "image_url", image_url: { url: "data:image/png;base64,aa" } },
+            {
+              type: "image_url",
+              image_url: { url: "data:image/png;base64,aa" },
+            },
           ],
         },
       ],
@@ -67,6 +70,41 @@ describe("buildOpenAIResponsesPayload", () => {
     expect(payload.input[0].content).toEqual([
       { type: "input_text", text: "Describe this" },
       { type: "input_image", image_url: "data:image/png;base64,aa" },
+    ]);
+  });
+
+  test("converts prior assistant messages to Responses output content", () => {
+    const payload = buildOpenAIResponsesPayload({
+      messages: [
+        { role: "user", content: "What is in this file?" },
+        {
+          role: "assistant",
+          content: [
+            { type: "text", text: "It contains a short note." },
+            {
+              type: "image_url",
+              image_url: { url: "data:image/png;base64,aa" },
+            },
+          ],
+        },
+        { role: "user", content: "Summarize it again." },
+      ],
+      modelConfig,
+    }) as any;
+
+    expect(payload.input).toEqual([
+      {
+        role: "user",
+        content: [{ type: "input_text", text: "What is in this file?" }],
+      },
+      {
+        role: "assistant",
+        content: [{ type: "output_text", text: "It contains a short note." }],
+      },
+      {
+        role: "user",
+        content: [{ type: "input_text", text: "Summarize it again." }],
+      },
     ]);
   });
 

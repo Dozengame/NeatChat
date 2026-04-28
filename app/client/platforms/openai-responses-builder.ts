@@ -19,12 +19,26 @@ export type ResponsesInputContent =
       image_url: string;
     };
 
+export type ResponsesOutputContent =
+  | {
+      type: "output_text";
+      text: string;
+    }
+  | {
+      type: "refusal";
+      refusal: string;
+    };
+
+export type ResponsesMessageContent =
+  | ResponsesInputContent
+  | ResponsesOutputContent;
+
 export interface ResponsesRequestPayload {
   input:
     | string
     | {
         role: "user" | "assistant";
-        content: ResponsesInputContent[];
+        content: ResponsesMessageContent[];
       }[];
   instructions?: string;
   stream?: boolean;
@@ -56,7 +70,7 @@ function contentToText(content: string | MultimodalContent[]) {
     .join("\n");
 }
 
-function toResponsesContent(content: string | MultimodalContent[]) {
+function toResponsesInputContent(content: string | MultimodalContent[]) {
   if (typeof content === "string") {
     return [
       {
@@ -87,6 +101,20 @@ function toResponsesContent(content: string | MultimodalContent[]) {
     .filter(Boolean) as ResponsesInputContent[];
 }
 
+function toResponsesOutputContent(content: string | MultimodalContent[]) {
+  const text = contentToText(content);
+  if (!text) {
+    return [];
+  }
+
+  return [
+    {
+      type: "output_text" as const,
+      text,
+    },
+  ];
+}
+
 function toResponsesInput(messages: ChatOptions["messages"]) {
   const instructions = messages
     .filter((message) => message.role === "system")
@@ -98,7 +126,10 @@ function toResponsesInput(messages: ChatOptions["messages"]) {
     .filter((message) => message.role !== "system")
     .map((message) => ({
       role: message.role as "user" | "assistant",
-      content: toResponsesContent(message.content),
+      content:
+        message.role === "assistant"
+          ? toResponsesOutputContent(message.content)
+          : toResponsesInputContent(message.content),
     }))
     .filter((message) => message.content.length > 0);
 
