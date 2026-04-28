@@ -176,8 +176,13 @@ function Screen() {
   } = accessStore;
   const isAccessControlled =
     !clientConfig?.isApp && accessStore.enabledAccessControl();
+  const shouldWaitForServerConfig =
+    accessStore._hasHydrated &&
+    !clientConfig?.isApp &&
+    !accessStore.hasFetchedServerConfig();
   const shouldRequireAccessCode =
     accessStore._hasHydrated &&
+    !shouldWaitForServerConfig &&
     isAccessControlled &&
     !accessStore.hasValidAccessCode();
 
@@ -208,7 +213,7 @@ function Screen() {
     validateAccessCode,
   ]);
 
-  if (!accessStore._hasHydrated) {
+  if (!accessStore._hasHydrated || shouldWaitForServerConfig) {
     return <Loading />;
   }
 

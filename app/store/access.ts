@@ -35,9 +35,13 @@ import {
   splitModelRef,
   type PublicAppConfig,
 } from "../utils/public-app-config";
-import { isAccessCodeValidatedToday } from "../utils/access-code-validation";
+import {
+  getAccessCodeValidationServerId,
+  isAccessCodeValidationCurrent,
+} from "../utils/access-code-validation";
 
 let isFetchingConfig = false;
+let hasFetchedConfig = false;
 
 const isApp = getClientConfig()?.buildMode === "export";
 
@@ -69,6 +73,7 @@ const DEFAULT_ACCESS_STATE = {
   accessCode: "",
   validatedAccessCode: "",
   accessCodeValidatedAt: 0,
+  accessCodeValidatedServerId: "",
   isValidatingAccessCode: false,
   accessCodeError: "",
   useCustomConfig: false,
@@ -268,8 +273,14 @@ function isAllowedModel(
 }
 
 export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
+  hasFetchedConfig = true;
+
   const oldSnapshot = useAppConfig.getState().serverConfigSnapshot;
-  if (oldSnapshot?.configHash === publicConfig.configHash) {
+  if (
+    oldSnapshot?.configHash === publicConfig.configHash &&
+    oldSnapshot?.configVersion === publicConfig.configVersion &&
+    oldSnapshot?.deploymentId === publicConfig.deploymentId
+  ) {
     useAccessStore.setState(() => publicConfigToAccessState(publicConfig));
     return;
   }
@@ -579,6 +590,7 @@ export const useAccessStore = createPersistStore(
         accessCode,
         validatedAccessCode: "",
         accessCodeValidatedAt: 0,
+        accessCodeValidatedServerId: "",
         accessCodeError: "",
         lastUpdateTime: Date.now(),
       } as Partial<ReturnType<typeof get>>);
@@ -589,6 +601,7 @@ export const useAccessStore = createPersistStore(
         accessCode: "",
         validatedAccessCode: "",
         accessCodeValidatedAt: 0,
+        accessCodeValidatedServerId: "",
         accessCodeError: "",
         lastUpdateTime: Date.now(),
       } as Partial<ReturnType<typeof get>>);
@@ -596,11 +609,13 @@ export const useAccessStore = createPersistStore(
 
     hasValidAccessCode() {
       const state = get();
-      return (
-        ensure(state, ["accessCode"]) &&
-        state.validatedAccessCode === state.accessCode &&
-        isAccessCodeValidatedToday(state.accessCodeValidatedAt)
-      );
+      return isAccessCodeValidationCurrent({
+        accessCode: state.accessCode,
+        validatedAccessCode: state.validatedAccessCode,
+        accessCodeValidatedAt: state.accessCodeValidatedAt,
+        accessCodeValidatedServerId: state.accessCodeValidatedServerId,
+        serverConfig: state.serverConfigSnapshot,
+      });
     },
 
     async validateAccessCode() {
@@ -610,6 +625,7 @@ export const useAccessStore = createPersistStore(
           accessCode: "",
           validatedAccessCode: "",
           accessCodeValidatedAt: 0,
+          accessCodeValidatedServerId: "",
           isValidatingAccessCode: false,
           accessCodeError: "invalid",
           lastUpdateTime: Date.now(),
@@ -632,8 +648,12 @@ export const useAccessStore = createPersistStore(
 
         if (ok) {
           set({
+            accessCode,
             validatedAccessCode: accessCode,
             accessCodeValidatedAt: Date.now(),
+            accessCodeValidatedServerId: getAccessCodeValidationServerId(
+              get().serverConfigSnapshot,
+            ),
             isValidatingAccessCode: false,
             accessCodeError: "",
             lastUpdateTime: Date.now(),
@@ -645,6 +665,7 @@ export const useAccessStore = createPersistStore(
           accessCode: "",
           validatedAccessCode: "",
           accessCodeValidatedAt: 0,
+          accessCodeValidatedServerId: "",
           isValidatingAccessCode: false,
           accessCodeError: res.status === 429 ? "rate_limited" : "invalid",
           lastUpdateTime: Date.now(),
@@ -668,8 +689,17 @@ export const useAccessStore = createPersistStore(
         (this.enabledAccessControl() && this.hasValidAccessCode())
       );
     },
+    hasFetchedServerConfig() {
+      return getClientConfig()?.buildMode === "export" || hasFetchedConfig;
+    },
     fetch() {
-      if (isFetchingConfig || getClientConfig()?.buildMode === "export") return;
+      if (
+        isFetchingConfig ||
+        hasFetchedConfig ||
+        getClientConfig()?.buildMode === "export"
+      ) {
+        return;
+      }
       isFetchingConfig = true;
       fetch("/api/config", {
         method: "post",

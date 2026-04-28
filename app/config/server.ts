@@ -30,6 +30,9 @@ declare global {
       WEBUI_ALLOWED_MODELS?: string; // comma separated model@Provider list
 
       VERCEL?: string;
+      VERCEL_DEPLOYMENT_ID?: string;
+      VERCEL_URL?: string;
+      VERCEL_GIT_COMMIT_SHA?: string;
       BUILD_MODE?: "standalone" | "export";
       BUILD_APP?: string; // is building desktop app
 

@@ -206,6 +206,18 @@ describe("OpenAI Responses config", () => {
     expect(headers.Expires).toBe("0");
   });
 
+  test("uses Vercel deployment id before git commit for public config identity", async () => {
+    process.env.VERCEL_DEPLOYMENT_ID = "dpl_new";
+    process.env.VERCEL_URL = "new-deployment.vercel.app";
+    process.env.VERCEL_GIT_COMMIT_SHA = "same-commit-sha";
+
+    const publicConfig = buildPublicAppConfig(
+      new Date("2026-04-28T00:00:00.000Z"),
+    );
+
+    expect(publicConfig.deploymentId).toBe("dpl_new");
+  });
+
   test("forces provider together with server default model", () => {
     expect(
       resolveServerModelConfig({
