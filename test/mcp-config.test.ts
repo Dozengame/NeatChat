@@ -6,6 +6,7 @@ import {
 import {
   JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
   JIMENG_MCP_SERVER_CONFIG,
+  normalizeJimengMcpRequest,
 } from "../app/mcp/jimeng";
 
 describe("MCP config", () => {
@@ -55,6 +56,31 @@ describe("MCP config", () => {
     expect(JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT).toContain(
       "dreamina_query_result",
     );
+    expect(JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT).toContain("poll 必须为 0");
+  });
+
+  test("forces Jimeng generation submits to stay non-blocking", () => {
+    expect(
+      normalizeJimengMcpRequest({
+        method: "tools/call",
+        params: {
+          name: "dreamina_text2image",
+          arguments: {
+            prompt: "cat",
+            poll: 60,
+          },
+        },
+      }),
+    ).toEqual({
+      method: "tools/call",
+      params: {
+        name: "dreamina_text2image",
+        arguments: {
+          prompt: "cat",
+          poll: 0,
+        },
+      },
+    });
   });
 
   test("resolves MCP headers from environment variables", () => {

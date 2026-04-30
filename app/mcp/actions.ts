@@ -17,6 +17,7 @@ import fs from "fs/promises";
 import path from "path";
 import { getServerSideConfig } from "../config/server";
 import { BUILTIN_MCP_CONFIG, mergeMcpConfig } from "./config";
+import { JIMENG_MCP_SERVER_ID, normalizeJimengMcpRequest } from "./jimeng";
 
 const logger = new MCPClientLogger("MCP Actions");
 const CONFIG_PATH = path.join(process.cwd(), "app/mcp/mcp_config.json");
@@ -367,12 +368,32 @@ export async function executeMcpAction(
   request: McpRequestMessage,
 ) {
   try {
-    const client = clientsMap.get(clientId);
+    let client = clientsMap.get(clientId);
+    if (!client?.client) {
+      const currentConfig = await getMcpConfigFromFile();
+      const serverConfig = currentConfig.mcpServers[clientId];
+      if (
+        clientId === JIMENG_MCP_SERVER_ID &&
+        getServerSideConfig().enableMcp &&
+        serverConfig
+      ) {
+        await initializeSingleClient(clientId, {
+          ...serverConfig,
+          status: "active",
+        });
+        client = clientsMap.get(clientId);
+      }
+    }
+
     if (!client?.client) {
       throw new Error(`Client ${clientId} not found`);
     }
     logger.info(`Executing request for [${clientId}]`);
-    return await executeRequest(client.client, request);
+    const requestToExecute =
+      clientId === JIMENG_MCP_SERVER_ID
+        ? normalizeJimengMcpRequest(request)
+        : request;
+    return await executeRequest(client.client, requestToExecute);
   } catch (error) {
     logger.error(`Failed to execute request for [${clientId}]: ${error}`);
     throw error;
