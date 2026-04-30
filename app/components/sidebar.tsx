@@ -10,8 +10,6 @@ import MaskIcon from "../icons/mask.svg";
 import DragIcon from "../icons/drag.svg";
 import DiscoveryIcon from "../icons/discovery.svg";
 import NeatIcon from "../icons/neat.svg";
-import McpIcon from "../icons/mcp.svg";
-import LoadingIcon from "../icons/three-dots.svg";
 
 import Locale from "../locales";
 
@@ -37,21 +35,6 @@ import { getClientConfig } from "../config/client";
 const ChatList = dynamic(async () => (await import("./chat-list")).ChatList, {
   loading: () => null,
 });
-
-const McpMarketPage = dynamic(
-  async () => (await import("./mcp-market")).McpMarketPage,
-  {
-    loading: () => <Loading noLogo />,
-  },
-);
-
-function Loading(props: { noLogo?: boolean }) {
-  return (
-    <div className="loading-content">
-      <LoadingIcon />
-    </div>
-  );
-}
 
 export function useHotKey() {
   const chatStore = useChatStore();
@@ -245,6 +228,18 @@ export function SideBar(props: { className?: string }) {
   const config = useAppConfig();
   const chatStore = useChatStore();
   const [mcpEnabled, setMcpEnabled] = useState(false);
+  const discoveryItems = useMemo(
+    () => [
+      ...(mcpEnabled
+        ? [{ title: Locale.Mcp.Name, value: Path.McpMarket }]
+        : []),
+      ...PLUGINS.map((item) => ({
+        title: item.name,
+        value: item.path,
+      })),
+    ],
+    [mcpEnabled],
+  );
 
   useEffect(() => {
     console.log("[Config] got config from build time", getClientConfig());
@@ -301,17 +296,6 @@ export function SideBar(props: { className?: string }) {
             }}
             shadow
           />
-          {mcpEnabled && (
-            <IconButton
-              icon={<McpIcon />}
-              text={shouldNarrow ? undefined : Locale.Mcp.Name}
-              className={styles["sidebar-bar-button"]}
-              onClick={() => {
-                navigate(Path.McpMarket, { state: { fromHome: true } });
-              }}
-              shadow
-            />
-          )}
           <IconButton
             icon={<DiscoveryIcon />}
             text={shouldNarrow ? undefined : Locale.Discovery.Name}
@@ -322,14 +306,7 @@ export function SideBar(props: { className?: string }) {
         </div>
         {showPluginSelector && (
           <SimpleSelector
-            items={[
-              ...PLUGINS.map((item) => {
-                return {
-                  title: item.name,
-                  value: item.path,
-                };
-              }),
-            ]}
+            items={discoveryItems}
             onClose={() => setShowPluginSelector(false)}
             onSelection={(s) => {
               navigate(s[0], { state: { fromHome: true } });

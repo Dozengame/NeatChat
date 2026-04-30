@@ -46,7 +46,12 @@ import {
   isMcpEnabled,
 } from "../mcp/actions";
 import { extractMcpJson, isMcpJson } from "../mcp/utils";
-import { formatMcpToolResultForChat } from "../mcp/display";
+import {
+  combineMcpToolResults,
+  formatMcpToolResultForChat,
+  getJimengQuerySubmitId,
+  mergeJimengResultIntoReply,
+} from "../mcp/display";
 import {
   JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
   JIMENG_MCP_SERVER_ID,
@@ -587,6 +592,7 @@ export const useChatStore = createPersistStore(
         options?: {
           mcpClientIds?: string[];
           systemPrompt?: string;
+          visibleMcpResult?: string;
         },
       ) {
         const session = get().ensureCurrentSessionSaved();
@@ -652,8 +658,13 @@ export const useChatStore = createPersistStore(
           },
           onFinish(message) {
             botMessage.streaming = false;
-            if (message) {
-              botMessage.content = message;
+            if (message || options?.visibleMcpResult) {
+              botMessage.content = options?.visibleMcpResult
+                ? mergeJimengResultIntoReply(
+                    message || "",
+                    options.visibleMcpResult,
+                  )
+                : message;
               botMessage.date = new Date().toLocaleString();
               get().onNewMessage(botMessage, session);
             }
@@ -1060,16 +1071,55 @@ export const useChatStore = createPersistStore(
               console.debug("[MCP Request]", mcpRequest);
 
               executeMcpAction(mcpRequest.clientId, mcpRequest.mcp)
-                .then((result) => {
+                .then(async (result) => {
                   console.log("[MCP Response]", result);
+                  let resultForChat = result;
+                  const querySubmitId =
+                    mcpRequest.clientId === JIMENG_MCP_SERVER_ID
+                      ? getJimengQuerySubmitId(result)
+                      : undefined;
+
+                  if (querySubmitId) {
+                    try {
+                      const queryResult = await executeMcpAction(
+                        JIMENG_MCP_SERVER_ID,
+                        {
+                          method: "tools/call",
+                          params: {
+                            name: "dreamina_query_result",
+                            arguments: {
+                              submit_id: querySubmitId,
+                              download: true,
+                            },
+                          },
+                        },
+                      );
+                      console.log("[MCP Query Response]", queryResult);
+                      resultForChat = combineMcpToolResults(
+                        result,
+                        queryResult,
+                      );
+                    } catch (error) {
+                      console.warn(
+                        "[MCP] Failed to query Jimeng result",
+                        error,
+                      );
+                    }
+                  }
+
+                  const formattedResult = formatMcpToolResultForChat(
+                    mcpRequest.clientId,
+                    resultForChat,
+                  );
                   get().onUserInput(
-                    formatMcpToolResultForChat(mcpRequest.clientId, result),
+                    formattedResult,
                     [],
                     true,
                     mcpRequest.clientId === JIMENG_MCP_SERVER_ID
                       ? {
                           mcpClientIds: [JIMENG_MCP_SERVER_ID],
                           systemPrompt: JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
+                          visibleMcpResult: formattedResult,
                         }
                       : undefined,
                   );

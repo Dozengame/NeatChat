@@ -32,6 +32,7 @@ import CancelIcon from "../icons/cancel.svg";
 import FileIcon from "../icons/file.svg";
 import AttachmentIcon from "../icons/attachment.svg";
 import ImageIcon from "../icons/image.svg";
+import DownloadIcon from "../icons/download.svg";
 
 import LightIcon from "../icons/light.svg";
 import DarkIcon from "../icons/dark.svg";
@@ -146,6 +147,13 @@ import {
   JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
   JIMENG_MCP_SERVER_ID,
 } from "../mcp/jimeng";
+import { isMcpJson } from "../mcp/utils";
+import {
+  formatJimengMcpRequestForChat,
+  hasJimengDisplayableImage,
+  mergeJimengProgressWithResult,
+  mergeJimengResultIntoReply,
+} from "../mcp/display";
 
 import { ImageEditor } from "./image-editor";
 
@@ -153,9 +161,244 @@ const localStorage = safeLocalStorage();
 
 const ttsPlayer = createTTSPlayer();
 
+function getImageDownloadName(src: string) {
+  const fallbackName = "generated-image.png";
+  const decodeFileName = (fileName: string) => {
+    try {
+      return decodeURIComponent(fileName);
+    } catch {
+      return fileName;
+    }
+  };
+
+  try {
+    const url = new URL(src, window.location.href);
+    const fileName = url.pathname.split("/").filter(Boolean).pop();
+    return fileName ? decodeFileName(fileName) : fallbackName;
+  } catch {
+    const fileName = src.split("/").filter(Boolean).pop()?.split("?")[0];
+    return fileName ? decodeFileName(fileName) : fallbackName;
+  }
+}
+
+function isJimengPublicImage(src: string) {
+  try {
+    const url = new URL(src, window.location.href);
+    return (
+      url.protocol === "https:" &&
+      url.hostname === "123.207.69.230" &&
+      url.pathname.startsWith("/jimeng-media/")
+    );
+  } catch {
+    return false;
+  }
+}
+
+function getDownloadSource(src: string) {
+  if (!isJimengPublicImage(src)) {
+    return src;
+  }
+
+  return `/api/image-download?url=${encodeURIComponent(src)}`;
+}
+
+function triggerFileDownload(url: string, fileName: string) {
+  if (!url) return;
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function isMobileSaveTarget() {
+  return (
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    window.matchMedia?.("(pointer: coarse)").matches
+  );
+}
+
+async function shareImageFile(blob: Blob, fileName: string) {
+  const nav = navigator as Navigator & {
+    canShare?: (data: ShareData) => boolean;
+    share?: (data: ShareData) => Promise<void>;
+  };
+  const file = new File([blob], fileName, {
+    type: blob.type || "image/png",
+  });
+  const shareData: ShareData = {
+    files: [file],
+    title: fileName,
+  };
+
+  if (!nav.share || !nav.canShare?.(shareData)) {
+    return false;
+  }
+
+  await nav.share(shareData);
+  return true;
+}
+
+async function downloadImage(src: string) {
+  if (!src) return;
+
+  const fileName = getImageDownloadName(src);
+  const downloadSource = getDownloadSource(src);
+
+  try {
+    const response = await fetch(downloadSource);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    if (isMobileSaveTarget()) {
+      try {
+        if (await shareImageFile(blob, fileName)) {
+          return;
+        }
+      } catch (error) {
+        if ((error as Error)?.name === "AbortError") {
+          return;
+        }
+        console.warn("[Image Download] Failed to share image", error);
+      }
+    }
+
+    const objectUrl = URL.createObjectURL(blob);
+    triggerFileDownload(objectUrl, fileName);
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  } catch (error) {
+    console.warn("[Image Download] Falling back to direct link", error);
+    showToast("无法直接保存图片，已打开原图");
+    triggerFileDownload(src, fileName);
+  }
+}
+
+function MessageImagePreview(props: {
+  src: string;
+  alt?: string;
+  className: string;
+  onPreview: (src: string) => void;
+  onDownload: (src: string) => void | Promise<void>;
+}) {
+  return (
+    <span className={styles["chat-message-image-frame"]}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        className={props.className}
+        src={props.src}
+        alt={props.alt ?? ""}
+        onClick={() => props.onPreview(props.src)}
+      />
+      <button
+        type="button"
+        className={styles["chat-message-image-download"]}
+        aria-label="下载原图"
+        title="下载原图"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          props.onDownload(props.src);
+        }}
+      >
+        <DownloadIcon />
+      </button>
+    </span>
+  );
+}
+
 const Markdown = dynamic(async () => (await import("./markdown")).Markdown, {
   loading: () => <LoadingIcon />,
 });
+
+type RenderMessage = ChatMessage & { preview?: boolean };
+
+function getVisibleChatMessages(messages: RenderMessage[]) {
+  let pendingJimengResult: string | undefined;
+  let pendingJimengProgressIndex: number | undefined;
+
+  const visibleMessages = messages.reduce<RenderMessage[]>(
+    (visibleMessages, message) => {
+      const textContent = getMessageTextContent(message);
+
+      if (message.isMcpResponse) {
+        if (pendingJimengProgressIndex !== undefined) {
+          visibleMessages[pendingJimengProgressIndex] = {
+            ...visibleMessages[pendingJimengProgressIndex],
+            content: mergeJimengProgressWithResult(
+              getMessageTextContent(
+                visibleMessages[pendingJimengProgressIndex],
+              ),
+              textContent,
+              { includeImages: false },
+            ),
+          };
+          pendingJimengResult = textContent;
+          return visibleMessages;
+        }
+
+        if (hasJimengDisplayableImage(textContent)) {
+          pendingJimengResult = textContent;
+        }
+        return visibleMessages;
+      }
+
+      if (message.role === "assistant" && isMcpJson(textContent)) {
+        const jimengProgress = formatJimengMcpRequestForChat(textContent);
+        if (jimengProgress) {
+          pendingJimengProgressIndex = visibleMessages.length;
+          visibleMessages.push({
+            ...message,
+            content: jimengProgress,
+          });
+        }
+        return visibleMessages;
+      }
+
+      if (message.role === "assistant" && pendingJimengResult) {
+        const mergedContent = mergeJimengResultIntoReply(
+          textContent,
+          pendingJimengResult,
+        );
+        pendingJimengResult = undefined;
+        pendingJimengProgressIndex = undefined;
+
+        if (mergedContent !== textContent) {
+          visibleMessages.push({
+            ...message,
+            content: mergedContent,
+          });
+          return visibleMessages;
+        }
+      }
+
+      visibleMessages.push(message);
+      return visibleMessages;
+    },
+    [],
+  );
+
+  if (
+    pendingJimengProgressIndex !== undefined &&
+    pendingJimengResult !== undefined
+  ) {
+    visibleMessages[pendingJimengProgressIndex] = {
+      ...visibleMessages[pendingJimengProgressIndex],
+      content: mergeJimengProgressWithResult(
+        getMessageTextContent(visibleMessages[pendingJimengProgressIndex]),
+        pendingJimengResult,
+        { includeImages: true },
+      ),
+    };
+  }
+
+  return visibleMessages;
+}
 
 export function SessionConfigModel(props: { onClose: () => void }) {
   const chatStore = useChatStore();
@@ -1168,8 +1411,6 @@ export function ShortcutKeyModal(props: { onClose: () => void }) {
 }
 
 function _Chat() {
-  type RenderMessage = ChatMessage & { preview?: boolean };
-
   const chatStore = useChatStore();
   const session = chatStore.currentSession();
   const config = useAppConfig();
@@ -1629,8 +1870,12 @@ function _Chat() {
 
   // preview messages
   const renderMessages = useMemo(() => {
+    const visibleSessionMessages = getVisibleChatMessages(
+      session.messages as RenderMessage[],
+    );
+
     return context
-      .concat(session.messages as RenderMessage[])
+      .concat(visibleSessionMessages)
       .concat(
         isLoading
           ? [
@@ -2032,11 +2277,26 @@ function _Chat() {
 
   // 在_Chat组件中添加状态
   const [editingImage, setEditingImage] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // 在_Chat组件中添加状态，记录当前编辑图片所属的消息ID
   const [editingImageMessageId, setEditingImageMessageId] = useState<
     string | null
   >(null);
+
+  useEffect(() => {
+    if (!previewImage) return;
+
+    const closePreview = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setPreviewImage(null);
+      }
+    };
+
+    window.addEventListener("keydown", closePreview);
+    return () => window.removeEventListener("keydown", closePreview);
+  }, [previewImage]);
+
   const showInputReasoningAction = isOpenAIGpt5OrNewerModelConfig({
     model: session.mask.modelConfig.model,
     providerName: session.mask.modelConfig.providerName,
@@ -2291,16 +2551,15 @@ function _Chat() {
                           defaultShow={i >= messages.length - 6}
                           isUser={isUser}
                           messageId={message.id}
+                          onPreviewImage={setPreviewImage}
+                          onDownloadImage={downloadImage}
                         />
                         {getMessageImages(message).length == 1 && (
-                          <img
+                          <MessageImagePreview
                             className={styles["chat-message-item-image"]}
                             src={getMessageImages(message)[0]}
-                            alt=""
-                            onClick={() => {
-                              setEditingImage(getMessageImages(message)[0]);
-                              setEditingImageMessageId(message.id); // 保存图片所属的消息ID
-                            }}
+                            onPreview={setPreviewImage}
+                            onDownload={downloadImage}
                           />
                         )}
                         {getMessageImages(message).length > 1 && (
@@ -2315,17 +2574,14 @@ function _Chat() {
                           >
                             {getMessageImages(message).map((image, index) => {
                               return (
-                                <img
+                                <MessageImagePreview
                                   className={
                                     styles["chat-message-item-image-multi"]
                                   }
                                   key={index}
                                   src={image}
-                                  alt=""
-                                  onClick={() => {
-                                    setEditingImage(image);
-                                    setEditingImageMessageId(message.id); // 保存图片所属的消息ID
-                                  }}
+                                  onPreview={setPreviewImage}
+                                  onDownload={downloadImage}
                                 />
                               );
                             })}
@@ -2661,6 +2917,47 @@ function _Chat() {
               />
             </div>
           </Modal>
+        </div>
+      )}
+
+      {previewImage && (
+        <div
+          className={styles["image-preview-mask"]}
+          role="dialog"
+          aria-modal="true"
+          aria-label="图片预览"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className={styles["image-preview-toolbar"]}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles["image-preview-button"]}
+              aria-label="下载原图"
+              title="下载原图"
+              onClick={() => downloadImage(previewImage)}
+            >
+              <DownloadIcon />
+            </button>
+            <button
+              type="button"
+              className={styles["image-preview-button"]}
+              aria-label="关闭预览"
+              title="关闭预览"
+              onClick={() => setPreviewImage(null)}
+            >
+              <CancelIcon />
+            </button>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className={styles["image-preview-image"]}
+            src={previewImage}
+            alt="图片预览"
+            onClick={(event) => event.stopPropagation()}
+          />
         </div>
       )}
 

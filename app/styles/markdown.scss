@@ -128,7 +128,7 @@ summary,
       -webkit-user-select: none;
       display: inline-block;
       -webkit-tap-highlight-color: transparent;
-      
+
       &:hover {
         color: rgb(49, 94, 248);
 
@@ -142,7 +142,7 @@ summary,
       }
 
       &::before {
-        content: '▶';
+        content: "▶";
         display: inline-block;
         margin-right: 0.5em;
         transition: transform 0.2s;
@@ -194,7 +194,7 @@ summary,
       }
     }
 
-    blockquote, 
+    blockquote,
     > p > blockquote {
       margin: 0;
       padding-left: 1.5em;
@@ -203,7 +203,7 @@ summary,
       font-size: 0.9em;
 
       &::before {
-        content: '';
+        content: "";
         position: absolute;
         left: calc(0.45em - 1px);
         top: 0;
@@ -330,6 +330,76 @@ summary,
   max-width: 100%;
   box-sizing: content-box;
   background-color: var(--color-canvas-default);
+}
+
+.markdown-body .markdown-image-frame {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+  vertical-align: top;
+
+  &:hover,
+  &:focus-within {
+    .markdown-image-download {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+  }
+}
+
+.markdown-body img.markdown-image-preview {
+  box-sizing: border-box;
+  border-radius: 10px;
+  border: rgba($color: #888, $alpha: 0.2) 1px solid;
+  cursor: zoom-in;
+  display: block;
+}
+
+.markdown-body .markdown-image-download {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba($color: #fff, $alpha: 0.34);
+  border-radius: 999px;
+  background: rgba($color: #000, $alpha: 0.64);
+  box-shadow: 0 8px 24px rgba($color: #000, $alpha: 0.24);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    background 0.18s ease;
+
+  &:hover {
+    background: rgba($color: #000, $alpha: 0.78);
+  }
+
+  svg {
+    width: 17px;
+    height: 17px;
+    filter: invert(1);
+  }
+}
+
+@media (hover: none), (max-width: 600px) {
+  .markdown-body .markdown-image-download {
+    width: 36px;
+    height: 36px;
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
 }
 
 .markdown-body code,
@@ -476,8 +546,14 @@ summary,
 .markdown-body kbd {
   display: inline-block;
   padding: 3px 5px;
-  font: 11px ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas,
-    Liberation Mono, monospace;
+  font:
+    11px ui-monospace,
+    SFMono-Regular,
+    SF Mono,
+    Menlo,
+    Consolas,
+    Liberation Mono,
+    monospace;
   line-height: 10px;
   color: var(--color-fg-default);
   vertical-align: middle;
@@ -566,16 +642,28 @@ summary,
 .markdown-body tt,
 .markdown-body code,
 .markdown-body samp {
-  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas,
-    Liberation Mono, monospace;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    SF Mono,
+    Menlo,
+    Consolas,
+    Liberation Mono,
+    monospace;
   font-size: 12px;
 }
 
 .markdown-body pre {
   margin-top: 0;
   margin-bottom: 0;
-  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas,
-    Liberation Mono, monospace;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    SF Mono,
+    Menlo,
+    Consolas,
+    Liberation Mono,
+    monospace;
   font-size: 12px;
   word-wrap: normal;
 }
@@ -1252,11 +1340,18 @@ summary,
 .markdown-body-container {
   position: relative;
   width: 100%;
-  
+
   .token-info {
-    font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+    font-family:
+      ui-monospace,
+      SFMono-Regular,
+      SF Mono,
+      Menlo,
+      Consolas,
+      Liberation Mono,
+      monospace;
     transition: opacity 0.3s ease;
-    
+
     &:hover {
       opacity: 1 !important;
     }

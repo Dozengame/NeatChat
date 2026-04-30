@@ -11,6 +11,7 @@ import { copyToClipboard, useWindowSize } from "../utils";
 import mermaid from "mermaid";
 import Locale from "../locales";
 import LoadingIcon from "../icons/three-dots.svg";
+import DownloadIcon from "../icons/download.svg";
 import React from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { showImageModal, showToast } from "./ui-lib";
@@ -406,7 +407,16 @@ ${quotedContent}
   });
 }
 
-function _MarkDownContent(props: { content: string }) {
+type MarkdownImageActionProps = {
+  onPreviewImage?: (src: string) => void;
+  onDownloadImage?: (src: string) => void | Promise<void>;
+};
+
+function _MarkDownContent(
+  props: {
+    content: string;
+  } & MarkdownImageActionProps,
+) {
   // 检测文件附件格式
   const detectFileAttachments = (content: string) => {
     const fileRegex =
@@ -626,6 +636,49 @@ function _MarkDownContent(props: { content: string }) {
         },
         pre: PreCode,
         code: CustomCode,
+        img: (imgProps) => {
+          const src =
+            typeof imgProps.src === "string" ? imgProps.src.trim() : "";
+          const alt = typeof imgProps.alt === "string" ? imgProps.alt : "";
+
+          if (!src || (!props.onPreviewImage && !props.onDownloadImage)) {
+            return (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img {...imgProps} alt={alt} />
+            );
+          }
+
+          return (
+            <span className="markdown-image-frame">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                {...imgProps}
+                alt={alt}
+                src={src}
+                className="markdown-image-preview"
+                onClick={(event) => {
+                  event.preventDefault();
+                  props.onPreviewImage?.(src);
+                }}
+              />
+              {props.onDownloadImage && (
+                <button
+                  type="button"
+                  className="markdown-image-download"
+                  aria-label="下载原图"
+                  title="下载原图"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    props.onDownloadImage?.(src);
+                  }}
+                >
+                  <DownloadIcon />
+                </button>
+              )}
+            </span>
+          );
+        },
         p: (pProps) => <p {...pProps} dir="auto" />,
         details: Details,
         summary: Summary,
@@ -648,7 +701,8 @@ export function Markdown(
     defaultShow?: boolean;
     isUser?: boolean;
     messageId?: string;
-  } & React.DOMAttributes<HTMLDivElement>,
+  } & MarkdownImageActionProps &
+    React.DOMAttributes<HTMLDivElement>,
 ) {
   const mdRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -821,7 +875,11 @@ export function Markdown(
         {props.loading ? (
           <LoadingIcon />
         ) : (
-          <MarkdownContent content={props.content} />
+          <MarkdownContent
+            content={props.content}
+            onPreviewImage={props.onPreviewImage}
+            onDownloadImage={props.onDownloadImage}
+          />
         )}
       </div>
 
