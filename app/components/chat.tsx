@@ -150,6 +150,7 @@ import {
 import { isMcpJson } from "../mcp/utils";
 import {
   formatJimengMcpRequestForChat,
+  formatPendingMcpRequestForChat,
   hasJimengDisplayableImage,
   mergeJimengProgressWithResult,
   mergeJimengResultIntoReply,
@@ -358,6 +359,17 @@ function getVisibleChatMessages(messages: RenderMessage[]) {
           });
         }
         return visibleMessages;
+      }
+
+      if (message.role === "assistant" && message.streaming) {
+        const pendingMcpProgress = formatPendingMcpRequestForChat(textContent);
+        if (pendingMcpProgress) {
+          visibleMessages.push({
+            ...message,
+            content: pendingMcpProgress,
+          });
+          return visibleMessages;
+        }
       }
 
       if (message.role === "assistant" && pendingJimengResult) {

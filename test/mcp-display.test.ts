@@ -1,6 +1,7 @@
 import {
   combineMcpToolResults,
   formatJimengMcpRequestForChat,
+  formatPendingMcpRequestForChat,
   formatMcpToolResultForChat,
   getJimengQuerySubmitId,
   hasJimengDisplayableImage,
@@ -41,6 +42,25 @@ describe("formatMcpToolResultForChat", () => {
     expect(formatted).toContain("正在提交到 jimeng-mcp");
     expect(formatted).not.toContain("```json:mcp");
     expect(formatted).not.toContain('"method"');
+  });
+
+  test("turns streaming jimeng MCP request fragments into stable progress text", () => {
+    const formatted = formatPendingMcpRequestForChat(
+      "```json:mcp:jimeng-mcp\n{\"method\"",
+    );
+
+    expect(formatted).toContain("图片生成任务");
+    expect(formatted).toContain("正在准备提交到 jimeng-mcp");
+    expect(formatted).not.toContain("```json:mcp");
+    expect(formatted).not.toContain('"method"');
+  });
+
+  test("hides generic MCP request fragments before the client id is complete", () => {
+    const formatted = formatPendingMcpRequestForChat("```json:mcp");
+
+    expect(formatted).toContain("工具调用");
+    expect(formatted).toContain("正在准备执行工具");
+    expect(formatted).not.toContain("```json:mcp");
   });
 
   test("renders markdown_images as markdown image lines", () => {
@@ -324,8 +344,8 @@ describe("formatMcpToolResultForChat", () => {
     expect(updatedProgress).toContain("优化后的 Prompt：");
     expect(updatedProgress).toContain("当前进度：");
     expect(updatedProgress).toContain("状态：生成中");
-    expect(updatedProgress).toContain("原始状态：querying");
-    expect(updatedProgress).toContain("任务 ID：submit-1");
+    expect(updatedProgress).not.toContain("原始状态：querying");
+    expect(updatedProgress).not.toContain("任务 ID：submit-1");
     expect(updatedProgress).not.toContain("command:");
     expect(updatedProgress).not.toContain("stdout:");
   });

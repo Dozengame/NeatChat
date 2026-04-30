@@ -369,6 +369,20 @@ export function formatJimengMcpRequestForChat(content: string) {
     .join("\n\n");
 }
 
+export function formatPendingMcpRequestForChat(content: string) {
+  if (!content.includes("```json:mcp")) {
+    return undefined;
+  }
+
+  if (!content.includes(`json:mcp:${JIMENG_MCP_SERVER_ID}`)) {
+    return ["工具调用", "当前进度：\n- 状态：正在准备执行工具"].join("\n\n");
+  }
+
+  return ["图片生成任务", "当前进度：\n- 状态：正在准备提交到 jimeng-mcp"].join(
+    "\n\n",
+  );
+}
+
 export function mergeJimengProgressWithResult(
   progressText: string,
   result: unknown,
@@ -378,7 +392,6 @@ export function mergeJimengProgressWithResult(
     JIMENG_MCP_SERVER_ID,
     result,
   );
-  const submitId = getLastSubmitId(formattedResult);
   const genStatus = getLastGenStatus(formattedResult);
   const errorDetails = extractErrorDetails(formattedResult);
   const imageMarkdown = options.includeImages
@@ -386,8 +399,6 @@ export function mergeJimengProgressWithResult(
     : "";
   const progressLines = [
     `- 状态：${getJimengStatusLabel(genStatus)}`,
-    genStatus ? `- 原始状态：${genStatus}` : "",
-    submitId ? `- 任务 ID：${submitId}` : "",
     ...errorDetails.map((detail) => `- ${detail}`),
   ];
 

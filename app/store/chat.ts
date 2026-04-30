@@ -48,16 +48,17 @@ import {
 import { extractMcpJson, isMcpJson } from "../mcp/utils";
 import {
   combineMcpToolResults,
+  formatJimengMcpRequestForChat,
   formatMcpToolResultForChat,
   getJimengQuerySubmitId,
+  mergeJimengProgressWithResult,
   mergeJimengResultIntoReply,
 } from "../mcp/display";
-import {
-  JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
-  JIMENG_MCP_SERVER_ID,
-} from "../mcp/jimeng";
+import { JIMENG_MCP_SERVER_ID } from "../mcp/jimeng";
 
 const localStorage = safeLocalStorage();
+const JIMENG_RESULT_POLL_INTERVAL_MS = 3000;
+const JIMENG_RESULT_MAX_POLLS = 40;
 
 export type ChatMessageTool = {
   id: string;
@@ -128,6 +129,10 @@ function refreshEmptySessionCustomInstructions(session: ChatSession) {
   if (session.messages.length === 0) {
     session.customInstructions = getCurrentCustomInstructions();
   }
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function createEmptySession(): ChatSession {
@@ -579,7 +584,7 @@ export const useChatStore = createPersistStore(
 
         // 使用缓存的MCP状态进行检查
         if (mcpCache.enabled) {
-          get().checkMcpJson(message);
+          get().checkMcpJson(message, targetSession);
         }
 
         get().summarizeSession(false, targetSession);
@@ -1059,7 +1064,7 @@ export const useChatStore = createPersistStore(
         });
       },
       /** check if the message contains MCP JSON and execute the MCP action */
-      checkMcpJson(message: ChatMessage) {
+      checkMcpJson(message: ChatMessage, targetSession?: ChatSession) {
         // 直接使用缓存的MCP状态
         if (!mcpCache.enabled) return;
 
@@ -1070,17 +1075,50 @@ export const useChatStore = createPersistStore(
             if (mcpRequest) {
               console.debug("[MCP Request]", mcpRequest);
 
-              executeMcpAction(mcpRequest.clientId, mcpRequest.mcp)
-                .then(async (result) => {
-                  console.log("[MCP Response]", result);
-                  let resultForChat = result;
-                  const querySubmitId =
-                    mcpRequest.clientId === JIMENG_MCP_SERVER_ID
-                      ? getJimengQuerySubmitId(result)
-                      : undefined;
+              if (mcpRequest.clientId === JIMENG_MCP_SERVER_ID) {
+                const progressText =
+                  formatJimengMcpRequestForChat(content) ||
+                  "图片生成任务\n\n当前进度：\n- 状态：正在提交到 jimeng-mcp";
+                const updateJimengMessage = (nextContent: string) => {
+                  get().updateTargetSession(
+                    targetSession ?? get().currentSession(),
+                    (session) => {
+                      const targetMessage = session.messages.find(
+                        (item) => item.id === message.id,
+                      );
+                      if (targetMessage) {
+                        targetMessage.content = nextContent;
+                        targetMessage.streaming = false;
+                        targetMessage.date = new Date().toLocaleString();
+                      }
+                      session.messages = session.messages.concat();
+                      session.lastUpdate = Date.now();
+                    },
+                  );
+                };
 
-                  if (querySubmitId) {
-                    try {
+                updateJimengMessage(progressText);
+
+                executeMcpAction(mcpRequest.clientId, mcpRequest.mcp)
+                  .then(async (result) => {
+                    console.log("[MCP Response]", result);
+                    let resultForChat = result;
+                    let querySubmitId = getJimengQuerySubmitId(resultForChat);
+                    updateJimengMessage(
+                      mergeJimengProgressWithResult(
+                        progressText,
+                        resultForChat,
+                        { includeImages: !querySubmitId },
+                      ),
+                    );
+
+                    let pollCount = 0;
+                    while (
+                      querySubmitId &&
+                      pollCount < JIMENG_RESULT_MAX_POLLS
+                    ) {
+                      pollCount += 1;
+                      await delay(JIMENG_RESULT_POLL_INTERVAL_MS);
                       const queryResult = await executeMcpAction(
                         JIMENG_MCP_SERVER_ID,
                         {
@@ -1096,33 +1134,60 @@ export const useChatStore = createPersistStore(
                       );
                       console.log("[MCP Query Response]", queryResult);
                       resultForChat = combineMcpToolResults(
-                        result,
+                        resultForChat,
                         queryResult,
                       );
-                    } catch (error) {
-                      console.warn(
-                        "[MCP] Failed to query Jimeng result",
-                        error,
+                      querySubmitId = getJimengQuerySubmitId(resultForChat);
+                      updateJimengMessage(
+                        mergeJimengProgressWithResult(
+                          progressText,
+                          resultForChat,
+                          { includeImages: !querySubmitId },
+                        ),
                       );
                     }
-                  }
 
+                    if (querySubmitId) {
+                      updateJimengMessage(
+                        mergeJimengProgressWithResult(
+                          progressText,
+                          combineMcpToolResults(
+                            resultForChat,
+                            [
+                              "gen_status: timeout",
+                              "error_message: 结果查询超时，请稍后重试",
+                            ].join("\n"),
+                          ),
+                          { includeImages: false },
+                        ),
+                      );
+                    }
+                  })
+                  .catch((error) => {
+                    console.warn("[MCP] Failed to run Jimeng task", error);
+                    updateJimengMessage(
+                      mergeJimengProgressWithResult(
+                        progressText,
+                        [
+                          "gen_status: failed",
+                          "error_message: 任务提交或查询失败，请稍后重试",
+                        ].join("\n"),
+                        { includeImages: false },
+                      ),
+                    );
+                    showToast("图片生成失败");
+                  });
+                return;
+              }
+
+              executeMcpAction(mcpRequest.clientId, mcpRequest.mcp)
+                .then(async (result) => {
+                  console.log("[MCP Response]", result);
                   const formattedResult = formatMcpToolResultForChat(
                     mcpRequest.clientId,
-                    resultForChat,
+                    result,
                   );
-                  get().onUserInput(
-                    formattedResult,
-                    [],
-                    true,
-                    mcpRequest.clientId === JIMENG_MCP_SERVER_ID
-                      ? {
-                          mcpClientIds: [JIMENG_MCP_SERVER_ID],
-                          systemPrompt: JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
-                          visibleMcpResult: formattedResult,
-                        }
-                      : undefined,
-                  );
+                  get().onUserInput(formattedResult, [], true);
                 })
                 .catch((error) => showToast("MCP execution failed", error));
             }
