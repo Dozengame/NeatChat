@@ -6,6 +6,10 @@ import { getClientConfig } from "../config/client";
 import yaml from "js-yaml";
 import { adapter, getOperationId } from "../utils";
 import { useAccessStore } from "./access";
+import {
+  getRetiredDefaultPluginIds,
+  isRetiredDefaultPluginId,
+} from "../utils/plugin-defaults";
 
 const isApp = getClientConfig()?.isApp !== false;
 
@@ -209,6 +213,7 @@ export const usePluginStore = createPersistStore(
     getAsTools(ids: string[]) {
       const plugins = get().plugins;
       const selected = (ids || [])
+        .filter((id) => !isRetiredDefaultPluginId(id))
         .map((id) => plugins[id])
         .filter((i) => i)
         .map((p) => FunctionToolService.add(p));
@@ -222,9 +227,9 @@ export const usePluginStore = createPersistStore(
       return get().plugins[id ?? 1145141919810];
     },
     getAll() {
-      return Object.values(get().plugins).sort(
-        (a, b) => b.createdAt - a.createdAt,
-      );
+      return Object.values(get().plugins)
+        .sort((a, b) => b.createdAt - a.createdAt)
+        .filter((plugin) => !isRetiredDefaultPluginId(plugin.id));
     },
   }),
   {
@@ -240,6 +245,15 @@ export const usePluginStore = createPersistStore(
         fetch("./plugins.json")
           .then((res) => res.json())
           .then((res) => {
+            const activeDefaultPluginIds = new Set<string>(
+              res.map((item: any) => String(item.id)),
+            );
+
+            getRetiredDefaultPluginIds(
+              state.plugins,
+              activeDefaultPluginIds,
+            ).forEach((id) => state.delete(id));
+
             Promise.all(
               res
                 .filter((item: any) => !state.get(item.id))

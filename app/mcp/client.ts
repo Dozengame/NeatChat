@@ -3,18 +3,34 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { MCPClientLogger } from "./logger";
 import { ListToolsResponse, McpRequestMessage, ServerConfig } from "./types";
 import { z } from "zod";
+import { resolveConfigHeaders } from "./config";
 
 const logger = new MCPClientLogger();
 
-export async function createClient(
-  id: string,
-  config: ServerConfig,
-): Promise<Client> {
-  logger.info(`Creating client for ${id}...`);
+async function createTransport(id: string, config: ServerConfig) {
+  if (config.type === "streamable-http" || config.url) {
+    if (!config.url) {
+      throw new Error(`Missing remote URL for MCP client [${id}]`);
+    }
 
-  const transport = new StdioClientTransport({
+    const { StreamableHTTPClientTransport } = await import(
+      "@modelcontextprotocol/sdk/client/streamableHttp.js"
+    );
+
+    return new StreamableHTTPClientTransport(new URL(config.url), {
+      requestInit: {
+        headers: resolveConfigHeaders(config.headers, id),
+      },
+    });
+  }
+
+  if (!config.command) {
+    throw new Error(`Missing command for MCP client [${id}]`);
+  }
+
+  return new StdioClientTransport({
     command: config.command,
-    args: config.args,
+    args: config.args ?? [],
     env: {
       ...Object.fromEntries(
         Object.entries(process.env)
@@ -24,6 +40,15 @@ export async function createClient(
       ...(config.env || {}),
     },
   });
+}
+
+export async function createClient(
+  id: string,
+  config: ServerConfig,
+): Promise<Client> {
+  logger.info(`Creating client for ${id}...`);
+
+  const transport = await createTransport(id, config);
 
   const client = new Client(
     {

@@ -111,10 +111,14 @@ export interface ServerStatusResponse {
 
 // MCP 服务器配置相关类型
 export interface ServerConfig {
-  command: string;
-  args: string[];
+  type?: "stdio" | "streamable-http";
+  command?: string;
+  args?: string[];
+  url?: string;
+  headers?: Record<string, string>;
   env?: Record<string, string>;
   status?: "active" | "paused" | "error";
+  chatDefaultEnabled?: boolean;
 }
 
 export interface McpConfigData {
@@ -154,10 +158,25 @@ export interface PresetServer {
   tags: string[];
 
   // MCP Server 的命令
-  command: string;
+  command?: string;
 
   // MCP Server 的参数
-  baseArgs: string[];
+  baseArgs?: string[];
+
+  // MCP Server 的连接方式
+  type?: "stdio" | "streamable-http";
+
+  // MCP Server 的远程地址
+  url?: string;
+
+  // MCP Server 的远程请求头
+  headers?: Record<string, string>;
+
+  // MCP Server 的默认状态
+  status?: "active" | "paused" | "error";
+
+  // 是否默认暴露给聊天
+  chatDefaultEnabled?: boolean;
 
   // MCP Server 是否需要配置
   configurable: boolean;

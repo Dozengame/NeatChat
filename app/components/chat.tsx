@@ -31,6 +31,7 @@ import ConfirmIcon from "../icons/confirm.svg";
 import CancelIcon from "../icons/cancel.svg";
 import FileIcon from "../icons/file.svg";
 import AttachmentIcon from "../icons/attachment.svg";
+import ImageIcon from "../icons/image.svg";
 
 import LightIcon from "../icons/light.svg";
 import DarkIcon from "../icons/dark.svg";
@@ -45,7 +46,6 @@ import PluginIcon from "../icons/plugin.svg";
 import ShortcutkeyIcon from "../icons/shortcutkey.svg";
 import ReloadIcon from "../icons/reload.svg";
 import HeadphoneIcon from "../icons/headphone.svg";
-import McpToolIcon from "../icons/tool.svg";
 import {
   ChatMessage,
   SubmitKey,
@@ -136,8 +136,16 @@ import {
   processAttachmentFiles,
   uploadAttachments,
 } from "../utils/file";
-import { getAvailableClientsCount, isMcpEnabled } from "../mcp/actions";
+import {
+  activateMcpClient,
+  deactivateMcpClient,
+  isMcpEnabled,
+} from "../mcp/actions";
 import { createConfigFieldMeta } from "../utils/public-app-config";
+import {
+  JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
+  JIMENG_MCP_SERVER_ID,
+} from "../mcp/jimeng";
 
 import { ImageEditor } from "./image-editor";
 
@@ -392,6 +400,7 @@ export function ChatAction(props: {
   text: string;
   icon: JSX.Element;
   onClick: () => void;
+  active?: boolean;
 }) {
   const iconRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -413,7 +422,9 @@ export function ChatAction(props: {
 
   return (
     <div
-      className={clsx(styles["chat-input-action"], "clickable")}
+      className={clsx(styles["chat-input-action"], "clickable", {
+        [styles["chat-input-action-active"]]: props.active,
+      })}
       onClick={() => {
         props.onClick();
         setTimeout(updateWidth, 1);
@@ -481,10 +492,11 @@ export function ChatActions(props: {
   setShowShortcutKeyModal: React.Dispatch<React.SetStateAction<boolean>>;
   setUserInput: (input: string) => void;
   setShowChatSidePanel: React.Dispatch<React.SetStateAction<boolean>>;
+  imageGenerationEnabled: boolean;
+  setImageGenerationEnabled: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const config = useAppConfig();
   const accessStore = useAccessStore();
-  const navigate = useNavigate();
   const chatStore = useChatStore();
   const pluginStore = usePluginStore();
   const session = chatStore.currentSession();
@@ -525,6 +537,8 @@ export function ChatActions(props: {
   }, [models, currentModel, currentProviderName]);
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [showPluginSelector, setShowPluginSelector] = useState(false);
+  const [showImageGenerationSelector, setShowImageGenerationSelector] =
+    useState(false);
   const [showUploadImage, setShowUploadImage] = useState(false);
 
   const [showSizeSelector, setShowSizeSelector] = useState(false);
@@ -591,6 +605,53 @@ export function ChatActions(props: {
   ]);
 
   const showModelSearchOption = config.enableModelSearch ?? false;
+  const availablePlugins = pluginStore
+    .getAll()
+    .filter((item) => item?.title?.trim() && item?.content?.trim());
+  const pluginSelectorItems = [
+    ...(currentModel === "gemini-2.0-flash-exp"
+      ? [
+          {
+            title: Locale.Plugin.EnableWeb,
+            value: "googleSearch",
+          },
+        ]
+      : []),
+    ...availablePlugins.map((item) => ({
+      title: `${item?.title}@${item?.version}`,
+      value: item?.id,
+    })),
+  ];
+  const shouldShowPluginAction =
+    showPlugins(currentProviderName, currentModel) &&
+    pluginSelectorItems.length > 0;
+  const setImageGenerationMode = async (enabled: boolean) => {
+    if (enabled) {
+      const mcpEnabled = await isMcpEnabled();
+      if (!mcpEnabled) {
+        showToast("图片生成未启用");
+        return;
+      }
+
+      try {
+        await activateMcpClient(JIMENG_MCP_SERVER_ID);
+        chatStore.resetMcpCache();
+      } catch (error) {
+        showToast(error instanceof Error ? error.message : "图片生成启用失败");
+        return;
+      }
+    } else {
+      try {
+        await deactivateMcpClient(JIMENG_MCP_SERVER_ID);
+      } catch (error) {
+        console.warn("[MCP] Failed to deactivate Jimeng MCP", error);
+      }
+      chatStore.resetMcpCache();
+    }
+
+    props.setImageGenerationEnabled(enabled);
+    showToast(enabled ? "已启用图片生成" : "已关闭图片生成");
+  };
 
   return (
     <div className={styles["chat-input-actions"]}>
@@ -808,43 +869,57 @@ export function ChatActions(props: {
           />
         )}
 
-        {showPlugins(currentProviderName, currentModel) && (
+        {shouldShowPluginAction && (
           <ChatAction
-            onClick={() => {
-              if (currentModel === "gemini-2.0-flash-exp") {
-                setShowPluginSelector(true);
-              } else if (pluginStore.getAll().length === 0) {
-                navigate(Path.Plugins);
-              } else {
-                setShowPluginSelector(true);
-              }
-            }}
+            onClick={() => setShowPluginSelector(true)}
             text={Locale.Plugin.Name}
             icon={<PluginIcon />}
           />
         )}
         {showPluginSelector && (
           <SimpleMultipleSelector
-            items={[
-              ...(currentModel === "gemini-2.0-flash-exp"
-                ? [
-                    {
-                      title: Locale.Plugin.EnableWeb,
-                      value: "googleSearch",
-                    },
-                  ]
-                : []),
-              ...pluginStore.getAll().map((item) => ({
-                title: `${item?.title}@${item?.version}`,
-                value: item?.id,
-              })),
-            ]}
+            items={pluginSelectorItems}
             defaultSelectedValue={chatStore.currentSession().mask?.plugin}
             onClose={() => setShowPluginSelector(false)}
             onSelection={(s) => {
               chatStore.updateTargetSession(session, (session) => {
                 session.mask.plugin = s;
               });
+            }}
+            showSearch={false}
+          />
+        )}
+
+        <ChatAction
+          active={props.imageGenerationEnabled}
+          onClick={() => setShowImageGenerationSelector(true)}
+          text="图片生成"
+          icon={<ImageIcon />}
+        />
+        {showImageGenerationSelector && (
+          <Selector
+            defaultSelectedValue={
+              props.imageGenerationEnabled ? "enabled" : "disabled"
+            }
+            items={[
+              {
+                title: "启用图片生成",
+                subTitle: "后续消息会优先调用 jimeng-mcp 生成图片",
+                value: "enabled",
+                icon: <ImageIcon />,
+              },
+              {
+                title: "关闭图片生成",
+                subTitle: "后续消息按普通聊天处理",
+                value: "disabled",
+                icon: <ImageIcon />,
+              },
+            ]}
+            onClose={() => setShowImageGenerationSelector(false)}
+            onSelection={(selection) => {
+              const selected = selection[0];
+              if (!selected) return;
+              setImageGenerationMode(selected === "enabled");
             }}
             showSearch={false}
           />
@@ -1140,6 +1215,7 @@ function _Chat() {
   const [uploading, setUploading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<FileInfo[]>([]);
+  const [imageGenerationEnabled, setImageGenerationEnabled] = useState(false);
 
   // prompt hints
   const promptStore = usePromptStore();
@@ -1305,7 +1381,17 @@ function _Chat() {
 
     setIsLoading(true);
     chatStore
-      .onUserInput(finalUserInput, attachImages)
+      .onUserInput(
+        finalUserInput,
+        attachImages,
+        false,
+        imageGenerationEnabled
+          ? {
+              mcpClientIds: [JIMENG_MCP_SERVER_ID],
+              systemPrompt: JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
+            }
+          : undefined,
+      )
       .then(() => setIsLoading(false));
 
     setAttachImages([]);
@@ -1940,33 +2026,6 @@ function _Chat() {
     setAttachedFiles(attachedFiles.filter((_, i) => i !== index));
   }
 
-  const MCPAction = () => {
-    const [count, setCount] = useState<number>(0);
-    const [mcpEnabled, setMcpEnabled] = useState(false);
-
-    useEffect(() => {
-      const checkMcpStatus = async () => {
-        const enabled = await isMcpEnabled();
-        setMcpEnabled(enabled);
-        if (enabled) {
-          const count = await getAvailableClientsCount();
-          setCount(count);
-        }
-      };
-      checkMcpStatus();
-    }, []);
-
-    if (!mcpEnabled) return null;
-
-    return (
-      <ChatAction
-        onClick={() => navigate(Path.McpMarket)}
-        text={`MCP${count ? ` (${count})` : ""}`}
-        icon={<McpToolIcon />}
-      />
-    );
-  };
-
   // 在 _Chat 组件内添加新状态
   const [editingFile, setEditingFile] = useState<FileInfo | null>(null);
   const [showFileEditModal, setShowFileEditModal] = useState(false);
@@ -2366,6 +2425,8 @@ function _Chat() {
               setShowShortcutKeyModal={setShowShortcutKeyModal}
               setUserInput={setUserInput}
               setShowChatSidePanel={setShowChatSidePanel}
+              imageGenerationEnabled={imageGenerationEnabled}
+              setImageGenerationEnabled={setImageGenerationEnabled}
             />
             <label
               className={clsx(styles["chat-input-panel-inner"], {

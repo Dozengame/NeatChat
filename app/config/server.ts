@@ -105,6 +105,7 @@ declare global {
       DEFAULT_INPUT_TEMPLATE?: string;
 
       ENABLE_MCP?: string; // enable mcp functionality
+      JIMENG_MCP_TOKEN?: string; // Jimeng MCP bearer token
     }
   }
 }
@@ -235,6 +236,10 @@ export const getServerSideConfig = () => {
     ? parseEnvBoolean(process.env.HIDE_BALANCE_QUERY)
     : !parseEnvBoolean(process.env.ENABLE_BALANCE_QUERY);
 
+  const enableMcp = process.env.ENABLE_MCP
+    ? parseEnvBoolean(process.env.ENABLE_MCP)
+    : !!process.env.JIMENG_MCP_TOKEN;
+
   return {
     baseUrl: process.env.BASE_URL,
     apiKey: getApiKey(process.env.OPENAI_API_KEY),
@@ -324,6 +329,6 @@ export const getServerSideConfig = () => {
     defaultModel,
     defaultTemperature,
     allowedWebDavEndpoints,
-    enableMcp: process.env.ENABLE_MCP === "true",
+    enableMcp,
   };
 };

@@ -17,9 +17,14 @@ import {
 import fs from "fs/promises";
 import path from "path";
 import { getServerSideConfig } from "../config/server";
+import { mergeMcpConfig } from "./config";
 
 const logger = new MCPClientLogger("MCP Actions");
 const CONFIG_PATH = path.join(process.cwd(), "app/mcp/mcp_config.json");
+const DEFAULT_CONFIG_PATH = path.join(
+  process.cwd(),
+  "app/mcp/mcp_config.default.json",
+);
 
 const clientsMap = new Map<string, McpClientData>();
 
@@ -39,12 +44,12 @@ export async function getClientsStatus(): Promise<
       continue;
     }
 
-    if (serverConfig.status === "paused") {
-      result[clientId] = { status: "paused", errorMsg: null };
-      continue;
-    }
-
     if (!status) {
+      if (serverConfig.status === "paused") {
+        result[clientId] = { status: "paused", errorMsg: null };
+        continue;
+      }
+
       result[clientId] = { status: "undefined", errorMsg: null };
       continue;
     }
@@ -118,24 +123,23 @@ async function initializeSingleClient(
     errorMsg: null, // null 表示正在初始化
   });
 
-  // 异步初始化
-  createClient(clientId, serverConfig)
-    .then(async (client) => {
-      const tools = await listTools(client);
-      logger.info(
-        `Supported tools for [${clientId}]: ${JSON.stringify(tools, null, 2)}`,
-      );
-      clientsMap.set(clientId, { client, tools, errorMsg: null });
-      logger.success(`Client [${clientId}] initialized successfully`);
-    })
-    .catch((error) => {
-      clientsMap.set(clientId, {
-        client: null,
-        tools: null,
-        errorMsg: error instanceof Error ? error.message : String(error),
-      });
-      logger.error(`Failed to initialize client [${clientId}]: ${error}`);
+  try {
+    const client = await createClient(clientId, serverConfig);
+    const tools = await listTools(client);
+    logger.info(
+      `Supported tools for [${clientId}]: ${JSON.stringify(tools, null, 2)}`,
+    );
+    clientsMap.set(clientId, { client, tools, errorMsg: null });
+    logger.success(`Client [${clientId}] initialized successfully`);
+  } catch (error) {
+    clientsMap.set(clientId, {
+      client: null,
+      tools: null,
+      errorMsg: error instanceof Error ? error.message : String(error),
     });
+    logger.error(`Failed to initialize client [${clientId}]: ${error}`);
+    throw error;
+  }
 }
 
 // 初始化系统
@@ -190,6 +194,35 @@ export async function addMcpServer(clientId: string, config: ServerConfig) {
     logger.error(`Failed to add server [${clientId}]: ${error}`);
     throw error;
   }
+}
+
+export async function activateMcpClient(clientId: string) {
+  const currentConfig = await getMcpConfigFromFile();
+  const serverConfig = currentConfig.mcpServers[clientId];
+  if (!serverConfig) {
+    throw new Error(`Server ${clientId} not found`);
+  }
+
+  const currentClient = clientsMap.get(clientId);
+  if (currentClient?.client && !currentClient.errorMsg) {
+    return getClientsStatus();
+  }
+
+  await initializeSingleClient(clientId, {
+    ...serverConfig,
+    status: "active",
+  });
+
+  return getClientsStatus();
+}
+
+export async function deactivateMcpClient(clientId: string) {
+  const client = clientsMap.get(clientId);
+  if (client?.client) {
+    await removeClient(client.client);
+  }
+  clientsMap.delete(clientId);
+  return getClientsStatus();
 }
 
 // 暂停服务器
@@ -353,12 +386,23 @@ export async function executeMcpAction(
 
 // 获取 MCP 配置文件
 export async function getMcpConfigFromFile(): Promise<McpConfigData> {
+  let defaultConfig = DEFAULT_MCP_CONFIG;
+
+  try {
+    const defaultConfigStr = await fs.readFile(DEFAULT_CONFIG_PATH, "utf-8");
+    defaultConfig = JSON.parse(defaultConfigStr);
+  } catch (error) {
+    logger.error(`Failed to load default MCP config: ${error}`);
+  }
+
   try {
     const configStr = await fs.readFile(CONFIG_PATH, "utf-8");
-    return JSON.parse(configStr);
+    return mergeMcpConfig(defaultConfig, JSON.parse(configStr));
   } catch (error) {
-    logger.error(`Failed to load MCP config, using default config: ${error}`);
-    return DEFAULT_MCP_CONFIG;
+    if ((error as NodeJS.ErrnoException)?.code !== "ENOENT") {
+      logger.error(`Failed to load MCP config, using default config: ${error}`);
+    }
+    return defaultConfig;
   }
 }
 

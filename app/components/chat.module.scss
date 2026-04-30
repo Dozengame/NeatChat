@@ -113,6 +113,18 @@
       }
     }
 
+    &-active {
+      width: var(--full-width);
+      border-color: rgba(49, 94, 248, 0.52);
+      background-color: rgba(49, 94, 248, 0.16);
+      color: var(--primary);
+
+      .text {
+        opacity: 1;
+        transform: translate(0);
+      }
+    }
+
     .text,
     .icon {
       display: flex;

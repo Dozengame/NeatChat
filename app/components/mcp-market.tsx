@@ -42,6 +42,34 @@ interface ConfigProperty {
   minItems?: number;
 }
 
+function buildServerConfigFromPreset(preset: PresetServer): ServerConfig {
+  if (preset.type === "streamable-http" || preset.url) {
+    if (!preset.url) {
+      throw new Error("Missing MCP server URL");
+    }
+
+    return {
+      type: "streamable-http",
+      url: preset.url,
+      ...(preset.headers ? { headers: preset.headers } : {}),
+      ...(preset.status ? { status: preset.status } : {}),
+      ...(preset.chatDefaultEnabled !== undefined
+        ? { chatDefaultEnabled: preset.chatDefaultEnabled }
+        : {}),
+    };
+  }
+
+  if (!preset.command) {
+    throw new Error("Missing MCP server command");
+  }
+
+  return {
+    type: "stdio",
+    command: preset.command,
+    args: [...(preset.baseArgs ?? [])],
+  };
+}
+
 export function McpMarketPage() {
   const navigate = useNavigate();
   const [mcpEnabled, setMcpEnabled] = useState(false);
@@ -151,10 +179,10 @@ export function McpMarketPage() {
           if (mapping.type === "spread") {
             // For spread types, extract the array from args.
             const startPos = mapping.position ?? 0;
-            userConfig[key] = currentConfig.args.slice(startPos);
+            userConfig[key] = (currentConfig.args ?? []).slice(startPos);
           } else if (mapping.type === "single") {
             // For single types, get a single value
-            userConfig[key] = currentConfig.args[mapping.position ?? 0];
+            userConfig[key] = (currentConfig.args ?? [])[mapping.position ?? 0];
           } else if (
             mapping.type === "env" &&
             mapping.key &&
@@ -191,7 +219,7 @@ export function McpMarketPage() {
     try {
       updateLoadingState(savingServerId, "Updating configuration...");
       // 构建服务器配置
-      const args = [...preset.baseArgs];
+      const args = [...(preset.baseArgs ?? [])];
       const env: Record<string, string> = {};
 
       Object.entries(preset.argsMapping || {}).forEach(([key, mapping]) => {
@@ -214,8 +242,14 @@ export function McpMarketPage() {
       });
 
       const serverConfig: ServerConfig = {
+        type: preset.type ?? "stdio",
         command: preset.command,
         args,
+        ...(preset.url ? { url: preset.url } : {}),
+        ...(preset.headers ? { headers: preset.headers } : {}),
+        ...(preset.chatDefaultEnabled !== undefined
+          ? { chatDefaultEnabled: preset.chatDefaultEnabled }
+          : {}),
         ...(Object.keys(env).length > 0 ? { env } : {}),
       };
 
@@ -267,10 +301,7 @@ export function McpMarketPage() {
         const serverId = preset.id;
         updateLoadingState(serverId, "Creating MCP client...");
 
-        const serverConfig: ServerConfig = {
-          command: preset.command,
-          args: [...preset.baseArgs],
-        };
+        const serverConfig = buildServerConfigFromPreset(preset);
         const newConfig = await addMcpServer(preset.id, serverConfig);
         setConfig(newConfig);
         // 重置MCP缓存

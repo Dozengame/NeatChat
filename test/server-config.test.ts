@@ -158,6 +158,16 @@ describe("OpenAI Responses config", () => {
     expect(config.hideUserApiKey).toBe(true);
   });
 
+  test("enables MCP when Jimeng token is configured", () => {
+    delete process.env.ENABLE_MCP;
+    process.env.JIMENG_MCP_TOKEN = "test-jimeng-token";
+
+    expect(getServerSideConfig().enableMcp).toBe(true);
+
+    process.env.ENABLE_MCP = "false";
+    expect(getServerSideConfig().enableMcp).toBe(false);
+  });
+
   test("keeps ENABLE_BALANCE_QUERY compatibility", () => {
     delete process.env.HIDE_BALANCE_QUERY;
     process.env.ENABLE_BALANCE_QUERY = "1";

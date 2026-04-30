@@ -41,10 +41,16 @@ import { createEmptyMask, Mask } from "./mask";
 import {
   executeMcpAction,
   getAllTools,
+  getMcpConfigFromFile,
   getClientsStatus,
   isMcpEnabled,
 } from "../mcp/actions";
 import { extractMcpJson, isMcpJson } from "../mcp/utils";
+import { formatMcpToolResultForChat } from "../mcp/display";
+import {
+  JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
+  JIMENG_MCP_SERVER_ID,
+} from "../mcp/jimeng";
 
 const localStorage = safeLocalStorage();
 
@@ -234,22 +240,35 @@ function fillTemplateWith(input: string, modelConfig: ModelConfig) {
 let mcpCache: {
   enabled: boolean | null;
   systemPrompt: string;
+  scopedSystemPrompts: Record<string, string>;
 } = {
   enabled: null,
   systemPrompt: "",
+  scopedSystemPrompts: {},
 };
 
 // 修改getMcpSystemPrompt函数，只包含活跃状态的工具
-async function getMcpSystemPrompt(forceRefresh = false): Promise<string> {
+async function getMcpSystemPrompt(
+  forceRefresh = false,
+  clientIds?: string[],
+): Promise<string> {
+  const scopedClientIds = clientIds?.filter(Boolean).sort() ?? [];
+  const scopedKey = scopedClientIds.join(",");
   // 如果已有缓存且不强制刷新，直接返回
-  if (mcpCache.systemPrompt && !forceRefresh) {
+  if (!scopedKey && mcpCache.systemPrompt && !forceRefresh) {
     return mcpCache.systemPrompt;
+  }
+  if (scopedKey && mcpCache.scopedSystemPrompts[scopedKey] && !forceRefresh) {
+    return mcpCache.scopedSystemPrompts[scopedKey];
   }
 
   // 获取所有工具
   const tools = await getAllTools();
   // 获取所有客户端状态
   const clientStatuses = await getClientsStatus();
+  const config = await getMcpConfigFromFile();
+  const allowedClientIds =
+    scopedClientIds.length > 0 ? new Set(scopedClientIds) : undefined;
 
   let toolsStr = "";
   let hasActiveTools = false;
@@ -257,10 +276,18 @@ async function getMcpSystemPrompt(forceRefresh = false): Promise<string> {
   tools.forEach((i) => {
     // 跳过没有工具的客户端
     if (!i.tools) return;
+    if (allowedClientIds && !allowedClientIds.has(i.clientId)) return;
 
     // 检查客户端状态，只包含活跃状态的客户端
     const clientStatus = clientStatuses[i.clientId];
     if (clientStatus && clientStatus.status === "active") {
+      if (
+        !allowedClientIds &&
+        config.mcpServers[i.clientId]?.chatDefaultEnabled === false
+      ) {
+        return;
+      }
+
       hasActiveTools = true;
       toolsStr += MCP_TOOLS_TEMPLATE.replace(
         "{{ clientId }}",
@@ -278,7 +305,11 @@ async function getMcpSystemPrompt(forceRefresh = false): Promise<string> {
     : "";
 
   // 更新缓存
-  mcpCache.systemPrompt = prompt;
+  if (scopedKey) {
+    mcpCache.scopedSystemPrompts[scopedKey] = prompt;
+  } else {
+    mcpCache.systemPrompt = prompt;
+  }
   return prompt;
 }
 
@@ -313,6 +344,7 @@ function resetMcpCache() {
   mcpCache = {
     enabled: null,
     systemPrompt: "",
+    scopedSystemPrompts: {},
   };
   // 立即开始预加载新的系统提示
   checkMcpEnabledAndPreloadPrompt();
@@ -552,6 +584,10 @@ export const useChatStore = createPersistStore(
         content: string,
         attachImages?: string[],
         isMcpResponse?: boolean,
+        options?: {
+          mcpClientIds?: string[];
+          systemPrompt?: string;
+        },
       ) {
         const session = get().ensureCurrentSessionSaved();
         const modelConfig = session.mask.modelConfig;
@@ -584,7 +620,7 @@ export const useChatStore = createPersistStore(
         });
 
         // get recent messages
-        const recentMessages = await get().getMessagesWithMemory();
+        const recentMessages = await get().getMessagesWithMemory(options);
         const sendMessages = recentMessages.concat(userMessage);
         const messageIndex = session.messages.length + 1;
 
@@ -683,7 +719,10 @@ export const useChatStore = createPersistStore(
         }
       },
 
-      async getMessagesWithMemory() {
+      async getMessagesWithMemory(options?: {
+        mcpClientIds?: string[];
+        systemPrompt?: string;
+      }) {
         // 确保MCP状态已初始化
         if (mcpCache.enabled === null) {
           await checkMcpEnabledAndPreloadPrompt();
@@ -706,7 +745,13 @@ export const useChatStore = createPersistStore(
 
         // 直接使用缓存的MCP状态
         const mcpEnabled = mcpCache.enabled;
-        const mcpSystemPrompt = mcpEnabled ? mcpCache.systemPrompt : "";
+        const mcpSystemPrompt = mcpEnabled
+          ? await getMcpSystemPrompt(false, options?.mcpClientIds)
+          : "";
+        const extraSystemPrompt = options?.systemPrompt?.trim() ?? "";
+        const composedMcpSystemPrompt = [mcpSystemPrompt, extraSystemPrompt]
+          .filter(Boolean)
+          .join("\n\n");
         const customInstructions = session.customInstructions?.trim() ?? "";
 
         var systemPrompts: ChatMessage[] = [];
@@ -719,20 +764,20 @@ export const useChatStore = createPersistStore(
           });
 
           // 只有当有默认系统提示词或MCP系统提示词时才添加系统消息
-          if (defaultSystemPrompt || mcpSystemPrompt) {
+          if (defaultSystemPrompt || composedMcpSystemPrompt) {
             systemPrompts = [
               createMessage({
                 role: "system",
-                content: defaultSystemPrompt + mcpSystemPrompt,
+                content: defaultSystemPrompt + composedMcpSystemPrompt,
               }),
             ];
           }
-        } else if (mcpEnabled && mcpSystemPrompt) {
+        } else if (mcpEnabled && composedMcpSystemPrompt) {
           // 只有当MCP启用且有MCP系统提示词时才添加系统消息
           systemPrompts = [
             createMessage({
               role: "system",
-              content: mcpSystemPrompt,
+              content: composedMcpSystemPrompt,
             }),
           ];
         }
@@ -1017,14 +1062,16 @@ export const useChatStore = createPersistStore(
               executeMcpAction(mcpRequest.clientId, mcpRequest.mcp)
                 .then((result) => {
                   console.log("[MCP Response]", result);
-                  const mcpResponse =
-                    typeof result === "object"
-                      ? JSON.stringify(result)
-                      : String(result);
                   get().onUserInput(
-                    `\`\`\`json:mcp-response:${mcpRequest.clientId}\n${mcpResponse}\n\`\`\``,
+                    formatMcpToolResultForChat(mcpRequest.clientId, result),
                     [],
                     true,
+                    mcpRequest.clientId === JIMENG_MCP_SERVER_ID
+                      ? {
+                          mcpClientIds: [JIMENG_MCP_SERVER_ID],
+                          systemPrompt: JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
+                        }
+                      : undefined,
                   );
                 })
                 .catch((error) => showToast("MCP execution failed", error));

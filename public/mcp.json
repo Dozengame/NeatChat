@@ -1,6 +1,21 @@
 {
   "data": [
     {
+      "id": "jimeng-mcp",
+      "name": "Jimeng MCP",
+      "description": "Remote Jimeng MCP image generation service",
+      "tags": ["jimeng", "image", "generation", "remote"],
+      "repo": "",
+      "type": "streamable-http",
+      "url": "https://123.207.69.230/jimeng-mcp",
+      "headers": {
+        "Authorization": "Bearer ${JIMENG_MCP_TOKEN}"
+      },
+      "status": "paused",
+      "chatDefaultEnabled": false,
+      "configurable": false
+    },
+    {
       "id": "filesystem",
       "name": "Filesystem",
       "description": "Secure file operations with configurable access controls",
@@ -273,4 +288,3 @@
     }
   ]
 }
-  
