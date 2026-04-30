@@ -1,4 +1,8 @@
-import { mergeMcpConfig, resolveConfigHeaders } from "../app/mcp/config";
+import {
+  BUILTIN_MCP_CONFIG,
+  mergeMcpConfig,
+  resolveConfigHeaders,
+} from "../app/mcp/config";
 import {
   JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
   JIMENG_MCP_SERVER_CONFIG,
@@ -41,6 +45,7 @@ describe("MCP config", () => {
   });
 
   test("keeps Jimeng MCP out of default chat tool exposure", () => {
+    expect(BUILTIN_MCP_CONFIG.mcpServers).toHaveProperty("jimeng-mcp");
     expect(JIMENG_MCP_SERVER_CONFIG.status).toBe("paused");
     expect(JIMENG_MCP_SERVER_CONFIG.chatDefaultEnabled).toBe(false);
   });

@@ -7,7 +7,6 @@ import {
 } from "./client";
 import { MCPClientLogger } from "./logger";
 import {
-  DEFAULT_MCP_CONFIG,
   McpClientData,
   McpConfigData,
   McpRequestMessage,
@@ -17,14 +16,10 @@ import {
 import fs from "fs/promises";
 import path from "path";
 import { getServerSideConfig } from "../config/server";
-import { mergeMcpConfig } from "./config";
+import { BUILTIN_MCP_CONFIG, mergeMcpConfig } from "./config";
 
 const logger = new MCPClientLogger("MCP Actions");
 const CONFIG_PATH = path.join(process.cwd(), "app/mcp/mcp_config.json");
-const DEFAULT_CONFIG_PATH = path.join(
-  process.cwd(),
-  "app/mcp/mcp_config.default.json",
-);
 
 const clientsMap = new Map<string, McpClientData>();
 
@@ -386,23 +381,14 @@ export async function executeMcpAction(
 
 // 获取 MCP 配置文件
 export async function getMcpConfigFromFile(): Promise<McpConfigData> {
-  let defaultConfig = DEFAULT_MCP_CONFIG;
-
-  try {
-    const defaultConfigStr = await fs.readFile(DEFAULT_CONFIG_PATH, "utf-8");
-    defaultConfig = JSON.parse(defaultConfigStr);
-  } catch (error) {
-    logger.error(`Failed to load default MCP config: ${error}`);
-  }
-
   try {
     const configStr = await fs.readFile(CONFIG_PATH, "utf-8");
-    return mergeMcpConfig(defaultConfig, JSON.parse(configStr));
+    return mergeMcpConfig(BUILTIN_MCP_CONFIG, JSON.parse(configStr));
   } catch (error) {
     if ((error as NodeJS.ErrnoException)?.code !== "ENOENT") {
       logger.error(`Failed to load MCP config, using default config: ${error}`);
     }
-    return defaultConfig;
+    return BUILTIN_MCP_CONFIG;
   }
 }
 
