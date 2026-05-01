@@ -846,7 +846,7 @@
   gap: 12px;
   flex: 1;
   min-height: 118px;
-  padding: 16px 92px 58px 18px;
+  padding: 16px 124px 58px 18px;
   border-radius: 18px;
   border: 1px solid rgba($color: #888, $alpha: 0.28);
   position: relative;
@@ -959,8 +959,10 @@
   position: absolute;
   right: 20px;
   bottom: 20px;
-  width: 58px;
+  box-sizing: border-box;
+  min-width: 88px;
   height: 58px;
+  padding: 0 16px;
   border-radius: 18px;
   box-shadow: 0 12px 26px rgba(49, 94, 248, 0.28);
 }
@@ -994,8 +996,10 @@
   .chat-input-send {
     right: 20px;
     bottom: 20px;
+    min-width: unset;
     width: 56px;
     height: 56px;
+    padding: 16px;
   }
 }
 

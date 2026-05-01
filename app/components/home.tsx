@@ -21,6 +21,7 @@ import {
   Routes,
   Route,
   useLocation,
+  useNavigate,
 } from "react-router-dom";
 import { SideBar } from "./sidebar";
 import { useAppConfig } from "../store/config";
@@ -160,6 +161,8 @@ export function WindowContent(props: { children: React.ReactNode }) {
 function Screen() {
   const config = useAppConfig();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [didRouteMobileStartup, setDidRouteMobileStartup] = useState(false);
   const isArtifact = location.pathname.includes(Path.Artifacts);
   const isHome = location.pathname === Path.Home;
   const isAuth = location.pathname === Path.Auth;
@@ -193,6 +196,28 @@ function Screen() {
   useEffect(() => {
     loadAsyncGoogleFont();
   }, []);
+
+  useEffect(() => {
+    if (
+      !didRouteMobileStartup &&
+      accessStore._hasHydrated &&
+      isMobileScreen &&
+      isHome &&
+      !shouldWaitForServerConfig &&
+      !shouldRequireAccessCode
+    ) {
+      setDidRouteMobileStartup(true);
+      navigate(Path.Chat, { replace: true });
+    }
+  }, [
+    didRouteMobileStartup,
+    accessStore._hasHydrated,
+    isHome,
+    isMobileScreen,
+    navigate,
+    shouldRequireAccessCode,
+    shouldWaitForServerConfig,
+  ]);
 
   useEffect(() => {
     if (
