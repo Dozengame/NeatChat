@@ -223,18 +223,18 @@ export function buildAccessControlConfig(
     quotaTimeZone:
       env.ACCESS_QUOTA_TIME_ZONE?.trim() || DEFAULT_QUOTA_TIME_ZONE,
     redisUrl: firstEnvValue(env, [
-      "ACCESS_USAGE_REDIS_URL",
       "NEATCHAT_REDIS_KV_REST_API_URL",
       "NEATCHAT_REDIS_REST_API_URL",
       "KV_REST_API_URL",
       "UPSTASH_REDIS_REST_URL",
+      "ACCESS_USAGE_REDIS_URL",
     ]),
     redisToken: firstEnvValue(env, [
-      "ACCESS_USAGE_REDIS_TOKEN",
       "NEATCHAT_REDIS_KV_REST_API_TOKEN",
       "NEATCHAT_REDIS_REST_API_TOKEN",
       "KV_REST_API_TOKEN",
       "UPSTASH_REDIS_REST_TOKEN",
+      "ACCESS_USAGE_REDIS_TOKEN",
     ]),
     redisPrefix: env.ACCESS_USAGE_REDIS_PREFIX?.trim() || DEFAULT_REDIS_PREFIX,
   };

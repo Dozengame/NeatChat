@@ -146,6 +146,9 @@ describe("access control tiers", () => {
     delete process.env.ACCESS_USAGE_REDIS_TOKEN;
     delete process.env.NEATCHAT_REDIS_KV_REST_API_URL;
     delete process.env.NEATCHAT_REDIS_KV_REST_API_TOKEN;
+    delete process.env.NEATCHAT_REDIS_KV_REST_API_READ_ONLY_TOKEN;
+    delete process.env.NEATCHAT_REDIS_KV_URL;
+    delete process.env.NEATCHAT_REDIS_REDIS_URL;
     delete process.env.NEATCHAT_REDIS_REST_API_URL;
     delete process.env.NEATCHAT_REDIS_REST_API_TOKEN;
     delete process.env.KV_REST_API_URL;
@@ -519,6 +522,8 @@ describe("access control tiers", () => {
   });
 
   test("reads Vercel generated Upstash REST variables as Redis store fallback", () => {
+    process.env.ACCESS_USAGE_REDIS_URL = "https://legacy.example.com";
+    process.env.ACCESS_USAGE_REDIS_TOKEN = "legacy-token";
     process.env.NEATCHAT_REDIS_KV_REST_API_URL = "https://redis.example.com";
     process.env.NEATCHAT_REDIS_KV_REST_API_TOKEN = "write-token";
 
