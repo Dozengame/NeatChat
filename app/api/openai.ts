@@ -3,7 +3,8 @@ import { getServerSideConfig } from "@/app/config/server";
 import { ModelProvider, OpenaiPath } from "@/app/constant";
 import { prettyObject } from "@/app/utils/format";
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "./auth";
+import { auth, authErrorResponse } from "./auth";
+import { withUsageAccounting } from "./abuse-control";
 import { requestOpenai } from "./common";
 
 const ALLOWED_PATH = new Set(Object.values(OpenaiPath));
@@ -14,8 +15,11 @@ function getModels(remoteModelRes: OpenAIListModelResponse) {
   if (config.disableGPT4) {
     remoteModelRes.data = remoteModelRes.data.filter(
       (m) =>
-        !(m.id.startsWith("gpt-4") || m.id.startsWith("chatgpt-4o") || m.id.startsWith("o1")) ||
-        m.id.startsWith("gpt-4o-mini"),
+        !(
+          m.id.startsWith("gpt-4") ||
+          m.id.startsWith("chatgpt-4o") ||
+          m.id.startsWith("o1")
+        ) || m.id.startsWith("gpt-4o-mini"),
     );
   }
 
@@ -47,11 +51,9 @@ export async function handle(
     );
   }
 
-  const authResult = auth(req, ModelProvider.GPT);
+  const authResult = await auth(req, ModelProvider.GPT);
   if (authResult.error) {
-    return NextResponse.json(authResult, {
-      status: 401,
-    });
+    return authErrorResponse(authResult);
   }
 
   try {
@@ -66,7 +68,7 @@ export async function handle(
       });
     }
 
-    return response;
+    return await withUsageAccounting(req, response);
   } catch (e) {
     console.error("[OpenAI] ", e);
     return NextResponse.json(prettyObject(e));

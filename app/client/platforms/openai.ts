@@ -181,6 +181,9 @@ export class ChatGPTApi implements LLMApi {
 
   async extractMessage(res: any) {
     if (res.error) {
+      if (typeof res.msg === "string" && res.msg.trim()) {
+        return res.msg;
+      }
       return "```\n" + JSON.stringify(res, null, 4) + "\n```";
     }
     const responsesText = extractResponsesText(res);

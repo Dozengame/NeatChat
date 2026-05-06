@@ -1,5 +1,8 @@
-import md5 from "spark-md5";
 import { DEFAULT_MODELS, DEFAULT_GA_ID } from "../constant";
+import {
+  buildAccessControlConfig,
+  getAccessCodeHashes,
+} from "../utils/access-control";
 import {
   OPENAI_RESPONSES_DEFAULT_COMPRESS_MESSAGE_LENGTH_THRESHOLD,
   OPENAI_RESPONSES_DEFAULT_MODEL,
@@ -17,6 +20,40 @@ declare global {
 
       OPENAI_API_KEY?: string;
       CODE?: string;
+      ACCESS_CODE_ADMIN?: string;
+      ACCESS_CODE_ADVANCED?: string;
+      ACCESS_CODE_NORMAL?: string;
+      ADMIN_ACCESS_CODE?: string;
+      ADVANCED_ACCESS_CODE?: string;
+      NORMAL_ACCESS_CODE?: string;
+      ACCESS_ADMIN_DAILY_TOKENS?: string;
+      ACCESS_ADVANCED_DAILY_TOKENS?: string;
+      ACCESS_NORMAL_DAILY_TOKENS?: string;
+      ACCESS_IP_WHITELIST?: string;
+      IP_WHITELIST?: string;
+      ACCESS_WHITELIST_TOKEN_MULTIPLIER?: string;
+      ACCESS_BURST_WINDOW_SECONDS?: string;
+      ACCESS_BURST_TOKEN_LIMIT?: string;
+      ACCESS_BURST_COOLDOWN_SECONDS?: string;
+      ACCESS_DEVICE_ID_ENABLED?: string;
+      ACCESS_DEVICE_ID_SECRET?: string;
+      ACCESS_DEVICE_ID_COOKIE_NAME?: string;
+      ACCESS_DEVICE_ID_MAX_AGE_DAYS?: string;
+      ACCESS_IP_BURST_GUARD_ENABLED?: string;
+      ACCESS_IP_BURST_TOKEN_LIMIT?: string;
+      ACCESS_IP_BURST_WINDOW_SECONDS?: string;
+      ACCESS_QUOTA_TIME_ZONE?: string;
+      ACCESS_USAGE_REDIS_URL?: string;
+      ACCESS_USAGE_REDIS_TOKEN?: string;
+      ACCESS_USAGE_REDIS_PREFIX?: string;
+      NEATCHAT_REDIS_KV_REST_API_URL?: string;
+      NEATCHAT_REDIS_KV_REST_API_TOKEN?: string;
+      NEATCHAT_REDIS_REST_API_URL?: string;
+      NEATCHAT_REDIS_REST_API_TOKEN?: string;
+      KV_REST_API_URL?: string;
+      KV_REST_API_TOKEN?: string;
+      UPSTASH_REDIS_REST_URL?: string;
+      UPSTASH_REDIS_REST_TOKEN?: string;
 
       BASE_URL?: string;
       OPENAI_ORG_ID?: string; // openai only
@@ -111,13 +148,8 @@ declare global {
 }
 
 export function getAccessCodes(): Set<string> {
-  const code = process.env.CODE;
-
   try {
-    const codes = (code?.split(",") ?? [])
-      .filter((v) => !!v)
-      .map((v) => md5.hash(v.trim()));
-    return new Set(codes);
+    return getAccessCodeHashes(buildAccessControlConfig(process.env));
   } catch (e) {
     return new Set();
   }
@@ -185,6 +217,7 @@ export const getServerSideConfig = () => {
     parseOpenAICompressMessageLengthThreshold(
       process.env.OPENAI_COMPRESS_MESSAGE_LENGTH_THRESHOLD,
     ) ?? OPENAI_RESPONSES_DEFAULT_COMPRESS_MESSAGE_LENGTH_THRESHOLD;
+  const accessControl = buildAccessControlConfig(process.env);
 
   if (disableGPT4) {
     if (customModels) customModels += ",";
@@ -314,9 +347,9 @@ export const getServerSideConfig = () => {
     gtmId: process.env.GTM_ID,
     gaId: process.env.GA_ID || DEFAULT_GA_ID,
 
-    needCode: getAccessCodes().size > 0,
-    code: process.env.CODE,
-    codes: getAccessCodes(),
+    needCode: accessControl.profiles.length > 0,
+    codes: getAccessCodeHashes(accessControl),
+    accessControl,
 
     proxyUrl: process.env.PROXY_URL,
     isVercel: !!process.env.VERCEL,

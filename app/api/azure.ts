@@ -1,7 +1,8 @@
 import { ModelProvider } from "@/app/constant";
 import { prettyObject } from "@/app/utils/format";
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "./auth";
+import { withUsageAccounting } from "./abuse-control";
+import { auth, authErrorResponse } from "./auth";
 import { requestOpenai } from "./common";
 
 export async function handle(
@@ -16,15 +17,13 @@ export async function handle(
 
   const subpath = params.path.join("/");
 
-  const authResult = auth(req, ModelProvider.GPT);
+  const authResult = await auth(req, ModelProvider.GPT);
   if (authResult.error) {
-    return NextResponse.json(authResult, {
-      status: 401,
-    });
+    return authErrorResponse(authResult);
   }
 
   try {
-    return await requestOpenai(req);
+    return await withUsageAccounting(req, await requestOpenai(req));
   } catch (e) {
     console.error("[Azure] ", e);
     return NextResponse.json(prettyObject(e));

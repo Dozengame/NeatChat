@@ -10,6 +10,7 @@ const en: LocaleType = {
     Unauthorized: isApp
       ? "Invalid access code. Please enter it again."
       : "Invalid access code. Please enter it again.",
+    AccessRestricted: "Access is temporarily limited. Please try again later.",
   },
   Auth: {
     Return: "Return",

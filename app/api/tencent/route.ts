@@ -2,7 +2,8 @@ import { getServerSideConfig } from "@/app/config/server";
 import { TENCENT_BASE_URL, ModelProvider } from "@/app/constant";
 import { prettyObject } from "@/app/utils/format";
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/app/api/auth";
+import { withUsageAccounting } from "@/app/api/abuse-control";
+import { auth, authErrorResponse } from "@/app/api/auth";
 import { getHeader } from "@/app/utils/tencent";
 
 const serverConfig = getServerSideConfig();
@@ -17,16 +18,14 @@ async function handle(
     return NextResponse.json({ body: "OK" }, { status: 200 });
   }
 
-  const authResult = auth(req, ModelProvider.Hunyuan);
+  const authResult = await auth(req, ModelProvider.Hunyuan);
   if (authResult.error) {
-    return NextResponse.json(authResult, {
-      status: 401,
-    });
+    return authErrorResponse(authResult);
   }
 
   try {
     const response = await request(req);
-    return response;
+    return await withUsageAccounting(req, response);
   } catch (e) {
     console.error("[Tencent] ", e);
     return NextResponse.json(prettyObject(e));

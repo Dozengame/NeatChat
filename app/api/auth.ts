@@ -1,18 +1,12 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSideConfig } from "../config/server";
-import md5 from "spark-md5";
 import { ACCESS_CODE_PREFIX, ModelProvider } from "../constant";
-
-function getIP(req: NextRequest) {
-  let ip = req.ip ?? req.headers.get("x-real-ip");
-  const forwardedFor = req.headers.get("x-forwarded-for");
-
-  if (!ip && forwardedFor) {
-    ip = forwardedFor.split(",").at(0) ?? "";
-  }
-
-  return ip;
-}
+import {
+  checkAccessUsage,
+  getClientIp,
+  markSystemAccessCodeRequest,
+} from "./abuse-control";
+import { resolveAccessCodeProfile } from "../utils/access-control";
 
 function parseApiKey(bearToken: string) {
   const token = bearToken.trim().replaceAll("Bearer ", "").trim();
@@ -28,26 +22,65 @@ export function validateAccessCode(accessCode: string) {
   const serverConfig = getServerSideConfig();
   if (!serverConfig.needCode) return true;
 
-  const hashedCode = md5.hash(accessCode ?? "").trim();
-  return serverConfig.codes.has(hashedCode);
+  return !!resolveAccessCodeProfile(accessCode, serverConfig.accessControl);
 }
 
-export function auth(req: NextRequest, modelProvider: ModelProvider) {
+export type AuthResult =
+  | {
+      error: false;
+    }
+  | {
+      error: true;
+      msg: string;
+      status?: number;
+      retryAfterSeconds?: number;
+    };
+
+export function authErrorResponse(authResult: AuthResult) {
+  if (!authResult.error) {
+    return NextResponse.json({ error: false });
+  }
+
+  const publicMessage =
+    authResult.status === 429
+      ? "当前访问暂时受限，请稍后再试。"
+      : authResult.msg;
+  const headers =
+    authResult.status === 429 && authResult.retryAfterSeconds
+      ? { "Retry-After": String(authResult.retryAfterSeconds) }
+      : undefined;
+
+  return NextResponse.json(
+    {
+      error: true,
+      msg: publicMessage,
+      retryAfterSeconds: authResult.retryAfterSeconds,
+    },
+    {
+      status: authResult.status ?? 401,
+      headers,
+    },
+  );
+}
+
+export async function auth(
+  req: NextRequest,
+  modelProvider: ModelProvider,
+): Promise<AuthResult> {
   const authToken = req.headers.get("Authorization") ?? "";
 
   // check if it is openai api key or user token
   const { accessCode, apiKey } = parseApiKey(authToken);
 
-  const hashedCode = md5.hash(accessCode ?? "").trim();
-
   const serverConfig = getServerSideConfig();
-  console.log("[Auth] allowed hashed codes: ", [...serverConfig.codes]);
-  console.log("[Auth] got access code:", accessCode);
-  console.log("[Auth] hashed access code:", hashedCode);
-  console.log("[User IP] ", getIP(req));
+  const accessProfile = accessCode
+    ? resolveAccessCodeProfile(accessCode, serverConfig.accessControl)
+    : undefined;
+  console.log("[Auth] access tier:", accessProfile?.tier ?? "none");
+  console.log("[User IP] ", getClientIp(req));
   console.log("[Time] ", new Date().toLocaleString());
 
-  if (serverConfig.needCode && !validateAccessCode(accessCode) && !apiKey) {
+  if (serverConfig.needCode && !accessProfile && !apiKey) {
     return {
       error: true,
       msg: !accessCode ? "empty access code" : "wrong access code",
@@ -116,6 +149,20 @@ export function auth(req: NextRequest, modelProvider: ModelProvider) {
     }
 
     if (systemApiKey) {
+      if (accessProfile) {
+        const usageCheck = await checkAccessUsage(req, accessProfile);
+        if (!usageCheck.allowed) {
+          return {
+            error: true,
+            msg: usageCheck.error,
+            status: usageCheck.status,
+            retryAfterSeconds: usageCheck.retryAfterSeconds,
+          };
+        }
+
+        markSystemAccessCodeRequest(req, accessProfile);
+      }
+
       console.log("[Auth] use system api key");
       req.headers.set("Authorization", `Bearer ${systemApiKey}`);
     } else {

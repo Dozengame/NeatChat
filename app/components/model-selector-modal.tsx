@@ -18,6 +18,7 @@ import {
 import styles from "./model-selector-modal.module.scss";
 import { ModelTestButton } from "./model-test-button";
 import { ModelTestResult, testModels } from "../utils/model-test";
+import { getHeaders } from "../client/api";
 
 interface ModelInfo {
   id: string;
@@ -327,6 +328,7 @@ export function ModelSelectorModal(props: {
           const response = await fetch("/api/proxy", {
             method: "POST",
             headers: {
+              ...getHeaders(),
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
@@ -704,6 +706,7 @@ export function ModelSelectorModal(props: {
         const response = await fetch("/api/model-test", {
           method: "POST",
           headers: {
+            ...getHeaders(),
             "Content-Type": "application/json",
           },
           body: JSON.stringify({

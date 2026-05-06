@@ -9,6 +9,7 @@ const cn = {
     Unauthorized: isApp
       ? "访问密码无效，请重新输入。"
       : "访问密码无效，请重新输入。",
+    AccessRestricted: "当前访问暂时受限，请稍后再试。",
   },
   Auth: {
     Return: "返回",

@@ -1,5 +1,5 @@
 import OpenAPIClientAxios from "openapi-client-axios";
-import { StoreKey } from "../constant";
+import { ACCESS_CODE_PREFIX, StoreKey } from "../constant";
 import { nanoid } from "nanoid";
 import { createPersistStore } from "../utils/store";
 import { getClientConfig } from "../config/client";
@@ -70,6 +70,10 @@ export const FunctionToolService = {
       const openaiApiKey = useAccessStore.getState().openaiApiKey;
       if (openaiApiKey) {
         headers[headerName] = `Bearer ${openaiApiKey}`;
+      } else if (!isApp && useAccessStore.getState().accessCode) {
+        headers[headerName] = `Bearer ${ACCESS_CODE_PREFIX}${
+          useAccessStore.getState().accessCode
+        }`;
       }
     }
     const api = new OpenAPIClientAxios({

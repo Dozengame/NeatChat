@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { publicConfigHeaders } from "@/app/config/public";
 import { getServerSideConfig } from "@/app/config/server";
 import { validateAccessCode } from "@/app/api/auth";
+import { ensureAccessDeviceCookie } from "@/app/api/abuse-control";
 
 const ACCESS_CODE_MAX_FAILED_ATTEMPTS = 5;
 const ACCESS_CODE_ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
@@ -82,8 +83,17 @@ function recordFailedAttempt(
   });
 }
 
-function rateLimitedResponse(retryAfterSeconds: number) {
-  return NextResponse.json(
+function jsonWithDeviceCookie(
+  req: NextRequest,
+  body: Record<string, unknown>,
+  init?: ResponseInit,
+) {
+  return ensureAccessDeviceCookie(req, NextResponse.json(body, init));
+}
+
+function rateLimitedResponse(req: NextRequest, retryAfterSeconds: number) {
+  return jsonWithDeviceCookie(
+    req,
     {
       ok: false,
       error: "rate_limited",
@@ -103,7 +113,8 @@ async function handle(req: NextRequest) {
   const serverConfig = getServerSideConfig();
 
   if (!serverConfig.needCode) {
-    return NextResponse.json(
+    return jsonWithDeviceCookie(
+      req,
       { ok: true },
       {
         headers: publicConfigHeaders(),
@@ -119,7 +130,10 @@ async function handle(req: NextRequest) {
   const { key, attempt } = getAttempt(req, now);
 
   if (attempt.lockedUntil > now) {
-    return rateLimitedResponse(Math.ceil((attempt.lockedUntil - now) / 1000));
+    return rateLimitedResponse(
+      req,
+      Math.ceil((attempt.lockedUntil - now) / 1000),
+    );
   }
 
   const ok = accessCode.length > 0 && validateAccessCode(accessCode);
@@ -130,7 +144,8 @@ async function handle(req: NextRequest) {
     recordFailedAttempt(key, attempt, now);
   }
 
-  return NextResponse.json(
+  return jsonWithDeviceCookie(
+    req,
     { ok },
     {
       status: ok ? 200 : 401,

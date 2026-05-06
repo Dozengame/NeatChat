@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSideConfig } from "@/app/config/server";
 import { ModelProvider, STABILITY_BASE_URL } from "@/app/constant";
-import { auth } from "@/app/api/auth";
+import { withUsageAccounting } from "@/app/api/abuse-control";
+import { auth, authErrorResponse } from "@/app/api/auth";
 
 export async function handle(
   req: NextRequest,
@@ -39,12 +40,10 @@ export async function handle(
     10 * 60 * 1000,
   );
 
-  const authResult = auth(req, ModelProvider.Stability);
+  const authResult = await auth(req, ModelProvider.Stability);
 
   if (authResult.error) {
-    return NextResponse.json(authResult, {
-      status: 401,
-    });
+    return authErrorResponse(authResult);
   }
 
   const bearToken = req.headers.get("Authorization") ?? "";
@@ -88,11 +87,14 @@ export async function handle(
     newHeaders.delete("www-authenticate");
     // to disable nginx buffering
     newHeaders.set("X-Accel-Buffering", "no");
-    return new Response(res.body, {
-      status: res.status,
-      statusText: res.statusText,
-      headers: newHeaders,
-    });
+    return await withUsageAccounting(
+      req,
+      new Response(res.body, {
+        status: res.status,
+        statusText: res.statusText,
+        headers: newHeaders,
+      }),
+    );
   } finally {
     clearTimeout(timeoutId);
   }

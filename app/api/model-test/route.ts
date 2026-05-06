@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSideConfig } from "@/app/config/server";
-import { OPENAI_BASE_URL, OpenaiPath } from "@/app/constant";
+import { ModelProvider, OPENAI_BASE_URL, OpenaiPath } from "@/app/constant";
 import { ModelTestResult } from "@/app/utils/model-test";
+import {
+  checkCurrentRequestAccessUsage,
+  usageErrorResponse,
+  withUsageAccounting,
+} from "@/app/api/abuse-control";
+import { auth, authErrorResponse } from "@/app/api/auth";
+
+const MODEL_TEST_MAX_MODELS = 1;
 
 // 测试单个模型
 async function testModel(
+  req: NextRequest,
   model: string,
   serverConfig: ReturnType<typeof getServerSideConfig>,
   apiKey: string,
@@ -21,7 +30,9 @@ async function testModel(
     );
 
     let baseUrl =
-      serverConfig.openaiResponsesUrl || serverConfig.baseUrl || OPENAI_BASE_URL;
+      serverConfig.openaiResponsesUrl ||
+      serverConfig.baseUrl ||
+      OPENAI_BASE_URL;
     if (!baseUrl.startsWith("http")) {
       baseUrl = `https://${baseUrl}`;
     }
@@ -29,10 +40,9 @@ async function testModel(
       baseUrl = baseUrl.slice(0, -1);
     }
 
-    const url =
-      baseUrl.toLowerCase().endsWith(`/${OpenaiPath.ResponsesPath}`)
-        ? baseUrl
-        : `${baseUrl}/${OpenaiPath.ResponsesPath}`;
+    const url = baseUrl.toLowerCase().endsWith(`/${OpenaiPath.ResponsesPath}`)
+      ? baseUrl
+      : `${baseUrl}/${OpenaiPath.ResponsesPath}`;
 
     // 构建请求体
     const requestBody = {
@@ -49,15 +59,18 @@ async function testModel(
     };
 
     // 发送请求
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(requestBody),
-      signal: controller.signal,
-    });
+    const response = await withUsageAccounting(
+      req,
+      await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      }),
+    );
 
     // 清除超时计时器
     clearTimeout(timeoutId);
@@ -98,12 +111,24 @@ async function testModel(
 
 export async function POST(req: NextRequest) {
   try {
+    const authResult = await auth(req, ModelProvider.GPT);
+    if (authResult.error) {
+      return authErrorResponse(authResult);
+    }
+
     const body = await req.json();
     const { models, timeoutSeconds = 5 } = body;
 
     if (!Array.isArray(models) || models.length === 0) {
       return NextResponse.json(
         { error: "请提供要测试的模型列表" },
+        { status: 400 },
+      );
+    }
+
+    if (models.length > MODEL_TEST_MAX_MODELS) {
+      return NextResponse.json(
+        { error: "每次最多测试 1 个模型" },
         { status: 400 },
       );
     }
@@ -119,12 +144,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const usageCheck = await checkCurrentRequestAccessUsage(req, {
+      estimatedTokens: (serverConfig.openaiMaxOutputTokens ?? 16) + 2,
+    });
+    if (!usageCheck.allowed) {
+      return usageErrorResponse(usageCheck);
+    }
+
     // 测试结果
     const results: Record<string, ModelTestResult> = {};
 
     // 逐个测试模型
     for (const model of models) {
       results[model] = await testModel(
+        req,
         model,
         serverConfig,
         apiKey,

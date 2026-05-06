@@ -327,7 +327,10 @@ export function stream(
             extraInfo = prettyObject(resJson);
           } catch {}
 
-          if (res.status === 401) {
+          if (res.status === 429) {
+            responseTexts.push(Locale.Error.AccessRestricted);
+            extraInfo = "";
+          } else if (res.status === 401) {
             responseTexts.push(Locale.Error.Unauthorized);
           }
 

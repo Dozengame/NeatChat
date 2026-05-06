@@ -7,7 +7,8 @@ import {
 } from "@/app/constant";
 import { prettyObject } from "@/app/utils/format";
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/app/api/auth";
+import { withUsageAccounting } from "@/app/api/abuse-control";
+import { auth, authErrorResponse } from "@/app/api/auth";
 import { isModelAvailableInServer } from "@/app/utils/model";
 
 const serverConfig = getServerSideConfig();
@@ -22,16 +23,14 @@ export async function handle(
     return NextResponse.json({ body: "OK" }, { status: 200 });
   }
 
-  const authResult = auth(req, ModelProvider.Doubao);
+  const authResult = await auth(req, ModelProvider.Doubao);
   if (authResult.error) {
-    return NextResponse.json(authResult, {
-      status: 401,
-    });
+    return authErrorResponse(authResult);
   }
 
   try {
     const response = await request(req);
-    return response;
+    return await withUsageAccounting(req, response);
   } catch (e) {
     console.error("[ByteDance] ", e);
     return NextResponse.json(prettyObject(e));

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "./auth";
+import { withUsageAccounting } from "./abuse-control";
+import { auth, authErrorResponse } from "./auth";
 import { getServerSideConfig } from "@/app/config/server";
 import { ApiPath, GEMINI_BASE_URL, ModelProvider } from "@/app/constant";
 import { prettyObject } from "@/app/utils/format";
@@ -19,11 +20,9 @@ export async function handle(
     return NextResponse.json({ body: "OK" }, { status: 200 });
   }
 
-  const authResult = auth(req, ModelProvider.GeminiPro);
+  const authResult = await auth(req, ModelProvider.GeminiPro);
   if (authResult.error) {
-    return NextResponse.json(authResult, {
-      status: 401,
-    });
+    return authErrorResponse(authResult);
   }
 
   const bearToken =
@@ -45,7 +44,7 @@ export async function handle(
   }
   try {
     const response = await request(req, apiKey);
-    return response;
+    return await withUsageAccounting(req, response);
   } catch (e) {
     console.error("[Google] ", e);
     return NextResponse.json(prettyObject(e));
