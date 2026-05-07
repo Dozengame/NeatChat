@@ -380,16 +380,17 @@ export function safeLocalStorage(): {
   removeItem: (key: string) => void;
   clear: () => void;
 } {
-  let storage: Storage | null;
+  let storage: Storage | null = null;
+  const canWarn = typeof window !== "undefined";
 
   try {
-    if (typeof window !== "undefined" && window.localStorage) {
+    if (canWarn && window.localStorage) {
       storage = window.localStorage;
-    } else {
-      storage = null;
     }
   } catch (e) {
-    console.error("localStorage is not available:", e);
+    if (canWarn) {
+      console.error("localStorage is not available:", e);
+    }
     storage = null;
   }
 
@@ -397,17 +398,17 @@ export function safeLocalStorage(): {
     getItem(key: string): string | null {
       if (storage) {
         return storage.getItem(key);
-      } else {
+      } else if (canWarn) {
         console.warn(
           `Attempted to get item "${key}" from localStorage, but localStorage is not available.`,
         );
-        return null;
       }
+      return null;
     },
     setItem(key: string, value: string): void {
       if (storage) {
         storage.setItem(key, value);
-      } else {
+      } else if (canWarn) {
         console.warn(
           `Attempted to set item "${key}" in localStorage, but localStorage is not available.`,
         );
@@ -416,7 +417,7 @@ export function safeLocalStorage(): {
     removeItem(key: string): void {
       if (storage) {
         storage.removeItem(key);
-      } else {
+      } else if (canWarn) {
         console.warn(
           `Attempted to remove item "${key}" from localStorage, but localStorage is not available.`,
         );
@@ -425,7 +426,7 @@ export function safeLocalStorage(): {
     clear(): void {
       if (storage) {
         storage.clear();
-      } else {
+      } else if (canWarn) {
         console.warn(
           "Attempted to clear localStorage, but localStorage is not available.",
         );

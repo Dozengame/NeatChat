@@ -257,6 +257,18 @@ export function RealtimeChat({
     }
   };
 
+  const handleConnectRef = useRef(handleConnect);
+  const toggleRecordingRef = useRef(toggleRecording);
+  const disconnectRef = useRef(disconnect);
+  const isRecordingRef = useRef(isRecording);
+
+  useEffect(() => {
+    handleConnectRef.current = handleConnect;
+    toggleRecordingRef.current = toggleRecording;
+    disconnectRef.current = disconnect;
+    isRecordingRef.current = isRecording;
+  });
+
   useEffect(() => {
     // 防止重复初始化
     if (initRef.current) return;
@@ -266,8 +278,8 @@ export function RealtimeChat({
       const handler = new AudioHandler();
       await handler.initialize();
       audioHandlerRef.current = handler;
-      await handleConnect();
-      await toggleRecording();
+      await handleConnectRef.current();
+      await toggleRecordingRef.current();
     };
 
     initAudioHandler().catch((error) => {
@@ -276,11 +288,11 @@ export function RealtimeChat({
     });
 
     return () => {
-      if (isRecording) {
-        toggleRecording();
+      if (isRecordingRef.current) {
+        toggleRecordingRef.current();
       }
       audioHandlerRef.current?.close().catch(console.error);
-      disconnect();
+      disconnectRef.current();
     };
   }, []);
 

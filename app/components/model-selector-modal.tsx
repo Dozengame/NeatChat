@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Modal, List, ListItem, showToast } from "./ui-lib";
 import { IconButton } from "./button";
 import LoadingIcon from "../icons/three-dots.svg";
@@ -10,7 +10,6 @@ import CloseIcon from "../icons/close.svg";
 import EditIcon from "../icons/edit.svg";
 import ResetIcon from "../icons/reload.svg";
 import {
-  getModelCategory,
   getFixedCategoryAvatar,
   DEFAULT_SYSTEM_CATEGORY_PATTERNS,
   SYSTEM_CATEGORIES_STORAGE_KEY,
@@ -19,6 +18,8 @@ import styles from "./model-selector-modal.module.scss";
 import { ModelTestButton } from "./model-test-button";
 import { ModelTestResult, testModels } from "../utils/model-test";
 import { getHeaders } from "../client/api";
+
+const MODELS_STORAGE_KEY = "chat-next-web-models";
 
 interface ModelInfo {
   id: string;
@@ -73,9 +74,6 @@ export function ModelSelectorModal(props: {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryPattern, setNewCategoryPattern] = useState("");
 
-  // 添加一个本地存储键，用于保存模型列表
-  const MODELS_STORAGE_KEY = "chat-next-web-models";
-
   // 使用从emoji.tsx导入的DEFAULT_SYSTEM_CATEGORY_PATTERNS
   const [systemCategoryPatterns, setSystemCategoryPatterns] = useState<
     Record<string, string>
@@ -83,6 +81,25 @@ export function ModelSelectorModal(props: {
 
   // 添加一个状态来跟踪当前选择的超时时间
   const [testTimeout, setTestTimeout] = useState(5);
+
+  const getCategory = useCallback(
+    (modelId: string) => {
+      const lowerModelId = modelId.toLowerCase();
+
+      for (const [category, pattern] of Object.entries(
+        systemCategoryPatterns,
+      )) {
+        for (const p of pattern.split("|")) {
+          if (lowerModelId.includes(p.toLowerCase())) {
+            return category;
+          }
+        }
+      }
+
+      return "Other";
+    },
+    [systemCategoryPatterns],
+  );
 
   // 在组件初始化时，尝试从本地存储加载系统类别匹配规则
   useEffect(() => {
@@ -145,7 +162,7 @@ export function ModelSelectorModal(props: {
 
     // 收集所有类别
     models.forEach((model) => {
-      const category = getModelCategory(model.id);
+      const category = getCategory(model.id);
       categories.add(category);
     });
 
@@ -172,250 +189,265 @@ export function ModelSelectorModal(props: {
     }
 
     return result;
-  }, [models, systemCategoryPatterns]);
+  }, [models, getCategory]);
 
   // 修改初始化函数，确保加载自定义模型
-  const fetchModels = async (forceRefresh = false) => {
-    setLoading(true);
+  const fetchModels = useCallback(
+    async (forceRefresh = false) => {
+      setLoading(true);
 
-    try {
-      // 尝试从本地存储加载模型列表
-      const storedModels = localStorage.getItem(MODELS_STORAGE_KEY);
+      try {
+        // 尝试从本地存储加载模型列表
+        const storedModels = localStorage.getItem(MODELS_STORAGE_KEY);
 
-      if (storedModels && !forceRefresh) {
-        // 如果有本地存储的模型列表且不是强制刷新，则使用本地存储的数据
-        const parsedModels = JSON.parse(storedModels);
+        if (storedModels && !forceRefresh) {
+          // 如果有本地存储的模型列表且不是强制刷新，则使用本地存储的数据
+          const parsedModels = JSON.parse(storedModels);
 
-        // 确保保留测试结果相关字段
-        const modelsWithTestResults = parsedModels.map((model: ModelInfo) => ({
-          ...model,
-          selected: currentModelList.includes(model.id),
-          // 保留测试相关字段
-          tested: model.tested || false,
-          available: model.available,
-          responseTime: model.responseTime,
-          timeout: model.timeout,
-        }));
-
-        setModels(modelsWithTestResults);
-        setLoading(false);
-        return;
-      }
-
-      // 检查用户是否已输入访问密码
-      if (!accessStore.isAuthorized()) {
-        showToast(Locale.Settings.Access.CustomModel.AuthRequired);
-        setLoading(false);
-        return;
-      }
-
-      // 获取自定义模型列表
-      const customModelIds = currentModelList.filter((id) => id !== "-all");
-
-      // 从远程获取
-      const configResponse = await fetch("/api/config");
-      const configData = await configResponse.json();
-
-      // 检查是否启用了自定义接口
-      const useCustomApi = accessStore.useCustomConfig;
-
-      console.log("自定义接口状态:", useCustomApi);
-      console.log(
-        "客户端API密钥:",
-        accessStore.openaiApiKey ? "已设置" : "未设置",
-      );
-
-      let apiModelList = [];
-
-      if (useCustomApi) {
-        // 使用客户端配置
-        const baseUrl = accessStore.openaiUrl || "https://api.openai.com";
-        const apiKey = accessStore.openaiApiKey;
-
-        if (!apiKey) {
-          showToast(Locale.Settings.Access.CustomModel.ApiKeyRequired);
-          setLoading(false);
-          return;
-        }
-
-        try {
-          // 使用客户端密钥直接请求
-          const url = `${baseUrl}/v1/models`;
-          const response = await fetch(url, {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              "Content-Type": "application/json",
-            },
-          });
-
-          if (!response.ok) {
-            throw new Error(
-              Locale.Settings.Access.CustomModel.ServerTestFailedError.replace(
-                "{0}",
-                response.status.toString(),
-              ),
-            );
-          }
-
-          const data = await response.json();
-
-          if (data.data && Array.isArray(data.data)) {
-            // 处理模型数据
-            apiModelList = data.data.map((model: any) => ({
-              id: model.id,
+          // 确保保留测试结果相关字段
+          const modelsWithTestResults = parsedModels.map(
+            (model: ModelInfo) => ({
+              ...model,
               selected: currentModelList.includes(model.id),
-            }));
-
-            // 按字母顺序排序
-            apiModelList.sort((a: ModelInfo, b: ModelInfo) =>
-              a.id.localeCompare(b.id),
-            );
-
-            // 找出自定义模型名中已有的但不在API返回列表中的模型
-            const apiModelIds = apiModelList.map((m: ModelInfo) => m.id);
-            const customModels = currentModelList
-              .filter(
-                (modelId) =>
-                  !apiModelIds.includes(modelId) && modelId !== "-all",
-              )
-              .map((modelId) => ({
-                id: modelId,
-                selected: true,
-                isCustom: true,
-              }));
-
-            // 合并API模型和自定义模型
-            const allModels = [...apiModelList, ...customModels];
-            setModels(allModels);
-
-            // 保存到本地存储
-            localStorage.setItem(MODELS_STORAGE_KEY, JSON.stringify(allModels));
-
-            // 显示获取到的模型数量，指明是从客户端获取的
-            showToast(
-              Locale.Settings.Access.CustomModel.FetchSuccessFromClient(
-                apiModelList.length,
-              ),
-            );
-          } else {
-            throw new Error(Locale.Settings.Access.CustomModel.InvalidResponse);
-          }
-        } catch (error) {
-          // 客户端错误
-          console.error("从客户端获取模型列表失败:", error);
-          showToast(
-            Locale.Settings.Access.CustomModel.FetchFailedFromClient(
-              error instanceof Error ? error.message : String(error),
-            ),
-          );
-          setLoading(false);
-          return;
-        }
-      } else {
-        // 使用服务端配置
-        const baseUrl = configData.baseUrl || "https://api.openai.com";
-
-        // 检查服务端是否设置了API密钥
-        if (configData.apiKey !== "已设置") {
-          showToast(Locale.Settings.Access.CustomModel.ApiKeyRequired);
-          setLoading(false);
-          return;
-        }
-
-        try {
-          // 通过服务端代理请求
-          const response = await fetch("/api/proxy", {
-            method: "POST",
-            headers: {
-              ...getHeaders(),
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              url: `${baseUrl}/v1/models`,
+              // 保留测试相关字段
+              tested: model.tested || false,
+              available: model.available,
+              responseTime: model.responseTime,
+              timeout: model.timeout,
             }),
-          });
-
-          if (!response.ok) {
-            throw new Error(
-              Locale.Settings.Access.CustomModel.ServerTestFailedError.replace(
-                "{0}",
-                response.status.toString(),
-              ),
-            );
-          }
-
-          const data = await response.json();
-
-          if (data.data && Array.isArray(data.data)) {
-            // 处理模型数据
-            apiModelList = data.data.map((model: any) => ({
-              id: model.id,
-              selected: currentModelList.includes(model.id),
-            }));
-
-            // 按字母顺序排序
-            apiModelList.sort((a: ModelInfo, b: ModelInfo) =>
-              a.id.localeCompare(b.id),
-            );
-
-            // 找出自定义模型名中已有的但不在API返回列表中的模型
-            const apiModelIds = apiModelList.map((m: ModelInfo) => m.id);
-            const customModels = currentModelList
-              .filter(
-                (modelId) =>
-                  !apiModelIds.includes(modelId) && modelId !== "-all",
-              )
-              .map((modelId) => ({
-                id: modelId,
-                selected: true,
-                isCustom: true,
-              }));
-
-            // 合并API模型和自定义模型
-            const allModels = [...apiModelList, ...customModels];
-            setModels(allModels);
-
-            // 保存到本地存储
-            localStorage.setItem(MODELS_STORAGE_KEY, JSON.stringify(allModels));
-
-            // 显示获取到的模型数量，指明是从服务端获取的
-            showToast(
-              Locale.Settings.Access.CustomModel.FetchSuccessFromServer(
-                apiModelList.length,
-              ),
-            );
-          } else {
-            throw new Error(Locale.Settings.Access.CustomModel.InvalidResponse);
-          }
-        } catch (error) {
-          // 服务端错误
-          console.error("从服务端获取模型列表失败:", error);
-          showToast(
-            Locale.Settings.Access.CustomModel.FetchFailedFromServer(
-              error instanceof Error ? error.message : String(error),
-            ),
           );
+
+          setModels(modelsWithTestResults);
           setLoading(false);
           return;
         }
+
+        // 检查用户是否已输入访问密码
+        if (!accessStore.isAuthorized()) {
+          showToast(Locale.Settings.Access.CustomModel.AuthRequired);
+          setLoading(false);
+          return;
+        }
+
+        // 获取自定义模型列表
+        const customModelIds = currentModelList.filter((id) => id !== "-all");
+
+        // 从远程获取
+        const configResponse = await fetch("/api/config");
+        const configData = await configResponse.json();
+
+        // 检查是否启用了自定义接口
+        const useCustomApi = accessStore.useCustomConfig;
+
+        console.log("自定义接口状态:", useCustomApi);
+        console.log(
+          "客户端API密钥:",
+          accessStore.openaiApiKey ? "已设置" : "未设置",
+        );
+
+        let apiModelList = [];
+
+        if (useCustomApi) {
+          // 使用客户端配置
+          const baseUrl = accessStore.openaiUrl || "https://api.openai.com";
+          const apiKey = accessStore.openaiApiKey;
+
+          if (!apiKey) {
+            showToast(Locale.Settings.Access.CustomModel.ApiKeyRequired);
+            setLoading(false);
+            return;
+          }
+
+          try {
+            // 使用客户端密钥直接请求
+            const url = `${baseUrl}/v1/models`;
+            const response = await fetch(url, {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+              },
+            });
+
+            if (!response.ok) {
+              throw new Error(
+                Locale.Settings.Access.CustomModel.ServerTestFailedError.replace(
+                  "{0}",
+                  response.status.toString(),
+                ),
+              );
+            }
+
+            const data = await response.json();
+
+            if (data.data && Array.isArray(data.data)) {
+              // 处理模型数据
+              apiModelList = data.data.map((model: any) => ({
+                id: model.id,
+                selected: currentModelList.includes(model.id),
+              }));
+
+              // 按字母顺序排序
+              apiModelList.sort((a: ModelInfo, b: ModelInfo) =>
+                a.id.localeCompare(b.id),
+              );
+
+              // 找出自定义模型名中已有的但不在API返回列表中的模型
+              const apiModelIds = apiModelList.map((m: ModelInfo) => m.id);
+              const customModels = currentModelList
+                .filter(
+                  (modelId) =>
+                    !apiModelIds.includes(modelId) && modelId !== "-all",
+                )
+                .map((modelId) => ({
+                  id: modelId,
+                  selected: true,
+                  isCustom: true,
+                }));
+
+              // 合并API模型和自定义模型
+              const allModels = [...apiModelList, ...customModels];
+              setModels(allModels);
+
+              // 保存到本地存储
+              localStorage.setItem(
+                MODELS_STORAGE_KEY,
+                JSON.stringify(allModels),
+              );
+
+              // 显示获取到的模型数量，指明是从客户端获取的
+              showToast(
+                Locale.Settings.Access.CustomModel.FetchSuccessFromClient(
+                  apiModelList.length,
+                ),
+              );
+            } else {
+              throw new Error(
+                Locale.Settings.Access.CustomModel.InvalidResponse,
+              );
+            }
+          } catch (error) {
+            // 客户端错误
+            console.error("从客户端获取模型列表失败:", error);
+            showToast(
+              Locale.Settings.Access.CustomModel.FetchFailedFromClient(
+                error instanceof Error ? error.message : String(error),
+              ),
+            );
+            setLoading(false);
+            return;
+          }
+        } else {
+          // 使用服务端配置
+          const baseUrl = configData.baseUrl || "https://api.openai.com";
+
+          // 检查服务端是否设置了API密钥
+          if (configData.apiKey !== "已设置") {
+            showToast(Locale.Settings.Access.CustomModel.ApiKeyRequired);
+            setLoading(false);
+            return;
+          }
+
+          try {
+            // 通过服务端代理请求
+            const response = await fetch("/api/proxy", {
+              method: "POST",
+              headers: {
+                ...getHeaders(),
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                url: `${baseUrl}/v1/models`,
+              }),
+            });
+
+            if (!response.ok) {
+              throw new Error(
+                Locale.Settings.Access.CustomModel.ServerTestFailedError.replace(
+                  "{0}",
+                  response.status.toString(),
+                ),
+              );
+            }
+
+            const data = await response.json();
+
+            if (data.data && Array.isArray(data.data)) {
+              // 处理模型数据
+              apiModelList = data.data.map((model: any) => ({
+                id: model.id,
+                selected: currentModelList.includes(model.id),
+              }));
+
+              // 按字母顺序排序
+              apiModelList.sort((a: ModelInfo, b: ModelInfo) =>
+                a.id.localeCompare(b.id),
+              );
+
+              // 找出自定义模型名中已有的但不在API返回列表中的模型
+              const apiModelIds = apiModelList.map((m: ModelInfo) => m.id);
+              const customModels = currentModelList
+                .filter(
+                  (modelId) =>
+                    !apiModelIds.includes(modelId) && modelId !== "-all",
+                )
+                .map((modelId) => ({
+                  id: modelId,
+                  selected: true,
+                  isCustom: true,
+                }));
+
+              // 合并API模型和自定义模型
+              const allModels = [...apiModelList, ...customModels];
+              setModels(allModels);
+
+              // 保存到本地存储
+              localStorage.setItem(
+                MODELS_STORAGE_KEY,
+                JSON.stringify(allModels),
+              );
+
+              // 显示获取到的模型数量，指明是从服务端获取的
+              showToast(
+                Locale.Settings.Access.CustomModel.FetchSuccessFromServer(
+                  apiModelList.length,
+                ),
+              );
+            } else {
+              throw new Error(
+                Locale.Settings.Access.CustomModel.InvalidResponse,
+              );
+            }
+          } catch (error) {
+            // 服务端错误
+            console.error("从服务端获取模型列表失败:", error);
+            showToast(
+              Locale.Settings.Access.CustomModel.FetchFailedFromServer(
+                error instanceof Error ? error.message : String(error),
+              ),
+            );
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (error) {
+        // 通用错误（如配置获取失败等）
+        console.error(Locale.Settings.Access.CustomModel.FetchFailed, error);
+        showToast(
+          `获取模型列表失败: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      // 通用错误（如配置获取失败等）
-      console.error(Locale.Settings.Access.CustomModel.FetchFailed, error);
-      showToast(
-        `获取模型列表失败: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [accessStore, currentModelList],
+  );
 
   useEffect(() => {
     fetchModels(false); // 传入false表示优先从本地加载
-  }, [accessStore.useCustomConfig]);
+  }, [fetchModels]);
 
   const toggleModelSelection = (originalIndex: number) => {
     const updatedModels = [...models];
@@ -438,7 +470,7 @@ export function ModelSelectorModal(props: {
       .filter((model) => model.selected)
       .map((model) => {
         // 获取模型类别
-        const category = getModelCategory(model.id);
+        const category = getCategory(model.id);
         // 返回格式为 modelId@Category 的字符串
         return `${model.id}@${category}`;
       })
@@ -458,7 +490,7 @@ export function ModelSelectorModal(props: {
           .includes(searchKeyword.toLowerCase());
         const matchesCategory =
           selectedCategory === "all" ||
-          getModelCategory(model.id) === selectedCategory;
+          getCategory(model.id) === selectedCategory;
 
         return matchesSearch && matchesCategory;
       })
@@ -482,7 +514,7 @@ export function ModelSelectorModal(props: {
           .includes(searchKeyword.toLowerCase());
         const matchesCategory =
           selectedCategory === "all" ||
-          getModelCategory(model.id) === selectedCategory;
+          getCategory(model.id) === selectedCategory;
 
         return matchesSearch && matchesCategory;
       })
@@ -537,7 +569,7 @@ export function ModelSelectorModal(props: {
       (model) =>
         model.id.toLowerCase().includes(searchKeyword.toLowerCase()) &&
         (selectedCategory === "all" ||
-          getModelCategory(model.id) === selectedCategory),
+          getCategory(model.id) === selectedCategory),
     );
 
     // 获取要编辑的模型
@@ -598,7 +630,7 @@ export function ModelSelectorModal(props: {
       (model) =>
         model.id.toLowerCase().includes(searchKeyword.toLowerCase()) &&
         (selectedCategory === "all" ||
-          getModelCategory(model.id) === selectedCategory),
+          getCategory(model.id) === selectedCategory),
     );
 
     // 获取要删除的模型
@@ -667,9 +699,9 @@ export function ModelSelectorModal(props: {
       (model) =>
         model.id.toLowerCase().includes(searchKeyword.toLowerCase()) &&
         (selectedCategory === "all" ||
-          getModelCategory(model.id) === selectedCategory),
+          getCategory(model.id) === selectedCategory),
     );
-  }, [models, searchKeyword, selectedCategory, getModelCategory]);
+  }, [models, searchKeyword, selectedCategory, getCategory]);
 
   // 根据响应时间返回样式类
   const getResponseTimeClass = (responseTime: number) => {
@@ -1008,7 +1040,7 @@ export function ModelSelectorModal(props: {
                 const isEditing = editingIndex === originalIndex;
 
                 // 获取模型类别
-                const modelCategory = getModelCategory(model.id);
+                const modelCategory = getCategory(model.id);
 
                 // 根据类别构造头像标识符
                 let avatarId = getFixedCategoryAvatar(modelCategory);

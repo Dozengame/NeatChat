@@ -751,6 +751,7 @@ export function ChatActions(props: {
   imageGenerationEnabled: boolean;
   setImageGenerationEnabled: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
+  const { setAttachImages, setUploading } = props;
   const config = useAppConfig();
   const accessStore = useAccessStore();
   const chatStore = useChatStore();
@@ -813,8 +814,8 @@ export function ChatActions(props: {
     const show = isVisionModel(currentModel);
     setShowUploadImage(show);
     if (!show) {
-      props.setAttachImages([]);
-      props.setUploading(false);
+      setAttachImages([]);
+      setUploading(false);
     }
 
     // if current model is not available
@@ -858,6 +859,8 @@ export function ChatActions(props: {
     currentProviderName,
     models,
     session,
+    setAttachImages,
+    setUploading,
   ]);
 
   const showModelSearchOption = config.enableModelSearch ?? false;
@@ -1443,7 +1446,7 @@ function _Chat() {
           (scrollRef.current.scrollTop + scrollRef.current.clientHeight),
       ) <= 1
     : false;
-  const isAttachWithTop = useMemo(() => {
+  const isAttachWithTop = (() => {
     const lastMessage = scrollRef.current?.lastElementChild as HTMLElement;
     // if scrolllRef is not ready or no message, return false
     if (!scrollRef?.current || !lastMessage) return false;
@@ -1452,7 +1455,7 @@ function _Chat() {
       scrollRef.current.getBoundingClientRect().top;
     // leave some space for user question
     return topDistance < 100;
-  }, [scrollRef?.current?.scrollHeight]);
+  })();
 
   const isTyping = userInput !== "";
 

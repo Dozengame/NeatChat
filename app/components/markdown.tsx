@@ -132,9 +132,10 @@ export function PreCode(props: { children: any }) {
           codeElement.style.whiteSpace = "pre-wrap";
         }
       });
-      setTimeout(renderArtifacts, 1);
+      const timer = setTimeout(renderArtifacts, 1);
+      return () => clearTimeout(timer);
     }
-  }, []);
+  }, [renderArtifacts]);
 
   return (
     <>
@@ -412,68 +413,62 @@ type MarkdownImageActionProps = {
   onDownloadImage?: (src: string) => void | Promise<void>;
 };
 
+function detectFileAttachments(content: string) {
+  const fileRegex =
+    /文件名: (.+?)\n类型: (.+?)\n大小: (.+?) KB\n\n([\s\S]+?)(?=\n\n---|$)/g;
+  let match;
+  const files = [];
+
+  while ((match = fileRegex.exec(content)) !== null) {
+    files.push({
+      fileName: match[1],
+      fileType: match[2],
+      fileSize: parseFloat(match[3]) * 1024,
+      content: match[4],
+    });
+  }
+
+  return files;
+}
+
+function replaceFileAttachments(content: string) {
+  const files = detectFileAttachments(content);
+
+  if (files.length === 0) {
+    return content;
+  }
+
+  let newContent = content;
+
+  files.forEach((file) => {
+    const fileMarker = `文件名: ${file.fileName}\n类型: ${
+      file.fileType
+    }\n大小: ${(file.fileSize / 1024).toFixed(2)} KB\n\n`;
+    const replacement = `[📄 ${file.fileName}](file://${encodeURIComponent(
+      file.fileName,
+    )}?type=${encodeURIComponent(file.fileType)}&size=${file.fileSize})`;
+    const startIndex = newContent.indexOf(fileMarker);
+
+    if (startIndex >= 0) {
+      const contentStart = startIndex + fileMarker.length;
+      let contentEnd = newContent.indexOf("\n\n---\n\n", contentStart);
+      if (contentEnd < 0) contentEnd = newContent.length;
+
+      newContent =
+        newContent.substring(0, startIndex) +
+        replacement +
+        newContent.substring(contentEnd);
+    }
+  });
+
+  return newContent;
+}
+
 function _MarkDownContent(
   props: {
     content: string;
   } & MarkdownImageActionProps,
 ) {
-  // 检测文件附件格式
-  const detectFileAttachments = (content: string) => {
-    const fileRegex =
-      /文件名: (.+?)\n类型: (.+?)\n大小: (.+?) KB\n\n([\s\S]+?)(?=\n\n---|$)/g;
-    let match;
-    const files = [];
-
-    while ((match = fileRegex.exec(content)) !== null) {
-      files.push({
-        fileName: match[1],
-        fileType: match[2],
-        fileSize: parseFloat(match[3]) * 1024, // 转换为字节
-        content: match[4],
-      });
-    }
-
-    return files;
-  };
-
-  // 替换文件内容为文件附件组件
-  const replaceFileAttachments = (content: string) => {
-    const files = detectFileAttachments(content);
-
-    if (files.length === 0) {
-      return content;
-    }
-
-    let newContent = content;
-
-    // 使用更友好的链接文本
-    files.forEach((file, index) => {
-      // 创建一个安全的替换模式
-      const fileMarker = `文件名: ${file.fileName}\n类型: ${
-        file.fileType
-      }\n大小: ${(file.fileSize / 1024).toFixed(2)} KB\n\n`;
-      const replacement = `[📄 ${file.fileName}](file://${encodeURIComponent(
-        file.fileName,
-      )}?type=${encodeURIComponent(file.fileType)}&size=${file.fileSize})`;
-      const startIndex = newContent.indexOf(fileMarker);
-
-      if (startIndex >= 0) {
-        // 找到文件内容的结束位置
-        const contentStart = startIndex + fileMarker.length;
-        let contentEnd = newContent.indexOf("\n\n---\n\n", contentStart);
-        if (contentEnd < 0) contentEnd = newContent.length;
-
-        // 使用特殊格式的 Markdown 链接，可以被 ReactMarkdown 正确处理
-        newContent =
-          newContent.substring(0, startIndex) +
-          replacement +
-          newContent.substring(contentEnd);
-      }
-    });
-
-    return newContent;
-  };
-
   const escapedContent = useMemo(() => {
     // 检查是否是 base64 图像数据
     try {
