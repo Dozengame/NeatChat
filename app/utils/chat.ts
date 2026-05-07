@@ -154,6 +154,13 @@ export function removeImage(imageUrl: string) {
   });
 }
 
+export function buildChatRequestPayload(requestPayload: any, tools: any[]) {
+  return {
+    ...requestPayload,
+    ...(tools && tools.length ? { tools } : {}),
+  };
+}
+
 export function stream(
   chatPath: string,
   requestPayload: any,
@@ -298,10 +305,7 @@ export function stream(
   ) {
     const chatPayload = {
       method: "POST",
-      body: JSON.stringify({
-        ...requestPayload,
-        tools: tools && tools.length ? tools : undefined,
-      }),
+      body: JSON.stringify(buildChatRequestPayload(requestPayload, tools)),
       signal: controller.signal,
       headers,
     };
