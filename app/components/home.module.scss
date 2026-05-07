@@ -38,6 +38,36 @@
   @include container();
 }
 
+.compact-container {
+  --window-width: 100vw;
+  --window-height: var(--full-height);
+  --window-content-width: var(--window-width);
+
+  min-height: unset;
+  min-width: unset;
+  max-height: unset;
+  max-width: 100vw;
+  border: 0;
+  border-radius: 0;
+
+  .sidebar {
+    position: absolute;
+    left: -100%;
+    z-index: 1000;
+    height: var(--full-height);
+    transition: all ease 0.3s;
+    box-shadow: none;
+  }
+
+  .sidebar-show {
+    left: 0;
+  }
+
+  .mobile {
+    display: block;
+  }
+}
+
 @media only screen and (min-width: 600px) {
   .tight-container {
     --window-width: 100vw;

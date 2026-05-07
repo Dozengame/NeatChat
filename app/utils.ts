@@ -136,10 +136,17 @@ export function useWindowSize() {
 }
 
 export const MOBILE_MAX_WIDTH = 600;
+export const COMPACT_MAX_WIDTH = 900;
 export function useMobileScreen() {
   const { width } = useWindowSize();
 
   return width <= MOBILE_MAX_WIDTH;
+}
+
+export function useCompactScreen() {
+  const { width } = useWindowSize();
+
+  return width <= COMPACT_MAX_WIDTH;
 }
 
 export function isFirefox() {

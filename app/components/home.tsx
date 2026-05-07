@@ -8,7 +8,7 @@ import styles from "./home.module.scss";
 import NeatIcon from "../icons/neat.svg";
 import LoadingIcon from "../icons/three-dots.svg";
 
-import { getCSSVar, useMobileScreen } from "../utils";
+import { getCSSVar, useCompactScreen } from "../utils";
 
 import dynamic from "next/dynamic";
 import { Path, SlotID } from "../constant";
@@ -189,9 +189,9 @@ function Screen() {
     isAccessControlled &&
     !accessStore.hasValidAccessCode();
 
-  const isMobileScreen = useMobileScreen();
+  const isCompactScreen = useCompactScreen();
   const shouldTightBorder =
-    clientConfig?.isApp || (config.tightBorder && !isMobileScreen);
+    (clientConfig?.isApp || config.tightBorder) && !isCompactScreen;
 
   useEffect(() => {
     loadAsyncGoogleFont();
@@ -201,19 +201,20 @@ function Screen() {
     if (
       !didRouteMobileStartup &&
       accessStore._hasHydrated &&
-      isMobileScreen &&
-      isHome &&
+      isCompactScreen &&
       !shouldWaitForServerConfig &&
       !shouldRequireAccessCode
     ) {
       setDidRouteMobileStartup(true);
-      navigate(Path.Chat, { replace: true });
+      if (isHome) {
+        navigate(Path.Chat, { replace: true });
+      }
     }
   }, [
     didRouteMobileStartup,
     accessStore._hasHydrated,
     isHome,
-    isMobileScreen,
+    isCompactScreen,
     navigate,
     shouldRequireAccessCode,
     shouldWaitForServerConfig,
@@ -281,6 +282,7 @@ function Screen() {
     <div
       className={clsx(styles.container, {
         [styles["tight-container"]]: shouldTightBorder,
+        [styles["compact-container"]]: isCompactScreen,
         [styles["rtl-screen"]]: getLang() === ("ar" as any),
       })}
     >

@@ -65,6 +65,7 @@ import {
   copyToClipboard,
   selectOrCopy,
   autoGrowTextArea,
+  useCompactScreen,
   useMobileScreen,
   getMessageTextContent,
   getMessageImages,
@@ -1463,6 +1464,7 @@ function _Chat() {
   );
   const [hitBottom, setHitBottom] = useState(true);
   const isMobileScreen = useMobileScreen();
+  const isCompactScreen = useCompactScreen();
   const navigate = useNavigate();
   const [attachImages, setAttachImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -1473,6 +1475,24 @@ function _Chat() {
   // prompt hints
   const promptStore = usePromptStore();
   const [promptHints, setPromptHints] = useState<RenderPrompt[]>([]);
+  const [isInputExpanded, setIsInputExpanded] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const ignoreInputCollapseUntil = useRef(0);
+  const hasActiveInputContent =
+    userInput.trim().length > 0 ||
+    attachImages.length > 0 ||
+    attachedFiles.length > 0 ||
+    promptHints.length > 0;
+  const shouldExpandChatInput =
+    !isCompactScreen ||
+    isInputExpanded ||
+    isInputFocused ||
+    hasActiveInputContent;
+  const expandInput = () => {
+    ignoreInputCollapseUntil.current = Date.now() + 350;
+    setIsInputExpanded(true);
+  };
+
   const onSearch = useDebouncedCallback(
     (text: string) => {
       const matchedPrompts = promptStore.search(text);
@@ -1489,7 +1509,7 @@ function _Chat() {
       const rows = inputRef.current ? autoGrowTextArea(inputRef.current) : 1;
       const inputRows = Math.min(
         20,
-        Math.max(2 + Number(!isMobileScreen), rows),
+        Math.max(2 + Number(!isCompactScreen), rows),
       );
       setInputRows(inputRows);
     },
@@ -1652,7 +1672,11 @@ function _Chat() {
     chatStore.setLastInput(finalUserInput);
     setUserInput("");
     setPromptHints([]);
-    if (!isMobileScreen) inputRef.current?.focus();
+    if (isCompactScreen) {
+      setIsInputExpanded(false);
+    } else {
+      inputRef.current?.focus();
+    }
     setAutoScroll(true);
   };
 
@@ -1801,7 +1825,7 @@ function _Chat() {
     const images = getMessageImages(userMessage);
     chatStore.onUserInput(textContent, images).then(() => setIsLoading(false));
     // 只在非移动设备上聚焦输入框
-    if (!isMobileScreen) {
+    if (!isCompactScreen) {
       inputRef.current?.focus();
     }
   };
@@ -1959,6 +1983,16 @@ function _Chat() {
 
     setHitBottom(isHitBottom);
     setAutoScroll(isHitBottom);
+
+    if (
+      isCompactScreen &&
+      !hasActiveInputContent &&
+      Date.now() > ignoreInputCollapseUntil.current
+    ) {
+      inputRef.current?.blur();
+      setIsInputFocused(false);
+      setIsInputExpanded(false);
+    }
   };
   function scrollToBottom() {
     setMsgRenderIndex(renderMessages.length - CHAT_PAGE_SIZE);
@@ -1975,8 +2009,8 @@ function _Chat() {
 
   const clientConfig = useMemo(() => getClientConfig(), []);
 
-  const autoFocus = !isMobileScreen; // wont auto focus on mobile screen
-  const showMaxIcon = !isMobileScreen && !clientConfig?.isApp;
+  const autoFocus = !isCompactScreen; // wont auto focus on compact screens
+  const showMaxIcon = !isCompactScreen && !clientConfig?.isApp;
 
   useCommand({
     fill: setUserInput,
@@ -2263,7 +2297,7 @@ function _Chat() {
   };
 
   const handleTouchEnd = () => {
-    if (!isMobileScreen) return;
+    if (!isCompactScreen) return;
 
     const swipeDistance = touchEndX - touchStartX;
     const minSwipeDistance = 100; // 最小滑动距离
@@ -2323,7 +2357,7 @@ function _Chat() {
       onTouchEnd={handleTouchEnd}
     >
       <div className="window-header" data-tauri-drag-region>
-        {isMobileScreen && (
+        {isCompactScreen && (
           <div className="window-actions">
             <div className={"window-action-button"}>
               <IconButton
@@ -2359,7 +2393,7 @@ function _Chat() {
               }}
             />
           </div>
-          {!isMobileScreen && (
+          {!isCompactScreen && (
             <div className="window-action-button">
               <IconButton
                 icon={<RenameIcon />}
@@ -2413,6 +2447,9 @@ function _Chat() {
             onTouchStart={() => {
               inputRef.current?.blur();
               setAutoScroll(false);
+              if (!hasActiveInputContent) {
+                setIsInputExpanded(false);
+              }
             }}
           >
             {messages.map((message, i) => {
@@ -2665,7 +2702,11 @@ function _Chat() {
               );
             })}
           </div>
-          <div className={styles["chat-input-panel"]}>
+          <div
+            className={clsx(styles["chat-input-panel"], {
+              [styles["chat-input-panel-collapsed"]]: !shouldExpandChatInput,
+            })}
+          >
             <PromptHints
               prompts={promptHints}
               onPromptSelect={onPromptSelect}
@@ -2680,6 +2721,7 @@ function _Chat() {
               hitBottom={hitBottom}
               uploading={uploading}
               showPromptHints={() => {
+                expandInput();
                 // Click again to close
                 if (promptHints.length > 0) {
                   setPromptHints([]);
@@ -2698,6 +2740,8 @@ function _Chat() {
             />
             <label
               className={clsx(styles["chat-input-panel-inner"], {
+                [styles["chat-input-panel-inner-collapsed"]]:
+                  !shouldExpandChatInput,
                 [styles["chat-input-panel-inner-attach"]]:
                   attachImages.length !== 0 || attachedFiles.length !== 0,
                 [styles["chat-input-panel-inner-reasoning"]]:
@@ -2710,15 +2754,23 @@ function _Chat() {
                 ref={inputRef}
                 className={styles["chat-input"]}
                 placeholder={
-                  isMobileScreen
+                  isCompactScreen
                     ? Locale.Chat.MobileInput
                     : Locale.Chat.Input(submitKey)
                 }
                 onInput={(e) => onInput(e.currentTarget.value)}
                 value={userInput}
                 onKeyDown={onInputKeyDown}
-                onFocus={scrollToBottom}
-                onClick={scrollToBottom}
+                onFocus={() => {
+                  setIsInputFocused(true);
+                  expandInput();
+                  scrollToBottom();
+                }}
+                onClick={() => {
+                  expandInput();
+                  scrollToBottom();
+                }}
+                onBlur={() => setIsInputFocused(false)}
                 onPaste={handlePaste}
                 rows={inputRows}
                 autoFocus={autoFocus}
@@ -2821,7 +2873,7 @@ function _Chat() {
 
               <IconButton
                 icon={<SendWhiteIcon />}
-                text={isMobileScreen ? undefined : Locale.Chat.Send}
+                text={isCompactScreen ? undefined : Locale.Chat.Send}
                 className={styles["chat-input-send"]}
                 type="primary"
                 onClick={() => doSubmit(userInput)}
@@ -2831,7 +2883,7 @@ function _Chat() {
         </div>
         <div
           className={clsx(styles["chat-side-panel"], {
-            [styles["mobile"]]: isMobileScreen,
+            [styles["mobile"]]: isCompactScreen,
             [styles["chat-side-panel-show"]]: showChatSidePanel,
           })}
         >

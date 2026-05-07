@@ -499,7 +499,7 @@
   margin-top: 5px;
   .chat-message-tool {
     display: flex;
-    align-items: end;
+    align-items: flex-end;
     svg {
       margin-left: 5px;
       margin-right: 5px;
@@ -785,6 +785,16 @@
   }
 }
 
+.chat-input-panel-collapsed {
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  box-shadow: 0 -6px 18px rgba($color: #000, $alpha: 0.05);
+
+  .prompt-hints,
+  .chat-input-actions {
+    display: none;
+  }
+}
+
 @mixin single-line {
   white-space: nowrap;
   overflow: hidden;
@@ -876,6 +886,39 @@
   box-shadow:
     0 12px 42px rgba($color: #000, $alpha: 0.1),
     0 0 0 3px rgba(49, 94, 248, 0.12);
+}
+
+.chat-input-panel-inner-collapsed {
+  min-height: 48px;
+  gap: 0;
+  padding: 10px 58px 10px 16px;
+  border-radius: 18px;
+  box-shadow: none;
+
+  .chat-input {
+    height: 26px;
+    min-height: 26px;
+    max-height: 26px;
+    line-height: 26px;
+    padding-bottom: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .chat-input-reasoning,
+  .attachments-container {
+    display: none;
+  }
+
+  .chat-input-send {
+    right: 8px;
+    bottom: 8px;
+    min-width: unset;
+    width: 40px;
+    height: 40px;
+    padding: 10px;
+    border-radius: 14px;
+  }
 }
 
 .chat-input {
@@ -984,6 +1027,52 @@
 
   .chat-input-panel-inner-attach {
     min-height: 216px;
+  }
+
+  .attach-image,
+  .attach-file {
+    flex-basis: 82px;
+    width: 82px;
+    height: 82px;
+  }
+
+  .chat-input-send {
+    right: 20px;
+    bottom: 20px;
+    min-width: unset;
+    width: 56px;
+    height: 56px;
+    padding: 16px;
+  }
+}
+
+@media only screen and (max-width: 900px) {
+  .chat-input-panel {
+    padding: 12px 20px 18px;
+  }
+
+  .chat-input {
+    font-size: 16px;
+  }
+
+  .chat-input-panel-inner {
+    min-height: 120px;
+    padding: 16px 88px 58px 16px;
+    border-radius: 16px;
+  }
+
+  .chat-input-panel-inner-attach {
+    min-height: 216px;
+  }
+
+  .chat-input-panel-inner-collapsed {
+    min-height: 48px;
+    padding: 10px 58px 10px 16px;
+    border-radius: 18px;
+  }
+
+  .chat-input-panel-collapsed {
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
   }
 
   .attach-image,
