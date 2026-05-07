@@ -10,6 +10,7 @@ import {
   parseOpenAIMaxOutputTokens,
   parseOpenAIResponsesReasoningEffort,
   parseOpenAIResponsesTextVerbosity,
+  shouldRequireOpenAIResponsesWebSearch,
   shouldUseOpenAIResponses,
   supportsOpenAIResponsesWebSearch,
 } from "../app/utils/openai-responses";
@@ -109,6 +110,16 @@ describe("OpenAI Responses config", () => {
         providerName: "OpenAI",
       }),
     ).toBe(false);
+  });
+
+  test("requires web search for time-sensitive user requests", () => {
+    expect(shouldRequireOpenAIResponsesWebSearch("今天有什么大新闻")).toBe(
+      true,
+    );
+    expect(shouldRequireOpenAIResponsesWebSearch("latest OpenAI news")).toBe(
+      true,
+    );
+    expect(shouldRequireOpenAIResponsesWebSearch("解释一下递归")).toBe(false);
   });
 
   test("detects OpenAI GPT-5 and newer model configs for settings controls", () => {

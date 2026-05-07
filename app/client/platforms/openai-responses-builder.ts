@@ -7,6 +7,7 @@ import {
   supportsOpenAIResponsesSampling,
   type OpenAIResponsesReasoningEffort,
   type OpenAIResponsesTextVerbosity,
+  type OpenAIResponsesWebSearchMode,
 } from "@/app/utils/openai-responses";
 
 export type ResponsesInputContent =
@@ -66,6 +67,7 @@ export interface ResponsesRequestPayload {
   temperature?: number;
   top_p?: number;
   tools?: ResponsesTool[];
+  tool_choice?: "auto" | "required";
 }
 
 function contentToText(content: string | MultimodalContent[]) {
@@ -202,6 +204,7 @@ export function buildOpenAIResponsesPayload(params: {
   store?: boolean;
   serviceTier?: string;
   enableWebSearch?: boolean;
+  webSearchMode?: OpenAIResponsesWebSearchMode;
 }): ResponsesRequestPayload {
   const { instructions, input, previousResponseId } = toResponsesInput(
     params.messages,
@@ -263,6 +266,9 @@ export function buildOpenAIResponsesPayload(params: {
 
   if (params.enableWebSearch) {
     payload.tools = [{ type: "web_search" }];
+    if (params.webSearchMode === "required") {
+      payload.tool_choice = "required";
+    }
   }
 
   if (supportsOpenAIResponsesSampling(params.modelConfig.model)) {

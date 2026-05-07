@@ -194,6 +194,18 @@ describe("buildOpenAIResponsesPayload", () => {
     expect(payload.tools).toEqual([{ type: "web_search" }]);
   });
 
+  test("requires hosted web search for time-sensitive requests", () => {
+    const payload = buildOpenAIResponsesPayload({
+      messages: [{ role: "user", content: "今天有什么大新闻" }],
+      modelConfig,
+      enableWebSearch: true,
+      webSearchMode: "required",
+    }) as any;
+
+    expect(payload.tools).toEqual([{ type: "web_search" }]);
+    expect(payload.tool_choice).toBe("required");
+  });
+
   test("omits sampling params for older reasoning models", () => {
     const payload = buildOpenAIResponsesPayload({
       messages: [{ role: "user", content: "Hello" }],

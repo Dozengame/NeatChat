@@ -27,6 +27,7 @@ import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
 import { DalleSize, DalleQuality, DalleStyle } from "@/app/typing";
 import {
   shouldUseOpenAIResponses,
+  shouldRequireOpenAIResponsesWebSearch,
   supportsOpenAIResponsesWebSearch,
 } from "@/app/utils/openai-responses";
 import {
@@ -320,6 +321,16 @@ export class ChatGPTApi implements LLMApi {
           model: modelConfig.model,
           providerName: modelConfig.providerName || ServiceProvider.OpenAI,
         });
+        const latestUserText =
+          messages
+            .filter((message) => message.role === "user")
+            .map((message) => getMessageTextContent(message as any))
+            .at(-1) ?? "";
+        const webSearchMode =
+          enableWebSearch &&
+          shouldRequireOpenAIResponsesWebSearch(latestUserText)
+            ? "required"
+            : "auto";
 
         requestPayload = buildOpenAIResponsesPayload({
           messages,
@@ -339,6 +350,7 @@ export class ChatGPTApi implements LLMApi {
           truncation: "disabled",
           store: false,
           enableWebSearch,
+          webSearchMode,
         });
       } else {
         requestPayload = {
