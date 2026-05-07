@@ -134,3 +134,17 @@ export function supportsOpenAIResponsesSampling(model?: string) {
 
   return true;
 }
+
+export function supportsOpenAIResponsesWebSearch(params: {
+  model?: string;
+  providerName?: string;
+}) {
+  const providerName = params.providerName?.trim().toLowerCase();
+  const normalizedModel = params.model?.trim().toLowerCase() ?? "";
+
+  return (
+    (!providerName || OPENAI_PROVIDER_NAMES.has(providerName)) &&
+    (/^gpt-5\.(4|5)(?:[-.]|$)/.test(normalizedModel) ||
+      /^gpt-4\.1(?:[-.]|$)/.test(normalizedModel))
+  );
+}

@@ -44,6 +44,7 @@ describe("buildOpenAIResponsesPayload", () => {
     ]);
     expect(payload.max_output_tokens).toBe(12345);
     expect(payload.reasoning).toEqual({ effort: "low", summary: "auto" });
+    expect(payload.include).toEqual(["reasoning.encrypted_content"]);
     expect(payload.text).toEqual({ verbosity: "low" });
     expect(payload.truncation).toBe("disabled");
     expect(payload.store).toBe(false);
@@ -106,6 +107,91 @@ describe("buildOpenAIResponsesPayload", () => {
         content: [{ type: "input_text", text: "Summarize it again." }],
       },
     ]);
+  });
+
+  test("replays stored Responses output items when running stateless", () => {
+    const priorOutput = [
+      {
+        id: "rs_123",
+        type: "reasoning",
+        encrypted_content: "encrypted",
+        summary: [],
+      },
+      {
+        id: "msg_123",
+        type: "message",
+        status: "completed",
+        role: "assistant",
+        content: [
+          {
+            type: "output_text",
+            text: "Prior answer",
+            annotations: [],
+          },
+        ],
+      },
+    ];
+    const payload = buildOpenAIResponsesPayload({
+      messages: [
+        { role: "user", content: "First question" },
+        {
+          role: "assistant",
+          content: "Prior answer",
+          openaiResponseId: "resp_123",
+          openaiResponsesOutput: priorOutput,
+        },
+        { role: "user", content: "Follow up" },
+      ],
+      modelConfig,
+      store: false,
+    }) as any;
+
+    expect(payload.previous_response_id).toBeUndefined();
+    expect(payload.input).toEqual([
+      {
+        role: "user",
+        content: [{ type: "input_text", text: "First question" }],
+      },
+      ...priorOutput,
+      {
+        role: "user",
+        content: [{ type: "input_text", text: "Follow up" }],
+      },
+    ]);
+  });
+
+  test("uses previous_response_id when server-side state is enabled", () => {
+    const payload = buildOpenAIResponsesPayload({
+      messages: [
+        { role: "user", content: "First question" },
+        {
+          role: "assistant",
+          content: "Prior answer",
+          openaiResponseId: "resp_123",
+        },
+        { role: "user", content: "Follow up" },
+      ],
+      modelConfig,
+      store: true,
+    }) as any;
+
+    expect(payload.previous_response_id).toBe("resp_123");
+    expect(payload.input).toEqual([
+      {
+        role: "user",
+        content: [{ type: "input_text", text: "Follow up" }],
+      },
+    ]);
+  });
+
+  test("adds hosted web search tool when enabled", () => {
+    const payload = buildOpenAIResponsesPayload({
+      messages: [{ role: "user", content: "What changed today?" }],
+      modelConfig,
+      enableWebSearch: true,
+    }) as any;
+
+    expect(payload.tools).toEqual([{ type: "web_search" }]);
   });
 
   test("omits sampling params for older reasoning models", () => {

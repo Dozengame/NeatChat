@@ -42,6 +42,8 @@ export interface MultimodalContent {
 export interface RequestMessage {
   role: MessageRole;
   content: string | MultimodalContent[];
+  openaiResponseId?: string;
+  openaiResponsesOutput?: unknown[];
 }
 
 export interface LLMConfig {
@@ -72,7 +74,11 @@ export interface ChatOptions {
   config: LLMConfig;
 
   onUpdate?: (message: string, chunk: string) => void;
-  onFinish: (message: string, responseRes: Response) => void;
+  onFinish: (
+    message: string,
+    responseRes: Response,
+    metadata?: { openaiResponseId?: string; openaiResponsesOutput?: unknown[] },
+  ) => void;
   onError?: (err: Error) => void;
   onController?: (controller: AbortController) => void;
   onBeforeTool?: (tool: ChatMessageTool) => void;

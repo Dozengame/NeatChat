@@ -79,6 +79,8 @@ export type ChatMessage = RequestMessage & {
   isError?: boolean;
   id: string;
   model?: ModelType;
+  openaiResponseId?: string;
+  openaiResponsesOutput?: unknown[];
   tools?: ChatMessageTool[];
   audio_url?: string;
   isMcpResponse?: boolean;
@@ -661,7 +663,7 @@ export const useChatStore = createPersistStore(
               session.messages = session.messages.concat();
             });
           },
-          onFinish(message) {
+          onFinish(message, _responseRes, metadata) {
             botMessage.streaming = false;
             if (message || options?.visibleMcpResult) {
               botMessage.content = options?.visibleMcpResult
@@ -670,6 +672,9 @@ export const useChatStore = createPersistStore(
                     options.visibleMcpResult,
                   )
                 : message;
+              botMessage.openaiResponseId = metadata?.openaiResponseId;
+              botMessage.openaiResponsesOutput =
+                metadata?.openaiResponsesOutput;
               botMessage.date = new Date().toLocaleString();
               get().onNewMessage(botMessage, session);
             }

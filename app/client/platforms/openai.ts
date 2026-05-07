@@ -25,7 +25,10 @@ import {
 } from "@/app/utils/chat";
 import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
 import { DalleSize, DalleQuality, DalleStyle } from "@/app/typing";
-import { shouldUseOpenAIResponses } from "@/app/utils/openai-responses";
+import {
+  shouldUseOpenAIResponses,
+  supportsOpenAIResponsesWebSearch,
+} from "@/app/utils/openai-responses";
 import {
   buildOpenAIResponsesPayload,
   ResponsesRequestPayload,
@@ -87,22 +90,35 @@ export interface DalleRequestPayload {
 }
 
 export function extractResponsesText(res: any) {
-  if (typeof res?.output_text === "string") {
-    return res.output_text;
-  }
-
+  const outputText =
+    typeof res?.output_text === "string" ? res.output_text : undefined;
   const parts: string[] = [];
+  const citations = new Map<string, string>();
   for (const output of res?.output ?? []) {
     if (Array.isArray(output?.content)) {
       for (const content of output.content) {
         if (content?.type === "output_text" && content.text) {
           parts.push(content.text);
+          for (const annotation of content.annotations ?? []) {
+            if (annotation?.type === "url_citation" && annotation.url) {
+              citations.set(annotation.url, annotation.title || annotation.url);
+            }
+          }
         }
       }
     }
   }
 
-  return parts.join("");
+  const text = parts.join("") || outputText || "";
+  if (citations.size === 0) {
+    return text;
+  }
+
+  const sources = Array.from(citations.entries())
+    .map(([url, title]) => `- [${title}](${url})`)
+    .join("\n");
+
+  return `${text}\n\n来源：\n${sources}`;
 }
 
 export function parseResponsesSSE(text: string) {
@@ -259,6 +275,8 @@ export class ChatGPTApi implements LLMApi {
     };
     const accessStore = useAccessStore.getState();
     const isDalle3 = _isDalle3(options.config.model);
+    let openaiResponseId: string | undefined;
+    let openaiResponsesOutput: unknown[] | undefined;
     const useResponses =
       !isDalle3 &&
       shouldUseOpenAIResponses({
@@ -298,6 +316,11 @@ export class ChatGPTApi implements LLMApi {
       }
 
       if (useResponses) {
+        const enableWebSearch = supportsOpenAIResponsesWebSearch({
+          model: modelConfig.model,
+          providerName: modelConfig.providerName || ServiceProvider.OpenAI,
+        });
+
         requestPayload = buildOpenAIResponsesPayload({
           messages,
           modelConfig: {
@@ -315,6 +338,7 @@ export class ChatGPTApi implements LLMApi {
           reasoningSummary: "auto",
           truncation: "disabled",
           store: false,
+          enableWebSearch,
         });
       } else {
         requestPayload = {
@@ -383,13 +407,19 @@ export class ChatGPTApi implements LLMApi {
           .getState()
           .getAsTools(session.mask?.plugin || []);
 
+        const webAccessState = useResponses
+          ? supportsOpenAIResponsesWebSearch({
+              model: modelConfig.model,
+              providerName: modelConfig.providerName || ServiceProvider.OpenAI,
+            })
+            ? "Auto"
+            : "Unsupported"
+          : session.mask?.plugin?.includes("googleSearch")
+          ? "Enabled"
+          : "Disabled";
+
         // 添加联网状态日志
-        console.log(
-          "[Chat] Web Access:",
-          session.mask?.plugin?.includes("googleSearch")
-            ? "Enabled"
-            : "Disabled",
-        );
+        console.log("[Chat] Web Access:", webAccessState);
 
         // 特殊处理gemini模型的联网功能
         // 如果是gemini-2.0-flash-exp且用户选择了googleSearch，使用特定的tools
@@ -426,6 +456,12 @@ export class ChatGPTApi implements LLMApi {
           (text: string, runTools: ChatMessageTool[]) => {
             if (useResponses) {
               const json = JSON.parse(text);
+              if (typeof json.response?.id === "string") {
+                openaiResponseId = json.response.id;
+              }
+              if (Array.isArray(json.response?.output)) {
+                openaiResponsesOutput = json.response.output;
+              }
               if (
                 json.type === "response.output_text.delta" ||
                 json.type === "response.refusal.delta"
@@ -460,6 +496,16 @@ export class ChatGPTApi implements LLMApi {
                   return "<think>\n正在推理...";
                 }
                 return;
+              }
+
+              if (json.type === "response.completed" && json.response) {
+                const finalText = extractResponsesText(json.response);
+                if (finalText) {
+                  return {
+                    content: finalText,
+                    replace: true,
+                  };
+                }
               }
 
               if (json.type === "response.error" && json.error) {
@@ -546,6 +592,12 @@ export class ChatGPTApi implements LLMApi {
           },
           options,
           useResponses ? OPENAI_RESPONSES_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
+          {
+            getMetadata: () => ({
+              openaiResponseId,
+              openaiResponsesOutput,
+            }),
+          },
         );
       } else {
         const chatPayload = {
@@ -570,7 +622,19 @@ export class ChatGPTApi implements LLMApi {
 
         const resJson = await res.json();
         const message = await this.extractMessage(resJson);
-        options.onFinish(message, res);
+        options.onFinish(
+          message,
+          res,
+          useResponses
+            ? {
+                openaiResponseId:
+                  typeof resJson?.id === "string" ? resJson.id : undefined,
+                openaiResponsesOutput: Array.isArray(resJson?.output)
+                  ? resJson.output
+                  : undefined,
+              }
+            : undefined,
+        );
       }
     } catch (e) {
       console.log("[Request] failed to make a chat request", e);

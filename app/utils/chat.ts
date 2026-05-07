@@ -172,6 +172,9 @@ export function stream(
   ) => void,
   options: any,
   timeoutMs = REQUEST_TIMEOUT_MS,
+  responseMetadata?: {
+    getMetadata?: () => Record<string, unknown> | undefined;
+  },
 ) {
   let responseText = "";
   let remainText = "";
@@ -277,7 +280,11 @@ export function stream(
       }
       console.debug("[ChatAPI] end");
       finished = true;
-      options.onFinish(responseText + remainText, responseRes); // 将res传递给onFinish
+      options.onFinish(
+        responseText + remainText,
+        responseRes,
+        responseMetadata?.getMetadata?.(),
+      ); // 将res传递给onFinish
     }
   };
 

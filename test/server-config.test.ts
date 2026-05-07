@@ -11,6 +11,7 @@ import {
   parseOpenAIResponsesReasoningEffort,
   parseOpenAIResponsesTextVerbosity,
   shouldUseOpenAIResponses,
+  supportsOpenAIResponsesWebSearch,
 } from "../app/utils/openai-responses";
 import {
   buildPublicAppConfig,
@@ -75,6 +76,39 @@ describe("OpenAI Responses config", () => {
         providerName: "OpenAI",
       }),
     ).toBe(true);
+  });
+
+  test("enables hosted web search only for supported OpenAI models", () => {
+    expect(
+      supportsOpenAIResponsesWebSearch({
+        model: "gpt-5.5",
+        providerName: "OpenAI",
+      }),
+    ).toBe(true);
+    expect(
+      supportsOpenAIResponsesWebSearch({
+        model: "gpt-5.4",
+        providerName: "OpenAI",
+      }),
+    ).toBe(true);
+    expect(
+      supportsOpenAIResponsesWebSearch({
+        model: "gpt-4.1",
+        providerName: "OpenAI",
+      }),
+    ).toBe(true);
+    expect(
+      supportsOpenAIResponsesWebSearch({
+        model: "gpt-5.5",
+        providerName: "Azure",
+      }),
+    ).toBe(false);
+    expect(
+      supportsOpenAIResponsesWebSearch({
+        model: "gpt-4o",
+        providerName: "OpenAI",
+      }),
+    ).toBe(false);
   });
 
   test("detects OpenAI GPT-5 and newer model configs for settings controls", () => {

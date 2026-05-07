@@ -33,16 +33,24 @@ export type ResponsesMessageContent =
   | ResponsesInputContent
   | ResponsesOutputContent;
 
+export type ResponsesInputItem =
+  | {
+      role: "user" | "assistant";
+      content: ResponsesMessageContent[];
+    }
+  | Record<string, unknown>;
+
+export type ResponsesTool = {
+  type: "web_search";
+};
+
 export interface ResponsesRequestPayload {
-  input:
-    | string
-    | {
-        role: "user" | "assistant";
-        content: ResponsesMessageContent[];
-      }[];
+  input: string | ResponsesInputItem[];
   instructions?: string;
   stream?: boolean;
   model: string;
+  previous_response_id?: string;
+  include?: string[];
   max_output_tokens?: number;
   reasoning?: {
     effort: OpenAIResponsesReasoningEffort;
@@ -57,6 +65,7 @@ export interface ResponsesRequestPayload {
   service_tier?: string;
   temperature?: number;
   top_p?: number;
+  tools?: ResponsesTool[];
 }
 
 function contentToText(content: string | MultimodalContent[]) {
@@ -115,27 +124,70 @@ function toResponsesOutputContent(content: string | MultimodalContent[]) {
   ];
 }
 
-function toResponsesInput(messages: ChatOptions["messages"]) {
+function toResponsesInput(messages: ChatOptions["messages"], store?: boolean) {
   const instructions = messages
     .filter((message) => message.role === "system")
     .map((message) => contentToText(message.content))
     .filter(Boolean)
     .join("\n\n");
 
-  const input = messages
-    .filter((message) => message.role !== "system")
-    .map((message) => ({
-      role: message.role as "user" | "assistant",
-      content:
-        message.role === "assistant"
-          ? toResponsesOutputContent(message.content)
-          : toResponsesInputContent(message.content),
-    }))
-    .filter((message) => message.content.length > 0);
+  const conversationMessages = messages.filter(
+    (message) => message.role !== "system",
+  );
+  const input: ResponsesInputItem[] = [];
+
+  const previousResponseIndex =
+    store === false
+      ? -1
+      : (() => {
+          for (let i = conversationMessages.length - 1; i >= 0; i -= 1) {
+            const message = conversationMessages[i];
+            if (
+              message?.role === "assistant" &&
+              typeof message.openaiResponseId === "string" &&
+              message.openaiResponseId.trim()
+            ) {
+              return i;
+            }
+          }
+          return -1;
+        })();
+
+  const previousResponseId =
+    previousResponseIndex >= 0
+      ? conversationMessages[previousResponseIndex].openaiResponseId
+      : undefined;
+  const messagesToSend =
+    previousResponseIndex >= 0
+      ? conversationMessages.slice(previousResponseIndex + 1)
+      : conversationMessages;
+
+  for (const message of messagesToSend) {
+    if (
+      message.role === "assistant" &&
+      Array.isArray(message.openaiResponsesOutput) &&
+      message.openaiResponsesOutput.length > 0
+    ) {
+      input.push(...(message.openaiResponsesOutput as ResponsesInputItem[]));
+      continue;
+    }
+
+    const content =
+      message.role === "assistant"
+        ? toResponsesOutputContent(message.content)
+        : toResponsesInputContent(message.content);
+    if (content.length > 0) {
+      input.push({
+        role: message.role as "user" | "assistant",
+        content,
+      });
+    }
+  }
 
   return {
     instructions: instructions || undefined,
     input: input.length > 0 ? input : "",
+    previousResponseId,
   };
 }
 
@@ -149,14 +201,22 @@ export function buildOpenAIResponsesPayload(params: {
   truncation?: "auto" | "disabled";
   store?: boolean;
   serviceTier?: string;
+  enableWebSearch?: boolean;
 }): ResponsesRequestPayload {
-  const { instructions, input } = toResponsesInput(params.messages);
+  const { instructions, input, previousResponseId } = toResponsesInput(
+    params.messages,
+    params.store,
+  );
   const payload: ResponsesRequestPayload = {
     input,
     instructions,
     stream: params.stream,
     model: params.modelConfig.model,
   };
+
+  if (previousResponseId) {
+    payload.previous_response_id = previousResponseId;
+  }
 
   if (params.modelConfig.max_output_tokens > 0) {
     payload.max_output_tokens = params.modelConfig.max_output_tokens;
@@ -173,6 +233,9 @@ export function buildOpenAIResponsesPayload(params: {
         OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT) as OpenAIResponsesReasoningEffort,
       summary: params.reasoningSummary,
     };
+    if (params.store === false) {
+      payload.include = ["reasoning.encrypted_content"];
+    }
   }
 
   const verbosity =
@@ -196,6 +259,10 @@ export function buildOpenAIResponsesPayload(params: {
 
   if (params.serviceTier) {
     payload.service_tier = params.serviceTier;
+  }
+
+  if (params.enableWebSearch) {
+    payload.tools = [{ type: "web_search" }];
   }
 
   if (supportsOpenAIResponsesSampling(params.modelConfig.model)) {
