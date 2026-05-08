@@ -44,6 +44,7 @@ let isFetchingConfig = false;
 let hasFetchedConfig = false;
 
 const isApp = getClientConfig()?.buildMode === "export";
+const ACCESS_CODE_VALIDATE_TIMEOUT_MS = 15_000;
 
 const DEFAULT_OPENAI_URL = isApp ? OPENAI_BASE_URL : ApiPath.OpenAI;
 
@@ -160,6 +161,15 @@ const DEFAULT_ACCESS_STATE = {
   // tts config
   edgeTTSVoiceName: "zh-CN-YunxiNeural",
 };
+
+export function sanitizeAccessPersistedState<T extends Record<string, any>>(
+  state: T,
+) {
+  return {
+    ...state,
+    isValidatingAccessCode: false,
+  };
+}
 
 const MODEL_CONFIG_FIELDS = [
   "model",
@@ -634,9 +644,15 @@ export const useAccessStore = createPersistStore(
       }
 
       set({ isValidatingAccessCode: true } as Partial<ReturnType<typeof get>>);
+      const controller = new AbortController();
+      const timeout = setTimeout(
+        () => controller.abort(),
+        ACCESS_CODE_VALIDATE_TIMEOUT_MS,
+      );
       try {
         const res = await fetch("/api/access-code", {
           method: "POST",
+          signal: controller.signal,
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
@@ -673,10 +689,16 @@ export const useAccessStore = createPersistStore(
         return false;
       } catch {
         set({
+          validatedAccessCode: "",
+          accessCodeValidatedAt: 0,
+          accessCodeValidatedServerId: "",
           isValidatingAccessCode: false,
           accessCodeError: "invalid",
+          lastUpdateTime: Date.now(),
         } as Partial<ReturnType<typeof get>>);
         return false;
+      } finally {
+        clearTimeout(timeout);
       }
     },
 
@@ -727,20 +749,25 @@ export const useAccessStore = createPersistStore(
   }),
   {
     name: StoreKey.Access,
-    version: 2,
+    version: 3,
+    partialize(state) {
+      return sanitizeAccessPersistedState(state as any);
+    },
     migrate(persistedState, version) {
+      const state = sanitizeAccessPersistedState(persistedState as any);
+
       if (version < 2) {
-        const state = persistedState as {
+        const legacyState = state as {
           token: string;
           openaiApiKey: string;
           azureApiVersion: string;
           googleApiKey: string;
         };
-        state.openaiApiKey = state.token;
-        state.azureApiVersion = "2023-08-01-preview";
+        legacyState.openaiApiKey = legacyState.token;
+        legacyState.azureApiVersion = "2023-08-01-preview";
       }
 
-      return persistedState as any;
+      return state as any;
     },
   },
 );

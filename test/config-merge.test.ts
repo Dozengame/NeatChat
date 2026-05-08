@@ -5,7 +5,10 @@ jest.mock("../app/client/api", () => ({
   ClientApi: jest.fn(),
 }));
 
-import { applyPublicAppConfig } from "../app/store/access";
+import {
+  applyPublicAppConfig,
+  sanitizeAccessPersistedState,
+} from "../app/store/access";
 import { DEFAULT_CONFIG, useAppConfig } from "../app/store/config";
 import { useChatStore } from "../app/store/chat";
 import { ServiceProvider } from "../app/constant";
@@ -205,5 +208,19 @@ describe("applyPublicAppConfig", () => {
       useChatStore.getState().temporarySession!.mask.modelConfig
         .max_output_tokens,
     ).toBe(10000);
+  });
+});
+
+describe("sanitizeAccessPersistedState", () => {
+  test("does not restore a stale access-code validating state", () => {
+    expect(
+      sanitizeAccessPersistedState({
+        accessCode: "code",
+        isValidatingAccessCode: true,
+      }),
+    ).toMatchObject({
+      accessCode: "code",
+      isValidatingAccessCode: false,
+    });
   });
 });
