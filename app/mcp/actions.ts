@@ -23,6 +23,8 @@ const logger = new MCPClientLogger("MCP Actions");
 const CONFIG_PATH = path.join(process.cwd(), "app/mcp/mcp_config.json");
 
 const clientsMap = new Map<string, McpClientData>();
+let initializeMcpSystemPromise: Promise<McpConfigData | undefined> | null =
+  null;
 
 // 获取客户端状态
 export async function getClientsStatus(): Promise<
@@ -140,24 +142,42 @@ async function initializeSingleClient(
 
 // 初始化系统
 export async function initializeMcpSystem() {
-  logger.info("MCP Actions starting...");
-  try {
-    // 检查是否已有活跃的客户端
-    if (clientsMap.size > 0) {
-      logger.info("MCP system already initialized, skipping...");
-      return;
-    }
-
-    const config = await getMcpConfigFromFile();
-    // 初始化所有客户端
-    for (const [clientId, serverConfig] of Object.entries(config.mcpServers)) {
-      await initializeSingleClient(clientId, serverConfig);
-    }
-    return config;
-  } catch (error) {
-    logger.error(`Failed to initialize MCP system: ${error}`);
-    throw error;
+  if (clientsMap.size > 0) {
+    logger.info("MCP system already initialized, skipping...");
+    return;
   }
+
+  if (initializeMcpSystemPromise) {
+    logger.info("MCP system initialization already in progress, reusing...");
+    return initializeMcpSystemPromise;
+  }
+
+  initializeMcpSystemPromise = (async () => {
+    logger.info("MCP Actions starting...");
+    try {
+      // 检查是否已有活跃的客户端
+      if (clientsMap.size > 0) {
+        logger.info("MCP system already initialized, skipping...");
+        return;
+      }
+
+      const config = await getMcpConfigFromFile();
+      // 初始化所有客户端
+      for (const [clientId, serverConfig] of Object.entries(
+        config.mcpServers,
+      )) {
+        await initializeSingleClient(clientId, serverConfig);
+      }
+      return config;
+    } catch (error) {
+      logger.error(`Failed to initialize MCP system: ${error}`);
+      throw error;
+    } finally {
+      initializeMcpSystemPromise = null;
+    }
+  })();
+
+  return initializeMcpSystemPromise;
 }
 
 // 添加服务器

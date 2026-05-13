@@ -3,6 +3,7 @@ jest.mock("../app/mcp/actions", () => ({
   executeMcpAction: jest.fn(),
   getAllTools: jest.fn(() => Promise.resolve([])),
   getClientsStatus: jest.fn(() => Promise.resolve({})),
+  initializeMcpSystem: jest.fn(() => Promise.resolve()),
   isMcpEnabled: jest.fn(() => Promise.resolve(false)),
 }));
 jest.mock("../app/client/api", () => ({
@@ -12,6 +13,7 @@ jest.mock("../app/client/api", () => ({
 }));
 
 import { getClientApi } from "../app/client/api";
+import { isMcpEnabled } from "../app/mcp/actions";
 import {
   applyCustomInstructionsDefaults,
   DEFAULT_CONFIG,
@@ -30,6 +32,7 @@ describe("custom instructions", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (isMcpEnabled as jest.Mock).mockResolvedValue(false);
     (getClientApi as jest.Mock).mockReturnValue({
       llm: {
         chat: chatMock,
@@ -63,6 +66,58 @@ describe("custom instructions", () => {
     expect(messages.some((m: any) => m.content === "Do not include this.")).toBe(
       false,
     );
+  });
+
+  test("queues visible messages before async prompt preparation finishes", async () => {
+    const pendingInput = useChatStore.getState().onUserInput("Hello");
+
+    const session = useChatStore.getState().currentSession();
+    expect(session.messages).toEqual([
+      expect.objectContaining({
+        role: "user",
+        content: "Hello",
+      }),
+      expect.objectContaining({
+        role: "assistant",
+        streaming: true,
+      }),
+    ]);
+
+    await pendingInput;
+  });
+
+  test("stops queued assistant message when prompt preparation fails", async () => {
+    const consoleErrorSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    try {
+      await useChatStore.getState().onUserInput("Hello", undefined, false, {
+        systemPrompt: {
+          trim() {
+            throw new Error("MCP config unavailable");
+          },
+        } as any,
+      });
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
+
+    const session = useChatStore.getState().currentSession();
+    expect(chatMock).not.toHaveBeenCalled();
+    expect(session.messages).toEqual([
+      expect.objectContaining({
+        role: "user",
+        content: "Hello",
+        isError: true,
+      }),
+      expect.objectContaining({
+        role: "assistant",
+        streaming: false,
+        isError: true,
+      }),
+    ]);
+    expect(session.messages[1].content).toContain("MCP config unavailable");
   });
 
   test("sends the default preset with a new chat", async () => {

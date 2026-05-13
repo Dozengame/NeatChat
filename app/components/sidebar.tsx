@@ -13,7 +13,7 @@ import NeatIcon from "../icons/neat.svg";
 
 import Locale from "../locales";
 
-import { useAppConfig, useChatStore, useAccessStore } from "../store";
+import { useAppConfig, useChatStore } from "../store";
 
 import {
   DEFAULT_SIDEBAR_WIDTH,
@@ -29,8 +29,7 @@ import { isIOS, useCompactScreen, useMobileScreen } from "../utils";
 import dynamic from "next/dynamic";
 import { showConfirm, SimpleSelector } from "./ui-lib";
 import clsx from "clsx";
-import { isMcpEnabled, initializeMcpSystem } from "../mcp/actions";
-import { getClientConfig } from "../config/client";
+import { isMcpEnabled } from "../mcp/actions";
 
 const ChatList = dynamic(async () => (await import("./chat-list")).ChatList, {
   loading: () => null,
@@ -228,10 +227,11 @@ export function SideBar(props: { className?: string }) {
   const navigate = useNavigate();
   const config = useAppConfig();
   const chatStore = useChatStore();
-  const [mcpEnabled, setMcpEnabled] = useState(false);
+  const [mcpEnabled, setMcpEnabled] = useState<boolean | null>(null);
+  const [checkingMcpEnabled, setCheckingMcpEnabled] = useState(false);
   const discoveryItems = useMemo(
     () => [
-      ...(mcpEnabled
+      ...(mcpEnabled === true
         ? [{ title: Locale.Mcp.Name, value: Path.McpMarket }]
         : []),
       ...PLUGINS.map((item) => ({
@@ -242,34 +242,23 @@ export function SideBar(props: { className?: string }) {
     [mcpEnabled],
   );
 
-  useEffect(() => {
-    console.log("[Config] got config from build time", getClientConfig());
-    useAccessStore.getState().fetch();
+  const openDiscoverySelector = () => {
+    setShowPluginSelector(true);
 
-    const initMcp = async () => {
-      try {
-        const enabled = await isMcpEnabled();
-        if (enabled) {
-          console.log("[MCP] initializing...");
-          await initializeMcpSystem();
-          console.log("[MCP] initialized");
-        }
-      } catch (err) {
-        console.error("[MCP] failed to initialize:", err);
-      }
-    };
-    initMcp();
-  }, []);
+    if (mcpEnabled !== null || checkingMcpEnabled) return;
 
-  useEffect(() => {
-    // 检查 MCP 是否启用
-    const checkMcpStatus = async () => {
-      const enabled = await isMcpEnabled();
-      setMcpEnabled(enabled);
-      console.log("[SideBar] MCP enabled:", enabled);
-    };
-    checkMcpStatus();
-  }, []);
+    setCheckingMcpEnabled(true);
+    isMcpEnabled()
+      .then((enabled) => {
+        setMcpEnabled(enabled);
+        console.log("[SideBar] MCP enabled:", enabled);
+      })
+      .catch((err) => {
+        console.error("[SideBar] failed to check MCP status:", err);
+        setMcpEnabled(false);
+      })
+      .finally(() => setCheckingMcpEnabled(false));
+  };
 
   return (
     <SideBarContainer
@@ -301,7 +290,7 @@ export function SideBar(props: { className?: string }) {
             icon={<DiscoveryIcon />}
             text={shouldNarrow ? undefined : Locale.Discovery.Name}
             className={styles["sidebar-bar-button"]}
-            onClick={() => setShowPluginSelector(true)}
+            onClick={openDiscoverySelector}
             shadow
           />
         </div>

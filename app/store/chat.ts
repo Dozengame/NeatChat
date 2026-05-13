@@ -43,6 +43,7 @@ import {
   getAllTools,
   getMcpConfigFromFile,
   getClientsStatus,
+  initializeMcpSystem,
   isMcpEnabled,
 } from "../mcp/actions";
 import { extractMcpJson, isMcpJson } from "../mcp/utils";
@@ -343,6 +344,7 @@ async function checkMcpEnabledAndPreloadPrompt(): Promise<boolean> {
   // 如果启用了MCP，预加载系统提示
   if (enabled) {
     try {
+      await initializeMcpSystem();
       await getMcpSystemPrompt();
     } catch (error) {
       console.error("Failed to preload MCP system prompt:", error);
@@ -633,9 +635,15 @@ export const useChatStore = createPersistStore(
           model: modelConfig.model,
         });
 
-        // get recent messages
-        const recentMessages = await get().getMessagesWithMemory(options);
-        const sendMessages = recentMessages.concat(userMessage);
+        const promptSession = {
+          ...session,
+          messages: session.messages.slice(),
+          mask: {
+            ...session.mask,
+            context: session.mask.context.slice(),
+            modelConfig: { ...session.mask.modelConfig },
+          },
+        };
         const messageIndex = session.messages.length + 1;
 
         // save user's and bot's message
@@ -649,6 +657,40 @@ export const useChatStore = createPersistStore(
             botMessage,
           ]);
         });
+
+        // get recent messages after the visible messages are queued
+        let recentMessages: ChatMessage[];
+        try {
+          recentMessages = await get().getMessagesWithMemory({
+            ...options,
+            session: promptSession,
+          });
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          botMessage.content +=
+            "\n\n" +
+            prettyObject({
+              error: true,
+              message: errorMessage,
+            });
+          botMessage.streaming = false;
+          userMessage.isError = true;
+          botMessage.isError = true;
+          get().updateTargetSession(session, (session) => {
+            const savedUserMessage = session.messages.find(
+              (message) => message.id === userMessage.id,
+            );
+            if (savedUserMessage) {
+              savedUserMessage.isError = true;
+            }
+            session.messages = session.messages.concat();
+          });
+          ChatControllerPool.remove(session.id, botMessage.id ?? messageIndex);
+          console.error("[Chat] failed to prepare messages", error);
+          return;
+        }
+        const sendMessages = recentMessages.concat(userMessage);
 
         const api: ClientApi = getClientApi(modelConfig.providerName);
         // make request
@@ -745,13 +787,14 @@ export const useChatStore = createPersistStore(
       async getMessagesWithMemory(options?: {
         mcpClientIds?: string[];
         systemPrompt?: string;
+        session?: ChatSession;
       }) {
         // 确保MCP状态已初始化
         if (mcpCache.enabled === null) {
           await checkMcpEnabledAndPreloadPrompt();
         }
 
-        const session = get().currentSession();
+        const session = options?.session ?? get().currentSession();
         const modelConfig = session.mask.modelConfig;
         const clearContextIndex = session.clearContextIndex ?? 0;
         const messages = session.messages.slice();
@@ -821,7 +864,13 @@ export const useChatStore = createPersistStore(
             ]
           : [];
 
-        const memoryPrompt = get().getMemoryPrompt();
+        const memoryPrompt = session.memoryPrompt.length
+          ? ({
+              role: "system",
+              content: Locale.Store.Prompt.History(session.memoryPrompt),
+              date: "",
+            } as ChatMessage)
+          : undefined;
         // long term memory
         const shouldSendLongTermMemory =
           modelConfig.sendMemory &&

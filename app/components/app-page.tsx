@@ -3,14 +3,17 @@
 import { Analytics } from "@vercel/analytics/react";
 import { useEffect } from "react";
 import { useChatStore } from "../store/chat";
+import { useAccessStore } from "../store/access";
+import { getClientConfig } from "../config/client";
 
 import { Home } from "./home";
 
-export function AppPage(props: { isVercel?: boolean }) {
+function useAppBootstrap() {
   const chatStoreHydrated = useChatStore((state) => state._hasHydrated);
 
   useEffect(() => {
-    useChatStore.getState().initMcp();
+    console.log("[Config] got config from build time", getClientConfig());
+    useAccessStore.getState().fetch();
   }, []);
 
   useEffect(() => {
@@ -18,6 +21,10 @@ export function AppPage(props: { isVercel?: boolean }) {
       useChatStore.getState().newSession();
     }
   }, [chatStoreHydrated]);
+}
+
+export function AppPage(props: { isVercel?: boolean }) {
+  useAppBootstrap();
 
   return (
     <>

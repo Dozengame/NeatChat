@@ -4,6 +4,7 @@ import React, {
   useRef,
   useEffect,
   useMemo,
+  useCallback,
   Fragment,
   RefObject,
 } from "react";
@@ -707,11 +708,12 @@ export function ChatAction(props: {
 function useScrollToBottom(
   scrollRef: RefObject<HTMLDivElement>,
   detach: boolean = false,
+  scrollSignal?: string,
 ) {
   // for auto-scroll
 
   const [autoScroll, setAutoScroll] = useState(true);
-  function scrollDomToBottom() {
+  const scrollDomToBottom = useCallback(() => {
     const dom = scrollRef.current;
     if (dom) {
       requestAnimationFrame(() => {
@@ -719,14 +721,14 @@ function useScrollToBottom(
         dom.scrollTo(0, dom.scrollHeight);
       });
     }
-  }
+  }, [scrollRef]);
 
   // auto scroll
   useEffect(() => {
     if (autoScroll && !detach) {
       scrollDomToBottom();
     }
-  });
+  }, [autoScroll, detach, scrollDomToBottom, scrollSignal]);
 
   return {
     scrollRef,
@@ -1461,9 +1463,13 @@ function _Chat() {
 
   // if user is typing, should auto scroll to bottom
   // if user is not typing, should auto scroll to bottom only if already at bottom
-  const { setAutoScroll, scrollDomToBottom } = useScrollToBottom(
+  const messageScrollSignal = `${session.messages.length}:${
+    session.messages.at(-1)?.id ?? ""
+  }`;
+  const { autoScroll, setAutoScroll, scrollDomToBottom } = useScrollToBottom(
     scrollRef,
     (isScrolledToBottom || isAttachWithTop) && !isTyping,
+    messageScrollSignal,
   );
   const [hitBottom, setHitBottom] = useState(true);
   const isMobileScreen = useMobileScreen();
@@ -2599,10 +2605,11 @@ function _Chat() {
                           }
                           fontSize={fontSize}
                           fontFamily={fontFamily}
-                          parentRef={scrollRef}
-                          defaultShow={i >= messages.length - 6}
                           isUser={isUser}
                           messageId={message.id}
+                          streaming={message.streaming}
+                          shouldAutoScroll={autoScroll}
+                          onContentChange={scrollDomToBottom}
                           onPreviewImage={setPreviewImage}
                           onDownloadImage={downloadImage}
                         />

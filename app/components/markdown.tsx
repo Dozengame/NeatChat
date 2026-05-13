@@ -6,21 +6,32 @@ import RehypeKatex from "rehype-katex";
 import RemarkGfm from "remark-gfm";
 import RehypeRaw from "rehype-raw";
 import RehypeHighlight from "rehype-highlight";
-import { useRef, useState, RefObject, useEffect, useMemo } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { copyToClipboard, useWindowSize } from "../utils";
-import mermaid from "mermaid";
 import Locale from "../locales";
 import LoadingIcon from "../icons/three-dots.svg";
 import DownloadIcon from "../icons/download.svg";
 import React from "react";
 import { useDebouncedCallback } from "use-debounce";
-import { showImageModal, showToast } from "./ui-lib";
-import { HTMLPreview, HTMLPreviewHander } from "./artifacts";
+import { showToast } from "./ui-lib";
 import { useChatStore } from "../store";
 
 import { useAppConfig } from "../store/config";
 import { FileAttachment } from "./file-attachment";
 import { encode } from "../utils/token";
+import dynamic from "next/dynamic";
+import clsx from "clsx";
+
+const Mermaid = dynamic(async () => (await import("./mermaid")).Mermaid, {
+  loading: () => null,
+});
+
+const HTMLPreview = dynamic(
+  async () => (await import("./artifacts")).HTMLPreview,
+  {
+    loading: () => null,
+  },
+);
 
 function Details(props: { children: React.ReactNode }) {
   return <details open>{props.children}</details>;
@@ -29,57 +40,8 @@ function Summary(props: { children: React.ReactNode }) {
   return <summary>{props.children}</summary>;
 }
 
-import clsx from "clsx";
-
-export function Mermaid(props: { code: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [hasError, setHasError] = useState(false);
-
-  useEffect(() => {
-    if (props.code && ref.current) {
-      mermaid
-        .run({
-          nodes: [ref.current],
-          suppressErrors: true,
-        })
-        .catch((e) => {
-          setHasError(true);
-          console.error("[Mermaid] ", e.message);
-        });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.code]);
-
-  function viewSvgInNewWindow() {
-    const svg = ref.current?.querySelector("svg");
-    if (!svg) return;
-    const text = new XMLSerializer().serializeToString(svg);
-    const blob = new Blob([text], { type: "image/svg+xml" });
-    showImageModal(URL.createObjectURL(blob));
-  }
-
-  if (hasError) {
-    return null;
-  }
-
-  return (
-    <div
-      className={clsx("no-dark", "mermaid")}
-      style={{
-        cursor: "pointer",
-        overflow: "auto",
-      }}
-      ref={ref}
-      onClick={() => viewSvgInNewWindow()}
-    >
-      {props.code}
-    </div>
-  );
-}
-
 export function PreCode(props: { children: any }) {
   const ref = useRef<HTMLPreElement>(null);
-  const previewRef = useRef<HTMLPreviewHander>(null);
   const [mermaidCode, setMermaidCode] = useState("");
   const [htmlCode, setHtmlCode] = useState("");
   const { height } = useWindowSize();
@@ -157,7 +119,6 @@ export function PreCode(props: { children: any }) {
       )}
       {htmlCode.length > 0 && enableArtifacts && (
         <HTMLPreview
-          ref={previewRef}
           code={htmlCode}
           autoHeight={!document.fullscreenElement}
           height={!document.fullscreenElement ? 600 : height}
@@ -692,17 +653,20 @@ export function Markdown(
     loading?: boolean;
     fontSize?: number;
     fontFamily?: string;
-    parentRef?: RefObject<HTMLDivElement>;
     defaultShow?: boolean;
     isUser?: boolean;
     messageId?: string;
+    streaming?: boolean;
+    shouldAutoScroll?: boolean;
+    onContentChange?: () => void;
   } & MarkdownImageActionProps &
     React.DOMAttributes<HTMLDivElement>,
 ) {
+  const content = props.content;
+  const shouldAutoScroll = props.shouldAutoScroll;
+  const onContentChange = props.onContentChange;
   const mdRef = useRef<HTMLDivElement>(null);
-  const [autoScroll, setAutoScroll] = useState(true);
-  const lastContentRef = useRef(props.content);
-  const lastScrollTopRef = useRef(0);
+  const lastContentRef = useRef(content);
 
   // 添加token计数状态和首字延迟状态
   const [tokenInfo, setTokenInfo] = useState<{
@@ -710,8 +674,6 @@ export function Markdown(
     isUser: boolean;
     firstCharDelay?: number;
   } | null>(null);
-  const tokenStartTimeRef = useRef<number | null>(null);
-  const contentLengthRef = useRef<number>(0);
   const messageStartTimeRef = useRef<number | null>(null);
   const firstCharReceivedTimeRef = useRef<number | null>(null);
 
@@ -734,49 +696,49 @@ export function Markdown(
     }
   }, [props.loading, props.isUser, props.messageId]);
 
+  useEffect(() => {
+    if (
+      props.isUser ||
+      !content ||
+      content.length === 0 ||
+      firstCharReceivedTimeRef.current
+    ) {
+      return;
+    }
+
+    firstCharReceivedTimeRef.current = Date.now();
+
+    if (messageStartTimeRef.current && props.messageId) {
+      const firstCharDelay =
+        firstCharReceivedTimeRef.current - messageStartTimeRef.current;
+      localStorage.setItem(
+        `first_char_delay_${props.messageId}`,
+        firstCharDelay.toString(),
+      );
+    }
+  }, [content, props.isUser, props.messageId]);
+
   // 修改token计算逻辑，添加首字延迟计算
   useEffect(() => {
     // 如果内容为空或正在加载，重置计时器
-    if (!props.content || props.content.length === 0) {
-      tokenStartTimeRef.current = null;
-      contentLengthRef.current = 0;
+    if (!content || content.length === 0) {
       setTokenInfo(null);
+      return;
+    }
+
+    if (props.streaming) {
       return;
     }
 
     try {
       // 只计算token数量，不计算速度
-      const tokens = encode(props.content);
+      const tokens = encode(content);
       const tokenCount = tokens.length;
-
-      // 更新内容长度
-      contentLengthRef.current = props.content.length;
 
       // 首字延迟计算
       let firstCharDelay: number | undefined = undefined;
 
-      // 如果是AI回复且是第一次收到内容
-      if (
-        !props.isUser &&
-        props.content.length > 0 &&
-        !firstCharReceivedTimeRef.current
-      ) {
-        firstCharReceivedTimeRef.current = Date.now();
-
-        // 计算延迟时间（毫秒）
-        if (messageStartTimeRef.current) {
-          firstCharDelay =
-            firstCharReceivedTimeRef.current - messageStartTimeRef.current;
-
-          // 保存到localStorage
-          if (props.messageId) {
-            localStorage.setItem(
-              `first_char_delay_${props.messageId}`,
-              firstCharDelay.toString(),
-            );
-          }
-        }
-      } else if (props.messageId) {
+      if (props.messageId) {
         // 尝试从localStorage获取已存储的延迟
         const storedDelay = localStorage.getItem(
           `first_char_delay_${props.messageId}`,
@@ -795,43 +757,18 @@ export function Markdown(
     } catch (e) {
       console.error("计算token出错:", e);
     }
-  }, [props.content, props.loading, props.isUser, props.messageId]);
-
-  // 检测是否滚动到底部
-  const checkIfAtBottom = (target: HTMLDivElement) => {
-    const threshold = 10;
-    const bottomPosition =
-      target.scrollHeight - target.scrollTop - target.clientHeight;
-    return bottomPosition <= threshold;
-  };
-
-  // 处理滚动事件
-  useEffect(() => {
-    const parent = props.parentRef?.current;
-    if (!parent) return;
-
-    const handleScroll = () => {
-      lastScrollTopRef.current = parent.scrollTop;
-      const isAtBottom = checkIfAtBottom(parent);
-      setAutoScroll(isAtBottom);
-    };
-
-    parent.addEventListener("scroll", handleScroll);
-    return () => parent.removeEventListener("scroll", handleScroll);
-  }, [props.parentRef]);
+  }, [content, props.isUser, props.messageId, props.streaming]);
 
   // 自动滚动效果
   useEffect(() => {
-    const parent = props.parentRef?.current;
-    if (!parent || props.content === lastContentRef.current) return;
+    if (content === lastContentRef.current) return;
 
-    // 只有当之前开启了自动滚动，且内容发生变化时才滚动
-    if (autoScroll) {
-      parent.scrollTop = parent.scrollHeight;
+    if (shouldAutoScroll) {
+      onContentChange?.();
     }
 
-    lastContentRef.current = props.content;
-  }, [props.content, props.parentRef, autoScroll]);
+    lastContentRef.current = content;
+  }, [content, onContentChange, shouldAutoScroll]);
 
   // 确保在消息完成后仍能获取首字延迟
   useEffect(() => {
