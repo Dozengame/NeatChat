@@ -61,6 +61,7 @@ declare global {
       BASE_URL?: string;
       OPENAI_ORG_ID?: string; // openai only
       OPENAI_RESPONSES_URL?: string; // custom responses endpoint
+      OPENAI_STORE_RESPONSES?: string; // store responses for OpenAI dashboard/API logs
       OPENAI_REASONING_EFFORT?: string; // responses api reasoning effort
       OPENAI_MAX_OUTPUT_TOKENS?: string; // responses api max_output_tokens
       OPENAI_TEXT_VERBOSITY?: string; // responses api text verbosity
@@ -220,6 +221,9 @@ export const getServerSideConfig = () => {
     parseOpenAICompressMessageLengthThreshold(
       process.env.OPENAI_COMPRESS_MESSAGE_LENGTH_THRESHOLD,
     ) ?? OPENAI_RESPONSES_DEFAULT_COMPRESS_MESSAGE_LENGTH_THRESHOLD;
+  const openaiStoreResponses = parseEnvBoolean(
+    process.env.OPENAI_STORE_RESPONSES,
+  );
   const accessControl = buildAccessControlConfig(process.env);
 
   if (disableGPT4) {
@@ -281,6 +285,7 @@ export const getServerSideConfig = () => {
     apiKey: getApiKey(process.env.OPENAI_API_KEY),
     openaiOrgId: process.env.OPENAI_ORG_ID,
     openaiResponsesUrl: process.env.OPENAI_RESPONSES_URL,
+    openaiStoreResponses,
     openaiReasoningEffort,
     openaiMaxOutputTokens,
     openaiTextVerbosity,

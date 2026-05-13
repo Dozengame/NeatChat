@@ -43,6 +43,7 @@ export interface RequestMessage {
   role: MessageRole;
   content: string | MultimodalContent[];
   openaiResponseId?: string;
+  openaiResponseStored?: boolean;
   openaiResponsesOutput?: unknown[];
 }
 
@@ -51,6 +52,7 @@ export interface LLMConfig {
   providerName?: string;
   temperature?: number;
   top_p?: number;
+  store?: boolean;
   stream?: boolean;
   presence_penalty?: number;
   frequency_penalty?: number;
@@ -77,7 +79,11 @@ export interface ChatOptions {
   onFinish: (
     message: string,
     responseRes: Response,
-    metadata?: { openaiResponseId?: string; openaiResponsesOutput?: unknown[] },
+    metadata?: {
+      openaiResponseId?: string;
+      openaiResponseStored?: boolean;
+      openaiResponsesOutput?: unknown[];
+    },
   ) => void;
   onError?: (err: Error) => void;
   onController?: (controller: AbortController) => void;

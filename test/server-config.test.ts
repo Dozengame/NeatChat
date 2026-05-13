@@ -183,6 +183,7 @@ describe("OpenAI Responses config", () => {
     process.env.OPENAI_REASONING_EFFORT = "";
     process.env.OPENAI_MAX_OUTPUT_TOKENS = "";
     process.env.OPENAI_TEXT_VERBOSITY = "";
+    process.env.OPENAI_STORE_RESPONSES = "";
 
     const config = getServerSideConfig();
 
@@ -191,6 +192,18 @@ describe("OpenAI Responses config", () => {
     expect(config.openaiReasoningEffort).toBe("low");
     expect(config.openaiMaxOutputTokens).toBeUndefined();
     expect(config.openaiTextVerbosity).toBe("medium");
+    expect(config.openaiStoreResponses).toBe(false);
+  });
+
+  test("enables stored OpenAI Responses only when explicitly configured", () => {
+    process.env.OPENAI_STORE_RESPONSES = "";
+    expect(getServerSideConfig().openaiStoreResponses).toBe(false);
+
+    process.env.OPENAI_STORE_RESPONSES = "1";
+    expect(getServerSideConfig().openaiStoreResponses).toBe(true);
+
+    process.env.OPENAI_STORE_RESPONSES = "false";
+    expect(getServerSideConfig().openaiStoreResponses).toBe(false);
   });
 
   test("supports hide balance and hide user api key env flags", () => {
@@ -240,6 +253,7 @@ describe("OpenAI Responses config", () => {
     process.env.OPENAI_REASONING_EFFORT = "low";
     process.env.OPENAI_TEXT_VERBOSITY = "low";
     process.env.OPENAI_COMPRESS_MESSAGE_LENGTH_THRESHOLD = "1200";
+    process.env.OPENAI_STORE_RESPONSES = "1";
 
     const publicConfig = buildPublicAppConfig(
       new Date("2026-04-28T00:00:00.000Z"),
@@ -252,6 +266,7 @@ describe("OpenAI Responses config", () => {
     expect(publicConfig.lockedFields).not.toContain("reasoningEffort");
     expect(publicConfig.serverFlags.hideUserApiKey).toBe(true);
     expect(publicConfig.serverFlags.hideBalanceQuery).toBe(true);
+    expect(publicConfig.defaults.store).toBe(true);
     expect(JSON.stringify(publicConfig)).not.toContain("test-api-key-value");
     expect(JSON.stringify(publicConfig)).not.toContain("test-access-code");
 

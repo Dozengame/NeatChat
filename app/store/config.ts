@@ -72,6 +72,7 @@ export type ModelConfig = {
   compressProviderName: string;
   enableInjectSystemPrompts: boolean;
   template: string;
+  store: boolean;
   reasoningEffort?: OpenAIChatReasoningEffort;
   textVerbosity?: OpenAIResponsesTextVerbosity;
   size: DalleSize;
@@ -151,6 +152,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     compressProviderName: "",
     enableInjectSystemPrompts: true,
     template: config?.template ?? DEFAULT_INPUT_TEMPLATE,
+    store: false,
     reasoningEffort: OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
     textVerbosity: OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY,
     size: "1024x1024" as DalleSize,

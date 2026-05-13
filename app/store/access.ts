@@ -183,6 +183,7 @@ const MODEL_CONFIG_FIELDS = [
   "sendMemory",
   "enableInjectSystemPrompts",
   "template",
+  "store",
 ] as const;
 
 function publicConfigToAccessState(config: PublicAppConfig) {
@@ -235,6 +236,7 @@ function getServerModelConfig(publicConfig: PublicAppConfig) {
     sendMemory: publicConfig.defaults.sendMemory,
     enableInjectSystemPrompts: publicConfig.defaults.enableInjectSystemPrompts,
     template: publicConfig.defaults.template,
+    store: publicConfig.defaults.store ?? false,
   } as Partial<ModelConfig>;
 }
 

@@ -168,6 +168,7 @@ describe("buildOpenAIResponsesPayload", () => {
           role: "assistant",
           content: "Prior answer",
           openaiResponseId: "resp_123",
+          openaiResponseStored: true,
         },
         { role: "user", content: "Follow up" },
       ],
@@ -177,6 +178,58 @@ describe("buildOpenAIResponsesPayload", () => {
 
     expect(payload.previous_response_id).toBe("resp_123");
     expect(payload.input).toEqual([
+      {
+        role: "user",
+        content: [{ type: "input_text", text: "Follow up" }],
+      },
+    ]);
+  });
+
+  test("does not reference prior stateless response ids after storage is enabled", () => {
+    const priorOutput = [
+      {
+        id: "rs_123",
+        type: "reasoning",
+        encrypted_content: "encrypted",
+        summary: [],
+      },
+      {
+        id: "msg_123",
+        type: "message",
+        status: "completed",
+        role: "assistant",
+        content: [
+          {
+            type: "output_text",
+            text: "Prior answer",
+            annotations: [],
+          },
+        ],
+      },
+    ];
+    const payload = buildOpenAIResponsesPayload({
+      messages: [
+        { role: "user", content: "First question" },
+        {
+          role: "assistant",
+          content: "Prior answer",
+          openaiResponseId: "resp_123",
+          openaiResponseStored: false,
+          openaiResponsesOutput: priorOutput,
+        },
+        { role: "user", content: "Follow up" },
+      ],
+      modelConfig,
+      store: true,
+    }) as any;
+
+    expect(payload.previous_response_id).toBeUndefined();
+    expect(payload.input).toEqual([
+      {
+        role: "user",
+        content: [{ type: "input_text", text: "First question" }],
+      },
+      ...priorOutput,
       {
         role: "user",
         content: [{ type: "input_text", text: "Follow up" }],

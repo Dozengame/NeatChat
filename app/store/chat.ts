@@ -80,6 +80,7 @@ export type ChatMessage = RequestMessage & {
   id: string;
   model?: ModelType;
   openaiResponseId?: string;
+  openaiResponseStored?: boolean;
   openaiResponsesOutput?: unknown[];
   tools?: ChatMessageTool[];
   audio_url?: string;
@@ -673,6 +674,7 @@ export const useChatStore = createPersistStore(
                   )
                 : message;
               botMessage.openaiResponseId = metadata?.openaiResponseId;
+              botMessage.openaiResponseStored = metadata?.openaiResponseStored;
               botMessage.openaiResponsesOutput =
                 metadata?.openaiResponsesOutput;
               botMessage.date = new Date().toLocaleString();

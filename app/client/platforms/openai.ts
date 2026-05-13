@@ -284,6 +284,10 @@ export class ChatGPTApi implements LLMApi {
         model: modelConfig.model,
         providerName: modelConfig.providerName,
       });
+    const storeResponses =
+      modelConfig.store ??
+      accessStore.serverConfigSnapshot?.defaults.store ??
+      false;
     let requestPayload:
       | AzureChatRequestPayload
       | ResponsesRequestPayload
@@ -348,7 +352,7 @@ export class ChatGPTApi implements LLMApi {
           stream: options.config.stream,
           reasoningSummary: "auto",
           truncation: "disabled",
-          store: false,
+          store: storeResponses,
           enableWebSearch,
           webSearchMode,
         });
@@ -607,6 +611,7 @@ export class ChatGPTApi implements LLMApi {
           {
             getMetadata: () => ({
               openaiResponseId,
+              openaiResponseStored: storeResponses,
               openaiResponsesOutput,
             }),
           },
@@ -641,6 +646,7 @@ export class ChatGPTApi implements LLMApi {
             ? {
                 openaiResponseId:
                   typeof resJson?.id === "string" ? resJson.id : undefined,
+                openaiResponseStored: storeResponses,
                 openaiResponsesOutput: Array.isArray(resJson?.output)
                   ? resJson.output
                   : undefined,

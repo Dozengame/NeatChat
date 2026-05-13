@@ -61,7 +61,7 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
       reasoningSummary: "auto" as const,
       textVerbosity: serverConfig.openaiTextVerbosity,
       truncation: "disabled" as const,
-      store: false,
+      store: serverConfig.openaiStoreResponses,
       stream: true,
       historyMessageCount: 4,
       compressMessageLengthThreshold:

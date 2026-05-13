@@ -139,13 +139,13 @@ function toResponsesInput(messages: ChatOptions["messages"], store?: boolean) {
   const input: ResponsesInputItem[] = [];
 
   const previousResponseIndex =
-    store === false
-      ? -1
-      : (() => {
+    store === true
+      ? (() => {
           for (let i = conversationMessages.length - 1; i >= 0; i -= 1) {
             const message = conversationMessages[i];
             if (
               message?.role === "assistant" &&
+              message.openaiResponseStored === true &&
               typeof message.openaiResponseId === "string" &&
               message.openaiResponseId.trim()
             ) {
@@ -153,7 +153,8 @@ function toResponsesInput(messages: ChatOptions["messages"], store?: boolean) {
             }
           }
           return -1;
-        })();
+        })()
+      : -1;
 
   const previousResponseId =
     previousResponseIndex >= 0
