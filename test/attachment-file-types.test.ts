@@ -26,6 +26,12 @@ describe("attachment file type support", () => {
     expect(
       isAttachmentImage(new File(["image"], "pasted.png", { type: "" })),
     ).toBe(true);
+    expect(
+      isAttachmentImage(new File(["image"], "pasted.heic", { type: "" })),
+    ).toBe(true);
+    expect(
+      isAttachmentImage(new File(["image"], "pasted.heif", { type: "" })),
+    ).toBe(true);
   });
 
   test("treats gpt-5.5 as image-input capable", () => {

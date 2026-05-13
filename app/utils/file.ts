@@ -166,11 +166,6 @@ export function extractClipboardImageUrls(clipboardData: DataTransfer) {
 }
 
 /**
- * 导入 mammoth 库
- */
-import mammoth from "mammoth";
-
-/**
  * 添加 Word 文件读取函数
  * @param file 要读取的文件
  * @returns 文件内容的Promise
@@ -269,7 +264,9 @@ export async function readWordFile(file: File): Promise<string> {
         }
 
         // 使用 mammoth 将 .docx 文档转换为文本
-        const result = await mammoth.extractRawText({ arrayBuffer });
+        const mammoth = await import("mammoth");
+        const mammothInput = { arrayBuffer, buffer: arrayBuffer };
+        const result = await mammoth.extractRawText(mammothInput);
         resolve(result.value); // 返回纯文本内容
       } catch (error: any) {
         // 如果是 ZIP 相关错误，提供更友好的错误消息
@@ -1049,8 +1046,28 @@ export async function readExcelFile(file: File): Promise<string> {
  * 图片文件处理相关函数
  */
 
+function isHeicImage(file: File) {
+  const type = file.type.toLowerCase();
+  const name = file.name.toLowerCase();
+  return (
+    type.includes("heic") ||
+    type.includes("heif") ||
+    name.endsWith(".heic") ||
+    name.endsWith(".heif")
+  );
+}
+
 // 从chat.tsx移动过来的上传图片函数
 export async function uploadImage(file: File): Promise<string> {
+  let imageBlob: Blob = file;
+
+  if (isHeicImage(file)) {
+    const mod = await import("heic2any");
+    const heic2any = mod.default ?? mod;
+    const converted = await heic2any({ blob: file, toType: "image/jpeg" });
+    imageBlob = Array.isArray(converted) ? converted[0] : converted;
+  }
+
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -1085,7 +1102,9 @@ export async function uploadImage(file: File): Promise<string> {
         ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
 
         // 转换为dataURL
-        const dataUrl = canvas.toDataURL(file.type);
+        const dataUrl = canvas.toDataURL(
+          imageBlob.type || file.type || "image/png",
+        );
         resolve(dataUrl);
       };
       img.onerror = () => {
@@ -1096,7 +1115,7 @@ export async function uploadImage(file: File): Promise<string> {
     reader.onerror = (e) => {
       reject(e);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(imageBlob);
   });
 }
 
