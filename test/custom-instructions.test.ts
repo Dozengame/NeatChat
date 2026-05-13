@@ -12,7 +12,12 @@ jest.mock("../app/client/api", () => ({
 }));
 
 import { getClientApi } from "../app/client/api";
-import { DEFAULT_CONFIG, useAppConfig } from "../app/store/config";
+import {
+  applyCustomInstructionsDefaults,
+  DEFAULT_CONFIG,
+  DEFAULT_CUSTOM_INSTRUCTIONS,
+  useAppConfig,
+} from "../app/store/config";
 import { useChatStore } from "../app/store/chat";
 
 describe("custom instructions", () => {
@@ -60,6 +65,20 @@ describe("custom instructions", () => {
     );
   });
 
+  test("sends the default preset with a new chat", async () => {
+    await useChatStore.getState().onUserInput("Hello");
+
+    const messages = getSentMessages();
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: "system",
+          content: DEFAULT_CUSTOM_INSTRUCTIONS,
+        }),
+      ]),
+    );
+  });
+
   test("sends enabled instructions with a new chat", async () => {
     useAppConfig.setState({
       enableCustomInstructions: true,
@@ -77,5 +96,31 @@ describe("custom instructions", () => {
         }),
       ]),
     );
+  });
+});
+
+describe("custom instructions defaults", () => {
+  test("upgrades the old blank default to the enabled preset", () => {
+    const state = applyCustomInstructionsDefaults({
+      enableCustomInstructions: false,
+      customInstructions: "",
+    });
+
+    expect(state).toMatchObject({
+      enableCustomInstructions: true,
+      customInstructions: DEFAULT_CUSTOM_INSTRUCTIONS,
+    });
+  });
+
+  test("keeps user-provided instructions and their disabled state", () => {
+    const state = applyCustomInstructionsDefaults({
+      enableCustomInstructions: false,
+      customInstructions: "Use a terse tone.",
+    });
+
+    expect(state).toMatchObject({
+      enableCustomInstructions: false,
+      customInstructions: "Use a terse tone.",
+    });
   });
 });
