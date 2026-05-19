@@ -57,7 +57,7 @@ export enum Theme {
 
 const config = getClientConfig();
 
-export const DEFAULT_CUSTOM_INSTRUCTIONS = `回答前先在内部理清问题，不展示完整推理过程、内部标签或逐步思考。
+const LEGACY_DEFAULT_CUSTOM_INSTRUCTIONS = `回答前先在内部理清问题，不展示完整推理过程、内部标签或逐步思考。
 默认用自然、像真人的中文表达：少官腔、少模板，直白克制，不油腻、不居高临下。先给结论/建议，再给 2–4 条关键理由；必要时补步骤、风险和注意事项。除非我要求“展开”，否则优先短而有用。
 在不影响准确性和简洁性的前提下，尽量用第一性原理点出本质：目标、关键变量、主要约束，然后再给建议和行动；不要机械套用模板。
 尽量具体，能给路径、按钮、步骤、数字、时间点、示例，就不要只讲抽象原则。信息不足时，先按常见前提给可用方案，再问 1–2 个关键问题。
@@ -68,6 +68,14 @@ export const DEFAULT_CUSTOM_INSTRUCTIONS = `回答前先在内部理清问题，
 - “聊天模式 / 更口语 / 随便聊聊”：更放松，更像真人对话，事实仍谨慎。
 - “展开”：补充细节、例子、备选方案和权衡。
 需要联网检索时，优先英文或非中文来源；如必须用中文来源，标注“中文来源，需谨慎核对”。`;
+
+export const DEFAULT_CUSTOM_INSTRUCTIONS = `你是资深全栈开发工程师，游戏设计师，提示词优化专家。擅长后端开发、H5前端开发和互联网行业的所有专业知识与技巧。回答问题时，优先提供可执行、可靠、贴近实际场景的建议。
+
+先理解用户的目标、上下文和约束；信息不完整时，先基于常见前提给出可用答案，再补充 1–2 个关键澄清问题。不要为了追求完整而过度追问。
+
+面向用户时，必须使用中文回复，专有名词保留 English。表达清楚、直接、简洁，像对一个聪明但没看代码的人说明问题。优先输出：结论、原因、建议方案、必要风险或注意事项。需要时再补充步骤、示例、代码或配置。
+
+如果存在多个方案，简要说明优缺点，并明确推荐方案和原因，不回避成本、限制和风险。避免空话、过程汇报腔、无关术语和不必要的实现细节。`;
 
 export type ModelConfig = {
   model: ModelType;
@@ -239,11 +247,12 @@ export function getEnabledCustomInstructions(config: CustomInstructionsConfig) {
 export function applyCustomInstructionsDefaults<
   T extends Partial<CustomInstructionsConfig>,
 >(state: T) {
-  const hasCustomInstructions =
-    typeof state.customInstructions === "string" &&
-    state.customInstructions.trim().length > 0;
+  const customInstructions = state.customInstructions?.trim() ?? "";
+  const shouldApplyDefault =
+    customInstructions.length === 0 ||
+    customInstructions === LEGACY_DEFAULT_CUSTOM_INSTRUCTIONS.trim();
 
-  if (!hasCustomInstructions) {
+  if (shouldApplyDefault) {
     state.enableCustomInstructions = DEFAULT_CONFIG.enableCustomInstructions;
     state.customInstructions = DEFAULT_CONFIG.customInstructions;
     return state;
@@ -345,7 +354,7 @@ export const useAppConfig = createPersistStore(
   }),
   {
     name: StoreKey.Config,
-    version: 4.5,
+    version: 4.6,
 
     merge(persistedState, currentState) {
       const state = persistedState as ChatConfig | undefined;
@@ -424,7 +433,7 @@ export const useAppConfig = createPersistStore(
         state.serverConfigSnapshot = state.serverConfigSnapshot ?? undefined;
       }
 
-      if (version < 4.5) {
+      if (version < 4.6) {
         applyCustomInstructionsDefaults(state);
       }
 
