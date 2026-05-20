@@ -20,6 +20,7 @@ import {
 } from "../app/config/public";
 import { deriveAllowedModels } from "../app/utils/public-app-config";
 import { resolveServerModelConfig } from "../app/utils/server-model-defaults";
+import { parseUpdateAnnouncementJson } from "../app/utils/update-announcement";
 
 describe("parseDefaultTemperature", () => {
   test("returns undefined when OPENAI_TEMPERATURE is empty or invalid", () => {
@@ -286,6 +287,93 @@ describe("OpenAI Responses config", () => {
     );
 
     expect(publicConfig.deploymentId).toBe("dpl_new");
+  });
+
+  test("parses update announcement json for public config", async () => {
+    process.env.WEBUI_ANNOUNCEMENT_JSON = JSON.stringify({
+      date: "2026.05.20",
+      sections: [
+        {
+          title: "新增",
+          items: ["增加更新内容弹框", "支持按构建 ID 去重"],
+        },
+        {
+          title: "优化",
+          items: ["公告配置改为单一 JSON"],
+        },
+      ],
+      note: "仅展示给当前构建未确认过的用户。",
+    });
+
+    const publicConfig = buildPublicAppConfig(
+      new Date("2026-05-20T00:00:00.000Z"),
+    );
+
+    expect(publicConfig.updateAnnouncement).toMatchObject({
+      date: "2026.05.20",
+      hash: expect.any(String),
+      sections: [
+        {
+          title: "新增",
+          items: ["增加更新内容弹框", "支持按构建 ID 去重"],
+        },
+        {
+          title: "优化",
+          items: ["公告配置改为单一 JSON"],
+        },
+      ],
+      note: "仅展示给当前构建未确认过的用户。",
+    });
+    expect(publicConfig.configHash).toBeTruthy();
+  });
+
+  test("does not include update announcement content in config hash", async () => {
+    process.env.WEBUI_ANNOUNCEMENT_JSON = JSON.stringify({
+      date: "2026.05.20",
+      sections: [{ title: "新增", items: ["第一版公告"] }],
+    });
+    const firstConfig = buildPublicAppConfig(
+      new Date("2026-05-20T00:00:00.000Z"),
+    );
+
+    process.env.WEBUI_ANNOUNCEMENT_JSON = JSON.stringify({
+      date: "2026.05.20",
+      sections: [{ title: "新增", items: ["第二版公告"] }],
+    });
+    const secondConfig = buildPublicAppConfig(
+      new Date("2026-05-20T00:00:00.000Z"),
+    );
+
+    expect(firstConfig.configHash).toBe(secondConfig.configHash);
+    expect(firstConfig.updateAnnouncement?.hash).not.toBe(
+      secondConfig.updateAnnouncement?.hash,
+    );
+  });
+
+  test("ignores invalid or empty update announcement json", () => {
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation();
+
+    try {
+      expect(parseUpdateAnnouncementJson("{bad-json")).toBeUndefined();
+      expect(
+        parseUpdateAnnouncementJson(
+          JSON.stringify({
+            date: "2026.05.20",
+            sections: [{ title: "新增", items: [] }],
+          }),
+        ),
+      ).toBeUndefined();
+      expect(
+        parseUpdateAnnouncementJson(
+          JSON.stringify({
+            enabled: false,
+            items: ["不会展示"],
+          }),
+        ),
+      ).toBeUndefined();
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   test("forces provider together with server default model", () => {

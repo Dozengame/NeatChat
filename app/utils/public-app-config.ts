@@ -6,6 +6,7 @@ import type {
   OpenAIResponsesReasoningEffort,
   OpenAIResponsesTextVerbosity,
 } from "./openai-responses";
+import type { PublicUpdateAnnouncement } from "./update-announcement";
 
 export type ConfigSource =
   | "server_default"
@@ -30,6 +31,7 @@ export type PublicAppConfig = {
   configHash: string;
   deploymentId?: string;
   updatedAt: string;
+  updateAnnouncement?: PublicUpdateAnnouncement;
   defaults: {
     model?: string;
     providerName?: string;

@@ -30,6 +30,7 @@ import { getClientConfig } from "../config/client";
 import { type ClientApi, getClientApi } from "../client/api";
 import { useAccessStore } from "../store";
 import clsx from "clsx";
+import { UpdateAnnouncement } from "./update-announcement";
 
 export function Loading(props: { noLogo?: boolean }) {
   return (
@@ -286,6 +287,11 @@ function Screen() {
       })}
     >
       {renderContent()}
+      <UpdateAnnouncement
+        enabled={!shouldRequireAccessCode && !isAuth}
+        announcement={accessStore.serverConfigSnapshot?.updateAnnouncement}
+        deploymentId={accessStore.serverConfigSnapshot?.deploymentId}
+      />
     </div>
   );
 }

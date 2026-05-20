@@ -69,6 +69,7 @@ declare global {
       WEBUI_CONFIG_VERSION?: string; // public config version
       WEBUI_LOCKED_FIELDS?: string; // comma separated locked fields
       WEBUI_ALLOWED_MODELS?: string; // comma separated model@Provider list
+      WEBUI_ANNOUNCEMENT_JSON?: string; // public update announcement shown after a new build
 
       VERCEL?: string;
       VERCEL_DEPLOYMENT_ID?: string;

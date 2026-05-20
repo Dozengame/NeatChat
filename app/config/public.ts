@@ -13,6 +13,7 @@ import {
   splitModelRef,
   type PublicAppConfig,
 } from "../utils/public-app-config";
+import { parseUpdateAnnouncementJson } from "../utils/update-announcement";
 
 export function publicConfigHeaders() {
   return {
@@ -24,6 +25,16 @@ export function publicConfigHeaders() {
 
 export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
   const serverConfig = getServerSideConfig();
+  const updateAnnouncementInput = parseUpdateAnnouncementJson(
+    process.env.WEBUI_ANNOUNCEMENT_JSON,
+    now,
+  );
+  const updateAnnouncement = updateAnnouncementInput
+    ? {
+        ...updateAnnouncementInput,
+        hash: hashPublicConfig(updateAnnouncementInput),
+      }
+    : undefined;
   const allowedModels = deriveAllowedModels({
     webuiAllowedModels: serverConfig.webuiAllowedModels,
     customModels: serverConfig.customModels || process.env.CUSTOM_MODELS || "",
@@ -110,6 +121,7 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
   return {
     configVersion: serverConfig.webuiConfigVersion || configHash,
     configHash,
+    updateAnnouncement,
     deploymentId:
       process.env.VERCEL_DEPLOYMENT_ID ||
       process.env.VERCEL_URL ||
