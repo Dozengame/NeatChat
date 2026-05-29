@@ -6,6 +6,10 @@ import { getModelProvider, isModelAvailableInServer } from "../utils/model";
 
 const serverConfig = getServerSideConfig();
 
+function isOpenAIImagePath(path: string) {
+  return path === OpenaiPath.ImagePath || path === OpenaiPath.ImageEditPath;
+}
+
 export async function requestOpenai(req: NextRequest) {
   const controller = new AbortController();
 
@@ -38,6 +42,8 @@ export async function requestOpenai(req: NextRequest) {
       ? serverConfig.azureUrl
       : path === OpenaiPath.ResponsesPath
       ? serverConfig.openaiResponsesUrl || serverConfig.baseUrl
+      : isOpenAIImagePath(path)
+      ? serverConfig.openaiImagesUrl || serverConfig.baseUrl
       : serverConfig.baseUrl) || OPENAI_BASE_URL;
 
   if (!baseUrl.startsWith("http")) {

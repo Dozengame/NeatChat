@@ -180,6 +180,26 @@ export function getOpenAIImageGenerationProgressContent(params: {
   }
 }
 
+export function parseOpenAIImageResponsePayload(params: {
+  status: number;
+  bodyText: string;
+}) {
+  if (!params.bodyText.trim()) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(params.bodyText);
+  } catch {
+    return {
+      error: {
+        code: String(params.status),
+        message: params.bodyText,
+      },
+    };
+  }
+}
+
 export function applyOpenAIImageGenerationDefaults<
   T extends {
     model?: string;

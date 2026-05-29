@@ -6,6 +6,7 @@ import {
   getOpenAIImageGenerationProgressContent,
   getOpenAIImageOutputContentType,
   isOpenAIImageGenerationModelConfig,
+  parseOpenAIImageResponsePayload,
 } from "../app/utils/openai-image";
 
 describe("OpenAI image generation models", () => {
@@ -194,6 +195,20 @@ describe("OpenAI image generation models", () => {
         phase: "saving",
       }),
     ).toContain("正在保存图片");
+  });
+
+  test("wraps non-json image responses as OpenAI errors", () => {
+    expect(
+      parseOpenAIImageResponsePayload({
+        status: 504,
+        bodyText: "An error occurred with your deployment",
+      }),
+    ).toEqual({
+      error: {
+        code: "504",
+        message: "An error occurred with your deployment",
+      },
+    });
   });
 
   test("keeps DALL-E 3 payload compatible with the existing image path", () => {

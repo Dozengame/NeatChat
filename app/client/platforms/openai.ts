@@ -61,6 +61,7 @@ import {
   getOpenAIImageOutputContentType,
   isGptImageGenerationModel,
   isOpenAIImageGenerationModelConfig,
+  parseOpenAIImageResponsePayload,
   type OpenAIImageGenerationRequestPayload,
 } from "@/app/utils/openai-image";
 
@@ -758,7 +759,15 @@ export class ChatGPTApi implements LLMApi {
         const res = await fetch(chatPath, chatPayload);
         clearTimeout(requestTimeoutId);
 
-        const resJson = await res.json();
+        const resJson = isImageGeneration
+          ? parseOpenAIImageResponsePayload({
+              status: res.status,
+              bodyText: await res.text(),
+            })
+          : await res.json();
+        if (isImageGeneration && (!res.ok || resJson?.error)) {
+          throw new Error(getOpenAIErrorMessage(resJson, res.status));
+        }
         if (isImageGeneration) {
           options.onUpdate?.(
             getOpenAIImageGenerationProgressContent({
@@ -767,9 +776,6 @@ export class ChatGPTApi implements LLMApi {
             }),
             "",
           );
-        }
-        if (isImageGeneration && (!res.ok || resJson?.error)) {
-          throw new Error(getOpenAIErrorMessage(resJson, res.status));
         }
         const message = await this.extractMessage(resJson, {
           imageContentType:

@@ -60,6 +60,7 @@ declare global {
 
       BASE_URL?: string;
       OPENAI_ORG_ID?: string; // openai only
+      OPENAI_IMAGES_URL?: string; // custom image generation/edit endpoint base
       OPENAI_RESPONSES_URL?: string; // custom responses endpoint
       OPENAI_STORE_RESPONSES?: string; // store responses for OpenAI dashboard/API logs
       OPENAI_REASONING_EFFORT?: string; // responses api reasoning effort
@@ -285,6 +286,7 @@ export const getServerSideConfig = () => {
     baseUrl: process.env.BASE_URL,
     apiKey: getApiKey(process.env.OPENAI_API_KEY),
     openaiOrgId: process.env.OPENAI_ORG_ID,
+    openaiImagesUrl: process.env.OPENAI_IMAGES_URL,
     openaiResponsesUrl: process.env.OPENAI_RESPONSES_URL,
     openaiStoreResponses,
     openaiReasoningEffort,
