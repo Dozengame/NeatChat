@@ -56,6 +56,17 @@ describe("custom model availability", () => {
     ).toBe(false);
   });
 
+  test("normalizes known provider names for new custom models", () => {
+    const table = collectModelTable(
+      DEFAULT_MODELS,
+      "-all,gpt-image-2@openai",
+    );
+
+    expect(table["gpt-image-2@openai"]?.provider?.providerName).toBe(
+      ServiceProvider.OpenAI,
+    );
+  });
+
   test("keeps Azure disabled when only OpenAI is allowed", () => {
     expect(
       isModelAvailableInServer(

@@ -1,4 +1,4 @@
-import { DEFAULT_MODELS } from "../constant";
+import { DEFAULT_MODELS, ServiceProvider } from "../constant";
 import { LLMModel } from "../client/api";
 
 const CustomSeq = {
@@ -15,12 +15,22 @@ const CustomSeq = {
   },
 };
 
-const customProvider = (providerName: string) => ({
-  id: providerName.toLowerCase(),
-  providerName: providerName,
-  providerType: "custom",
-  sorted: CustomSeq.next(providerName),
-});
+const ProviderNames = new Map(
+  Object.values(ServiceProvider).map((name) => [name.toLowerCase(), name]),
+);
+
+const normalizeKnownProviderName = (providerName: string) =>
+  ProviderNames.get(providerName.toLowerCase()) ?? providerName;
+
+const customProvider = (providerName: string) => {
+  const normalizedProviderName = normalizeKnownProviderName(providerName);
+  return {
+    id: normalizedProviderName.toLowerCase(),
+    providerName: normalizedProviderName,
+    providerType: "custom",
+    sorted: CustomSeq.next(normalizedProviderName),
+  };
+};
 
 /**
  * Sorts an array of models based on specified rules.
