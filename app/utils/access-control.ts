@@ -27,6 +27,7 @@ export interface AccessControlConfig {
   redisUrl?: string;
   redisToken?: string;
   redisPrefix: string;
+  usageStateVersion: string;
 }
 
 const DEFAULT_ADVANCED_DAILY_TOKENS = 500_000;
@@ -237,6 +238,7 @@ export function buildAccessControlConfig(
       "ACCESS_USAGE_REDIS_TOKEN",
     ]),
     redisPrefix: env.ACCESS_USAGE_REDIS_PREFIX?.trim() || DEFAULT_REDIS_PREFIX,
+    usageStateVersion: env.ACCESS_USAGE_STATE_VERSION?.trim() || "",
   };
 }
 

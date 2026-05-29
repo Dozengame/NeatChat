@@ -144,6 +144,7 @@ describe("access control tiers", () => {
     delete process.env.ACCESS_IP_BURST_WINDOW_SECONDS;
     delete process.env.ACCESS_USAGE_REDIS_URL;
     delete process.env.ACCESS_USAGE_REDIS_TOKEN;
+    delete process.env.ACCESS_USAGE_STATE_VERSION;
     delete process.env.NEATCHAT_REDIS_KV_REST_API_URL;
     delete process.env.NEATCHAT_REDIS_KV_REST_API_TOKEN;
     delete process.env.NEATCHAT_REDIS_KV_REST_API_READ_ONLY_TOKEN;
@@ -374,6 +375,70 @@ describe("access control tiers", () => {
     });
   });
 
+  test("ignores existing burst cooldown when burst limit is disabled", async () => {
+    process.env.ACCESS_CODE_NORMAL = "normal-key";
+    process.env.ACCESS_BURST_TOKEN_LIMIT = "100";
+    process.env.ACCESS_BURST_COOLDOWN_SECONDS = "900";
+    const profile = resolveAccessCodeProfile(
+      "normal-key",
+      buildAccessControlConfig(process.env),
+    )!;
+
+    const req = makeRequest("normal-key", "8.8.8.8");
+    markSystemAccessCodeRequest(req, profile);
+    await recordUsage(req, 101);
+
+    const blockedReq = makeRequest("normal-key", "8.8.8.8");
+    expect(await checkAccessUsage(blockedReq, profile)).toMatchObject({
+      allowed: false,
+      error: "cooling_down",
+    });
+
+    process.env.ACCESS_BURST_TOKEN_LIMIT = "0";
+
+    const allowedReq = makeRequest("normal-key", "8.8.8.8");
+    expect(await checkAccessUsage(allowedReq, profile)).toEqual({
+      allowed: true,
+    });
+  });
+
+  test("uses usage state version to isolate existing usage for the same cookie", async () => {
+    process.env.ACCESS_CODE_NORMAL = "normal-key";
+    process.env.ACCESS_DEVICE_ID_ENABLED = "true";
+    process.env.ACCESS_DEVICE_ID_SECRET = "test-device-secret";
+    process.env.ACCESS_BURST_TOKEN_LIMIT = "9999999";
+    process.env.ACCESS_USAGE_STATE_VERSION = "before-reset";
+    const config = buildAccessControlConfig(process.env);
+    const profile = resolveAccessCodeProfile("normal-key", config)!;
+    const device = await createSignedAccessDeviceId(
+      config,
+      "device-one-000001",
+    );
+
+    const req = makeRequest("normal-key", "8.8.8.8", {
+      cookies: { neatchat_device_id: device },
+    });
+    markSystemAccessCodeRequest(req, profile);
+    await recordUsage(req, 200000);
+
+    const blockedReq = makeRequest("normal-key", "8.8.8.8", {
+      cookies: { neatchat_device_id: device },
+    });
+    expect(await checkAccessUsage(blockedReq, profile)).toMatchObject({
+      allowed: false,
+      error: "daily_token_limit_exceeded",
+    });
+
+    process.env.ACCESS_USAGE_STATE_VERSION = "after-reset";
+
+    const resetReq = makeRequest("normal-key", "8.8.8.8", {
+      cookies: { neatchat_device_id: device },
+    });
+    expect(await checkAccessUsage(resetReq, profile)).toEqual({
+      allowed: true,
+    });
+  });
+
   test("applies aggregate IP burst guard across different device IDs", async () => {
     process.env.ACCESS_CODE_NORMAL = "normal-key";
     process.env.ACCESS_DEVICE_ID_ENABLED = "true";
@@ -531,5 +596,13 @@ describe("access control tiers", () => {
 
     expect(config.redisUrl).toBe("https://redis.example.com");
     expect(config.redisToken).toBe("write-token");
+  });
+
+  test("parses usage state version for usage key rotation", () => {
+    process.env.ACCESS_USAGE_STATE_VERSION = "release-20260529";
+
+    const config = buildAccessControlConfig(process.env);
+
+    expect(config.usageStateVersion).toBe("release-20260529");
   });
 });

@@ -46,6 +46,7 @@ declare global {
       ACCESS_USAGE_REDIS_URL?: string;
       ACCESS_USAGE_REDIS_TOKEN?: string;
       ACCESS_USAGE_REDIS_PREFIX?: string;
+      ACCESS_USAGE_STATE_VERSION?: string;
       NEATCHAT_REDIS_KV_REST_API_URL?: string;
       NEATCHAT_REDIS_KV_REST_API_TOKEN?: string;
       NEATCHAT_REDIS_KV_REST_API_READ_ONLY_TOKEN?: string;

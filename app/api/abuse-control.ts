@@ -281,6 +281,21 @@ function getIpBurstGuardKey(identity: { ipKey: string }) {
   };
 }
 
+function getUsageStatePrefix(config: AccessControlConfig) {
+  return config.usageStateVersion
+    ? `${config.redisPrefix}:v:${config.usageStateVersion}`
+    : config.redisPrefix;
+}
+
+function getUsageStateIdentityKey(
+  config: AccessControlConfig,
+  identityKey: string,
+) {
+  return config.usageStateVersion
+    ? `${config.usageStateVersion}:${identityKey}`
+    : identityKey;
+}
+
 function getUsageKeys(params: {
   identityKey: string;
   now: number;
@@ -291,13 +306,14 @@ function getUsageKeys(params: {
   const burstWindowSeconds = getUsageBurstWindowSeconds(params);
   const dayKey = formatDateInTimeZone(new Date(now), config.quotaTimeZone);
   const burstWindowKey = Math.floor(now / (burstWindowSeconds * 1000));
+  const usagePrefix = getUsageStatePrefix(config);
 
   return {
     dayKey,
     burstWindowKey,
-    dailyKey: `${config.redisPrefix}:daily:${dayKey}:${identityKey}`,
-    burstKey: `${config.redisPrefix}:burst:${burstWindowKey}:${identityKey}`,
-    cooldownKey: `${config.redisPrefix}:cooldown:${identityKey}`,
+    dailyKey: `${usagePrefix}:daily:${dayKey}:${identityKey}`,
+    burstKey: `${usagePrefix}:burst:${burstWindowKey}:${identityKey}`,
+    cooldownKey: `${usagePrefix}:cooldown:${identityKey}`,
   };
 }
 
@@ -309,7 +325,11 @@ function getMemoryRecord(params: {
 }) {
   const store = getMemoryStore();
   const keys = getUsageKeys(params);
-  const current = store.get(params.identityKey);
+  const stateIdentityKey = getUsageStateIdentityKey(
+    params.config,
+    params.identityKey,
+  );
+  const current = store.get(stateIdentityKey);
 
   if (!current || current.dayKey !== keys.dayKey) {
     const next: UsageRecord = {
@@ -319,7 +339,7 @@ function getMemoryRecord(params: {
       burstTokens: 0,
       cooldownUntil: current?.cooldownUntil ?? 0,
     };
-    store.set(params.identityKey, next);
+    store.set(stateIdentityKey, next);
     return next;
   }
 
@@ -527,7 +547,7 @@ export async function checkAccessUsage(
     config,
   });
 
-  if (usage.cooldownUntil > now) {
+  if (config.burstTokenLimit > 0 && usage.cooldownUntil > now) {
     return {
       allowed: false,
       status: 429,
