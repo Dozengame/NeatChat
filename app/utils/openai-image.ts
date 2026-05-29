@@ -1,0 +1,283 @@
+import { ServiceProvider } from "../constant";
+import type {
+  DalleStyle,
+  GptImageQuality,
+  GptImageSize,
+  OpenAIImageBackground,
+  OpenAIImageModeration,
+  OpenAIImageOutputFormat,
+  OpenAIImageQuality,
+  OpenAIImageSize,
+} from "../typing";
+
+export const GPT_IMAGE_2_MODEL = "gpt-image-2";
+const DALLE_MODEL_PREFIX = "dall-e";
+const GPT_IMAGE_MODEL_PREFIX = "gpt-image";
+
+export const DALLE3_IMAGE_SIZES = [
+  "1024x1024",
+  "1792x1024",
+  "1024x1792",
+] as const;
+export const DALLE_IMAGE_COMPATIBLE_SIZES = ["1024x1024"] as const;
+
+export const DALLE3_IMAGE_QUALITIES = ["standard", "hd"] as const;
+export const DALLE3_IMAGE_STYLES = ["vivid", "natural"] as const;
+
+export const GPT_IMAGE_2_SIZES = [
+  "auto",
+  "1024x1024",
+  "1536x1024",
+  "1024x1536",
+  "2048x2048",
+  "2048x1152",
+  "3840x2160",
+  "2160x3840",
+] as const;
+
+export const GPT_IMAGE_2_QUALITIES = [
+  "auto",
+  "low",
+  "medium",
+  "high",
+] as const;
+
+export const GPT_IMAGE_2_DEFAULTS = {
+  size: "auto" as GptImageSize,
+  quality: "auto" as GptImageQuality,
+  background: "auto" as OpenAIImageBackground,
+  output_format: "png" as OpenAIImageOutputFormat,
+  moderation: "auto" as OpenAIImageModeration,
+};
+
+export const DALLE3_DEFAULTS = {
+  size: "1024x1024" as OpenAIImageSize,
+  quality: "standard" as OpenAIImageQuality,
+  style: "vivid" as DalleStyle,
+};
+
+export const DALLE_IMAGE_DEFAULTS = {
+  size: "1024x1024" as OpenAIImageSize,
+};
+
+export interface DalleRequestPayload {
+  model: string;
+  prompt: string;
+  response_format: "url" | "b64_json";
+  n: number;
+  size: OpenAIImageSize;
+  quality?: OpenAIImageQuality;
+  style?: DalleStyle;
+}
+
+export interface GptImage2RequestPayload {
+  model: string;
+  prompt: string;
+  n: number;
+  size: OpenAIImageSize;
+  quality: OpenAIImageQuality;
+  background: OpenAIImageBackground;
+  output_format: OpenAIImageOutputFormat;
+  output_compression?: number;
+  moderation: OpenAIImageModeration;
+}
+
+export type OpenAIImageGenerationRequestPayload =
+  | DalleRequestPayload
+  | GptImage2RequestPayload;
+
+export type OpenAIImageGenerationConfig = Partial<{
+  size: OpenAIImageSize;
+  quality: OpenAIImageQuality;
+  style: DalleStyle;
+  background: OpenAIImageBackground;
+  output_format: OpenAIImageOutputFormat;
+  output_compression: number;
+  moderation: OpenAIImageModeration;
+}>;
+
+function normalizeModel(model?: string) {
+  return model?.trim().toLowerCase() ?? "";
+}
+
+function normalizeProvider(providerName?: string) {
+  return providerName?.trim().toLowerCase() ?? "";
+}
+
+export function isDalle3(model?: string) {
+  return normalizeModel(model) === "dall-e-3";
+}
+
+export function isDalleImageGenerationModel(model?: string) {
+  return normalizeModel(model).startsWith(DALLE_MODEL_PREFIX);
+}
+
+export function isGptImageGenerationModel(model?: string) {
+  return normalizeModel(model).startsWith(GPT_IMAGE_MODEL_PREFIX);
+}
+
+export function isOpenAIImageGenerationModel(model?: string) {
+  return (
+    isDalleImageGenerationModel(model) || isGptImageGenerationModel(model)
+  );
+}
+
+export function isOpenAIImageGenerationModelConfig(params: {
+  model?: string;
+  providerName?: string;
+}) {
+  const providerName = normalizeProvider(params.providerName);
+  const isOpenAIProvider =
+    !providerName || providerName === ServiceProvider.OpenAI.toLowerCase();
+
+  if (isGptImageGenerationModel(params.model)) {
+    return isOpenAIProvider;
+  }
+
+  if (isDalleImageGenerationModel(params.model)) {
+    return (
+      isOpenAIProvider || providerName === ServiceProvider.Azure.toLowerCase()
+    );
+  }
+
+  return false;
+}
+
+export function getOpenAIImageOutputContentType(
+  outputFormat?: OpenAIImageOutputFormat,
+) {
+  switch (outputFormat) {
+    case "jpeg":
+      return "image/jpeg";
+    case "webp":
+      return "image/webp";
+    case "png":
+    default:
+      return "image/png";
+  }
+}
+
+export function applyOpenAIImageGenerationDefaults<
+  T extends {
+    model?: string;
+    providerName?: string;
+    size?: OpenAIImageSize;
+    quality?: OpenAIImageQuality;
+    style?: DalleStyle;
+    background?: OpenAIImageBackground;
+    output_format?: OpenAIImageOutputFormat;
+    output_compression?: number;
+    moderation?: OpenAIImageModeration;
+  },
+>(config: T) {
+  if (!isOpenAIImageGenerationModelConfig(config)) {
+    return config;
+  }
+
+  if (isGptImageGenerationModel(config.model)) {
+    config.size = GPT_IMAGE_2_DEFAULTS.size;
+    config.quality = GPT_IMAGE_2_DEFAULTS.quality;
+    config.background = GPT_IMAGE_2_DEFAULTS.background;
+    config.output_format = GPT_IMAGE_2_DEFAULTS.output_format;
+    config.moderation = GPT_IMAGE_2_DEFAULTS.moderation;
+    config.output_compression = undefined;
+    config.style = undefined;
+    return config;
+  }
+
+  if (isDalle3(config.model)) {
+    config.size = DALLE3_DEFAULTS.size;
+    config.quality = DALLE3_DEFAULTS.quality;
+    config.style = DALLE3_DEFAULTS.style;
+  } else {
+    config.size = DALLE_IMAGE_DEFAULTS.size;
+    config.quality = undefined;
+    config.style = undefined;
+  }
+  config.background = undefined;
+  config.output_format = undefined;
+  config.output_compression = undefined;
+  config.moderation = undefined;
+  return config;
+}
+
+export function buildOpenAIImageGenerationPayload(params: {
+  model: string;
+  prompt: string;
+  config?: OpenAIImageGenerationConfig;
+}): OpenAIImageGenerationRequestPayload {
+  if (isGptImageGenerationModel(params.model)) {
+    const size = GPT_IMAGE_2_SIZES.includes(params.config?.size as any)
+      ? params.config?.size
+      : GPT_IMAGE_2_DEFAULTS.size;
+    const quality = GPT_IMAGE_2_QUALITIES.includes(params.config?.quality as any)
+      ? params.config?.quality
+      : GPT_IMAGE_2_DEFAULTS.quality;
+    const background =
+      params.config?.background === "opaque" ||
+      params.config?.background === "auto"
+        ? params.config.background
+        : GPT_IMAGE_2_DEFAULTS.background;
+    const outputFormat =
+      params.config?.output_format === "png" ||
+      params.config?.output_format === "jpeg" ||
+      params.config?.output_format === "webp"
+        ? params.config.output_format
+        : GPT_IMAGE_2_DEFAULTS.output_format;
+    const moderation =
+      params.config?.moderation === "low" || params.config?.moderation === "auto"
+        ? params.config.moderation
+        : GPT_IMAGE_2_DEFAULTS.moderation;
+
+    const payload: GptImage2RequestPayload = {
+      model: params.model,
+      prompt: params.prompt,
+      n: 1,
+      size: size ?? "auto",
+      quality: quality ?? "auto",
+      background: background ?? "auto",
+      output_format: outputFormat ?? "png",
+      moderation: moderation ?? "auto",
+    };
+
+    if (
+      typeof params.config?.output_compression === "number" &&
+      (payload.output_format === "jpeg" || payload.output_format === "webp")
+    ) {
+      payload.output_compression = Math.floor(
+        Math.min(100, Math.max(0, params.config.output_compression)),
+      );
+    }
+
+    return payload;
+  }
+
+  const dalleSizeOptions = isDalle3(params.model)
+    ? DALLE3_IMAGE_SIZES
+    : DALLE_IMAGE_COMPATIBLE_SIZES;
+  const size = dalleSizeOptions.includes(params.config?.size as any)
+    ? params.config?.size
+    : DALLE3_DEFAULTS.size;
+  const payload: DalleRequestPayload = {
+    model: params.model,
+    prompt: params.prompt,
+    response_format: "b64_json",
+    n: 1,
+    size: size ?? "1024x1024",
+  };
+
+  if (isDalle3(params.model)) {
+    const quality = DALLE3_IMAGE_QUALITIES.includes(
+      params.config?.quality as any,
+    )
+      ? params.config?.quality
+      : DALLE3_DEFAULTS.quality;
+    const style = DALLE3_IMAGE_STYLES.includes(params.config?.style as any)
+      ? params.config?.style
+      : DALLE3_DEFAULTS.style;
+    payload.quality = quality ?? "standard";
+    payload.style = style ?? "vivid";
+  }
+
+  return payload;
+}

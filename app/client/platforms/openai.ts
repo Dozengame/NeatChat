@@ -24,7 +24,6 @@ import {
   stream,
 } from "@/app/utils/chat";
 import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
-import { DalleSize, DalleQuality, DalleStyle } from "@/app/typing";
 import {
   shouldUseOpenAIResponses,
   shouldRequireOpenAIResponsesWebSearch,
@@ -49,10 +48,15 @@ import { getClientConfig } from "@/app/config/client";
 import {
   getMessageTextContent,
   isVisionModel,
-  isDalle3 as _isDalle3,
   getMessageTextContentWithoutThinking,
 } from "@/app/utils";
 import { fetch } from "@/app/utils/stream";
+import {
+  buildOpenAIImageGenerationPayload,
+  getOpenAIImageOutputContentType,
+  isOpenAIImageGenerationModelConfig,
+  type OpenAIImageGenerationRequestPayload,
+} from "@/app/utils/openai-image";
 
 const OPENAI_RESPONSES_TIMEOUT_MS = REQUEST_TIMEOUT_MS * 10;
 
@@ -80,15 +84,6 @@ export interface AzureChatRequestPayload {
   top_p: number;
 }
 
-export interface DalleRequestPayload {
-  model: string;
-  prompt: string;
-  response_format: "url" | "b64_json";
-  n: number;
-  size: DalleSize;
-  quality: DalleQuality;
-  style: DalleStyle;
-}
 
 export function extractResponsesText(res: any) {
   const outputText =
@@ -196,7 +191,12 @@ export class ChatGPTApi implements LLMApi {
     return cloudflareAIGatewayUrl([baseUrl, path].join("/"));
   }
 
-  async extractMessage(res: any) {
+  async extractMessage(
+    res: any,
+    options?: {
+      imageContentType?: string;
+    },
+  ) {
     if (res.error) {
       if (typeof res.msg === "string" && res.msg.trim()) {
         return res.msg;
@@ -213,7 +213,12 @@ export class ChatGPTApi implements LLMApi {
       const b64_json = res.data?.at(0)?.b64_json ?? "";
       if (!url && b64_json) {
         // uploadImage
-        url = await uploadImage(base64Image2Blob(b64_json, "image/png"));
+        url = await uploadImage(
+          base64Image2Blob(
+            b64_json,
+            options?.imageContentType ?? "image/png",
+          ),
+        );
       }
       return [
         {
@@ -275,11 +280,14 @@ export class ChatGPTApi implements LLMApi {
       },
     };
     const accessStore = useAccessStore.getState();
-    const isDalle3 = _isDalle3(options.config.model);
+    const isImageGeneration = isOpenAIImageGenerationModelConfig({
+      model: options.config.model,
+      providerName: options.config.providerName,
+    });
     let openaiResponseId: string | undefined;
     let openaiResponsesOutput: unknown[] | undefined;
     const useResponses =
-      !isDalle3 &&
+      !isImageGeneration &&
       shouldUseOpenAIResponses({
         model: modelConfig.model,
         providerName: modelConfig.providerName,
@@ -291,22 +299,17 @@ export class ChatGPTApi implements LLMApi {
     let requestPayload:
       | AzureChatRequestPayload
       | ResponsesRequestPayload
-      | DalleRequestPayload;
+      | OpenAIImageGenerationRequestPayload;
 
-    if (isDalle3) {
+    if (isImageGeneration) {
       const prompt = getMessageTextContent(
         options.messages.slice(-1)?.pop() as any,
       );
-      requestPayload = {
-        model: options.config.model,
+      requestPayload = buildOpenAIImageGenerationPayload({
+        model: modelConfig.model,
         prompt,
-        // URLs are only valid for 60 minutes after the image has been generated.
-        response_format: "b64_json", // using b64_json, and save image in CacheStorage
-        n: 1,
-        size: options.config?.size ?? "1024x1024",
-        quality: options.config?.quality ?? "standard",
-        style: options.config?.style ?? "vivid",
-      };
+        config: modelConfig,
+      });
     } else {
       const visionModel = isVisionModel(options.config.model);
       const messages: ChatOptions["messages"] = [];
@@ -376,7 +379,7 @@ export class ChatGPTApi implements LLMApi {
       requestPayload,
     );
 
-    const shouldStream = !isDalle3 && !!options.config.stream;
+    const shouldStream = !isImageGeneration && !!options.config.stream;
     const controller = new AbortController();
     options.onController?.(controller);
 
@@ -402,14 +405,14 @@ export class ChatGPTApi implements LLMApi {
             model?.provider?.providerName === ServiceProvider.Azure,
         );
         chatPath = this.path(
-          (isDalle3 ? Azure.ImagePath : Azure.ChatPath)(
+          (isImageGeneration ? Azure.ImagePath : Azure.ChatPath)(
             (model?.displayName ?? model?.name) as string,
             useCustomConfig ? useAccessStore.getState().azureApiVersion : "",
           ),
         );
       } else {
         chatPath = this.path(
-          isDalle3 ? OpenaiPath.ImagePath : OpenaiPath.ResponsesPath,
+          isImageGeneration ? OpenaiPath.ImagePath : OpenaiPath.ResponsesPath,
         );
       }
       if (shouldStream) {
@@ -629,7 +632,7 @@ export class ChatGPTApi implements LLMApi {
           () => controller.abort(),
           useResponses
             ? OPENAI_RESPONSES_TIMEOUT_MS
-            : isDalle3
+            : isImageGeneration
             ? REQUEST_TIMEOUT_MS * 4
             : REQUEST_TIMEOUT_MS, // dalle3 using b64_json is slow.
         );
@@ -638,7 +641,12 @@ export class ChatGPTApi implements LLMApi {
         clearTimeout(requestTimeoutId);
 
         const resJson = await res.json();
-        const message = await this.extractMessage(resJson);
+        const message = await this.extractMessage(resJson, {
+          imageContentType:
+            isImageGeneration && "output_format" in requestPayload
+              ? getOpenAIImageOutputContentType(requestPayload.output_format)
+              : undefined,
+        });
         options.onFinish(
           message,
           res,

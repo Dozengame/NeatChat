@@ -71,7 +71,6 @@ import {
   getMessageTextContent,
   getMessageImages,
   isVisionModel,
-  isDalle3,
   showPlugins,
   safeLocalStorage,
 } from "../utils";
@@ -79,7 +78,11 @@ import {
 import dynamic from "next/dynamic";
 
 import { ChatControllerPool } from "../client/controller";
-import { DalleSize, DalleQuality, DalleStyle } from "../typing";
+import {
+  DalleStyle,
+  OpenAIImageQuality,
+  OpenAIImageSize,
+} from "../typing";
 import { Prompt, usePromptStore } from "../store/prompt";
 import Locale from "../locales";
 
@@ -123,6 +126,18 @@ import {
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
   OpenAIChatReasoningEffort,
 } from "../utils/openai-responses";
+import {
+  applyOpenAIImageGenerationDefaults,
+  DALLE_IMAGE_COMPATIBLE_SIZES,
+  DALLE3_IMAGE_QUALITIES,
+  DALLE3_IMAGE_SIZES,
+  DALLE3_IMAGE_STYLES,
+  GPT_IMAGE_2_QUALITIES,
+  GPT_IMAGE_2_SIZES,
+  isDalle3,
+  isGptImageGenerationModel,
+  isOpenAIImageGenerationModelConfig,
+} from "../utils/openai-image";
 
 import { ClientApi } from "../client/api";
 import { createTTSPlayer } from "../utils/audio";
@@ -704,9 +719,23 @@ export function ChatActions(props: {
   const [showSizeSelector, setShowSizeSelector] = useState(false);
   const [showQualitySelector, setShowQualitySelector] = useState(false);
   const [showStyleSelector, setShowStyleSelector] = useState(false);
-  const dalle3Sizes: DalleSize[] = ["1024x1024", "1792x1024", "1024x1792"];
-  const dalle3Qualitys: DalleQuality[] = ["standard", "hd"];
-  const dalle3Styles: DalleStyle[] = ["vivid", "natural"];
+  const isOpenAIImageGeneration = isOpenAIImageGenerationModelConfig({
+    model: currentModel,
+    providerName: currentProviderName,
+  });
+  const isGptImageModel = isGptImageGenerationModel(currentModel);
+  const isDalle3Model = isDalle3(currentModel);
+  const imageSizes = isGptImageModel
+    ? GPT_IMAGE_2_SIZES
+    : isDalle3Model
+    ? DALLE3_IMAGE_SIZES
+    : DALLE_IMAGE_COMPATIBLE_SIZES;
+  const imageQualitys = isGptImageModel
+    ? GPT_IMAGE_2_QUALITIES
+    : isDalle3Model
+    ? DALLE3_IMAGE_QUALITIES
+    : [];
+  const dalle3Styles = DALLE3_IMAGE_STYLES;
   const currentSize = session.mask.modelConfig?.size ?? "1024x1024";
   const currentQuality = session.mask.modelConfig?.quality ?? "standard";
   const currentStyle = session.mask.modelConfig?.style ?? "vivid";
@@ -735,6 +764,7 @@ export function ChatActions(props: {
         session.mask.modelConfig.model = nextModel.name;
         session.mask.modelConfig.providerName = nextModel?.provider
           ?.providerName as ServiceProvider;
+        applyOpenAIImageGenerationDefaults(session.mask.modelConfig);
         session.mask.modelConfigMeta = {
           ...(session.mask.modelConfigMeta ?? {}),
           model: createConfigFieldMeta({
@@ -924,6 +954,7 @@ export function ChatActions(props: {
                 session.mask.modelConfig.model = model as ModelType;
                 session.mask.modelConfig.providerName =
                   providerName as ServiceProvider;
+                applyOpenAIImageGenerationDefaults(session.mask.modelConfig);
                 session.mask.modelConfigMeta = {
                   ...(session.mask.modelConfigMeta ?? {}),
                   model: createConfigFieldMeta({
@@ -947,7 +978,7 @@ export function ChatActions(props: {
           />
         )}
 
-        {isDalle3(currentModel) && (
+        {isOpenAIImageGeneration && (
           <ChatAction
             onClick={() => setShowSizeSelector(true)}
             text={currentSize}
@@ -955,17 +986,17 @@ export function ChatActions(props: {
           />
         )}
 
-        {showSizeSelector && (
+        {isOpenAIImageGeneration && showSizeSelector && (
           <Selector
             defaultSelectedValue={currentSize}
-            items={dalle3Sizes.map((m) => ({
+            items={imageSizes.map((m) => ({
               title: m,
               value: m,
             }))}
             onClose={() => setShowSizeSelector(false)}
             onSelection={(s) => {
               if (s.length === 0) return;
-              const size = s[0];
+              const size = s[0] as OpenAIImageSize;
               chatStore.updateTargetSession(session, (session) => {
                 session.mask.modelConfig.size = size;
               });
@@ -975,7 +1006,7 @@ export function ChatActions(props: {
           />
         )}
 
-        {isDalle3(currentModel) && (
+        {isOpenAIImageGeneration && imageQualitys.length > 0 && (
           <ChatAction
             onClick={() => setShowQualitySelector(true)}
             text={currentQuality}
@@ -983,17 +1014,19 @@ export function ChatActions(props: {
           />
         )}
 
-        {showQualitySelector && (
+        {isOpenAIImageGeneration &&
+          imageQualitys.length > 0 &&
+          showQualitySelector && (
           <Selector
             defaultSelectedValue={currentQuality}
-            items={dalle3Qualitys.map((m) => ({
+            items={imageQualitys.map((m) => ({
               title: m,
               value: m,
             }))}
             onClose={() => setShowQualitySelector(false)}
             onSelection={(q) => {
               if (q.length === 0) return;
-              const quality = q[0];
+              const quality = q[0] as OpenAIImageQuality;
               chatStore.updateTargetSession(session, (session) => {
                 session.mask.modelConfig.quality = quality;
               });
@@ -1003,7 +1036,7 @@ export function ChatActions(props: {
           />
         )}
 
-        {isDalle3(currentModel) && (
+        {isDalle3Model && (
           <ChatAction
             onClick={() => setShowStyleSelector(true)}
             text={currentStyle}
@@ -1021,7 +1054,7 @@ export function ChatActions(props: {
             onClose={() => setShowStyleSelector(false)}
             onSelection={(s) => {
               if (s.length === 0) return;
-              const style = s[0];
+              const style = s[0] as DalleStyle;
               chatStore.updateTargetSession(session, (session) => {
                 session.mask.modelConfig.style = style;
               });
@@ -2809,9 +2842,9 @@ function _Chat() {
               }}
               onStartVoice={async () => {
                 console.log("start voice");
-              }}
-            />
-          )}
+            }}
+          />
+        )}
         </div>
       </div>
       {showExport && (

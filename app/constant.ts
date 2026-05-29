@@ -331,6 +331,8 @@ const openaiModels = [
   "o1-preview",
 ];
 
+const openaiImageModels = ["gpt-image-2"];
+
 const googleModels = [
   "gemini-1.0-pro",
   "gemini-1.5-pro-latest",
@@ -435,6 +437,17 @@ export const DEFAULT_MODELS = [
       providerName: "OpenAI",
       providerType: "openai",
       sorted: 1, // 这里是固定的，确保顺序与之前内置的版本一致
+    },
+  })),
+  ...openaiImageModels.map((name) => ({
+    name,
+    available: true,
+    sorted: seq++,
+    provider: {
+      id: "openai",
+      providerName: "OpenAI",
+      providerType: "openai",
+      sorted: 1,
     },
   })),
   ...openaiModels.map((name) => ({

@@ -15,6 +15,18 @@ import {
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
   OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY,
 } from "../utils/openai-responses";
+import {
+  applyOpenAIImageGenerationDefaults,
+  DALLE_IMAGE_COMPATIBLE_SIZES,
+  DALLE3_IMAGE_QUALITIES,
+  DALLE3_IMAGE_SIZES,
+  DALLE3_IMAGE_STYLES,
+  GPT_IMAGE_2_QUALITIES,
+  GPT_IMAGE_2_SIZES,
+  isDalle3,
+  isGptImageGenerationModel,
+  isOpenAIImageGenerationModelConfig,
+} from "../utils/openai-image";
 import type {
   OpenAIChatReasoningEffort,
   OpenAIResponsesTextVerbosity,
@@ -73,6 +85,22 @@ export function ModelConfigList(props: {
     model: props.modelConfig.model,
     providerName: props.modelConfig?.providerName,
   });
+  const isOpenAIImageGeneration = isOpenAIImageGenerationModelConfig({
+    model: props.modelConfig.model,
+    providerName: props.modelConfig?.providerName,
+  });
+  const isGptImageModel = isGptImageGenerationModel(props.modelConfig.model);
+  const isDalle3Model = isDalle3(props.modelConfig.model);
+  const imageSizeOptions = isGptImageModel
+    ? GPT_IMAGE_2_SIZES
+    : isDalle3Model
+    ? DALLE3_IMAGE_SIZES
+    : DALLE_IMAGE_COMPATIBLE_SIZES;
+  const imageQualityOptions = isGptImageModel
+    ? GPT_IMAGE_2_QUALITIES
+    : isDalle3Model
+    ? DALLE3_IMAGE_QUALITIES
+    : [];
   const reasoningEffort = (props.modelConfig.reasoningEffort ??
     OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT) as OpenAIChatReasoningEffort;
   const reasoningLabels: Record<OpenAIChatReasoningEffort, string> = {
@@ -112,6 +140,7 @@ export function ModelConfigList(props: {
             updateUnlocked(["model", "providerName"], (config) => {
               config.model = ModalConfigValidator.model(model);
               config.providerName = providerName as ServiceProvider;
+              applyOpenAIImageGenerationDefaults(config);
               if (
                 isOpenAIGpt5OrNewerModelConfig({
                   model: config.model,
@@ -139,7 +168,70 @@ export function ModelConfigList(props: {
         </Select>
       </ListItem>
 
-      {isOpenAIGpt5OrNewer ? (
+      {isOpenAIImageGeneration ? (
+        <>
+          <ListItem title="图像尺寸" subTitle={sourceText("size")}>
+            <Select
+              aria-label="图像尺寸"
+              value={props.modelConfig.size}
+              onChange={(e) => {
+                updateUnlocked(["size"], (config) => {
+                  config.size = e.currentTarget.value as typeof config.size;
+                });
+              }}
+            >
+              {imageSizeOptions.map((size) => (
+                <option value={size} key={size}>
+                  {size}
+                </option>
+              ))}
+            </Select>
+          </ListItem>
+          {imageQualityOptions.length > 0 && (
+            <ListItem title="图像质量" subTitle={sourceText("quality")}>
+              <Select
+                aria-label="图像质量"
+                value={props.modelConfig.quality}
+                onChange={(e) => {
+                  updateUnlocked(["quality"], (config) => {
+                    config.quality = e.currentTarget
+                      .value as typeof config.quality;
+                  });
+                }}
+              >
+                {imageQualityOptions.map((quality) => (
+                  <option value={quality} key={quality}>
+                    {quality}
+                  </option>
+                ))}
+              </Select>
+            </ListItem>
+          )}
+          {isDalle3Model && (
+            <ListItem
+              title={Locale.SdPanel.ImageStyle}
+              subTitle={sourceText("style")}
+            >
+              <Select
+                aria-label={Locale.SdPanel.ImageStyle}
+                value={props.modelConfig.style ?? "vivid"}
+                onChange={(e) => {
+                  updateUnlocked(["style"], (config) => {
+                    config.style = e.currentTarget
+                      .value as typeof config.style;
+                  });
+                }}
+              >
+                {DALLE3_IMAGE_STYLES.map((style) => (
+                  <option value={style} key={style}>
+                    {style}
+                  </option>
+                ))}
+              </Select>
+            </ListItem>
+          )}
+        </>
+      ) : isOpenAIGpt5OrNewer ? (
         <>
           <ListItem
             title={Locale.Settings.ReasoningEffort.Title}
@@ -244,31 +336,35 @@ export function ModelConfigList(props: {
         </>
       )}
 
-      <ListItem
-        title={Locale.Settings.MaxTokens.Title}
-        subTitle={`${Locale.Settings.MaxTokens.SubTitle}。${sourceText(
-          "max_output_tokens",
-        )}`}
-      >
-        <input
-          aria-label={Locale.Settings.MaxTokens.Title}
-          type="number"
-          min={1024}
-          max={512000}
-          value={maxOutputTokensValue}
-          disabled={forcedMaxOutputTokens || isLocked("max_output_tokens")}
-          onChange={(e) => {
-            if (forcedMaxOutputTokens || isLocked("max_output_tokens")) return;
-            updateUnlocked(["max_output_tokens"], (config) => {
-              config.max_output_tokens = ModalConfigValidator.max_output_tokens(
-                e.currentTarget.valueAsNumber,
-              );
-            });
-          }}
-        />
-      </ListItem>
+      {!isOpenAIImageGeneration && (
+        <ListItem
+          title={Locale.Settings.MaxTokens.Title}
+          subTitle={`${Locale.Settings.MaxTokens.SubTitle}。${sourceText(
+            "max_output_tokens",
+          )}`}
+        >
+          <input
+            aria-label={Locale.Settings.MaxTokens.Title}
+            type="number"
+            min={1024}
+            max={512000}
+            value={maxOutputTokensValue}
+            disabled={forcedMaxOutputTokens || isLocked("max_output_tokens")}
+            onChange={(e) => {
+              if (forcedMaxOutputTokens || isLocked("max_output_tokens")) return;
+              updateUnlocked(["max_output_tokens"], (config) => {
+                config.max_output_tokens =
+                  ModalConfigValidator.max_output_tokens(
+                    e.currentTarget.valueAsNumber,
+                  );
+              });
+            }}
+          />
+        </ListItem>
+      )}
 
-      {props.modelConfig?.providerName == ServiceProvider.Google ? null : (
+      {props.modelConfig?.providerName == ServiceProvider.Google ||
+      isOpenAIImageGeneration ? null : (
         <>
           {!isOpenAIGpt5OrNewer && (
             <>
@@ -356,95 +452,102 @@ export function ModelConfigList(props: {
         </>
       )}
 
-      <ListItem
-        title={Locale.Settings.HistoryCount.Title}
-        subTitle={`${Locale.Settings.HistoryCount.SubTitle}。${sourceText(
-          "historyMessageCount",
-        )}`}
-      >
-        <InputRange
-          aria={Locale.Settings.HistoryCount.Title}
-          title={props.modelConfig.historyMessageCount.toString()}
-          value={props.modelConfig.historyMessageCount}
-          min="0"
-          max="64"
-          step="1"
-          onChange={(e) => {
-            updateUnlocked(["historyMessageCount"], (config) => {
-              config.historyMessageCount = e.target.valueAsNumber;
-            });
-          }}
-        />
-      </ListItem>
+      {!isOpenAIImageGeneration && (
+        <>
+          <ListItem
+            title={Locale.Settings.HistoryCount.Title}
+            subTitle={`${Locale.Settings.HistoryCount.SubTitle}。${sourceText(
+              "historyMessageCount",
+            )}`}
+          >
+            <InputRange
+              aria={Locale.Settings.HistoryCount.Title}
+              title={props.modelConfig.historyMessageCount.toString()}
+              value={props.modelConfig.historyMessageCount}
+              min="0"
+              max="64"
+              step="1"
+              onChange={(e) => {
+                updateUnlocked(["historyMessageCount"], (config) => {
+                  config.historyMessageCount = e.target.valueAsNumber;
+                });
+              }}
+            />
+          </ListItem>
 
-      <ListItem
-        title={Locale.Settings.CompressThreshold.Title}
-        subTitle={`${Locale.Settings.CompressThreshold.SubTitle}。${sourceText(
-          "compressMessageLengthThreshold",
-        )}`}
-      >
-        <input
-          aria-label={Locale.Settings.CompressThreshold.Title}
-          type="number"
-          min={500}
-          max={4000}
-          value={props.modelConfig.compressMessageLengthThreshold}
-          disabled={isLocked("compressMessageLengthThreshold")}
-          onChange={(e) => {
-            updateUnlocked(["compressMessageLengthThreshold"], (config) => {
-              config.compressMessageLengthThreshold =
-                ModalConfigValidator.compressMessageLengthThreshold(
-                  e.currentTarget.valueAsNumber,
+          <ListItem
+            title={Locale.Settings.CompressThreshold.Title}
+            subTitle={`${Locale.Settings.CompressThreshold.SubTitle}。${sourceText(
+              "compressMessageLengthThreshold",
+            )}`}
+          >
+            <input
+              aria-label={Locale.Settings.CompressThreshold.Title}
+              type="number"
+              min={500}
+              max={4000}
+              value={props.modelConfig.compressMessageLengthThreshold}
+              disabled={isLocked("compressMessageLengthThreshold")}
+              onChange={(e) => {
+                updateUnlocked(["compressMessageLengthThreshold"], (config) => {
+                  config.compressMessageLengthThreshold =
+                    ModalConfigValidator.compressMessageLengthThreshold(
+                      e.currentTarget.valueAsNumber,
+                    );
+                });
+              }}
+            />
+          </ListItem>
+
+          <ListItem
+            title={Locale.Memory.Title}
+            subTitle={`${Locale.Memory.Send}。${sourceText("sendMemory")}`}
+          >
+            <input
+              aria-label={Locale.Memory.Title}
+              type="checkbox"
+              checked={props.modelConfig.sendMemory}
+              onChange={(e) => {
+                updateUnlocked(["sendMemory"], (config) => {
+                  config.sendMemory = e.currentTarget.checked;
+                });
+              }}
+            />
+          </ListItem>
+
+          <ListItem
+            title={Locale.Settings.CompressModel.Title}
+            subTitle={Locale.Settings.CompressModel.SubTitle}
+          >
+            <Select
+              className={styles["select-compress-model"]}
+              aria-label={Locale.Settings.CompressModel.Title}
+              value={compressModelValue}
+              onChange={(e) => {
+                const [model, providerName] = getModelProvider(
+                  e.currentTarget.value,
                 );
-            });
-          }}
-        />
-      </ListItem>
-
-      <ListItem
-        title={Locale.Memory.Title}
-        subTitle={`${Locale.Memory.Send}。${sourceText("sendMemory")}`}
-      >
-        <input
-          aria-label={Locale.Memory.Title}
-          type="checkbox"
-          checked={props.modelConfig.sendMemory}
-          onChange={(e) => {
-            updateUnlocked(["sendMemory"], (config) => {
-              config.sendMemory = e.currentTarget.checked;
-            });
-          }}
-        />
-      </ListItem>
-
-      <ListItem
-        title={Locale.Settings.CompressModel.Title}
-        subTitle={Locale.Settings.CompressModel.SubTitle}
-      >
-        <Select
-          className={styles["select-compress-model"]}
-          aria-label={Locale.Settings.CompressModel.Title}
-          value={compressModelValue}
-          onChange={(e) => {
-            const [model, providerName] = getModelProvider(
-              e.currentTarget.value,
-            );
-            props.updateConfig((config) => {
-              config.compressModel = ModalConfigValidator.model(model);
-              config.compressProviderName = providerName as ServiceProvider;
-            });
-            props.markOverride?.(["compressModel", "compressProviderName"]);
-          }}
-        >
-          {allModels
-            .filter((v) => v.available)
-            .map((v, i) => (
-              <option value={`${v.name}@${v.provider?.providerName}`} key={i}>
-                {v.displayName}({v.provider?.providerName})
-              </option>
-            ))}
-        </Select>
-      </ListItem>
+                props.updateConfig((config) => {
+                  config.compressModel = ModalConfigValidator.model(model);
+                  config.compressProviderName = providerName as ServiceProvider;
+                });
+                props.markOverride?.(["compressModel", "compressProviderName"]);
+              }}
+            >
+              {allModels
+                .filter((v) => v.available)
+                .map((v, i) => (
+                  <option
+                    value={`${v.name}@${v.provider?.providerName}`}
+                    key={i}
+                  >
+                    {v.displayName}({v.provider?.providerName})
+                  </option>
+                ))}
+            </Select>
+          </ListItem>
+        </>
+      )}
     </>
   );
 }

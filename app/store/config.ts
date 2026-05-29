@@ -1,5 +1,12 @@
 import { LLMModel } from "../client/api";
-import { DalleSize, DalleQuality, DalleStyle } from "../typing";
+import {
+  DalleStyle,
+  OpenAIImageBackground,
+  OpenAIImageModeration,
+  OpenAIImageOutputFormat,
+  OpenAIImageQuality,
+  OpenAIImageSize,
+} from "../typing";
 import { getClientConfig } from "../config/client";
 import {
   DEFAULT_INPUT_TEMPLATE,
@@ -95,9 +102,13 @@ export type ModelConfig = {
   store: boolean;
   reasoningEffort?: OpenAIChatReasoningEffort;
   textVerbosity?: OpenAIResponsesTextVerbosity;
-  size: DalleSize;
-  quality: DalleQuality;
-  style: DalleStyle;
+  size: OpenAIImageSize;
+  quality: OpenAIImageQuality;
+  style?: DalleStyle;
+  background?: OpenAIImageBackground;
+  output_format?: OpenAIImageOutputFormat;
+  output_compression?: number;
+  moderation?: OpenAIImageModeration;
 };
 
 export type AppConfig = {
@@ -175,8 +186,8 @@ export const DEFAULT_CONFIG: AppConfig = {
     store: false,
     reasoningEffort: OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
     textVerbosity: OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY,
-    size: "1024x1024" as DalleSize,
-    quality: "standard" as DalleQuality,
+    size: "1024x1024" as OpenAIImageSize,
+    quality: "standard" as OpenAIImageQuality,
     style: "vivid" as DalleStyle,
   },
   ttsConfig: {

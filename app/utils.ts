@@ -5,6 +5,14 @@ import { RequestMessage } from "./client/api";
 // import { fetch as tauriFetch, ResponseType } from "@tauri-apps/api/http";
 import { fetch as tauriStreamFetch } from "./utils/stream";
 import { ServiceProvider } from "./constant";
+import { isDalleImageGenerationModel } from "./utils/openai-image";
+export {
+  isDalle3,
+  isDalleImageGenerationModel,
+  isGptImageGenerationModel,
+  isOpenAIImageGenerationModel,
+  isOpenAIImageGenerationModelConfig,
+} from "./utils/openai-image";
 
 export function trimTopic(topic: string) {
   // Fix an issue where double quotes still show in the Indonesian language
@@ -301,12 +309,8 @@ export function isVisionModel(model: string) {
       modelLower.includes(keyword.toLowerCase()),
     ) ||
       isGpt4Turbo ||
-      isDalle3(modelLower))
+      isDalleImageGenerationModel(modelLower))
   );
-}
-
-export function isDalle3(model: string) {
-  return "dall-e-3" === model;
 }
 
 export function showPlugins(providerName?: string, model?: string) {

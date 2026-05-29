@@ -3,9 +3,9 @@ import {
   getMessageTextContent,
   trimTopic,
   getMessageTextContentWithoutThinking,
-  isDalle3,
   safeLocalStorage,
 } from "../utils";
+import { isOpenAIImageGenerationModelConfig } from "../utils/openai-image";
 
 import { indexedDBStorage } from "@/app/utils/indexedDB-storage";
 import { nanoid } from "nanoid";
@@ -950,8 +950,13 @@ export const useChatStore = createPersistStore(
         const config = useAppConfig.getState();
         const session = targetSession;
         const modelConfig = session.mask.modelConfig;
-        // skip summarize when using dalle3?
-        if (isDalle3(modelConfig.model)) {
+        // Image generation prompts should not be summarized as text chat.
+        if (
+          isOpenAIImageGenerationModelConfig({
+            model: modelConfig.model,
+            providerName: modelConfig.providerName,
+          })
+        ) {
           return;
         }
 

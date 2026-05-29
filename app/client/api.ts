@@ -11,7 +11,7 @@ import {
   useAccessStore,
   useChatStore,
 } from "../store";
-import { ChatGPTApi, DalleRequestPayload } from "./platforms/openai";
+import { ChatGPTApi } from "./platforms/openai";
 import { GeminiProApi } from "./platforms/google";
 import { ClaudeApi } from "./platforms/anthropic";
 import { ErnieApi } from "./platforms/baidu";
@@ -23,6 +23,14 @@ import { SparkApi } from "./platforms/iflytek";
 import { XAIApi } from "./platforms/xai";
 import { ChatGLMApi } from "./platforms/glm";
 import type { OpenAIChatReasoningEffort } from "../utils/openai-responses";
+import type {
+  DalleStyle,
+  OpenAIImageBackground,
+  OpenAIImageModeration,
+  OpenAIImageOutputFormat,
+  OpenAIImageQuality,
+  OpenAIImageSize,
+} from "../typing";
 
 export const ROLES = ["system", "user", "assistant"] as const;
 export type MessageRole = (typeof ROLES)[number];
@@ -57,9 +65,13 @@ export interface LLMConfig {
   presence_penalty?: number;
   frequency_penalty?: number;
   reasoningEffort?: OpenAIChatReasoningEffort;
-  size?: DalleRequestPayload["size"];
-  quality?: DalleRequestPayload["quality"];
-  style?: DalleRequestPayload["style"];
+  size?: OpenAIImageSize;
+  quality?: OpenAIImageQuality;
+  style?: DalleStyle;
+  background?: OpenAIImageBackground;
+  output_format?: OpenAIImageOutputFormat;
+  output_compression?: number;
+  moderation?: OpenAIImageModeration;
 }
 
 export interface SpeechOptions {
