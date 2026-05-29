@@ -102,17 +102,16 @@ export async function requestOpenai(req: NextRequest) {
       ? cloudflareAIGatewayUrl(baseUrl)
       : cloudflareAIGatewayUrl(`${baseUrl}/${path}`);
   console.log("fetchUrl", fetchUrl);
+  const fetchHeaders: Record<string, string> = {
+    "Content-Type": isMultipartRequest ? requestContentType : "application/json",
+    "Cache-Control": "no-store",
+    [authHeaderName]: authValue,
+    ...(serverConfig.openaiOrgId && {
+      "OpenAI-Organization": serverConfig.openaiOrgId,
+    }),
+  };
   const fetchOptions: RequestInit = {
-    headers: {
-      "Content-Type": isMultipartRequest
-        ? requestContentType
-        : "application/json",
-      "Cache-Control": "no-store",
-      [authHeaderName]: authValue,
-      ...(serverConfig.openaiOrgId && {
-        "OpenAI-Organization": serverConfig.openaiOrgId,
-      }),
-    },
+    headers: fetchHeaders,
     method: req.method,
     body: req.body,
     // to fix #2485: https://stackoverflow.com/questions/55920957/cloudflare-worker-typeerror-one-time-use-body
@@ -127,8 +126,10 @@ export async function requestOpenai(req: NextRequest) {
     try {
       let requestModel = "";
       if (isMultipartRequest) {
-        const formData = await req.clone().formData();
+        const formData = await req.formData();
         requestModel = String(formData.get("model") ?? "");
+        fetchOptions.body = formData;
+        delete fetchHeaders["Content-Type"];
       } else {
         const clonedBody = await req.text();
         fetchOptions.body = clonedBody;
