@@ -5,7 +5,10 @@ import {
   getMessageTextContentWithoutThinking,
   safeLocalStorage,
 } from "../utils";
-import { isOpenAIImageGenerationModelConfig } from "../utils/openai-image";
+import {
+  getOpenAIImageGenerationProgressContent,
+  isOpenAIImageGenerationModelConfig,
+} from "../utils/openai-image";
 
 import { indexedDBStorage } from "@/app/utils/indexedDB-storage";
 import { nanoid } from "nanoid";
@@ -607,6 +610,10 @@ export const useChatStore = createPersistStore(
       ) {
         const session = get().ensureCurrentSessionSaved();
         const modelConfig = session.mask.modelConfig;
+        const isOpenAIImageGeneration = isOpenAIImageGenerationModelConfig({
+          model: modelConfig.model,
+          providerName: modelConfig.providerName,
+        });
 
         // MCP Response no need to fill template
         let mContent: string | MultimodalContent[] = isMcpResponse
@@ -631,6 +638,12 @@ export const useChatStore = createPersistStore(
 
         const botMessage: ChatMessage = createMessage({
           role: "assistant",
+          content: isOpenAIImageGeneration
+            ? getOpenAIImageGenerationProgressContent({
+                model: modelConfig.model,
+                phase: "preparing",
+              })
+            : "",
           streaming: true,
           model: modelConfig.model,
         });

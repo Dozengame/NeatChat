@@ -5,7 +5,7 @@ import { RequestMessage } from "./client/api";
 // import { fetch as tauriFetch, ResponseType } from "@tauri-apps/api/http";
 import { fetch as tauriStreamFetch } from "./utils/stream";
 import { ServiceProvider } from "./constant";
-import { isDalleImageGenerationModel } from "./utils/openai-image";
+import { isOpenAIImageGenerationModel } from "./utils/openai-image";
 export {
   isDalle3,
   isDalleImageGenerationModel,
@@ -309,7 +309,7 @@ export function isVisionModel(model: string) {
       modelLower.includes(keyword.toLowerCase()),
     ) ||
       isGpt4Turbo ||
-      isDalleImageGenerationModel(modelLower))
+      isOpenAIImageGenerationModel(modelLower))
   );
 }
 

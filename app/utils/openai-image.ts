@@ -86,6 +86,11 @@ export type OpenAIImageGenerationRequestPayload =
   | DalleRequestPayload
   | GptImage2RequestPayload;
 
+export type OpenAIImageInputFile = {
+  blob: Blob;
+  filename?: string;
+};
+
 export type OpenAIImageGenerationConfig = Partial<{
   size: OpenAIImageSize;
   quality: OpenAIImageQuality;
@@ -154,6 +159,24 @@ export function getOpenAIImageOutputContentType(
     case "png":
     default:
       return "image/png";
+  }
+}
+
+export function getOpenAIImageGenerationProgressContent(params: {
+  model?: string;
+  phase?: "preparing" | "generating" | "saving";
+}) {
+  const model = params.model?.trim();
+  const modelLine = model ? `\n\n模型：${model}` : "";
+
+  switch (params.phase) {
+    case "saving":
+      return `图片已生成，正在保存图片...${modelLine}`;
+    case "generating":
+      return `正在生成图片，请稍候...${modelLine}`;
+    case "preparing":
+    default:
+      return `正在准备图片生成请求...${modelLine}`;
   }
 }
 
@@ -280,4 +303,71 @@ export function buildOpenAIImageGenerationPayload(params: {
   }
 
   return payload;
+}
+
+export function buildOpenAIImageEditFormData(params: {
+  model: string;
+  prompt: string;
+  config?: OpenAIImageGenerationConfig;
+  images: OpenAIImageInputFile[];
+}) {
+  const outputFormat =
+    params.config?.output_format === "png" ||
+    params.config?.output_format === "jpeg" ||
+    params.config?.output_format === "webp"
+      ? params.config.output_format
+      : GPT_IMAGE_2_DEFAULTS.output_format;
+  const formData = new FormData();
+  formData.append("model", params.model);
+  formData.append("prompt", params.prompt);
+  formData.append("n", "1");
+  formData.append(
+    "size",
+    GPT_IMAGE_2_SIZES.includes(params.config?.size as any)
+      ? params.config?.size ?? GPT_IMAGE_2_DEFAULTS.size
+      : GPT_IMAGE_2_DEFAULTS.size,
+  );
+  formData.append(
+    "quality",
+    GPT_IMAGE_2_QUALITIES.includes(params.config?.quality as any)
+      ? params.config?.quality ?? GPT_IMAGE_2_DEFAULTS.quality
+      : GPT_IMAGE_2_DEFAULTS.quality,
+  );
+  formData.append(
+    "background",
+    params.config?.background === "opaque" ||
+      params.config?.background === "auto"
+      ? params.config.background
+      : GPT_IMAGE_2_DEFAULTS.background,
+  );
+  formData.append("output_format", outputFormat);
+
+  if (
+    typeof params.config?.output_compression === "number" &&
+    (outputFormat === "jpeg" || outputFormat === "webp")
+  ) {
+    formData.append(
+      "output_compression",
+      String(
+        Math.floor(
+          Math.min(100, Math.max(0, params.config.output_compression)),
+        ),
+      ),
+    );
+  }
+
+  if (
+    params.config?.moderation === "low" ||
+    params.config?.moderation === "auto"
+  ) {
+    formData.append("moderation", params.config.moderation);
+  } else {
+    formData.append("moderation", GPT_IMAGE_2_DEFAULTS.moderation);
+  }
+
+  params.images.forEach((image, index) => {
+    formData.append("image[]", image.blob, image.filename ?? `image-${index}`);
+  });
+
+  return formData;
 }

@@ -10,6 +10,10 @@ export async function requestOpenai(req: NextRequest) {
   const controller = new AbortController();
 
   const isAzure = req.nextUrl.pathname.includes("azure/deployments");
+  const requestContentType = req.headers.get("content-type") ?? "";
+  const isMultipartRequest = requestContentType
+    .toLowerCase()
+    .includes("multipart/form-data");
 
   var authValue,
     authHeaderName = "";
@@ -100,7 +104,9 @@ export async function requestOpenai(req: NextRequest) {
   console.log("fetchUrl", fetchUrl);
   const fetchOptions: RequestInit = {
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": isMultipartRequest
+        ? requestContentType
+        : "application/json",
       "Cache-Control": "no-store",
       [authHeaderName]: authValue,
       ...(serverConfig.openaiOrgId && {
@@ -119,10 +125,17 @@ export async function requestOpenai(req: NextRequest) {
   // #1815 try to refuse gpt4 request
   if (serverConfig.customModels && req.body) {
     try {
-      const clonedBody = await req.text();
-      fetchOptions.body = clonedBody;
+      let requestModel = "";
+      if (isMultipartRequest) {
+        const formData = await req.clone().formData();
+        requestModel = String(formData.get("model") ?? "");
+      } else {
+        const clonedBody = await req.text();
+        fetchOptions.body = clonedBody;
 
-      const jsonBody = JSON.parse(clonedBody) as { model?: string };
+        const jsonBody = JSON.parse(clonedBody) as { model?: string };
+        requestModel = jsonBody?.model ?? "";
+      }
 
       // not undefined and is false
       const providerName = isAzure
@@ -131,14 +144,14 @@ export async function requestOpenai(req: NextRequest) {
       if (
         isModelAvailableInServer(
           serverConfig.customModels,
-          jsonBody?.model as string,
+          requestModel,
           providerName as string,
         )
       ) {
         return NextResponse.json(
           {
             error: true,
-            message: `you are not allowed to use ${jsonBody?.model} model`,
+            message: `you are not allowed to use ${requestModel} model`,
           },
           {
             status: 403,

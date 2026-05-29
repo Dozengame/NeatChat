@@ -1,7 +1,9 @@
 import { DEFAULT_MODELS, ServiceProvider } from "../app/constant";
 import {
   applyOpenAIImageGenerationDefaults,
+  buildOpenAIImageEditFormData,
   buildOpenAIImageGenerationPayload,
+  getOpenAIImageGenerationProgressContent,
   getOpenAIImageOutputContentType,
   isOpenAIImageGenerationModelConfig,
 } from "../app/utils/openai-image";
@@ -143,11 +145,55 @@ describe("OpenAI image generation models", () => {
     expect(payload.style).toBeUndefined();
   });
 
+  test("builds gpt-image edit multipart payload for image-to-image", () => {
+    const image = new Blob(["image"], { type: "image/png" });
+    const formData = buildOpenAIImageEditFormData({
+      model: "gpt-image-2",
+      prompt: "Use this image as reference",
+      images: [{ blob: image, filename: "reference.png" }],
+      config: {
+        size: "1024x1024",
+        quality: "high",
+        output_format: "webp",
+        output_compression: 80,
+      },
+    });
+
+    expect(formData.get("model")).toBe("gpt-image-2");
+    expect(formData.get("prompt")).toBe("Use this image as reference");
+    expect(formData.get("size")).toBe("1024x1024");
+    expect(formData.get("quality")).toBe("high");
+    expect(formData.get("output_format")).toBe("webp");
+    expect(formData.get("output_compression")).toBe("80");
+    expect(formData.getAll("image[]")).toHaveLength(1);
+  });
+
   test("maps gpt-image output formats to cache content types", () => {
     expect(getOpenAIImageOutputContentType("png")).toBe("image/png");
     expect(getOpenAIImageOutputContentType("jpeg")).toBe("image/jpeg");
     expect(getOpenAIImageOutputContentType("webp")).toBe("image/webp");
     expect(getOpenAIImageOutputContentType()).toBe("image/png");
+  });
+
+  test("describes image generation progress phases", () => {
+    expect(
+      getOpenAIImageGenerationProgressContent({
+        model: "gpt-image-2",
+        phase: "preparing",
+      }),
+    ).toContain("正在准备图片生成请求");
+    expect(
+      getOpenAIImageGenerationProgressContent({
+        model: "gpt-image-2",
+        phase: "generating",
+      }),
+    ).toContain("正在生成图片");
+    expect(
+      getOpenAIImageGenerationProgressContent({
+        model: "gpt-image-2",
+        phase: "saving",
+      }),
+    ).toContain("正在保存图片");
   });
 
   test("keeps DALL-E 3 payload compatible with the existing image path", () => {

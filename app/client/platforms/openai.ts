@@ -21,6 +21,7 @@ import {
   preProcessImageContent,
   uploadImage,
   base64Image2Blob,
+  cacheImageToBase64Image,
   stream,
 } from "@/app/utils/chat";
 import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
@@ -45,15 +46,20 @@ import {
 } from "../api";
 import Locale from "../../locales";
 import { getClientConfig } from "@/app/config/client";
+import type { OpenAIImageOutputFormat } from "@/app/typing";
 import {
+  getMessageImages,
   getMessageTextContent,
   isVisionModel,
   getMessageTextContentWithoutThinking,
 } from "@/app/utils";
 import { fetch } from "@/app/utils/stream";
 import {
+  buildOpenAIImageEditFormData,
   buildOpenAIImageGenerationPayload,
+  getOpenAIImageGenerationProgressContent,
   getOpenAIImageOutputContentType,
+  isGptImageGenerationModel,
   isOpenAIImageGenerationModelConfig,
   type OpenAIImageGenerationRequestPayload,
 } from "@/app/utils/openai-image";
@@ -70,6 +76,78 @@ export interface OpenAIListModelResponse {
 }
 
 export type RequestPayload = Record<string, any>;
+
+function dataUrlToBlob(dataUrl: string) {
+  const match = dataUrl.match(/^data:([^;,]+);base64,(.*)$/);
+  if (!match) {
+    throw new Error("invalid image data url");
+  }
+  return base64Image2Blob(match[2], match[1]);
+}
+
+function getImageFilename(index: number, blob: Blob) {
+  const extension =
+    blob.type === "image/jpeg"
+      ? "jpg"
+      : blob.type === "image/webp"
+      ? "webp"
+      : "png";
+  return `image-${index}.${extension}`;
+}
+
+function normalizeOpenAIImageOutputFormat(
+  value: FormDataEntryValue | OpenAIImageOutputFormat | null | undefined,
+): OpenAIImageOutputFormat | undefined {
+  if (value === "png" || value === "jpeg" || value === "webp") {
+    return value;
+  }
+  return undefined;
+}
+
+async function loadOpenAIImageInput(imageUrl: string, index: number) {
+  try {
+    if (imageUrl.startsWith("data:image/")) {
+      const blob = dataUrlToBlob(imageUrl);
+      return { blob, filename: getImageFilename(index, blob) };
+    }
+
+    const response = await fetch(imageUrl, {
+      method: "GET",
+      mode: "cors",
+      credentials: "include",
+    });
+    if (response.ok) {
+      const blob = await response.blob();
+      return { blob, filename: getImageFilename(index, blob) };
+    }
+  } catch (error) {
+    console.warn("[OpenAI Image] failed to load image url directly", error);
+  }
+
+  const dataUrl = await cacheImageToBase64Image(imageUrl);
+  const blob = dataUrlToBlob(dataUrl);
+  return { blob, filename: getImageFilename(index, blob) };
+}
+
+function getOpenAIErrorMessage(resJson: any, status: number) {
+  const detail =
+    typeof resJson?.error?.message === "string"
+      ? resJson.error.message
+      : typeof resJson?.message === "string"
+      ? resJson.message
+      : typeof resJson?.msg === "string"
+      ? resJson.msg
+      : "";
+  const code =
+    typeof resJson?.error?.code === "string"
+      ? resJson.error.code
+      : typeof resJson?.code === "string"
+      ? resJson.code
+      : String(status);
+  return detail
+    ? `OpenAI image generation failed (${code}): ${detail}`
+    : `OpenAI image generation failed (${code})`;
+}
 
 export interface AzureChatRequestPayload {
   messages: {
@@ -299,17 +377,33 @@ export class ChatGPTApi implements LLMApi {
     let requestPayload:
       | AzureChatRequestPayload
       | ResponsesRequestPayload
-      | OpenAIImageGenerationRequestPayload;
+      | OpenAIImageGenerationRequestPayload
+      | FormData;
 
     if (isImageGeneration) {
-      const prompt = getMessageTextContent(
-        options.messages.slice(-1)?.pop() as any,
-      );
-      requestPayload = buildOpenAIImageGenerationPayload({
-        model: modelConfig.model,
-        prompt,
-        config: modelConfig,
-      });
+      const latestMessage = options.messages.slice(-1)?.pop() as any;
+      const prompt = getMessageTextContent(latestMessage);
+      const imageUrls = getMessageImages(latestMessage);
+      if (
+        imageUrls.length > 0 &&
+        isGptImageGenerationModel(modelConfig.model)
+      ) {
+        const images = await Promise.all(
+          imageUrls.map((url, index) => loadOpenAIImageInput(url, index)),
+        );
+        requestPayload = buildOpenAIImageEditFormData({
+          model: modelConfig.model,
+          prompt,
+          config: modelConfig,
+          images,
+        });
+      } else {
+        requestPayload = buildOpenAIImageGenerationPayload({
+          model: modelConfig.model,
+          prompt,
+          config: modelConfig,
+        });
+      }
     } else {
       const visionModel = isVisionModel(options.config.model);
       const messages: ChatOptions["messages"] = [];
@@ -412,7 +506,11 @@ export class ChatGPTApi implements LLMApi {
         );
       } else {
         chatPath = this.path(
-          isImageGeneration ? OpenaiPath.ImagePath : OpenaiPath.ResponsesPath,
+          isImageGeneration
+            ? requestPayload instanceof FormData
+              ? OpenaiPath.ImageEditPath
+              : OpenaiPath.ImagePath
+            : OpenaiPath.ResponsesPath,
         );
       }
       if (shouldStream) {
@@ -620,12 +718,32 @@ export class ChatGPTApi implements LLMApi {
           },
         );
       } else {
-        const chatPayload = {
+        const multipartPayload =
+          requestPayload instanceof FormData ? requestPayload : undefined;
+        const isMultipartRequest = !!multipartPayload;
+        const imageOutputFormat = normalizeOpenAIImageOutputFormat(
+          multipartPayload
+            ? multipartPayload.get("output_format")
+            : "output_format" in requestPayload
+            ? requestPayload.output_format
+            : undefined,
+        );
+        const chatPayload: RequestInit = {
           method: "POST",
-          body: JSON.stringify(requestPayload),
+          body: multipartPayload ?? JSON.stringify(requestPayload),
           signal: controller.signal,
-          headers: getHeaders(),
+          headers: getHeaders(isMultipartRequest),
         };
+
+        if (isImageGeneration) {
+          options.onUpdate?.(
+            getOpenAIImageGenerationProgressContent({
+              model: modelConfig.model,
+              phase: "generating",
+            }),
+            "",
+          );
+        }
 
         // make a fetch request
         const requestTimeoutId = setTimeout(
@@ -641,10 +759,22 @@ export class ChatGPTApi implements LLMApi {
         clearTimeout(requestTimeoutId);
 
         const resJson = await res.json();
+        if (isImageGeneration) {
+          options.onUpdate?.(
+            getOpenAIImageGenerationProgressContent({
+              model: modelConfig.model,
+              phase: "saving",
+            }),
+            "",
+          );
+        }
+        if (isImageGeneration && (!res.ok || resJson?.error)) {
+          throw new Error(getOpenAIErrorMessage(resJson, res.status));
+        }
         const message = await this.extractMessage(resJson, {
           imageContentType:
-            isImageGeneration && "output_format" in requestPayload
-              ? getOpenAIImageOutputContentType(requestPayload.output_format)
+            isImageGeneration && imageOutputFormat
+              ? getOpenAIImageOutputContentType(imageOutputFormat)
               : undefined,
         });
         options.onFinish(

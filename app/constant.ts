@@ -169,6 +169,7 @@ export const OpenaiPath = {
   ResponsesPath: "v1/responses",
   SpeechPath: "v1/audio/speech",
   ImagePath: "v1/images/generations",
+  ImageEditPath: "v1/images/edits",
   UsagePath: "dashboard/billing/usage",
   SubsPath: "dashboard/billing/subscription",
   ListModelPath: "v1/models",
