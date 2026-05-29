@@ -87,8 +87,6 @@ export const PUBLIC_APP_CONFIG_SCHEMA_VERSION = 1;
 
 export const DEFAULT_WEBUI_LOCKED_FIELDS = [
   "customModels",
-  "model",
-  "providerName",
   "baseUrl",
   "apiKey",
   "temperature",

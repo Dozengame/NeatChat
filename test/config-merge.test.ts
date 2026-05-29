@@ -158,6 +158,51 @@ describe("applyPublicAppConfig", () => {
     expect(current.mask.modelConfig.max_output_tokens).toBe(30000);
   });
 
+  test("keeps an allowed conversation model selectable when only customModels is locked", () => {
+    useChatStore.setState({
+      temporarySession: {
+        ...(session(12345, false) as any),
+        mask: {
+          ...(session(12345, false) as any).mask,
+          modelConfig: {
+            ...(session(12345, false) as any).mask.modelConfig,
+            model: "gpt-image-2",
+            providerName: ServiceProvider.OpenAI,
+          },
+        },
+      },
+    } as any);
+
+    applyPublicAppConfig(
+      publicConfig({
+        defaults: {
+          model: "gpt-5.4",
+          providerName: "OpenAI",
+        },
+        forced: {
+          model: "gpt-5.4",
+          providerName: "OpenAI",
+        },
+        allowedModels: ["gpt-5.4@OpenAI", "gpt-image-2@OpenAI"],
+        lockedFields: [
+          "customModels",
+          "baseUrl",
+          "apiKey",
+          "temperature",
+          "textVerbosity",
+        ],
+        legacy: {
+          customModels: "-all,gpt-5.4@openai,gpt-image-2@openai",
+          defaultModel: "gpt-5.4",
+        },
+      }),
+    );
+
+    const current = useChatStore.getState().temporarySession!;
+    expect(current.mask.modelConfig.model).toBe("gpt-image-2");
+    expect(current.mask.modelConfig.providerName).toBe("OpenAI");
+  });
+
   test("forces max_output_tokens when admin sets a numeric value", () => {
     applyPublicAppConfig(
       publicConfig({

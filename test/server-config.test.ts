@@ -240,6 +240,14 @@ describe("OpenAI Responses config", () => {
         customModels: "-all,gpt-5.5@openai",
       }),
     ).toEqual(["gpt-5.5@OpenAI"]);
+
+    const allowedModels = deriveAllowedModels({
+      customModels: "-all,gpt-5.4@openai,gpt-image-2@openai",
+    });
+    expect(allowedModels).toHaveLength(2);
+    expect(allowedModels).toEqual(
+      expect.arrayContaining(["gpt-5.4@OpenAI", "gpt-image-2@OpenAI"]),
+    );
   });
 
   test("builds public config without secrets and no-store headers", async () => {
@@ -263,6 +271,8 @@ describe("OpenAI Responses config", () => {
     expect(publicConfig.configHash).toBeTruthy();
     expect(publicConfig.configVersion).toBeTruthy();
     expect(publicConfig.allowedModels).toEqual(["gpt-5.5@OpenAI"]);
+    expect(publicConfig.lockedFields).not.toContain("model");
+    expect(publicConfig.lockedFields).not.toContain("providerName");
     expect(publicConfig.lockedFields).toContain("max_output_tokens");
     expect(publicConfig.lockedFields).not.toContain("reasoningEffort");
     expect(publicConfig.serverFlags.hideUserApiKey).toBe(true);

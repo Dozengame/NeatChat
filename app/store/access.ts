@@ -307,12 +307,7 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
       const serverValue = serverModelConfig[field];
       if (serverValue === undefined) continue;
 
-      const locked =
-        isPublicConfigFieldLocked(publicConfig, field) ||
-        (field === "model" &&
-          isPublicConfigFieldLocked(publicConfig, "customModels")) ||
-        (field === "providerName" &&
-          isPublicConfigFieldLocked(publicConfig, "customModels"));
+      const locked = isPublicConfigFieldLocked(publicConfig, field);
 
       if (locked) {
         modelConfig = {
@@ -415,12 +410,7 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
         const serverValue = serverModelConfig[field];
         if (serverValue === undefined) continue;
 
-        const locked =
-          isPublicConfigFieldLocked(publicConfig, field) ||
-          (field === "model" &&
-            isPublicConfigFieldLocked(publicConfig, "customModels")) ||
-          (field === "providerName" &&
-            isPublicConfigFieldLocked(publicConfig, "customModels"));
+        const locked = isPublicConfigFieldLocked(publicConfig, field);
 
         if (locked) {
           modelConfig = {

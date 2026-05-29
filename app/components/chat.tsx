@@ -686,8 +686,7 @@ export function ChatActions(props: {
   }, [allModels]);
   const modelLocked =
     accessStore.lockedFields?.includes("model") ||
-    accessStore.lockedFields?.includes("providerName") ||
-    accessStore.lockedFields?.includes("customModels");
+    accessStore.lockedFields?.includes("providerName");
   const currentModelName = useMemo(() => {
     const model = models.find(
       (m) =>

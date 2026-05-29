@@ -41,10 +41,7 @@ export function ModelConfigList(props: {
   const lockedFields = new Set(accessStore.lockedFields ?? []);
   const allowedModels = new Set(accessStore.allowedModels ?? []);
   const isLocked = (field: string) =>
-    modelConfigMeta[field]?.locked ||
-    lockedFields.has(field) ||
-    (field === "model" && lockedFields.has("customModels")) ||
-    (field === "providerName" && lockedFields.has("customModels"));
+    modelConfigMeta[field]?.locked || lockedFields.has(field);
   const sourceText = (field: string) => {
     const source = isLocked(field)
       ? "admin_forced"
