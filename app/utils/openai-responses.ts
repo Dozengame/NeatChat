@@ -150,8 +150,25 @@ export function supportsOpenAIResponsesWebSearch(params: {
   );
 }
 
+function getSearchIntentText(input?: string) {
+  const text = input?.trim();
+  if (!text) {
+    return "";
+  }
+
+  const attachmentStart = text.search(
+    /(?:^|\n\n)文件名: .+\n类型: .+\n大小: [\d.]+ KB\n\n/,
+  );
+
+  if (attachmentStart < 0) {
+    return text;
+  }
+
+  return text.slice(0, attachmentStart).trim();
+}
+
 export function shouldRequireOpenAIResponsesWebSearch(input?: string) {
-  const normalized = input?.trim().toLowerCase();
+  const normalized = getSearchIntentText(input).toLowerCase();
   if (!normalized) {
     return false;
   }
@@ -159,4 +176,8 @@ export function shouldRequireOpenAIResponsesWebSearch(input?: string) {
   return /(?:今天|今日|昨天|昨晚|明天|本周|本月|今年|现在|当前|实时|最新|最近|刚刚|新闻|大新闻|热搜|热点|发生了什么|价格|股价|汇率|天气|赛程|比分|结果|发布|更新|today|yesterday|tomorrow|this\s+(?:week|month|year)|latest|recent|current|currently|right\s+now|real[-\s]?time|live|news|headline|price|stock|exchange\s+rate|weather|schedule|score|release|released|update|updated)/i.test(
     normalized,
   );
+}
+
+export function shouldEnableOpenAIResponsesWebSearch(input?: string) {
+  return shouldRequireOpenAIResponsesWebSearch(input);
 }

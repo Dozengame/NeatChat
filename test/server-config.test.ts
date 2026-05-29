@@ -10,6 +10,7 @@ import {
   parseOpenAIMaxOutputTokens,
   parseOpenAIResponsesReasoningEffort,
   parseOpenAIResponsesTextVerbosity,
+  shouldEnableOpenAIResponsesWebSearch,
   shouldRequireOpenAIResponsesWebSearch,
   shouldUseOpenAIResponses,
   supportsOpenAIResponsesWebSearch,
@@ -121,6 +122,38 @@ describe("OpenAI Responses config", () => {
       true,
     );
     expect(shouldRequireOpenAIResponsesWebSearch("解释一下递归")).toBe(false);
+  });
+
+  test("does not force web search from pasted attachment body text", () => {
+    const pastedAttachmentText = [
+      "文件名: 粘贴的文本.txt",
+      "类型: text/plain",
+      "大小: 1.91 KB",
+      "",
+      "当前这段长文本只是用户粘贴的附件正文，不是实时搜索请求。",
+    ].join("\n");
+    const explicitSearchWithAttachment = [
+      "请查一下今天新闻，并参考附件",
+      "",
+      "文件名: 粘贴的文本.txt",
+      "类型: text/plain",
+      "大小: 1.91 KB",
+      "",
+      "这段附件内容本身不决定是否搜索。",
+    ].join("\n");
+
+    expect(
+      shouldRequireOpenAIResponsesWebSearch(pastedAttachmentText),
+    ).toBe(false);
+    expect(shouldEnableOpenAIResponsesWebSearch(pastedAttachmentText)).toBe(
+      false,
+    );
+    expect(
+      shouldRequireOpenAIResponsesWebSearch(explicitSearchWithAttachment),
+    ).toBe(true);
+    expect(
+      shouldEnableOpenAIResponsesWebSearch(explicitSearchWithAttachment),
+    ).toBe(true);
   });
 
   test("detects OpenAI GPT-5 and newer model configs for settings controls", () => {

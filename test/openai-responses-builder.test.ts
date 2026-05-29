@@ -1,6 +1,7 @@
 import { buildOpenAIResponsesPayload } from "../app/client/platforms/openai-responses-builder";
 import { DEFAULT_CONFIG } from "../app/store/config";
 import { ServiceProvider } from "../app/constant";
+import { shouldEnableOpenAIResponsesWebSearch } from "../app/utils/openai-responses";
 
 describe("buildOpenAIResponsesPayload", () => {
   const modelConfig = {
@@ -257,6 +258,24 @@ describe("buildOpenAIResponsesPayload", () => {
 
     expect(payload.tools).toEqual([{ type: "web_search" }]);
     expect(payload.tool_choice).toBe("required");
+  });
+
+  test("does not add hosted web search for pasted attachment body text", () => {
+    const content = [
+      "文件名: 粘贴的文本.txt",
+      "类型: text/plain",
+      "大小: 1.91 KB",
+      "",
+      "当前这段长文本只是用户粘贴的附件正文，不是实时搜索请求。",
+    ].join("\n");
+    const payload = buildOpenAIResponsesPayload({
+      messages: [{ role: "user", content }],
+      modelConfig: { ...modelConfig, model: "gpt-5.4" as any },
+      enableWebSearch: shouldEnableOpenAIResponsesWebSearch(content),
+    }) as any;
+
+    expect(payload.tools).toBeUndefined();
+    expect(payload.tool_choice).toBeUndefined();
   });
 
   test("omits sampling params for older reasoning models", () => {

@@ -28,6 +28,7 @@ import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
 import {
   shouldUseOpenAIResponses,
   shouldRequireOpenAIResponsesWebSearch,
+  shouldEnableOpenAIResponsesWebSearch,
   supportsOpenAIResponsesWebSearch,
 } from "@/app/utils/openai-responses";
 import {
@@ -428,11 +429,14 @@ export class ChatGPTApi implements LLMApi {
             .filter((message) => message.role === "user")
             .map((message) => getMessageTextContent(message as any))
             .at(-1) ?? "";
-        const webSearchMode =
+        const shouldEnableWebSearch =
           enableWebSearch &&
+          shouldEnableOpenAIResponsesWebSearch(latestUserText);
+        const webSearchMode =
+          shouldEnableWebSearch &&
           shouldRequireOpenAIResponsesWebSearch(latestUserText)
             ? "required"
-            : "auto";
+            : undefined;
 
         requestPayload = buildOpenAIResponsesPayload({
           messages,
@@ -451,7 +455,7 @@ export class ChatGPTApi implements LLMApi {
           reasoningSummary: "auto",
           truncation: "disabled",
           store: storeResponses,
-          enableWebSearch,
+          enableWebSearch: shouldEnableWebSearch,
           webSearchMode,
         });
       } else {
