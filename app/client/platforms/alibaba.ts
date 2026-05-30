@@ -4,17 +4,19 @@ import {
   Alibaba,
   ALIBABA_BASE_URL,
   REQUEST_TIMEOUT_MS,
-} from "@/app/constant";
-import { useAccessStore, useAppConfig, useChatStore } from "@/app/store";
+  } from "@/app/constant";
+import { useAccessStore,
+  useAppConfig,
+  useChatStore } from "@/app/store";
 
 import {
   ChatOptions,
-  getHeaders,
   LLMApi,
   LLMModel,
   SpeechOptions,
   MultimodalContent,
-} from "../api";
+} from "../types";
+import { getHeadersAsync } from "../header-loader";
 import Locale from "../../locales";
 import {
   EventStreamContentType,
@@ -128,7 +130,7 @@ export class QwenApi implements LLMApi {
         body: JSON.stringify(requestPayload),
         signal: controller.signal,
         headers: {
-          ...getHeaders(),
+          ...(await getHeadersAsync()),
           "X-DashScope-SSE": shouldStream ? "enable" : "disable",
         },
       };
@@ -274,4 +276,3 @@ export class QwenApi implements LLMApi {
     return [];
   }
 }
-export { Alibaba };

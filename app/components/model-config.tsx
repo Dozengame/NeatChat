@@ -1,6 +1,12 @@
 import { ServiceProvider } from "@/app/constant";
-import { ModalConfigValidator, useAccessStore, useAppConfig } from "../store";
-import type { ConfigSource, ModelConfig, ModelConfigMeta } from "../store";
+import {
+  ModalConfigValidator,
+  useAppConfig,
+  type ConfigSource,
+  type ModelConfig,
+  type ModelConfigMeta,
+} from "../store/config";
+import { useAccessStore } from "../store/access";
 
 import Locale from "../locales";
 import { InputRange } from "./input-range";
@@ -40,7 +46,28 @@ const SOURCE_LABELS: Record<ConfigSource, string> = {
   fallback: "系统默认",
 };
 
+const REASONING_LABELS: Record<OpenAIChatReasoningEffort, string> = {
+  low: Locale.Settings.ReasoningEffort.Low,
+  medium: Locale.Settings.ReasoningEffort.Medium,
+  high: Locale.Settings.ReasoningEffort.High,
+};
+
+const TEXT_VERBOSITY_LABELS: Record<OpenAIResponsesTextVerbosity, string> = {
+  low: "简洁",
+  medium: "适中",
+  high: "详细",
+};
+
 export function ModelConfigList(props: {
+  modelConfig: ModelConfig;
+  updateConfig: (updater: (config: ModelConfig) => void) => void;
+  modelConfigMeta?: ModelConfigMeta;
+  markOverride?: (fields: string[]) => void;
+}) {
+  return useModelConfigListView(props);
+}
+
+function useModelConfigListView(props: {
   modelConfig: ModelConfig;
   updateConfig: (updater: (config: ModelConfig) => void) => void;
   modelConfigMeta?: ModelConfigMeta;
@@ -103,11 +130,6 @@ export function ModelConfigList(props: {
     : [];
   const reasoningEffort = (props.modelConfig.reasoningEffort ??
     OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT) as OpenAIChatReasoningEffort;
-  const reasoningLabels: Record<OpenAIChatReasoningEffort, string> = {
-    low: Locale.Settings.ReasoningEffort.Low,
-    medium: Locale.Settings.ReasoningEffort.Medium,
-    high: Locale.Settings.ReasoningEffort.High,
-  };
   const getReasoningMaxOutputTokens = (effort: OpenAIChatReasoningEffort) =>
     accessStore.openaiMaxOutputTokens ??
     getMaxOutputTokensForReasoningEffort(effort);
@@ -118,11 +140,6 @@ export function ModelConfigList(props: {
   const textVerbosity = (props.modelConfig.textVerbosity ||
     accessStore.openaiTextVerbosity ||
     OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY) as OpenAIResponsesTextVerbosity;
-  const textVerbosityLabels: Record<OpenAIResponsesTextVerbosity, string> = {
-    low: "简洁",
-    medium: "适中",
-    high: "详细",
-  };
 
   return (
     <>
@@ -156,10 +173,13 @@ export function ModelConfigList(props: {
             });
           }}
         >
-          {Object.keys(groupModels).map((providerName, index) => (
-            <optgroup label={providerName} key={index}>
-              {groupModels[providerName].map((v, i) => (
-                <option value={`${v.name}@${v.provider?.providerName}`} key={i}>
+          {Object.keys(groupModels).map((providerName) => (
+            <optgroup label={providerName} key={providerName}>
+              {groupModels[providerName].map((v) => (
+                <option
+                  value={`${v.name}@${v.provider?.providerName}`}
+                  key={`${v.name}@${v.provider?.providerName}`}
+                >
                   {v.displayName}
                 </option>
               ))}
@@ -217,8 +237,7 @@ export function ModelConfigList(props: {
                 value={props.modelConfig.style ?? "vivid"}
                 onChange={(e) => {
                   updateUnlocked(["style"], (config) => {
-                    config.style = e.currentTarget
-                      .value as typeof config.style;
+                    config.style = e.currentTarget.value as typeof config.style;
                   });
                 }}
               >
@@ -257,7 +276,7 @@ export function ModelConfigList(props: {
             >
               {(["low", "medium", "high"] as const).map((effort) => (
                 <option value={effort} key={effort}>
-                  {reasoningLabels[effort]}
+                  {REASONING_LABELS[effort]}
                 </option>
               ))}
             </Select>
@@ -282,7 +301,7 @@ export function ModelConfigList(props: {
             >
               {(["low", "medium", "high"] as const).map((verbosity) => (
                 <option value={verbosity} key={verbosity}>
-                  {textVerbosityLabels[verbosity]}
+                  {TEXT_VERBOSITY_LABELS[verbosity]}
                 </option>
               ))}
             </Select>
@@ -351,7 +370,8 @@ export function ModelConfigList(props: {
             value={maxOutputTokensValue}
             disabled={forcedMaxOutputTokens || isLocked("max_output_tokens")}
             onChange={(e) => {
-              if (forcedMaxOutputTokens || isLocked("max_output_tokens")) return;
+              if (forcedMaxOutputTokens || isLocked("max_output_tokens"))
+                return;
               updateUnlocked(["max_output_tokens"], (config) => {
                 config.max_output_tokens =
                   ModalConfigValidator.max_output_tokens(
@@ -477,9 +497,9 @@ export function ModelConfigList(props: {
 
           <ListItem
             title={Locale.Settings.CompressThreshold.Title}
-            subTitle={`${Locale.Settings.CompressThreshold.SubTitle}。${sourceText(
-              "compressMessageLengthThreshold",
-            )}`}
+            subTitle={`${
+              Locale.Settings.CompressThreshold.SubTitle
+            }。${sourceText("compressMessageLengthThreshold")}`}
           >
             <input
               aria-label={Locale.Settings.CompressThreshold.Title}
@@ -534,16 +554,18 @@ export function ModelConfigList(props: {
                 props.markOverride?.(["compressModel", "compressProviderName"]);
               }}
             >
-              {allModels
-                .filter((v) => v.available)
-                .map((v, i) => (
-                  <option
-                    value={`${v.name}@${v.provider?.providerName}`}
-                    key={i}
-                  >
-                    {v.displayName}({v.provider?.providerName})
-                  </option>
-                ))}
+              {allModels.flatMap((v) =>
+                v.available
+                  ? [
+                      <option
+                        value={`${v.name}@${v.provider?.providerName}`}
+                        key={`${v.name}@${v.provider?.providerName}`}
+                      >
+                        {v.displayName}({v.provider?.providerName})
+                      </option>,
+                    ]
+                  : [],
+              )}
             </Select>
           </ListItem>
         </>

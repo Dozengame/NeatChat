@@ -85,7 +85,7 @@ export type PublicAppConfig = {
 
 export const PUBLIC_APP_CONFIG_SCHEMA_VERSION = 1;
 
-export const DEFAULT_WEBUI_LOCKED_FIELDS = [
+const DEFAULT_WEBUI_LOCKED_FIELDS = [
   "customModels",
   "baseUrl",
   "apiKey",
@@ -97,14 +97,14 @@ const PROVIDER_NAMES = new Map(
   Object.values(ServiceProvider).map((name) => [name.toLowerCase(), name]),
 );
 
-export function parseCsvList(value?: string) {
-  return (value ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
+function parseCsvList(value?: string) {
+  return (value ?? "").split(",").flatMap((item) => {
+    const trimmed = item.trim();
+    return trimmed ? [trimmed] : [];
+  });
 }
 
-export function normalizeProviderName(providerName?: string) {
+function normalizeProviderName(providerName?: string) {
   if (!providerName?.trim()) {
     return ServiceProvider.OpenAI;
   }
@@ -137,9 +137,12 @@ export function deriveAllowedModels(params: {
   webuiAllowedModels?: string;
   customModels?: string;
 }) {
-  const explicitAllowedModels = parseCsvList(params.webuiAllowedModels)
-    .map(normalizeModelRef)
-    .filter(Boolean) as string[];
+  const explicitAllowedModels = parseCsvList(params.webuiAllowedModels).flatMap(
+    (modelRef) => {
+      const normalized = normalizeModelRef(modelRef);
+      return normalized ? [normalized] : [];
+    },
+  );
 
   if (explicitAllowedModels.length > 0) {
     return Array.from(new Set(explicitAllowedModels));
@@ -150,11 +153,13 @@ export function deriveAllowedModels(params: {
   }
 
   const models = collectModels(DEFAULT_MODELS, params.customModels);
-  const allowedModels = models
-    .filter((model) => model.available)
-    .map((model) => `${model.name}@${model.provider?.providerName}`)
-    .map(normalizeModelRef)
-    .filter(Boolean) as string[];
+  const allowedModels = models.flatMap((model) => {
+    if (!model.available) return [];
+    const normalized = normalizeModelRef(
+      `${model.name}@${model.provider?.providerName}`,
+    );
+    return normalized ? [normalized] : [];
+  });
 
   return Array.from(new Set(allowedModels));
 }
@@ -211,7 +216,7 @@ export function resolveAllowedModelRef(params: {
   return allowedModels[0];
 }
 
-export function stableStringify(value: unknown): string {
+function stableStringify(value: unknown): string {
   if (Array.isArray(value)) {
     return `[${value.map(stableStringify).join(",")}]`;
   }

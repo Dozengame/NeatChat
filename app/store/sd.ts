@@ -4,11 +4,14 @@ import {
   ACCESS_CODE_PREFIX,
   ApiPath,
 } from "@/app/constant";
-import { getBearerToken } from "@/app/client/api";
+import { getBearerToken } from "@/app/client/headers";
 import { createPersistStore } from "@/app/utils/store";
 import { nanoid } from "nanoid";
 import { uploadImage, base64Image2Blob } from "@/app/utils/chat";
-import { models, getModelParamBasicData } from "@/app/components/sd/sd-panel";
+import {
+  models,
+  getModelParamBasicData,
+} from "@/app/components/sd/sd-panel-models";
 import { useAccessStore } from "./access";
 
 const defaultModel = {

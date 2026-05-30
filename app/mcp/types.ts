@@ -12,7 +12,7 @@ export interface McpRequestMessage {
   };
 }
 
-export const McpRequestMessageSchema: z.ZodType<McpRequestMessage> = z.object({
+const McpRequestMessageSchema: z.ZodType<McpRequestMessage> = z.object({
   jsonrpc: z.literal("2.0").optional(),
   id: z.union([z.string(), z.number()]).optional(),
   method: z.string(),
@@ -32,7 +32,7 @@ export interface McpResponseMessage {
   };
 }
 
-export const McpResponseMessageSchema: z.ZodType<McpResponseMessage> = z.object(
+const McpResponseMessageSchema: z.ZodType<McpResponseMessage> = z.object(
   {
     jsonrpc: z.literal("2.0").optional(),
     id: z.union([z.string(), z.number()]).optional(),
@@ -55,7 +55,7 @@ export interface McpNotifications {
   };
 }
 
-export const McpNotificationsSchema: z.ZodType<McpNotifications> = z.object({
+const McpNotificationsSchema: z.ZodType<McpNotifications> = z.object({
   jsonrpc: z.literal("2.0").optional(),
   method: z.string(),
   params: z.record(z.unknown()).optional(),
@@ -126,7 +126,7 @@ export interface McpConfigData {
   mcpServers: Record<string, ServerConfig>;
 }
 
-export const DEFAULT_MCP_CONFIG: McpConfigData = {
+const DEFAULT_MCP_CONFIG: McpConfigData = {
   mcpServers: {},
 };
 

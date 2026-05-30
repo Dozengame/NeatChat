@@ -7,15 +7,15 @@ import {
   useChatStore,
   ChatMessageTool,
   usePluginStore,
-} from "@/app/store";
+  } from "@/app/store";
 import { stream } from "@/app/utils/chat";
 import {
   ChatOptions,
-  getHeaders,
   LLMApi,
   LLMModel,
   SpeechOptions,
-} from "../api";
+} from "../types";
+import { getHeadersAsync } from "../header-loader";
 import { getClientConfig } from "@/app/config/client";
 import { getMessageTextContent } from "@/app/utils";
 import { RequestPayload } from "./openai";
@@ -97,7 +97,7 @@ export class XAIApi implements LLMApi {
         method: "POST",
         body: JSON.stringify(requestPayload),
         signal: controller.signal,
-        headers: getHeaders(),
+        headers: await getHeadersAsync(),
       };
 
       // make a fetch request
@@ -115,7 +115,7 @@ export class XAIApi implements LLMApi {
         return stream(
           chatPath,
           requestPayload,
-          getHeaders(),
+          await getHeadersAsync(),
           tools as any,
           funcs,
           controller,

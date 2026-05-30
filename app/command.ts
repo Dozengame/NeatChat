@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLayoutEffect } from "react";
+import { useSearchParams as useRouterSearchParams } from "react-router-dom";
 import Locale from "./locales";
 
 type Command = (param: string) => void;
@@ -11,25 +11,38 @@ interface Commands {
   settings?: Command;
 }
 
-export function useCommand(commands: Commands = {}) {
-  const [searchParams, setSearchParams] = useSearchParams();
+const EMPTY_COMMANDS: Commands = {};
+const EMPTY_CHAT_COMMANDS: ChatCommands = {};
 
-  useEffect(() => {
+function extractChatCommand(userInput: string) {
+  const match = userInput.match(ChatCommandPrefix);
+  if (match) {
+    return userInput.slice(1) as keyof ChatCommands;
+  }
+  return userInput as keyof ChatCommands;
+}
+
+export function useCommand(commands: Commands = EMPTY_COMMANDS) {
+  const [searchParams, setSearchParams] = useRouterSearchParams();
+
+  useLayoutEffect(() => {
     let shouldUpdate = false;
-    searchParams.forEach((param, name) => {
+    const nextSearchParams = new URLSearchParams(searchParams);
+
+    nextSearchParams.forEach((param, name) => {
       const commandName = name as keyof Commands;
-      if (typeof commands[commandName] === "function") {
-        commands[commandName]!(param);
-        searchParams.delete(name);
+      const command = commands[commandName];
+      if (typeof command === "function") {
+        command(param);
+        nextSearchParams.delete(name);
         shouldUpdate = true;
       }
     });
 
     if (shouldUpdate) {
-      setSearchParams(searchParams);
+      setSearchParams(nextSearchParams);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, commands]);
+  }, [searchParams, commands, setSearchParams]);
 }
 
 interface ChatCommands {
@@ -45,28 +58,24 @@ interface ChatCommands {
 // Compatible with Chinese colon character "："
 export const ChatCommandPrefix = /^[:：]/;
 
-export function useChatCommand(commands: ChatCommands = {}) {
-  function extract(userInput: string) {
-    const match = userInput.match(ChatCommandPrefix);
-    if (match) {
-      return userInput.slice(1) as keyof ChatCommands;
-    }
-    return userInput as keyof ChatCommands;
-  }
-
+export function useChatCommand(commands: ChatCommands = EMPTY_CHAT_COMMANDS) {
   function search(userInput: string) {
-    const input = extract(userInput);
+    const input = extractChatCommand(userInput);
     const desc = Locale.Chat.Commands;
-    return Object.keys(commands)
-      .filter((c) => c.startsWith(input))
-      .map((c) => ({
-        title: desc[c as keyof ChatCommands],
-        content: ":" + c,
-      }));
+    return Object.keys(commands).flatMap((c) =>
+      c.startsWith(input)
+        ? [
+            {
+              title: desc[c as keyof ChatCommands],
+              content: ":" + c,
+            },
+          ]
+        : [],
+    );
   }
 
   function match(userInput: string) {
-    const command = extract(userInput);
+    const command = extractChatCommand(userInput);
     const matched = typeof commands[command] === "function";
 
     return {

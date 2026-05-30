@@ -216,11 +216,11 @@ export const usePluginStore = createPersistStore(
 
     getAsTools(ids: string[]) {
       const plugins = get().plugins;
-      const selected = (ids || [])
-        .filter((id) => !isRetiredDefaultPluginId(id))
-        .map((id) => plugins[id])
-        .filter((i) => i)
-        .map((p) => FunctionToolService.add(p));
+      const selected = (ids || []).flatMap((id) => {
+        if (isRetiredDefaultPluginId(id)) return [];
+        const plugin = plugins[id];
+        return plugin ? [FunctionToolService.add(plugin)] : [];
+      });
       return [
         // @ts-ignore
         selected.reduce((s, i) => s.concat(i.tools), []),
@@ -259,32 +259,33 @@ export const usePluginStore = createPersistStore(
             ).forEach((id) => state.delete(id));
 
             Promise.all(
-              res
-                .filter((item: any) => !state.get(item.id))
-                .map((item: any) =>
-                  // skip get schema
-                  state.get(item.id)
-                    ? item
-                    : fetch(item.schema)
+              res.flatMap((item: any) =>
+                !state.get(item.id)
+                  ? [
+                      // skip get schema
+                      fetch(item.schema)
                         .then((res) => res.text())
                         .then((content) => ({
                           ...item,
                           content,
                         }))
                         .catch((e) => item),
-                ),
+                    ]
+                  : [],
+              ),
             ).then((builtinPlugins: any) => {
-              builtinPlugins
-                .filter((item: any) => item?.content)
-                .forEach((item: any) => {
-                  const plugin = state.create(item);
-                  state.updatePlugin(plugin.id, (plugin) => {
-                    const tool = FunctionToolService.add(plugin, true);
-                    plugin.title = tool.api.definition.info.title;
-                    plugin.version = tool.api.definition.info.version;
-                    plugin.builtin = false;
-                  });
+              builtinPlugins.forEach((item: any) => {
+                if (!item?.content) {
+                  return;
+                }
+                const plugin = state.create(item);
+                state.updatePlugin(plugin.id, (plugin) => {
+                  const tool = FunctionToolService.add(plugin, true);
+                  plugin.title = tool.api.definition.info.title;
+                  plugin.version = tool.api.definition.info.version;
+                  plugin.builtin = false;
                 });
+              });
             });
           });
       };

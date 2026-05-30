@@ -1,9 +1,6 @@
-import {
-  ChatSession,
-  useAccessStore,
-  useAppConfig,
-  useChatStore,
-} from "../store";
+import { ChatSession, useChatStore } from "../store/chat";
+import { useAccessStore } from "../store/access";
+import { useAppConfig } from "../store/config";
 import { useMaskStore } from "../store/mask";
 import { usePromptStore } from "../store/prompt";
 import { StoreKey } from "../constant";

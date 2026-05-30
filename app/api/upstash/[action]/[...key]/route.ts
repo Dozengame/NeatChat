@@ -46,6 +46,7 @@ async function handle(
   );
 
   const fetchOptions: RequestInit = {
+    cache: "no-store",
     headers: {
       authorization: req.headers.get("authorization") ?? "",
     },
@@ -56,7 +57,10 @@ async function handle(
   };
 
   console.log("[Upstash Proxy]", targetUrl, fetchOptions);
-  const fetchResult = await fetch(targetUrl, fetchOptions);
+  const fetchResult = await fetch(targetUrl, {
+    ...fetchOptions,
+    cache: "no-store",
+  });
 
   console.log("[Any Proxy]", targetUrl, {
     status: fetchResult.status,

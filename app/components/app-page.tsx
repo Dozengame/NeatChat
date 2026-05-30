@@ -13,7 +13,11 @@ function useAppBootstrap() {
 
   useEffect(() => {
     console.log("[Config] got config from build time", getClientConfig());
-    useAccessStore.getState().fetch();
+    const accessStore = useAccessStore.getState();
+    accessStore.fetch();
+    if (accessStore.needCode && accessStore.hasValidAccessCode()) {
+      void accessStore.validateAccessCode();
+    }
   }, []);
 
   useEffect(() => {

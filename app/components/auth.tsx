@@ -2,12 +2,12 @@ import styles from "./auth.module.scss";
 import { IconButton } from "./button";
 import { useNavigate } from "react-router-dom";
 import { Path } from "../constant";
-import { useAccessStore } from "../store";
+import { useAccessStore } from "../store/access";
 import Locale from "../locales";
 import NeatIcon from "../icons/neat.svg";
 import { PasswordInput } from "./ui-lib";
 import clsx from "clsx";
-import { showToast } from "./ui-lib";
+import { showToast } from "./ui-lib-actions";
 
 export function AuthPage() {
   const navigate = useNavigate();

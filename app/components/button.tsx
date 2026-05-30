@@ -23,6 +23,7 @@ export function IconButton(props: {
 }) {
   return (
     <button
+      type="button"
       className={clsx(
         "clickable",
         styles["icon-button"],
@@ -36,7 +37,6 @@ export function IconButton(props: {
       onClick={props.onClick}
       title={props.title}
       disabled={props.disabled}
-      role="button"
       tabIndex={props.tabIndex}
       autoFocus={props.autoFocus}
       style={props.style}

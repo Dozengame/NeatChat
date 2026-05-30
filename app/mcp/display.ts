@@ -40,16 +40,14 @@ function resultToText(result: unknown): string {
   if (result && typeof result === "object") {
     const content = (result as { content?: unknown }).content;
     if (Array.isArray(content)) {
-      const textParts = content
-        .map((item) => {
-          if (typeof item === "string") return item;
-          if (item && typeof item === "object" && "text" in item) {
-            const text = (item as { text?: unknown }).text;
-            return typeof text === "string" ? text : "";
-          }
-          return "";
-        })
-        .filter(Boolean);
+      const textParts = content.flatMap((item) => {
+        if (typeof item === "string") return item ? [item] : [];
+        if (item && typeof item === "object" && "text" in item) {
+          const text = (item as { text?: unknown }).text;
+          return typeof text === "string" && text ? [text] : [];
+        }
+        return [];
+      });
 
       if (textParts.length > 0) {
         return textParts.join("\n\n");
@@ -342,7 +340,12 @@ export function getJimengQuerySubmitId(result: unknown) {
 }
 
 export function combineMcpToolResults(...results: unknown[]) {
-  return results.map(resultToText).filter(Boolean).join("\n\n");
+  return results
+    .flatMap((result) => {
+      const text = resultToText(result);
+      return text ? [text] : [];
+    })
+    .join("\n\n");
 }
 
 export function hasJimengDisplayableImage(result: unknown) {

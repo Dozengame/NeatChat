@@ -69,6 +69,7 @@ async function testModel(
         },
         body: JSON.stringify(requestBody),
         signal: controller.signal,
+        cache: "no-store",
       }),
     );
 
@@ -151,19 +152,16 @@ export async function POST(req: NextRequest) {
       return usageErrorResponse(usageCheck);
     }
 
-    // 测试结果
-    const results: Record<string, ModelTestResult> = {};
-
-    // 逐个测试模型
-    for (const model of models) {
-      results[model] = await testModel(
-        req,
+    const testEntries = await Promise.all(
+      models.map(async (model) => [
         model,
-        serverConfig,
-        apiKey,
-        timeoutSeconds,
-      );
-    }
+        await testModel(req, model, serverConfig, apiKey, timeoutSeconds),
+      ]),
+    );
+    const results = Object.fromEntries(testEntries) as Record<
+      string,
+      ModelTestResult
+    >;
 
     return NextResponse.json({ results });
   } catch (error) {

@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
 
     const response = await fetch(url, {
       method: "GET",
+      cache: "no-store",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",

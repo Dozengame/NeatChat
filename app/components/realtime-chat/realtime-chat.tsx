@@ -33,13 +33,21 @@ export function RealtimeChat({
   onStartVoice,
   onPausedVoice,
 }: RealtimeChatProps) {
+  return useRealtimeChatView({ onClose, onStartVoice, onPausedVoice });
+}
+
+function useRealtimeChatView({
+  onClose,
+  onStartVoice,
+  onPausedVoice,
+}: RealtimeChatProps) {
   const chatStore = useChatStore();
   const session = chatStore.currentSession();
   const config = useAppConfig();
   const [status, setStatus] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
+  const isConnectingRef = useRef(false);
   const [modality, setModality] = useState("audio");
   const [useVAD, setUseVAD] = useState(true);
   const [frequencies, setFrequencies] = useState<Uint8Array | undefined>();
@@ -57,10 +65,10 @@ export function RealtimeChat({
   const voice = config.realtimeConfig.voice;
 
   const handleConnect = async () => {
-    if (isConnecting) return;
+    if (isConnectingRef.current) return;
     if (!isConnected) {
       try {
-        setIsConnecting(true);
+        isConnectingRef.current = true;
         clientRef.current = azure
           ? new RTClient(
               new URL(azureEndpoint),
@@ -111,7 +119,7 @@ export function RealtimeChat({
         console.error("Connection failed:", error);
         setStatus("Connection failed");
       } finally {
-        setIsConnecting(false);
+        isConnectingRef.current = false;
       }
     } else {
       await disconnect();
@@ -247,8 +255,10 @@ export function RealtimeChat({
         audioHandlerRef.current.stopRecording();
         if (!useVAD) {
           const inputAudio = await clientRef.current?.commitAudio();
-          await handleInputAudio(inputAudio!);
-          await clientRef.current?.generateResponse();
+          await Promise.all([
+            handleInputAudio(inputAudio!),
+            clientRef.current?.generateResponse(),
+          ]);
         }
         setIsRecording(false);
       } catch (error) {
@@ -260,23 +270,24 @@ export function RealtimeChat({
   const handleConnectRef = useRef(handleConnect);
   const toggleRecordingRef = useRef(toggleRecording);
   const disconnectRef = useRef(disconnect);
-  const isRecordingRef = useRef(isRecording);
 
   useEffect(() => {
     handleConnectRef.current = handleConnect;
     toggleRecordingRef.current = toggleRecording;
     disconnectRef.current = disconnect;
-    isRecordingRef.current = isRecording;
   });
 
   useEffect(() => {
     // 防止重复初始化
     if (initRef.current) return;
     initRef.current = true;
+    let audioHandler: AudioHandler | undefined;
+    const disconnectRealtime = disconnectRef.current;
 
     const initAudioHandler = async () => {
       const handler = new AudioHandler();
       await handler.initialize();
+      audioHandler = handler;
       audioHandlerRef.current = handler;
       await handleConnectRef.current();
       await toggleRecordingRef.current();
@@ -288,11 +299,9 @@ export function RealtimeChat({
     });
 
     return () => {
-      if (isRecordingRef.current) {
-        toggleRecordingRef.current();
-      }
-      audioHandlerRef.current?.close().catch(console.error);
-      disconnectRef.current();
+      audioHandler?.stopRecording();
+      audioHandler?.close().catch(console.error);
+      disconnectRealtime();
     };
   }, []);
 

@@ -18,9 +18,9 @@ import {
   useHotKey,
 } from "@/app/components/sidebar";
 
-import { getParams, getModelParamBasicData } from "./sd-panel";
+import { getParams, getModelParamBasicData } from "./sd-panel-models";
 import { useSdStore } from "@/app/store/sd";
-import { showToast } from "@/app/components/ui-lib";
+import { showToast } from "@/app/components/ui-lib-actions";
 import { useMobileScreen } from "@/app/utils";
 
 const SdPanel = dynamic(

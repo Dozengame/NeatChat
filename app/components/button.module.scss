@@ -1,4 +1,6 @@
 .icon-button {
+  appearance: none;
+  box-sizing: border-box;
   background-color: var(--white);
   border-radius: 10px;
   display: flex;
@@ -12,6 +14,8 @@
   outline: none;
   border: none;
   color: var(--black);
+  font-family: inherit;
+  line-height: 1;
 
   &[disabled] {
     cursor: not-allowed;
@@ -72,6 +76,8 @@
 
 .icon-button-text {
   font-size: 12px;
+  font-family: inherit;
+  line-height: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

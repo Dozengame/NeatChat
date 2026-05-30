@@ -4,17 +4,19 @@ import {
   ByteDance,
   BYTEDANCE_BASE_URL,
   REQUEST_TIMEOUT_MS,
-} from "@/app/constant";
-import { useAccessStore, useAppConfig, useChatStore } from "@/app/store";
+  } from "@/app/constant";
+import { useAccessStore,
+  useAppConfig,
+  useChatStore } from "@/app/store";
 
 import {
   ChatOptions,
-  getHeaders,
   LLMApi,
   LLMModel,
   MultimodalContent,
   SpeechOptions,
-} from "../api";
+} from "../types";
+import { getHeadersAsync } from "../header-loader";
 import Locale from "../../locales";
 import {
   EventStreamContentType,
@@ -117,7 +119,7 @@ export class DoubaoApi implements LLMApi {
         method: "POST",
         body: JSON.stringify(requestPayload),
         signal: controller.signal,
-        headers: getHeaders(),
+        headers: await getHeadersAsync(),
       };
 
       // make a fetch request
@@ -260,4 +262,3 @@ export class DoubaoApi implements LLMApi {
     return [];
   }
 }
-export { ByteDance };

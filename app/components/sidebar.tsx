@@ -13,7 +13,8 @@ import NeatIcon from "../icons/neat.svg";
 
 import Locale from "../locales";
 
-import { useAppConfig, useChatStore } from "../store";
+import { useChatStore } from "../store/chat";
+import { useAppConfig } from "../store/config";
 
 import {
   DEFAULT_SIDEBAR_WIDTH,
@@ -27,13 +28,16 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { isIOS, useCompactScreen, useMobileScreen } from "../utils";
 import dynamic from "next/dynamic";
-import { showConfirm, SimpleSelector } from "./ui-lib";
+import { SimpleSelector } from "./ui-lib";
+import { showConfirm } from "./ui-lib-actions";
 import clsx from "clsx";
 import { isMcpEnabled } from "../mcp/actions";
 
 const ChatList = dynamic(async () => (await import("./chat-list")).ChatList, {
   loading: () => null,
 });
+
+const limitSideBarWidth = (x: number) => Math.min(MAX_SIDEBAR_WIDTH, x);
 
 export function useHotKey() {
   const chatStore = useChatStore();
@@ -55,12 +59,13 @@ export function useHotKey() {
 }
 
 export function useDragSideBar() {
-  const limit = (x: number) => Math.min(MAX_SIDEBAR_WIDTH, x);
-
   const config = useAppConfig();
   const startX = useRef(0);
   const startDragWidth = useRef(config.sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH);
-  const lastUpdateTime = useRef(Date.now());
+  const lastUpdateTime = useRef(0);
+  if (lastUpdateTime.current === 0) {
+    lastUpdateTime.current = Date.now();
+  }
 
   const toggleSideBar = () => {
     config.update((config) => {
@@ -84,7 +89,7 @@ export function useDragSideBar() {
       }
       lastUpdateTime.current = Date.now();
       const d = e.clientX - startX.current;
-      const nextWidth = limit(startDragWidth.current + d);
+      const nextWidth = limitSideBarWidth(startDragWidth.current + d);
       config.update((config) => {
         if (nextWidth < MIN_SIDEBAR_WIDTH) {
           config.sidebarWidth = NARROW_SIDEBAR_WIDTH;
@@ -117,7 +122,7 @@ export function useDragSideBar() {
   useEffect(() => {
     const barWidth = shouldNarrow
       ? NARROW_SIDEBAR_WIDTH
-      : limit(config.sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH);
+      : limitSideBarWidth(config.sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH);
     const sideBarWidth = isCompactScreen ? "100vw" : `${barWidth}px`;
     document.documentElement.style.setProperty("--sidebar-width", sideBarWidth);
   }, [config.sidebarWidth, isCompactScreen, shouldNarrow]);
@@ -196,12 +201,14 @@ export function SideBarHeader(props: {
 
 export function SideBarBody(props: {
   children: React.ReactNode;
-  onClick?: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
+  backgroundAction?: React.ReactNode;
 }) {
-  const { onClick, children } = props;
+  const { backgroundAction, children } = props;
+
   return (
-    <div className={styles["sidebar-body"]} onClick={onClick}>
-      {children}
+    <div className={styles["sidebar-body"]}>
+      {backgroundAction}
+      <div className={styles["sidebar-body-content"]}>{children}</div>
     </div>
   );
 }
@@ -228,7 +235,7 @@ export function SideBar(props: { className?: string }) {
   const config = useAppConfig();
   const chatStore = useChatStore();
   const [mcpEnabled, setMcpEnabled] = useState<boolean | null>(null);
-  const [checkingMcpEnabled, setCheckingMcpEnabled] = useState(false);
+  const checkingMcpEnabledRef = useRef(false);
   const discoveryItems = useMemo(
     () => [
       ...(mcpEnabled === true
@@ -245,9 +252,9 @@ export function SideBar(props: { className?: string }) {
   const openDiscoverySelector = () => {
     setShowPluginSelector(true);
 
-    if (mcpEnabled !== null || checkingMcpEnabled) return;
+    if (mcpEnabled !== null || checkingMcpEnabledRef.current) return;
 
-    setCheckingMcpEnabled(true);
+    checkingMcpEnabledRef.current = true;
     isMcpEnabled()
       .then((enabled) => {
         setMcpEnabled(enabled);
@@ -257,7 +264,9 @@ export function SideBar(props: { className?: string }) {
         console.error("[SideBar] failed to check MCP status:", err);
         setMcpEnabled(false);
       })
-      .finally(() => setCheckingMcpEnabled(false));
+      .finally(() => {
+        checkingMcpEnabledRef.current = false;
+      });
   };
 
   return (
@@ -305,11 +314,16 @@ export function SideBar(props: { className?: string }) {
         )}
       </SideBarHeader>
       <SideBarBody
-        onClick={(e) => {
-          if (e.target === e.currentTarget) {
-            navigate(Path.Home);
-          }
-        }}
+        backgroundAction={
+          <button
+            type="button"
+            className={styles["sidebar-body-background-action"]}
+            aria-label="Return home"
+            onClick={() => {
+              navigate(Path.Home);
+            }}
+          />
+        }
       >
         <ChatList narrow={shouldNarrow} />
       </SideBarBody>

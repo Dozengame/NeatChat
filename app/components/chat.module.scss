@@ -25,13 +25,55 @@
   }
 }
 
+.attach-item {
+  position: relative;
+  flex: 0 0 82px;
+  width: 82px;
+  height: 82px;
+}
+
+.attach-image-mask {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity ease 0.2s;
+  pointer-events: none;
+}
+
+.attach-item:hover .attach-image-mask,
+.attach-image-mask:focus-within {
+  opacity: 1;
+}
+
+.delete-image {
+  appearance: none;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: var(--border-in-light);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background-color: var(--white);
+  box-shadow: 0 6px 18px rgba($color: #000, $alpha: 0.12);
+  pointer-events: auto;
+}
+
 .attach-image {
+  appearance: none;
+  box-sizing: border-box;
   cursor: default;
   flex: 0 0 82px;
   width: 82px;
   height: 82px;
   border: 1px solid rgba($color: #888, $alpha: 0.22);
   border-radius: 12px;
+  padding: 0;
   margin-right: 0;
   background-size: cover;
   background-position: center;
@@ -40,29 +82,6 @@
   overflow: hidden;
   position: relative;
 
-  .attach-image-mask {
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    transition: all ease 0.2s;
-  }
-
-  .attach-image-mask:hover {
-    opacity: 1;
-  }
-
-  .delete-image {
-    width: 24px;
-    height: 24px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-    float: right;
-    background-color: var(--white);
-    margin: 6px;
-  }
 }
 
 .chat-input-actions {
@@ -78,16 +97,23 @@
   }
 
   .chat-input-action {
+    appearance: none;
+    box-sizing: content-box;
     display: inline-flex;
     border-radius: 20px;
     font-size: 12px;
+    font-family: inherit;
+    line-height: 1;
     background-color: var(--white);
     color: var(--black);
     border: var(--border-in-light);
     padding: 4px 10px;
+    margin: 0;
+    text-align: left;
     animation: slide-in ease 0.3s;
     transition: width ease 0.3s;
     align-items: center;
+    justify-content: flex-start;
     height: 16px;
     width: var(--icon-width);
     overflow: hidden;
@@ -191,12 +217,18 @@
 
 .context-prompt {
   .context-prompt-insert {
+    appearance: none;
+    border: 0;
+    box-sizing: border-box;
     display: flex;
     justify-content: center;
     padding: 4px;
     opacity: 0.2;
     transition: all ease 0.3s;
     background-color: rgba(0, 0, 0, 0);
+    color: var(--black);
+    font-family: inherit;
+    line-height: 1;
     cursor: pointer;
     border-radius: 4px;
     margin-top: 4px;
@@ -261,9 +293,13 @@
 }
 
 .clear-context {
+  appearance: none;
   margin: 20px 0 0 0;
   padding: 4px 0;
-
+  width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  border: 0;
   border-top: var(--border-in-light);
   border-bottom: var(--border-in-light);
   box-shadow: var(--card-shadow) inset;
@@ -273,11 +309,14 @@
   align-items: center;
 
   color: var(--black);
+  font-family: inherit;
   transition: all ease 0.3s;
   cursor: pointer;
   overflow: hidden;
   position: relative;
   font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
 
   animation: slide-in ease 0.3s;
 
@@ -350,10 +389,25 @@
 }
 
 .chat-body-main-title {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font-family: inherit;
+  line-height: inherit;
+  text-align: inherit;
   cursor: pointer;
 
   &:hover {
     text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 4px;
+    border-radius: 4px;
   }
 }
 
@@ -542,7 +596,10 @@
 }
 
 .chat-message-item-image {
-  width: 100%;
+  width: auto;
+  height: auto;
+  max-height: min(52vh, 520px);
+  object-fit: contain;
 }
 
 .chat-message-item-images {
@@ -586,6 +643,16 @@
       pointer-events: auto;
     }
   }
+}
+
+.chat-message-image-preview-button {
+  display: block;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  line-height: 0;
+  cursor: zoom-in;
 }
 
 .chat-message-item-images {
@@ -672,6 +739,7 @@
 }
 
 .image-preview-mask {
+  border: 0;
   position: fixed;
   inset: 0;
   z-index: 9999;
@@ -681,6 +749,22 @@
   padding: 72px 24px 24px;
   background: rgba($color: #000, $alpha: 0.82);
   box-sizing: border-box;
+}
+
+.file-edit-scroll {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.file-edit-textarea {
+  width: 100%;
+  height: 300px;
+  padding: 8px;
+  font-family: monospace;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
 }
 
 .image-preview-toolbar {
@@ -1183,12 +1267,15 @@
 
 // 修改文件附件样式，使其与图片附件完全一致
 .attach-file {
+  appearance: none;
+  box-sizing: border-box;
   cursor: default;
   flex: 0 0 82px;
   width: 82px;
   height: 82px;
   border: 1px solid rgba($color: #888, $alpha: 0.22);
   border-radius: 12px;
+  padding: 0;
   margin-right: 0;
   background-color: var(--white);
   position: relative;
@@ -1235,33 +1322,6 @@
   .attach-file-size {
     font-size: 10px;
     color: var(--black-50);
-  }
-
-  .attach-image-mask {
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    transition: all ease 0.2s;
-    position: absolute;
-    top: 0;
-    left: 0;
-  }
-
-  .attach-image-mask:hover {
-    opacity: 1;
-  }
-
-  .delete-image {
-    width: 24px;
-    height: 24px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-    float: right;
-    background-color: var(--white);
-    margin: 6px;
   }
 }
 

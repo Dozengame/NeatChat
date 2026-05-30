@@ -6,15 +6,21 @@ import RehypeKatex from "rehype-katex";
 import RemarkGfm from "remark-gfm";
 import RehypeRaw from "rehype-raw";
 import RehypeHighlight from "rehype-highlight";
-import { useRef, useState, useEffect, useMemo } from "react";
+import React, {
+  createContext,
+  useContext,
+  useRef,
+  useState,
+  useEffect,
+  useMemo,
+  useLayoutEffect,
+} from "react";
 import { copyToClipboard, useWindowSize } from "../utils";
 import Locale from "../locales";
 import LoadingIcon from "../icons/three-dots.svg";
 import DownloadIcon from "../icons/download.svg";
-import React from "react";
 import { useDebouncedCallback } from "use-debounce";
-import { showToast } from "./ui-lib";
-import { useChatStore } from "../store";
+import { showToast } from "./ui-lib-actions";
 
 import { useAppConfig } from "../store/config";
 import { FileAttachment } from "./file-attachment";
@@ -27,11 +33,16 @@ const Mermaid = dynamic(async () => (await import("./mermaid")).Mermaid, {
 });
 
 const HTMLPreview = dynamic(
-  async () => (await import("./artifacts")).HTMLPreview,
+  async () => (await import("./artifacts-preview")).HTMLPreview,
   {
     loading: () => null,
   },
 );
+
+const MarkdownFeatureContext = createContext({
+  enableArtifacts: true,
+  enableCodeFold: true,
+});
 
 function Details(props: { children: React.ReactNode }) {
   return <details open>{props.children}</details>;
@@ -45,8 +56,6 @@ export function PreCode(props: { children: any }) {
   const [mermaidCode, setMermaidCode] = useState("");
   const [htmlCode, setHtmlCode] = useState("");
   const { height } = useWindowSize();
-  const chatStore = useChatStore();
-  const session = chatStore.currentSession();
 
   const renderArtifacts = useDebouncedCallback(() => {
     if (!ref.current) return;
@@ -68,8 +77,9 @@ export function PreCode(props: { children: any }) {
   }, 600);
 
   const config = useAppConfig();
+  const features = useContext(MarkdownFeatureContext);
   const enableArtifacts =
-    session.mask?.enableArtifacts !== false && config.enableArtifacts;
+    features.enableArtifacts && config.enableArtifacts;
 
   //Wrap the paragraph for plain-text
   useEffect(() => {
@@ -102,8 +112,10 @@ export function PreCode(props: { children: any }) {
   return (
     <>
       <pre ref={ref}>
-        <span
+        <button
+          type="button"
           className="copy-code-button"
+          aria-label="复制代码"
           onClick={() => {
             if (ref.current) {
               copyToClipboard(
@@ -111,7 +123,7 @@ export function PreCode(props: { children: any }) {
               );
             }
           }}
-        ></span>
+        ></button>
         {props.children}
       </pre>
       {mermaidCode.length > 0 && (
@@ -129,17 +141,15 @@ export function PreCode(props: { children: any }) {
 }
 
 function CustomCode(props: { children: any; className?: string }) {
-  const chatStore = useChatStore();
-  const session = chatStore.currentSession();
   const config = useAppConfig();
-  const enableCodeFold =
-    session.mask?.enableCodeFold !== false && config.enableCodeFold;
+  const features = useContext(MarkdownFeatureContext);
+  const enableCodeFold = features.enableCodeFold && config.enableCodeFold;
 
   const ref = useRef<HTMLPreElement>(null);
   const [collapsed, setCollapsed] = useState(true);
   const [showToggle, setShowToggle] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (ref.current) {
       const codeHeight = ref.current.scrollHeight;
       setShowToggle(codeHeight > 400);
@@ -150,21 +160,7 @@ function CustomCode(props: { children: any; className?: string }) {
   const toggleCollapsed = () => {
     setCollapsed((collapsed) => !collapsed);
   };
-  const renderShowMoreButton = () => {
-    if (showToggle && enableCodeFold && collapsed) {
-      return (
-        <div
-          className={clsx("show-hide-button", {
-            collapsed,
-            expanded: !collapsed,
-          })}
-        >
-          <button onClick={toggleCollapsed}>{Locale.NewChat.More}</button>
-        </div>
-      );
-    }
-    return null;
-  };
+  const showMoreButton = showToggle && enableCodeFold && collapsed;
   return (
     <>
       <code
@@ -178,7 +174,18 @@ function CustomCode(props: { children: any; className?: string }) {
         {props.children}
       </code>
 
-      {renderShowMoreButton()}
+      {showMoreButton && (
+        <div
+          className={clsx("show-hide-button", {
+            collapsed,
+            expanded: !collapsed,
+          })}
+        >
+          <button type="button" onClick={toggleCollapsed}>
+            {Locale.NewChat.More}
+          </button>
+        </div>
+      )}
     </>
   );
 }
@@ -425,16 +432,17 @@ function replaceFileAttachments(content: string) {
   return newContent;
 }
 
-function _MarkDownContent(
+function MarkDownContentInner(
   props: {
     content: string;
   } & MarkdownImageActionProps,
 ) {
+  const { content } = props;
   const escapedContent = useMemo(() => {
     // 检查是否是 base64 图像数据
     try {
       // 尝试解析整个内容
-      const jsonData = JSON.parse(props.content);
+      const jsonData = JSON.parse(content);
       if (jsonData.type === "base64_image") {
         // 如果有附加文本，添加到图像后面
         const textContent = jsonData.text ? `\n\n${jsonData.text}` : "";
@@ -445,7 +453,7 @@ function _MarkDownContent(
 
       // 尝试匹配完整的 JSON 字符串模式
       const jsonRegex = /(\{.*"type"\s*:\s*"base64_image".*?\})/;
-      const jsonMatch = jsonRegex.exec(props.content);
+      const jsonMatch = jsonRegex.exec(content);
 
       if (jsonMatch && jsonMatch[1]) {
         try {
@@ -453,7 +461,7 @@ function _MarkDownContent(
           const jsonData = JSON.parse(jsonMatch[1]);
           if (jsonData.type === "base64_image" && jsonData.data) {
             // 分析原始内容，保持文本顺序
-            const parts = props.content.split(jsonMatch[1]);
+            const parts = content.split(jsonMatch[1]);
             const beforeText = parts[0] ? `${parts[0]}\n\n` : "";
             const afterText = parts[1] ? `\n\n${parts[1]}` : "";
             const imageText = jsonData.text ? `\n\n${jsonData.text}` : "";
@@ -467,7 +475,7 @@ function _MarkDownContent(
 
       // 尝试其他正则表达式匹配
       const regex = /\{"type":"base64_image","data":"(data:[^"]+)".*?\}/g;
-      const match = regex.exec(props.content);
+      const match = regex.exec(content);
       if (match && match[1]) {
         // 找到了 base64 图像数据
         return `![Generated Image](${match[1]})`;
@@ -475,16 +483,16 @@ function _MarkDownContent(
 
       // 尝试另一种格式
       const regex2 = /\{"data":"(data:[^"]+)","type":"base64_image".*?\}/g;
-      const match2 = regex2.exec(props.content);
+      const match2 = regex2.exec(content);
       if (match2 && match2[1]) {
         // 找到了 base64 图像数据
         return `![Generated Image](${match2[1]})`;
       }
     }
 
-    const processedContent = replaceFileAttachments(props.content);
+    const processedContent = replaceFileAttachments(content);
     return tryWrapHtmlCode(formatThinkText(escapeBrackets(processedContent)));
-  }, [props.content]);
+  }, [content]);
 
   return (
     <ReactMarkdown
@@ -569,7 +577,9 @@ function _MarkDownContent(
           if (/\.(aac|mp3|opus|wav)$/.test(href)) {
             return (
               <figure>
-                <audio controls src={href}></audio>
+                <audio controls src={href} aria-label="音频附件">
+                  <track kind="captions" />
+                </audio>
               </figure>
             );
           }
@@ -577,8 +587,9 @@ function _MarkDownContent(
           // 处理视频链接
           if (/\.(3gp|3g2|webm|ogv|mpeg|mp4|avi)$/.test(href)) {
             return (
-              <video controls width="99.9%">
+              <video controls width="99.9%" aria-label="视频附件">
                 <source src={href} />
+                <track kind="captions" />
               </video>
             );
           }
@@ -588,7 +599,11 @@ function _MarkDownContent(
           const target = isInternal ? "_self" : aProps.target ?? "_blank";
           const rel = !isInternal ? "noopener noreferrer" : undefined;
 
-          return <a {...aProps} href={href} target={target} rel={rel} />;
+          return (
+            <a {...aProps} href={href} target={target} rel={rel}>
+              {aProps.children || href}
+            </a>
+          );
         },
         pre: PreCode,
         code: CustomCode,
@@ -599,24 +614,32 @@ function _MarkDownContent(
 
           if (!src || (!props.onPreviewImage && !props.onDownloadImage)) {
             return (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img {...imgProps} alt={alt} />
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img {...imgProps} alt={alt} src={src} />
+              </>
             );
           }
 
           return (
             <span className="markdown-image-frame">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                {...imgProps}
-                alt={alt}
-                src={src}
-                className="markdown-image-preview"
+              <button
+                type="button"
+                className="markdown-image-preview-button"
+                aria-label={alt || "预览图片"}
                 onClick={(event) => {
                   event.preventDefault();
                   props.onPreviewImage?.(src);
                 }}
-              />
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  {...imgProps}
+                  alt={alt}
+                  src={src}
+                  className="markdown-image-preview"
+                />
+              </button>
               {props.onDownloadImage && (
                 <button
                   type="button"
@@ -645,7 +668,7 @@ function _MarkDownContent(
   );
 }
 
-export const MarkdownContent = React.memo(_MarkDownContent);
+export const MarkdownContent = React.memo(MarkDownContentInner);
 
 export function Markdown(
   props: {
@@ -658,22 +681,58 @@ export function Markdown(
     messageId?: string;
     streaming?: boolean;
     shouldAutoScroll?: boolean;
+    enableArtifacts?: boolean;
+    enableCodeFold?: boolean;
     onContentChange?: () => void;
-  } & MarkdownImageActionProps &
-    React.DOMAttributes<HTMLDivElement>,
+  } & MarkdownImageActionProps,
 ) {
-  const content = props.content;
-  const shouldAutoScroll = props.shouldAutoScroll;
-  const onContentChange = props.onContentChange;
+  const {
+    content,
+    fontSize,
+    fontFamily,
+    isUser,
+    loading,
+    messageId,
+    streaming,
+    shouldAutoScroll,
+    enableArtifacts = true,
+    enableCodeFold = true,
+    onContentChange,
+    onPreviewImage,
+    onDownloadImage,
+  } = props;
   const mdRef = useRef<HTMLDivElement>(null);
   const lastContentRef = useRef(content);
 
   // 添加token计数状态和首字延迟状态
-  const [tokenInfo, setTokenInfo] = useState<{
+  const tokenInfo = useMemo<{
     count: number;
     isUser: boolean;
     firstCharDelay?: number;
-  } | null>(null);
+  } | null>(() => {
+    if (!content || content.length === 0 || streaming) {
+      return null;
+    }
+
+    try {
+      const storedDelay = messageId
+        ? localStorage.getItem(`first_char_delay_${messageId}`)
+        : null;
+
+      return {
+        count: encode(content).length,
+        isUser: isUser ?? false,
+        firstCharDelay: storedDelay ? parseInt(storedDelay) : undefined,
+      };
+    } catch (e) {
+      console.error("计算token出错:", e);
+      return null;
+    }
+  }, [content, isUser, messageId, streaming]);
+  const markdownFeatures = useMemo(
+    () => ({ enableArtifacts, enableCodeFold }),
+    [enableArtifacts, enableCodeFold],
+  );
   const messageStartTimeRef = useRef<number | null>(null);
   const firstCharReceivedTimeRef = useRef<number | null>(null);
 
@@ -681,24 +740,24 @@ export function Markdown(
   const [isHovering, setIsHovering] = useState(false);
 
   // 初始化消息发送时间
-  useEffect(() => {
-    if (props.loading && !props.isUser && !messageStartTimeRef.current) {
+  useLayoutEffect(() => {
+    if (loading && !isUser && !messageStartTimeRef.current) {
       // 记录消息开始请求的时间
       messageStartTimeRef.current = Date.now();
 
       // 保存到localStorage
-      if (props.messageId) {
+      if (messageId) {
         localStorage.setItem(
-          `msg_start_${props.messageId}`,
+          `msg_start_${messageId}`,
           messageStartTimeRef.current.toString(),
         );
       }
     }
-  }, [props.loading, props.isUser, props.messageId]);
+  }, [loading, isUser, messageId]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (
-      props.isUser ||
+      isUser ||
       !content ||
       content.length === 0 ||
       firstCharReceivedTimeRef.current
@@ -708,59 +767,18 @@ export function Markdown(
 
     firstCharReceivedTimeRef.current = Date.now();
 
-    if (messageStartTimeRef.current && props.messageId) {
+    if (messageStartTimeRef.current && messageId) {
       const firstCharDelay =
         firstCharReceivedTimeRef.current - messageStartTimeRef.current;
       localStorage.setItem(
-        `first_char_delay_${props.messageId}`,
+        `first_char_delay_${messageId}`,
         firstCharDelay.toString(),
       );
     }
-  }, [content, props.isUser, props.messageId]);
-
-  // 修改token计算逻辑，添加首字延迟计算
-  useEffect(() => {
-    // 如果内容为空或正在加载，重置计时器
-    if (!content || content.length === 0) {
-      setTokenInfo(null);
-      return;
-    }
-
-    if (props.streaming) {
-      return;
-    }
-
-    try {
-      // 只计算token数量，不计算速度
-      const tokens = encode(content);
-      const tokenCount = tokens.length;
-
-      // 首字延迟计算
-      let firstCharDelay: number | undefined = undefined;
-
-      if (props.messageId) {
-        // 尝试从localStorage获取已存储的延迟
-        const storedDelay = localStorage.getItem(
-          `first_char_delay_${props.messageId}`,
-        );
-        if (storedDelay) {
-          firstCharDelay = parseInt(storedDelay);
-        }
-      }
-
-      // 只设置token数量和首字延迟
-      setTokenInfo({
-        count: tokenCount,
-        isUser: props.isUser ?? false,
-        firstCharDelay,
-      });
-    } catch (e) {
-      console.error("计算token出错:", e);
-    }
-  }, [content, props.isUser, props.messageId, props.streaming]);
+  }, [content, isUser, messageId]);
 
   // 自动滚动效果
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (content === lastContentRef.current) return;
 
     if (shouldAutoScroll) {
@@ -770,65 +788,36 @@ export function Markdown(
     lastContentRef.current = content;
   }, [content, onContentChange, shouldAutoScroll]);
 
-  // 确保在消息完成后仍能获取首字延迟
-  useEffect(() => {
-    // 当消息加载完成时，确保我们仍然能获取到首字延迟
-    if (!props.loading && props.messageId && !props.isUser) {
-      // 尝试从localStorage获取已存储的延迟
-      const storedDelay = localStorage.getItem(
-        `first_char_delay_${props.messageId}`,
-      );
-
-      if (storedDelay && tokenInfo) {
-        // 确保tokenInfo中包含首字延迟
-        if (!tokenInfo.firstCharDelay) {
-          setTokenInfo({
-            ...tokenInfo,
-            firstCharDelay: parseInt(storedDelay),
-          });
-        }
-      }
-    }
-  }, [props.loading, props.messageId, props.isUser, tokenInfo]);
-
   return (
-    <div className="markdown-body-container" style={{ position: "relative" }}>
+    <div className="markdown-body-container">
       <div
         className="markdown-body"
         style={{
-          fontSize: `${props.fontSize ?? 14}px`,
-          fontFamily: props.fontFamily || "inherit",
+          fontSize: `${fontSize ?? 14}px`,
+          fontFamily: fontFamily || "inherit",
         }}
         ref={mdRef}
-        onContextMenu={props.onContextMenu}
-        onDoubleClickCapture={props.onDoubleClickCapture}
         dir="auto"
       >
-        {props.loading ? (
+        {loading ? (
           <LoadingIcon />
         ) : (
-          <MarkdownContent
-            content={props.content}
-            onPreviewImage={props.onPreviewImage}
-            onDownloadImage={props.onDownloadImage}
-          />
+          <MarkdownFeatureContext.Provider value={markdownFeatures}>
+            <MarkdownContent
+              content={content}
+              onPreviewImage={onPreviewImage}
+              onDownloadImage={onDownloadImage}
+            />
+          </MarkdownFeatureContext.Provider>
         )}
       </div>
 
       {/* Token信息显示 */}
-      {!props.loading && tokenInfo && (
-        <div
+      {!loading && tokenInfo && (
+        <button
+          type="button"
           className="token-info"
-          style={{
-            position: "absolute",
-            right: "0px",
-            bottom: "-28px",
-            fontSize: "12px",
-            color: "var(--color-fg-subtle)",
-            opacity: 0.8,
-            whiteSpace: "nowrap",
-            cursor: "pointer",
-          }}
+          aria-label="Token 信息"
           onMouseEnter={() => tokenInfo.firstCharDelay && setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
           onClick={() => {
@@ -841,7 +830,7 @@ export function Markdown(
           {isHovering && tokenInfo.firstCharDelay
             ? Locale.Chat.TokenInfo.FirstDelay(tokenInfo.firstCharDelay)
             : Locale.Chat.TokenInfo.TokenCount(tokenInfo.count)}
-        </div>
+        </button>
       )}
     </div>
   );

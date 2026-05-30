@@ -13,9 +13,6 @@ export function VoicePrint({ frequencies, isActive }: VoicePrintProps) {
   const historyRef = useRef<number[][]>([]);
   // 控制保留的历史数据帧数，影响平滑度
   const historyLengthRef = useRef(10);
-  // 存储动画帧ID，用于清理
-  const animationFrameRef = useRef<number>();
-
   /**
    * 更新频率历史数据
    * 使用FIFO队列维护固定长度的历史记录
@@ -30,6 +27,7 @@ export function VoicePrint({ frequencies, isActive }: VoicePrintProps) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    let animationFrameId: number | undefined;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -158,7 +156,7 @@ export function VoicePrint({ frequencies, isActive }: VoicePrintProps) {
       ctx.fillStyle = gradient;
       ctx.fill();
 
-      animationFrameRef.current = requestAnimationFrame(draw);
+      animationFrameId = requestAnimationFrame(draw);
     };
 
     // 启动动画循环
@@ -166,8 +164,8 @@ export function VoicePrint({ frequencies, isActive }: VoicePrintProps) {
 
     // 清理函数：在组件卸载时取消动画
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
       }
     };
   }, [frequencies, isActive, updateHistory]);

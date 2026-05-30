@@ -1,0 +1,24 @@
+{
+  "ignore": {
+    "overrides": [
+      {
+        "files": ["app/api/google.ts"],
+        "rules": ["deslop/unused-export"]
+      },
+      {
+        "files": [
+          "public/audio-processor.js",
+          "public/serviceWorkerRegister.js"
+        ],
+        "rules": ["deslop/unused-file"]
+      },
+      {
+        "files": ["package.json"],
+        "rules": [
+          "deslop/unused-dependency",
+          "deslop/unused-dev-dependency"
+        ]
+      }
+    ]
+  }
+}

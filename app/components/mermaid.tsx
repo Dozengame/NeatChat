@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import mermaid from "mermaid";
 import clsx from "clsx";
-import { showImageModal } from "./ui-lib";
+import { showImageModal } from "./ui-lib-actions";
 
 export function Mermaid(props: { code: string }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLButtonElement>(null);
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
@@ -37,16 +37,14 @@ export function Mermaid(props: { code: string }) {
   }
 
   return (
-    <div
+    <button
+      type="button"
       className={clsx("no-dark", "mermaid")}
-      style={{
-        cursor: "pointer",
-        overflow: "auto",
-      }}
       ref={ref}
       onClick={() => viewSvgInNewWindow()}
+      aria-label="Open Mermaid diagram preview"
     >
       {props.code}
-    </div>
+    </button>
   );
 }

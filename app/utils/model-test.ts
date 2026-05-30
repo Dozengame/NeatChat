@@ -1,6 +1,10 @@
 // 模型测试服务
 
-import { showToast } from "../components/ui-lib";
+import { showToast } from "../components/ui-lib-actions";
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 // 测试结果接口
 export interface ModelTestResult {
@@ -13,7 +17,7 @@ export interface ModelTestResult {
 }
 
 // 测试模型可用性
-export async function testModel(
+async function testModel(
   model: string,
   apiKey: string,
   baseUrl: string = "https://api.openai.com",
@@ -119,7 +123,7 @@ export async function testModel(
 }
 
 // 批量测试多个模型
-export async function testModels(
+async function testModels(
   models: string[],
   apiKey: string,
   baseUrl: string = "https://api.openai.com",
@@ -139,49 +143,58 @@ export async function testModels(
     showToast(`开始测试 ${models.length} 个模型...`);
   }
 
-  // 逐个测试模型
-  for (const model of models) {
-    // 检查是否已取消
-    if (signal?.aborted) {
-      break;
-    }
-
-    results[model] = await testModel(
-      model,
-      apiKey,
-      baseUrl,
-      timeoutSeconds,
-      signal,
-    );
-
-    // 调用单个模型测试完成的回调，传递累积的测试结果
-    if (onModelTested && !signal?.aborted) {
-      onModelTested(model, results[model], { ...results });
-    }
-
-    // 显示每个模型的测试结果
-    if (!signal?.aborted) {
-      if (results[model].success) {
-        showToast(
-          `${model}: 测试成功 (${(
-            (results[model].responseTime || 0) / 1000
-          ).toFixed(2)}s)`,
-        );
-      } else if (results[model].timeout) {
-        showToast(`${model}: 超时`);
-      } else {
-        const errorMessage = results[model].message || "测试失败";
-        showToast(`${model}: ${errorMessage}`);
+  const testEntries = await Promise.all(
+    models.map(async (model): Promise<[string, ModelTestResult] | null> => {
+      if (signal?.aborted) {
+        return null;
       }
-    }
 
-    // 添加短暂延迟，确保状态更新被应用
-    if (!signal?.aborted) {
-      await new Promise<void>((resolve) => {
-        setTimeout(() => resolve(), 10);
-      });
-    }
-  }
+      const result = await testModel(
+        model,
+        apiKey,
+        baseUrl,
+        timeoutSeconds,
+        signal,
+      );
+      results[model] = result;
+
+      // 调用单个模型测试完成的回调，传递累积的测试结果
+      if (onModelTested && !signal?.aborted) {
+        onModelTested(model, result, { ...results });
+      }
+
+      // 显示每个模型的测试结果
+      if (!signal?.aborted) {
+        if (result.success) {
+          showToast(
+            `${model}: 测试成功 (${((result.responseTime || 0) / 1000).toFixed(
+              2,
+            )}s)`,
+          );
+        } else if (result.timeout) {
+          showToast(`${model}: 超时`);
+        } else {
+          const errorMessage = result.message || "测试失败";
+          showToast(`${model}: ${errorMessage}`);
+        }
+      }
+
+      if (!signal?.aborted) {
+        await sleep(10);
+      }
+
+      return [model, result];
+    }),
+  );
+
+  Object.assign(
+    results,
+    Object.fromEntries(
+      testEntries.filter((entry): entry is [string, ModelTestResult] =>
+        Boolean(entry),
+      ),
+    ),
+  );
 
   return results;
 }

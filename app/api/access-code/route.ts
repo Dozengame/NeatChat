@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { publicConfigHeaders } from "@/app/config/public";
 import { getServerSideConfig } from "@/app/config/server";
-import { validateAccessCode } from "@/app/api/auth";
+import {
+  validateAccessCode,
+} from "@/app/api/auth";
 import { ensureAccessDeviceCookie } from "@/app/api/abuse-control";
+import {
+  ACCESS_SESSION_COOKIE_NAME,
+  accessSessionCookieOptions,
+  createAccessSessionCookieValue,
+} from "@/app/utils/access-session";
 
 const ACCESS_CODE_MAX_FAILED_ATTEMPTS = 5;
 const ACCESS_CODE_ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
@@ -83,7 +90,7 @@ function recordFailedAttempt(
   });
 }
 
-function jsonWithDeviceCookie(
+async function jsonWithDeviceCookie(
   req: NextRequest,
   body: Record<string, unknown>,
   init?: ResponseInit,
@@ -91,7 +98,7 @@ function jsonWithDeviceCookie(
   return ensureAccessDeviceCookie(req, NextResponse.json(body, init));
 }
 
-function rateLimitedResponse(req: NextRequest, retryAfterSeconds: number) {
+async function rateLimitedResponse(req: NextRequest, retryAfterSeconds: number) {
   return jsonWithDeviceCookie(
     req,
     {
@@ -144,7 +151,7 @@ async function handle(req: NextRequest) {
     recordFailedAttempt(key, attempt, now);
   }
 
-  return jsonWithDeviceCookie(
+  const response = await jsonWithDeviceCookie(
     req,
     { ok },
     {
@@ -152,6 +159,21 @@ async function handle(req: NextRequest) {
       headers: publicConfigHeaders(),
     },
   );
+
+  if (ok) {
+    const cookieValue = createAccessSessionCookieValue(accessCode);
+    if (cookieValue) {
+      response.cookies.set(
+        ACCESS_SESSION_COOKIE_NAME,
+        cookieValue,
+        accessSessionCookieOptions,
+      );
+    }
+  } else {
+    response.cookies.delete(ACCESS_SESSION_COOKIE_NAME);
+  }
+
+  return response;
 }
 
 export const POST = handle;

@@ -1,4 +1,5 @@
 import { useDebouncedCallback } from "use-debounce";
+import { useMemo, useRef, useState } from "react";
 import OpenAPIClientAxios from "openapi-client-axios";
 import yaml from "js-yaml";
 import { PLUGINS_REPO_URL } from "../constant";
@@ -17,20 +18,17 @@ import ReloadIcon from "../icons/reload.svg";
 import GithubIcon from "../icons/github.svg";
 
 import { Plugin, usePluginStore, FunctionToolService } from "../store/plugin";
-import {
-  PasswordInput,
-  List,
-  ListItem,
-  Modal,
-  showConfirm,
-  showToast,
-} from "./ui-lib";
+import { PasswordInput, List, ListItem, Modal } from "./ui-lib";
+import { showConfirm, showToast } from "./ui-lib-actions";
 import Locale from "../locales";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
 import clsx from "clsx";
 
 export function PluginPage() {
+  return usePluginPageView();
+}
+
+function usePluginPageView() {
   const navigate = useNavigate();
   const pluginStore = usePluginStore();
 
@@ -85,7 +83,27 @@ export function PluginPage() {
     }
   }, 100).bind(null, editingPlugin);
 
-  const [loadUrl, setLoadUrl] = useState<string>("");
+  const loadUrlRef = useRef("");
+  const editingPluginContent = editingPlugin?.content;
+  const pluginContentPreview = useMemo(
+    () => (
+      <div
+        className={clsx("markdown-body", pluginStyles["plugin-content"])}
+        dir="auto"
+      >
+        <pre>
+          <code
+            contentEditable={true}
+            suppressContentEditableWarning
+            onBlur={onChangePlugin}
+          >
+            {editingPluginContent}
+          </code>
+        </pre>
+      </div>
+    ),
+    [editingPluginContent, onChangePlugin],
+  );
   const loadFromUrl = (loadUrl: string) =>
     fetch(loadUrl)
       .catch((e) => {
@@ -153,9 +171,9 @@ export function PluginPage() {
           <div className={styles["mask-filter"]}>
             <input
               type="text"
+              aria-label={Locale.Plugin.Page.Search}
               className={styles["search-bar"]}
               placeholder={Locale.Plugin.Page.Search}
-              autoFocus
               onInput={(e) => onSearch(e.currentTarget.value)}
             />
 
@@ -292,6 +310,7 @@ export function PluginPage() {
                 <ListItem title={Locale.Plugin.Auth.CustomHeader}>
                   <input
                     type="text"
+                    aria-label={Locale.Plugin.Auth.CustomHeader}
                     value={editingPlugin?.authHeader}
                     onChange={(e) => {
                       pluginStore.updatePlugin(editingPlugin.id, (plugin) => {
@@ -306,6 +325,7 @@ export function PluginPage() {
               ) && (
                 <ListItem title={Locale.Plugin.Auth.Token}>
                   <PasswordInput
+                    aria={Locale.Plugin.Auth.Token}
                     type="text"
                     value={editingPlugin?.authToken}
                     onChange={(e) => {
@@ -322,41 +342,24 @@ export function PluginPage() {
                 <div className={pluginStyles["plugin-schema"]}>
                   <input
                     type="text"
+                    aria-label={Locale.Plugin.EditModal.Content}
                     style={{ minWidth: 200 }}
-                    onInput={(e) => setLoadUrl(e.currentTarget.value)}
+                    onInput={(e) => {
+                      loadUrlRef.current = e.currentTarget.value;
+                    }}
                   ></input>
                   <IconButton
                     icon={<ReloadIcon />}
                     text={Locale.Plugin.EditModal.Load}
                     bordered
-                    onClick={() => loadFromUrl(loadUrl)}
+                    onClick={() => loadFromUrl(loadUrlRef.current)}
                   />
                 </div>
               </ListItem>
-              <ListItem
-                subTitle={
-                  <div
-                    className={clsx(
-                      "markdown-body",
-                      pluginStyles["plugin-content"],
-                    )}
-                    dir="auto"
-                  >
-                    <pre>
-                      <code
-                        contentEditable={true}
-                        dangerouslySetInnerHTML={{
-                          __html: editingPlugin.content,
-                        }}
-                        onBlur={onChangePlugin}
-                      ></code>
-                    </pre>
-                  </div>
-                }
-              ></ListItem>
-              {editingPluginTool?.tools.map((tool, index) => (
+              <ListItem subTitle={pluginContentPreview}></ListItem>
+              {editingPluginTool?.tools.map((tool) => (
                 <ListItem
-                  key={index}
+                  key={tool?.function?.name}
                   title={tool?.function?.name}
                   subTitle={tool?.function?.description}
                 />

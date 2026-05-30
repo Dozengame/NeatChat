@@ -3,7 +3,7 @@ import {
   UPLOAD_URL,
   REQUEST_TIMEOUT_MS,
 } from "@/app/constant";
-import { RequestMessage } from "@/app/client/api";
+import { MultimodalContent, RequestMessage } from "@/app/client/types";
 import Locale from "@/app/locales";
 import {
   EventStreamContentType,
@@ -12,7 +12,7 @@ import {
 import { prettyObject } from "./format";
 import { fetch as tauriFetch } from "./stream";
 
-export function compressImage(file: Blob, maxSize: number): Promise<string> {
+function compressImage(file: Blob, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     const readAsDataUrl = (blob: Blob) => reader.readAsDataURL(blob);
@@ -70,24 +70,26 @@ export function compressImage(file: Blob, maxSize: number): Promise<string> {
 
 export async function preProcessImageContent(
   content: RequestMessage["content"],
-) {
+): Promise<RequestMessage["content"]> {
   if (typeof content === "string") {
     return content;
   }
-  const result = [];
-  for (const part of content) {
-    if (part?.type == "image_url" && part?.image_url?.url) {
+  const result = await Promise.all(
+    content.map(async (part): Promise<MultimodalContent | null> => {
+      if (part?.type != "image_url" || !part?.image_url?.url) {
+        return { ...part };
+      }
+
       try {
         const url = await cacheImageToBase64Image(part?.image_url?.url);
-        result.push({ type: part.type, image_url: { url } });
+        return { type: part.type, image_url: { url } };
       } catch (error) {
         console.error("Error processing image URL:", error);
+        return null;
       }
-    } else {
-      result.push({ ...part });
-    }
-  }
-  return result;
+    }),
+  );
+  return result.filter((part): part is MultimodalContent => part !== null);
 }
 
 const imageCaches: Record<string, string> = {};

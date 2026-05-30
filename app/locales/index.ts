@@ -1,7 +1,7 @@
 import cn from "./cn";
 import en from "./en";
 import { merge } from "../utils/merge";
-import { safeLocalStorage } from "@/app/utils";
+import { safeLocalStorage } from "@/app/utils/storage";
 
 import type { LocaleType } from "./cn";
 export type { LocaleType, PartialLocaleType } from "./cn";
@@ -84,12 +84,12 @@ export function getISOLang() {
 }
 
 const DEFAULT_STT_LANG = "zh-CN";
-export const STT_LANG_MAP: Record<Lang, string> = {
+const STT_LANG_MAP: Record<Lang, string> = {
   cn: "zh-CN",
   en: "en-US",
 };
 
-export function getSTTLang(): string {
+function getSTTLang(): string {
   try {
     return STT_LANG_MAP[getLang()];
   } catch {

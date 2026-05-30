@@ -13,9 +13,22 @@ export interface FileAttachmentProps {
 
 export function FileAttachment(props: FileAttachmentProps) {
   const { fileName, fileType, fileSize, onClick } = props;
+  const interactiveProps = onClick
+    ? {
+        role: "button",
+        tabIndex: 0,
+        onClick,
+        onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick();
+          }
+        },
+      }
+    : {};
 
   return (
-    <div className={styles["file-attachment"]} onClick={onClick}>
+    <div className={styles["file-attachment"]} {...interactiveProps}>
       <div className={styles["file-attachment-card"]}>
         <div
           className={clsx(

@@ -42,12 +42,11 @@ const DEFAULT_IP_BURST_TOKEN_LIMIT = 2_000_000;
 const DEFAULT_IP_BURST_WINDOW_SECONDS = 10 * 60;
 const DEFAULT_QUOTA_TIME_ZONE = "Asia/Shanghai";
 const DEFAULT_REDIS_PREFIX = "neatchat:access-usage";
-
 function splitEnvList(value?: string) {
-  return (value ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
+  return (value ?? "").split(",").flatMap((item) => {
+    const trimmed = item.trim();
+    return trimmed ? [trimmed] : [];
+  });
 }
 
 function firstEnvValue(env: Partial<NodeJS.ProcessEnv>, names: string[]) {
@@ -325,15 +324,16 @@ export function getEffectiveDailyTokenLimit(params: {
 }
 
 export function formatDateInTimeZone(now: Date, timeZone: string) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(now);
-  const byType = new Map(parts.map((part) => [part.type, part.value]));
+  const [month, day, year] = now
+    .toLocaleDateString("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    })
+    .split("/");
 
-  return `${byType.get("year")}-${byType.get("month")}-${byType.get("day")}`;
+  return `${year}-${month}-${day}`;
 }
 
 export function extractTokenUsageFromJson(value: unknown): number {

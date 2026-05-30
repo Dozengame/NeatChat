@@ -94,10 +94,11 @@ async function request(req: NextRequest) {
     // @ts-ignore
     duplex: "half",
     signal: controller.signal,
+    cache: "no-store",
   };
 
   try {
-    const res = await fetch(fetchUrl, fetchOptions);
+    const res = await fetch(fetchUrl, { ...fetchOptions, cache: "no-store" });
 
     // to prevent browser prompt for credentials
     const newHeaders = new Headers(res.headers);

@@ -8,7 +8,7 @@ import { Readable } from "stream";
 /**
  * https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice#:~:text=Optional-,volume,-Indicates%20the%20volume
  */
-export enum VOLUME {
+enum VOLUME {
   SILENT = "silent",
   X_SOFT = "x-soft",
   SOFT = "soft",
@@ -21,7 +21,7 @@ export enum VOLUME {
 /**
  * https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice#:~:text=Optional-,rate,-Indicates%20the%20speaking
  */
-export enum RATE {
+enum RATE {
   X_SLOW = "x-slow",
   SLOW = "slow",
   MEDIUM = "medium",
@@ -33,7 +33,7 @@ export enum RATE {
 /**
  * https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice#:~:text=Optional-,pitch,-Indicates%20the%20baseline
  */
-export enum PITCH {
+enum PITCH {
   X_LOW = "x-low",
   LOW = "low",
   MEDIUM = "medium",
@@ -95,7 +95,7 @@ export type Voice = {
   Status: string;
 };
 
-export class ProsodyOptions {
+class ProsodyOptions {
   /**
    * The pitch to use.
    * Can be any {@link PITCH}, or a relative frequency in Hz (+50Hz), a relative semitone (+2st), or a relative percentage (+50%).
@@ -147,14 +147,21 @@ export class MsEdgeTTS {
     this._enableLogger = enableLogger;
   }
 
-  private async _send(message: any) {
-    for (let i = 1; i <= 3 && this._ws!.readyState !== this._ws!.OPEN; i++) {
-      if (i == 1) {
-        this._startTime = Date.now();
-      }
-      this._log("connecting: ", i);
-      await this._initClient();
+  private async _connect(attempt = 1): Promise<void> {
+    if (attempt > 3 || this._ws!.readyState === this._ws!.OPEN) {
+      return;
     }
+
+    if (attempt === 1) {
+      this._startTime = Date.now();
+    }
+    this._log("connecting: ", attempt);
+    await this._initClient();
+    return this._connect(attempt + 1);
+  }
+
+  private async _send(message: any) {
+    await this._connect();
     this._ws!.send(message);
   }
 

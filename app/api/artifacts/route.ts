@@ -34,6 +34,7 @@ async function handle(req: NextRequest, res: NextResponse) {
         "Content-Type": "application/json",
       },
       method: "PUT",
+      cache: "no-store",
       body: JSON.stringify([body]),
     });
     const result = await res.json();
@@ -49,18 +50,6 @@ async function handle(req: NextRequest, res: NextResponse) {
       { status: 400 },
     );
   }
-  if (req.method === "GET") {
-    const id = req?.nextUrl?.searchParams?.get("id");
-    const res = await fetch(`${storeUrl()}/values/${id}`, {
-      headers: storeHeaders(),
-      method: "GET",
-    });
-    return new Response(res.body, {
-      status: res.status,
-      statusText: res.statusText,
-      headers: res.headers,
-    });
-  }
   return NextResponse.json(
     { error: true, msg: "Invalid request" },
     { status: 400 },
@@ -68,6 +57,25 @@ async function handle(req: NextRequest, res: NextResponse) {
 }
 
 export const POST = handle;
-export const GET = handle;
+
+export async function GET(req: NextRequest) {
+  const serverConfig = getServerSideConfig();
+  const storeUrl = () =>
+    `https://api.cloudflare.com/client/v4/accounts/${serverConfig.cloudflareAccountId}/storage/kv/namespaces/${serverConfig.cloudflareKVNamespaceId}`;
+  const storeHeaders = () => ({
+    Authorization: `Bearer ${serverConfig.cloudflareKVApiKey}`,
+  });
+  const id = req.nextUrl.searchParams.get("id");
+  const res = await fetch(`${storeUrl()}/values/${id}`, {
+    headers: storeHeaders(),
+    method: "GET",
+    cache: "no-store",
+  });
+  return new Response(res.body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers: res.headers,
+  });
+}
 
 export const runtime = "edge";

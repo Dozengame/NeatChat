@@ -1,5 +1,5 @@
 import { DEFAULT_MODELS, ServiceProvider } from "../constant";
-import { LLMModel } from "../client/api";
+import { LLMModel } from "../client/types";
 
 const CustomSeq = {
   val: -1000, //To ensure the custom model located at front, start from -1000, refer to constant.ts
@@ -147,7 +147,7 @@ export function collectModelTable(
   return modelTable;
 }
 
-export function collectModelTableWithDefaultModel(
+function collectModelTableWithDefaultModel(
   models: readonly LLMModel[],
   customModels: string,
   defaultModel: string,

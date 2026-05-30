@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import ConfirmIcon from "../icons/confirm.svg";
 import type { PublicUpdateAnnouncement } from "../utils/update-announcement";
@@ -42,7 +42,7 @@ export function UpdateAnnouncement(props: {
   enabled?: boolean;
 }) {
   const { announcement, deploymentId, enabled = true } = props;
-  const [visible, setVisible] = useState(false);
+  const [dismissedKey, setDismissedKey] = useState("");
   const seenKey = useMemo(() => {
     if (!announcement) {
       return undefined;
@@ -51,14 +51,12 @@ export function UpdateAnnouncement(props: {
     return getAnnouncementSeenKey({ deploymentId, announcement });
   }, [announcement, deploymentId]);
 
-  useEffect(() => {
-    if (!enabled || !announcement || !seenKey) {
-      setVisible(false);
-      return;
-    }
-
-    setVisible(!hasSeenAnnouncement(seenKey));
-  }, [announcement, enabled, seenKey]);
+  const visible =
+    enabled &&
+    !!announcement &&
+    !!seenKey &&
+    dismissedKey !== seenKey &&
+    !hasSeenAnnouncement(seenKey);
 
   if (!enabled || !announcement || !seenKey || !visible) {
     return null;
@@ -67,15 +65,14 @@ export function UpdateAnnouncement(props: {
   const title = `${announcement.date} 更新内容`;
   const onConfirm = () => {
     markAnnouncementSeen(seenKey);
-    setVisible(false);
+    setDismissedKey(seenKey);
   };
 
   return (
     <div className={styles.mask} role="presentation">
-      <section
+      <dialog
+        open
         className={styles.panel}
-        role="dialog"
-        aria-modal="true"
         aria-labelledby="update-announcement-title"
       >
         <header className={styles.header}>
@@ -114,12 +111,11 @@ export function UpdateAnnouncement(props: {
             text="我知道了"
             aria="我知道了"
             onClick={onConfirm}
-            autoFocus
             bordered
             shadow
           />
         </footer>
-      </section>
+      </dialog>
     </div>
   );
 }

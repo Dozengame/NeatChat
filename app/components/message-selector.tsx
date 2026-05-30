@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChatMessage, useAppConfig, useChatStore } from "../store";
+import { ChatMessage, useChatStore } from "../store/chat";
+import { useAppConfig } from "../store/config";
 import { Updater } from "../typing";
 import { IconButton } from "./button";
 import { MaskAvatar } from "./mask";
@@ -9,18 +10,21 @@ import styles from "./message-selector.module.scss";
 import { getMessageTextContent } from "../utils";
 import clsx from "clsx";
 
+function isValidSelectableMessage(message: ChatMessage) {
+  return getMessageTextContent(message).trim().length > 0;
+}
+
 function useShiftRange() {
   const [startIndex, setStartIndex] = useState<number>();
-  const [endIndex, setEndIndex] = useState<number>();
   const [shiftDown, setShiftDown] = useState(false);
 
-  const onClickIndex = (index: number) => {
+  const getRangeForClick = (index: number) => {
     if (shiftDown && startIndex !== undefined) {
-      setEndIndex(index);
-    } else {
-      setStartIndex(index);
-      setEndIndex(undefined);
+      return [startIndex, index].sort((a, b) => a - b) as [number, number];
     }
+
+    setStartIndex(index);
+    return undefined;
   };
 
   useEffect(() => {
@@ -32,7 +36,6 @@ function useShiftRange() {
       if (e.key !== "Shift") return;
       setShiftDown(false);
       setStartIndex(undefined);
-      setEndIndex(undefined);
     };
 
     window.addEventListener("keyup", onKeyUp);
@@ -45,18 +48,20 @@ function useShiftRange() {
   }, []);
 
   return {
-    onClickIndex,
-    startIndex,
-    endIndex,
+    getRangeForClick,
   };
 }
 
-export function useMessageSelector() {
-  const [selection, setSelection] = useState(new Set<string>());
+export function useMessageSelector(initialSelection?: Iterable<string>) {
+  const [selection, setSelection] = useState(
+    () => new Set<string>(initialSelection),
+  );
   const updateSelection: Updater<Set<string>> = (updater) => {
-    const newSelection = new Set<string>(selection);
-    updater(newSelection);
-    setSelection(newSelection);
+    setSelection((selection) => {
+      const newSelection = new Set<string>(selection);
+      updater(newSelection);
+      return newSelection;
+    });
   };
 
   return {
@@ -68,13 +73,10 @@ export function useMessageSelector() {
 export function MessageSelector(props: {
   selection: Set<string>;
   updateSelection: Updater<Set<string>>;
-  defaultSelectAll?: boolean;
-  onSelected?: (messages: ChatMessage[]) => void;
 }) {
   const LATEST_COUNT = 4;
   const chatStore = useChatStore();
   const session = chatStore.currentSession();
-  const isValid = (m: ChatMessage) => m.content && !m.isError && !m.streaming;
   const allMessages = useMemo(() => {
     let startIndex = Math.max(0, session.clearContextIndex ?? 0);
     if (startIndex === session.messages.length - 1) {
@@ -88,8 +90,9 @@ export function MessageSelector(props: {
       allMessages.filter(
         (m, i) =>
           m.id && // message must have id
-          isValid(m) &&
-          (i >= allMessages.length - 1 || isValid(allMessages[i + 1])),
+          isValidSelectableMessage(m) &&
+          (i >= allMessages.length - 1 ||
+            isValidSelectableMessage(allMessages[i + 1])),
       ),
     [allMessages],
   );
@@ -114,7 +117,7 @@ export function MessageSelector(props: {
   };
 
   // for range selection
-  const { startIndex, endIndex, onClickIndex } = useShiftRange();
+  const { getRangeForClick } = useShiftRange();
 
   const selectAll = () => {
     props.updateSelection((selection) =>
@@ -122,39 +125,20 @@ export function MessageSelector(props: {
     );
   };
 
-  useEffect(() => {
-    if (props.defaultSelectAll) {
-      selectAll();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (startIndex === undefined || endIndex === undefined) {
-      return;
-    }
-    const [start, end] = [startIndex, endIndex].sort((a, b) => a - b);
-    props.updateSelection((selection) => {
-      for (let i = start; i <= end; i += 1) {
-        selection.add(messages[i].id ?? i);
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startIndex, endIndex]);
-
   return (
     <div className={styles["message-selector"]}>
       <div className={styles["message-filter"]}>
         <input
           type="text"
+          aria-label={Locale.Select.Search}
           placeholder={Locale.Select.Search}
           className={clsx(styles["filter-item"], styles["search-bar"])}
           value={searchInput}
-          onInput={(e) => {
+          onChange={(e) => {
             setSearchInput(e.currentTarget.value);
             doSearch(e.currentTarget.value);
           }}
-        ></input>
+        />
 
         <div className={styles["actions"]}>
           <IconButton
@@ -190,21 +174,15 @@ export function MessageSelector(props: {
       <div className={styles["messages"]}>
         {messages.map((m, i) => {
           if (!isInSearchResult(m.id!)) return null;
-          const id = m.id ?? i;
+          const id = m.id!;
           const isSelected = props.selection.has(id);
 
           return (
-            <div
+            <label
               className={clsx(styles["message"], {
                 [styles["message-selected"]]: props.selection.has(m.id!),
               })}
-              key={i}
-              onClick={() => {
-                props.updateSelection((selection) => {
-                  selection.has(id) ? selection.delete(id) : selection.add(id);
-                });
-                onClickIndex(i);
-              }}
+              key={id}
             >
               <div className={styles["avatar"]}>
                 {m.role === "user" ? (
@@ -227,8 +205,29 @@ export function MessageSelector(props: {
 
               <div className={styles["checkbox"]}>
                 <input type="checkbox" checked={isSelected} readOnly></input>
+                <input
+                  type="checkbox"
+                  aria-label={getMessageTextContent(m)}
+                  checked={isSelected}
+                  onChange={() => {
+                    const range = getRangeForClick(i);
+                    props.updateSelection((selection) => {
+                      if (range) {
+                        const [start, end] = range;
+                        for (let index = start; index <= end; index += 1) {
+                          selection.add(messages[index].id!);
+                        }
+                        return;
+                      }
+
+                      selection.has(id)
+                        ? selection.delete(id)
+                        : selection.add(id);
+                    });
+                  }}
+                />
               </div>
-            </div>
+            </label>
           );
         })}
       </div>

@@ -1,8 +1,11 @@
 import { useDebouncedCallback } from "use-debounce";
+import Image from "next/image";
 import React, {
   useState,
+  useReducer,
   useRef,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useCallback,
   Fragment,
@@ -50,17 +53,14 @@ import ReloadIcon from "../icons/reload.svg";
 import HeadphoneIcon from "../icons/headphone.svg";
 import {
   ChatMessage,
-  SubmitKey,
   useChatStore,
   BOT_HELLO,
   createMessage,
-  useAccessStore,
-  Theme,
-  useAppConfig,
   DEFAULT_TOPIC,
-  ModelType,
-  usePluginStore,
-} from "../store";
+} from "../store/chat";
+import { useAccessStore } from "../store/access";
+import { SubmitKey, Theme, useAppConfig, ModelType } from "../store/config";
+import { usePluginStore } from "../store/plugin";
 
 import {
   copyToClipboard,
@@ -78,11 +78,7 @@ import {
 import dynamic from "next/dynamic";
 
 import { ChatControllerPool } from "../client/controller";
-import {
-  DalleStyle,
-  OpenAIImageQuality,
-  OpenAIImageSize,
-} from "../typing";
+import { DalleStyle, OpenAIImageQuality, OpenAIImageSize } from "../typing";
 import { Prompt, usePromptStore } from "../store/prompt";
 import Locale from "../locales";
 
@@ -94,11 +90,9 @@ import {
   ListItem,
   Modal,
   Selector,
-  showConfirm,
-  showPrompt,
-  showToast,
   SimpleMultipleSelector,
 } from "./ui-lib";
+import { showConfirm, showPrompt, showToast } from "./ui-lib-actions";
 import { useNavigate } from "react-router-dom";
 import {
   CHAT_PAGE_SIZE,
@@ -111,7 +105,7 @@ import {
   UNFINISHED_INPUT,
   ServiceProvider,
 } from "../constant";
-import { Avatar } from "./emoji";
+import { Avatar } from "./avatar";
 import { ContextPrompts, MaskAvatar, MaskConfig } from "./mask";
 import { useMaskStore } from "../store/mask";
 import { useChatCommand, useCommand } from "../command";
@@ -119,7 +113,7 @@ import { prettyObject } from "../utils/format";
 import { ExportMessageModal } from "./exporter";
 import { getClientConfig } from "../config/client";
 import { useAllModels } from "../utils/hooks";
-import { MultimodalContent } from "../client/api";
+import { MultimodalContent } from "../client/types";
 import {
   getMaxOutputTokensForReasoningEffort,
   isOpenAIGpt5OrNewerModelConfig,
@@ -175,6 +169,39 @@ import { ImageEditor } from "./image-editor";
 const localStorage = safeLocalStorage();
 
 const ttsPlayer = createTTSPlayer();
+const reasoningLabels: Record<OpenAIChatReasoningEffort, string> = {
+  low: "标准",
+  medium: "进阶",
+  high: "深入",
+};
+
+const stopAll = () => ChatControllerPool.stopAll();
+type ChatActionModalKey =
+  | "model"
+  | "plugin"
+  | "imageGeneration"
+  | "size"
+  | "quality"
+  | "style";
+type ChatActionModals = Record<ChatActionModalKey, boolean>;
+const closedChatActionModals: ChatActionModals = {
+  model: false,
+  plugin: false,
+  imageGeneration: false,
+  size: false,
+  quality: false,
+  style: false,
+};
+
+function chatActionModalsReducer(
+  state: ChatActionModals,
+  action: { key: ChatActionModalKey; value: boolean },
+) {
+  return {
+    ...state,
+    [action.key]: action.value,
+  };
+}
 
 function getImageDownloadName(src: string) {
   const fallbackName = "generated-image.png";
@@ -303,13 +330,19 @@ function MessageImagePreview(props: {
 }) {
   return (
     <span className={styles["chat-message-image-frame"]}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        className={props.className}
-        src={props.src}
-        alt={props.alt ?? ""}
+      <button
+        type="button"
+        className={styles["chat-message-image-preview-button"]}
+        aria-label={props.alt || "预览图片"}
         onClick={() => props.onPreview(props.src)}
-      />
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          className={props.className}
+          src={props.src}
+          alt={props.alt ?? ""}
+        />
+      </button>
       <button
         type="button"
         className={styles["chat-message-image-download"]}
@@ -411,16 +444,16 @@ function PromptToast(props: {
   return (
     <div className={styles["prompt-toast"]} key="prompt-toast">
       {props.showToast && context.length > 0 && (
-        <div
+        <button
+          type="button"
           className={clsx(styles["prompt-toast-inner"], "clickable")}
-          role="button"
           onClick={() => props.setShowModal(true)}
         >
           <BrainIcon />
           <span className={styles["prompt-toast-content"]}>
             {Locale.Context.Toast(context.length)}
           </span>
-        </div>
+        </button>
       )}
       {props.showModal && (
         <SessionConfigModel onClose={() => props.setShowModal(false)} />
@@ -482,13 +515,16 @@ export function PromptHints(props: {
   prompts: RenderPrompt[];
   onPromptSelect: (prompt: RenderPrompt) => void;
 }) {
-  const noPrompts = props.prompts.length === 0;
+  const { prompts, onPromptSelect } = props;
+  const noPrompts = prompts.length === 0;
   const [selectIndex, setSelectIndex] = useState(0);
-  const selectedRef = useRef<HTMLDivElement>(null);
+  const promptCountRef = useRef(prompts.length);
+  const selectedRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
+  if (prompts.length !== promptCountRef.current) {
+    promptCountRef.current = prompts.length;
     setSelectIndex(0);
-  }, [props.prompts.length]);
+  }
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -501,7 +537,7 @@ export function PromptHints(props: {
         e.preventDefault();
         const nextIndex = Math.max(
           0,
-          Math.min(props.prompts.length - 1, selectIndex + delta),
+          Math.min(prompts.length - 1, selectIndex + delta),
         );
         setSelectIndex(nextIndex);
         selectedRef.current?.scrollIntoView({
@@ -514,9 +550,9 @@ export function PromptHints(props: {
       } else if (e.key === "ArrowDown") {
         changeIndex(-1);
       } else if (e.key === "Enter") {
-        const selectedPrompt = props.prompts.at(selectIndex);
+        const selectedPrompt = prompts.at(selectIndex);
         if (selectedPrompt) {
-          props.onPromptSelect(selectedPrompt);
+          onPromptSelect(selectedPrompt);
         }
       }
     };
@@ -524,25 +560,25 @@ export function PromptHints(props: {
     window.addEventListener("keydown", onKeyDown);
 
     return () => window.removeEventListener("keydown", onKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.prompts.length, selectIndex]);
+  }, [noPrompts, onPromptSelect, prompts, selectIndex]);
 
   if (noPrompts) return null;
   return (
     <div className={styles["prompt-hints"]}>
-      {props.prompts.map((prompt, i) => (
-        <div
+      {prompts.map((prompt, i) => (
+        <button
+          type="button"
           ref={i === selectIndex ? selectedRef : null}
           className={clsx(styles["prompt-hint"], {
             [styles["prompt-hint-selected"]]: i === selectIndex,
           })}
           key={prompt.title + i.toString()}
-          onClick={() => props.onPromptSelect(prompt)}
+          onClick={() => onPromptSelect(prompt)}
           onMouseEnter={() => setSelectIndex(i)}
         >
           <div className={styles["hint-title"]}>{prompt.title}</div>
           <div className={styles["hint-content"]}>{prompt.content}</div>
-        </div>
+        </button>
       ))}
     </div>
   );
@@ -553,7 +589,8 @@ function ClearContextDivider() {
   const session = chatStore.currentSession();
 
   return (
-    <div
+    <button
+      type="button"
       className={styles["clear-context"]}
       onClick={() =>
         chatStore.updateTargetSession(
@@ -566,7 +603,7 @@ function ClearContextDivider() {
       <div className={styles["clear-context-revert-btn"]}>
         {Locale.Context.Revert}
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -595,7 +632,8 @@ export function ChatAction(props: {
   }
 
   return (
-    <div
+    <button
+      type="button"
       className={clsx(styles["chat-input-action"], "clickable", {
         [styles["chat-input-action-active"]]: props.active,
       })}
@@ -618,7 +656,7 @@ export function ChatAction(props: {
       <div className={styles["text"]} ref={textRef}>
         {props.text}
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -641,7 +679,7 @@ function useScrollToBottom(
   }, [scrollRef]);
 
   // auto scroll
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (autoScroll && !detach) {
       scrollDomToBottom();
     }
@@ -655,7 +693,7 @@ function useScrollToBottom(
   };
 }
 
-export function ChatActions(props: {
+type ChatActionsProps = {
   uploadAttachments: () => void;
   setAttachImages: (images: string[]) => void;
   setUploading: (uploading: boolean) => void;
@@ -669,7 +707,9 @@ export function ChatActions(props: {
   setShowChatSidePanel: React.Dispatch<React.SetStateAction<boolean>>;
   imageGenerationEnabled: boolean;
   setImageGenerationEnabled: React.Dispatch<React.SetStateAction<boolean>>;
-}) {
+};
+
+function useChatActionsView(props: ChatActionsProps) {
   const { setAttachImages, setUploading } = props;
   const config = useAppConfig();
   const accessStore = useAccessStore();
@@ -689,7 +729,6 @@ export function ChatActions(props: {
 
   // stop all responses
   const couldStop = ChatControllerPool.hasPending();
-  const stopAll = () => ChatControllerPool.stopAll();
 
   // switch model
   const currentModel = session.mask.modelConfig.model;
@@ -710,15 +749,12 @@ export function ChatActions(props: {
     );
     return model?.displayName ?? "";
   }, [models, currentModel, currentProviderName]);
-  const [showModelSelector, setShowModelSelector] = useState(false);
-  const [showPluginSelector, setShowPluginSelector] = useState(false);
-  const [showImageGenerationSelector, setShowImageGenerationSelector] =
-    useState(false);
-  const [showUploadImage, setShowUploadImage] = useState(false);
-
-  const [showSizeSelector, setShowSizeSelector] = useState(false);
-  const [showQualitySelector, setShowQualitySelector] = useState(false);
-  const [showStyleSelector, setShowStyleSelector] = useState(false);
+  const [actionModals, setActionModal] = useReducer(
+    chatActionModalsReducer,
+    closedChatActionModals,
+  );
+  const setActionModalOpen = (key: ChatActionModalKey, value: boolean) =>
+    setActionModal({ key, value });
   const isOpenAIImageGeneration = isOpenAIImageGenerationModelConfig({
     model: currentModel,
     providerName: currentProviderName,
@@ -743,9 +779,7 @@ export function ChatActions(props: {
   const isMobileScreen = useMobileScreen();
 
   useEffect(() => {
-    const show = isVisionModel(currentModel);
-    setShowUploadImage(show);
-    if (!show) {
+    if (!isVisionModel(currentModel)) {
       setAttachImages([]);
       setUploading(false);
     }
@@ -925,13 +959,13 @@ export function ChatActions(props: {
               showToast("该项已由管理员锁定");
               return;
             }
-            setShowModelSelector(true);
+            setActionModalOpen("model", true);
           }}
           text={currentModelName}
           icon={<RobotIcon />}
         />
 
-        {showModelSelector && (
+        {actionModals.model && (
           <Selector
             defaultSelectedValue={`${currentModel}@${currentProviderName}`}
             items={models.map((m) => ({
@@ -945,7 +979,7 @@ export function ChatActions(props: {
                 <Avatar model={m.name} provider={m?.provider?.providerName} />
               ),
             }))}
-            onClose={() => setShowModelSelector(false)}
+            onClose={() => setActionModalOpen("model", false)}
             onSelection={(m) => {
               if (modelLocked) return;
               if (m.length === 0) return;
@@ -980,20 +1014,20 @@ export function ChatActions(props: {
 
         {isOpenAIImageGeneration && (
           <ChatAction
-            onClick={() => setShowSizeSelector(true)}
+            onClick={() => setActionModalOpen("size", true)}
             text={currentSize}
             icon={<SizeIcon />}
           />
         )}
 
-        {isOpenAIImageGeneration && showSizeSelector && (
+        {isOpenAIImageGeneration && actionModals.size && (
           <Selector
             defaultSelectedValue={currentSize}
             items={imageSizes.map((m) => ({
               title: m,
               value: m,
             }))}
-            onClose={() => setShowSizeSelector(false)}
+            onClose={() => setActionModalOpen("size", false)}
             onSelection={(s) => {
               if (s.length === 0) return;
               const size = s[0] as OpenAIImageSize;
@@ -1008,7 +1042,7 @@ export function ChatActions(props: {
 
         {isOpenAIImageGeneration && imageQualitys.length > 0 && (
           <ChatAction
-            onClick={() => setShowQualitySelector(true)}
+            onClick={() => setActionModalOpen("quality", true)}
             text={currentQuality}
             icon={<QualityIcon />}
           />
@@ -1016,42 +1050,42 @@ export function ChatActions(props: {
 
         {isOpenAIImageGeneration &&
           imageQualitys.length > 0 &&
-          showQualitySelector && (
-          <Selector
-            defaultSelectedValue={currentQuality}
-            items={imageQualitys.map((m) => ({
-              title: m,
-              value: m,
-            }))}
-            onClose={() => setShowQualitySelector(false)}
-            onSelection={(q) => {
-              if (q.length === 0) return;
-              const quality = q[0] as OpenAIImageQuality;
-              chatStore.updateTargetSession(session, (session) => {
-                session.mask.modelConfig.quality = quality;
-              });
-              showToast(quality);
-            }}
-            showSearch={false}
-          />
-        )}
+          actionModals.quality && (
+            <Selector
+              defaultSelectedValue={currentQuality}
+              items={imageQualitys.map((m) => ({
+                title: m,
+                value: m,
+              }))}
+              onClose={() => setActionModalOpen("quality", false)}
+              onSelection={(q) => {
+                if (q.length === 0) return;
+                const quality = q[0] as OpenAIImageQuality;
+                chatStore.updateTargetSession(session, (session) => {
+                  session.mask.modelConfig.quality = quality;
+                });
+                showToast(quality);
+              }}
+              showSearch={false}
+            />
+          )}
 
         {isDalle3Model && (
           <ChatAction
-            onClick={() => setShowStyleSelector(true)}
+            onClick={() => setActionModalOpen("style", true)}
             text={currentStyle}
             icon={<StyleIcon />}
           />
         )}
 
-        {showStyleSelector && (
+        {actionModals.style && (
           <Selector
             defaultSelectedValue={currentStyle}
             items={dalle3Styles.map((m) => ({
               title: m,
               value: m,
             }))}
-            onClose={() => setShowStyleSelector(false)}
+            onClose={() => setActionModalOpen("style", false)}
             onSelection={(s) => {
               if (s.length === 0) return;
               const style = s[0] as DalleStyle;
@@ -1066,16 +1100,16 @@ export function ChatActions(props: {
 
         {shouldShowPluginAction && (
           <ChatAction
-            onClick={() => setShowPluginSelector(true)}
+            onClick={() => setActionModalOpen("plugin", true)}
             text={Locale.Plugin.Name}
             icon={<PluginIcon />}
           />
         )}
-        {showPluginSelector && (
+        {actionModals.plugin && (
           <SimpleMultipleSelector
             items={pluginSelectorItems}
             defaultSelectedValue={chatStore.currentSession().mask?.plugin}
-            onClose={() => setShowPluginSelector(false)}
+            onClose={() => setActionModalOpen("plugin", false)}
             onSelection={(s) => {
               chatStore.updateTargetSession(session, (session) => {
                 session.mask.plugin = s;
@@ -1087,11 +1121,11 @@ export function ChatActions(props: {
 
         <ChatAction
           active={props.imageGenerationEnabled}
-          onClick={() => setShowImageGenerationSelector(true)}
+          onClick={() => setActionModalOpen("imageGeneration", true)}
           text="图片生成"
           icon={<ImageIcon />}
         />
-        {showImageGenerationSelector && (
+        {actionModals.imageGeneration && (
           <Selector
             defaultSelectedValue={
               props.imageGenerationEnabled ? "enabled" : "disabled"
@@ -1110,7 +1144,7 @@ export function ChatActions(props: {
                 icon: <ImageIcon />,
               },
             ]}
-            onClose={() => setShowImageGenerationSelector(false)}
+            onClose={() => setActionModalOpen("imageGeneration", false)}
             onSelection={(selection) => {
               const selected = selection[0];
               if (!selected) return;
@@ -1141,6 +1175,10 @@ export function ChatActions(props: {
   );
 }
 
+export function ChatActions(props: ChatActionsProps) {
+  return useChatActionsView(props);
+}
+
 function ChatInputReasoningAction() {
   const accessStore = useAccessStore();
   const chatStore = useChatStore();
@@ -1153,11 +1191,6 @@ function ChatInputReasoningAction() {
     (OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT as OpenAIChatReasoningEffort);
   const [showReasoningSelectorModal, setShowReasoningSelectorModal] =
     useState(false);
-  const reasoningLabels: Record<OpenAIChatReasoningEffort, string> = {
-    low: "标准",
-    medium: "进阶",
-    high: "深入",
-  };
   const reasoningLocked =
     accessStore.lockedFields?.includes("reasoningEffort") ||
     session.mask.modelConfigMeta?.reasoningEffort?.locked;
@@ -1232,7 +1265,7 @@ function ChatInputReasoningAction() {
 export function EditMessageModal(props: { onClose: () => void }) {
   const chatStore = useChatStore();
   const session = chatStore.currentSession();
-  const [messages, setMessages] = useState(session.messages.slice());
+  const [messages, setMessages] = useState(() => session.messages.slice());
 
   return (
     <div className="modal-mask">
@@ -1270,8 +1303,9 @@ export function EditMessageModal(props: { onClose: () => void }) {
           >
             <input
               type="text"
+              aria-label={Locale.Chat.EditMessage.Topic.Title}
               value={session.topic}
-              onInput={(e) =>
+              onChange={(e) =>
                 chatStore.updateTargetSession(
                   session,
                   (session) => (session.topic = e.currentTarget.value),
@@ -1295,9 +1329,14 @@ export function EditMessageModal(props: { onClose: () => void }) {
 
 export function DeleteImageButton(props: { deleteImage: (e?: any) => void }) {
   return (
-    <div className={styles["delete-image"]} onClick={props.deleteImage}>
+    <button
+      type="button"
+      className={styles["delete-image"]}
+      aria-label={Locale.Chat.Actions.Delete}
+      onClick={props.deleteImage}
+    >
       <DeleteIcon />
-    </div>
+    </button>
   );
 }
 
@@ -1341,14 +1380,17 @@ export function ShortcutKeyModal(props: { onClose: () => void }) {
       >
         <div className={styles["shortcut-key-container"]}>
           <div className={styles["shortcut-key-grid"]}>
-            {shortcuts.map((shortcut, index) => (
-              <div key={index} className={styles["shortcut-key-item"]}>
+            {shortcuts.map((shortcut) => (
+              <div key={shortcut.title} className={styles["shortcut-key-item"]}>
                 <div className={styles["shortcut-key-title"]}>
                   {shortcut.title}
                 </div>
                 <div className={styles["shortcut-key-keys"]}>
-                  {shortcut.keys.map((key, i) => (
-                    <div key={i} className={styles["shortcut-key"]}>
+                  {shortcut.keys.map((key) => (
+                    <div
+                      key={`${shortcut.title}-${key}`}
+                      className={styles["shortcut-key"]}
+                    >
                       <span>{key}</span>
                     </div>
                   ))}
@@ -1362,9 +1404,10 @@ export function ShortcutKeyModal(props: { onClose: () => void }) {
   );
 }
 
-function _Chat() {
+function useChatInnerView() {
   const chatStore = useChatStore();
   const session = chatStore.currentSession();
+  const updateTargetSession = chatStore.updateTargetSession;
   const config = useAppConfig();
   const fontSize = config.fontSize;
   const fontFamily = config.fontFamily;
@@ -1372,8 +1415,14 @@ function _Chat() {
   const [showExport, setShowExport] = useState(false);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const [userInput, setUserInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const unfinishedInputKey = UNFINISHED_INPUT(session.id);
+  const [userInput, setUserInput] = useState(
+    () => localStorage.getItem(unfinishedInputKey) ?? "",
+  );
+  const [isLoading, setIsLoading] = useReducer(
+    (_: boolean, next: boolean) => next,
+    false,
+  );
   const { submitKey, shouldSubmit } = useSubmitHandler();
   const scrollRef = useRef<HTMLDivElement>(null);
   const isScrolledToBottom = scrollRef?.current
@@ -1463,8 +1512,7 @@ function _Chat() {
     },
   );
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(measure, [userInput]);
+  useEffect(measure, [measure, userInput]);
 
   // chat commands shortcuts
   const chatCommands = useChatCommand({
@@ -1646,7 +1694,7 @@ function _Chat() {
   };
 
   useEffect(() => {
-    chatStore.updateTargetSession(session, (session) => {
+    updateTargetSession(session, (session) => {
       const stopTiming = Date.now() - REQUEST_TIMEOUT_MS;
       session.messages.forEach((m) => {
         // check if should stop all stale messages
@@ -1671,8 +1719,7 @@ function _Chat() {
         session.mask.modelConfig = { ...config.modelConfig };
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session]);
+  }, [updateTargetSession, config.modelConfig, session]);
 
   // check if should send message
   const onInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -1788,7 +1835,6 @@ function _Chat() {
 
   const accessStore = useAccessStore();
   const [speechStatus, setSpeechStatus] = useState(false);
-  const [speechLoading, setSpeechLoading] = useState(false);
   async function openaiSpeech(text: string) {
     if (speechStatus) {
       ttsPlayer.stop();
@@ -1797,7 +1843,6 @@ function _Chat() {
       var api: ClientApi;
       api = new ClientApi(ModelProvider.GPT);
       const config = useAppConfig.getState();
-      setSpeechLoading(true);
       ttsPlayer.init();
       let audioBuffer: ArrayBuffer;
       const { markdownToTxt } = require("markdown-to-txt");
@@ -1827,8 +1872,7 @@ function _Chat() {
           console.error("[OpenAI Speech]", e);
           showToast(prettyObject(e));
           setSpeechStatus(false);
-        })
-        .finally(() => setSpeechLoading(false));
+        });
     }
   }
 
@@ -1893,7 +1937,7 @@ function _Chat() {
     userInput,
   ]);
 
-  const [msgRenderIndex, _setMsgRenderIndex] = useState(
+  const [msgRenderIndex, _setMsgRenderIndex] = useState(() =>
     Math.max(0, renderMessages.length - CHAT_PAGE_SIZE),
   );
   function setMsgRenderIndex(newIndex: number) {
@@ -2018,20 +2062,11 @@ function _Chat() {
 
   // remember unfinished input
   useEffect(() => {
-    // try to load from local storage
-    const key = UNFINISHED_INPUT(session.id);
-    const mayBeUnfinishedInput = localStorage.getItem(key);
-    if (mayBeUnfinishedInput && userInput.length === 0) {
-      setUserInput(mayBeUnfinishedInput);
-      localStorage.removeItem(key);
-    }
-
     const dom = inputRef.current;
     return () => {
-      localStorage.setItem(key, dom?.value ?? "");
+      localStorage.setItem(unfinishedInputKey, dom?.value ?? "");
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [unfinishedInputKey]);
 
   function appendAttachments(fileInfos: FileInfo[], imageUrls: string[]) {
     const messages: string[] = [];
@@ -2231,22 +2266,22 @@ function _Chat() {
   const [showChatSidePanel, setShowChatSidePanel] = useState(false);
 
   // 添加触摸滑动相关的状态
-  const [touchStartX, setTouchStartX] = useState(0);
-  const [touchEndX, setTouchEndX] = useState(0);
+  const touchStartXRef = useRef(0);
+  const touchEndXRef = useRef(0);
 
   // 处理触摸事件
   const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStartX(e.touches[0].clientX);
+    touchStartXRef.current = e.touches[0].clientX;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEndX(e.touches[0].clientX);
+    touchEndXRef.current = e.touches[0].clientX;
   };
 
   const handleTouchEnd = () => {
     if (!isCompactScreen) return;
 
-    const swipeDistance = touchEndX - touchStartX;
+    const swipeDistance = touchEndXRef.current - touchStartXRef.current;
     const minSwipeDistance = 100; // 最小滑动距离
 
     // 向右滑动且距离足够
@@ -2255,8 +2290,8 @@ function _Chat() {
     }
 
     // 重置触摸状态
-    setTouchStartX(0);
-    setTouchEndX(0);
+    touchStartXRef.current = 0;
+    touchEndXRef.current = 0;
   };
 
   // 添加删除单个文件函数
@@ -2264,7 +2299,7 @@ function _Chat() {
     setAttachedFiles(attachedFiles.filter((_, i) => i !== index));
   }
 
-  // 在 _Chat 组件内添加新状态
+  // 在 ChatInner 组件内添加新状态
   const [editingFile, setEditingFile] = useState<FileInfo | null>(null);
   const [showFileEditModal, setShowFileEditModal] = useState(false);
 
@@ -2273,9 +2308,7 @@ function _Chat() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // 在_Chat组件中添加状态，记录当前编辑图片所属的消息ID
-  const [editingImageMessageId, setEditingImageMessageId] = useState<
-    string | null
-  >(null);
+  const editingImageMessageIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!previewImage) return;
@@ -2318,7 +2351,8 @@ function _Chat() {
         )}
 
         <div className={clsx("window-header-title", styles["chat-body-title"])}>
-          <div
+          <button
+            type="button"
             className={clsx(
               "window-header-main-title",
               styles["chat-body-main-title"],
@@ -2326,7 +2360,7 @@ function _Chat() {
             onClickCapture={() => setIsEditingMessage(true)}
           >
             {!session.topic ? DEFAULT_TOPIC : session.topic}
-          </div>
+          </button>
         </div>
         <div className="window-actions">
           <div className="window-action-button">
@@ -2386,18 +2420,11 @@ function _Chat() {
       </div>
       <div className={styles["chat-main"]}>
         <div className={styles["chat-body-container"]}>
-          <div
+          <section
             className={styles["chat-body"]}
             ref={scrollRef}
+            aria-label="聊天消息"
             onScroll={(e) => onChatBodyScroll(e.currentTarget)}
-            onMouseDown={() => inputRef.current?.blur()}
-            onTouchStart={() => {
-              inputRef.current?.blur();
-              setAutoScroll(false);
-              if (!hasActiveInputContent) {
-                setIsInputExpanded(false);
-              }
-            }}
           >
             {messages.map((message, i) => {
               const isUser = message.role === "user";
@@ -2547,6 +2574,8 @@ function _Chat() {
                           messageId={message.id}
                           streaming={message.streaming}
                           shouldAutoScroll={autoScroll}
+                          enableArtifacts={session.mask?.enableArtifacts !== false}
+                          enableCodeFold={session.mask?.enableCodeFold !== false}
                           onContentChange={scrollDomToBottom}
                           onPreviewImage={setPreviewImage}
                           onDownloadImage={downloadImage}
@@ -2575,7 +2604,7 @@ function _Chat() {
                                   className={
                                     styles["chat-message-item-image-multi"]
                                   }
-                                  key={index}
+                                  key={image}
                                   src={image}
                                   onPreview={setPreviewImage}
                                   onDownload={downloadImage}
@@ -2649,7 +2678,7 @@ function _Chat() {
                 </Fragment>
               );
             })}
-          </div>
+          </section>
           <div
             className={clsx(styles["chat-input-panel"], {
               [styles["chat-input-panel-collapsed"]]: !shouldExpandChatInput,
@@ -2706,7 +2735,7 @@ function _Chat() {
                     ? Locale.Chat.MobileInput
                     : Locale.Chat.Input(submitKey)
                 }
-                onInput={(e) => onInput(e.currentTarget.value)}
+                onChange={(e) => onInput(e.currentTarget.value)}
                 value={userInput}
                 onKeyDown={onInputKeyDown}
                 onFocus={() => {
@@ -2735,12 +2764,14 @@ function _Chat() {
                 <div className={styles["attachments-container"]}>
                   {/* 图片附件 */}
                   {attachImages.map((image, index) => (
-                    <div
-                      key={`img-${index}`}
-                      className={styles["attach-image"]}
-                      style={{ backgroundImage: `url("${image}")` }}
-                      onClick={() => setEditingImage(image)}
-                    >
+                    <div className={styles["attach-item"]} key={image}>
+                      <button
+                        type="button"
+                        className={styles["attach-image"]}
+                        aria-label="编辑图片附件"
+                        style={{ backgroundImage: `url("${image}")` }}
+                        onClick={() => setEditingImage(image)}
+                      />
                       <div className={styles["attach-image-mask"]}>
                         <DeleteImageButton
                           deleteImage={(e) => {
@@ -2757,55 +2788,60 @@ function _Chat() {
                   {/* 文件附件 */}
                   {attachedFiles.map((file, index) => (
                     <div
-                      key={`file-${index}`}
-                      className={styles["attach-file"]}
-                      onClick={async () => {
-                        // 使用与消息编辑相同的showPrompt函数
-                        const newContent = await showPrompt(
-                          `编辑文件：${file.name}`,
-                          file.content,
-                          20, // 更多行数以便于编辑文件内容
-                        );
-
-                        if (newContent) {
-                          // 更新文件内容
-                          const updatedFiles = attachedFiles.map((f, i) => {
-                            if (i === index) {
-                              // 更新文件大小
-                              const newSize = new Blob([newContent]).size;
-                              return {
-                                ...f,
-                                content: newContent,
-                                size: newSize,
-                                originalFile: new File([newContent], f.name, {
-                                  type: f.type,
-                                }),
-                              };
-                            }
-                            return f;
-                          });
-                          setAttachedFiles(updatedFiles);
-                        }
-                      }}
+                      className={styles["attach-item"]}
+                      key={`${file.name}-${file.size}-${file.type}`}
                     >
-                      <div className={styles["attach-file-card"]}>
-                        <div
-                          className={clsx(
-                            styles["attach-file-icon"],
-                            getFileIconClass(file.type),
-                          )}
-                        >
-                          <FileIcon />
-                        </div>
-                        <div className={styles["attach-file-info"]}>
-                          <div className={styles["attach-file-name"]}>
-                            {file.name}
+                      <button
+                        type="button"
+                        className={styles["attach-file"]}
+                        onClick={async () => {
+                          // 使用与消息编辑相同的showPrompt函数
+                          const newContent = await showPrompt(
+                            `编辑文件：${file.name}`,
+                            file.content,
+                            20, // 更多行数以便于编辑文件内容
+                          );
+
+                          if (newContent) {
+                            // 更新文件内容
+                            const updatedFiles = attachedFiles.map((f, i) => {
+                              if (i === index) {
+                                // 更新文件大小
+                                const newSize = new Blob([newContent]).size;
+                                return {
+                                  ...f,
+                                  content: newContent,
+                                  size: newSize,
+                                  originalFile: new File([newContent], f.name, {
+                                    type: f.type,
+                                  }),
+                                };
+                              }
+                              return f;
+                            });
+                            setAttachedFiles(updatedFiles);
+                          }
+                        }}
+                      >
+                        <div className={styles["attach-file-card"]}>
+                          <div
+                            className={clsx(
+                              styles["attach-file-icon"],
+                              getFileIconClass(file.type),
+                            )}
+                          >
+                            <FileIcon />
                           </div>
-                          <div className={styles["attach-file-size"]}>
-                            {(file.size / 1024).toFixed(2)} KB
+                          <div className={styles["attach-file-info"]}>
+                            <div className={styles["attach-file-name"]}>
+                              {file.name}
+                            </div>
+                            <div className={styles["attach-file-size"]}>
+                              {(file.size / 1024).toFixed(2)} KB
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      </button>
                       <div className={styles["attach-image-mask"]}>
                         <DeleteImageButton
                           deleteImage={(e) => {
@@ -2842,9 +2878,9 @@ function _Chat() {
               }}
               onStartVoice={async () => {
                 console.log("start voice");
-            }}
-          />
-        )}
+              }}
+            />
+          )}
         </div>
       </div>
       {showExport && (
@@ -2906,18 +2942,10 @@ function _Chat() {
               />,
             ]}
           >
-            <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
+            <div className={styles["file-edit-scroll"]}>
               <textarea
-                style={{
-                  width: "100%",
-                  height: "300px",
-                  padding: "8px",
-                  fontFamily: "monospace",
-                  fontSize: "14px",
-                  border: "1px solid #ccc",
-                  borderRadius: "4px",
-                  resize: "vertical",
-                }}
+                aria-label={`编辑文件内容: ${editingFile.name}`}
+                className={styles["file-edit-textarea"]}
                 value={editingFile.content}
                 onChange={(e) => {
                   // 更新正在编辑的文件内容
@@ -2933,17 +2961,14 @@ function _Chat() {
       )}
 
       {previewImage && (
-        <div
+        <dialog
+          open
           className={styles["image-preview-mask"]}
-          role="dialog"
           aria-modal="true"
           aria-label="图片预览"
-          onClick={() => setPreviewImage(null)}
+          onCancel={() => setPreviewImage(null)}
         >
-          <div
-            className={styles["image-preview-toolbar"]}
-            onClick={(event) => event.stopPropagation()}
-          >
+          <div className={styles["image-preview-toolbar"]}>
             <button
               type="button"
               className={styles["image-preview-button"]}
@@ -2963,14 +2988,15 @@ function _Chat() {
               <CancelIcon />
             </button>
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             className={styles["image-preview-image"]}
             src={previewImage}
             alt="图片预览"
-            onClick={(event) => event.stopPropagation()}
+            width={1600}
+            height={1200}
+            unoptimized
           />
-        </div>
+        </dialog>
       )}
 
       {editingImage && (
@@ -2978,7 +3004,7 @@ function _Chat() {
           imageUrl={editingImage}
           onClose={() => {
             setEditingImage(null);
-            setEditingImageMessageId(null); // 清除消息ID
+            editingImageMessageIdRef.current = null; // 清除消息ID
           }}
           onSave={(editedImage) => {
             // 检查是否为附件图片
@@ -2990,13 +3016,13 @@ function _Chat() {
               );
             }
             // 检查是否为消息中的图片
-            else if (editingImageMessageId) {
+            else if (editingImageMessageIdRef.current) {
               // 更新消息中的图片
               chatStore.updateTargetSession(session, (session) => {
                 // 查找所有消息(包括上下文消息)
                 const messages = session.mask.context.concat(session.messages);
                 const messageToUpdate = messages.find(
-                  (m) => m.id === editingImageMessageId,
+                  (m) => m.id === editingImageMessageIdRef.current,
                 );
 
                 if (messageToUpdate) {
@@ -3030,7 +3056,7 @@ function _Chat() {
             }
 
             setEditingImage(null);
-            setEditingImageMessageId(null); // 清除消息ID
+            editingImageMessageIdRef.current = null; // 清除消息ID
           }}
         />
       )}
@@ -3038,8 +3064,12 @@ function _Chat() {
   );
 }
 
+function ChatInner() {
+  return useChatInnerView();
+}
+
 export function Chat() {
   const chatStore = useChatStore();
   const session = chatStore.currentSession();
-  return <_Chat key={session.id}></_Chat>;
+  return <ChatInner key={session.id}></ChatInner>;
 }

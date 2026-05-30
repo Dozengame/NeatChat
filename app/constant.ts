@@ -1,13 +1,13 @@
-export const OWNER = "tianzhentech";
-export const REPO = "NeatChat";
+const OWNER = "tianzhentech";
+const REPO = "NeatChat";
 export const REPO_URL = `https://github.com/${OWNER}/${REPO}`;
 export const PLUGINS_REPO_URL = `https://github.com/ChatGPTNextWeb/NextChat-Awesome-Plugins`;
 export const ISSUE_URL = `https://github.com/${OWNER}/${REPO}/issues`;
-export const UPDATE_URL = `${REPO_URL}#keep-updated`;
-export const RELEASE_URL = `${REPO_URL}/releases`;
+const UPDATE_URL = `${REPO_URL}#keep-updated`;
+const RELEASE_URL = `${REPO_URL}/releases`;
 export const FETCH_COMMIT_URL = `https://api.github.com/repos/${OWNER}/${REPO}/commits?per_page=1`;
 export const FETCH_TAG_URL = `https://api.github.com/repos/${OWNER}/${REPO}/tags?per_page=1`;
-export const RUNTIME_CONFIG_DOM = "danger-runtime-config";
+const RUNTIME_CONFIG_DOM = "danger-runtime-config";
 
 export const STABILITY_BASE_URL = "https://api.stability.ai";
 
@@ -98,7 +98,7 @@ export const NARROW_SIDEBAR_WIDTH = 100;
 
 export const ACCESS_CODE_PREFIX = "nk-";
 
-export const LAST_INPUT_KEY = "last-input";
+const LAST_INPUT_KEY = "last-input";
 export const UNFINISHED_INPUT = (id: string) => "unfinished-input-" + id;
 
 export const STORAGE_KEY = "NeatChat";
@@ -575,7 +575,7 @@ export const DEFAULT_MODELS = [
 ] as const;
 
 export const CHAT_PAGE_SIZE = 15;
-export const MAX_RENDER_MSG_COUNT = 45;
+const MAX_RENDER_MSG_COUNT = 45;
 
 // some famous webdav endpoints
 export const internalAllowedWebDavEndpoints = [

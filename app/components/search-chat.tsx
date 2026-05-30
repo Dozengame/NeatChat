@@ -1,14 +1,14 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { ErrorBoundary } from "./error";
 import styles from "./mask.module.scss";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { IconButton } from "./button";
 import CloseIcon from "../icons/close.svg";
 import EyeIcon from "../icons/eye.svg";
 import Locale from "../locales";
 import { Path } from "../constant";
 
-import { useChatStore } from "../store";
+import { useChatStore } from "../store/chat";
 
 type Item = {
   id: number;
@@ -23,10 +23,7 @@ export function SearchChatPage() {
   const sessions = chatStore.sessions;
   const selectSession = chatStore.selectSession;
 
-  const [searchResults, setSearchResults] = useState<Item[]>([]);
-
-  const previousValueRef = useRef<string>("");
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [searchText, setSearchText] = useState("");
   const doSearch = useCallback(
     (text: string) => {
       const lowerCaseText = text.toLowerCase();
@@ -41,18 +38,17 @@ export function SearchChatPage() {
           const lowerCaseContent = content.toLowerCase();
 
           // full text search
-          let pos = lowerCaseContent.indexOf(lowerCaseText);
-          while (pos !== -1) {
+          let pos = 0;
+          const segments = lowerCaseContent.split(lowerCaseText);
+          for (let i = 0; i < segments.length - 1; i += 1) {
+            pos += segments[i].length;
             const start = Math.max(0, pos - 35);
             const end = Math.min(
               content.length,
               pos + lowerCaseText.length + 35,
             );
             fullTextContents.push(content.substring(start, end));
-            pos = lowerCaseContent.indexOf(
-              lowerCaseText,
-              pos + lowerCaseText.length,
-            );
+            pos += lowerCaseText.length;
           }
         });
 
@@ -72,24 +68,15 @@ export function SearchChatPage() {
     },
     [sessions],
   );
+  const searchResults = useMemo(
+    () => (searchText.length > 0 ? doSearch(searchText) : []),
+    [doSearch, searchText],
+  );
 
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      if (searchInputRef.current) {
-        const currentValue = searchInputRef.current.value;
-        if (currentValue !== previousValueRef.current) {
-          if (currentValue.length > 0) {
-            const result = doSearch(currentValue);
-            setSearchResults(result);
-          }
-          previousValueRef.current = currentValue;
-        }
-      }
-    }, 1000);
-
-    // Cleanup the interval on component unmount
-    return () => clearInterval(intervalId);
-  }, [doSearch]);
+  const openSearchResult = (item: Item) => {
+    navigate(Path.Chat);
+    selectSession(item.id);
+  };
 
   return (
     <ErrorBoundary>
@@ -121,17 +108,16 @@ export function SearchChatPage() {
             {/**搜索输入框 */}
             <input
               type="text"
+              aria-label={Locale.SearchChat.Page.Search}
               className={styles["search-bar"]}
               placeholder={Locale.SearchChat.Page.Search}
-              autoFocus
-              ref={searchInputRef}
+              value={searchText}
+              onChange={(e) => setSearchText(e.currentTarget.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  const searchText = e.currentTarget.value;
                   if (searchText.length > 0) {
-                    const result = doSearch(searchText);
-                    setSearchResults(result);
+                    doSearch(searchText);
                   }
                 }
               }}
@@ -140,11 +126,11 @@ export function SearchChatPage() {
 
           <div>
             {searchResults.map((item) => (
-              <div
+              <Link
+                to={Path.Chat}
                 className={styles["mask-item"]}
                 key={item.id}
                 onClick={() => {
-                  navigate(Path.Chat);
                   selectSession(item.id);
                 }}
                 style={{ cursor: "pointer" }}
@@ -153,17 +139,19 @@ export function SearchChatPage() {
                 <div className={styles["mask-header"]}>
                   <div className={styles["mask-title"]}>
                     <div className={styles["mask-name"]}>{item.name}</div>
-                    {item.content.slice(0, 70)}
+                    <div className={styles["mask-info"]}>
+                      {item.content.slice(0, 70)}
+                    </div>
                   </div>
                 </div>
                 {/** 操作按钮 */}
                 <div className={styles["mask-actions"]}>
-                  <IconButton
-                    icon={<EyeIcon />}
-                    text={Locale.SearchChat.Item.View}
-                  />
+                  <span className={styles["mask-action"]}>
+                    <EyeIcon />
+                    {Locale.SearchChat.Item.View}
+                  </span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

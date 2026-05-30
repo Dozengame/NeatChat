@@ -3,14 +3,14 @@
  */
 
 import React from "react";
-import { showToast, showModal } from "../components/ui-lib";
+import { showToast, showModal } from "../components/ui-lib-actions";
 
 /**
  * 读取文件为文本
  * @param file 要读取的文件
  * @returns 文件内容的Promise
  */
-export function readFileAsText(file: File): Promise<string> {
+function readFileAsText(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => resolve(e.target?.result as string);
@@ -117,16 +117,16 @@ const IMAGE_ATTACHMENT_EXTENSIONS = new Set([
   "heif",
 ]);
 
-export const ATTACHMENT_ACCEPT =
+const ATTACHMENT_ACCEPT =
   "image/png,image/jpeg,image/webp,image/heic,image/heif,.png,.jpg,.jpeg,.webp,.heic,.heif,.txt,.md,.js,.mjs,.cjs,.lua,.luau,.as,.py,.html,.css,.json,.csv,.xml,.log,.docx,.doc,.pptx,.ppt,.pdf,.sh,.bash,.zsh,.sql,.ini,.conf,.yaml,.yml,.toml,.tex,.c,.cpp,.h,.hpp,.java,.cs,.go,.rs,.php,.rb,.pl,.swift,.kt,.ts,.jsx,.tsx,.vue,.scss,.less,.laya,.ls,.lh,.lmat,.ltc,.atlas,.ani,.sk,.part,.prefab,.scene,.fire,.cocos,.cc,.meta,.plist,.fnt,.r,.m,.ipynb,.zip,.xlsx,.xls,.svg,Dockerfile";
 
-export const TEXT_ATTACHMENT_ACCEPT =
+const TEXT_ATTACHMENT_ACCEPT =
   ".txt,.md,.js,.mjs,.cjs,.lua,.luau,.as,.py,.html,.css,.json,.csv,.xml,.log,.sh,.bash,.zsh,.sql,.ini,.conf,.yaml,.yml,.toml,.tex,.c,.cpp,.h,.hpp,.java,.cs,.go,.rs,.php,.rb,.pl,.swift,.kt,.ts,.jsx,.tsx,.vue,.scss,.less,.laya,.ls,.lh,.lmat,.ltc,.atlas,.ani,.sk,.part,.prefab,.scene,.fire,.cocos,.cc,.meta,.plist,.fnt,.r,.m,.ipynb,.svg,Dockerfile";
 
 const PASTED_DATA_IMAGE_PATTERN =
   /data:image\/(?:png|jpe?g|webp|heic|heif);base64,[a-z0-9+/=]+/gi;
 
-export function isPasteableImageUrl(url?: string | null) {
+function isPasteableImageUrl(url?: string | null) {
   if (!url) return false;
   const normalized = url.trim();
   return (
@@ -170,7 +170,7 @@ export function extractClipboardImageUrls(clipboardData: DataTransfer) {
  * @param file 要读取的文件
  * @returns 文件内容的Promise
  */
-export async function readWordFile(file: File): Promise<string> {
+async function readWordFile(file: File): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -322,7 +322,7 @@ export async function readWordFile(file: File): Promise<string> {
  * @param file 要读取的文件
  * @returns 文件内容的Promise
  */
-export async function readPowerPointFile(file: File): Promise<string> {
+async function readPowerPointFile(file: File): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -438,8 +438,10 @@ export async function readPowerPointFile(file: File): Promise<string> {
                   if (textMatches) {
                     const slideNumber = parseInt(path.match(slideRegex)![1]);
                     const slideText = textMatches
-                      .map((match) => match.replace(/<a:t>|<\/a:t>/g, ""))
-                      .filter((text) => text.trim().length > 0)
+                      .flatMap((match) => {
+                        const text = match.replace(/<a:t>|<\/a:t>/g, "");
+                        return text.trim().length > 0 ? [text] : [];
+                      })
                       .join("\n");
 
                     if (slideText.trim()) {
@@ -497,7 +499,7 @@ export async function readPowerPointFile(file: File): Promise<string> {
  * @param file 要读取的文件
  * @returns 文件内容的Promise
  */
-export async function readPdfFile(file: File): Promise<string> {
+async function readPdfFile(file: File): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -536,27 +538,53 @@ export async function readPdfFile(file: File): Promise<string> {
           const isLargeFile = file.size > 50 * 1024 * 1024; // 50MB
           const maxPagesToProcess = isLargeFile ? 30 : pdf.numPages;
 
-          // 遍历页面
-          for (let i = 1; i <= Math.min(maxPagesToProcess, pdf.numPages); i++) {
+          const pageNumbers = Array.from(
+            { length: Math.min(maxPagesToProcess, pdf.numPages) },
+            (_, index) => index + 1,
+          );
+          const pageResults = await Promise.all(
+            pageNumbers.map(async (i) => {
+              let pageText = "";
+              let isEmpty = false;
+
+              try {
+                // 获取页面
+                const page = await pdf.getPage(i);
+
+                // 提取文本
+                const content = await page.getTextContent();
+                pageText = content.items.map((item: any) => item.str).join(" ");
+                isEmpty = pageText.trim().length === 0;
+              } catch (pageError) {
+                return {
+                  pageNumber: i,
+                  text: `[无法解析此页]`,
+                  isEmpty: false,
+                };
+              }
+
+              return {
+                pageNumber: i,
+                text: isEmpty ? "[空白或图像内容]" : pageText,
+                isEmpty,
+              };
+            }),
+          );
+
+          // 按页码顺序拼接，保持原输出顺序
+          for (const pageResult of pageResults) {
             try {
-              // 获取页面
-              const page = await pdf.getPage(i);
-
-              // 提取文本
-              const content = await page.getTextContent();
-              const pageText = content.items
-                .map((item: any) => item.str)
-                .join(" ");
-
-              if (pageText.trim().length > 0) {
+              if (!pageResult.isEmpty && pageResult.text !== "[无法解析此页]") {
                 hasContent = true;
-                textContent += `--- 第 ${i} 页 ---\n${pageText}\n\n`;
-              } else {
+                textContent += `--- 第 ${pageResult.pageNumber} 页 ---\n${pageResult.text}\n\n`;
+              } else if (pageResult.isEmpty) {
                 emptyPageCount++;
-                textContent += `--- 第 ${i} 页 ---\n[空白或图像内容]\n\n`;
+                textContent += `--- 第 ${pageResult.pageNumber} 页 ---\n${pageResult.text}\n\n`;
+              } else {
+                textContent += `--- 第 ${pageResult.pageNumber} 页 ---\n${pageResult.text}\n\n`;
               }
             } catch (pageError) {
-              textContent += `--- 第 ${i} 页 ---\n[无法解析此页]\n\n`;
+              textContent += `--- 第 ${pageResult.pageNumber} 页 ---\n[无法解析此页]\n\n`;
             }
           }
 
@@ -658,7 +686,7 @@ export async function readPdfFile(file: File): Promise<string> {
  * @param file 要读取的 ZIP 文件
  * @returns 文件内容的 Promise
  */
-export async function readZipFile(file: File): Promise<string> {
+async function readZipFile(file: File): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -882,7 +910,7 @@ export async function readZipFile(file: File): Promise<string> {
  * @param file 要读取的文件
  * @returns 文件内容的Promise
  */
-export async function readExcelFile(file: File): Promise<string> {
+async function readExcelFile(file: File): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -1058,7 +1086,7 @@ function isHeicImage(file: File) {
 }
 
 // 从chat.tsx移动过来的上传图片函数
-export async function uploadImage(file: File): Promise<string> {
+async function uploadImage(file: File): Promise<string> {
   let imageBlob: Blob = file;
 
   if (isHeicImage(file)) {
@@ -1120,7 +1148,7 @@ export async function uploadImage(file: File): Promise<string> {
 }
 
 // 从chat.tsx移动过来的远程上传图片函数
-export async function uploadImageRemote(file: File): Promise<string> {
+async function uploadImageRemote(file: File): Promise<string> {
   try {
     return await uploadImage(file);
   } catch (error) {
@@ -1236,24 +1264,41 @@ export async function readAttachmentFile(file: File): Promise<FileInfo> {
 }
 
 export async function processAttachmentFiles(files: File[]) {
-  const fileInfos: FileInfo[] = [];
-  const imageUrls: string[] = [];
-
-  for (const file of files) {
-    try {
+  const processedFiles = await Promise.all(
+    files.map(async (file) => {
       if (!isSupportedAttachmentFile(file)) {
         showToast(`${file.name || "该文件"} 类型不支持`);
-        continue;
+        return null;
       }
 
-      if (isAttachmentImage(file)) {
-        imageUrls.push(await uploadImageRemote(file));
-      } else {
-        fileInfos.push(await readAttachmentFile(file));
+      try {
+        if (isAttachmentImage(file)) {
+          return {
+            type: "image" as const,
+            value: await uploadImageRemote(file),
+          };
+        }
+
+        return {
+          type: "file" as const,
+          value: await readAttachmentFile(file),
+        };
+      } catch (error: any) {
+        console.error(`读取文件 ${file.name} 失败:`, error);
+        showToast(`读取文件 ${file.name} 失败: ${error.message || "未知错误"}`);
+        return null;
       }
-    } catch (error: any) {
-      console.error(`读取文件 ${file.name} 失败:`, error);
-      showToast(`读取文件 ${file.name} 失败: ${error.message || "未知错误"}`);
+    }),
+  );
+
+  const fileInfos: FileInfo[] = [];
+  const imageUrls: string[] = [];
+  for (const item of processedFiles) {
+    if (!item) continue;
+    if (item.type === "image") {
+      imageUrls.push(item.value);
+    } else {
+      fileInfos.push(item.value);
     }
   }
 
@@ -1457,7 +1502,7 @@ export function getFileTypeByExtension(filename: string): string {
 /**
  * 上传并处理单个文本文件
  */
-export function uploadTextFile(
+function uploadTextFile(
   onStart: () => void,
   onSuccess: (fileInfo: FileInfo) => void,
   onError: (error: any) => void,
@@ -1620,7 +1665,7 @@ export function getFileIconClass(fileType: string): string {
  * @param onError 上传失败的回调
  * @param onFinish 上传完成的回调（无论成功失败）
  */
-export function uploadMultipleTextFiles(
+function uploadMultipleTextFiles(
   onStart: () => void,
   onSuccess: (fileInfos: FileInfo[]) => void,
   onError: (error: any) => void,

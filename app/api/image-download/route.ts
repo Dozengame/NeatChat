@@ -62,6 +62,7 @@ export async function GET(req: NextRequest) {
 
   const response = await fetch(imageUrl.toString(), {
     method: "GET",
+    cache: "no-store",
     headers: {
       Accept:
         "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",

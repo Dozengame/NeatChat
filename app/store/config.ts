@@ -1,4 +1,4 @@
-import { LLMModel } from "../client/api";
+import { LLMModel } from "../client/types";
 import {
   DalleStyle,
   OpenAIImageBackground,

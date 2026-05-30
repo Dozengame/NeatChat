@@ -8,14 +8,14 @@ import {
   Azure,
   REQUEST_TIMEOUT_MS,
   ServiceProvider,
-} from "@/app/constant";
+  } from "@/app/constant";
 import {
   ChatMessageTool,
   useAccessStore,
   useAppConfig,
   useChatStore,
   usePluginStore,
-} from "@/app/store";
+  } from "@/app/store";
 import { collectModelsWithDefaultModel } from "@/app/utils/model";
 import {
   preProcessImageContent,
@@ -23,28 +23,28 @@ import {
   base64Image2Blob,
   cacheImageToBase64Image,
   stream,
-} from "@/app/utils/chat";
+  } from "@/app/utils/chat";
 import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
 import {
   shouldUseOpenAIResponses,
   shouldRequireOpenAIResponsesWebSearch,
   shouldEnableOpenAIResponsesWebSearch,
   supportsOpenAIResponsesWebSearch,
-} from "@/app/utils/openai-responses";
+  } from "@/app/utils/openai-responses";
 import {
   buildOpenAIResponsesPayload,
   ResponsesRequestPayload,
-} from "./openai-responses-builder";
+  } from "./openai-responses-builder";
 
 import {
   ChatOptions,
-  getHeaders,
   LLMApi,
   LLMModel,
   LLMUsage,
   MultimodalContent,
   SpeechOptions,
-} from "../api";
+} from "../types";
+import { getHeadersAsync } from "../header-loader";
 import Locale from "../../locales";
 import { getClientConfig } from "@/app/config/client";
 import type { OpenAIImageOutputFormat } from "@/app/typing";
@@ -164,8 +164,7 @@ export interface AzureChatRequestPayload {
   top_p: number;
 }
 
-
-export function extractResponsesText(res: any) {
+function extractResponsesText(res: any) {
   const outputText =
     typeof res?.output_text === "string" ? res.output_text : undefined;
   const parts: string[] = [];
@@ -197,7 +196,7 @@ export function extractResponsesText(res: any) {
   return `${text}\n\n来源：\n${sources}`;
 }
 
-export function parseResponsesSSE(text: string) {
+function parseResponsesSSE(text: string) {
   const json = JSON.parse(text);
 
   if (
@@ -294,10 +293,7 @@ export class ChatGPTApi implements LLMApi {
       if (!url && b64_json) {
         // uploadImage
         url = await uploadImage(
-          base64Image2Blob(
-            b64_json,
-            options?.imageContentType ?? "image/png",
-          ),
+          base64Image2Blob(b64_json, options?.imageContentType ?? "image/png"),
         );
       }
       return [
@@ -332,7 +328,7 @@ export class ChatGPTApi implements LLMApi {
         method: "POST",
         body: JSON.stringify(requestPayload),
         signal: controller.signal,
-        headers: getHeaders(),
+        headers: await getHeadersAsync(),
       };
 
       // make a fetch request
@@ -408,16 +404,17 @@ export class ChatGPTApi implements LLMApi {
       }
     } else {
       const visionModel = isVisionModel(options.config.model);
-      const messages: ChatOptions["messages"] = [];
-      for (const v of options.messages) {
-        const content =
-          visionModel || Array.isArray(v.content)
-            ? await preProcessImageContent(v.content)
-            : v.role === "assistant" // 如果 role 是 assistant
-            ? getMessageTextContentWithoutThinking(v) // 调用 getMessageTextContentWithoutThinking
-            : getMessageTextContent(v); // 否则调用 getMessageTextContent
-        messages.push({ role: v.role, content });
-      }
+      const messages: ChatOptions["messages"] = await Promise.all(
+        options.messages.map(async (v) => {
+          const content =
+            visionModel || Array.isArray(v.content)
+              ? await preProcessImageContent(v.content)
+              : v.role === "assistant" // 如果 role 是 assistant
+              ? getMessageTextContentWithoutThinking(v) // 调用 getMessageTextContentWithoutThinking
+              : getMessageTextContent(v); // 否则调用 getMessageTextContent
+          return { role: v.role, content };
+        }),
+      );
 
       if (useResponses) {
         const enableWebSearch = supportsOpenAIResponsesWebSearch({
@@ -425,10 +422,13 @@ export class ChatGPTApi implements LLMApi {
           providerName: modelConfig.providerName || ServiceProvider.OpenAI,
         });
         const latestUserText =
-          messages
-            .filter((message) => message.role === "user")
-            .map((message) => getMessageTextContent(message as any))
-            .at(-1) ?? "";
+          messages.reduce<string | undefined>(
+            (latest, message) =>
+              message.role === "user"
+                ? getMessageTextContent(message as any)
+                : latest,
+            undefined,
+          ) ?? "";
         const shouldEnableWebSearch =
           enableWebSearch &&
           shouldEnableOpenAIResponsesWebSearch(latestUserText);
@@ -570,7 +570,7 @@ export class ChatGPTApi implements LLMApi {
             ...requestPayload,
             ...(Array.isArray(tools) && tools.length > 0 ? { tools } : {}),
           },
-          getHeaders(),
+          await getHeadersAsync(),
           Array.isArray(tools) ? tools : [],
           funcs,
           controller,
@@ -737,7 +737,7 @@ export class ChatGPTApi implements LLMApi {
           method: "POST",
           body: multipartPayload ?? JSON.stringify(requestPayload),
           signal: controller.signal,
-          headers: getHeaders(isMultipartRequest),
+          headers: await getHeadersAsync(isMultipartRequest),
         };
 
         if (isImageGeneration) {
@@ -826,12 +826,12 @@ export class ChatGPTApi implements LLMApi {
         ),
         {
           method: "GET",
-          headers: getHeaders(),
+          headers: await getHeadersAsync(),
         },
       ),
       fetch(this.path(OpenaiPath.SubsPath), {
         method: "GET",
-        headers: getHeaders(),
+        headers: await getHeadersAsync(),
       }),
     ]);
 
@@ -881,7 +881,7 @@ export class ChatGPTApi implements LLMApi {
     const res = await fetch(this.path(OpenaiPath.ListModelPath), {
       method: "GET",
       headers: {
-        ...getHeaders(),
+        ...(await getHeadersAsync()),
       },
     });
 
@@ -910,4 +910,3 @@ export class ChatGPTApi implements LLMApi {
     }));
   }
 }
-export { OpenaiPath };

@@ -1,12 +1,12 @@
 import { ApiPath, Google, REQUEST_TIMEOUT_MS } from "@/app/constant";
 import {
   ChatOptions,
-  getHeaders,
   LLMApi,
   LLMModel,
   LLMUsage,
   SpeechOptions,
-} from "../api";
+} from "../types";
+import { getHeadersAsync } from "../header-loader";
 import {
   useAccessStore,
   useAppConfig,
@@ -97,11 +97,12 @@ export class GeminiProApi implements LLMApi {
     );
 
     // try get base64image from local cache image_url
-    const _messages: ChatOptions["messages"] = [];
-    for (const v of options.messages) {
-      const content = await preProcessImageContent(v.content);
-      _messages.push({ role: v.role, content });
-    }
+    const _messages: ChatOptions["messages"] = await Promise.all(
+      options.messages.map(async (v) => ({
+        role: v.role,
+        content: await preProcessImageContent(v.content),
+      })),
+    );
 
     // 只有当用户选择了 googleSearch 时才创建 tools
     const tools = session.mask?.plugin?.includes("googleSearch")
@@ -206,7 +207,7 @@ export class GeminiProApi implements LLMApi {
         method: "POST",
         body: JSON.stringify(requestPayload),
         signal: controller.signal,
-        headers: getHeaders(),
+        headers: await getHeadersAsync(),
       };
 
       // make a fetch request
@@ -224,7 +225,7 @@ export class GeminiProApi implements LLMApi {
         return stream(
           chatPath,
           requestPayload,
-          getHeaders(),
+          await getHeadersAsync(),
           tools || [], // 如果 tools 未定义，传入空数组
           funcs,
           controller,

@@ -1,14 +1,18 @@
-import { useEffect, useState } from "react";
-import { showToast } from "./components/ui-lib";
+import { showToast } from "./components/ui-lib-actions";
 import Locale from "./locales";
-import { RequestMessage } from "./client/api";
+import { RequestMessage } from "./client/types";
 // import { fetch as tauriFetch, ResponseType } from "@tauri-apps/api/http";
 import { fetch as tauriStreamFetch } from "./utils/stream";
 import { ServiceProvider } from "./constant";
 import { isOpenAIImageGenerationModel } from "./utils/openai-image";
+export { safeLocalStorage } from "./utils/storage";
+export {
+  useCompactScreen,
+  useMobileScreen,
+  useWindowSize,
+} from "./utils/screen";
 export {
   isDalle3,
-  isDalleImageGenerationModel,
   isGptImageGenerationModel,
   isOpenAIImageGenerationModel,
   isOpenAIImageGenerationModelConfig,
@@ -119,45 +123,7 @@ export function isIOS() {
   return /iphone|ipad|ipod/.test(userAgent);
 }
 
-export function useWindowSize() {
-  const [size, setSize] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
-
-  useEffect(() => {
-    const onResize = () => {
-      setSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    };
-
-    window.addEventListener("resize", onResize);
-
-    return () => {
-      window.removeEventListener("resize", onResize);
-    };
-  }, []);
-
-  return size;
-}
-
-export const MOBILE_MAX_WIDTH = 600;
-export const COMPACT_MAX_WIDTH = 900;
-export function useMobileScreen() {
-  const { width } = useWindowSize();
-
-  return width <= MOBILE_MAX_WIDTH;
-}
-
-export function useCompactScreen() {
-  const { width } = useWindowSize();
-
-  return width <= COMPACT_MAX_WIDTH;
-}
-
-export function isFirefox() {
+function isFirefox() {
   return (
     typeof navigator !== "undefined" && /firefox/i.test(navigator.userAgent)
   );
@@ -232,7 +198,7 @@ export function getCSSVar(varName: string) {
 /**
  * Detects Macintosh
  */
-export function isMacOS(): boolean {
+function isMacOS(): boolean {
   if (typeof window !== "undefined") {
     let userAgent = window.navigator.userAgent.toLocaleLowerCase();
     const macintosh = /iphone|ipad|ipod|macintosh/.test(userAgent);
@@ -354,7 +320,7 @@ export function showPlugins(providerName?: string, model?: string) {
   return false;
 }
 
-export function fetch(
+function fetch(
   url: string,
   options?: Record<string, unknown>,
 ): Promise<any> {
@@ -376,67 +342,6 @@ export function adapter(config: Record<string, unknown>) {
       .text()
       .then((data: string) => ({ status, statusText, headers, data }));
   });
-}
-
-export function safeLocalStorage(): {
-  getItem: (key: string) => string | null;
-  setItem: (key: string, value: string) => void;
-  removeItem: (key: string) => void;
-  clear: () => void;
-} {
-  let storage: Storage | null = null;
-  const canWarn = typeof window !== "undefined";
-
-  try {
-    if (canWarn && window.localStorage) {
-      storage = window.localStorage;
-    }
-  } catch (e) {
-    if (canWarn) {
-      console.error("localStorage is not available:", e);
-    }
-    storage = null;
-  }
-
-  return {
-    getItem(key: string): string | null {
-      if (storage) {
-        return storage.getItem(key);
-      } else if (canWarn) {
-        console.warn(
-          `Attempted to get item "${key}" from localStorage, but localStorage is not available.`,
-        );
-      }
-      return null;
-    },
-    setItem(key: string, value: string): void {
-      if (storage) {
-        storage.setItem(key, value);
-      } else if (canWarn) {
-        console.warn(
-          `Attempted to set item "${key}" in localStorage, but localStorage is not available.`,
-        );
-      }
-    },
-    removeItem(key: string): void {
-      if (storage) {
-        storage.removeItem(key);
-      } else if (canWarn) {
-        console.warn(
-          `Attempted to remove item "${key}" from localStorage, but localStorage is not available.`,
-        );
-      }
-    },
-    clear(): void {
-      if (storage) {
-        storage.clear();
-      } else if (canWarn) {
-        console.warn(
-          "Attempted to clear localStorage, but localStorage is not available.",
-        );
-      }
-    },
-  };
 }
 
 export function getOperationId(operation: {
@@ -475,7 +380,7 @@ export function clientUpdate() {
 }
 
 // https://gist.github.com/iwill/a83038623ba4fef6abb9efca87ae9ccb
-export function semverCompare(a: string, b: string) {
+function semverCompare(a: string, b: string) {
   if (a.startsWith(b + "-")) return -1;
   if (b.startsWith(a + "-")) return 1;
   return a.localeCompare(b, undefined, {

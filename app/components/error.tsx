@@ -6,7 +6,7 @@ import GithubIcon from "../icons/github.svg";
 import ResetIcon from "../icons/reload.svg";
 import { ISSUE_URL } from "../constant";
 import Locale from "../locales";
-import { showConfirm } from "./ui-lib";
+import { showConfirm } from "./ui-lib-actions";
 import { useSyncStore } from "../store/sync";
 import { useChatStore } from "../store/chat";
 

@@ -10,7 +10,7 @@ import type {
   OpenAIImageSize,
 } from "../typing";
 
-export const GPT_IMAGE_2_MODEL = "gpt-image-2";
+const GPT_IMAGE_2_MODEL = "gpt-image-2";
 const DALLE_MODEL_PREFIX = "dall-e";
 const GPT_IMAGE_MODEL_PREFIX = "gpt-image";
 
@@ -42,7 +42,7 @@ export const GPT_IMAGE_2_QUALITIES = [
   "high",
 ] as const;
 
-export const GPT_IMAGE_2_DEFAULTS = {
+const GPT_IMAGE_2_DEFAULTS = {
   size: "auto" as GptImageSize,
   quality: "auto" as GptImageQuality,
   background: "auto" as OpenAIImageBackground,
@@ -50,13 +50,13 @@ export const GPT_IMAGE_2_DEFAULTS = {
   moderation: "auto" as OpenAIImageModeration,
 };
 
-export const DALLE3_DEFAULTS = {
+const DALLE3_DEFAULTS = {
   size: "1024x1024" as OpenAIImageSize,
   quality: "standard" as OpenAIImageQuality,
   style: "vivid" as DalleStyle,
 };
 
-export const DALLE_IMAGE_DEFAULTS = {
+const DALLE_IMAGE_DEFAULTS = {
   size: "1024x1024" as OpenAIImageSize,
 };
 
@@ -113,7 +113,7 @@ export function isDalle3(model?: string) {
   return normalizeModel(model) === "dall-e-3";
 }
 
-export function isDalleImageGenerationModel(model?: string) {
+function isDalleImageGenerationModel(model?: string) {
   return normalizeModel(model).startsWith(DALLE_MODEL_PREFIX);
 }
 

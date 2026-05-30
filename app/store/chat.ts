@@ -12,14 +12,16 @@ import {
 
 import { indexedDBStorage } from "@/app/utils/indexedDB-storage";
 import { nanoid } from "nanoid";
-import type {
-  ClientApi,
-  MultimodalContent,
-  RequestMessage,
-} from "../client/api";
-import { getClientApi } from "../client/api";
+import type { MultimodalContent } from "../client/types";
+import type { ClientApi } from "../client/api";
+import {
+  DEFAULT_TOPIC,
+  type ChatMessage,
+  type ChatMessageTool,
+} from "./chat-types";
+export { DEFAULT_TOPIC, type ChatMessage, type ChatMessageTool } from "./chat-types";
 import { ChatControllerPool } from "../client/controller";
-import { showToast } from "../components/ui-lib";
+import { showToast } from "../components/ui-lib-actions";
 import {
   DEFAULT_INPUT_TEMPLATE,
   DEFAULT_MODELS,
@@ -37,7 +39,6 @@ import { estimateTokenLength } from "../utils/token";
 import {
   getEnabledCustomInstructions,
   ModelConfig,
-  ModelType,
   useAppConfig,
 } from "./config";
 import { createEmptyMask, Mask } from "./mask";
@@ -59,37 +60,11 @@ import {
   mergeJimengResultIntoReply,
 } from "../mcp/display";
 import { JIMENG_MCP_SERVER_ID } from "../mcp/jimeng";
+import { registerChatStore } from "./chat-state-link";
 
 const localStorage = safeLocalStorage();
 const JIMENG_RESULT_POLL_INTERVAL_MS = 3000;
 const JIMENG_RESULT_MAX_POLLS = 40;
-
-export type ChatMessageTool = {
-  id: string;
-  index?: number;
-  type?: string;
-  function?: {
-    name: string;
-    arguments?: string;
-  };
-  content?: string;
-  isError?: boolean;
-  errorMsg?: string;
-};
-
-export type ChatMessage = RequestMessage & {
-  date: string;
-  streaming?: boolean;
-  isError?: boolean;
-  id: string;
-  model?: ModelType;
-  openaiResponseId?: string;
-  openaiResponseStored?: boolean;
-  openaiResponsesOutput?: unknown[];
-  tools?: ChatMessageTool[];
-  audio_url?: string;
-  isMcpResponse?: boolean;
-};
 
 export function createMessage(override: Partial<ChatMessage>): ChatMessage {
   return {
@@ -122,7 +97,6 @@ export interface ChatSession {
   mask: Mask;
 }
 
-export const DEFAULT_TOPIC = Locale.Store.DefaultTopic;
 export const BOT_HELLO: ChatMessage = createMessage({
   role: "assistant",
   content: Locale.Store.BotHello,
@@ -279,11 +253,11 @@ async function getMcpSystemPrompt(
     return mcpCache.scopedSystemPrompts[scopedKey];
   }
 
-  // 获取所有工具
-  const tools = await getAllTools();
-  // 获取所有客户端状态
-  const clientStatuses = await getClientsStatus();
-  const config = await getMcpConfigFromFile();
+  const [tools, clientStatuses, config] = await Promise.all([
+    getAllTools(),
+    getClientsStatus(),
+    getMcpConfigFromFile(),
+  ]);
   const allowedClientIds =
     scopedClientIds.length > 0 ? new Set(scopedClientIds) : undefined;
 
@@ -705,6 +679,7 @@ export const useChatStore = createPersistStore(
         }
         const sendMessages = recentMessages.concat(userMessage);
 
+        const { getClientApi } = await import("../client/api");
         const api: ClientApi = getClientApi(modelConfig.providerName);
         // make request
         api.llm.chat({
@@ -956,7 +931,7 @@ export const useChatStore = createPersistStore(
         });
       },
 
-      summarizeSession(
+      async summarizeSession(
         refreshTitle: boolean = false,
         targetSession: ChatSession,
       ) {
@@ -980,6 +955,7 @@ export const useChatStore = createPersistStore(
               session.mask.modelConfig.model,
               session.mask.modelConfig.providerName,
             );
+        const { getClientApi } = await import("../client/api");
         const api: ClientApi = getClientApi(providerName as ServiceProvider);
 
         // remove error messages if any
@@ -1400,3 +1376,5 @@ export const useChatStore = createPersistStore(
     },
   },
 );
+
+registerChatStore(useChatStore);

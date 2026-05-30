@@ -2,11 +2,13 @@
 
 require("../polyfill");
 
-import { useState, useEffect } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import styles from "./home.module.scss";
-
-import NeatIcon from "../icons/neat.svg";
-import LoadingIcon from "../icons/three-dots.svg";
 
 import { getCSSVar, useCompactScreen } from "../utils";
 
@@ -28,18 +30,10 @@ import { useAppConfig } from "../store/config";
 import { AuthPage } from "./auth";
 import { getClientConfig } from "../config/client";
 import { type ClientApi, getClientApi } from "../client/api";
-import { useAccessStore } from "../store";
+import { useAccessStore } from "../store/access";
 import clsx from "clsx";
 import { UpdateAnnouncement } from "./update-announcement";
-
-export function Loading(props: { noLogo?: boolean }) {
-  return (
-    <div className={clsx("no-dark", styles["loading-content"])}>
-      {!props.noLogo && <NeatIcon width={30} height={30} />}
-      <LoadingIcon />
-    </div>
-  );
-}
+import { Loading } from "./loading";
 
 const Artifacts = dynamic(async () => (await import("./artifacts")).Artifacts, {
   loading: () => <Loading noLogo />,
@@ -83,7 +77,7 @@ const McpMarketPage = dynamic(
   },
 );
 
-export function useSwitchTheme() {
+function useSwitchTheme() {
   const config = useAppConfig();
 
   useEffect(() => {
@@ -125,15 +119,15 @@ function useHtmlLang() {
   }, []);
 }
 
-const useHasHydrated = () => {
-  const [hasHydrated, setHasHydrated] = useState<boolean>(false);
-
-  useEffect(() => {
-    setHasHydrated(true);
-  }, []);
-
-  return hasHydrated;
-};
+const subscribeHydration = () => () => {};
+const getHydratedSnapshot = () => true;
+const getServerHydratedSnapshot = () => false;
+const useHasHydrated = () =>
+  useSyncExternalStore(
+    subscribeHydration,
+    getHydratedSnapshot,
+    getServerHydratedSnapshot,
+  );
 
 const loadAsyncGoogleFont = () => {
   const linkEl = document.createElement("link");
@@ -158,11 +152,47 @@ export function WindowContent(props: { children: React.ReactNode }) {
   );
 }
 
+function ScreenContent(props: {
+  isAuth: boolean;
+  isHome: boolean;
+  isSd: boolean;
+  isSdNew: boolean;
+  shouldRequireAccessCode: boolean;
+}) {
+  const { isAuth, isHome, isSd, isSdNew, shouldRequireAccessCode } = props;
+
+  if (shouldRequireAccessCode) return <AuthPage />;
+  if (isAuth) return <AuthPage />;
+  if (isSd) return <Sd />;
+  if (isSdNew) return <Sd />;
+  return (
+    <>
+      <SideBar
+        className={clsx({
+          [styles["sidebar-show"]]: isHome,
+        })}
+      />
+      <WindowContent>
+        <Routes>
+          <Route path={Path.Home} element={<Chat />} />
+          <Route path={Path.NewChat} element={<NewChat />} />
+          <Route path={Path.Masks} element={<MaskPage />} />
+          <Route path={Path.Plugins} element={<PluginPage />} />
+          <Route path={Path.SearchChat} element={<SearchChat />} />
+          <Route path={Path.Chat} element={<Chat />} />
+          <Route path={Path.Settings} element={<Settings />} />
+          <Route path={Path.McpMarket} element={<McpMarketPage />} />
+        </Routes>
+      </WindowContent>
+    </>
+  );
+}
+
 function Screen() {
   const config = useAppConfig();
   const location = useLocation();
   const navigate = useNavigate();
-  const [didRouteMobileStartup, setDidRouteMobileStartup] = useState(false);
+  const didRouteMobileStartupRef = useRef(false);
   const isArtifact = location.pathname.includes(Path.Artifacts);
   const isHome = location.pathname === Path.Home;
   const isAuth = location.pathname === Path.Auth;
@@ -199,19 +229,18 @@ function Screen() {
 
   useEffect(() => {
     if (
-      !didRouteMobileStartup &&
+      !didRouteMobileStartupRef.current &&
       accessStore._hasHydrated &&
       isCompactScreen &&
       !shouldWaitForServerConfig &&
       !shouldRequireAccessCode
     ) {
-      setDidRouteMobileStartup(true);
+      didRouteMobileStartupRef.current = true;
       if (isHome) {
         navigate(Path.Chat, { replace: true });
       }
     }
   }, [
-    didRouteMobileStartup,
     accessStore._hasHydrated,
     isHome,
     isCompactScreen,
@@ -250,34 +279,6 @@ function Screen() {
       </Routes>
     );
   }
-  const renderContent = () => {
-    if (shouldRequireAccessCode) return <AuthPage />;
-    if (isAuth) return <AuthPage />;
-    if (isSd) return <Sd />;
-    if (isSdNew) return <Sd />;
-    return (
-      <>
-        <SideBar
-          className={clsx({
-            [styles["sidebar-show"]]: isHome,
-          })}
-        />
-        <WindowContent>
-          <Routes>
-            <Route path={Path.Home} element={<Chat />} />
-            <Route path={Path.NewChat} element={<NewChat />} />
-            <Route path={Path.Masks} element={<MaskPage />} />
-            <Route path={Path.Plugins} element={<PluginPage />} />
-            <Route path={Path.SearchChat} element={<SearchChat />} />
-            <Route path={Path.Chat} element={<Chat />} />
-            <Route path={Path.Settings} element={<Settings />} />
-            <Route path={Path.McpMarket} element={<McpMarketPage />} />
-          </Routes>
-        </WindowContent>
-      </>
-    );
-  };
-
   return (
     <div
       className={clsx(styles.container, {
@@ -286,7 +287,13 @@ function Screen() {
         [styles["rtl-screen"]]: getLang() === ("ar" as any),
       })}
     >
-      {renderContent()}
+      <ScreenContent
+        isAuth={isAuth}
+        isHome={isHome}
+        isSd={isSd}
+        isSdNew={isSdNew}
+        shouldRequireAccessCode={shouldRequireAccessCode}
+      />
       <UpdateAnnouncement
         enabled={!shouldRequireAccessCode && !isAuth}
         announcement={accessStore.serverConfigSnapshot?.updateAnnouncement}
@@ -296,14 +303,21 @@ function Screen() {
   );
 }
 
-export function useLoadData() {
-  const config = useAppConfig();
-  const accessStore = useAccessStore();
-  const clientConfig = getClientConfig();
+function useLoadData() {
+  const providerName = useAppConfig((state) => state.modelConfig.providerName);
+  const accessCodeValidatedAt = useAccessStore(
+    (state) => state.accessCodeValidatedAt,
+  );
+  const needCode = useAccessStore((state) => state.needCode);
+  const clientConfig = useMemo(() => getClientConfig(), []);
 
-  const api: ClientApi = getClientApi(config.modelConfig.providerName);
+  const api: ClientApi = useMemo(
+    () => getClientApi(providerName),
+    [providerName],
+  );
 
   useEffect(() => {
+    const accessStore = useAccessStore.getState();
     if (
       !clientConfig?.isApp &&
       accessStore.enabledAccessControl() &&
@@ -312,12 +326,18 @@ export function useLoadData() {
       return;
     }
 
+    let cancelled = false;
     (async () => {
       const models = await api.llm.models();
-      config.mergeModels(models);
+      if (!cancelled) {
+        useAppConfig.getState().mergeModels(models);
+      }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessStore.accessCodeValidatedAt, accessStore.needCode]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accessCodeValidatedAt, api.llm, clientConfig?.isApp, needCode]);
 }
 
 export function Home() {

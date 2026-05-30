@@ -6,7 +6,7 @@ import { IconButton } from "@/app/components/button";
 import ReturnIcon from "@/app/icons/return.svg";
 import Locale from "@/app/locales";
 import { Path } from "@/app/constant";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef } from "react";
 import {
   copyToClipboard,
   getMessageTextContent,
@@ -31,11 +31,12 @@ import {
   showConfirm,
   showImageModal,
   showModal,
-} from "@/app/components/ui-lib";
+} from "@/app/components/ui-lib-actions";
 import { removeImage } from "@/app/utils/chat";
 import { SideBar } from "./sd-sidebar";
 import { WindowContent } from "@/app/components/home";
-import { params } from "./sd-panel";
+import { params } from "./sd-panel-models";
+import Image from "next/image";
 import clsx from "clsx";
 
 function getSdTaskStatus(item: any) {
@@ -62,12 +63,17 @@ function getSdTaskStatus(item: any) {
       s = item.status.toUpperCase();
   }
   return (
-    <p className={styles["line-1"]} title={item.error} style={{ color: color }}>
+    <div
+      className={styles["line-1"]}
+      title={item.error}
+      style={{ color: color }}
+    >
       <span>
         {Locale.Sd.Status.Name}: {s}
       </span>
       {item.status === "error" && (
-        <span
+        <button
+          type="button"
           className="clickable"
           onClick={() => {
             showModal({
@@ -79,11 +85,17 @@ function getSdTaskStatus(item: any) {
               ),
             });
           }}
+          style={{
+            background: "none",
+            border: 0,
+            color: "inherit",
+            padding: 0,
+          }}
         >
           - {item.error}
-        </span>
+        </button>
       )}
-    </p>
+    </div>
   );
 }
 
@@ -96,12 +108,19 @@ export function Sd() {
   const config = useAppConfig();
   const scrollRef = useRef<HTMLDivElement>(null);
   const sdStore = useSdStore();
-  const [sdImages, setSdImages] = useState(sdStore.draw);
+  const sdImages = sdStore.draw;
   const isSd = location.pathname === Path.Sd;
 
-  useEffect(() => {
-    setSdImages(sdStore.draw);
-  }, [sdStore.currentId, sdStore.draw]);
+  const retryTask = (item: any) => {
+    sdStore.sendTask({
+      model: item.model,
+      model_name: item.model_name,
+      status: "wait",
+      params: { ...item.params },
+      created_at: new Date().toLocaleString(),
+      img_data: "",
+    });
+  };
 
   return (
     <>
@@ -163,12 +182,10 @@ export function Sd() {
                     >
                       {item.status === "success" ? (
                         <>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
+                          <button
+                            type="button"
                             className={styles["img"]}
-                            src={item.img_data}
-                            alt={item.id}
-                            onClick={(e) =>
+                            onClick={() =>
                               showImageModal(
                                 item.img_data,
                                 true,
@@ -180,7 +197,21 @@ export function Sd() {
                                   : { width: "100%", height: "100%" },
                               )
                             }
-                          />
+                            style={{
+                              background: "none",
+                              border: 0,
+                              padding: 0,
+                            }}
+                          >
+                            <Image
+                              unoptimized
+                              className={styles["img"]}
+                              src={item.img_data}
+                              alt={item.id}
+                              width={512}
+                              height={512}
+                            />
+                          </button>
                         </>
                       ) : item.status === "error" ? (
                         <div className={styles["pre-img"]}>
@@ -195,9 +226,10 @@ export function Sd() {
                         style={{ marginLeft: "10px" }}
                         className={styles["sd-img-item-info"]}
                       >
-                        <p className={styles["line-1"]}>
+                        <div className={styles["line-1"]}>
                           {Locale.SdPanel.Prompt}:{" "}
-                          <span
+                          <button
+                            type="button"
                             className="clickable"
                             title={item.params.prompt}
                             onClick={() => {
@@ -210,10 +242,16 @@ export function Sd() {
                                 ),
                               });
                             }}
+                            style={{
+                              background: "none",
+                              border: 0,
+                              color: "inherit",
+                              padding: 0,
+                            }}
                           >
                             {item.params.prompt}
-                          </span>
-                        </p>
+                          </button>
+                        </div>
                         <p>
                           {Locale.SdPanel.AIModel}: {item.model_name}
                         </p>
@@ -296,17 +334,7 @@ export function Sd() {
                             <ChatAction
                               text={Locale.Sd.Actions.Retry}
                               icon={<ResetIcon />}
-                              onClick={() => {
-                                const reqData = {
-                                  model: item.model,
-                                  model_name: item.model_name,
-                                  status: "wait",
-                                  params: { ...item.params },
-                                  created_at: new Date().toLocaleString(),
-                                  img_data: "",
-                                };
-                                sdStore.sendTask(reqData);
-                              }}
+                              onClick={() => retryTask(item)}
                             />
                             <ChatAction
                               text={Locale.Sd.Actions.Delete}

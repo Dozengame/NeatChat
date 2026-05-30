@@ -3,6 +3,7 @@ import {
   ServiceProvider,
   StoreKey,
   ApiPath,
+  ACCESS_CODE_PREFIX,
   OPENAI_BASE_URL,
   ANTHROPIC_BASE_URL,
   GEMINI_BASE_URL,
@@ -16,7 +17,6 @@ import {
   XAI_BASE_URL,
   CHATGLM_BASE_URL,
 } from "../constant";
-import { getHeaders } from "../client/api";
 import { getClientConfig } from "../config/client";
 import { createPersistStore } from "../utils/store";
 import { ensure } from "../utils/clone";
@@ -26,7 +26,6 @@ import {
   ModelConfigMeta,
   useAppConfig,
 } from "./config";
-import { useChatStore } from "./chat";
 import {
   createConfigFieldMeta,
   isPublicConfigFieldLocked,
@@ -39,6 +38,7 @@ import {
   getAccessCodeValidationServerId,
   isAccessCodeValidationCurrent,
 } from "../utils/access-code-validation";
+import { applyChatStateUpdate, getRegisteredChatStore } from "./chat-state-link";
 
 let isFetchingConfig = false;
 let hasFetchedConfig = false;
@@ -399,7 +399,7 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
 
   const globalConfig = useAppConfig.getState();
 
-  useChatStore.setState((state) => {
+  applyChatStateUpdate((state) => {
     const applyToSession = (session: typeof state.temporarySession) => {
       if (!session) return session;
 
@@ -492,7 +492,7 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
 
     return {
       temporarySession: applyToSession(state.temporarySession),
-      sessions: state.sessions.map((session) => applyToSession(session)!),
+      sessions: state.sessions.map((session: any) => applyToSession(session)!),
     };
   });
 
@@ -500,7 +500,10 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
 }
 
 function runAfterStoreHydration(callback: () => void) {
-  const stores = [useAccessStore, useAppConfig, useChatStore];
+  const chatStore = getRegisteredChatStore();
+  const stores = chatStore
+    ? [useAccessStore, useAppConfig, chatStore]
+    : [useAccessStore, useAppConfig];
   let unsubscribes: Array<() => void> = [];
   let finished = false;
 
@@ -719,7 +722,11 @@ export const useAccessStore = createPersistStore(
         method: "post",
         body: null,
         headers: {
-          ...getHeaders(),
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...(get().accessCode
+            ? { Authorization: `Bearer ${ACCESS_CODE_PREFIX}${get().accessCode}` }
+            : {}),
         },
       })
         .then((res) => res.json())

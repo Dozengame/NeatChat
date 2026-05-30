@@ -1,5 +1,6 @@
 import { Anthropic, ApiPath } from "@/app/constant";
-import { ChatOptions, getHeaders, LLMApi, SpeechOptions } from "../api";
+import { ChatOptions, LLMApi, SpeechOptions } from "../types";
+import { getHeadersAsync } from "../header-loader";
 import {
   useAccessStore,
   useAppConfig,
@@ -99,20 +100,21 @@ export class ClaudeApi implements LLMApi {
     };
 
     // try get base64image from local cache image_url
-    const messages: ChatOptions["messages"] = [];
-    for (const v of options.messages) {
-      const content = await preProcessImageContent(v.content);
-      messages.push({ role: v.role, content });
-    }
+    const messages: ChatOptions["messages"] = await Promise.all(
+      options.messages.map(async (v) => ({
+        role: v.role,
+        content: await preProcessImageContent(v.content),
+      })),
+    );
 
-    const keys = ["system", "user"];
+    const keys = new Set(["system", "user"]);
 
     // roles must alternate between "user" and "assistant" in claude, so add a fake assistant message between two user messages
     for (let i = 0; i < messages.length - 1; i++) {
       const message = messages[i];
       const nextMessage = messages[i + 1];
 
-      if (keys.includes(message.role) && keys.includes(nextMessage.role)) {
+      if (keys.has(message.role) && keys.has(nextMessage.role)) {
         messages[i] = [
           message,
           {
@@ -123,33 +125,35 @@ export class ClaudeApi implements LLMApi {
       }
     }
 
-    const prompt = messages
-      .flat()
-      .filter((v) => {
-        if (!v.content) return false;
-        if (typeof v.content === "string" && !v.content.trim()) return false;
-        return true;
-      })
-      .map((v) => {
-        const { role, content } = v;
-        const insideRole = ClaudeMapper[role] ?? "user";
+    const prompt = messages.flatMap<AnthropicMessage>((v) => {
+      if (!v.content) return [];
+      if (typeof v.content === "string" && !v.content.trim()) return [];
 
-        if (!visionModel || typeof content === "string") {
-          return {
+      const { role, content } = v;
+      const insideRole = ClaudeMapper[role] ?? "user";
+
+      if (!visionModel || typeof content === "string") {
+        return [
+          {
             role: insideRole,
             content: getMessageTextContent(v),
-          };
-        }
-        return {
+          },
+        ];
+      }
+
+      return [
+        {
           role: insideRole,
-          content: content
-            .filter((v) => v.image_url || v.text)
-            .map(({ type, text, image_url }) => {
+          content: content.flatMap<MultiBlockContent>(
+            ({ type, text, image_url }) => {
+              if (!image_url && !text) return [];
               if (type === "text") {
-                return {
-                  type,
-                  text: text!,
-                };
+                return [
+                  {
+                    type,
+                    text: text!,
+                  },
+                ];
               }
               const { url = "" } = image_url || {};
               const colonIndex = url.indexOf(":");
@@ -160,17 +164,21 @@ export class ClaudeApi implements LLMApi {
               const encodeType = url.slice(semicolonIndex + 1, comma);
               const data = url.slice(comma + 1);
 
-              return {
-                type: "image" as const,
-                source: {
-                  type: encodeType,
-                  media_type: mimeType,
-                  data,
+              return [
+                {
+                  type: "image" as const,
+                  source: {
+                    type: encodeType,
+                    media_type: mimeType,
+                    data,
+                  },
                 },
-              };
-            }),
-        };
-      });
+              ];
+            },
+          ),
+        },
+      ];
+    });
 
     if (prompt[0]?.role === "assistant") {
       prompt.unshift({
@@ -207,7 +215,7 @@ export class ClaudeApi implements LLMApi {
         path,
         requestBody,
         {
-          ...getHeaders(),
+          ...(await getHeadersAsync()),
           "anthropic-version": accessStore.anthropicApiVersion,
         },
         // @ts-ignore
@@ -309,7 +317,7 @@ export class ClaudeApi implements LLMApi {
         body: JSON.stringify(requestBody),
         signal: controller.signal,
         headers: {
-          ...getHeaders(), // get common headers
+          ...(await getHeadersAsync()), // get common headers
           "anthropic-version": accessStore.anthropicApiVersion,
           // do not send `anthropicApiKey` in browser!!!
           // Authorization: getAuthKey(accessStore.anthropicApiKey),

@@ -1,6 +1,6 @@
 import { BUILTIN_MASKS } from "../masks";
 import { getLang, Lang } from "../locales";
-import { DEFAULT_TOPIC, ChatMessage } from "./chat";
+import { DEFAULT_TOPIC, type ChatMessage } from "./chat-types";
 import { ModelConfig, ModelConfigMeta, useAppConfig } from "./config";
 import { StoreKey } from "../constant";
 import { nanoid } from "nanoid";
@@ -23,7 +23,7 @@ export type Mask = {
   enableCodeFold?: boolean;
 };
 
-export const DEFAULT_MASK_STATE = {
+const DEFAULT_MASK_STATE = {
   masks: {} as Record<string, Mask>,
   language: undefined as Lang | undefined,
 };

@@ -29,7 +29,10 @@ function parseItems(value: unknown) {
     return [];
   }
 
-  return value.map(cleanText).filter(Boolean);
+  return value.flatMap((item) => {
+    const text = cleanText(item);
+    return text ? [text] : [];
+  });
 }
 
 export function parseUpdateAnnouncementJson(
@@ -54,19 +57,17 @@ export function parseUpdateAnnouncementJson(
     }
 
     const sections = Array.isArray(input.sections)
-      ? input.sections
-          .map((section) => {
-            if (!section || typeof section !== "object") {
-              return undefined;
-            }
+      ? input.sections.flatMap((section) => {
+          if (!section || typeof section !== "object") {
+            return [];
+          }
 
-            const source = section as { title?: unknown; items?: unknown };
-            const title = cleanText(source.title) || "更新";
-            const items = parseItems(source.items);
+          const source = section as { title?: unknown; items?: unknown };
+          const title = cleanText(source.title) || "更新";
+          const items = parseItems(source.items);
 
-            return items.length > 0 ? { title, items } : undefined;
-          })
-          .filter(Boolean)
+          return items.length > 0 ? [{ title, items }] : [];
+        })
       : [];
 
     const rootItems = parseItems(input.items);
@@ -86,7 +87,10 @@ export function parseUpdateAnnouncementJson(
       ...(note ? { note } : {}),
     };
   } catch (error) {
-    console.warn("[Update Announcement] invalid WEBUI_ANNOUNCEMENT_JSON", error);
+    console.warn(
+      "[Update Announcement] invalid WEBUI_ANNOUNCEMENT_JSON",
+      error,
+    );
     return undefined;
   }
 }

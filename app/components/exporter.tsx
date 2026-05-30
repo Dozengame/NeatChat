@@ -1,16 +1,10 @@
 /* eslint-disable @next/next/no-img-element */
-import { ChatMessage, useAppConfig, useChatStore } from "../store";
+import { ChatMessage, useChatStore } from "../store/chat";
+import { useAppConfig } from "../store/config";
 import Locale from "../locales";
 import styles from "./exporter.module.scss";
-import {
-  List,
-  ListItem,
-  Modal,
-  Select,
-  showImageModal,
-  showModal,
-  showToast,
-} from "./ui-lib";
+import { List, ListItem, Modal, Select } from "./ui-lib";
+import { showImageModal, showModal, showToast } from "./ui-lib-actions";
 import { IconButton } from "./button";
 import {
   copyToClipboard,
@@ -25,9 +19,16 @@ import ShareIcon from "../icons/share.svg";
 import NeatIcon from "../icons/neat.svg";
 
 import DownloadIcon from "../icons/download.svg";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { MessageSelector, useMessageSelector } from "./message-selector";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 
 import { toBlob, toPng } from "html-to-image";
 
@@ -42,6 +43,20 @@ import { MaskAvatar } from "./mask";
 const Markdown = dynamic(async () => (await import("./markdown")).Markdown, {
   loading: () => <LoadingIcon />,
 });
+
+const EXPORT_STEPS = [
+  {
+    name: Locale.Export.Steps.Select,
+    value: "select",
+  },
+  {
+    name: Locale.Export.Steps.Preview,
+    value: "preview",
+  },
+];
+
+const EXPORT_FORMATS = ["text", "image", "json"] as const;
+type ExportFormat = (typeof EXPORT_FORMATS)[number];
 
 export function ExportMessageModal(props: { onClose: () => void }) {
   return (
@@ -114,8 +129,9 @@ function Steps<
       <div className={styles["steps-inner"]}>
         {steps.map((step, i) => {
           return (
-            <div
-              key={i}
+            <button
+              type="button"
+              key={step.value}
               className={clsx("clickable", styles["step"], {
                 [styles["step-finished"]]: i <= props.index,
                 [styles["step-current"]]: i === props.index,
@@ -123,11 +139,10 @@ function Steps<
               onClick={() => {
                 props.onStepChange?.(i);
               }}
-              role="button"
             >
               <span className={styles["step-index"]}>{i + 1}</span>
               <span className={styles["step-name"]}>{step.name}</span>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -135,21 +150,9 @@ function Steps<
   );
 }
 
-export function MessageExporter() {
-  const steps = [
-    {
-      name: Locale.Export.Steps.Select,
-      value: "select",
-    },
-    {
-      name: Locale.Export.Steps.Preview,
-      value: "preview",
-    },
-  ];
+function MessageExporter() {
   const { currentStep, setCurrentStepIndex, currentStepIndex } =
-    useSteps(steps);
-  const formats = ["text", "image", "json"] as const;
-  type ExportFormat = (typeof formats)[number];
+    useSteps(EXPORT_STEPS);
 
   const [exportConfig, setExportConfig] = useState({
     format: "image" as ExportFormat,
@@ -164,7 +167,22 @@ export function MessageExporter() {
 
   const chatStore = useChatStore();
   const session = chatStore.currentSession();
-  const { selection, updateSelection } = useMessageSelector();
+  const initialSelection = useMemo(() => {
+    const selectableIds: string[] = [];
+    session.messages.forEach((message, index) => {
+      if (!message.id || !getMessageTextContent(message).trim()) return;
+      const nextMessage = session.messages[index + 1];
+      if (
+        index < session.messages.length - 1 &&
+        (!nextMessage || !getMessageTextContent(nextMessage).trim())
+      ) {
+        return;
+      }
+      selectableIds.push(message.id);
+    });
+    return selectableIds;
+  }, [session.messages]);
+  const { selection, updateSelection } = useMessageSelector(initialSelection);
   const selectedMessages = useMemo(() => {
     const ret: ChatMessage[] = [];
     if (exportConfig.includeContext) {
@@ -196,7 +214,7 @@ export function MessageExporter() {
   return (
     <>
       <Steps
-        steps={steps}
+        steps={EXPORT_STEPS}
         index={currentStepIndex}
         onStepChange={setCurrentStepIndex}
       />
@@ -218,7 +236,7 @@ export function MessageExporter() {
                 )
               }
             >
-              {formats.map((f) => (
+              {EXPORT_FORMATS.map((f) => (
                 <option key={f} value={f}>
                   {f}
                 </option>
@@ -231,6 +249,7 @@ export function MessageExporter() {
           >
             <input
               type="checkbox"
+              aria-label={Locale.Export.IncludeContext.Title}
               checked={exportConfig.includeContext}
               onChange={(e) => {
                 updateExportConfig(
@@ -243,7 +262,6 @@ export function MessageExporter() {
         <MessageSelector
           selection={selection}
           updateSelection={updateSelection}
-          defaultSelectAll
         />
       </div>
       {currentStep.value === "preview" && (
@@ -253,42 +271,48 @@ export function MessageExporter() {
   );
 }
 
-export function RenderExport(props: {
-  messages: ChatMessage[];
-  onRender: (messages: ChatMessage[]) => void;
-}) {
+export type RenderExportHandle = {
+  getMessages: () => ChatMessage[] | undefined;
+};
+
+const RenderExport = forwardRef<
+  RenderExportHandle,
+  {
+    messages: ChatMessage[];
+  }
+>(function RenderExport(props, ref) {
   const domRef = useRef<HTMLDivElement>(null);
+  const { messages } = props;
 
-  useEffect(() => {
-    if (!domRef.current) return;
-    const dom = domRef.current;
-    const messages = Array.from(
-      dom.getElementsByClassName(EXPORT_MESSAGE_CLASS_NAME),
-    );
+  useImperativeHandle(ref, () => ({
+    getMessages: () => {
+      if (!domRef.current) return;
+      const dom = domRef.current;
+      const messageElements = Array.from(
+        dom.getElementsByClassName(EXPORT_MESSAGE_CLASS_NAME),
+      );
 
-    if (messages.length !== props.messages.length) {
-      return;
-    }
+      if (messageElements.length !== messages.length) {
+        return;
+      }
 
-    const renderMsgs = messages.map((v, i) => {
-      const [role, _] = v.id.split(":");
-      return {
-        id: i.toString(),
-        role: role as any,
-        content: role === "user" ? v.textContent ?? "" : v.innerHTML,
-        date: "",
-      };
-    });
-
-    props.onRender(renderMsgs);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      return messageElements.map((v, i) => {
+        const [role, _] = v.id.split(":");
+        return {
+          id: i.toString(),
+          role: role as any,
+          content: role === "user" ? v.textContent ?? "" : v.innerHTML,
+          date: "",
+        };
+      });
+    },
+  }));
 
   return (
     <div ref={domRef}>
-      {props.messages.map((m, i) => (
+      {messages.map((m, i) => (
         <div
-          key={i}
+          key={m.id || `${m.role}:${getMessageTextContent(m)}`}
           id={`${m.role}:${i}`}
           className={EXPORT_MESSAGE_CLASS_NAME}
         >
@@ -297,20 +321,18 @@ export function RenderExport(props: {
       ))}
     </div>
   );
-}
+});
 
-export function PreviewActions(props: {
+function PreviewActions(props: {
   download: () => void;
   copy: () => void;
   showCopy?: boolean;
   messages?: ChatMessage[];
 }) {
   const [loading, setLoading] = useState(false);
-  const [shouldExport, setShouldExport] = useState(false);
+  const renderExportRef = useRef<RenderExportHandle>(null);
   const config = useAppConfig();
   const onRenderMsgs = (msgs: ChatMessage[]) => {
-    setShouldExport(false);
-
     const api: ClientApi = getClientApi(config.modelConfig.providerName);
 
     api
@@ -322,6 +344,7 @@ export function PreviewActions(props: {
           children: [
             <input
               type="text"
+              aria-label={Locale.Export.Share}
               value={res}
               key="input"
               style={{
@@ -355,7 +378,14 @@ export function PreviewActions(props: {
   const share = async () => {
     if (props.messages?.length) {
       setLoading(true);
-      setShouldExport(true);
+      requestAnimationFrame(() => {
+        const renderMsgs = renderExportRef.current?.getMessages();
+        if (renderMsgs) {
+          onRenderMsgs(renderMsgs);
+        } else {
+          setLoading(false);
+        }
+      });
     }
   };
 
@@ -393,18 +423,13 @@ export function PreviewActions(props: {
           pointerEvents: "none",
         }}
       >
-        {shouldExport && (
-          <RenderExport
-            messages={props.messages ?? []}
-            onRender={onRenderMsgs}
-          />
-        )}
+        <RenderExport ref={renderExportRef} messages={props.messages ?? []} />
       </div>
     </>
   );
 }
 
-export function ImagePreviewer(props: {
+function ImagePreviewer(props: {
   messages: ChatMessage[];
   topic: string;
 }) {
@@ -412,6 +437,7 @@ export function ImagePreviewer(props: {
   const session = chatStore.currentSession();
   const mask = session.mask;
   const config = useAppConfig();
+  const lastMessageDate = props.messages.at(-1)?.date;
 
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -534,9 +560,9 @@ export function ImagePreviewer(props: {
             </div>
             <div className={styles["chat-info-item"]}>
               {Locale.Exporter.Time}:{" "}
-              {new Date(
-                props.messages.at(-1)?.date ?? Date.now(),
-              ).toLocaleString()}
+              {lastMessageDate
+                ? new Date(lastMessageDate).toLocaleString()
+                : ""}
             </div>
           </div>
         </div>
@@ -544,7 +570,7 @@ export function ImagePreviewer(props: {
           return (
             <div
               className={clsx(styles["message"], styles["message-" + m.role])}
-              key={i}
+              key={m.id || `${m.role}:${getMessageTextContent(m)}`}
             >
               <div className={styles["avatar"]}>
                 {m.role === "user" ? (
@@ -565,10 +591,12 @@ export function ImagePreviewer(props: {
                   defaultShow
                 />
                 {getMessageImages(m).length == 1 && (
-                  <img
-                    key={i}
+                  <Image
+                    unoptimized
                     src={getMessageImages(m)[0]}
                     alt="message"
+                    width={512}
+                    height={512}
                     className={styles["message-image"]}
                   />
                 )}
@@ -582,10 +610,13 @@ export function ImagePreviewer(props: {
                     }
                   >
                     {getMessageImages(m).map((src, i) => (
-                      <img
-                        key={i}
+                      <Image
+                        unoptimized
+                        key={src}
                         src={src}
                         alt="message"
+                        width={512}
+                        height={512}
                         className={styles["message-image-multi"]}
                       />
                     ))}
@@ -600,7 +631,7 @@ export function ImagePreviewer(props: {
   );
 }
 
-export function MarkdownPreviewer(props: {
+function MarkdownPreviewer(props: {
   messages: ChatMessage[];
   topic: string;
 }) {
@@ -637,7 +668,7 @@ export function MarkdownPreviewer(props: {
   );
 }
 
-export function JsonPreviewer(props: {
+function JsonPreviewer(props: {
   messages: ChatMessage[];
   topic: string;
 }) {
@@ -671,9 +702,14 @@ export function JsonPreviewer(props: {
         showCopy={false}
         messages={props.messages}
       />
-      <div className="markdown-body" onClick={copy}>
+      <button
+        type="button"
+        className="markdown-body"
+        onClick={copy}
+        style={{ background: "none", border: 0, padding: 0, textAlign: "left" }}
+      >
         <Markdown content={mdText} />
-      </div>
+      </button>
     </>
   );
 }

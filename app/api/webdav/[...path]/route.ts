@@ -129,6 +129,7 @@ async function handle(
   );
 
   const fetchOptions: RequestInit = {
+    cache: "no-store",
     headers: {
       authorization: req.headers.get("authorization") ?? "",
     },
@@ -142,7 +143,10 @@ async function handle(
   let fetchResult;
 
   try {
-    fetchResult = await fetch(targetUrl, fetchOptions);
+    fetchResult = await fetch(targetUrl, {
+      ...fetchOptions,
+      cache: "no-store",
+    });
   } finally {
     console.log(
       "[Any Proxy]",

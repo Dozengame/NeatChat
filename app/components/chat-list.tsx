@@ -8,15 +8,15 @@ import {
   OnDragEndResponder,
 } from "@hello-pangea/dnd";
 
-import { useChatStore } from "../store";
+import { useChatStore } from "../store/chat";
 
 import Locale from "../locales";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Path } from "../constant";
 import { MaskAvatar } from "./mask";
 import { Mask } from "../store/mask";
 import { useRef, useEffect } from "react";
-import { showConfirm } from "./ui-lib";
+import { showConfirm } from "./ui-lib-actions";
 import { useCompactScreen } from "../utils";
 import clsx from "clsx";
 
@@ -44,60 +44,79 @@ export function ChatItem(props: {
   const { pathname: currentPath } = useLocation();
   return (
     <Draggable draggableId={`${props.id}`} index={props.index}>
-      {(provided) => (
-        <div
-          className={clsx(styles["chat-item"], {
-            [styles["chat-item-selected"]]:
-              props.selected &&
-              (currentPath === Path.Chat || currentPath === Path.Home),
-          })}
-          onClick={props.onClick}
-          ref={(ele) => {
-            draggableRef.current = ele;
-            provided.innerRef(ele);
-          }}
-          {...provided.draggableProps}
-          {...provided.dragHandleProps}
-          title={`${props.title}\n${Locale.ChatItem.ChatItemCount(
-            props.count,
-          )}`}
-        >
-          {props.narrow ? (
-            <div className={styles["chat-item-narrow"]}>
-              <div className={clsx(styles["chat-item-avatar"], "no-dark")}>
-                <MaskAvatar
-                  avatar={props.mask.avatar}
-                  model={props.mask.modelConfig.model}
-                />
-              </div>
-              <div className={styles["chat-item-narrow-count"]}>
-                {props.count}
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className={styles["chat-item-title"]}>{props.title}</div>
-              <div className={styles["chat-item-info"]}>
-                <div className={styles["chat-item-count"]}>
-                  {Locale.ChatItem.ChatItemCount(props.count)}
-                </div>
-                <div className={styles["chat-item-date"]}>{props.time}</div>
-              </div>
-            </>
-          )}
+      {(provided) => {
+        const dragHandleProps = provided.dragHandleProps ?? {};
 
+        return (
           <div
-            className={styles["chat-item-delete"]}
-            onClickCapture={(e) => {
-              props.onDelete?.();
-              e.preventDefault();
-              e.stopPropagation();
+            className={clsx(styles["chat-item"], {
+              [styles["chat-item-selected"]]:
+                props.selected &&
+                (currentPath === Path.Chat || currentPath === Path.Home),
+            })}
+            ref={(ele) => {
+              draggableRef.current = ele;
+              provided.innerRef(ele);
             }}
+            {...provided.draggableProps}
+            title={`${props.title}\n${Locale.ChatItem.ChatItemCount(
+              props.count,
+            )}`}
           >
-            <DeleteIcon />
+            <Link
+              to={Path.Chat}
+              className={styles["chat-item-link"]}
+              onClick={props.onClick}
+              {...dragHandleProps}
+            >
+              {props.narrow ? (
+                <div className={styles["chat-item-narrow"]}>
+                  <div className={clsx(styles["chat-item-avatar"], "no-dark")}>
+                    <MaskAvatar
+                      avatar={props.mask.avatar}
+                      model={props.mask.modelConfig.model}
+                    />
+                  </div>
+                  <div className={styles["chat-item-narrow-count"]}>
+                    {props.count}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className={styles["chat-item-title"]}>{props.title}</div>
+                  <div className={styles["chat-item-info"]}>
+                    <div className={styles["chat-item-count"]}>
+                      {Locale.ChatItem.ChatItemCount(props.count)}
+                    </div>
+                    <div className={styles["chat-item-date"]}>{props.time}</div>
+                  </div>
+                </>
+              )}
+            </Link>
+
+            <button
+              type="button"
+              className={styles["chat-item-delete"]}
+              onClick={(e) => {
+                props.onDelete?.();
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              aria-label={Locale.Home.DeleteChat}
+              style={{
+                appearance: "none",
+                background: "none",
+                border: 0,
+                color: "inherit",
+                font: "inherit",
+                padding: 0,
+              }}
+            >
+              <DeleteIcon />
+            </button>
           </div>
-        </div>
-      )}
+        );
+      }}
     </Draggable>
   );
 }

@@ -1,4 +1,4 @@
-import type { ChatOptions, MultimodalContent } from "../api";
+import type { ChatOptions, MultimodalContent } from "../types";
 import type { ModelConfig } from "@/app/store";
 import {
   isOpenAIGpt5OrNewerModelConfig,
@@ -76,8 +76,7 @@ function contentToText(content: string | MultimodalContent[]) {
   }
 
   return content
-    .map((part) => (part.type === "text" ? part.text ?? "" : ""))
-    .filter(Boolean)
+    .flatMap((part) => (part.type === "text" && part.text ? [part.text] : []))
     .join("\n");
 }
 
@@ -91,25 +90,29 @@ function toResponsesInputContent(content: string | MultimodalContent[]) {
     ];
   }
 
-  return content
-    .map((part) => {
-      if (part.type === "text") {
-        return {
-          type: "input_text" as const,
-          text: part.text ?? "",
-        };
-      }
+  return content.flatMap<ResponsesInputContent>((part) => {
+    if (part.type === "text") {
+      return part.text
+        ? [
+            {
+              type: "input_text" as const,
+              text: part.text,
+            },
+          ]
+        : [];
+    }
 
-      if (part.type === "image_url" && part.image_url?.url) {
-        return {
+    if (part.type === "image_url" && part.image_url?.url) {
+      return [
+        {
           type: "input_image" as const,
           image_url: part.image_url.url,
-        };
-      }
+        },
+      ];
+    }
 
-      return undefined;
-    })
-    .filter(Boolean) as ResponsesInputContent[];
+    return [];
+  }) as ResponsesInputContent[];
 }
 
 function toResponsesOutputContent(content: string | MultimodalContent[]) {
@@ -128,9 +131,11 @@ function toResponsesOutputContent(content: string | MultimodalContent[]) {
 
 function toResponsesInput(messages: ChatOptions["messages"], store?: boolean) {
   const instructions = messages
-    .filter((message) => message.role === "system")
-    .map((message) => contentToText(message.content))
-    .filter(Boolean)
+    .flatMap((message) => {
+      if (message.role !== "system") return [];
+      const text = contentToText(message.content);
+      return text ? [text] : [];
+    })
     .join("\n\n");
 
   const conversationMessages = messages.filter(

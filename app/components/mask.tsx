@@ -14,25 +14,13 @@ import CopyIcon from "../icons/copy.svg";
 import DragIcon from "../icons/drag.svg";
 
 import { DEFAULT_MASK_AVATAR, Mask, useMaskStore } from "../store/mask";
-import {
-  ChatMessage,
-  createMessage,
-  ModelConfig,
-  ModelType,
-  useAppConfig,
-  useChatStore,
-} from "../store";
-import { MultimodalContent, ROLES } from "../client/api";
-import {
-  Input,
-  List,
-  ListItem,
-  Modal,
-  Popover,
-  Select,
-  showConfirm,
-} from "./ui-lib";
-import { Avatar, AvatarPicker } from "./emoji";
+import { ChatMessage, createMessage, useChatStore } from "../store/chat";
+import { ModelConfig, ModelType, useAppConfig } from "../store/config";
+import { MultimodalContent, ROLES } from "../client/types";
+import { Input, List, ListItem, Modal, Popover, Select } from "./ui-lib";
+import { showConfirm } from "./ui-lib-actions";
+import { AvatarPicker } from "./emoji";
+import { Avatar } from "./avatar";
 import Locale, { AllLangs, ALL_LANG_OPTIONS, Lang } from "../locales";
 import { useNavigate } from "react-router-dom";
 
@@ -138,17 +126,22 @@ export function MaskConfig(props: {
             open={showPicker}
             onClose={() => setShowPicker(false)}
           >
-            <div
-              tabIndex={0}
+            <button
+              type="button"
               aria-label={Locale.Mask.Config.Avatar}
               onClick={() => setShowPicker(true)}
-              style={{ cursor: "pointer" }}
+              style={{
+                background: "none",
+                border: 0,
+                cursor: "pointer",
+                padding: 0,
+              }}
             >
               <MaskAvatar
                 avatar={props.mask.avatar}
                 model={props.mask.modelConfig.model}
               />
-            </div>
+            </button>
           </Popover>
         </ListItem>
         <ListItem title={Locale.Mask.Config.Name}>
@@ -156,7 +149,7 @@ export function MaskConfig(props: {
             aria-label={Locale.Mask.Config.Name}
             type="text"
             value={props.mask.name}
-            onInput={(e) =>
+            onChange={(e) =>
               props.updateMask((mask) => {
                 mask.name = e.currentTarget.value;
               })
@@ -347,6 +340,16 @@ export function ContextPrompts(props: {
   const addContextPrompt = (prompt: ChatMessage, i: number) => {
     props.updateContext((context) => context.splice(i, 0, prompt));
   };
+  const addEmptyContextPrompt = (index: number) => {
+    addContextPrompt(
+      createMessage({
+        role: "user",
+        content: "",
+        date: new Date().toLocaleString(),
+      }),
+      index,
+    );
+  };
 
   const removeContextPrompt = (i: number) => {
     props.updateContext((context) => context.splice(i, 1));
@@ -406,21 +409,13 @@ export function ContextPrompts(props: {
                           update={(prompt) => updateContextPrompt(i, prompt)}
                           remove={() => removeContextPrompt(i)}
                         />
-                        <div
+                        <button
+                          type="button"
                           className={chatStyle["context-prompt-insert"]}
-                          onClick={() => {
-                            addContextPrompt(
-                              createMessage({
-                                role: "user",
-                                content: "",
-                                date: new Date().toLocaleString(),
-                              }),
-                              i + 1,
-                            );
-                          }}
+                          onClick={() => addEmptyContextPrompt(i + 1)}
                         >
                           <AddIcon />
-                        </div>
+                        </button>
                       </div>
                     )}
                   </Draggable>
@@ -558,9 +553,9 @@ export function MaskPage() {
           <div className={styles["mask-filter"]}>
             <input
               type="text"
+              aria-label={Locale.Mask.Page.Search}
               className={styles["search-bar"]}
               placeholder={Locale.Mask.Page.Search}
-              autoFocus
               onInput={(e) => onSearch(e.currentTarget.value)}
             />
             <Select

@@ -49,36 +49,44 @@ function blobToBytes(blob: Blob) {
 }
 
 async function serializeFormData(formData: FormData) {
-  const boundary = `----NeatChatFormBoundary${Date.now().toString(16)}${Math.random()
-    .toString(16)
-    .slice(2)}`;
+  const boundary = `----NeatChatFormBoundary${Date.now().toString(
+    16,
+  )}${Math.random().toString(16).slice(2)}`;
   const body: number[] = [];
 
-  for (const [name, value] of formData.entries()) {
-    appendBytes(
-      body,
-      encodeText(
-        `--${boundary}\r\nContent-Disposition: form-data; name="${escapeMultipartName(
-          name,
-        )}"`,
-      ),
-    );
+  const parts = await Promise.all(
+    Array.from(formData.entries()).map(async ([name, value]) => {
+      const part: number[] = [];
+      appendBytes(
+        part,
+        encodeText(
+          `--${boundary}\r\nContent-Disposition: form-data; name="${escapeMultipartName(
+            name,
+          )}"`,
+        ),
+      );
 
-    if (typeof value === "string") {
-      appendBytes(body, encodeText(`\r\n\r\n${value}\r\n`));
-      continue;
-    }
+      if (typeof value === "string") {
+        appendBytes(part, encodeText(`\r\n\r\n${value}\r\n`));
+        return part;
+      }
 
-    const filename = escapeMultipartName(value.name || "blob");
-    const contentType = value.type || "application/octet-stream";
-    appendBytes(
-      body,
-      encodeText(
-        `; filename="${filename}"\r\nContent-Type: ${contentType}\r\n\r\n`,
-      ),
-    );
-    appendBytes(body, await blobToBytes(value));
-    appendBytes(body, encodeText("\r\n"));
+      const filename = escapeMultipartName(value.name || "blob");
+      const contentType = value.type || "application/octet-stream";
+      appendBytes(
+        part,
+        encodeText(
+          `; filename="${filename}"\r\nContent-Type: ${contentType}\r\n\r\n`,
+        ),
+      );
+      appendBytes(part, await blobToBytes(value));
+      appendBytes(part, encodeText("\r\n"));
+      return part;
+    }),
+  );
+
+  for (const part of parts) {
+    appendBytes(body, part);
   }
 
   appendBytes(body, encodeText(`--${boundary}--\r\n`));

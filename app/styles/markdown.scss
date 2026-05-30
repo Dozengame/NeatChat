@@ -328,6 +328,7 @@ summary,
 .markdown-body img {
   border-style: none;
   max-width: 100%;
+  height: auto;
   box-sizing: content-box;
   background-color: var(--color-canvas-default);
 }
@@ -349,8 +350,35 @@ summary,
   }
 }
 
+.markdown-body .markdown-image-preview-button {
+  display: block;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  line-height: 0;
+  cursor: zoom-in;
+}
+
+.mermaid {
+  appearance: none;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  overflow: auto;
+  padding: 0;
+  text-align: inherit;
+  width: 100%;
+}
+
 .markdown-body img.markdown-image-preview {
   box-sizing: border-box;
+  width: auto;
+  height: auto;
+  max-height: min(52vh, 520px);
+  object-fit: contain;
   border-radius: 10px;
   border: rgba($color: #888, $alpha: 0.2) 1px solid;
   cursor: zoom-in;
@@ -1342,6 +1370,13 @@ summary,
   width: 100%;
 
   .token-info {
+    position: absolute;
+    right: 0;
+    bottom: -28px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-fg-subtle);
     font-family:
       ui-monospace,
       SFMono-Regular,
@@ -1350,6 +1385,10 @@ summary,
       Consolas,
       Liberation Mono,
       monospace;
+    font-size: 12px;
+    white-space: nowrap;
+    cursor: pointer;
+    opacity: 0.8;
     transition: opacity 0.3s ease;
 
     &:hover {

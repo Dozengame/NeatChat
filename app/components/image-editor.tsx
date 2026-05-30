@@ -22,14 +22,34 @@ const FlippedIcon = ({ icon }: { icon: React.ReactNode }) => (
   <div style={{ transform: "scaleX(-1)" }}>{icon}</div>
 );
 
+const DRAWING_COLORS = [
+  "#FF0000",
+  "#00FF00",
+  "#0000FF",
+  "#FFFF00",
+  "#FF00FF",
+  "#00FFFF",
+  "#000000",
+  "#FFFFFF",
+];
+const BRUSH_SIZES = [2, 5, 10, 20];
+
 export function ImageEditor(props: {
   imageUrl: string;
   onClose: () => void;
   onSave: (editedImageUrl: string) => void;
 }) {
+  return useImageEditorView(props);
+}
+
+function useImageEditorView(props: {
+  imageUrl: string;
+  onClose: () => void;
+  onSave: (editedImageUrl: string) => void;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [ctx, setCtx] = useState<CanvasRenderingContext2D | null>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const isDrawingRef = useRef(false);
   const [color, setColor] = useState("#FF0000"); // 默认红色
   const [brushSize, setBrushSize] = useState(5);
   const [history, setHistory] = useState<string[]>([]);
@@ -37,14 +57,10 @@ export function ImageEditor(props: {
   const [selectedTool, setSelectedTool] = useState<DrawingTool>(
     DrawingTool.Brush,
   );
-  const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(
-    null,
-  );
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [originalImage, setOriginalImage] = useState<HTMLImageElement | null>(
-    null,
-  );
-  const [prevBrushSize, setPrevBrushSize] = useState(5);
+  const startPointRef = useRef<{ x: number; y: number } | null>(null);
+  const previewImageRef = useRef<string | null>(null);
+  const originalImageRef = useRef<HTMLImageElement | null>(null);
+  const prevBrushSizeRef = useRef(5);
 
   // 初始化Canvas
   useEffect(() => {
@@ -54,7 +70,7 @@ export function ImageEditor(props: {
     const context = canvas.getContext("2d");
     if (!context) return;
 
-    setCtx(context);
+    ctxRef.current = context;
 
     // 加载图片
     const image = new Image();
@@ -68,7 +84,7 @@ export function ImageEditor(props: {
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
       // 保存原始图像
-      setOriginalImage(image);
+      originalImageRef.current = image;
 
       // 保存初始状态到历史记录
       saveToHistory();
@@ -95,6 +111,7 @@ export function ImageEditor(props: {
     setRedoStack((prev) => [...prev, lastState]);
 
     // 恢复到上一个状态
+    const ctx = ctxRef.current;
     if (ctx && canvasRef.current) {
       const img = new Image();
       img.onload = () => {
@@ -123,6 +140,7 @@ export function ImageEditor(props: {
     setHistory((prev) => [...prev, stateToRestore]);
 
     // 恢复状态
+    const ctx = ctxRef.current;
     if (ctx && canvasRef.current) {
       const img = new Image();
       img.onload = () => {
@@ -146,8 +164,9 @@ export function ImageEditor(props: {
       | React.MouseEvent<HTMLCanvasElement>
       | React.TouchEvent<HTMLCanvasElement>,
   ) => {
+    const ctx = ctxRef.current;
     if (!ctx || !canvasRef.current) return;
-    setIsDrawing(true);
+    isDrawingRef.current = true;
 
     const rect = canvasRef.current.getBoundingClientRect();
     const scaleX = canvasRef.current.width / rect.width;
@@ -167,9 +186,9 @@ export function ImageEditor(props: {
       selectedTool !== DrawingTool.Brush &&
       selectedTool !== DrawingTool.Eraser
     ) {
-      setStartPoint({ x, y });
+      startPointRef.current = { x, y };
       // 保存当前状态用于预览
-      setPreviewImage(canvasRef.current.toDataURL());
+      previewImageRef.current = canvasRef.current.toDataURL();
     } else {
       // 自由绘制模式或橡皮擦模式
       ctx.beginPath();
@@ -190,6 +209,8 @@ export function ImageEditor(props: {
 
   // 添加专门的擦除函数
   const eraseAt = (x: number, y: number, radius: number) => {
+    const ctx = ctxRef.current;
+    const originalImage = originalImageRef.current;
     if (!ctx || !originalImage || !canvasRef.current) return;
 
     const lastDrawingState = history[history.length - 1];
@@ -206,6 +227,8 @@ export function ImageEditor(props: {
     // 从上一个历史状态中获取当前绘制
     const currentImg = new Image();
     currentImg.onload = () => {
+      const ctx = ctxRef.current;
+      const originalImage = originalImageRef.current;
       if (!ctx || !originalImage || !canvasRef.current) return;
 
       // 清除该区域
@@ -236,7 +259,8 @@ export function ImageEditor(props: {
       | React.MouseEvent<HTMLCanvasElement>
       | React.TouchEvent<HTMLCanvasElement>,
   ) => {
-    if (!isDrawing || !ctx || !canvasRef.current) return;
+    const ctx = ctxRef.current;
+    if (!isDrawingRef.current || !ctx || !canvasRef.current) return;
 
     const rect = canvasRef.current.getBoundingClientRect();
     const scaleX = canvasRef.current.width / rect.width;
@@ -258,7 +282,8 @@ export function ImageEditor(props: {
     } else if (selectedTool === DrawingTool.Eraser) {
       // 橡皮擦模式 - 使用新的擦除函数
       eraseAt(x, y, brushSize / 2);
-    } else if (startPoint && previewImage) {
+    } else if (startPointRef.current && previewImageRef.current) {
+      const startPoint = startPointRef.current;
       // 形状绘制模式 - 预览
       const img = new Image();
       img.onload = () => {
@@ -290,23 +315,24 @@ export function ImageEditor(props: {
             break;
         }
       };
-      img.src = previewImage;
+      img.src = previewImageRef.current;
     }
   };
 
   // 结束绘制
   const endDrawing = () => {
-    if (!isDrawing) return;
-    setIsDrawing(false);
+    if (!isDrawingRef.current) return;
+    isDrawingRef.current = false;
 
+    const ctx = ctxRef.current;
     if (ctx) {
       ctx.closePath();
       ctx.globalCompositeOperation = "source-over"; // 重置为默认模式
     }
 
     // 重置状态
-    setStartPoint(null);
-    setPreviewImage(null);
+    startPointRef.current = null;
+    previewImageRef.current = null;
 
     // 保存到历史记录并清空重做栈
     saveToHistory();
@@ -321,20 +347,9 @@ export function ImageEditor(props: {
     props.onClose();
   };
 
-  const colors = [
-    "#FF0000",
-    "#00FF00",
-    "#0000FF",
-    "#FFFF00",
-    "#FF00FF",
-    "#00FFFF",
-    "#000000",
-    "#FFFFFF",
-  ];
-  const sizes = [2, 5, 10, 20];
-
   // 添加绘制函数
   const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
+    const ctx = ctxRef.current;
     if (!ctx) return;
     ctx.beginPath();
     ctx.moveTo(x1, y1);
@@ -343,6 +358,7 @@ export function ImageEditor(props: {
   };
 
   const drawArrow = (x1: number, y1: number, x2: number, y2: number) => {
+    const ctx = ctxRef.current;
     if (!ctx) return;
 
     // 绘制直线部分
@@ -371,6 +387,7 @@ export function ImageEditor(props: {
   };
 
   const drawRectangle = (x1: number, y1: number, x2: number, y2: number) => {
+    const ctx = ctxRef.current;
     if (!ctx) return;
     const width = x2 - x1;
     const height = y2 - y1;
@@ -380,6 +397,7 @@ export function ImageEditor(props: {
   };
 
   const drawCircle = (x1: number, y1: number, x2: number, y2: number) => {
+    const ctx = ctxRef.current;
     if (!ctx) return;
     const radius = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
     ctx.beginPath();
@@ -429,27 +447,33 @@ export function ImageEditor(props: {
         <div className={styles["image-editor-container"]}>
           <div className={styles["tools-container"]}>
             <div className={styles["tools-selector"]}>
-              <div
+              <button
                 className={`${styles["tool-option"]} ${
                   selectedTool === DrawingTool.Brush ? styles["selected"] : ""
                 }`}
+                type="button"
+                aria-label="画笔工具"
+                aria-pressed={selectedTool === DrawingTool.Brush}
                 onClick={() => {
                   if (selectedTool === DrawingTool.Eraser) {
-                    setBrushSize(prevBrushSize);
+                    setBrushSize(prevBrushSizeRef.current);
                   }
                   setSelectedTool(DrawingTool.Brush);
                 }}
                 title="画笔工具"
               >
                 ✏️
-              </div>
-              <div
+              </button>
+              <button
                 className={`${styles["tool-option"]} ${
                   selectedTool === DrawingTool.Eraser ? styles["selected"] : ""
                 }`}
+                type="button"
+                aria-label="橡皮擦"
+                aria-pressed={selectedTool === DrawingTool.Eraser}
                 onClick={() => {
                   if (selectedTool !== DrawingTool.Eraser) {
-                    setPrevBrushSize(brushSize);
+                    prevBrushSizeRef.current = brushSize;
                   }
                   setSelectedTool(DrawingTool.Eraser);
                   setBrushSize(20); // 设置为最粗的笔刷粗细
@@ -457,87 +481,105 @@ export function ImageEditor(props: {
                 title="橡皮擦"
               >
                 🧼
-              </div>
-              <div
+              </button>
+              <button
                 className={`${styles["tool-option"]} ${
                   selectedTool === DrawingTool.Line ? styles["selected"] : ""
                 }`}
+                type="button"
+                aria-label="直线工具"
+                aria-pressed={selectedTool === DrawingTool.Line}
                 onClick={() => {
                   if (selectedTool === DrawingTool.Eraser) {
-                    setBrushSize(prevBrushSize);
+                    setBrushSize(prevBrushSizeRef.current);
                   }
                   setSelectedTool(DrawingTool.Line);
                 }}
                 title="直线工具"
               >
                 ⁄
-              </div>
-              <div
+              </button>
+              <button
                 className={`${styles["tool-option"]} ${
                   selectedTool === DrawingTool.Arrow ? styles["selected"] : ""
                 }`}
+                type="button"
+                aria-label="箭头工具"
+                aria-pressed={selectedTool === DrawingTool.Arrow}
                 onClick={() => {
                   if (selectedTool === DrawingTool.Eraser) {
-                    setBrushSize(prevBrushSize);
+                    setBrushSize(prevBrushSizeRef.current);
                   }
                   setSelectedTool(DrawingTool.Arrow);
                 }}
                 title="箭头工具"
               >
                 →
-              </div>
-              <div
+              </button>
+              <button
                 className={`${styles["tool-option"]} ${
                   selectedTool === DrawingTool.Rectangle
                     ? styles["selected"]
                     : ""
                 }`}
+                type="button"
+                aria-label="矩形工具"
+                aria-pressed={selectedTool === DrawingTool.Rectangle}
                 onClick={() => {
                   if (selectedTool === DrawingTool.Eraser) {
-                    setBrushSize(prevBrushSize);
+                    setBrushSize(prevBrushSizeRef.current);
                   }
                   setSelectedTool(DrawingTool.Rectangle);
                 }}
                 title="矩形工具"
               >
                 □
-              </div>
-              <div
+              </button>
+              <button
                 className={`${styles["tool-option"]} ${
                   selectedTool === DrawingTool.Circle ? styles["selected"] : ""
                 }`}
+                type="button"
+                aria-label="圆形工具"
+                aria-pressed={selectedTool === DrawingTool.Circle}
                 onClick={() => {
                   if (selectedTool === DrawingTool.Eraser) {
-                    setBrushSize(prevBrushSize);
+                    setBrushSize(prevBrushSizeRef.current);
                   }
                   setSelectedTool(DrawingTool.Circle);
                 }}
                 title="圆形工具"
               >
                 ○
-              </div>
+              </button>
             </div>
 
             <div className={styles["color-picker"]}>
-              {colors.map((c) => (
-                <div
+              {DRAWING_COLORS.map((c) => (
+                <button
                   key={c}
                   className={`${styles["color-option"]} ${
                     color === c ? styles["selected"] : ""
                   }`}
                   style={{ backgroundColor: c }}
+                  type="button"
+                  aria-label={`选择颜色 ${c}`}
+                  aria-pressed={color === c}
                   onClick={() => setColor(c)}
                 />
               ))}
             </div>
 
             <div className={styles["brush-size-picker"]}>
-              {sizes.map((s) => (
-                <div
+              {BRUSH_SIZES.map((s) => (
+                <button
                   key={s}
                   className={`${styles["size-option"]} ${
                     brushSize === s ? styles["selected"] : ""
                   }`}
+                  type="button"
+                  aria-label={`选择笔刷大小 ${s}`}
+                  aria-pressed={brushSize === s}
                   onClick={() => setBrushSize(s)}
                 >
                   <div
@@ -548,7 +590,7 @@ export function ImageEditor(props: {
                       backgroundColor: "black",
                     }}
                   />
-                </div>
+                </button>
               ))}
             </div>
           </div>
