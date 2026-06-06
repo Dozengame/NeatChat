@@ -1950,6 +1950,13 @@ function useChatInnerView() {
     );
     return renderMessages.slice(msgRenderIndex, endRenderIndex);
   }, [msgRenderIndex, renderMessages]);
+  const showEmptyState =
+    session.messages.length === 0 &&
+    context.length === 1 &&
+    getMessageTextContent(context[0]) === BOT_HELLO.content &&
+    !isLoading;
+  const showEmptyHero =
+    showEmptyState && !hasActiveInputContent && !showChatActionMenu;
 
   const onChatBodyScroll = (e: HTMLElement) => {
     const bottomHeight = e.scrollTop + e.clientHeight;
@@ -2417,12 +2424,22 @@ function useChatInnerView() {
       <div className={styles["chat-main"]}>
         <div className={styles["chat-body-container"]}>
           <section
-            className={styles["chat-body"]}
+            className={clsx(styles["chat-body"], {
+              [styles["chat-body-empty"]]: showEmptyHero,
+            })}
             ref={scrollRef}
             aria-label="聊天消息"
             onScroll={(e) => onChatBodyScroll(e.currentTarget)}
           >
-            {messages.map((message, i) => {
+            {showEmptyHero && (
+              <div className={styles["chat-empty-state"]}>
+                <div className={styles["chat-empty-halo"]} />
+                <h1 className={styles["chat-empty-title"]}>
+                  {Locale.Chat.EmptyTitle}
+                </h1>
+              </div>
+            )}
+            {(showEmptyState ? [] : messages).map((message, i) => {
               const isUser = message.role === "user";
               const isContext = i < context.length;
               const showActions =
@@ -2682,6 +2699,7 @@ function useChatInnerView() {
           <div
             className={clsx(styles["chat-input-panel"], {
               [styles["chat-input-panel-collapsed"]]: !shouldExpandChatInput,
+              [styles["chat-input-panel-empty"]]: showEmptyState,
             })}
           >
             <PromptHints

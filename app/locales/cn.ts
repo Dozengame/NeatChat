@@ -77,6 +77,7 @@ const cn = {
     },
     Rename: "重命名对话",
     Typing: "正在输入…",
+    EmptyTitle: "你好！想聊点什么？",
     Input: (submitKey: string) => {
       var inputHints = `${submitKey} 发送`;
       if (submitKey === String(SubmitKey.Enter)) {
