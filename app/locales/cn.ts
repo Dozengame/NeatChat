@@ -803,6 +803,7 @@ const cn = {
     Page: {
       Title: "搜索聊天记录",
       Search: "输入搜索关键词",
+      Recent: "最近聊天",
       NoResult: "没有找到结果",
       NoData: "没有数据",
       Loading: "加载中",
@@ -925,6 +926,7 @@ const cn = {
     Confirm: "确认",
     Cancel: "取消",
     Close: "关闭",
+    Clear: "清除",
     Create: "新建",
     Edit: "编辑",
     Export: "导出",

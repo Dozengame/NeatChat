@@ -25,7 +25,7 @@ export function useWindowSize() {
 }
 
 const MOBILE_MAX_WIDTH = 600;
-const COMPACT_MAX_WIDTH = 900;
+const COMPACT_MAX_WIDTH = 767;
 
 export function useMobileScreen() {
   const { width } = useWindowSize();

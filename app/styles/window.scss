@@ -1,11 +1,13 @@
 .window-header {
-  padding: 10px 20px;
-  border-bottom: rgba(0, 0, 0, 0.1) 1px solid;
+  padding: 10px 18px;
+  border-bottom: 0;
   position: relative;
 
   display: flex;
   justify-content: space-between;
   align-items: center;
+  min-height: 44px;
+  box-sizing: border-box;
 }
 
 .window-header-title {
@@ -13,8 +15,8 @@
   overflow: hidden;
 
   .window-header-main-title {
-    font-size: 20px;
-    font-weight: bolder;
+    font-size: 16px;
+    font-weight: 500;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

@@ -813,6 +813,7 @@ const en: LocaleType = {
     Page: {
       Title: "Search Chat History",
       Search: "Enter search query to search chat history",
+      Recent: "Recent chats",
       NoResult: "No results found",
       NoData: "No data",
       Loading: "Loading...",
@@ -932,6 +933,7 @@ const en: LocaleType = {
     Confirm: "Confirm",
     Cancel: "Cancel",
     Close: "Close",
+    Clear: "Clear",
     Create: "Create",
     Edit: "Edit",
     Export: "Export",

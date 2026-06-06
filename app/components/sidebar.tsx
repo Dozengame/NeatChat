@@ -25,7 +25,7 @@ import {
   PLUGINS,
 } from "../constant";
 
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { isIOS, useCompactScreen, useMobileScreen } from "../utils";
 import dynamic from "next/dynamic";
 import { SimpleSelector } from "./ui-lib";
@@ -232,6 +232,7 @@ export function SideBar(props: { className?: string }) {
   const { onDragStart, shouldNarrow } = useDragSideBar();
   const [showPluginSelector, setShowPluginSelector] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const config = useAppConfig();
   const chatStore = useChatStore();
   const [mcpEnabled, setMcpEnabled] = useState<boolean | null>(null);
@@ -269,6 +270,36 @@ export function SideBar(props: { className?: string }) {
       });
   };
 
+  const startNewChat = () => {
+    if (config.dontShowMaskSplashScreen) {
+      chatStore.newSession();
+      navigate(Path.Chat);
+    } else {
+      navigate(Path.NewChat);
+    }
+  };
+
+  const navItems = [
+    {
+      label: Locale.Home.NewChat,
+      icon: <AddIcon />,
+      path: Path.NewChat,
+      onClick: startNewChat,
+    },
+    {
+      label: Locale.SearchChat.Name,
+      icon: <DiscoveryIcon />,
+      path: Path.SearchChat,
+      onClick: () => navigate(Path.SearchChat),
+    },
+    {
+      label: Locale.Mask.Name,
+      icon: <MaskIcon />,
+      path: Path.Masks,
+      onClick: () => navigate(Path.Masks, { state: { fromHome: true } }),
+    },
+  ];
+
   return (
     <SideBarContainer
       onDragStart={onDragStart}
@@ -277,31 +308,40 @@ export function SideBar(props: { className?: string }) {
     >
       <SideBarHeader
         title="NeatChat"
-        subTitle="A Better AI assistant."
-        logo={<NeatIcon width={44} height={44} />}
+        logo={<NeatIcon width={32} height={32} />}
         shouldNarrow={shouldNarrow}
       >
         <div className={styles["sidebar-header-bar"]}>
-          <IconButton
-            icon={<MaskIcon />}
-            text={shouldNarrow ? undefined : Locale.Mask.Name}
-            className={styles["sidebar-bar-button"]}
-            onClick={() => {
-              if (config.dontShowMaskSplashScreen !== true) {
-                navigate(Path.NewChat, { state: { fromHome: true } });
-              } else {
-                navigate(Path.Masks, { state: { fromHome: true } });
-              }
-            }}
-            shadow
-          />
-          <IconButton
-            icon={<DiscoveryIcon />}
-            text={shouldNarrow ? undefined : Locale.Discovery.Name}
-            className={styles["sidebar-bar-button"]}
+          {navItems.map((item) => (
+            <button
+              type="button"
+              key={item.path}
+              className={clsx(styles["sidebar-nav-item"], {
+                [styles["sidebar-nav-item-active"]]:
+                  location.pathname === item.path,
+              })}
+              onClick={item.onClick}
+              aria-label={item.label}
+              title={shouldNarrow ? item.label : undefined}
+            >
+              {item.icon}
+              {!shouldNarrow && <span>{item.label}</span>}
+            </button>
+          ))}
+          <button
+            type="button"
+            className={clsx(styles["sidebar-nav-item"], {
+              [styles["sidebar-nav-item-active"]]:
+                location.pathname === Path.Plugins ||
+                location.pathname === Path.McpMarket,
+            })}
             onClick={openDiscoverySelector}
-            shadow
-          />
+            aria-label={Locale.Discovery.Name}
+            title={shouldNarrow ? Locale.Discovery.Name : undefined}
+          >
+            <DiscoveryIcon />
+            {!shouldNarrow && <span>{Locale.Discovery.Name}</span>}
+          </button>
         </div>
         {showPluginSelector && (
           <SimpleSelector
@@ -325,6 +365,11 @@ export function SideBar(props: { className?: string }) {
           />
         }
       >
+        {!shouldNarrow && (
+          <div className={styles["sidebar-section-label"]}>
+            {Locale.SearchChat.Page.Recent}
+          </div>
+        )}
         <ChatList narrow={shouldNarrow} />
       </SideBarBody>
       <SideBarTail
@@ -355,14 +400,7 @@ export function SideBar(props: { className?: string }) {
           <IconButton
             icon={<AddIcon />}
             text={shouldNarrow ? undefined : Locale.Home.NewChat}
-            onClick={() => {
-              if (config.dontShowMaskSplashScreen) {
-                chatStore.newSession();
-                navigate(Path.Chat);
-              } else {
-                navigate(Path.NewChat);
-              }
-            }}
+            onClick={startNewChat}
             shadow
           />
         }

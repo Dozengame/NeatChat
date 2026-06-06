@@ -37,6 +37,7 @@ import FileIcon from "../icons/file.svg";
 import AttachmentIcon from "../icons/attachment.svg";
 import ImageIcon from "../icons/image.svg";
 import DownloadIcon from "../icons/download.svg";
+import AddIcon from "../icons/add.svg";
 
 import LightIcon from "../icons/light.svg";
 import DarkIcon from "../icons/dark.svg";
@@ -1468,18 +1469,14 @@ function useChatInnerView() {
   const promptStore = usePromptStore();
   const [promptHints, setPromptHints] = useState<RenderPrompt[]>([]);
   const [isInputExpanded, setIsInputExpanded] = useState(false);
-  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [showChatActionMenu, setShowChatActionMenu] = useState(false);
   const ignoreInputCollapseUntil = useRef(0);
   const hasActiveInputContent =
     userInput.trim().length > 0 ||
     attachImages.length > 0 ||
     attachedFiles.length > 0 ||
     promptHints.length > 0;
-  const shouldExpandChatInput =
-    !isCompactScreen ||
-    isInputExpanded ||
-    isInputFocused ||
-    hasActiveInputContent;
+  const shouldExpandChatInput = isInputExpanded || hasActiveInputContent;
   const expandInput = () => {
     ignoreInputCollapseUntil.current = Date.now() + 350;
     setIsInputExpanded(true);
@@ -1981,7 +1978,6 @@ function useChatInnerView() {
       Date.now() > ignoreInputCollapseUntil.current
     ) {
       inputRef.current?.blur();
-      setIsInputFocused(false);
       setIsInputExpanded(false);
     }
   };
@@ -2574,8 +2570,12 @@ function useChatInnerView() {
                           messageId={message.id}
                           streaming={message.streaming}
                           shouldAutoScroll={autoScroll}
-                          enableArtifacts={session.mask?.enableArtifacts !== false}
-                          enableCodeFold={session.mask?.enableCodeFold !== false}
+                          enableArtifacts={
+                            session.mask?.enableArtifacts !== false
+                          }
+                          enableCodeFold={
+                            session.mask?.enableCodeFold !== false
+                          }
                           onContentChange={scrollDomToBottom}
                           onPreviewImage={setPreviewImage}
                           onDownloadImage={downloadImage}
@@ -2689,180 +2689,200 @@ function useChatInnerView() {
               onPromptSelect={onPromptSelect}
             />
 
-            <ChatActions
-              uploadAttachments={handleUploadAttachments}
-              setAttachImages={setAttachImages}
-              setUploading={setUploading}
-              showPromptModal={() => setShowPromptModal(true)}
-              scrollToBottom={scrollToBottom}
-              hitBottom={hitBottom}
-              uploading={uploading}
-              showPromptHints={() => {
-                expandInput();
-                // Click again to close
-                if (promptHints.length > 0) {
-                  setPromptHints([]);
-                  return;
-                }
-
-                inputRef.current?.focus();
-                setUserInput("/");
-                onSearch("");
-              }}
-              setShowShortcutKeyModal={setShowShortcutKeyModal}
-              setUserInput={setUserInput}
-              setShowChatSidePanel={setShowChatSidePanel}
-              imageGenerationEnabled={imageGenerationEnabled}
-              setImageGenerationEnabled={setImageGenerationEnabled}
-            />
-            <label
-              className={clsx(styles["chat-input-panel-inner"], {
-                [styles["chat-input-panel-inner-collapsed"]]:
-                  !shouldExpandChatInput,
-                [styles["chat-input-panel-inner-attach"]]:
-                  attachImages.length !== 0 || attachedFiles.length !== 0,
-                [styles["chat-input-panel-inner-reasoning"]]:
-                  showInputReasoningAction,
-              })}
-              htmlFor="chat-input"
-            >
-              <textarea
-                id="chat-input"
-                ref={inputRef}
-                className={styles["chat-input"]}
-                placeholder={
-                  isCompactScreen
-                    ? Locale.Chat.MobileInput
-                    : Locale.Chat.Input(submitKey)
-                }
-                onChange={(e) => onInput(e.currentTarget.value)}
-                value={userInput}
-                onKeyDown={onInputKeyDown}
-                onFocus={() => {
-                  setIsInputFocused(true);
-                  expandInput();
-                  scrollToBottom();
-                }}
+            <div className={styles["chat-input-row"]}>
+              <button
+                type="button"
+                className={clsx(styles["chat-input-menu-button"], {
+                  [styles["chat-input-menu-button-active"]]: showChatActionMenu,
+                })}
                 onClick={() => {
                   expandInput();
-                  scrollToBottom();
+                  setShowChatActionMenu((open) => !open);
                 }}
-                onBlur={() => setIsInputFocused(false)}
-                onPaste={handlePaste}
-                rows={inputRows}
-                autoFocus={autoFocus}
-                style={{
-                  fontSize: config.fontSize,
-                  fontFamily: config.fontFamily,
-                }}
-              />
+                aria-label="打开对话工具"
+                aria-expanded={showChatActionMenu}
+              >
+                <AddIcon />
+              </button>
+              {showChatActionMenu && (
+                <div className={styles["chat-input-action-menu"]}>
+                  <ChatActions
+                    uploadAttachments={handleUploadAttachments}
+                    setAttachImages={setAttachImages}
+                    setUploading={setUploading}
+                    showPromptModal={() => setShowPromptModal(true)}
+                    scrollToBottom={scrollToBottom}
+                    hitBottom={hitBottom}
+                    uploading={uploading}
+                    showPromptHints={() => {
+                      expandInput();
+                      // Click again to close
+                      if (promptHints.length > 0) {
+                        setPromptHints([]);
+                        return;
+                      }
 
-              <ChatInputReasoningAction />
-
-              {/* 附件容器（包含图片和文件） */}
-              {(attachImages.length > 0 || attachedFiles.length > 0) && (
-                <div className={styles["attachments-container"]}>
-                  {/* 图片附件 */}
-                  {attachImages.map((image, index) => (
-                    <div className={styles["attach-item"]} key={image}>
-                      <button
-                        type="button"
-                        className={styles["attach-image"]}
-                        aria-label="编辑图片附件"
-                        style={{ backgroundImage: `url("${image}")` }}
-                        onClick={() => setEditingImage(image)}
-                      />
-                      <div className={styles["attach-image-mask"]}>
-                        <DeleteImageButton
-                          deleteImage={(e) => {
-                            e.stopPropagation(); // 防止触发图片点击事件
-                            setAttachImages(
-                              attachImages.filter((_, i) => i !== index),
-                            );
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* 文件附件 */}
-                  {attachedFiles.map((file, index) => (
-                    <div
-                      className={styles["attach-item"]}
-                      key={`${file.name}-${file.size}-${file.type}`}
-                    >
-                      <button
-                        type="button"
-                        className={styles["attach-file"]}
-                        onClick={async () => {
-                          // 使用与消息编辑相同的showPrompt函数
-                          const newContent = await showPrompt(
-                            `编辑文件：${file.name}`,
-                            file.content,
-                            20, // 更多行数以便于编辑文件内容
-                          );
-
-                          if (newContent) {
-                            // 更新文件内容
-                            const updatedFiles = attachedFiles.map((f, i) => {
-                              if (i === index) {
-                                // 更新文件大小
-                                const newSize = new Blob([newContent]).size;
-                                return {
-                                  ...f,
-                                  content: newContent,
-                                  size: newSize,
-                                  originalFile: new File([newContent], f.name, {
-                                    type: f.type,
-                                  }),
-                                };
-                              }
-                              return f;
-                            });
-                            setAttachedFiles(updatedFiles);
-                          }
-                        }}
-                      >
-                        <div className={styles["attach-file-card"]}>
-                          <div
-                            className={clsx(
-                              styles["attach-file-icon"],
-                              getFileIconClass(file.type),
-                            )}
-                          >
-                            <FileIcon />
-                          </div>
-                          <div className={styles["attach-file-info"]}>
-                            <div className={styles["attach-file-name"]}>
-                              {file.name}
-                            </div>
-                            <div className={styles["attach-file-size"]}>
-                              {(file.size / 1024).toFixed(2)} KB
-                            </div>
-                          </div>
-                        </div>
-                      </button>
-                      <div className={styles["attach-image-mask"]}>
-                        <DeleteImageButton
-                          deleteImage={(e) => {
-                            e.stopPropagation(); // 防止触发文件点击事件
-                            deleteAttachedFile(index);
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                      inputRef.current?.focus();
+                      setUserInput("/");
+                      onSearch("");
+                    }}
+                    setShowShortcutKeyModal={setShowShortcutKeyModal}
+                    setUserInput={setUserInput}
+                    setShowChatSidePanel={setShowChatSidePanel}
+                    imageGenerationEnabled={imageGenerationEnabled}
+                    setImageGenerationEnabled={setImageGenerationEnabled}
+                  />
                 </div>
               )}
+              <label
+                className={clsx(styles["chat-input-panel-inner"], {
+                  [styles["chat-input-panel-inner-collapsed"]]:
+                    !shouldExpandChatInput,
+                  [styles["chat-input-panel-inner-attach"]]:
+                    attachImages.length !== 0 || attachedFiles.length !== 0,
+                  [styles["chat-input-panel-inner-reasoning"]]:
+                    showInputReasoningAction,
+                })}
+                htmlFor="chat-input"
+              >
+                <textarea
+                  id="chat-input"
+                  ref={inputRef}
+                  className={styles["chat-input"]}
+                  placeholder={
+                    isCompactScreen
+                      ? Locale.Chat.MobileInput
+                      : Locale.Chat.Input(submitKey)
+                  }
+                  onChange={(e) => onInput(e.currentTarget.value)}
+                  value={userInput}
+                  onKeyDown={onInputKeyDown}
+                  onFocus={() => {
+                    scrollToBottom();
+                  }}
+                  onClick={() => {
+                    scrollToBottom();
+                  }}
+                  onPaste={handlePaste}
+                  rows={inputRows}
+                  autoFocus={autoFocus}
+                  style={{
+                    fontSize: config.fontSize,
+                    fontFamily: config.fontFamily,
+                  }}
+                />
 
-              <IconButton
-                icon={<SendWhiteIcon />}
-                text={isCompactScreen ? undefined : Locale.Chat.Send}
-                className={styles["chat-input-send"]}
-                type="primary"
-                onClick={() => doSubmit(userInput)}
-              />
-            </label>
+                <ChatInputReasoningAction />
+
+                {/* 附件容器（包含图片和文件） */}
+                {(attachImages.length > 0 || attachedFiles.length > 0) && (
+                  <div className={styles["attachments-container"]}>
+                    {/* 图片附件 */}
+                    {attachImages.map((image, index) => (
+                      <div className={styles["attach-item"]} key={image}>
+                        <button
+                          type="button"
+                          className={styles["attach-image"]}
+                          aria-label="编辑图片附件"
+                          style={{ backgroundImage: `url("${image}")` }}
+                          onClick={() => setEditingImage(image)}
+                        />
+                        <div className={styles["attach-image-mask"]}>
+                          <DeleteImageButton
+                            deleteImage={(e) => {
+                              e.stopPropagation(); // 防止触发图片点击事件
+                              setAttachImages(
+                                attachImages.filter((_, i) => i !== index),
+                              );
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* 文件附件 */}
+                    {attachedFiles.map((file, index) => (
+                      <div
+                        className={styles["attach-item"]}
+                        key={`${file.name}-${file.size}-${file.type}`}
+                      >
+                        <button
+                          type="button"
+                          className={styles["attach-file"]}
+                          onClick={async () => {
+                            // 使用与消息编辑相同的showPrompt函数
+                            const newContent = await showPrompt(
+                              `编辑文件：${file.name}`,
+                              file.content,
+                              20, // 更多行数以便于编辑文件内容
+                            );
+
+                            if (newContent) {
+                              // 更新文件内容
+                              const updatedFiles = attachedFiles.map((f, i) => {
+                                if (i === index) {
+                                  // 更新文件大小
+                                  const newSize = new Blob([newContent]).size;
+                                  return {
+                                    ...f,
+                                    content: newContent,
+                                    size: newSize,
+                                    originalFile: new File(
+                                      [newContent],
+                                      f.name,
+                                      {
+                                        type: f.type,
+                                      },
+                                    ),
+                                  };
+                                }
+                                return f;
+                              });
+                              setAttachedFiles(updatedFiles);
+                            }
+                          }}
+                        >
+                          <div className={styles["attach-file-card"]}>
+                            <div
+                              className={clsx(
+                                styles["attach-file-icon"],
+                                getFileIconClass(file.type),
+                              )}
+                            >
+                              <FileIcon />
+                            </div>
+                            <div className={styles["attach-file-info"]}>
+                              <div className={styles["attach-file-name"]}>
+                                {file.name}
+                              </div>
+                              <div className={styles["attach-file-size"]}>
+                                {(file.size / 1024).toFixed(2)} KB
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                        <div className={styles["attach-image-mask"]}>
+                          <DeleteImageButton
+                            deleteImage={(e) => {
+                              e.stopPropagation(); // 防止触发文件点击事件
+                              deleteAttachedFile(index);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <IconButton
+                  icon={<SendWhiteIcon />}
+                  text={isCompactScreen ? undefined : Locale.Chat.Send}
+                  className={styles["chat-input-send"]}
+                  type="primary"
+                  onClick={() => doSubmit(userInput)}
+                />
+              </label>
+            </div>
           </div>
         </div>
         <div
