@@ -2,12 +2,7 @@
 
 require("../polyfill");
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useSyncExternalStore,
-} from "react";
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import styles from "./home.module.scss";
 
 import { getCSSVar, useCompactScreen } from "../utils";
@@ -157,9 +152,18 @@ function ScreenContent(props: {
   isHome: boolean;
   isSd: boolean;
   isSdNew: boolean;
+  isCompactScreen: boolean;
   shouldRequireAccessCode: boolean;
 }) {
-  const { isAuth, isHome, isSd, isSdNew, shouldRequireAccessCode } = props;
+  const {
+    isAuth,
+    isHome,
+    isSd,
+    isSdNew,
+    isCompactScreen,
+    shouldRequireAccessCode,
+  } = props;
+  const navigate = useNavigate();
 
   if (shouldRequireAccessCode) return <AuthPage />;
   if (isAuth) return <AuthPage />;
@@ -172,6 +176,14 @@ function ScreenContent(props: {
           [styles["sidebar-show"]]: isHome,
         })}
       />
+      {isCompactScreen && isHome && (
+        <button
+          type="button"
+          className={styles["sidebar-backdrop"]}
+          aria-label="关闭侧边栏"
+          onClick={() => navigate(Path.Chat)}
+        />
+      )}
       <WindowContent>
         <Routes>
           <Route path={Path.Home} element={<Chat />} />
@@ -292,6 +304,7 @@ function Screen() {
         isHome={isHome}
         isSd={isSd}
         isSdNew={isSdNew}
+        isCompactScreen={isCompactScreen}
         shouldRequireAccessCode={shouldRequireAccessCode}
       />
       <UpdateAnnouncement

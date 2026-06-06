@@ -116,9 +116,12 @@ function useSettingsView() {
     if (!showUsage || shouldHideBalanceQuery) return;
 
     setLoadingUsage(true);
-    useUpdateStore.getState().updateUsage(false).finally(() => {
-      setLoadingUsage(false);
-    });
+    useUpdateStore
+      .getState()
+      .updateUsage(false)
+      .finally(() => {
+        setLoadingUsage(false);
+      });
   }, [showUsage, shouldHideBalanceQuery]);
 
   useEffect(() => {
@@ -127,17 +130,22 @@ function useSettingsView() {
         navigate(Path.Home);
       }
     };
-    if (clientConfig?.isApp) {
-      // Force to set custom endpoint to true if it's app
-      accessStore.update((state) => {
-        state.useCustomConfig = true;
-      });
-    }
     document.addEventListener("keydown", keydownEvent);
     return () => {
       document.removeEventListener("keydown", keydownEvent);
     };
-  }, [accessStore, clientConfig?.isApp, navigate]);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!clientConfig?.isApp) return;
+
+    const accessState = useAccessStore.getState();
+    if (accessState.useCustomConfig) return;
+
+    accessState.update((state) => {
+      state.useCustomConfig = true;
+    });
+  }, [clientConfig?.isApp]);
 
   const showAccessCode = enabledAccessControl && !clientConfig?.isApp;
 

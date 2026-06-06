@@ -5,7 +5,6 @@ import styles from "./home.module.scss";
 import { IconButton } from "./button";
 import SettingsIcon from "../icons/settings.svg";
 import AddIcon from "../icons/add.svg";
-import DeleteIcon from "../icons/delete.svg";
 import MaskIcon from "../icons/mask.svg";
 import DragIcon from "../icons/drag.svg";
 import DiscoveryIcon from "../icons/discovery.svg";
@@ -29,7 +28,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { isIOS, useCompactScreen, useMobileScreen } from "../utils";
 import dynamic from "next/dynamic";
 import { SimpleSelector } from "./ui-lib";
-import { showConfirm } from "./ui-lib-actions";
 import clsx from "clsx";
 import { isMcpEnabled } from "../mcp/actions";
 
@@ -230,6 +228,7 @@ export function SideBarTail(props: {
 export function SideBar(props: { className?: string }) {
   useHotKey();
   const { onDragStart, shouldNarrow } = useDragSideBar();
+  const isCompactScreen = useCompactScreen();
   const [showPluginSelector, setShowPluginSelector] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -374,17 +373,44 @@ export function SideBar(props: { className?: string }) {
       </SideBarBody>
       <SideBarTail
         primaryAction={
-          <>
-            <div className={clsx(styles["sidebar-action"], styles.mobile)}>
-              <IconButton
-                icon={<DeleteIcon />}
-                onClick={async () => {
-                  if (await showConfirm(Locale.Home.DeleteChat)) {
-                    chatStore.deleteSession(chatStore.currentSessionIndex);
-                  }
-                }}
-              />
+          isCompactScreen ? (
+            <div className={styles["sidebar-mobile-account"]}>
+              <div
+                className={clsx(
+                  styles["sidebar-mobile-account-avatar"],
+                  "no-dark",
+                )}
+              >
+                <span
+                  className={styles["sidebar-mobile-pixel-face"]}
+                  aria-hidden="true"
+                >
+                  <span className={styles["sidebar-mobile-pixel-eye-left"]} />
+                  <span className={styles["sidebar-mobile-pixel-eye-right"]} />
+                  <span className={styles["sidebar-mobile-pixel-mouth"]} />
+                </span>
+              </div>
+              <div className={styles["sidebar-mobile-account-copy"]}>
+                <div className={styles["sidebar-mobile-account-name"]}>
+                  NeatChat
+                </div>
+                <div className={styles["sidebar-mobile-account-meta"]}>
+                  Local
+                </div>
+              </div>
+              <Link
+                to={Path.Settings}
+                className={styles["sidebar-mobile-account-settings"]}
+                aria-label={Locale.Settings.Title}
+              >
+                <IconButton
+                  aria={Locale.Settings.Title}
+                  icon={<SettingsIcon />}
+                  bordered
+                />
+              </Link>
             </div>
+          ) : (
             <div className={styles["sidebar-action"]}>
               <Link to={Path.Settings}>
                 <IconButton
@@ -394,15 +420,17 @@ export function SideBar(props: { className?: string }) {
                 />
               </Link>
             </div>
-          </>
+          )
         }
         secondaryAction={
-          <IconButton
-            icon={<AddIcon />}
-            text={shouldNarrow ? undefined : Locale.Home.NewChat}
-            onClick={startNewChat}
-            shadow
-          />
+          isCompactScreen ? null : (
+            <IconButton
+              icon={<AddIcon />}
+              text={shouldNarrow ? undefined : Locale.Home.NewChat}
+              onClick={startNewChat}
+              shadow
+            />
+          )
         }
       />
     </SideBarContainer>

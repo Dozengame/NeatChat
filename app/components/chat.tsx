@@ -16,7 +16,7 @@ import SendWhiteIcon from "../icons/send-white.svg";
 import BrainIcon from "../icons/brain.svg";
 import RenameIcon from "../icons/rename.svg";
 import ExportIcon from "../icons/share.svg";
-import ReturnIcon from "../icons/return.svg";
+import MenuIcon from "../icons/menu.svg";
 import CopyIcon from "../icons/copy.svg";
 import SpeakIcon from "../icons/speak.svg";
 import SpeakStopIcon from "../icons/speak-stop.svg";
@@ -38,6 +38,7 @@ import AttachmentIcon from "../icons/attachment.svg";
 import ImageIcon from "../icons/image.svg";
 import DownloadIcon from "../icons/download.svg";
 import AddIcon from "../icons/add.svg";
+import NeatIcon from "../icons/neat.svg";
 
 import LightIcon from "../icons/light.svg";
 import DarkIcon from "../icons/dark.svg";
@@ -175,6 +176,23 @@ const reasoningLabels: Record<OpenAIChatReasoningEffort, string> = {
   medium: "进阶",
   high: "深入",
 };
+const reasoningDescriptions: Record<OpenAIChatReasoningEffort, string> = {
+  low: "最适合回答大多数问题",
+  medium: "更稳妥处理复杂任务",
+  high: "用于高难度推理",
+};
+const reasoningEfforts: OpenAIChatReasoningEffort[] = ["low", "medium", "high"];
+const imageQualityLabels: Record<OpenAIImageQuality, string> = {
+  auto: "自动",
+  low: "低清晰度",
+  medium: "标准清晰度",
+  high: "高清晰度",
+  standard: "标准",
+  hd: "高清",
+};
+const getImageQualityLabel = (quality: OpenAIImageQuality) =>
+  imageQualityLabels[quality] ?? quality;
+type MobileModelAdvancedSection = "reasoning" | "image-size" | "image-quality";
 
 const stopAll = () => ChatControllerPool.stopAll();
 type ChatActionModalKey =
@@ -611,7 +629,7 @@ function ClearContextDivider() {
 export function ChatAction(props: {
   text: string;
   icon: JSX.Element;
-  onClick: () => void;
+  onClick: () => void | Promise<void>;
   active?: boolean;
 }) {
   const iconRef = useRef<HTMLDivElement>(null);
@@ -639,7 +657,7 @@ export function ChatAction(props: {
         [styles["chat-input-action-active"]]: props.active,
       })}
       onClick={() => {
-        props.onClick();
+        void props.onClick();
         setTimeout(updateWidth, 1);
       }}
       onMouseEnter={updateWidth}
@@ -708,6 +726,7 @@ type ChatActionsProps = {
   setShowChatSidePanel: React.Dispatch<React.SetStateAction<boolean>>;
   imageGenerationEnabled: boolean;
   setImageGenerationEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+  onActionComplete?: () => void;
 };
 
 function useChatActionsView(props: ChatActionsProps) {
@@ -777,7 +796,7 @@ function useChatActionsView(props: ChatActionsProps) {
   const currentQuality = session.mask.modelConfig?.quality ?? "standard";
   const currentStyle = session.mask.modelConfig?.style ?? "vivid";
 
-  const isMobileScreen = useMobileScreen();
+  const isCompactScreen = useCompactScreen();
 
   useEffect(() => {
     if (!isVisionModel(currentModel)) {
@@ -852,9 +871,27 @@ function useChatActionsView(props: ChatActionsProps) {
   const shouldShowPluginAction =
     showPlugins(currentProviderName, currentModel) &&
     pluginSelectorItems.length > 0;
+  const hasClearableContext = session.messages.some(
+    (message) =>
+      getMessageTextContent(message).trim().length > 0 ||
+      getMessageImages(message).some(Boolean),
+  );
+  const completeMobileAction = () => {
+    if (isCompactScreen) {
+      props.onActionComplete?.();
+    }
+  };
   const setImageGenerationMode = async (enabled: boolean) => {
     if (enabled) {
-      const mcpEnabled = await isMcpEnabled();
+      let mcpEnabled = false;
+      try {
+        mcpEnabled = await isMcpEnabled();
+      } catch (error) {
+        console.warn("[MCP] Failed to check MCP status", error);
+        showToast("图片生成未启用");
+        return;
+      }
+
       if (!mcpEnabled) {
         showToast("图片生成未启用");
         return;
@@ -897,21 +934,27 @@ function useChatActionsView(props: ChatActionsProps) {
             icon={<BottomIcon />}
           />
         )}
-        {props.hitBottom && (
+        {!isCompactScreen && props.hitBottom && (
           <ChatAction
-            onClick={props.showPromptModal}
+            onClick={() => {
+              props.showPromptModal();
+              completeMobileAction();
+            }}
             text={Locale.Chat.InputActions.Settings}
             icon={<SettingsIcon />}
           />
         )}
 
         <ChatAction
-          onClick={props.uploadAttachments}
+          onClick={() => {
+            props.uploadAttachments();
+            completeMobileAction();
+          }}
           text={"上传附件"}
           icon={props.uploading ? <LoadingButtonIcon /> : <AttachmentIcon />}
         />
 
-        {config.enableThemeChange && (
+        {!isCompactScreen && config.enableThemeChange && (
           <ChatAction
             onClick={nextTheme}
             text={Locale.Chat.InputActions.Theme[theme]}
@@ -929,7 +972,7 @@ function useChatActionsView(props: ChatActionsProps) {
           />
         )}
 
-        {config.enablePromptHints && (
+        {!isCompactScreen && config.enablePromptHints && (
           <ChatAction
             onClick={props.showPromptHints}
             text={Locale.Chat.InputActions.Prompt}
@@ -937,7 +980,7 @@ function useChatActionsView(props: ChatActionsProps) {
           />
         )}
 
-        {config.enableClearContext && (
+        {config.enableClearContext && hasClearableContext && (
           <ChatAction
             text={Locale.Chat.InputActions.Clear}
             icon={<BreakIcon />}
@@ -950,23 +993,26 @@ function useChatActionsView(props: ChatActionsProps) {
                   session.memoryPrompt = ""; // will clear memory
                 }
               });
+              completeMobileAction();
             }}
           />
         )}
 
-        <ChatAction
-          onClick={() => {
-            if (modelLocked) {
-              showToast("该项已由管理员锁定");
-              return;
-            }
-            setActionModalOpen("model", true);
-          }}
-          text={currentModelName}
-          icon={<RobotIcon />}
-        />
+        {!isCompactScreen && (
+          <ChatAction
+            onClick={() => {
+              if (modelLocked) {
+                showToast("该项已由管理员锁定");
+                return;
+              }
+              setActionModalOpen("model", true);
+            }}
+            text={currentModelName}
+            icon={<RobotIcon />}
+          />
+        )}
 
-        {actionModals.model && (
+        {!isCompactScreen && actionModals.model && (
           <Selector
             defaultSelectedValue={`${currentModel}@${currentProviderName}`}
             items={models.map((m) => ({
@@ -1013,7 +1059,7 @@ function useChatActionsView(props: ChatActionsProps) {
           />
         )}
 
-        {isOpenAIImageGeneration && (
+        {!isCompactScreen && isOpenAIImageGeneration && (
           <ChatAction
             onClick={() => setActionModalOpen("size", true)}
             text={currentSize}
@@ -1021,7 +1067,7 @@ function useChatActionsView(props: ChatActionsProps) {
           />
         )}
 
-        {isOpenAIImageGeneration && actionModals.size && (
+        {!isCompactScreen && isOpenAIImageGeneration && actionModals.size && (
           <Selector
             defaultSelectedValue={currentSize}
             items={imageSizes.map((m) => ({
@@ -1041,15 +1087,18 @@ function useChatActionsView(props: ChatActionsProps) {
           />
         )}
 
-        {isOpenAIImageGeneration && imageQualitys.length > 0 && (
-          <ChatAction
-            onClick={() => setActionModalOpen("quality", true)}
-            text={currentQuality}
-            icon={<QualityIcon />}
-          />
-        )}
+        {!isCompactScreen &&
+          isOpenAIImageGeneration &&
+          imageQualitys.length > 0 && (
+            <ChatAction
+              onClick={() => setActionModalOpen("quality", true)}
+              text={currentQuality}
+              icon={<QualityIcon />}
+            />
+          )}
 
-        {isOpenAIImageGeneration &&
+        {!isCompactScreen &&
+          isOpenAIImageGeneration &&
           imageQualitys.length > 0 &&
           actionModals.quality && (
             <Selector
@@ -1071,7 +1120,7 @@ function useChatActionsView(props: ChatActionsProps) {
             />
           )}
 
-        {isDalle3Model && (
+        {!isCompactScreen && isDalle3Model && (
           <ChatAction
             onClick={() => setActionModalOpen("style", true)}
             text={currentStyle}
@@ -1079,7 +1128,7 @@ function useChatActionsView(props: ChatActionsProps) {
           />
         )}
 
-        {actionModals.style && (
+        {!isCompactScreen && actionModals.style && (
           <Selector
             defaultSelectedValue={currentStyle}
             items={dalle3Styles.map((m) => ({
@@ -1099,14 +1148,14 @@ function useChatActionsView(props: ChatActionsProps) {
           />
         )}
 
-        {shouldShowPluginAction && (
+        {!isCompactScreen && shouldShowPluginAction && (
           <ChatAction
             onClick={() => setActionModalOpen("plugin", true)}
             text={Locale.Plugin.Name}
             icon={<PluginIcon />}
           />
         )}
-        {actionModals.plugin && (
+        {!isCompactScreen && actionModals.plugin && (
           <SimpleMultipleSelector
             items={pluginSelectorItems}
             defaultSelectedValue={chatStore.currentSession().mask?.plugin}
@@ -1122,11 +1171,19 @@ function useChatActionsView(props: ChatActionsProps) {
 
         <ChatAction
           active={props.imageGenerationEnabled}
-          onClick={() => setActionModalOpen("imageGeneration", true)}
-          text="图片生成"
+          onClick={async () => {
+            if (isCompactScreen) {
+              completeMobileAction();
+              await setImageGenerationMode(!props.imageGenerationEnabled);
+              return;
+            }
+
+            setActionModalOpen("imageGeneration", true);
+          }}
+          text={props.imageGenerationEnabled ? "关闭图片生成" : "图片生成"}
           icon={<ImageIcon />}
         />
-        {actionModals.imageGeneration && (
+        {!isCompactScreen && actionModals.imageGeneration && (
           <Selector
             defaultSelectedValue={
               props.imageGenerationEnabled ? "enabled" : "disabled"
@@ -1155,7 +1212,7 @@ function useChatActionsView(props: ChatActionsProps) {
           />
         )}
 
-        {!isMobileScreen && config.enableShortcuts && (
+        {!isCompactScreen && config.enableShortcuts && (
           <ChatAction
             onClick={() => props.setShowShortcutKeyModal(true)}
             text={Locale.Chat.ShortcutKey.Title}
@@ -1164,13 +1221,15 @@ function useChatActionsView(props: ChatActionsProps) {
         )}
       </>
       <div className={styles["chat-input-actions-end"]}>
-        {ENABLE_REALTIME_CHAT && config.realtimeConfig.enable && (
-          <ChatAction
-            onClick={() => props.setShowChatSidePanel(true)}
-            text={"Realtime Chat"}
-            icon={<HeadphoneIcon />}
-          />
-        )}
+        {!isCompactScreen &&
+          ENABLE_REALTIME_CHAT &&
+          config.realtimeConfig.enable && (
+            <ChatAction
+              onClick={() => props.setShowChatSidePanel(true)}
+              text={"Realtime Chat"}
+              icon={<HeadphoneIcon />}
+            />
+          )}
       </div>
     </div>
   );
@@ -1205,6 +1264,37 @@ function ChatInputReasoningAction() {
 
   if (!showReasoningSelector) return null;
 
+  const openReasoningSelector = () => {
+    if (reasoningLocked) {
+      showToast("该项已由管理员锁定");
+      return;
+    }
+    setShowReasoningSelectorModal(true);
+  };
+  const selectReasoningEffort = (selection: OpenAIChatReasoningEffort[]) => {
+    if (reasoningLocked) return;
+    const reasoningEffort = selection[0];
+    if (!reasoningEffort) return;
+    chatStore.updateTargetSession(session, (session) => {
+      session.mask.modelConfig.reasoningEffort = reasoningEffort;
+      session.mask.modelConfig.max_output_tokens =
+        getReasoningMaxOutputTokens(reasoningEffort);
+      session.mask.modelConfigMeta = {
+        ...(session.mask.modelConfigMeta ?? {}),
+        reasoningEffort: createConfigFieldMeta({
+          source: "conversation_override",
+          publicConfig: useAppConfig.getState().serverConfigSnapshot,
+        }),
+        max_output_tokens: createConfigFieldMeta({
+          source: "conversation_override",
+          publicConfig: useAppConfig.getState().serverConfigSnapshot,
+        }),
+      };
+      session.mask.syncGlobalConfig = false;
+    });
+    showToast(reasoningLabels[reasoningEffort]);
+  };
+
   return (
     <>
       <button
@@ -1212,11 +1302,7 @@ function ChatInputReasoningAction() {
         className={styles["chat-input-reasoning"]}
         onClick={(event) => {
           event.preventDefault();
-          if (reasoningLocked) {
-            showToast("该项已由管理员锁定");
-            return;
-          }
-          setShowReasoningSelectorModal(true);
+          openReasoningSelector();
         }}
         disabled={reasoningLocked}
       >
@@ -1227,35 +1313,13 @@ function ChatInputReasoningAction() {
       {showReasoningSelectorModal && (
         <Selector
           defaultSelectedValue={currentReasoningEffort}
-          items={(["low", "medium", "high"] as const).map((effort) => ({
+          items={reasoningEfforts.map((effort) => ({
             title: reasoningLabels[effort],
             value: effort,
             icon: <BrainIcon />,
           }))}
           onClose={() => setShowReasoningSelectorModal(false)}
-          onSelection={(selection) => {
-            if (reasoningLocked) return;
-            const reasoningEffort = selection[0];
-            if (!reasoningEffort) return;
-            chatStore.updateTargetSession(session, (session) => {
-              session.mask.modelConfig.reasoningEffort = reasoningEffort;
-              session.mask.modelConfig.max_output_tokens =
-                getReasoningMaxOutputTokens(reasoningEffort);
-              session.mask.modelConfigMeta = {
-                ...(session.mask.modelConfigMeta ?? {}),
-                reasoningEffort: createConfigFieldMeta({
-                  source: "conversation_override",
-                  publicConfig: useAppConfig.getState().serverConfigSnapshot,
-                }),
-                max_output_tokens: createConfigFieldMeta({
-                  source: "conversation_override",
-                  publicConfig: useAppConfig.getState().serverConfigSnapshot,
-                }),
-              };
-              session.mask.syncGlobalConfig = false;
-            });
-            showToast(reasoningLabels[reasoningEffort]);
-          }}
+          onSelection={selectReasoningEffort}
           showSearch={false}
         />
       )}
@@ -1831,6 +1895,160 @@ function useChatInnerView() {
   };
 
   const accessStore = useAccessStore();
+  const [showMobileModelSelector, setShowMobileModelSelector] = useState(false);
+  const [expandedMobileModelSection, setExpandedMobileModelSection] =
+    useState<MobileModelAdvancedSection | null>(null);
+  const closeMobileModelSelector = () => {
+    setShowMobileModelSelector(false);
+    setExpandedMobileModelSection(null);
+  };
+  const toggleMobileModelSection = (section: MobileModelAdvancedSection) => {
+    setExpandedMobileModelSection((currentSection) =>
+      currentSection === section ? null : section,
+    );
+  };
+  const headerCurrentModel = session.mask.modelConfig.model;
+  const headerCurrentProviderName =
+    session.mask.modelConfig?.providerName || ServiceProvider.OpenAI;
+  const headerModelLocked =
+    accessStore.lockedFields?.includes("model") ||
+    accessStore.lockedFields?.includes("providerName");
+  const allHeaderModels = useAllModels();
+  const headerAvailableModels = useMemo(
+    () => allHeaderModels.filter((model) => model.available),
+    [allHeaderModels],
+  );
+  const headerCurrentModelName = useMemo(() => {
+    const model = headerAvailableModels.find(
+      (item) =>
+        item.name === headerCurrentModel &&
+        item?.provider?.providerName === headerCurrentProviderName,
+    );
+    return model?.displayName ?? headerCurrentModel;
+  }, [headerAvailableModels, headerCurrentModel, headerCurrentProviderName]);
+  const headerCurrentReasoningEffort =
+    session.mask.modelConfig?.reasoningEffort ??
+    (OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT as OpenAIChatReasoningEffort);
+  const headerReasoningLocked =
+    accessStore.lockedFields?.includes("reasoningEffort") ||
+    session.mask.modelConfigMeta?.reasoningEffort?.locked;
+  const showHeaderReasoningControl = isOpenAIGpt5OrNewerModelConfig({
+    model: headerCurrentModel,
+    providerName: headerCurrentProviderName,
+  });
+  const showHeaderImageControls = isOpenAIImageGenerationModelConfig({
+    model: headerCurrentModel,
+    providerName: headerCurrentProviderName,
+  });
+  const headerIsGptImageModel = isGptImageGenerationModel(headerCurrentModel);
+  const headerIsDalle3Model = isDalle3(headerCurrentModel);
+  const headerImageSizes = headerIsGptImageModel
+    ? GPT_IMAGE_2_SIZES
+    : headerIsDalle3Model
+    ? DALLE3_IMAGE_SIZES
+    : DALLE_IMAGE_COMPATIBLE_SIZES;
+  const headerImageQualitys = headerIsGptImageModel
+    ? GPT_IMAGE_2_QUALITIES
+    : headerIsDalle3Model
+    ? DALLE3_IMAGE_QUALITIES
+    : [];
+  const headerCurrentSize =
+    session.mask.modelConfig?.size ?? ("1024x1024" as OpenAIImageSize);
+  const headerCurrentQuality =
+    session.mask.modelConfig?.quality ?? ("standard" as OpenAIImageQuality);
+  const isReasoningSectionExpanded = expandedMobileModelSection === "reasoning";
+  const isImageSizeSectionExpanded =
+    expandedMobileModelSection === "image-size";
+  const isImageQualitySectionExpanded =
+    expandedMobileModelSection === "image-quality";
+  const getHeaderReasoningMaxOutputTokens = (
+    effort: OpenAIChatReasoningEffort,
+  ) =>
+    accessStore.openaiMaxOutputTokens ??
+    getMaxOutputTokensForReasoningEffort(effort);
+  const selectHeaderModel = (selected: string) => {
+    if (headerModelLocked) {
+      showToast("该项已由管理员锁定");
+      return;
+    }
+    const [model, providerName] = getModelProvider(selected);
+    chatStore.updateTargetSession(session, (session) => {
+      session.mask.modelConfig.model = model as ModelType;
+      session.mask.modelConfig.providerName = providerName as ServiceProvider;
+      applyOpenAIImageGenerationDefaults(session.mask.modelConfig);
+      session.mask.modelConfigMeta = {
+        ...(session.mask.modelConfigMeta ?? {}),
+        model: createConfigFieldMeta({
+          source: "conversation_override",
+          publicConfig: config.serverConfigSnapshot,
+        }),
+        providerName: createConfigFieldMeta({
+          source: "conversation_override",
+          publicConfig: config.serverConfigSnapshot,
+        }),
+      };
+      session.mask.syncGlobalConfig = false;
+      if (model !== "gemini-2.0-flash-exp") {
+        session.mask.plugin = [];
+      }
+    });
+    closeMobileModelSelector();
+    showToast(model);
+  };
+  const selectHeaderReasoningEffort = (
+    reasoningEffort: OpenAIChatReasoningEffort,
+  ) => {
+    if (headerReasoningLocked) {
+      showToast("该项已由管理员锁定");
+      return;
+    }
+    chatStore.updateTargetSession(session, (session) => {
+      session.mask.modelConfig.reasoningEffort = reasoningEffort;
+      session.mask.modelConfig.max_output_tokens =
+        getHeaderReasoningMaxOutputTokens(reasoningEffort);
+      session.mask.modelConfigMeta = {
+        ...(session.mask.modelConfigMeta ?? {}),
+        reasoningEffort: createConfigFieldMeta({
+          source: "conversation_override",
+          publicConfig: config.serverConfigSnapshot,
+        }),
+        max_output_tokens: createConfigFieldMeta({
+          source: "conversation_override",
+          publicConfig: config.serverConfigSnapshot,
+        }),
+      };
+      session.mask.syncGlobalConfig = false;
+    });
+    showToast(reasoningLabels[reasoningEffort]);
+  };
+  const selectHeaderImageSize = (size: OpenAIImageSize) => {
+    chatStore.updateTargetSession(session, (session) => {
+      session.mask.modelConfig.size = size;
+      session.mask.modelConfigMeta = {
+        ...(session.mask.modelConfigMeta ?? {}),
+        size: createConfigFieldMeta({
+          source: "conversation_override",
+          publicConfig: config.serverConfigSnapshot,
+        }),
+      };
+      session.mask.syncGlobalConfig = false;
+    });
+    showToast(size);
+  };
+  const selectHeaderImageQuality = (quality: OpenAIImageQuality) => {
+    chatStore.updateTargetSession(session, (session) => {
+      session.mask.modelConfig.quality = quality;
+      session.mask.modelConfigMeta = {
+        ...(session.mask.modelConfigMeta ?? {}),
+        quality: createConfigFieldMeta({
+          source: "conversation_override",
+          publicConfig: config.serverConfigSnapshot,
+        }),
+      };
+      session.mask.syncGlobalConfig = false;
+    });
+    showToast(getImageQualityLabel(quality));
+  };
   const [speechStatus, setSpeechStatus] = useState(false);
   async function openaiSpeech(text: string) {
     if (speechStatus) {
@@ -1955,6 +2173,7 @@ function useChatInnerView() {
     context.length === 1 &&
     getMessageTextContent(context[0]) === BOT_HELLO.content &&
     !isLoading;
+  const showEmptyComposer = showEmptyState && !hasActiveInputContent;
   const showEmptyHero =
     showEmptyState && !hasActiveInputContent && !showChatActionMenu;
 
@@ -2326,10 +2545,19 @@ function useChatInnerView() {
     return () => window.removeEventListener("keydown", closePreview);
   }, [previewImage]);
 
-  const showInputReasoningAction = isOpenAIGpt5OrNewerModelConfig({
-    model: session.mask.modelConfig.model,
-    providerName: session.mask.modelConfig.providerName,
-  });
+  const showInputReasoningAction =
+    !isCompactScreen &&
+    isOpenAIGpt5OrNewerModelConfig({
+      model: session.mask.modelConfig.model,
+      providerName: session.mask.modelConfig.providerName,
+    });
+  const promptToast = (
+    <PromptToast
+      showToast={!hitBottom}
+      showModal={showPromptModal}
+      setShowModal={setShowPromptModal}
+    />
+  );
 
   return (
     <div
@@ -2339,45 +2567,80 @@ function useChatInnerView() {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      <div className="window-header" data-tauri-drag-region>
-        {isCompactScreen && (
-          <div className="window-actions">
-            <div className={"window-action-button"}>
-              <IconButton
-                icon={<ReturnIcon />}
-                bordered
-                title={Locale.Chat.Actions.ChatList}
-                onClick={() => navigate(Path.Home)}
-              />
-            </div>
-          </div>
-        )}
-
-        <div className={clsx("window-header-title", styles["chat-body-title"])}>
+      {showChatActionMenu && (
+        <button
+          type="button"
+          className={styles["chat-input-action-menu-backdrop"]}
+          aria-label="关闭对话工具"
+          onClick={() => setShowChatActionMenu(false)}
+        />
+      )}
+      {isCompactScreen ? (
+        <div className={styles["chat-mobile-header"]} data-tauri-drag-region>
+          <IconButton
+            className={styles["chat-mobile-header-button"]}
+            icon={<MenuIcon />}
+            bordered
+            title={Locale.Chat.Actions.ChatList}
+            aria={Locale.Chat.Actions.ChatList}
+            onClick={() => navigate(Path.Home)}
+          />
           <button
             type="button"
-            className={clsx(
-              "window-header-main-title",
-              styles["chat-body-main-title"],
-            )}
-            onClickCapture={() => setIsEditingMessage(true)}
+            className={styles["chat-mobile-model-title"]}
+            aria-label="选择模型"
+            onClick={() => {
+              setShowChatActionMenu(false);
+              setExpandedMobileModelSection(null);
+              setShowMobileModelSelector((open) => !open);
+            }}
+            aria-expanded={showMobileModelSelector}
           >
-            {!session.topic ? DEFAULT_TOPIC : session.topic}
+            <span>{headerCurrentModelName}</span>
+            <span className={styles["chat-mobile-model-title-arrow"]}>⌄</span>
           </button>
+          <IconButton
+            className={styles["chat-mobile-header-button"]}
+            icon={<RenameIcon />}
+            bordered
+            title={Locale.Chat.InputActions.Settings}
+            aria={Locale.Chat.InputActions.Settings}
+            onClick={() => {
+              closeMobileModelSelector();
+              setShowChatActionMenu(false);
+              setShowPromptModal(true);
+            }}
+          />
+          {promptToast}
         </div>
-        <div className="window-actions">
-          <div className="window-action-button">
-            <IconButton
-              icon={<ReloadIcon />}
-              bordered
-              title={Locale.Chat.Actions.RefreshTitle}
-              onClick={() => {
-                showToast(Locale.Chat.Actions.RefreshToast);
-                chatStore.summarizeSession(true, session);
-              }}
-            />
+      ) : (
+        <div className="window-header" data-tauri-drag-region>
+          <div
+            className={clsx("window-header-title", styles["chat-body-title"])}
+          >
+            <button
+              type="button"
+              className={clsx(
+                "window-header-main-title",
+                styles["chat-body-main-title"],
+              )}
+              onClickCapture={() => setIsEditingMessage(true)}
+            >
+              {!session.topic ? DEFAULT_TOPIC : session.topic}
+            </button>
           </div>
-          {!isCompactScreen && (
+          <div className="window-actions">
+            <div className="window-action-button">
+              <IconButton
+                icon={<ReloadIcon />}
+                bordered
+                title={Locale.Chat.Actions.RefreshTitle}
+                onClick={() => {
+                  showToast(Locale.Chat.Actions.RefreshToast);
+                  chatStore.summarizeSession(true, session);
+                }}
+              />
+            </div>
             <div className="window-action-button">
               <IconButton
                 icon={<RenameIcon />}
@@ -2387,40 +2650,310 @@ function useChatInnerView() {
                 onClick={() => setIsEditingMessage(true)}
               />
             </div>
-          )}
-          <div className="window-action-button">
-            <IconButton
-              icon={<ExportIcon />}
-              bordered
-              title={Locale.Chat.Actions.Export}
-              onClick={() => {
-                setShowExport(true);
-              }}
-            />
-          </div>
-          {showMaxIcon && (
             <div className="window-action-button">
               <IconButton
-                icon={config.tightBorder ? <MinIcon /> : <MaxIcon />}
+                icon={<ExportIcon />}
                 bordered
-                title={Locale.Chat.Actions.FullScreen}
-                aria={Locale.Chat.Actions.FullScreen}
+                title={Locale.Chat.Actions.Export}
                 onClick={() => {
-                  config.update(
-                    (config) => (config.tightBorder = !config.tightBorder),
-                  );
+                  setShowExport(true);
                 }}
               />
             </div>
-          )}
+            {showMaxIcon && (
+              <div className="window-action-button">
+                <IconButton
+                  icon={config.tightBorder ? <MinIcon /> : <MaxIcon />}
+                  bordered
+                  title={Locale.Chat.Actions.FullScreen}
+                  aria={Locale.Chat.Actions.FullScreen}
+                  onClick={() => {
+                    config.update(
+                      (config) => (config.tightBorder = !config.tightBorder),
+                    );
+                  }}
+                />
+              </div>
+            )}
+          </div>
+          {promptToast}
         </div>
+      )}
 
-        <PromptToast
-          showToast={!hitBottom}
-          showModal={showPromptModal}
-          setShowModal={setShowPromptModal}
-        />
-      </div>
+      {isCompactScreen && showMobileModelSelector && (
+        <>
+          <button
+            type="button"
+            className={styles["chat-mobile-model-menu-backdrop"]}
+            aria-label="关闭模型选择"
+            onClick={closeMobileModelSelector}
+          />
+          <div
+            className={styles["chat-mobile-model-menu"]}
+            role="dialog"
+            aria-label="模型和思考等级"
+          >
+            <div className={styles["chat-mobile-model-list"]}>
+              {headerAvailableModels.length === 0 ? (
+                <div className={styles["chat-mobile-model-empty"]}>
+                  暂无可用模型
+                </div>
+              ) : (
+                headerAvailableModels.map((model) => {
+                  const providerName = model?.provider?.providerName;
+                  const selected =
+                    model.name === headerCurrentModel &&
+                    providerName === headerCurrentProviderName;
+                  return (
+                    <button
+                      type="button"
+                      key={`${model.name}@${providerName}`}
+                      className={clsx(styles["chat-mobile-model-option"], {
+                        [styles["chat-mobile-model-option-selected"]]: selected,
+                      })}
+                      onClick={() =>
+                        selectHeaderModel(`${model.name}@${providerName}`)
+                      }
+                    >
+                      <span className={styles["chat-mobile-menu-check"]}>
+                        {selected ? "✓" : ""}
+                      </span>
+                      <span className={styles["chat-mobile-model-copy"]}>
+                        <span className={styles["chat-mobile-model-name"]}>
+                          {model.displayName || model.name}
+                        </span>
+                        {providerName && (
+                          <span
+                            className={styles["chat-mobile-model-provider"]}
+                          >
+                            {providerName}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            {(showHeaderReasoningControl || showHeaderImageControls) && (
+              <>
+                <div className={styles["chat-mobile-model-divider"]} />
+                {showHeaderReasoningControl && (
+                  <div className={styles["chat-mobile-model-section"]}>
+                    <button
+                      type="button"
+                      className={styles["chat-mobile-reasoning-head"]}
+                      aria-expanded={isReasoningSectionExpanded}
+                      onClick={() => toggleMobileModelSection("reasoning")}
+                    >
+                      <span>
+                        <strong>思考等级</strong>
+                        <small>
+                          {reasoningLabels[headerCurrentReasoningEffort]}
+                        </small>
+                      </span>
+                      <span className={styles["chat-mobile-reasoning-caret"]}>
+                        {isReasoningSectionExpanded ? "⌃" : "⌄"}
+                      </span>
+                    </button>
+                    {isReasoningSectionExpanded && (
+                      <div className={styles["chat-mobile-reasoning-list"]}>
+                        {reasoningEfforts.map((effort) => {
+                          const selected =
+                            effort === headerCurrentReasoningEffort;
+                          return (
+                            <button
+                              type="button"
+                              key={effort}
+                              className={clsx(
+                                styles["chat-mobile-reasoning-option"],
+                                {
+                                  [styles[
+                                    "chat-mobile-reasoning-option-selected"
+                                  ]]: selected,
+                                },
+                              )}
+                              onClick={() =>
+                                selectHeaderReasoningEffort(effort)
+                              }
+                            >
+                              <span
+                                className={styles["chat-mobile-menu-check"]}
+                              >
+                                {selected ? "✓" : ""}
+                              </span>
+                              <span
+                                className={styles["chat-mobile-model-copy"]}
+                              >
+                                <span
+                                  className={styles["chat-mobile-model-name"]}
+                                >
+                                  {reasoningLabels[effort]}
+                                </span>
+                                <span
+                                  className={
+                                    styles["chat-mobile-model-provider"]
+                                  }
+                                >
+                                  {reasoningDescriptions[effort]}
+                                </span>
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {showHeaderImageControls && (
+                  <>
+                    <div className={styles["chat-mobile-model-section"]}>
+                      <button
+                        type="button"
+                        className={styles["chat-mobile-reasoning-head"]}
+                        aria-expanded={isImageSizeSectionExpanded}
+                        onClick={() => toggleMobileModelSection("image-size")}
+                      >
+                        <span>
+                          <strong>图片尺寸</strong>
+                          <small>{headerCurrentSize}</small>
+                        </span>
+                        <span className={styles["chat-mobile-reasoning-caret"]}>
+                          {isImageSizeSectionExpanded ? "⌃" : "⌄"}
+                        </span>
+                      </button>
+                      {isImageSizeSectionExpanded && (
+                        <div className={styles["chat-mobile-reasoning-list"]}>
+                          {headerImageSizes.map((size) => {
+                            const selected = size === headerCurrentSize;
+                            return (
+                              <button
+                                type="button"
+                                key={size}
+                                className={clsx(
+                                  styles["chat-mobile-reasoning-option"],
+                                  {
+                                    [styles[
+                                      "chat-mobile-reasoning-option-selected"
+                                    ]]: selected,
+                                  },
+                                )}
+                                onClick={() =>
+                                  selectHeaderImageSize(size as OpenAIImageSize)
+                                }
+                              >
+                                <span
+                                  className={styles["chat-mobile-menu-check"]}
+                                >
+                                  {selected ? "✓" : ""}
+                                </span>
+                                <span
+                                  className={styles["chat-mobile-model-copy"]}
+                                >
+                                  <span
+                                    className={styles["chat-mobile-model-name"]}
+                                  >
+                                    {size}
+                                  </span>
+                                  <span
+                                    className={
+                                      styles["chat-mobile-model-provider"]
+                                    }
+                                  >
+                                    生成图片尺寸
+                                  </span>
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    {headerImageQualitys.length > 0 && (
+                      <div className={styles["chat-mobile-model-section"]}>
+                        <button
+                          type="button"
+                          className={styles["chat-mobile-reasoning-head"]}
+                          aria-expanded={isImageQualitySectionExpanded}
+                          onClick={() =>
+                            toggleMobileModelSection("image-quality")
+                          }
+                        >
+                          <span>
+                            <strong>图片清晰度</strong>
+                            <small>
+                              {getImageQualityLabel(headerCurrentQuality)}
+                            </small>
+                          </span>
+                          <span
+                            className={styles["chat-mobile-reasoning-caret"]}
+                          >
+                            {isImageQualitySectionExpanded ? "⌃" : "⌄"}
+                          </span>
+                        </button>
+                        {isImageQualitySectionExpanded && (
+                          <div className={styles["chat-mobile-reasoning-list"]}>
+                            {headerImageQualitys.map((quality) => {
+                              const selected = quality === headerCurrentQuality;
+                              return (
+                                <button
+                                  type="button"
+                                  key={quality}
+                                  className={clsx(
+                                    styles["chat-mobile-reasoning-option"],
+                                    {
+                                      [styles[
+                                        "chat-mobile-reasoning-option-selected"
+                                      ]]: selected,
+                                    },
+                                  )}
+                                  onClick={() =>
+                                    selectHeaderImageQuality(
+                                      quality as OpenAIImageQuality,
+                                    )
+                                  }
+                                >
+                                  <span
+                                    className={styles["chat-mobile-menu-check"]}
+                                  >
+                                    {selected ? "✓" : ""}
+                                  </span>
+                                  <span
+                                    className={styles["chat-mobile-model-copy"]}
+                                  >
+                                    <span
+                                      className={
+                                        styles["chat-mobile-model-name"]
+                                      }
+                                    >
+                                      {getImageQualityLabel(
+                                        quality as OpenAIImageQuality,
+                                      )}
+                                    </span>
+                                    <span
+                                      className={
+                                        styles["chat-mobile-model-provider"]
+                                      }
+                                    >
+                                      {quality}
+                                    </span>
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        </>
+      )}
+
       <div className={styles["chat-main"]}>
         <div className={styles["chat-body-container"]}>
           <section
@@ -2434,6 +2967,9 @@ function useChatInnerView() {
             {showEmptyHero && (
               <div className={styles["chat-empty-state"]}>
                 <div className={styles["chat-empty-halo"]} />
+                <div className={clsx(styles["chat-empty-logo"], "no-dark")}>
+                  <NeatIcon />
+                </div>
                 <h1 className={styles["chat-empty-title"]}>
                   {Locale.Chat.EmptyTitle}
                 </h1>
@@ -2699,7 +3235,7 @@ function useChatInnerView() {
           <div
             className={clsx(styles["chat-input-panel"], {
               [styles["chat-input-panel-collapsed"]]: !shouldExpandChatInput,
-              [styles["chat-input-panel-empty"]]: showEmptyState,
+              [styles["chat-input-panel-empty"]]: showEmptyComposer,
             })}
           >
             <PromptHints
@@ -2749,6 +3285,7 @@ function useChatInnerView() {
                     setShowChatSidePanel={setShowChatSidePanel}
                     imageGenerationEnabled={imageGenerationEnabled}
                     setImageGenerationEnabled={setImageGenerationEnabled}
+                    onActionComplete={() => setShowChatActionMenu(false)}
                   />
                 </div>
               )}
@@ -2782,7 +3319,7 @@ function useChatInnerView() {
                     scrollToBottom();
                   }}
                   onPaste={handlePaste}
-                  rows={inputRows}
+                  rows={isCompactScreen ? 1 : inputRows}
                   autoFocus={autoFocus}
                   style={{
                     fontSize: config.fontSize,
@@ -2790,7 +3327,7 @@ function useChatInnerView() {
                   }}
                 />
 
-                <ChatInputReasoningAction />
+                {showInputReasoningAction && <ChatInputReasoningAction />}
 
                 {/* 附件容器（包含图片和文件） */}
                 {(attachImages.length > 0 || attachedFiles.length > 0) && (
