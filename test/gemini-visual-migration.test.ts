@@ -81,6 +81,14 @@ describe("Gemini visual migration shell", () => {
     );
     const actionMenuBlock = readCssBlock(chatStyles, ".chat-input-action-menu");
     const actionMenuRootDeclarations = readRootDeclarations(actionMenuBlock);
+    const multimodalTrayBlock = readCssBlock(
+      chatStyles,
+      ".chat-multimodal-tray",
+    );
+    const multimodalPrimaryBlock = readCssBlock(
+      chatStyles,
+      ".chat-multimodal-section-primary",
+    );
     const messageRowUserBlock = readCssBlock(
       chatStyles,
       ".chat-message-row-user",
@@ -92,6 +100,14 @@ describe("Gemini visual migration shell", () => {
     const onInputBlock = readFunctionBlock(
       chat,
       "const onInput = (text: string) =>",
+    );
+    const setImageGenerationModeBlock = readFunctionBlock(
+      chat,
+      "const setImageGenerationMode = async (enabled: boolean) =>",
+    );
+    const doSubmitBlock = readFunctionBlock(
+      chat,
+      "const doSubmit = (userInput: string) =>",
     );
 
     expect(chat).toContain('styles["chat-empty-state"]');
@@ -111,6 +127,22 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("<ChatActions");
     expect(chat).toContain("handleUploadAttachments");
     expect(chat).toContain("setImageGenerationEnabled");
+    expect(chat).toContain('styles["chat-multimodal-tray"]');
+    expect(chat).toContain('styles["chat-multimodal-section"]');
+    expect(chat).toContain('aria-label="多模态工具"');
+    expect(chat).toContain('aria-label="会话工具"');
+    expect(chat).toContain("const hasSessionActions =");
+    expect(chat).toContain('styles["chat-multimodal-section-primary"]');
+    expect(chat).toContain('styles["chat-multimodal-section-session"]');
+    expect(chat).toContain("isMcpEnabled()");
+    expect(chat).toContain("activateMcpClient(JIMENG_MCP_SERVER_ID)");
+    expect(chat).toContain("deactivateMcpClient(JIMENG_MCP_SERVER_ID)");
+    expect(chat).toContain("JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT");
+    expect(chat).toContain("uploadAttachments(");
+    expect(chat).toContain('styles["attachments-container"]');
+    expect(chat).toContain('styles["attach-image"]');
+    expect(chat).toContain('aria-label="编辑图片附件"');
+    expect(chat).toContain('styles["attach-file"]');
     expect(chat).toContain('styles["chat-desktop-title-stack"]');
     expect(chat).toContain('styles["chat-desktop-model-title"]');
     expect(chat).toContain('styles["chat-desktop-model-menu"]');
@@ -162,8 +194,25 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain(".chat-desktop-model-menu");
     expect(chatStyles).toMatch(/@media only screen and \(min-width: 901px\)/);
     expect(chatStyles).toContain(".chat-input-action-menu");
+    expect(chatStyles).toContain(".chat-multimodal-tray");
+    expect(chatStyles).toContain(".chat-multimodal-section");
+    expect(chatStyles).toContain(".chat-multimodal-section-primary");
+    expect(chatStyles).toContain(".chat-multimodal-section-session");
+    expect(multimodalTrayBlock).toMatch(/display:\s*flex;/);
+    expect(multimodalTrayBlock).toMatch(/gap:\s*6px;/);
+    expect(multimodalPrimaryBlock).toMatch(/min-width:\s*0;/);
     expect(actionMenuRootDeclarations).toMatch(/box-sizing:\s*border-box;/);
     expect(onInputBlock).toMatch(/setShowChatActionMenu\(false\);/);
+    expect(setImageGenerationModeBlock).toContain("isMcpEnabled()");
+    expect(setImageGenerationModeBlock).toContain(
+      "activateMcpClient(JIMENG_MCP_SERVER_ID)",
+    );
+    expect(setImageGenerationModeBlock).toContain(
+      "deactivateMcpClient(JIMENG_MCP_SERVER_ID)",
+    );
+    expect(setImageGenerationModeBlock).toMatch(/chatStore\.resetMcpCache\(\);/);
+    expect(doSubmitBlock).toContain("attachImages");
+    expect(doSubmitBlock).toContain("JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT");
     expect(chatStyles).toContain(
       ".chat-input-panel-inner-reasoning:not(.chat-input-panel-inner-collapsed)",
     );

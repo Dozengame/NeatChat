@@ -915,310 +915,340 @@ function useChatActionsView(props: ChatActionsProps) {
     props.setImageGenerationEnabled(enabled);
     showToast(enabled ? "已启用图片生成" : "已关闭图片生成");
   };
+  const hasSessionActions =
+    couldStop ||
+    !props.hitBottom ||
+    (config.enableClearContext && hasClearableContext) ||
+    !isCompactScreen;
 
   return (
     <div className={styles["chat-input-actions"]}>
-      <>
-        {couldStop && (
-          <ChatAction
-            onClick={stopAll}
-            text={Locale.Chat.InputActions.Stop}
-            icon={<StopIcon />}
-          />
-        )}
-        {!props.hitBottom && (
-          <ChatAction
-            onClick={props.scrollToBottom}
-            text={Locale.Chat.InputActions.ToBottom}
-            icon={<BottomIcon />}
-          />
-        )}
-        {!isCompactScreen && props.hitBottom && (
+      <div className={styles["chat-multimodal-tray"]}>
+        <div
+          className={clsx(
+            styles["chat-multimodal-section"],
+            styles["chat-multimodal-section-primary"],
+          )}
+          aria-label="多模态工具"
+        >
           <ChatAction
             onClick={() => {
-              props.showPromptModal();
+              props.uploadAttachments();
               completeMobileAction();
             }}
-            text={Locale.Chat.InputActions.Settings}
-            icon={<SettingsIcon />}
+            text={"上传附件"}
+            icon={props.uploading ? <LoadingButtonIcon /> : <AttachmentIcon />}
           />
-        )}
 
-        <ChatAction
-          onClick={() => {
-            props.uploadAttachments();
-            completeMobileAction();
-          }}
-          text={"上传附件"}
-          icon={props.uploading ? <LoadingButtonIcon /> : <AttachmentIcon />}
-        />
-
-        {!isCompactScreen && config.enableThemeChange && (
-          <ChatAction
-            onClick={nextTheme}
-            text={Locale.Chat.InputActions.Theme[theme]}
-            icon={
-              <>
-                {theme === Theme.Auto ? (
-                  <AutoIcon />
-                ) : theme === Theme.Light ? (
-                  <LightIcon />
-                ) : theme === Theme.Dark ? (
-                  <DarkIcon />
-                ) : null}
-              </>
-            }
-          />
-        )}
-
-        {!isCompactScreen && config.enablePromptHints && (
-          <ChatAction
-            onClick={props.showPromptHints}
-            text={Locale.Chat.InputActions.Prompt}
-            icon={<PromptIcon />}
-          />
-        )}
-
-        {config.enableClearContext && hasClearableContext && (
-          <ChatAction
-            text={Locale.Chat.InputActions.Clear}
-            icon={<BreakIcon />}
-            onClick={() => {
-              chatStore.updateTargetSession(session, (session) => {
-                if (session.clearContextIndex === session.messages.length) {
-                  session.clearContextIndex = undefined;
-                } else {
-                  session.clearContextIndex = session.messages.length;
-                  session.memoryPrompt = ""; // will clear memory
-                }
-              });
-              completeMobileAction();
-            }}
-          />
-        )}
-
-        {!isCompactScreen && (
-          <ChatAction
-            onClick={() => {
-              if (modelLocked) {
-                showToast("该项已由管理员锁定");
-                return;
-              }
-              setActionModalOpen("model", true);
-            }}
-            text={currentModelName}
-            icon={<RobotIcon />}
-          />
-        )}
-
-        {!isCompactScreen && actionModals.model && (
-          <Selector
-            defaultSelectedValue={`${currentModel}@${currentProviderName}`}
-            items={models.map((m) => ({
-              title: `${m.displayName}${
-                m?.provider?.providerName
-                  ? " (" + m?.provider?.providerName + ")"
-                  : ""
-              }`,
-              value: `${m.name}@${m?.provider?.providerName}`,
-              icon: (
-                <Avatar model={m.name} provider={m?.provider?.providerName} />
-              ),
-            }))}
-            onClose={() => setActionModalOpen("model", false)}
-            onSelection={(m) => {
-              if (modelLocked) return;
-              if (m.length === 0) return;
-              const [model, providerName] = getModelProvider(m[0]);
-              chatStore.updateTargetSession(session, (session) => {
-                session.mask.modelConfig.model = model as ModelType;
-                session.mask.modelConfig.providerName =
-                  providerName as ServiceProvider;
-                applyOpenAIImageGenerationDefaults(session.mask.modelConfig);
-                session.mask.modelConfigMeta = {
-                  ...(session.mask.modelConfigMeta ?? {}),
-                  model: createConfigFieldMeta({
-                    source: "conversation_override",
-                    publicConfig: config.serverConfigSnapshot,
-                  }),
-                  providerName: createConfigFieldMeta({
-                    source: "conversation_override",
-                    publicConfig: config.serverConfigSnapshot,
-                  }),
-                };
-                session.mask.syncGlobalConfig = false;
-                // 如果切换到非 gemini-2.0-flash-exp 模型，清除插件选择
-                if (model !== "gemini-2.0-flash-exp") {
-                  session.mask.plugin = [];
-                }
-              });
-              showToast(model);
-            }}
-            showSearch={config.enableModelSearch ?? false}
-          />
-        )}
-
-        {!isCompactScreen && isOpenAIImageGeneration && (
-          <ChatAction
-            onClick={() => setActionModalOpen("size", true)}
-            text={currentSize}
-            icon={<SizeIcon />}
-          />
-        )}
-
-        {!isCompactScreen && isOpenAIImageGeneration && actionModals.size && (
-          <Selector
-            defaultSelectedValue={currentSize}
-            items={imageSizes.map((m) => ({
-              title: m,
-              value: m,
-            }))}
-            onClose={() => setActionModalOpen("size", false)}
-            onSelection={(s) => {
-              if (s.length === 0) return;
-              const size = s[0] as OpenAIImageSize;
-              chatStore.updateTargetSession(session, (session) => {
-                session.mask.modelConfig.size = size;
-              });
-              showToast(size);
-            }}
-            showSearch={false}
-          />
-        )}
-
-        {!isCompactScreen &&
-          isOpenAIImageGeneration &&
-          imageQualitys.length > 0 && (
+          {!isCompactScreen && config.enablePromptHints && (
             <ChatAction
-              onClick={() => setActionModalOpen("quality", true)}
-              text={currentQuality}
-              icon={<QualityIcon />}
+              onClick={props.showPromptHints}
+              text={Locale.Chat.InputActions.Prompt}
+              icon={<PromptIcon />}
             />
           )}
 
-        {!isCompactScreen &&
-          isOpenAIImageGeneration &&
-          imageQualitys.length > 0 &&
-          actionModals.quality && (
+          <ChatAction
+            active={props.imageGenerationEnabled}
+            onClick={async () => {
+              if (isCompactScreen) {
+                completeMobileAction();
+                await setImageGenerationMode(!props.imageGenerationEnabled);
+                return;
+              }
+
+              setActionModalOpen("imageGeneration", true);
+            }}
+            text={props.imageGenerationEnabled ? "关闭图片生成" : "图片生成"}
+            icon={<ImageIcon />}
+          />
+          {!isCompactScreen && actionModals.imageGeneration && (
             <Selector
-              defaultSelectedValue={currentQuality}
-              items={imageQualitys.map((m) => ({
-                title: m,
-                value: m,
-              }))}
-              onClose={() => setActionModalOpen("quality", false)}
-              onSelection={(q) => {
-                if (q.length === 0) return;
-                const quality = q[0] as OpenAIImageQuality;
-                chatStore.updateTargetSession(session, (session) => {
-                  session.mask.modelConfig.quality = quality;
-                });
-                showToast(quality);
+              defaultSelectedValue={
+                props.imageGenerationEnabled ? "enabled" : "disabled"
+              }
+              items={[
+                {
+                  title: "启用图片生成",
+                  subTitle: "后续消息会优先调用 jimeng-mcp 生成图片",
+                  value: "enabled",
+                  icon: <ImageIcon />,
+                },
+                {
+                  title: "关闭图片生成",
+                  subTitle: "后续消息按普通聊天处理",
+                  value: "disabled",
+                  icon: <ImageIcon />,
+                },
+              ]}
+              onClose={() => setActionModalOpen("imageGeneration", false)}
+              onSelection={(selection) => {
+                const selected = selection[0];
+                if (!selected) return;
+                setImageGenerationMode(selected === "enabled");
               }}
               showSearch={false}
             />
           )}
+        </div>
 
-        {!isCompactScreen && isDalle3Model && (
-          <ChatAction
-            onClick={() => setActionModalOpen("style", true)}
-            text={currentStyle}
-            icon={<StyleIcon />}
-          />
-        )}
+        {hasSessionActions && (
+          <div
+            className={clsx(
+              styles["chat-multimodal-section"],
+              styles["chat-multimodal-section-session"],
+            )}
+            aria-label="会话工具"
+          >
+            {couldStop && (
+              <ChatAction
+                onClick={stopAll}
+                text={Locale.Chat.InputActions.Stop}
+                icon={<StopIcon />}
+              />
+            )}
+            {!props.hitBottom && (
+              <ChatAction
+                onClick={props.scrollToBottom}
+                text={Locale.Chat.InputActions.ToBottom}
+                icon={<BottomIcon />}
+              />
+            )}
+            {!isCompactScreen && props.hitBottom && (
+              <ChatAction
+                onClick={() => {
+                  props.showPromptModal();
+                  completeMobileAction();
+                }}
+                text={Locale.Chat.InputActions.Settings}
+                icon={<SettingsIcon />}
+              />
+            )}
 
-        {!isCompactScreen && actionModals.style && (
-          <Selector
-            defaultSelectedValue={currentStyle}
-            items={dalle3Styles.map((m) => ({
-              title: m,
-              value: m,
-            }))}
-            onClose={() => setActionModalOpen("style", false)}
-            onSelection={(s) => {
-              if (s.length === 0) return;
-              const style = s[0] as DalleStyle;
-              chatStore.updateTargetSession(session, (session) => {
-                session.mask.modelConfig.style = style;
-              });
-              showToast(style);
-            }}
-            showSearch={false}
-          />
-        )}
+            {!isCompactScreen && config.enableThemeChange && (
+              <ChatAction
+                onClick={nextTheme}
+                text={Locale.Chat.InputActions.Theme[theme]}
+                icon={
+                  <>
+                    {theme === Theme.Auto ? (
+                      <AutoIcon />
+                    ) : theme === Theme.Light ? (
+                      <LightIcon />
+                    ) : theme === Theme.Dark ? (
+                      <DarkIcon />
+                    ) : null}
+                  </>
+                }
+              />
+            )}
 
-        {!isCompactScreen && shouldShowPluginAction && (
-          <ChatAction
-            onClick={() => setActionModalOpen("plugin", true)}
-            text={Locale.Plugin.Name}
-            icon={<PluginIcon />}
-          />
-        )}
-        {!isCompactScreen && actionModals.plugin && (
-          <SimpleMultipleSelector
-            items={pluginSelectorItems}
-            defaultSelectedValue={chatStore.currentSession().mask?.plugin}
-            onClose={() => setActionModalOpen("plugin", false)}
-            onSelection={(s) => {
-              chatStore.updateTargetSession(session, (session) => {
-                session.mask.plugin = s;
-              });
-            }}
-            showSearch={false}
-          />
-        )}
+            {config.enableClearContext && hasClearableContext && (
+              <ChatAction
+                text={Locale.Chat.InputActions.Clear}
+                icon={<BreakIcon />}
+                onClick={() => {
+                  chatStore.updateTargetSession(session, (session) => {
+                    if (session.clearContextIndex === session.messages.length) {
+                      session.clearContextIndex = undefined;
+                    } else {
+                      session.clearContextIndex = session.messages.length;
+                      session.memoryPrompt = ""; // will clear memory
+                    }
+                  });
+                  completeMobileAction();
+                }}
+              />
+            )}
 
-        <ChatAction
-          active={props.imageGenerationEnabled}
-          onClick={async () => {
-            if (isCompactScreen) {
-              completeMobileAction();
-              await setImageGenerationMode(!props.imageGenerationEnabled);
-              return;
-            }
+            {!isCompactScreen && (
+              <ChatAction
+                onClick={() => {
+                  if (modelLocked) {
+                    showToast("该项已由管理员锁定");
+                    return;
+                  }
+                  setActionModalOpen("model", true);
+                }}
+                text={currentModelName}
+                icon={<RobotIcon />}
+              />
+            )}
 
-            setActionModalOpen("imageGeneration", true);
-          }}
-          text={props.imageGenerationEnabled ? "关闭图片生成" : "图片生成"}
-          icon={<ImageIcon />}
-        />
-        {!isCompactScreen && actionModals.imageGeneration && (
-          <Selector
-            defaultSelectedValue={
-              props.imageGenerationEnabled ? "enabled" : "disabled"
-            }
-            items={[
-              {
-                title: "启用图片生成",
-                subTitle: "后续消息会优先调用 jimeng-mcp 生成图片",
-                value: "enabled",
-                icon: <ImageIcon />,
-              },
-              {
-                title: "关闭图片生成",
-                subTitle: "后续消息按普通聊天处理",
-                value: "disabled",
-                icon: <ImageIcon />,
-              },
-            ]}
-            onClose={() => setActionModalOpen("imageGeneration", false)}
-            onSelection={(selection) => {
-              const selected = selection[0];
-              if (!selected) return;
-              setImageGenerationMode(selected === "enabled");
-            }}
-            showSearch={false}
-          />
-        )}
+            {!isCompactScreen && actionModals.model && (
+              <Selector
+                defaultSelectedValue={`${currentModel}@${currentProviderName}`}
+                items={models.map((m) => ({
+                  title: `${m.displayName}${
+                    m?.provider?.providerName
+                      ? " (" + m?.provider?.providerName + ")"
+                      : ""
+                  }`,
+                  value: `${m.name}@${m?.provider?.providerName}`,
+                  icon: (
+                    <Avatar
+                      model={m.name}
+                      provider={m?.provider?.providerName}
+                    />
+                  ),
+                }))}
+                onClose={() => setActionModalOpen("model", false)}
+                onSelection={(m) => {
+                  if (modelLocked) return;
+                  if (m.length === 0) return;
+                  const [model, providerName] = getModelProvider(m[0]);
+                  chatStore.updateTargetSession(session, (session) => {
+                    session.mask.modelConfig.model = model as ModelType;
+                    session.mask.modelConfig.providerName =
+                      providerName as ServiceProvider;
+                    applyOpenAIImageGenerationDefaults(
+                      session.mask.modelConfig,
+                    );
+                    session.mask.modelConfigMeta = {
+                      ...(session.mask.modelConfigMeta ?? {}),
+                      model: createConfigFieldMeta({
+                        source: "conversation_override",
+                        publicConfig: config.serverConfigSnapshot,
+                      }),
+                      providerName: createConfigFieldMeta({
+                        source: "conversation_override",
+                        publicConfig: config.serverConfigSnapshot,
+                      }),
+                    };
+                    session.mask.syncGlobalConfig = false;
+                    // 如果切换到非 gemini-2.0-flash-exp 模型，清除插件选择
+                    if (model !== "gemini-2.0-flash-exp") {
+                      session.mask.plugin = [];
+                    }
+                  });
+                  showToast(model);
+                }}
+                showSearch={config.enableModelSearch ?? false}
+              />
+            )}
 
-        {!isCompactScreen && config.enableShortcuts && (
-          <ChatAction
-            onClick={() => props.setShowShortcutKeyModal(true)}
-            text={Locale.Chat.ShortcutKey.Title}
-            icon={<ShortcutkeyIcon />}
-          />
+            {!isCompactScreen && isOpenAIImageGeneration && (
+              <ChatAction
+                onClick={() => setActionModalOpen("size", true)}
+                text={currentSize}
+                icon={<SizeIcon />}
+              />
+            )}
+
+            {!isCompactScreen &&
+              isOpenAIImageGeneration &&
+              actionModals.size && (
+                <Selector
+                  defaultSelectedValue={currentSize}
+                  items={imageSizes.map((m) => ({
+                    title: m,
+                    value: m,
+                  }))}
+                  onClose={() => setActionModalOpen("size", false)}
+                  onSelection={(s) => {
+                    if (s.length === 0) return;
+                    const size = s[0] as OpenAIImageSize;
+                    chatStore.updateTargetSession(session, (session) => {
+                      session.mask.modelConfig.size = size;
+                    });
+                    showToast(size);
+                  }}
+                  showSearch={false}
+                />
+              )}
+
+            {!isCompactScreen &&
+              isOpenAIImageGeneration &&
+              imageQualitys.length > 0 && (
+                <ChatAction
+                  onClick={() => setActionModalOpen("quality", true)}
+                  text={currentQuality}
+                  icon={<QualityIcon />}
+                />
+              )}
+
+            {!isCompactScreen &&
+              isOpenAIImageGeneration &&
+              imageQualitys.length > 0 &&
+              actionModals.quality && (
+                <Selector
+                  defaultSelectedValue={currentQuality}
+                  items={imageQualitys.map((m) => ({
+                    title: m,
+                    value: m,
+                  }))}
+                  onClose={() => setActionModalOpen("quality", false)}
+                  onSelection={(q) => {
+                    if (q.length === 0) return;
+                    const quality = q[0] as OpenAIImageQuality;
+                    chatStore.updateTargetSession(session, (session) => {
+                      session.mask.modelConfig.quality = quality;
+                    });
+                    showToast(quality);
+                  }}
+                  showSearch={false}
+                />
+              )}
+
+            {!isCompactScreen && isDalle3Model && (
+              <ChatAction
+                onClick={() => setActionModalOpen("style", true)}
+                text={currentStyle}
+                icon={<StyleIcon />}
+              />
+            )}
+
+            {!isCompactScreen && actionModals.style && (
+              <Selector
+                defaultSelectedValue={currentStyle}
+                items={dalle3Styles.map((m) => ({
+                  title: m,
+                  value: m,
+                }))}
+                onClose={() => setActionModalOpen("style", false)}
+                onSelection={(s) => {
+                  if (s.length === 0) return;
+                  const style = s[0] as DalleStyle;
+                  chatStore.updateTargetSession(session, (session) => {
+                    session.mask.modelConfig.style = style;
+                  });
+                  showToast(style);
+                }}
+                showSearch={false}
+              />
+            )}
+
+            {!isCompactScreen && shouldShowPluginAction && (
+              <ChatAction
+                onClick={() => setActionModalOpen("plugin", true)}
+                text={Locale.Plugin.Name}
+                icon={<PluginIcon />}
+              />
+            )}
+            {!isCompactScreen && actionModals.plugin && (
+              <SimpleMultipleSelector
+                items={pluginSelectorItems}
+                defaultSelectedValue={chatStore.currentSession().mask?.plugin}
+                onClose={() => setActionModalOpen("plugin", false)}
+                onSelection={(s) => {
+                  chatStore.updateTargetSession(session, (session) => {
+                    session.mask.plugin = s;
+                  });
+                }}
+                showSearch={false}
+              />
+            )}
+
+            {!isCompactScreen && config.enableShortcuts && (
+              <ChatAction
+                onClick={() => props.setShowShortcutKeyModal(true)}
+                text={Locale.Chat.ShortcutKey.Title}
+                icon={<ShortcutkeyIcon />}
+              />
+            )}
+          </div>
         )}
-      </>
+      </div>
       <div className={styles["chat-input-actions-end"]}>
         {!isCompactScreen &&
           ENABLE_REALTIME_CHAT &&
