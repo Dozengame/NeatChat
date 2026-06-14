@@ -60,6 +60,7 @@ describe("Gemini visual migration shell", () => {
   test("keeps the Gemini-style empty state hooks and the existing tool menu entry points", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
+    const sidebar = read("app/components/sidebar.tsx");
     const homeStyles = read("app/components/home.module.scss");
     const globalStyles = read("app/styles/globals.scss");
     const constants = read("app/constant.ts");
@@ -107,6 +108,23 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["chat-desktop-model-menu"]');
     expect(chat).toMatch(/showMobileModelSelector\s*&&\s*\(/);
     expect(chat).toContain('styles["chat-mobile-model-menu"]');
+    expect(sidebar).toContain('styles["sidebar-primary-nav"]');
+    expect(sidebar).toContain('styles["sidebar-content-nav"]');
+    expect(sidebar).toContain("Locale.Home.PrimarySection");
+    expect(sidebar).toContain("Locale.Home.ContentSection");
+    expect(sidebar).toContain("Locale.Home.LocalContent");
+    expect(sidebar).toContain("Locale.SearchChat.Name");
+    expect(sidebar).toContain("Locale.Mask.Name");
+    expect(sidebar).toContain("Locale.Discovery.Name");
+    expect(sidebar).toContain("Path.NewChat");
+    expect(sidebar).toContain("Path.SearchChat");
+    expect(sidebar).toContain("Path.Masks");
+    expect(sidebar).toContain("Path.Plugins");
+    expect(sidebar).toContain("Path.McpMarket");
+    expect(sidebar).toContain("Path.Settings");
+    expect(sidebar).toContain("Path.Home");
+    expect(sidebar).toContain("<ChatList narrow={shouldNarrow}");
+    expect(sidebar).toContain("SimpleSelector");
 
     expect(chatStyles).toContain(".chat-empty-state");
     expect(chatStyles).toContain(".chat-empty-title");
@@ -139,12 +157,21 @@ describe("Gemini visual migration shell", () => {
     expect(globalStyles).toContain("--sidebar-width: 268px");
     expect(constants).toContain("DEFAULT_SIDEBAR_WIDTH = 268");
     expect(homeStyles).toContain("rgba(249, 251, 253");
+    expect(homeStyles).toContain(".sidebar-primary-nav");
+    expect(homeStyles).toContain(".sidebar-content-nav");
+    expect(homeStyles).toContain(".sidebar-content-card");
     expect(cnLocale).toContain('EmptyTitle: "你好！想聊点什么？"');
     expect(cnLocale).toContain("EmptySuggestions:");
+    expect(cnLocale).toContain("PrimarySection:");
+    expect(cnLocale).toContain("ContentSection:");
+    expect(cnLocale).toContain("LocalContent:");
     expect(enLocale).toContain(
       'EmptyTitle: "Hello! What would you like to discuss?"',
     );
     expect(enLocale).toContain("EmptySuggestions:");
+    expect(enLocale).toContain("PrimarySection:");
+    expect(enLocale).toContain("ContentSection:");
+    expect(enLocale).toContain("LocalContent:");
     expect(qaNotes).not.toContain("console `warn/error` logs empty");
     expect(qaNotes).toContain("known React dev warning");
     expect(gitignore).toContain("design-prototypes/");

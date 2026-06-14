@@ -402,11 +402,94 @@
   background-color: rgba(49, 94, 248, 0.1);
 }
 
+.sidebar-primary-nav,
+.sidebar-content-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-content-nav {
+  margin-top: 10px;
+}
+
+.sidebar-content-card {
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 58px;
+  padding: 8px 12px;
+  border: 1px solid rgba(60, 64, 67, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.68);
+  color: var(--black);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: inherit;
+  text-align: left;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: rgba(49, 94, 248, 0.18);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 6px 22px rgba(60, 64, 67, 0.08);
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+  }
+}
+
+.sidebar-content-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sidebar-content-title,
+.sidebar-content-subtitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-content-title {
+  color: var(--black);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sidebar-content-subtitle {
+  color: var(--black-50);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+:global(.dark) .sidebar-content-card {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+
+  &:hover,
+  &:focus-visible {
+    border-color: rgba(138, 180, 248, 0.24);
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
 .sidebar-section-label {
   color: var(--black-50);
   font-size: 12px;
   font-weight: 500;
-  margin: 12px 12px 8px;
+  margin: 10px 12px 6px;
 }
 
 .chat-item-count,
@@ -435,6 +518,32 @@
         margin-right: 0;
         margin-bottom: 10px;
       }
+    }
+  }
+
+  .sidebar-primary-nav,
+  .sidebar-content-nav {
+    align-items: center;
+    width: 100%;
+  }
+
+  .sidebar-content-nav {
+    margin-top: 8px;
+  }
+
+  .sidebar-content-card {
+    justify-content: center;
+    min-height: 42px;
+    width: 42px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+
+    &:hover,
+    &:focus-visible {
+      background-color: var(--hover-color);
+      box-shadow: none;
     }
   }
 

@@ -159,6 +159,12 @@ const en: LocaleType = {
   },
   Home: {
     NewChat: "New Chat",
+    PrimarySection: "Start",
+    ContentSection: "Content",
+    LocalContent: {
+      Title: "Local content",
+      SubTitle: "Search chats, files, and generated work",
+    },
     DeleteChat: "Confirm to delete the selected conversation?",
     DeleteToast: "Chat Deleted",
     Revert: "Revert",

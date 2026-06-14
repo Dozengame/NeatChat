@@ -157,6 +157,12 @@ const cn = {
   },
   Home: {
     NewChat: "新的聊天",
+    PrimarySection: "开始",
+    ContentSection: "内容",
+    LocalContent: {
+      Title: "本地内容",
+      SubTitle: "搜索聊天、文件和生成内容",
+    },
     DeleteChat: "确认删除选中的对话？",
     DeleteToast: "已删除会话",
     Revert: "撤销",

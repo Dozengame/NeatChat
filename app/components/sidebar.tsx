@@ -9,6 +9,7 @@ import MaskIcon from "../icons/mask.svg";
 import DragIcon from "../icons/drag.svg";
 import DiscoveryIcon from "../icons/discovery.svg";
 import NeatIcon from "../icons/neat.svg";
+import FileIcon from "../icons/file.svg";
 
 import Locale from "../locales";
 
@@ -278,7 +279,7 @@ export function SideBar(props: { className?: string }) {
     }
   };
 
-  const navItems = [
+  const primaryNavItems = [
     {
       label: Locale.Home.NewChat,
       icon: <AddIcon />,
@@ -311,36 +312,69 @@ export function SideBar(props: { className?: string }) {
         shouldNarrow={shouldNarrow}
       >
         <div className={styles["sidebar-header-bar"]}>
-          {navItems.map((item) => (
+          <div className={styles["sidebar-primary-nav"]}>
+            {!shouldNarrow && (
+              <div className={styles["sidebar-section-label"]}>
+                {Locale.Home.PrimarySection}
+              </div>
+            )}
+            {primaryNavItems.map((item) => (
+              <button
+                type="button"
+                key={item.path}
+                className={clsx(styles["sidebar-nav-item"], {
+                  [styles["sidebar-nav-item-active"]]:
+                    location.pathname === item.path,
+                })}
+                onClick={item.onClick}
+                aria-label={item.label}
+                title={shouldNarrow ? item.label : undefined}
+              >
+                {item.icon}
+                {!shouldNarrow && <span>{item.label}</span>}
+              </button>
+            ))}
+          </div>
+          <div className={styles["sidebar-content-nav"]}>
+            {!shouldNarrow && (
+              <div className={styles["sidebar-section-label"]}>
+                {Locale.Home.ContentSection}
+              </div>
+            )}
             <button
               type="button"
-              key={item.path}
+              className={styles["sidebar-content-card"]}
+              onClick={() => navigate(Path.SearchChat)}
+              aria-label={Locale.Home.LocalContent.Title}
+              title={shouldNarrow ? Locale.Home.LocalContent.Title : undefined}
+            >
+              <FileIcon />
+              {!shouldNarrow && (
+                <span className={styles["sidebar-content-copy"]}>
+                  <span className={styles["sidebar-content-title"]}>
+                    {Locale.Home.LocalContent.Title}
+                  </span>
+                  <span className={styles["sidebar-content-subtitle"]}>
+                    {Locale.Home.LocalContent.SubTitle}
+                  </span>
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
               className={clsx(styles["sidebar-nav-item"], {
                 [styles["sidebar-nav-item-active"]]:
-                  location.pathname === item.path,
+                  location.pathname === Path.Plugins ||
+                  location.pathname === Path.McpMarket,
               })}
-              onClick={item.onClick}
-              aria-label={item.label}
-              title={shouldNarrow ? item.label : undefined}
+              onClick={openDiscoverySelector}
+              aria-label={Locale.Discovery.Name}
+              title={shouldNarrow ? Locale.Discovery.Name : undefined}
             >
-              {item.icon}
-              {!shouldNarrow && <span>{item.label}</span>}
+              <DiscoveryIcon />
+              {!shouldNarrow && <span>{Locale.Discovery.Name}</span>}
             </button>
-          ))}
-          <button
-            type="button"
-            className={clsx(styles["sidebar-nav-item"], {
-              [styles["sidebar-nav-item-active"]]:
-                location.pathname === Path.Plugins ||
-                location.pathname === Path.McpMarket,
-            })}
-            onClick={openDiscoverySelector}
-            aria-label={Locale.Discovery.Name}
-            title={shouldNarrow ? Locale.Discovery.Name : undefined}
-          >
-            <DiscoveryIcon />
-            {!shouldNarrow && <span>{Locale.Discovery.Name}</span>}
-          </button>
+          </div>
         </div>
         {showPluginSelector && (
           <SimpleSelector
