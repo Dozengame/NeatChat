@@ -243,10 +243,20 @@ export function getMessageImages(message: RequestMessage): string[] {
   const urls: string[] = [];
   for (const c of message.content) {
     if (c.type === "image_url") {
-      urls.push(c.image_url?.url ?? "");
+      const url = c.image_url?.url?.trim() ?? "";
+      if (url) {
+        urls.push(url);
+      }
     }
   }
   return urls;
+}
+
+export function hasMessageContent(message: RequestMessage) {
+  return (
+    getMessageTextContent(message).trim().length > 0 ||
+    getMessageImages(message).some((url) => url.trim().length > 0)
+  );
 }
 
 export function isVisionModel(model: string) {
@@ -320,10 +330,7 @@ export function showPlugins(providerName?: string, model?: string) {
   return false;
 }
 
-function fetch(
-  url: string,
-  options?: Record<string, unknown>,
-): Promise<any> {
+function fetch(url: string, options?: Record<string, unknown>): Promise<any> {
   if (window.__TAURI__) {
     return tauriStreamFetch(url, options);
   }

@@ -7,11 +7,11 @@ import { MaskAvatar } from "./mask";
 import Locale from "../locales";
 
 import styles from "./message-selector.module.scss";
-import { getMessageTextContent } from "../utils";
+import { getMessageTextContent, hasMessageContent } from "../utils";
 import clsx from "clsx";
 
 function isValidSelectableMessage(message: ChatMessage) {
-  return getMessageTextContent(message).trim().length > 0;
+  return hasMessageContent(message);
 }
 
 function useShiftRange() {

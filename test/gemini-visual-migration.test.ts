@@ -6,8 +6,10 @@ function read(relativePath: string) {
 }
 
 function readCssBlock(source: string, selector: string) {
-  const selectorIndex = source.indexOf(selector);
-  if (selectorIndex < 0) return "";
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const selectorMatch = new RegExp(`${escapedSelector}\\s*\\{`).exec(source);
+  if (!selectorMatch) return "";
+  const selectorIndex = selectorMatch.index;
 
   const openIndex = source.indexOf("{", selectorIndex);
   if (openIndex < 0) return "";

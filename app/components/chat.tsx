@@ -72,6 +72,7 @@ import {
   useMobileScreen,
   getMessageTextContent,
   getMessageImages,
+  hasMessageContent,
   isVisionModel,
   showPlugins,
   safeLocalStorage,
@@ -871,10 +872,8 @@ function useChatActionsView(props: ChatActionsProps) {
   const shouldShowPluginAction =
     showPlugins(currentProviderName, currentModel) &&
     pluginSelectorItems.length > 0;
-  const hasClearableContext = session.messages.some(
-    (message) =>
-      getMessageTextContent(message).trim().length > 0 ||
-      getMessageImages(message).some(Boolean),
+  const hasClearableContext = session.messages.some((message) =>
+    hasMessageContent(message),
   );
   const completeMobileAction = () => {
     if (isCompactScreen) {
