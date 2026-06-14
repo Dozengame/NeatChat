@@ -984,3 +984,35 @@ Browser QA:
 Known risks:
 
 - This iteration only strengthens composer focus feedback. It does not change input handling, sending, tool menu actions, upload, image generation, MCP/Jimeng, settings, model selection, attachments, or message rendering.
+
+## Iteration 2026-06-15 composer-tools-modal-semantics
+
+Result: passed.
+
+Target flow:
+
+- App loads -> open the composer tool menu -> the tool menu dialog exposes modal semantics while preserving the existing button state, backdrop, menu contents, and responsive placement.
+
+Scope:
+
+- `app/components/chat.tsx`: added `aria-modal="true"` to the existing `id="chat-input-action-menu"` dialog.
+- `test/gemini-visual-migration.test.ts`: locked `aria-modal="true"` specifically on the composer tool menu without changing tool actions, upload, image generation, MCP/Jimeng, prompt hints, settings, model behavior, attachments, or messages.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because `chat-input-action-menu` did not expose `aria-modal="true"`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/#/chat`, actual viewport `1440x1024`. Initial tools button existed with `aria-label="打开对话工具"`, `aria-expanded="false"`, measured `44x44` at `left: 490`, `right: 534`, `top: 460.08`, `bottom: 504.08`. After opening, the button changed to `aria-label="关闭对话工具"`, `aria-expanded="true"`, `aria-controls="chat-input-action-menu"`; backdrop existed with `aria-label="关闭对话工具"` and covered the viewport; menu rendered as `id="chat-input-action-menu"`, `role="dialog"`, `aria-modal="true"`, `aria-label="对话工具菜单"`, measured `left: 490`, `right: 826`, `top: 156.48`, `bottom: 393.08`, `width: 336`, `height: 236.59`; text included `添加内容文件和图片上传附件图片生成对话设置gpt-5.4`; `menuOverflowsViewport: false`, `pageOverflowPx: 0`. No console warn/error logs.
+- Mobile `390x844`: page identity `http://localhost:3000/#/chat`, actual viewport `390x844`. Initial tools button existed with `aria-label="打开对话工具"`, `aria-expanded="false"`, measured `42x42` at `left: 19`, `right: 61`, `top: 781`, `bottom: 823`. After opening, the button changed to `aria-label="关闭对话工具"`, `aria-expanded="true"`, `aria-controls="chat-input-action-menu"`; backdrop existed with `aria-label="关闭对话工具"` and covered the viewport; menu rendered as `id="chat-input-action-menu"`, `role="dialog"`, `aria-modal="true"`, `aria-label="对话工具菜单"`, measured `left: 11`, `right: 331`, `top: 609.41`, `bottom: 767`, `width: 320`, `height: 157.59`; text included `添加内容文件和图片上传附件图片生成`; `menuOverflowsViewport: false`, `pageOverflowPx: 0`. No console warn/error logs.
+- Narrow mobile `320x740`: page identity `http://localhost:3000/#/chat`, actual viewport `320x740`. Initial tools button existed with `aria-label="打开对话工具"`, `aria-expanded="false"`, measured `42x42` at `left: 19`, `right: 61`, `top: 677`, `bottom: 719`. After opening, the button changed to `aria-label="关闭对话工具"`, `aria-expanded="true"`, `aria-controls="chat-input-action-menu"`; backdrop existed with `aria-label="关闭对话工具"` and covered the viewport; menu rendered as `id="chat-input-action-menu"`, `role="dialog"`, `aria-modal="true"`, `aria-label="对话工具菜单"`, measured `left: 11`, `right: 283`, `top: 505.41`, `bottom: 663`, `width: 272`, `height: 157.59`; text included `添加内容文件和图片上传附件图片生成`; `menuOverflowsViewport: false`, `pageOverflowPx: 0`. No console warn/error logs.
+
+Known risks:
+
+- This iteration only declares modal semantics for the existing composer tool menu. It does not change tool item order, click handlers, Escape handling, focus return, upload, image generation, MCP/Jimeng, prompt hints, settings, model behavior, attachments, or messages.

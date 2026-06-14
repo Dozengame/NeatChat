@@ -3503,6 +3503,7 @@ function useChatInnerView() {
                   id="chat-input-action-menu"
                   className={styles["chat-input-action-menu"]}
                   role="dialog"
+                  aria-modal="true"
                   aria-label="对话工具菜单"
                 >
                   <ChatActions
