@@ -3490,6 +3490,11 @@ function useChatInnerView() {
                       ? Locale.Chat.MobileInput
                       : Locale.Chat.Input(submitKey)
                   }
+                  aria-label={
+                    isCompactScreen
+                      ? Locale.Chat.MobileInput
+                      : Locale.Chat.Input(submitKey)
+                  }
                   onChange={(e) => onInput(e.currentTarget.value)}
                   value={userInput}
                   onKeyDown={onInputKeyDown}

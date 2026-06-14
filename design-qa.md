@@ -524,3 +524,38 @@ Browser QA:
 Known risks:
 
 - Browser QA verified the send control entry point and layout, but did not submit a message because this slice intentionally did not change `doSubmit` or model/network behavior.
+
+## Iteration 2026-06-15 composer-input-accessibility
+
+Result: passed.
+
+Target flow:
+
+- App loads -> composer textarea renders -> the input has a stable accessible name on desktop and mobile while preserving existing placeholder, row count, attachments, model, MCP, and submit behavior.
+
+Scope:
+
+- `app/components/chat.tsx`: added an `aria-label` to the existing `#chat-input` textarea, using the desktop submit-key copy on wide layouts and `Locale.Chat.MobileInput` on compact layouts.
+- `app/components/chat.module.scss`: reserved real desktop width for textarea when the input status row is visible, preventing the mode/status chip from overlapping input text.
+- `test/gemini-visual-migration.test.ts`: locked the textarea accessibility contract and the status-row layout reservation.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the textarea did not expose `aria-label`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed after adding the textarea label.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed again as expected when the desktop status row overlap was captured as a source contract.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed after adding the status-row width reservation.
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/`, title `NeatChat`, viewport `1440x1024`, ready state `complete`, meaningful body content present, no framework overlay; textarea existed with `aria-label="Enter 发送，Shift + Enter 换行"`, matching placeholder, `rows="3"`, `roleTextboxCount: 1`, measured `left: 563`, `right: 1041`, `top: 466`, `bottom: 494`, `width: 478`, `height: 28`; status row measured `left: 1109`, `right: 1191`, `width: 82`; `textareaStatusOverlap: false`, `textareaSendOverlap: false`, `textareaToolOverlap: false`, textarea/panel right overflow `0`, `scrollOverflowPx: 0`, no console warn/error logs.
+- Mobile `390x844`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, viewport `390x844`, ready state `complete`, meaningful body content present, no framework overlay; textarea existed with `aria-label="输入消息..."`, matching placeholder, `rows="1"`, `roleTextboxCount: 1`, measured `left: 67`, `right: 313`, `top: 788`, `bottom: 816`, `width: 246`, `height: 28`; send/tool overlap both `false`, textarea/panel right overflow `0`, `scrollOverflowPx: 0`, no console warn/error logs.
+- Narrow mobile `320x740`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, viewport `320x740`, ready state `complete`, meaningful body content present, no framework overlay; textarea existed with `aria-label="输入消息..."`, matching placeholder, `rows="1"`, `roleTextboxCount: 1`, measured `left: 67`, `right: 243`, `top: 684`, `bottom: 712`, `width: 176`, `height: 28`; send/tool overlap both `false`, textarea/panel right overflow `0`, `scrollOverflowPx: 0`, no console warn/error logs.
+
+Screenshot note:
+
+- In-app Browser screenshot capture was attempted with both full-page and viewport options, but the backend returned `Timed out running CDP command "Page.captureScreenshot" for tab 2`. DOM, ARIA, layout rectangle, overflow, and console-log checks above were completed in the in-app Browser after resetting each viewport and reloading.
+
+Known risks:
+
+- Browser QA verified the composer input accessibility and layout surface only. It did not submit a message or exercise live model/MCP network calls because this slice intentionally did not change those paths.

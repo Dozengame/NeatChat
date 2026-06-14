@@ -106,6 +106,10 @@ describe("Gemini visual migration shell", () => {
       mobileStyles,
       ".chat-input-status-row",
     );
+    const inputStatusBlock = readCssBlock(
+      chatStyles,
+      ".chat-input-panel-inner-status",
+    );
     const mobileMessageActionsBlock = readCssBlock(
       mobileStyles,
       ".chat-message-actions",
@@ -326,8 +330,13 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("Locale.Chat.MobileInput");
     expect(chat).toContain("rows={isCompactScreen ? 1 : inputRows}");
     expect(chat).toMatch(
+      /className=\{styles\["chat-input"\]\}[\s\S]*aria-label=\{\s*isCompactScreen\s*\?\s*Locale\.Chat\.MobileInput\s*:\s*Locale\.Chat\.Input\(submitKey\)\s*\}/,
+    );
+    expect(chat).toMatch(
       /className=\{styles\["chat-input-send"\]\}[\s\S]*aria=\{Locale\.Chat\.Send\}/,
     );
+    expect(inputStatusBlock).toContain(".chat-input");
+    expect(inputStatusBlock).toContain("width: calc(100% - 96px)");
     expect(chat).toContain('styles["chat-reading-surface"]');
     expect(chat).toContain('styles["chat-message-row"]');
     expect(chat).toContain('styles["chat-message-row-user"]');

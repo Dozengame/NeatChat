@@ -1817,6 +1817,7 @@
 
 .chat-input-panel-inner-status {
   .chat-input {
+    width: calc(100% - 96px);
     padding-bottom: 38px;
   }
 }
