@@ -885,3 +885,36 @@ Browser QA:
 Known risks:
 
 - This iteration does not change drag sorting, delete confirmation, session persistence, or mobile drawer routing. It only improves the visible selected state and accessible structure of the existing recent-chat list.
+
+## Iteration 2026-06-15 reading-surface-message-list
+
+Result: passed.
+
+Target flow:
+
+- App loads -> selecting an existing chat shows the conversation as a readable message list -> each visible message has a stable list item label and width protection against long content.
+
+Scope:
+
+- `app/components/chat.tsx`: added `role="list"` / `aria-label="会话消息列表"` to the reading surface and `role="listitem"`, readable per-message labels, and `aria-busy` for streaming/preview messages on message rows.
+- `app/components/chat.module.scss`: added `min-width: 0` to message containers and `overflow-wrap: anywhere` to message content blocks.
+- `test/gemini-visual-migration.test.ts`: locked the reading surface semantics, message row labels/busy state, and width-protection CSS.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the reading surface did not expose `role="list"`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `1440x1024`. After selecting the visible session `浏览器相关, 2 条对话`, chat body rendered with `aria-label="聊天消息"` and measured `left: 300`, `right: 1440`, `top: 62`, `bottom: 1024`, `width: 1140`, `height: 962`; reading surface rendered as `role="list"`, `aria-label="会话消息列表"`, `itemCount: 3`, measured `left: 410`, `right: 1330`, `top: 96`, `bottom: 1014`, `width: 920`, `height: 918`; first message row rendered as `role="listitem"`, `aria-label="助手消息 1"`, `aria-busy: null`, measured `left: 410`, `right: 1330`, `width: 920`; first message container had `minWidth: 0px`, `maxWidth: 100%`, `width: 760`; first message item had `overflowWrap: anywhere`, `wordBreak: break-word`, `maxWidth: 100%`; message action regions present (`messageActionsVisibleCount: 2`); `pageOverflowPx: 0`, `bodyOverflowPx: 0`. No console warn/error logs.
+- Mobile `390x844`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `390x844`. Chat body rendered with `aria-label="聊天消息"` and measured `left: 0`, `right: 390`, `top: 68`, `bottom: 844`, `width: 390`, `height: 776`; reading surface rendered as `role="list"`, `aria-label="会话消息列表"`, `itemCount: 3`, measured `left: 32`, `right: 358`, `top: 96`, `bottom: 1056`, `width: 326`, `height: 960`; first message row rendered as `role="listitem"`, `aria-label="助手消息 1"`, `aria-busy: null`, measured `left: 32`, `right: 358`, `width: 326`; first message container had `minWidth: 0px`, `maxWidth: 100%`, `width: 326`; first message item had `overflowWrap: anywhere`, `wordBreak: break-word`, `maxWidth: 100%`; message action regions present (`messageActionsVisibleCount: 2`); `pageOverflowPx: 0`, `bodyOverflowPx: 0`. No console warn/error logs.
+- Narrow mobile `320x740`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `320x740`. Chat body rendered with `aria-label="聊天消息"` and measured `left: 0`, `right: 320`, `top: 68`, `bottom: 740`, `width: 320`, `height: 672`; reading surface rendered as `role="list"`, `aria-label="会话消息列表"`, `itemCount: 3`, measured `left: 32`, `right: 288`, `top: 96`, `bottom: 1098`, `width: 256`, `height: 1002`; first message row rendered as `role="listitem"`, `aria-label="助手消息 1"`, `aria-busy: null`, measured `left: 32`, `right: 288`, `width: 256`; first message container had `minWidth: 0px`, `maxWidth: 100%`, `width: 256`; first message item had `overflowWrap: anywhere`, `wordBreak: break-word`, `maxWidth: 100%`; message action regions present (`messageActionsVisibleCount: 2`); `pageOverflowPx: 0`, `bodyOverflowPx: 0`. No console warn/error logs.
+
+Known risks:
+
+- This iteration does not change message rendering, Markdown behavior, retry/delete/pin/copy actions, TTS, image rendering, or auto-scroll. It only strengthens the reading surface structure and width stability.

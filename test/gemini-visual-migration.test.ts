@@ -166,6 +166,14 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-reading-surface > .chat-message-row-user",
     );
+    const messageContainerBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-container",
+    );
+    const chatMessageItemBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-item",
+    );
     const messageActionsBlock = readCssBlock(
       chatStyles,
       ".chat-message-actions",
@@ -381,9 +389,15 @@ describe("Gemini visual migration shell", () => {
     expect(inputStatusBlock).toContain(".chat-input");
     expect(inputStatusBlock).toContain("width: calc(100% - 96px)");
     expect(chat).toContain('styles["chat-reading-surface"]');
+    expect(chat).toMatch(
+      /className=\{styles\["chat-reading-surface"\]\}[\s\S]*role="list"[\s\S]*aria-label="会话消息列表"/,
+    );
     expect(chat).toContain('styles["chat-message-row"]');
     expect(chat).toContain('styles["chat-message-row-user"]');
     expect(chat).toContain('styles["chat-message-row-assistant"]');
+    expect(chat).toMatch(
+      /className=\{clsx\([\s\S]*styles\["chat-message-row"\][\s\S]*\)\}[\s\S]*role="listitem"[\s\S]*aria-label=\{`\$\{isUser \? "用户消息" : "助手消息"\} \$\{i \+ 1\}`\}[\s\S]*aria-busy=\{showTyping \? true : undefined\}/,
+    );
     expect(chat).toContain('aria-label="消息操作"');
     expect(chat).toContain('styles["chat-message-action-rail"]');
     expect(chat).toContain("aria-label={props.text}");
@@ -416,11 +430,11 @@ describe("Gemini visual migration shell", () => {
     expect(chatList).toMatch(
       /\{\.\.\.provided\.draggableProps\}[\s\S]*role="listitem"[\s\S]*aria-current=\{isCurrentChatItem \? "page" : undefined\}/,
     );
-    expect(chatList).toContain(
-      'aria-label={`${props.title}, ${Locale.ChatItem.ChatItemCount(props.count)}`}',
+    expect(chatList).toMatch(
+      /aria-label=\{`\$\{props\.title\}, \$\{Locale\.ChatItem\.ChatItemCount\(\s*props\.count,\s*\)\}`\}/,
     );
     expect(chatList).toMatch(
-      /\{\.\.\.dragHandleProps\}[\s\S]*aria-label=\{`\$\{props\.title\}, \$\{Locale\.ChatItem\.ChatItemCount\(props\.count\)\}`\}/,
+      /\{\.\.\.dragHandleProps\}[\s\S]*aria-label=\{`\$\{props\.title\}, \$\{Locale\.ChatItem\.ChatItemCount\(\s*props\.count,\s*\)\}`\}/,
     );
     expect(chatList).toContain('aria-label={Locale.Home.DeleteChat}');
     expect(chatList).toContain('styles["chat-item-delete"]');
@@ -485,6 +499,8 @@ describe("Gemini visual migration shell", () => {
     expect(messageRowUserBlock).toMatch(/justify-content:\s*flex-end;/);
     expect(messageRowUserOverrideBlock).toMatch(/flex-direction:\s*row;/);
     expect(messageRowUserOverrideBlock).toMatch(/justify-content:\s*flex-end;/);
+    expect(messageContainerBlock).toMatch(/min-width:\s*0;/);
+    expect(chatMessageItemBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(chatStyles.indexOf(".chat-reading-surface > .chat-message-row-user")).toBeGreaterThan(
       chatStyles.indexOf(".chat-message-user"),
     );

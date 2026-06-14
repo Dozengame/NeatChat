@@ -3183,7 +3183,11 @@ function useChatInnerView() {
                 </ul>
               </div>
             )}
-            <div className={styles["chat-reading-surface"]}>
+            <div
+              className={styles["chat-reading-surface"]}
+              role="list"
+              aria-label="会话消息列表"
+            >
               {(showEmptyState ? [] : messages).map((message, i) => {
                 const isUser = message.role === "user";
                 const isContext = i < context.length;
@@ -3210,6 +3214,11 @@ function useChatInnerView() {
                           ? styles["chat-message-user"]
                           : styles["chat-message"],
                       )}
+                      role="listitem"
+                      aria-label={`${isUser ? "用户消息" : "助手消息"} ${
+                        i + 1
+                      }`}
+                      aria-busy={showTyping ? true : undefined}
                     >
                       <div className={styles["chat-message-container"]}>
                         <div className={styles["chat-message-header"]}>
