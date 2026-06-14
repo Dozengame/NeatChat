@@ -1594,6 +1594,10 @@ function useChatInnerView() {
   const onInput = (text: string) => {
     const MAX_TEXT_LENGTH = 3000; // 最大文本长度
 
+    if (showChatActionMenu && text.trim().length > 0) {
+      setShowChatActionMenu(false);
+    }
+
     // 修改输入文本处理逻辑
     if (text.length > MAX_TEXT_LENGTH && userInput.length <= MAX_TEXT_LENGTH) {
       // 截断过长的文本内容
@@ -1955,6 +1959,11 @@ function useChatInnerView() {
     session.mask.modelConfig?.size ?? ("1024x1024" as OpenAIImageSize);
   const headerCurrentQuality =
     session.mask.modelConfig?.quality ?? ("standard" as OpenAIImageQuality);
+  const desktopModelDetail = showHeaderImageControls
+    ? `${headerCurrentSize} · ${getImageQualityLabel(headerCurrentQuality)}`
+    : showHeaderReasoningControl
+    ? `思考 ${reasoningLabels[headerCurrentReasoningEffort]}`
+    : headerCurrentProviderName;
   const isReasoningSectionExpanded = expandedMobileModelSection === "reasoning";
   const isImageSizeSectionExpanded =
     expandedMobileModelSection === "image-size";
@@ -2615,7 +2624,11 @@ function useChatInnerView() {
       ) : (
         <div className="window-header" data-tauri-drag-region>
           <div
-            className={clsx("window-header-title", styles["chat-body-title"])}
+            className={clsx(
+              "window-header-title",
+              styles["chat-body-title"],
+              styles["chat-desktop-title-stack"],
+            )}
           >
             <button
               type="button"
@@ -2626,6 +2639,27 @@ function useChatInnerView() {
               onClickCapture={() => setIsEditingMessage(true)}
             >
               {!session.topic ? DEFAULT_TOPIC : session.topic}
+            </button>
+            <button
+              type="button"
+              className={styles["chat-desktop-model-title"]}
+              aria-label="选择模型和参数"
+              onClick={() => {
+                setShowChatActionMenu(false);
+                setExpandedMobileModelSection(null);
+                setShowMobileModelSelector((open) => !open);
+              }}
+              aria-expanded={showMobileModelSelector}
+            >
+              <span className={styles["chat-desktop-model-name"]}>
+                {headerCurrentModelName}
+              </span>
+              <span className={styles["chat-desktop-model-meta"]}>
+                {desktopModelDetail}
+              </span>
+              <span className={styles["chat-desktop-model-title-arrow"]}>
+                ⌄
+              </span>
             </button>
           </div>
           <div className="window-actions">
@@ -2679,16 +2713,24 @@ function useChatInnerView() {
         </div>
       )}
 
-      {isCompactScreen && showMobileModelSelector && (
+      {showMobileModelSelector && (
         <>
           <button
             type="button"
-            className={styles["chat-mobile-model-menu-backdrop"]}
+            className={
+              isCompactScreen
+                ? styles["chat-mobile-model-menu-backdrop"]
+                : styles["chat-desktop-model-menu-backdrop"]
+            }
             aria-label="关闭模型选择"
             onClick={closeMobileModelSelector}
           />
           <div
-            className={styles["chat-mobile-model-menu"]}
+            className={
+              isCompactScreen
+                ? styles["chat-mobile-model-menu"]
+                : styles["chat-desktop-model-menu"]
+            }
             role="dialog"
             aria-label="模型和思考等级"
           >

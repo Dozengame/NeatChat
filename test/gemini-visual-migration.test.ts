@@ -34,6 +34,28 @@ function readRootDeclarations(block: string) {
   return nestedIndex < 0 ? block : block.slice(0, nestedIndex);
 }
 
+function readFunctionBlock(source: string, signature: string) {
+  const signatureIndex = source.indexOf(signature);
+  if (signatureIndex < 0) return "";
+
+  const openIndex = source.indexOf("{", signatureIndex);
+  if (openIndex < 0) return "";
+
+  let depth = 0;
+  for (let i = openIndex; i < source.length; i += 1) {
+    if (source[i] === "{") {
+      depth += 1;
+    } else if (source[i] === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return source.slice(openIndex + 1, i);
+      }
+    }
+  }
+
+  return "";
+}
+
 describe("Gemini visual migration shell", () => {
   test("keeps the Gemini-style empty state hooks and the existing tool menu entry points", () => {
     const chat = read("app/components/chat.tsx");
@@ -58,6 +80,10 @@ describe("Gemini visual migration shell", () => {
     );
     const actionMenuBlock = readCssBlock(chatStyles, ".chat-input-action-menu");
     const actionMenuRootDeclarations = readRootDeclarations(actionMenuBlock);
+    const onInputBlock = readFunctionBlock(
+      chat,
+      "const onInput = (text: string) =>",
+    );
 
     expect(chat).toContain('styles["chat-empty-state"]');
     expect(chat).toContain('styles["chat-empty-title"]');
@@ -72,12 +98,22 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("<ChatActions");
     expect(chat).toContain("handleUploadAttachments");
     expect(chat).toContain("setImageGenerationEnabled");
+    expect(chat).toContain('styles["chat-desktop-title-stack"]');
+    expect(chat).toContain('styles["chat-desktop-model-title"]');
+    expect(chat).toContain('styles["chat-desktop-model-menu"]');
+    expect(chat).toMatch(/showMobileModelSelector\s*&&\s*\(/);
+    expect(chat).toContain('styles["chat-mobile-model-menu"]');
 
     expect(chatStyles).toContain(".chat-empty-state");
     expect(chatStyles).toContain(".chat-empty-title");
     expect(chatStyles).toContain(".chat-empty-halo");
+    expect(chatStyles).toContain(".chat-desktop-title-stack");
+    expect(chatStyles).toContain(".chat-desktop-model-title");
+    expect(chatStyles).toContain(".chat-desktop-model-menu");
+    expect(chatStyles).toMatch(/@media only screen and \(min-width: 901px\)/);
     expect(chatStyles).toContain(".chat-input-action-menu");
     expect(actionMenuRootDeclarations).toMatch(/box-sizing:\s*border-box;/);
+    expect(onInputBlock).toMatch(/setShowChatActionMenu\(false\);/);
     expect(chatStyles).toContain(
       ".chat-input-panel-inner-reasoning:not(.chat-input-panel-inner-collapsed)",
     );
