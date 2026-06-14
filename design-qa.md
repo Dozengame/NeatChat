@@ -369,3 +369,33 @@ Browser QA:
 Known risks:
 
 - This iteration intentionally leaves non-chat utility gradients untouched, such as the clear-context mask gradient and global scrollbar styling. The Browser evidence only covers the chat shell surface targeted by this slice.
+
+## Iteration 2026-06-15 sidebar-history-action-polish
+
+Result: passed.
+
+Scope:
+
+- `app/components/chat-list.tsx`: removed the inline style object from the recent-chat delete button while preserving the existing aria label, click handler, delete confirmation behavior, drag handle, session selection, and routing.
+- `app/components/home.module.scss`: moved delete-button presentation into CSS, gave recent-chat rows fixed right-side action space, added a 32px desktop delete hit area with focus-visible treatment, disabled desktop pointer hits while the action is visually hidden, and kept mobile drawer delete buttons visible at 34px without expanding the drawer.
+- `test/gemini-visual-migration.test.ts`: locked the no-inline-style contract, row padding/title width, delete-button hit area/focus-visible CSS, desktop pointer-event guard, narrow-sidebar sizing, and mobile drawer visibility.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because `chat-list.tsx` still contained `style={{ ... }}` on the delete button.
+- A follow-up RED assertion caught the desktop hidden delete action still accepting pointer events before adding the `pointer-events` guard.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: measured `rowCount: 5`, `deleteCount: 5`, sidebar `0..300`, row padding `8px 40px 8px 12px`, title width `223px`, delete button `32x32`, delete opacity `0`, delete pointer events `none`, delete right overflow `0`, `titleDeleteOverlap: false`, `horizontalOverflowPx: 0`, focus-visible CSS present, and no console warn/error logs.
+- Mobile `390x844`: opened the mobile sidebar trigger from `aria-expanded: false` to `true`; drawer measured `0..304`, `rowCount: 5`, `deleteCount: 5`, row padding `0px 40px 0px 0px`, title width `199px`, delete button `34x34`, delete opacity `0.72`, delete pointer events `auto`, drawer/delete right overflow `0`, `titleDeleteOverlap: false`, `horizontalOverflowPx: 0`, and no console warn/error logs.
+- Narrow mobile `320x740`: opened the mobile sidebar trigger; drawer measured `0..266`, `rowCount: 5`, `deleteCount: 5`, row padding `0px 40px 0px 0px`, title width `157px`, delete button `34x34`, delete opacity `0.72`, delete pointer events `auto`, drawer/delete right overflow `0`, `titleDeleteOverlap: false`, `horizontalOverflowPx: 0`, and no console warn/error logs.
+
+Known risks:
+
+- Browser QA did not click the delete button because desktop delete is destructive without confirmation for non-compact layout. Existing click handlers and confirmation behavior were preserved in source, while Browser verified the rendered entry point, sizing, bounds, accessibility label, and drawer interaction.

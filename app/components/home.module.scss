@@ -294,7 +294,7 @@
 }
 
 .chat-item {
-  padding: 8px 12px;
+  padding: 8px 40px 8px 12px;
   background-color: transparent;
   border-radius: 999px;
   margin-bottom: 2px;
@@ -335,7 +335,7 @@
   font-size: 14px;
   font-weight: 500;
   display: block;
-  width: calc(100% - 15px);
+  width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -343,18 +343,54 @@
 }
 
 .chat-item-delete {
+  appearance: none;
   position: absolute;
   top: 50%;
-  right: 8px;
+  right: 4px;
   transform: translateY(-50%);
-  transition: all ease 0.3s;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.16s ease,
+    box-shadow 0.16s ease,
+    opacity 0.16s ease;
   opacity: 0;
   cursor: pointer;
+  pointer-events: none;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    background-color: var(--hover-color);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    box-shadow: var(--focus-ring-shadow);
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .chat-item:hover > .chat-item-delete {
-  opacity: 0.5;
+  opacity: 0.56;
   transform: translateY(-50%);
+  pointer-events: auto;
 }
 
 .chat-item:hover > .chat-item-delete:hover {
@@ -584,6 +620,12 @@
     }
   }
 
+  .chat-item-delete {
+    right: 3px;
+    width: 34px;
+    height: 34px;
+  }
+
   .chat-item-narrow {
     line-height: 0;
     font-weight: lighter;
@@ -667,7 +709,7 @@
   .chat-item {
     min-height: 36px;
     margin: 0;
-    padding: 0;
+    padding: 0 40px 0 0;
     border-radius: 0;
     background: transparent;
     display: flex;
@@ -699,9 +741,17 @@
     animation: none;
   }
 
-  .chat-item-info,
-  .chat-item-delete {
+  .chat-item-info {
     display: none;
+  }
+
+  .chat-item-delete {
+    right: 4px;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    opacity: 0.72;
+    pointer-events: auto;
   }
 }
 

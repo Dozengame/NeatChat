@@ -103,14 +103,6 @@ export function ChatItem(props: {
                 e.stopPropagation();
               }}
               aria-label={Locale.Home.DeleteChat}
-              style={{
-                appearance: "none",
-                background: "none",
-                border: 0,
-                color: "inherit",
-                font: "inherit",
-                padding: 0,
-              }}
             >
               <DeleteIcon />
             </button>

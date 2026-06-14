@@ -62,6 +62,7 @@ describe("Gemini visual migration shell", () => {
     const chatStyles = read("app/components/chat.module.scss");
     const home = read("app/components/home.tsx");
     const sidebar = read("app/components/sidebar.tsx");
+    const chatList = read("app/components/chat-list.tsx");
     const homeStyles = read("app/components/home.module.scss");
     const buttonStyles = read("app/components/button.module.scss");
     const globalStyles = read("app/styles/globals.scss");
@@ -172,6 +173,21 @@ describe("Gemini visual migration shell", () => {
       finalMobileAttachmentStyles,
       ".attach-file",
     );
+    const chatItemBlock = readCssBlock(homeStyles, ".chat-item");
+    const chatItemTitleBlock = readCssBlock(homeStyles, ".chat-item-title");
+    const chatItemDeleteBlock = readCssBlock(
+      homeStyles.slice(homeStyles.indexOf("\n.chat-item-delete {")),
+      ".chat-item-delete",
+    );
+    const chatItemHoverDeleteBlock = readCssBlock(
+      homeStyles,
+      ".chat-item:hover > .chat-item-delete",
+    );
+    const mobileChatItemDeleteBlock = readCssBlock(
+      homeStyles.slice(homeStyles.lastIndexOf("\n  .chat-item-delete {")),
+      ".chat-item-delete",
+    );
+    const narrowSidebarBlock = readCssBlock(homeStyles, ".narrow-sidebar");
     const onInputBlock = readFunctionBlock(
       chat,
       "const onInput = (text: string) =>",
@@ -277,6 +293,9 @@ describe("Gemini visual migration shell", () => {
     expect(sidebar).toContain('id="mobile-sidebar-drawer"');
     expect(sidebar).toContain("<ChatList narrow={shouldNarrow}");
     expect(sidebar).toContain("SimpleSelector");
+    expect(chatList).toContain('aria-label={Locale.Home.DeleteChat}');
+    expect(chatList).toContain('styles["chat-item-delete"]');
+    expect(chatList).not.toContain('style={{');
     expect(home).toContain('[styles["sidebar-show"]]: isHome');
     expect(home).toContain("isCompactScreen && isHome");
     expect(home).toContain('styles["sidebar-backdrop"]');
@@ -448,6 +467,26 @@ describe("Gemini visual migration shell", () => {
     expect(homeStyles).toContain(".sidebar-primary-nav");
     expect(homeStyles).toContain(".sidebar-content-nav");
     expect(homeStyles).toContain(".sidebar-content-card");
+    expect(chatItemBlock).toMatch(/padding:\s*8px 40px 8px 12px;/);
+    expect(chatItemTitleBlock).toMatch(/width:\s*100%;/);
+    expect(chatItemDeleteBlock).toMatch(/appearance:\s*none;/);
+    expect(chatItemDeleteBlock).toMatch(/width:\s*32px;/);
+    expect(chatItemDeleteBlock).toMatch(/height:\s*32px;/);
+    expect(chatItemDeleteBlock).toMatch(/border-radius:\s*999px;/);
+    expect(chatItemDeleteBlock).toMatch(/display:\s*inline-flex;/);
+    expect(chatItemDeleteBlock).toMatch(/align-items:\s*center;/);
+    expect(chatItemDeleteBlock).toMatch(/justify-content:\s*center;/);
+    expect(chatItemDeleteBlock).toMatch(/pointer-events:\s*none;/);
+    expect(chatItemDeleteBlock).toMatch(/&:focus-visible[\s\S]*opacity:\s*1;/);
+    expect(chatItemDeleteBlock).toMatch(/&:focus-visible[\s\S]*pointer-events:\s*auto;/);
+    expect(chatItemDeleteBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(chatItemHoverDeleteBlock).toMatch(/pointer-events:\s*auto;/);
+    expect(narrowSidebarBlock).toMatch(
+      /\.chat-item-delete[\s\S]*width:\s*34px;[\s\S]*height:\s*34px;/,
+    );
+    expect(mobileChatItemDeleteBlock).toMatch(/opacity:\s*0.72;/);
+    expect(mobileChatItemDeleteBlock).toMatch(/width:\s*34px;/);
+    expect(mobileChatItemDeleteBlock).toMatch(/height:\s*34px;/);
     expect(cnLocale).toContain('EmptyTitle: "你好！想聊点什么？"');
     expect(cnLocale).toContain("EmptySuggestions:");
     expect(cnLocale).toContain("PrimarySection:");
