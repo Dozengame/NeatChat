@@ -19,6 +19,7 @@ build.sh
 # misc
 .DS_Store
 design-prototypes/
+/docs/superpowers/plans/
 *.pem
 
 # debug
