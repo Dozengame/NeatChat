@@ -951,3 +951,36 @@ Browser QA:
 Known risks:
 
 - This iteration only clarifies the primary multimodal tool group. It does not change upload handling, image generation activation, MCP/Jimeng checks, prompt hints, session tools, settings, or model behavior.
+
+## Iteration 2026-06-15 composer-focus-shell
+
+Result: passed.
+
+Target flow:
+
+- App loads -> focus the composer textarea -> prompt bar keeps focus in the input shell and left tool button receives matching focus feedback.
+
+Scope:
+
+- `app/components/chat.module.scss`: added `box-sizing: border-box` and border-color transition to the composer menu button, plus focus-within shell styling for the base, empty, collapsed, and dark-mode composer states.
+- `test/gemini-visual-migration.test.ts`: locked the base focus shell and the higher-specificity empty composer focus rule.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the base focus shell rule was missing.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` later failed again as expected after Browser QA exposed the empty composer first-load specificity gap.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/#/chat`, actual viewport `1440x1024`. Focused textarea produced `activeElement: TEXTAREA#chat-input`, `focusWithinPanel: true`, `focusStyleApplied: true`; composer panel measured `left: 490`, `right: 1250`, `width: 760`, `height: 62`; menu button measured `left: 490`, `right: 534`, `width: 44`, `height: 44`, `borderColor: rgba(49, 94, 248, 0.28)`, `boxShadow: rgba(60, 64, 67, 0.12) 0px 2px 14px 0px, rgba(49, 94, 248, 0.08) 0px 0px 0px 3px`; send button measured `left: 1199`, `right: 1241`, `width: 42`, `height: 42`; input, menu button, panel, row, and send button all fit within viewport; `horizontalOverflowPx: 0`. No console warn/error logs.
+- Mobile `390x844`: page identity `http://localhost:3000/#/chat`, actual viewport `390x844`. Focused textarea produced `activeElement: TEXTAREA#chat-input`, `focusWithinPanel: true`, `focusStyleApplied: true`; composer panel measured `left: 10`, `right: 380`, `width: 370`, `height: 60`; row measured `left: 10`, `right: 380`, `borderColor: rgba(49, 94, 248, 0.22)`, `boxShadow: rgba(60, 64, 67, 0.16) 0px 8px 34px 0px, rgba(49, 94, 248, 0.1) 0px 0px 0px 3px`; menu button measured `left: 19`, `right: 61`, `width: 42`, `height: 42`, `borderColor: rgba(49, 94, 248, 0.28)`, `boxShadow: rgba(60, 64, 67, 0.12) 0px 2px 14px 0px, rgba(49, 94, 248, 0.08) 0px 0px 0px 3px`; send button measured `left: 331`, `right: 371`, `width: 40`, `height: 40`; all core controls fit within viewport; `horizontalOverflowPx: 0`. No console warn/error logs.
+- Narrow mobile `320x740`: page identity `http://localhost:3000/#/chat`, actual viewport `320x740`. Focused textarea produced `activeElement: TEXTAREA#chat-input`, `focusWithinPanel: true`, `focusStyleApplied: true`; composer panel measured `left: 10`, `right: 310`, `width: 300`, `height: 60`; row measured `left: 10`, `right: 310`, `borderColor: rgba(49, 94, 248, 0.22)`, `boxShadow: rgba(60, 64, 67, 0.16) 0px 8px 34px 0px, rgba(49, 94, 248, 0.1) 0px 0px 0px 3px`; menu button measured `left: 19`, `right: 61`, `width: 42`, `height: 42`, `borderColor: rgba(49, 94, 248, 0.28)`, `boxShadow: rgba(60, 64, 67, 0.12) 0px 2px 14px 0px, rgba(49, 94, 248, 0.08) 0px 0px 0px 3px`; send button measured `left: 261`, `right: 301`, `width: 40`, `height: 40`; all core controls fit within viewport; `horizontalOverflowPx: 0`. No console warn/error logs.
+
+Known risks:
+
+- This iteration only strengthens composer focus feedback. It does not change input handling, sending, tool menu actions, upload, image generation, MCP/Jimeng, settings, model selection, attachments, or message rendering.

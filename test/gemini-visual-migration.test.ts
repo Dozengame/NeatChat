@@ -78,6 +78,14 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-input-panel.chat-input-panel-empty",
     );
+    const inputPanelFocusMenuButtonBlock = readCssBlock(
+      chatStyles,
+      ".chat-input-panel:focus-within .chat-input-menu-button",
+    );
+    const emptyInputPanelFocusMenuButtonBlock = readCssBlock(
+      chatStyles,
+      ".chat-input-panel.chat-input-panel-empty:focus-within .chat-input-menu-button",
+    );
     const mobileStyles = chatStyles.slice(
       chatStyles.lastIndexOf("@media only screen and (max-width: 600px)"),
     );
@@ -583,6 +591,27 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain(".chat-mobile-model-title:focus-visible");
     expect(chatStyles).toContain(".chat-input-status-row");
     expect(chatStyles).toContain(".chat-input-mode-chip");
+    expect(chatStyles).toContain(
+      ".chat-input-panel:focus-within .chat-input-menu-button",
+    );
+    expect(inputPanelFocusMenuButtonBlock).toMatch(
+      /border-color:\s*rgba\(49,\s*94,\s*248,\s*0\.28\);/,
+    );
+    expect(inputPanelFocusMenuButtonBlock).toMatch(
+      /background:\s*var\(--surface-elevated\);/,
+    );
+    expect(inputPanelFocusMenuButtonBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--composer-shadow\),[\s\S]*0 0 0 3px rgba\(49,\s*94,\s*248,\s*0\.08\);/,
+    );
+    expect(chatStyles).toContain(
+      ".chat-input-panel.chat-input-panel-empty:focus-within .chat-input-menu-button",
+    );
+    expect(emptyInputPanelFocusMenuButtonBlock).toMatch(
+      /border-color:\s*rgba\(49,\s*94,\s*248,\s*0\.28\);/,
+    );
+    expect(emptyInputPanelFocusMenuButtonBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--composer-shadow\),[\s\S]*0 0 0 3px rgba\(49,\s*94,\s*248,\s*0\.08\);/,
+    );
     expect(inputStatusRowBlock).toMatch(/position:\s*absolute;/);
     expect(inputStatusRowBlock).toMatch(/left:\s*14px;/);
     expect(inputStatusRowBlock).toMatch(/right:\s*58px;/);

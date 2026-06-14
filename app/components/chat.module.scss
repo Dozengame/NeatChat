@@ -2036,6 +2036,7 @@
 
 .chat-input-menu-button {
   appearance: none;
+  box-sizing: border-box;
   flex: 0 0 44px;
   width: 44px;
   height: 44px;
@@ -2051,6 +2052,7 @@
   justify-content: center;
   transition:
     background-color 0.16s ease,
+    border-color 0.16s ease,
     transform 0.16s ease,
     box-shadow 0.16s ease;
 
@@ -2537,6 +2539,52 @@
     height: 40px;
     padding: 10px;
   }
+}
+
+.chat-input-panel:focus-within .chat-input-menu-button {
+  border-color: rgba(49, 94, 248, 0.28);
+  background: var(--surface-elevated);
+  box-shadow:
+    var(--composer-shadow),
+    0 0 0 3px rgba(49, 94, 248, 0.08);
+}
+
+.chat-input-panel.chat-input-panel-empty:focus-within .chat-input-menu-button {
+  border-color: rgba(49, 94, 248, 0.28);
+  background: var(--surface-elevated);
+  box-shadow:
+    var(--composer-shadow),
+    0 0 0 3px rgba(49, 94, 248, 0.08);
+}
+
+.chat-input-panel.chat-input-panel-collapsed:focus-within
+  .chat-input-menu-button {
+  border-color: rgba(49, 94, 248, 0.28);
+  background: var(--surface-elevated);
+  box-shadow:
+    var(--composer-shadow),
+    0 0 0 3px rgba(49, 94, 248, 0.08);
+}
+
+:global(.dark) .chat-input-panel:focus-within .chat-input-menu-button {
+  border-color: rgba(138, 180, 248, 0.28);
+  background: var(--surface-elevated);
+  box-shadow:
+    var(--composer-shadow),
+    0 0 0 3px rgba(138, 180, 248, 0.12);
+}
+
+:global(.dark)
+  .chat-input-panel.chat-input-panel-empty:focus-within
+  .chat-input-menu-button,
+:global(.dark)
+  .chat-input-panel.chat-input-panel-collapsed:focus-within
+  .chat-input-menu-button {
+  border-color: rgba(138, 180, 248, 0.28);
+  background: var(--surface-elevated);
+  box-shadow:
+    var(--composer-shadow),
+    0 0 0 3px rgba(138, 180, 248, 0.12);
 }
 
 .shortcut-key-container {
