@@ -254,7 +254,14 @@ describe("Gemini visual migration shell", () => {
     expect(chat).not.toContain('styles["chat-empty-halo"]');
     expect(chat).toContain("Locale.Chat.EmptySuggestions");
     expect(chat).toContain('styles["chat-empty-suggestions"]');
+    expect(chat).toMatch(
+      /<ul[\s\S]*className=\{styles\["chat-empty-suggestions"\]\}[\s\S]*aria-label="建议问题"[\s\S]*>\s*\{Locale\.Chat\.EmptySuggestions\.map/,
+    );
+    expect(chat).toContain('styles["chat-empty-suggestion-item"]');
     expect(chat).toContain('styles["chat-empty-suggestion"]');
+    expect(chat).toMatch(
+      /<li[\s\S]*className=\{styles\["chat-empty-suggestion-item"\]\}[\s\S]*>\s*<button[\s\S]*type="button"[\s\S]*className=\{styles\["chat-empty-suggestion"\]\}/,
+    );
     expect(chat).toMatch(/onClick=\{\(\) => applyEmptySuggestion\(suggestion\)\}/);
     expect(chat).toMatch(
       /const showEmptyHero\s*=\s*showEmptyState\s*&&\s*!hasActiveInputContent\s*&&\s*!showChatActionMenu;/,
@@ -379,6 +386,7 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).not.toContain(".chat-empty-halo");
     expect(emptyStateBlock).toMatch(/pointer-events:\s*none;/);
     expect(chatStyles).toContain(".chat-empty-suggestions");
+    expect(chatStyles).toContain(".chat-empty-suggestion-item");
     expect(chatStyles).toContain(".chat-empty-suggestion");
     expect(chatStyles).toContain(".chat-reading-surface");
     expect(chatStyles).toContain(".chat-message-row");

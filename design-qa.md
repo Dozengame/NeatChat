@@ -559,3 +559,40 @@ Screenshot note:
 Known risks:
 
 - Browser QA verified the composer input accessibility and layout surface only. It did not submit a message or exercise live model/MCP network calls because this slice intentionally did not change those paths.
+
+## Iteration 2026-06-15 empty-suggestion-list-semantics
+
+Result: passed.
+
+Target flow:
+
+- App loads into an empty chat -> suggested prompts render as a stable suggestions list -> clicking a suggestion fills the existing composer textarea without changing model, MCP, attachment, image generation, or submit behavior.
+
+Scope:
+
+- `app/components/chat.tsx`: changed the empty-state suggestions container from a plain `div` of buttons into a semantic `ul/li/button` structure while keeping the existing `applyEmptySuggestion(suggestion)` click path.
+- `app/components/chat.module.scss`: reset list margin, padding, and bullets, and added a bounded suggestion item wrapper so the visual chip layout stays unchanged.
+- `test/gemini-visual-migration.test.ts`: locked the empty-state `ul/li/button` structure and suggestion item style hook.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the empty-state suggestions still rendered as a `div` without `li` items.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/`, title `NeatChat`, viewport `1440x1024`, ready state `complete`, no framework overlay; suggestions container rendered as `UL` with `aria-label="建议问题"`, `roleListCount: 1`, `itemCount: 4`, `buttonCount: 4`; buttons measured `110x40`, `149x40`, `136x40`, `110x40`; list measured `left: 550`, `right: 1190`, `top: 403`, `bottom: 443`, `width: 640`, `height: 40`; composer panel measured `left: 490`, `right: 1250`, `top: 450`, `bottom: 512`; `listPanelOverlap: false`, list/panel right overflow `0`, `scrollOverflowPx: 0`; coordinate-clicking `总结这段内容` filled `#chat-input` with `总结这段内容`; no console warn/error logs.
+- Mobile `390x844`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, viewport `390x844`, ready state `complete`, no framework overlay; suggestions container rendered as `UL` with `aria-label="建议问题"`, `roleListCount: 1`, `itemCount: 4`, `buttonCount: 4`; list measured `left: 35`, `right: 355`, `top: 411`, `bottom: 487`, `width: 320`, `height: 76`; composer panel measured `left: 10`, `right: 380`, `top: 772`, `bottom: 832`; `listPanelOverlap: false`, list/panel right overflow `0`, `scrollOverflowPx: 0`; coordinate-clicking `总结这段内容` filled `#chat-input` with `总结这段内容`; no console warn/error logs.
+- Narrow mobile `320x740`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, viewport `320x740`, ready state `complete`, no framework overlay; suggestions container rendered as `UL` with `aria-label="建议问题"`, `roleListCount: 1`, `itemCount: 4`, `buttonCount: 4`; list measured `left: 16`, `right: 304`, `top: 366`, `bottom: 442`, `width: 288`, `height: 76`; composer panel measured `left: 10`, `right: 310`, `top: 668`, `bottom: 728`; `listPanelOverlap: false`, list/panel right overflow `0`, `scrollOverflowPx: 0`; coordinate-clicking `总结这段内容` filled `#chat-input` with `总结这段内容`; no console warn/error logs.
+
+Screenshot note:
+
+- In-app Browser screenshot capture was attempted after the DOM/interaction pass, but the backend again returned `Timed out running CDP command "Page.captureScreenshot" for tab 2`. This iteration uses Browser DOM, ARIA role, layout rectangle, overflow, click interaction, and console-log evidence.
+
+Known risks:
+
+- Browser QA clicked one representative suggestion in each viewport. The four suggestion labels share the same `applyEmptySuggestion` path, and all four rendered as buttons with stable geometry, but the remaining three labels were not individually clicked.

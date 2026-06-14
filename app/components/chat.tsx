@@ -3123,21 +3123,25 @@ function useChatInnerView() {
                 <h1 className={styles["chat-empty-title"]}>
                   {Locale.Chat.EmptyTitle}
                 </h1>
-                <div
+                <ul
                   className={styles["chat-empty-suggestions"]}
                   aria-label="建议问题"
                 >
                   {Locale.Chat.EmptySuggestions.map((suggestion) => (
-                    <button
-                      type="button"
+                    <li
                       key={suggestion}
-                      className={styles["chat-empty-suggestion"]}
-                      onClick={() => applyEmptySuggestion(suggestion)}
+                      className={styles["chat-empty-suggestion-item"]}
                     >
-                      {suggestion}
-                    </button>
+                      <button
+                        type="button"
+                        className={styles["chat-empty-suggestion"]}
+                        onClick={() => applyEmptySuggestion(suggestion)}
+                      >
+                        {suggestion}
+                      </button>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
             )}
             <div className={styles["chat-reading-surface"]}>
