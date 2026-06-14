@@ -430,3 +430,32 @@ Browser QA:
 Known risks:
 
 - Browser QA used DOM and coordinate click evidence rather than screenshots. The targeted visual contract was bounded layout, hit-area size, overlap, overflow, and preserved edit action behavior.
+
+## Iteration 2026-06-15 mobile-model-menu-polish
+
+Result: passed.
+
+Scope:
+
+- `app/components/chat.tsx`: added listbox/option semantics and `aria-selected` to the mobile model menu, reasoning list, image size list, and image quality list while preserving the existing model/reasoning/image setting handlers.
+- `app/components/chat.module.scss`: widened the mobile model menu within safe viewport bounds, tightened the scrollable list gutters, aligned option/check columns, made selected states visible in light and dark themes, and aligned the advanced-section header with option copy.
+- `test/gemini-visual-migration.test.ts`: locked the mobile model menu accessibility roles, selected state, bounded menu dimensions, check column sizing, list gutters, selected background, and advanced-list alignment.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the menu did not yet expose `role="listbox"`, `role="option"`, or `aria-selected`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+
+Browser QA:
+
+- Desktop `1440x1024`: desktop model dialog remained the active desktop surface (`mobileMenuExists: false`), measured `380x223` at `left: 318`, `right: 698`, `top: 54`, `bottom: 277`; desktop model trigger remained `147x34`; `scrollOverflowPx: 0`; no console warn/error logs.
+- Mobile `390x844`: mobile model dialog opened at `left: 35`, `right: 355`, `top: 46`, `bottom: 273`, `width: 320`; style measured `padding: 12px`, `borderRadius: 24px`, `maxHeight: 640px`; model list existed; `optionCount: 2`; `selectedCount: 1`; selected background `rgba(25, 103, 210, 0.1)`; check column measured `34px` with centered flex alignment; menu left/right overflow `0`; `scrollOverflowPx: 0`; no console warn/error logs.
+- Mobile expanded reasoning `390x844`: reasoning list appeared with `reasoningOptionCount: 3`, `selectedReasoningCount: 1`, selected background `rgba(25, 103, 210, 0.1)`, menu height `405`, and `scrollOverflowPx: 0`.
+- Narrow mobile `320x740`: mobile model dialog opened at `left: 24`, `right: 296`, `top: 46`, `bottom: 273`, `width: 272`; style measured `padding: 12px`, `borderRadius: 24px`, `maxHeight: 640px`; `optionCount: 2`; `selectedCount: 1`; selected background `rgba(25, 103, 210, 0.1)`; menu left/right overflow `0`; `scrollOverflowPx: 0`; no console warn/error logs.
+
+Known risks:
+
+- Browser QA covered the default model and reasoning controls available in the local config. Image size and quality list semantics are locked in source tests but did not render in this default non-image model state.

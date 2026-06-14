@@ -2813,7 +2813,11 @@ function useChatInnerView() {
             role="dialog"
             aria-label="模型和思考等级"
           >
-            <div className={styles["chat-mobile-model-list"]}>
+            <div
+              className={styles["chat-mobile-model-list"]}
+              role="listbox"
+              aria-label="可选模型"
+            >
               {headerAvailableModels.length === 0 ? (
                 <div className={styles["chat-mobile-model-empty"]}>
                   暂无可用模型
@@ -2831,6 +2835,8 @@ function useChatInnerView() {
                       className={clsx(styles["chat-mobile-model-option"], {
                         [styles["chat-mobile-model-option-selected"]]: selected,
                       })}
+                      role="option"
+                      aria-selected={selected}
                       onClick={() =>
                         selectHeaderModel(`${model.name}@${providerName}`)
                       }
@@ -2878,7 +2884,11 @@ function useChatInnerView() {
                       </span>
                     </button>
                     {isReasoningSectionExpanded && (
-                      <div className={styles["chat-mobile-reasoning-list"]}>
+                      <div
+                        className={styles["chat-mobile-reasoning-list"]}
+                        role="listbox"
+                        aria-label="思考等级选项"
+                      >
                         {reasoningEfforts.map((effort) => {
                           const selected =
                             effort === headerCurrentReasoningEffort;
@@ -2894,6 +2904,8 @@ function useChatInnerView() {
                                   ]]: selected,
                                 },
                               )}
+                              role="option"
+                              aria-selected={selected}
                               onClick={() =>
                                 selectHeaderReasoningEffort(effort)
                               }
@@ -2944,7 +2956,11 @@ function useChatInnerView() {
                         </span>
                       </button>
                       {isImageSizeSectionExpanded && (
-                        <div className={styles["chat-mobile-reasoning-list"]}>
+                        <div
+                          className={styles["chat-mobile-reasoning-list"]}
+                          role="listbox"
+                          aria-label="图片尺寸选项"
+                        >
                           {headerImageSizes.map((size) => {
                             const selected = size === headerCurrentSize;
                             return (
@@ -2959,6 +2975,8 @@ function useChatInnerView() {
                                     ]]: selected,
                                   },
                                 )}
+                                role="option"
+                                aria-selected={selected}
                                 onClick={() =>
                                   selectHeaderImageSize(size as OpenAIImageSize)
                                 }
@@ -3013,7 +3031,11 @@ function useChatInnerView() {
                           </span>
                         </button>
                         {isImageQualitySectionExpanded && (
-                          <div className={styles["chat-mobile-reasoning-list"]}>
+                          <div
+                            className={styles["chat-mobile-reasoning-list"]}
+                            role="listbox"
+                            aria-label="图片清晰度选项"
+                          >
                             {headerImageQualitys.map((quality) => {
                               const selected = quality === headerCurrentQuality;
                               return (
@@ -3028,6 +3050,8 @@ function useChatInnerView() {
                                       ]]: selected,
                                     },
                                   )}
+                                  role="option"
+                                  aria-selected={selected}
                                   onClick={() =>
                                     selectHeaderImageQuality(
                                       quality as OpenAIImageQuality,

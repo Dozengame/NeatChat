@@ -110,6 +110,38 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-mobile-header-button",
     );
+    const mobileModelMenuBlock = readCssBlock(
+      chatStyles,
+      ".chat-mobile-model-menu",
+    );
+    const mobileModelListBlock = readCssBlock(
+      chatStyles,
+      ".chat-mobile-model-list",
+    );
+    const mobileModelOptionBlock = readCssBlock(
+      chatStyles,
+      ".chat-mobile-model-option",
+    );
+    const mobileModelOptionSelectedBlock = readCssBlock(
+      chatStyles,
+      ".chat-mobile-model-option-selected",
+    );
+    const mobileMenuCheckBlock = readCssBlock(
+      chatStyles,
+      ".chat-mobile-menu-check",
+    );
+    const mobileReasoningHeadBlock = readCssBlock(
+      chatStyles,
+      ".chat-mobile-reasoning-head",
+    );
+    const mobileReasoningListBlock = readCssBlock(
+      chatStyles,
+      ".chat-mobile-reasoning-list",
+    );
+    const mobileReasoningOptionBlock = readCssBlock(
+      chatStyles,
+      ".chat-mobile-reasoning-option",
+    );
     const multimodalTrayBlock = readCssBlock(
       chatStyles,
       ".chat-multimodal-tray",
@@ -270,6 +302,13 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('aria-label="关闭模型选择"');
     expect(chat).toContain('role="dialog"');
     expect(chat).toContain('aria-label="模型和思考等级"');
+    expect(chat).toContain('role="listbox"');
+    expect(chat).toContain('aria-label="可选模型"');
+    expect(chat).toContain('aria-label="思考等级选项"');
+    expect(chat).toContain('aria-label="图片尺寸选项"');
+    expect(chat).toContain('aria-label="图片清晰度选项"');
+    expect(chat).toContain('role="option"');
+    expect(chat).toContain("aria-selected={selected}");
     expect(chat).toContain('aria-label="打开对话工具"');
     expect(chat).toContain("aria-expanded={showChatActionMenu}");
     expect(chat).toContain('aria-label="关闭对话工具"');
@@ -395,6 +434,34 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain(".chat-mobile-model-title[aria-expanded");
     expect(chatStyles).toContain(".chat-mobile-model-menu-backdrop");
     expect(chatStyles).toContain(".chat-mobile-model-menu");
+    expect(mobileModelMenuBlock).toMatch(
+      /width:\s*min\(320px,\s*calc\(100vw - 48px\)\);/,
+    );
+    expect(mobileModelMenuBlock).toMatch(
+      /max-height:\s*min\(640px,\s*calc\(100vh - 96px\)\);/,
+    );
+    expect(mobileModelMenuBlock).toMatch(/padding:\s*12px;/);
+    expect(mobileModelMenuBlock).toMatch(/border-radius:\s*24px;/);
+    expect(mobileModelListBlock).toMatch(/max-height:\s*min\(260px,\s*34vh\);/);
+    expect(mobileModelListBlock).toMatch(/padding-right:\s*2px;/);
+    expect(mobileModelOptionBlock).toMatch(
+      /grid-template-columns:\s*34px minmax\(0,\s*1fr\);/,
+    );
+    expect(mobileModelOptionBlock).toMatch(/padding:\s*9px 12px 9px 0;/);
+    expect(mobileModelOptionSelectedBlock).toMatch(
+      /background:\s*rgba\(25,\s*103,\s*210,\s*0\.1\);/,
+    );
+    expect(mobileMenuCheckBlock).toMatch(/display:\s*inline-flex;/);
+    expect(mobileMenuCheckBlock).toMatch(/align-items:\s*center;/);
+    expect(mobileMenuCheckBlock).toMatch(/justify-content:\s*center;/);
+    expect(mobileMenuCheckBlock).toMatch(/width:\s*34px;/);
+    expect(mobileReasoningHeadBlock).toMatch(
+      /padding:\s*10px 12px 10px 46px;/,
+    );
+    expect(mobileReasoningListBlock).toMatch(/padding-right:\s*2px;/);
+    expect(mobileReasoningOptionBlock).toMatch(
+      /grid-template-columns:\s*34px minmax\(0,\s*1fr\);/,
+    );
     expect(chatStyles).toContain("background: var(--surface-elevated)");
     expect(chatStyles).toContain("outline: var(--focus-ring)");
     expect(chatStyles).toContain("box-shadow: var(--focus-ring-shadow)");
