@@ -333,8 +333,12 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /aria-label=\{\s*showChatActionMenu\s*\?\s*"关闭对话工具"\s*:\s*"打开对话工具"\s*\}/,
     );
+    expect(chat).toContain('aria-controls="chat-input-action-menu"');
     expect(chat).toContain("aria-expanded={showChatActionMenu}");
     expect(chat).toContain('aria-label="关闭对话工具"');
+    expect(chat).toMatch(
+      /id="chat-input-action-menu"[\s\S]*className=\{styles\["chat-input-action-menu"\]\}[\s\S]*role="dialog"[\s\S]*aria-label="对话工具菜单"/,
+    );
     expect(chat).toContain("setShowChatActionMenu(false)");
     expect(chat).toContain('id="chat-input"');
     expect(chat).toContain("Locale.Chat.MobileInput");

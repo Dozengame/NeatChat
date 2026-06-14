@@ -628,3 +628,35 @@ Browser QA:
 Known risks:
 
 - Browser role-click intermittently timed out in this local Browser backend, so the interaction proof used DOM-measured button coordinates. The verified state changes are DOM/ARIA state changes from the live app, not inferred from source.
+
+## Iteration 2026-06-15 composer-tools-controls-link
+
+Result: passed.
+
+Target flow:
+
+- App loads -> the composer tools button exposes `aria-controls="chat-input-action-menu"` -> opening the tools menu renders a dialog with the matching `id` -> closing removes that dialog while the button keeps the same controls target.
+
+Scope:
+
+- `app/components/chat.tsx`: linked the composer tools button to the actual tools popover with `aria-controls` and a stable popover `id`, without changing the click handler, popover contents, upload, image generation, settings, or MCP behavior.
+- `test/gemini-visual-migration.test.ts`: locked the button-to-popover controls relationship alongside the existing dynamic label and `aria-expanded` contract.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the tools button did not expose `aria-controls="chat-input-action-menu"`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: initial tools button existed with `aria-label="打开对话工具"`, `aria-expanded="false"`, `aria-controls="chat-input-action-menu"`, measured `44x44` at `left: 490`, `right: 534`, `top: 460`, `bottom: 504`; popover absent. After coordinate-clicking the button, it changed to `aria-label="关闭对话工具"`, `aria-expanded="true"`, kept `aria-controls="chat-input-action-menu"`; popover rendered as `id="chat-input-action-menu"`, `role="dialog"`, `aria-label="对话工具菜单"`, measured `left: 490`, `right: 826`, `top: 178`, `bottom: 393`, `width: 336`, `height: 215`; `overflowsViewport: false`, `overlapsInput: false`, `overlapsButton: false`. Closing returned `aria-label="打开对话工具"`, `aria-expanded="false"`, kept the same controls target, and removed the popover. No console warn/error logs.
+- Mobile `390x844`: initial tools button existed with `aria-label="打开对话工具"`, `aria-expanded="false"`, `aria-controls="chat-input-action-menu"`, measured `42x42` at `left: 19`, `right: 61`, `top: 781`, `bottom: 823`; popover absent. After opening, it changed to `aria-label="关闭对话工具"`, `aria-expanded="true"`, kept the controls target; popover rendered as `id="chat-input-action-menu"`, `role="dialog"`, `aria-label="对话工具菜单"`, measured `left: 11`, `right: 331`, `top: 632`, `bottom: 767`, `width: 320`, `height: 135`; no viewport overflow, no input overlap, no button overlap. Closing returned the button to `aria-label="打开对话工具"`, `aria-expanded="false"` and removed the popover. No console warn/error logs.
+- Narrow mobile `320x740`: initial tools button existed with `aria-label="打开对话工具"`, `aria-expanded="false"`, `aria-controls="chat-input-action-menu"`, measured `42x42` at `left: 19`, `right: 61`, `top: 677`, `bottom: 719`; popover absent. After opening, it changed to `aria-label="关闭对话工具"`, `aria-expanded="true"`, kept the controls target; popover rendered as `id="chat-input-action-menu"`, `role="dialog"`, `aria-label="对话工具菜单"`, measured `left: 11`, `right: 283`, `top: 528`, `bottom: 663`, `width: 272`, `height: 135`; no viewport overflow, no input overlap, no button overlap. Closing returned the button to `aria-label="打开对话工具"`, `aria-expanded="false"` and removed the popover. No console warn/error logs.
+
+Known risks:
+
+- Browser role-click timed out again in this local Browser backend, so the interaction proof used DOM-measured button coordinates. The verified state changes are live DOM/ARIA state changes from the running app.

@@ -3436,12 +3436,14 @@ function useChatInnerView() {
                 aria-label={
                   showChatActionMenu ? "关闭对话工具" : "打开对话工具"
                 }
+                aria-controls="chat-input-action-menu"
                 aria-expanded={showChatActionMenu}
               >
                 <AddIcon />
               </button>
               {showChatActionMenu && (
                 <div
+                  id="chat-input-action-menu"
                   className={styles["chat-input-action-menu"]}
                   role="dialog"
                   aria-label="对话工具菜单"
