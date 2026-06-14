@@ -96,7 +96,7 @@ import {
   SimpleMultipleSelector,
 } from "./ui-lib";
 import { showConfirm, showPrompt, showToast } from "./ui-lib-actions";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   CHAT_PAGE_SIZE,
   DEFAULT_TTS_ENGINE,
@@ -1552,6 +1552,7 @@ function useChatInnerView() {
   const isMobileScreen = useMobileScreen();
   const isCompactScreen = useCompactScreen();
   const navigate = useNavigate();
+  const location = useLocation();
   const [attachImages, setAttachImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -2601,6 +2602,7 @@ function useChatInnerView() {
       model: session.mask.modelConfig.model,
       providerName: session.mask.modelConfig.providerName,
     });
+  const isMobileSidebarOpen = location.pathname === Path.Home;
   const promptToast = (
     <PromptToast
       showToast={!hitBottom}
@@ -2627,14 +2629,18 @@ function useChatInnerView() {
       )}
       {isCompactScreen ? (
         <div className={styles["chat-mobile-header"]} data-tauri-drag-region>
-          <IconButton
-            className={styles["chat-mobile-header-button"]}
-            icon={<MenuIcon />}
-            bordered
+          <button
+            type="button"
+            className={clsx("clickable", styles["chat-mobile-header-button"])}
             title={Locale.Chat.Actions.ChatList}
-            aria={Locale.Chat.Actions.ChatList}
+            aria-label={Locale.Chat.Actions.ChatList}
+            aria-controls="mobile-sidebar-drawer"
+            aria-expanded={isMobileSidebarOpen}
+            data-mobile-sidebar-trigger
             onClick={() => navigate(Path.Home)}
-          />
+          >
+            <MenuIcon />
+          </button>
           <button
             type="button"
             className={styles["chat-mobile-model-title"]}

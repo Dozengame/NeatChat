@@ -60,6 +60,7 @@ describe("Gemini visual migration shell", () => {
   test("keeps the Gemini-style empty state hooks and the existing tool menu entry points", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
+    const home = read("app/components/home.tsx");
     const sidebar = read("app/components/sidebar.tsx");
     const homeStyles = read("app/components/home.module.scss");
     const globalStyles = read("app/styles/globals.scss");
@@ -81,6 +82,14 @@ describe("Gemini visual migration shell", () => {
     );
     const actionMenuBlock = readCssBlock(chatStyles, ".chat-input-action-menu");
     const actionMenuRootDeclarations = readRootDeclarations(actionMenuBlock);
+    const mobileActionMenuBlock = readCssBlock(
+      mobileStyles,
+      ".chat-input-action-menu",
+    );
+    const mobileHeaderButtonBlock = readCssBlock(
+      chatStyles,
+      ".chat-mobile-header-button",
+    );
     const multimodalTrayBlock = readCssBlock(
       chatStyles,
       ".chat-multimodal-tray",
@@ -148,6 +157,23 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["chat-desktop-model-menu"]');
     expect(chat).toMatch(/showMobileModelSelector\s*&&\s*\(/);
     expect(chat).toContain('styles["chat-mobile-model-menu"]');
+    expect(chat).toContain('aria-controls="mobile-sidebar-drawer"');
+    expect(chat).toContain("const isMobileSidebarOpen =");
+    expect(chat).toContain("aria-expanded={isMobileSidebarOpen}");
+    expect(chat).toContain("data-mobile-sidebar-trigger");
+    expect(chat).toContain("onClick={() => navigate(Path.Home)}");
+    expect(chat).toContain('aria-label="选择模型"');
+    expect(chat).toContain("aria-expanded={showMobileModelSelector}");
+    expect(chat).toContain('aria-label="关闭模型选择"');
+    expect(chat).toContain('role="dialog"');
+    expect(chat).toContain('aria-label="模型和思考等级"');
+    expect(chat).toContain('aria-label="打开对话工具"');
+    expect(chat).toContain("aria-expanded={showChatActionMenu}");
+    expect(chat).toContain('aria-label="关闭对话工具"');
+    expect(chat).toContain("setShowChatActionMenu(false)");
+    expect(chat).toContain('id="chat-input"');
+    expect(chat).toContain("Locale.Chat.MobileInput");
+    expect(chat).toContain("rows={isCompactScreen ? 1 : inputRows}");
     expect(chat).toContain('styles["chat-reading-surface"]');
     expect(chat).toContain('styles["chat-message-row"]');
     expect(chat).toContain('styles["chat-message-row-user"]');
@@ -167,8 +193,16 @@ describe("Gemini visual migration shell", () => {
     expect(sidebar).toContain("Path.McpMarket");
     expect(sidebar).toContain("Path.Settings");
     expect(sidebar).toContain("Path.Home");
+    expect(sidebar).toContain('id="mobile-sidebar-drawer"');
     expect(sidebar).toContain("<ChatList narrow={shouldNarrow}");
     expect(sidebar).toContain("SimpleSelector");
+    expect(home).toContain('[styles["sidebar-show"]]: isHome');
+    expect(home).toContain("isCompactScreen && isHome");
+    expect(home).toContain('styles["sidebar-backdrop"]');
+    expect(home).toContain('aria-label="关闭侧边栏"');
+    expect(home).toContain('aria-controls="mobile-sidebar-drawer"');
+    expect(home).toContain('aria-expanded={isHome}');
+    expect(home).toContain("navigate(Path.Chat)");
 
     expect(chatStyles).toContain(".chat-empty-state");
     expect(chatStyles).toContain(".chat-empty-title");
@@ -192,8 +226,16 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain(".chat-desktop-title-stack");
     expect(chatStyles).toContain(".chat-desktop-model-title");
     expect(chatStyles).toContain(".chat-desktop-model-menu");
+    expect(chatStyles).toContain(".chat-mobile-header");
+    expect(chatStyles).toContain(".chat-mobile-header-button");
     expect(chatStyles).toMatch(/@media only screen and \(min-width: 901px\)/);
     expect(chatStyles).toContain(".chat-input-action-menu");
+    expect(chatStyles).toContain(".chat-input-action-menu-backdrop");
+    expect(chatStyles).toContain(".chat-mobile-model-title[aria-expanded");
+    expect(chatStyles).toContain(".chat-mobile-model-menu-backdrop");
+    expect(chatStyles).toContain(".chat-mobile-model-menu");
+    expect(mobileHeaderButtonBlock).toMatch(/appearance:\s*none;/);
+    expect(mobileHeaderButtonBlock).toMatch(/border:\s*var\(--border-in-light\);/);
     expect(chatStyles).toContain(".chat-multimodal-tray");
     expect(chatStyles).toContain(".chat-multimodal-section");
     expect(chatStyles).toContain(".chat-multimodal-section-primary");
@@ -202,6 +244,13 @@ describe("Gemini visual migration shell", () => {
     expect(multimodalTrayBlock).toMatch(/gap:\s*6px;/);
     expect(multimodalPrimaryBlock).toMatch(/min-width:\s*0;/);
     expect(actionMenuRootDeclarations).toMatch(/box-sizing:\s*border-box;/);
+    expect(mobileActionMenuBlock).toMatch(
+      /bottom:\s*calc\(64px \+ env\(safe-area-inset-bottom\)\);/,
+    );
+    expect(mobileActionMenuBlock).toMatch(
+      /width:\s*min\(304px,\s*calc\(100vw - 56px\)\);/,
+    );
+    expect(mobileActionMenuBlock).toMatch(/max-height:\s*min\(340px,\s*44vh\);/);
     expect(onInputBlock).toMatch(/setShowChatActionMenu\(false\);/);
     expect(setImageGenerationModeBlock).toContain("isMcpEnabled()");
     expect(setImageGenerationModeBlock).toContain(
@@ -232,6 +281,13 @@ describe("Gemini visual migration shell", () => {
     expect(globalStyles).toContain("--sidebar-width: 268px");
     expect(constants).toContain("DEFAULT_SIDEBAR_WIDTH = 268");
     expect(homeStyles).toContain("rgba(249, 251, 253");
+    expect(homeStyles).toContain(
+      "--mobile-sidebar-drawer-width: min(304px, calc(100vw - 54px));",
+    );
+    expect(homeStyles).toContain(".sidebar-backdrop");
+    expect(homeStyles).toContain("z-index: 900");
+    expect(homeStyles).toContain("z-index: 1000");
+    expect(homeStyles).toMatch(/\.sidebar-show\s*\{\s*left:\s*0;/);
     expect(homeStyles).toContain(".sidebar-primary-nav");
     expect(homeStyles).toContain(".sidebar-content-nav");
     expect(homeStyles).toContain(".sidebar-content-card");

@@ -146,6 +146,7 @@ export function SideBarContainer(props: {
   const { children, className, onDragStart, shouldNarrow } = props;
   return (
     <div
+      id="mobile-sidebar-drawer"
       className={clsx(styles.sidebar, className, {
         [styles["narrow-sidebar"]]: shouldNarrow,
       })}

@@ -181,6 +181,8 @@ function ScreenContent(props: {
           type="button"
           className={styles["sidebar-backdrop"]}
           aria-label="关闭侧边栏"
+          aria-controls="mobile-sidebar-drawer"
+          aria-expanded={isHome}
           onClick={() => navigate(Path.Chat)}
         />
       )}
