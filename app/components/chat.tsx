@@ -2856,6 +2856,7 @@ function useChatInnerView() {
                 : styles["chat-desktop-model-menu"]
             }
             role="dialog"
+            aria-modal="true"
             aria-label="模型和思考等级"
           >
             <div

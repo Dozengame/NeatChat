@@ -327,6 +327,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('aria-label="关闭模型选择"');
     expect(chat).toContain('id="chat-model-menu"');
     expect(chat).toContain('role="dialog"');
+    expect(chat).toMatch(
+      /id="chat-model-menu"[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*aria-label="模型和思考等级"/,
+    );
     expect(chat).toContain('aria-label="模型和思考等级"');
     expect(chat).toMatch(
       /if \(!showMobileModelSelector\) return;[\s\S]*const closeModelSelectorOnEscape = \(event: KeyboardEvent\) =>[\s\S]*event\.key === "Escape"[\s\S]*closeMobileModelSelector\(\);[\s\S]*window\.addEventListener\("keydown", closeModelSelectorOnEscape\);[\s\S]*window\.removeEventListener\("keydown", closeModelSelectorOnEscape\);/,
