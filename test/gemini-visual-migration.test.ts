@@ -70,12 +70,21 @@ describe("Gemini visual migration shell", () => {
     const enLocale = read("app/locales/en.ts");
     const qaNotes = read("design-qa.md");
     const gitignore = read(".gitignore");
+    const chatRootDeclarations = readRootDeclarations(
+      readCssBlock(chatStyles, ".chat"),
+    );
     const emptyInputPanelBlock = readCssBlock(
       chatStyles,
       ".chat-input-panel.chat-input-panel-empty",
     );
     const mobileStyles = chatStyles.slice(
       chatStyles.lastIndexOf("@media only screen and (max-width: 600px)"),
+    );
+    const desktopStyles = chatStyles.slice(
+      chatStyles.indexOf("@media only screen and (min-width: 901px)"),
+    );
+    const desktopChatRootDeclarations = readRootDeclarations(
+      readCssBlock(desktopStyles, ".chat"),
     );
     const mobileEmptyInputPanelBlock = readCssBlock(
       mobileStyles,
@@ -405,7 +414,13 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).not.toMatch(
       /\.chat-input-panel\.chat-input-panel-empty[\s\S]*?\.chat-input-menu-button\s*\{\s*display:\s*none;/,
     );
-    expect(chatStyles).toContain("radial-gradient");
+    expect(chatRootDeclarations).toMatch(/background:\s*var\(--surface\);/);
+    expect(chatRootDeclarations).not.toContain("radial-gradient");
+    expect(desktopChatRootDeclarations).toMatch(
+      /background:\s*var\(--surface\);/,
+    );
+    expect(desktopChatRootDeclarations).not.toContain("radial-gradient");
+    expect(desktopChatRootDeclarations).not.toContain("linear-gradient");
 
     expect(globalStyles).toContain("--window-width: 100vw");
     expect(globalStyles).toContain("--window-height: var(--full-height)");

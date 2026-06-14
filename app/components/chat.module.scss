@@ -405,12 +405,7 @@
   position: relative;
   height: 100%;
   touch-action: pan-y;
-  background: radial-gradient(
-      circle at 58% 48%,
-      rgba(188, 222, 255, 0.28),
-      transparent 34%
-    ),
-    var(--surface);
+  background: var(--surface);
 
   :global(.window-header) {
     flex: 0 0 auto;
@@ -2303,13 +2298,7 @@
 
 @media only screen and (min-width: 901px) {
   .chat {
-    background: radial-gradient(
-        circle at 50% 38%,
-        rgba(188, 222, 255, 0.22),
-        transparent 32%
-      ),
-      linear-gradient(180deg, rgba(249, 251, 253, 0.76), transparent 220px),
-      var(--surface);
+    background: var(--surface);
   }
 
   .chat-body {
