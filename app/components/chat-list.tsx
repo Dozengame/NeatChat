@@ -42,6 +42,9 @@ export function ChatItem(props: {
   }, [props.selected]);
 
   const { pathname: currentPath } = useLocation();
+  const isCurrentChatItem =
+    props.selected && (currentPath === Path.Chat || currentPath === Path.Home);
+
   return (
     <Draggable draggableId={`${props.id}`} index={props.index}>
       {(provided) => {
@@ -50,15 +53,15 @@ export function ChatItem(props: {
         return (
           <div
             className={clsx(styles["chat-item"], {
-              [styles["chat-item-selected"]]:
-                props.selected &&
-                (currentPath === Path.Chat || currentPath === Path.Home),
+              [styles["chat-item-selected"]]: isCurrentChatItem,
             })}
             ref={(ele) => {
               draggableRef.current = ele;
               provided.innerRef(ele);
             }}
             {...provided.draggableProps}
+            role="listitem"
+            aria-current={isCurrentChatItem ? "page" : undefined}
             title={`${props.title}\n${Locale.ChatItem.ChatItemCount(
               props.count,
             )}`}
@@ -68,6 +71,9 @@ export function ChatItem(props: {
               className={styles["chat-item-link"]}
               onClick={props.onClick}
               {...dragHandleProps}
+              aria-label={`${props.title}, ${Locale.ChatItem.ChatItemCount(
+                props.count,
+              )}`}
             >
               {props.narrow ? (
                 <div className={styles["chat-item-narrow"]}>
@@ -150,6 +156,8 @@ export function ChatList(props: { narrow?: boolean }) {
             className={styles["chat-list"]}
             ref={provided.innerRef}
             {...provided.droppableProps}
+            role="list"
+            aria-label={Locale.SearchChat.Page.Recent}
           >
             {sessions.map((item, i) => (
               <ChatItem

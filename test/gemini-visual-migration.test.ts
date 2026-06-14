@@ -222,6 +222,10 @@ describe("Gemini visual migration shell", () => {
       ".attach-file",
     );
     const chatItemBlock = readCssBlock(homeStyles, ".chat-item");
+    const chatItemSelectedBlock = readCssBlock(
+      homeStyles,
+      ".chat-item-selected",
+    );
     const chatItemTitleBlock = readCssBlock(homeStyles, ".chat-item-title");
     const chatItemDeleteBlock = readCssBlock(
       homeStyles.slice(homeStyles.indexOf("\n.chat-item-delete {")),
@@ -402,6 +406,22 @@ describe("Gemini visual migration shell", () => {
     expect(sidebar).toContain('id="mobile-sidebar-drawer"');
     expect(sidebar).toContain("<ChatList narrow={shouldNarrow}");
     expect(sidebar).toContain("SimpleSelector");
+    expect(chatList).toContain('role="list"');
+    expect(chatList).toContain("aria-label={Locale.SearchChat.Page.Recent}");
+    expect(chatList).toMatch(
+      /\{\.\.\.provided\.droppableProps\}[\s\S]*role="list"[\s\S]*aria-label=\{Locale\.SearchChat\.Page\.Recent\}/,
+    );
+    expect(chatList).toContain('role="listitem"');
+    expect(chatList).toContain('aria-current={isCurrentChatItem ? "page" : undefined}');
+    expect(chatList).toMatch(
+      /\{\.\.\.provided\.draggableProps\}[\s\S]*role="listitem"[\s\S]*aria-current=\{isCurrentChatItem \? "page" : undefined\}/,
+    );
+    expect(chatList).toContain(
+      'aria-label={`${props.title}, ${Locale.ChatItem.ChatItemCount(props.count)}`}',
+    );
+    expect(chatList).toMatch(
+      /\{\.\.\.dragHandleProps\}[\s\S]*aria-label=\{`\$\{props\.title\}, \$\{Locale\.ChatItem\.ChatItemCount\(props\.count\)\}`\}/,
+    );
     expect(chatList).toContain('aria-label={Locale.Home.DeleteChat}');
     expect(chatList).toContain('styles["chat-item-delete"]');
     expect(chatList).not.toContain('style={{');
@@ -630,6 +650,14 @@ describe("Gemini visual migration shell", () => {
     expect(homeStyles).toContain(".sidebar-content-nav");
     expect(homeStyles).toContain(".sidebar-content-card");
     expect(chatItemBlock).toMatch(/padding:\s*8px 40px 8px 12px;/);
+    expect(chatItemSelectedBlock).toMatch(/&::before[\s\S]*left:\s*0;/);
+    expect(chatItemSelectedBlock).toMatch(/&::before[\s\S]*width:\s*3px;/);
+    expect(chatItemSelectedBlock).toMatch(
+      /&::before[\s\S]*height:\s*calc\(100% - 16px\);/,
+    );
+    expect(chatItemSelectedBlock).toMatch(
+      /&::before[\s\S]*background:\s*var\(--primary\);/,
+    );
     expect(chatItemTitleBlock).toMatch(/width:\s*100%;/);
     expect(chatItemDeleteBlock).toMatch(/appearance:\s*none;/);
     expect(chatItemDeleteBlock).toMatch(/width:\s*32px;/);

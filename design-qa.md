@@ -852,3 +852,36 @@ Browser QA:
 Known risks:
 
 - This iteration only declares modal dialog semantics for the existing model menu. It does not add menu-internal arrow-key navigation.
+
+## Iteration 2026-06-15 sidebar-recent-list-current-state
+
+Result: passed.
+
+Target flow:
+
+- App loads -> sidebar shows recent chats -> selecting a chat marks the current item with readable list semantics and a visible left accent.
+
+Scope:
+
+- `app/components/chat-list.tsx`: added `role="list"` / `role="listitem"`, a recent-chat `aria-label`, current chat `aria-current="page"`, and readable per-chat link labels. Props are applied after drag-and-drop library props so the runtime DOM keeps the semantics.
+- `app/components/home.module.scss`: added a 3px selected-chat accent bar without changing drag, delete, or session selection behavior.
+- `test/gemini-visual-migration.test.ts`: locked the list semantics, attribute order after drag-and-drop props, and selected accent styling.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the sidebar recent list did not expose `role="list"`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `1440x1024`. After selecting the visible session `浏览器相关, 2 条对话`, sidebar measured `left: 0`, `right: 300`, `width: 300`, `height: 1024`; recent list rendered as `role="list"`, `aria-label="最近聊天"`, `itemCount: 5`, measured `left: 12`, `right: 287`, `top: 428`, `bottom: 718`, `width: 275`, `height: 291`; current item rendered as `role="listitem"`, `aria-current="page"`, link label `浏览器相关, 2 条对话`, title `浏览器相关\n2 条对话`, measured `left: 12`, `right: 287`, `top: 428`, `bottom: 484`, `width: 275`, `height: 57`; selected accent pseudo-element rendered with `width: 3px`, `height: 40.5px`, `left: 0px`, `background: rgb(49, 94, 248)`. `scrollOverflowPx: 0`. No console warn/error logs.
+- Mobile `390x844`: page identity `http://localhost:3000/#/`, title `NeatChat`, actual viewport `390x844`. Opening the mobile sidebar produced class `home_sidebar-show`, sidebar measured `left: 0`, `right: 304`, `width: 304`, `height: 844`; recent list rendered as `role="list"`, `aria-label="最近聊天"`, `itemCount: 5`, measured `left: 12`, `right: 291`, `top: 464`, `bottom: 668`, `width: 279`, `height: 204`; current item rendered as `aria-current="page"`, link label `浏览器相关, 2 条对话`, measured `left: 32`, `right: 271`, `top: 464`, `bottom: 500`, `width: 239`, `height: 36`; selected accent pseudo-element rendered with `width: 3px`, `height: 20px`, `left: 0px`, `background: rgb(49, 94, 248)`. `scrollOverflowPx: 0`. No console warn/error logs.
+- Narrow mobile `320x740`: page identity `http://localhost:3000/#/`, title `NeatChat`, actual viewport `320x740`. Opening the mobile sidebar produced class `home_sidebar-show`, sidebar measured `left: 0`, `right: 266`, `width: 266`, `height: 740`; recent list rendered as `role="list"`, `aria-label="最近聊天"`, `itemCount: 5`, measured `left: 12`, `right: 253`, `top: 464`, `bottom: 668`, `width: 241`, `height: 204`; current item rendered as `aria-current="page"`, link label `浏览器相关, 2 条对话`, measured `left: 32`, `right: 233`, `top: 464`, `bottom: 500`, `width: 201`, `height: 36`; selected accent pseudo-element rendered with `width: 3px`, `height: 20px`, `left: 0px`, `background: rgb(49, 94, 248)`. `scrollOverflowPx: 0`. No console warn/error logs.
+
+Known risks:
+
+- This iteration does not change drag sorting, delete confirmation, session persistence, or mobile drawer routing. It only improves the visible selected state and accessible structure of the existing recent-chat list.

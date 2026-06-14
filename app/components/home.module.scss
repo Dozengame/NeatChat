@@ -329,6 +329,17 @@
 .chat-item-selected {
   background-color: rgba(49, 94, 248, 0.1);
   color: var(--black);
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 8px;
+    width: 3px;
+    height: calc(100% - 16px);
+    border-radius: 999px;
+    background: var(--primary);
+  }
 }
 
 .chat-item-title {
