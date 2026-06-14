@@ -94,6 +94,10 @@ describe("Gemini visual migration shell", () => {
     const actionMenuBlock = readCssBlock(chatStyles, ".chat-input-action-menu");
     const emptyStateBlock = readCssBlock(chatStyles, ".chat-empty-state");
     const actionMenuRootDeclarations = readRootDeclarations(actionMenuBlock);
+    const actionMenuActiveActionBlock = readCssBlock(
+      chatStyles,
+      ".chat-input-action-menu .chat-input-action-active",
+    );
     const mobileActionMenuBlock = readCssBlock(
       mobileStyles,
       ".chat-input-action-menu",
@@ -266,8 +270,13 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("{imageGenerationEnabled && (");
     expect(chat).toContain('styles["chat-multimodal-tray"]');
     expect(chat).toContain('styles["chat-multimodal-section"]');
+    expect(chat).toContain('role="dialog"');
+    expect(chat).toContain('aria-label="对话工具菜单"');
+    expect(chat).toContain('role="group"');
     expect(chat).toContain('aria-label="多模态工具"');
     expect(chat).toContain('aria-label="会话工具"');
+    expect(chat).toContain("ariaPressed={props.imageGenerationEnabled}");
+    expect(chat).toContain("aria-pressed={props.ariaPressed}");
     expect(chat).toContain("const hasSessionActions =");
     expect(chat).toContain('styles["chat-multimodal-section-primary"]');
     expect(chat).toContain('styles["chat-multimodal-section-session"]');
@@ -489,13 +498,24 @@ describe("Gemini visual migration shell", () => {
     expect(multimodalTrayBlock).toMatch(/gap:\s*6px;/);
     expect(multimodalPrimaryBlock).toMatch(/min-width:\s*0;/);
     expect(actionMenuRootDeclarations).toMatch(/box-sizing:\s*border-box;/);
+    expect(actionMenuRootDeclarations).toMatch(
+      /width:\s*min\(336px,\s*calc\(100vw - 32px\)\);/,
+    );
+    expect(actionMenuRootDeclarations).toMatch(/padding:\s*10px;/);
+    expect(actionMenuRootDeclarations).toMatch(/border-radius:\s*20px;/);
+    expect(actionMenuActiveActionBlock).toMatch(
+      /background:\s*rgba\(25,\s*103,\s*210,\s*0\.1\);/,
+    );
+    expect(actionMenuActiveActionBlock).toMatch(/color:\s*var\(--primary\);/);
     expect(mobileActionMenuBlock).toMatch(
       /bottom:\s*calc\(64px \+ env\(safe-area-inset-bottom\)\);/,
     );
     expect(mobileActionMenuBlock).toMatch(
-      /width:\s*min\(304px,\s*calc\(100vw - 56px\)\);/,
+      /width:\s*min\(320px,\s*calc\(100vw - 48px\)\);/,
     );
-    expect(mobileActionMenuBlock).toMatch(/max-height:\s*min\(340px,\s*44vh\);/);
+    expect(mobileActionMenuBlock).toMatch(/max-height:\s*min\(360px,\s*48vh\);/);
+    expect(mobileActionMenuBlock).toMatch(/padding:\s*12px;/);
+    expect(mobileActionMenuBlock).toMatch(/border-radius:\s*22px;/);
     expect(onInputBlock).toMatch(/setShowChatActionMenu\(false\);/);
     expect(setImageGenerationModeBlock).toContain("isMcpEnabled()");
     expect(setImageGenerationModeBlock).toContain(

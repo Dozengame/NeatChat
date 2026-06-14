@@ -632,6 +632,8 @@ export function ChatAction(props: {
   icon: JSX.Element;
   onClick: () => void | Promise<void>;
   active?: boolean;
+  ariaPressed?: boolean;
+  role?: React.AriaRole;
 }) {
   const iconRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -658,6 +660,8 @@ export function ChatAction(props: {
         [styles["chat-input-action-active"]]: props.active,
       })}
       aria-label={props.text}
+      aria-pressed={props.ariaPressed}
+      role={props.role}
       onClick={() => {
         void props.onClick();
         setTimeout(updateWidth, 1);
@@ -930,6 +934,7 @@ function useChatActionsView(props: ChatActionsProps) {
             styles["chat-multimodal-section"],
             styles["chat-multimodal-section-primary"],
           )}
+          role="group"
           aria-label="多模态工具"
         >
           <ChatAction
@@ -951,6 +956,7 @@ function useChatActionsView(props: ChatActionsProps) {
 
           <ChatAction
             active={props.imageGenerationEnabled}
+            ariaPressed={props.imageGenerationEnabled}
             onClick={async () => {
               if (isCompactScreen) {
                 completeMobileAction();
@@ -999,6 +1005,7 @@ function useChatActionsView(props: ChatActionsProps) {
               styles["chat-multimodal-section"],
               styles["chat-multimodal-section-session"],
             )}
+            role="group"
             aria-label="会话工具"
           >
             {couldStop && (
@@ -3428,7 +3435,11 @@ function useChatInnerView() {
                 <AddIcon />
               </button>
               {showChatActionMenu && (
-                <div className={styles["chat-input-action-menu"]}>
+                <div
+                  className={styles["chat-input-action-menu"]}
+                  role="dialog"
+                  aria-label="对话工具菜单"
+                >
                   <ChatActions
                     uploadAttachments={handleUploadAttachments}
                     setAttachImages={setAttachImages}

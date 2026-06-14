@@ -459,3 +459,36 @@ Browser QA:
 Known risks:
 
 - Browser QA covered the default model and reasoning controls available in the local config. Image size and quality list semantics are locked in source tests but did not render in this default non-image model state.
+
+## Iteration 2026-06-15 composer-tools-popover-polish
+
+Result: passed.
+
+Target flow:
+
+- App loads -> click the composer `打开对话工具` button -> the tools popover opens with bounded layout, grouped tool sections, stable toggle state, and no runtime errors.
+
+Scope:
+
+- `app/components/chat.tsx`: moved the tools popover semantics onto the real `.chat-input-action-menu` surface, added group roles for the multimodal/session sections, and exposed `aria-pressed` on the image generation toggle without changing any existing handlers.
+- `app/components/chat.module.scss`: widened the desktop tools popover, aligned mobile width with the current safe-edge menu pattern, increased mobile max height slightly, and made active tool rows visible inside the popover.
+- `test/gemini-visual-migration.test.ts`: locked the popover label, group semantics, image-generation toggle state, desktop/mobile menu bounds, and active row styling.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the tools popover did not expose `aria-label="对话工具菜单"`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/`, title `NeatChat`, ready state `complete`, meaningful body content present, no framework overlay; tools popover existed with `role="dialog"` and `aria-label="对话工具菜单"`, measured `left: 490`, `right: 826`, `top: 178`, `bottom: 393`, `width: 336`, `height: 215`; style measured `width: 336px`, `maxHeight: 420px`, `padding: 10px`, `borderRadius: 20px`, `overflow: auto`; group count `2`; buttons measured `上传附件 310x38`, `图片生成 310x38` with `aria-pressed="false"`, `对话设置 310x38`, `gpt-5.4 310x38`; left/right overflow `0`, `scrollOverflowPx: 0`, no console warn/error logs.
+- Mobile `390x844`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, ready state `complete`, meaningful body content present, no framework overlay; tools popover measured `left: 11`, `right: 331`, `top: 632`, `bottom: 767`, `width: 320`, `height: 135`; style measured `width: 320px`, `maxHeight: 360px`, `padding: 12px`, `borderRadius: 22px`, `overflow: auto`; tool trigger measured `42x42` with `aria-expanded="true"`; group count `1`; buttons measured `上传附件 294x46`, `图片生成 294x46` with `aria-pressed="false"`; left/right/bottom overflow `0`, `scrollOverflowPx: 0`, no console warn/error logs.
+- Narrow mobile `320x740`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, ready state `complete`, meaningful body content present, no framework overlay; tools popover measured `left: 11`, `right: 283`, `top: 528`, `bottom: 663`, `width: 272`, `height: 135`; style measured `width: 272px`, `maxHeight: 355.2px`, `padding: 12px`, `borderRadius: 22px`, `overflow: auto`; tool trigger measured `42x42` with `aria-expanded="true"`; group count `1`; buttons measured `上传附件 246x46`, `图片生成 246x46` with `aria-pressed="false"`; left/right/bottom overflow `0`, `scrollOverflowPx: 0`, no console warn/error logs.
+
+Known risks:
+
+- Browser QA did not enable image generation because that path depends on the live MCP availability check. The active row visual state and `aria-pressed` wiring are covered by source tests, while Browser verified the default `false` toggle state rendered correctly.
