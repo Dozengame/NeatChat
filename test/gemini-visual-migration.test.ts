@@ -81,6 +81,14 @@ describe("Gemini visual migration shell", () => {
     );
     const actionMenuBlock = readCssBlock(chatStyles, ".chat-input-action-menu");
     const actionMenuRootDeclarations = readRootDeclarations(actionMenuBlock);
+    const messageRowUserBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-row-user",
+    );
+    const messageRowUserOverrideBlock = readCssBlock(
+      chatStyles,
+      ".chat-reading-surface > .chat-message-row-user",
+    );
     const onInputBlock = readFunctionBlock(
       chat,
       "const onInput = (text: string) =>",
@@ -108,6 +116,10 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["chat-desktop-model-menu"]');
     expect(chat).toMatch(/showMobileModelSelector\s*&&\s*\(/);
     expect(chat).toContain('styles["chat-mobile-model-menu"]');
+    expect(chat).toContain('styles["chat-reading-surface"]');
+    expect(chat).toContain('styles["chat-message-row"]');
+    expect(chat).toContain('styles["chat-message-row-user"]');
+    expect(chat).toContain('styles["chat-message-row-assistant"]');
     expect(sidebar).toContain('styles["sidebar-primary-nav"]');
     expect(sidebar).toContain('styles["sidebar-content-nav"]');
     expect(sidebar).toContain("Locale.Home.PrimarySection");
@@ -131,6 +143,20 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain(".chat-empty-halo");
     expect(chatStyles).toContain(".chat-empty-suggestions");
     expect(chatStyles).toContain(".chat-empty-suggestion");
+    expect(chatStyles).toContain(".chat-reading-surface");
+    expect(chatStyles).toContain(".chat-message-row");
+    expect(chatStyles).toContain(".chat-message-row-user");
+    expect(chatStyles).toContain(".chat-message-row-assistant");
+    expect(messageRowUserBlock).toMatch(/flex-direction:\s*row;/);
+    expect(messageRowUserBlock).toMatch(/justify-content:\s*flex-end;/);
+    expect(messageRowUserOverrideBlock).toMatch(/flex-direction:\s*row;/);
+    expect(messageRowUserOverrideBlock).toMatch(/justify-content:\s*flex-end;/);
+    expect(chatStyles.indexOf(".chat-reading-surface > .chat-message-row-user")).toBeGreaterThan(
+      chatStyles.indexOf(".chat-message-user"),
+    );
+    expect(chatStyles).toMatch(/--conversation-max-width:\s*min\(920px,\s*100%\);/);
+    expect(chatStyles).toMatch(/--assistant-message-max-width:\s*min\(760px,\s*100%\);/);
+    expect(chatStyles).toMatch(/--user-message-max-width:\s*min\(660px,\s*100%\);/);
     expect(chatStyles).toContain(".chat-desktop-title-stack");
     expect(chatStyles).toContain(".chat-desktop-model-title");
     expect(chatStyles).toContain(".chat-desktop-model-menu");
