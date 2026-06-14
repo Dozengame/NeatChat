@@ -87,6 +87,10 @@ describe("Gemini visual migration shell", () => {
       mobileStyles,
       ".chat-input-action-menu",
     );
+    const mobileStatusRowBlock = readCssBlock(
+      mobileStyles,
+      ".chat-input-status-row",
+    );
     const mobileMessageActionsBlock = readCssBlock(
       mobileStyles,
       ".chat-message-actions",
@@ -118,6 +122,14 @@ describe("Gemini visual migration shell", () => {
     const messageActionRailBlock = readCssBlock(
       chatStyles,
       ".chat-message-action-rail",
+    );
+    const inputStatusRowBlock = readCssBlock(
+      chatStyles.slice(chatStyles.indexOf("\n.chat-input-status-row {")),
+      ".chat-input-status-row",
+    );
+    const inputModeChipBlock = readCssBlock(
+      chatStyles,
+      ".chat-input-mode-chip",
     );
     const attachmentsContainerBlock = readCssBlock(
       chatStyles,
@@ -180,6 +192,12 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("<ChatActions");
     expect(chat).toContain("handleUploadAttachments");
     expect(chat).toContain("setImageGenerationEnabled");
+    expect(chat).toContain('styles["chat-input-status-row"]');
+    expect(chat).toContain('styles["chat-input-mode-chip"]');
+    expect(chat).toContain('styles["chat-input-image-mode-chip"]');
+    expect(chat).toContain('aria-label="当前输入模式"');
+    expect(chat).toContain('aria-label="图片生成模式已开启"');
+    expect(chat).toContain("{imageGenerationEnabled && (");
     expect(chat).toContain('styles["chat-multimodal-tray"]');
     expect(chat).toContain('styles["chat-multimodal-section"]');
     expect(chat).toContain('aria-label="多模态工具"');
@@ -329,6 +347,18 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain("box-shadow: var(--focus-ring-shadow)");
     expect(chatStyles).toContain(".chat-input-action:focus-visible");
     expect(chatStyles).toContain(".chat-mobile-model-title:focus-visible");
+    expect(chatStyles).toContain(".chat-input-status-row");
+    expect(chatStyles).toContain(".chat-input-mode-chip");
+    expect(inputStatusRowBlock).toMatch(/position:\s*absolute;/);
+    expect(inputStatusRowBlock).toMatch(/left:\s*14px;/);
+    expect(inputStatusRowBlock).toMatch(/right:\s*58px;/);
+    expect(inputStatusRowBlock).toMatch(/bottom:\s*10px;/);
+    expect(inputStatusRowBlock).toMatch(/display:\s*flex;/);
+    expect(inputStatusRowBlock).toMatch(/min-width:\s*0;/);
+    expect(inputModeChipBlock).toMatch(/height:\s*30px;/);
+    expect(inputModeChipBlock).toMatch(/max-width:\s*100%;/);
+    expect(inputModeChipBlock).toMatch(/border-radius:\s*15px;/);
+    expect(mobileStatusRowBlock).toMatch(/right:\s*52px;/);
     expect(mobileHeaderButtonBlock).toMatch(/appearance:\s*none;/);
     expect(mobileHeaderButtonBlock).toMatch(/border:\s*var\(--border-in-light\);/);
     expect(chatStyles).toContain(".chat-multimodal-tray");
@@ -359,6 +389,10 @@ describe("Gemini visual migration shell", () => {
     expect(doSubmitBlock).toContain("JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT");
     expect(chatStyles).toContain(
       ".chat-input-panel-inner-reasoning:not(.chat-input-panel-inner-collapsed)",
+    );
+    expect(chatStyles).toContain(".chat-input-panel-inner-status");
+    expect(chatStyles).toMatch(
+      /\.chat-input-panel-inner-status[\s\S]*?padding-bottom:\s*38px;/,
     );
     expect(emptyInputPanelBlock).toMatch(
       /\.chat-input-panel-inner-attach\s*\{[\s\S]*?min-height:\s*150px;/,

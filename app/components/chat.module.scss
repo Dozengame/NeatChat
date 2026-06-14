@@ -1772,6 +1772,12 @@
   }
 }
 
+.chat-input-panel-inner-status {
+  .chat-input {
+    padding-bottom: 38px;
+  }
+}
+
 .chat-input-panel-inner:has(.chat-input:focus) {
   border-color: var(--primary);
   box-shadow:
@@ -1800,7 +1806,7 @@
     display: none;
   }
 
-  .chat-input-reasoning {
+  .chat-input-status-row {
     left: auto;
     right: 54px;
     bottom: 9px;
@@ -1835,13 +1841,25 @@
   max-height: 30vh;
 }
 
-.chat-input-reasoning {
+.chat-input-status-row {
   position: absolute;
   left: 14px;
+  right: 58px;
   bottom: 10px;
   z-index: 2;
-  height: 30px;
   display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.chat-input-mode-chip {
+  box-sizing: border-box;
+  height: 30px;
+  max-width: 100%;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
   padding: 0 10px;
@@ -1849,17 +1867,33 @@
   border: 1px solid rgba(49, 94, 248, 0.28);
   background-color: rgba(49, 94, 248, 0.12);
   color: var(--primary);
-  cursor: pointer;
   font-size: 13px;
   line-height: 1;
+  pointer-events: auto;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   svg {
+    flex: 0 0 auto;
     width: 15px;
     height: 15px;
   }
 }
 
-:global(.dark) .chat-input-reasoning {
+.chat-input-reasoning {
+  cursor: pointer;
+}
+
+.chat-input-image-mode-chip {
+  cursor: default;
+}
+
+:global(.dark) .chat-input-mode-chip {
   border-color: rgba(118, 168, 255, 0.48);
   background-color: rgba(49, 94, 248, 0.26);
   color: rgb(125, 174, 255);
@@ -1871,7 +1905,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  .chat-input-reasoning {
+  .chat-input-mode-chip {
     border-color: rgba(118, 168, 255, 0.48);
     background-color: rgba(49, 94, 248, 0.26);
     color: rgb(125, 174, 255);
@@ -2166,6 +2200,12 @@
     box-shadow: none;
   }
 
+  .chat-input-status-row {
+    left: 6px;
+    right: 52px;
+    bottom: 9px;
+  }
+
   .chat-input-send {
     right: 0;
     bottom: 8px;
@@ -2238,7 +2278,7 @@
       border-radius: 26px;
     }
 
-    .chat-input-reasoning {
+    .chat-input-status-row {
       display: none;
     }
 
@@ -2349,13 +2389,14 @@
     }
   }
 
-  .chat-input-reasoning {
+  .chat-input-status-row {
     left: 16px;
+    right: 60px;
     bottom: 12px;
   }
 
   .chat-input-panel-inner-collapsed {
-    .chat-input-reasoning {
+    .chat-input-status-row {
       right: 58px;
       bottom: 11px;
     }
@@ -2396,7 +2437,7 @@
     background: transparent;
     box-shadow: none;
 
-    .chat-input-reasoning {
+    .chat-input-status-row {
       display: none;
     }
 

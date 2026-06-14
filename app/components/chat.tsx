@@ -1329,7 +1329,10 @@ function ChatInputReasoningAction() {
     <>
       <button
         type="button"
-        className={styles["chat-input-reasoning"]}
+        className={clsx(
+          styles["chat-input-mode-chip"],
+          styles["chat-input-reasoning"],
+        )}
         onClick={(event) => {
           event.preventDefault();
           openReasoningSelector();
@@ -1570,6 +1573,7 @@ function useChatInnerView() {
     userInput.trim().length > 0 ||
     attachImages.length > 0 ||
     attachedFiles.length > 0 ||
+    imageGenerationEnabled ||
     promptHints.length > 0;
   const shouldExpandChatInput = isInputExpanded || hasActiveInputContent;
   const expandInput = useCallback(() => {
@@ -2603,6 +2607,7 @@ function useChatInnerView() {
       model: session.mask.modelConfig.model,
       providerName: session.mask.modelConfig.providerName,
     });
+  const showInputStatusRow = showInputReasoningAction || imageGenerationEnabled;
   const isMobileSidebarOpen = location.pathname === Path.Home;
   const promptToast = (
     <PromptToast
@@ -3413,6 +3418,7 @@ function useChatInnerView() {
                     attachImages.length !== 0 || attachedFiles.length !== 0,
                   [styles["chat-input-panel-inner-reasoning"]]:
                     showInputReasoningAction,
+                  [styles["chat-input-panel-inner-status"]]: showInputStatusRow,
                 })}
                 htmlFor="chat-input"
               >
@@ -3443,7 +3449,26 @@ function useChatInnerView() {
                   }}
                 />
 
-                {showInputReasoningAction && <ChatInputReasoningAction />}
+                {showInputStatusRow && (
+                  <div
+                    className={styles["chat-input-status-row"]}
+                    aria-label="当前输入模式"
+                  >
+                    {showInputReasoningAction && <ChatInputReasoningAction />}
+                    {imageGenerationEnabled && (
+                      <span
+                        className={clsx(
+                          styles["chat-input-mode-chip"],
+                          styles["chat-input-image-mode-chip"],
+                        )}
+                        aria-label="图片生成模式已开启"
+                      >
+                        <ImageIcon />
+                        <span>图片生成</span>
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 {/* 附件容器（包含图片和文件） */}
                 {(attachImages.length > 0 || attachedFiles.length > 0) && (
