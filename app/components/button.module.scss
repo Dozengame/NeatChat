@@ -8,7 +8,11 @@
   justify-content: center;
   padding: 10px;
   cursor: pointer;
-  transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
   overflow: hidden;
   user-select: none;
   outline: none;
@@ -46,10 +50,17 @@
     }
   }
 
-  &:hover,
-  &:focus {
+  &:hover {
     background-color: var(--hover-color);
     border-color: rgba(49, 94, 248, 0.24);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    background-color: var(--hover-color);
+    border-color: rgba(49, 94, 248, 0.24);
+    box-shadow: var(--focus-ring-shadow);
   }
 }
 

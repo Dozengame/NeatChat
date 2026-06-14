@@ -63,6 +63,7 @@ describe("Gemini visual migration shell", () => {
     const home = read("app/components/home.tsx");
     const sidebar = read("app/components/sidebar.tsx");
     const homeStyles = read("app/components/home.module.scss");
+    const buttonStyles = read("app/components/button.module.scss");
     const globalStyles = read("app/styles/globals.scss");
     const constants = read("app/constant.ts");
     const cnLocale = read("app/locales/cn.ts");
@@ -234,6 +235,11 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain(".chat-mobile-model-title[aria-expanded");
     expect(chatStyles).toContain(".chat-mobile-model-menu-backdrop");
     expect(chatStyles).toContain(".chat-mobile-model-menu");
+    expect(chatStyles).toContain("background: var(--surface-elevated)");
+    expect(chatStyles).toContain("outline: var(--focus-ring)");
+    expect(chatStyles).toContain("box-shadow: var(--focus-ring-shadow)");
+    expect(chatStyles).toContain(".chat-input-action:focus-visible");
+    expect(chatStyles).toContain(".chat-mobile-model-title:focus-visible");
     expect(mobileHeaderButtonBlock).toMatch(/appearance:\s*none;/);
     expect(mobileHeaderButtonBlock).toMatch(/border:\s*var\(--border-in-light\);/);
     expect(chatStyles).toContain(".chat-multimodal-tray");
@@ -279,7 +285,16 @@ describe("Gemini visual migration shell", () => {
     expect(globalStyles).toContain("--window-width: 100vw");
     expect(globalStyles).toContain("--window-height: var(--full-height)");
     expect(globalStyles).toContain("--sidebar-width: 268px");
+    expect(globalStyles).toContain("--surface-elevated:");
+    expect(globalStyles).toContain("--focus-ring:");
+    expect(globalStyles).toContain("--focus-ring-shadow:");
+    expect(globalStyles).toMatch(
+      /@mixin dark[\s\S]*--surface-elevated:[\s\S]*--focus-ring:[\s\S]*--focus-ring-shadow:/,
+    );
     expect(constants).toContain("DEFAULT_SIDEBAR_WIDTH = 268");
+    expect(buttonStyles).toContain("&:focus-visible");
+    expect(buttonStyles).toContain("outline: var(--focus-ring)");
+    expect(buttonStyles).toContain("box-shadow: var(--focus-ring-shadow)");
     expect(homeStyles).toContain("rgba(249, 251, 253");
     expect(homeStyles).toContain(
       "--mobile-sidebar-drawer-width: min(304px, calc(100vw - 54px));",
@@ -288,6 +303,8 @@ describe("Gemini visual migration shell", () => {
     expect(homeStyles).toContain("z-index: 900");
     expect(homeStyles).toContain("z-index: 1000");
     expect(homeStyles).toMatch(/\.sidebar-show\s*\{\s*left:\s*0;/);
+    expect(homeStyles).toContain("outline: var(--focus-ring)");
+    expect(homeStyles).toContain("box-shadow: var(--focus-ring-shadow)");
     expect(homeStyles).toContain(".sidebar-primary-nav");
     expect(homeStyles).toContain(".sidebar-content-nav");
     expect(homeStyles).toContain(".sidebar-content-card");

@@ -453,9 +453,15 @@
     height: 18px;
   }
 
-  &:hover,
-  &:focus-visible {
+  &:hover {
     background: var(--hover-color);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    background: var(--hover-color);
+    box-shadow: var(--focus-ring-shadow);
   }
 }
 
@@ -498,6 +504,13 @@
   }
 }
 
+.chat-mobile-model-title:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 4px;
+  border-radius: 999px;
+  box-shadow: var(--focus-ring-shadow);
+}
+
 .chat-mobile-model-menu-backdrop {
   position: fixed;
   inset: 0;
@@ -521,7 +534,7 @@
   overscroll-behavior: contain;
   border: 1px solid rgba(60, 64, 67, 0.1);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--surface-elevated);
   box-shadow:
     0 26px 72px rgba(60, 64, 67, 0.14),
     0 6px 18px rgba(60, 64, 67, 0.1);
@@ -564,6 +577,12 @@
   &:hover,
   &:focus-visible {
     background: rgba(60, 64, 67, 0.08);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    box-shadow: var(--focus-ring-shadow);
   }
 }
 
@@ -655,6 +674,12 @@
     font-size: 13px;
     line-height: 1.25;
   }
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    box-shadow: var(--focus-ring-shadow);
+  }
 }
 
 .chat-mobile-reasoning-caret {
@@ -665,7 +690,7 @@
 
 :global(.dark) .chat-mobile-model-menu {
   border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(30, 30, 30, 0.96);
+  background: var(--surface-elevated);
   box-shadow:
     0 24px 70px rgba(0, 0, 0, 0.42),
     0 4px 16px rgba(0, 0, 0, 0.32);
@@ -908,13 +933,20 @@
     border-color 0.16s ease,
     box-shadow 0.16s ease;
 
-  &:hover,
-  &:focus-visible {
+  &:hover {
     border-color: rgba(49, 94, 248, 0.22);
     background: rgba(255, 255, 255, 0.94);
     box-shadow:
       0 2px 12px rgba(60, 64, 67, 0.1),
       0 0 0 3px rgba(49, 94, 248, 0.08);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    border-color: rgba(49, 94, 248, 0.22);
+    background: var(--surface-elevated);
+    box-shadow: var(--focus-ring-shadow);
   }
 }
 
@@ -975,7 +1007,7 @@
   overscroll-behavior: contain;
   border: 1px solid rgba(60, 64, 67, 0.1);
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--surface-elevated);
   box-shadow:
     0 26px 72px rgba(60, 64, 67, 0.14),
     0 6px 18px rgba(60, 64, 67, 0.1);
@@ -989,7 +1021,7 @@
 
 :global(.dark) .chat-desktop-model-menu {
   border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(30, 30, 30, 0.96);
+  background: var(--surface-elevated);
   box-shadow:
     0 24px 70px rgba(0, 0, 0, 0.42),
     0 4px 16px rgba(0, 0, 0, 0.32);
@@ -1830,11 +1862,20 @@
   justify-content: center;
   transition:
     background-color 0.16s ease,
-    transform 0.16s ease;
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
 
-  &:hover,
-  &:focus-visible {
+  &:hover {
     background: var(--hover-color);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    background: var(--hover-color);
+    box-shadow:
+      var(--composer-shadow),
+      var(--focus-ring-shadow);
   }
 
   svg {
@@ -1868,7 +1909,7 @@
   padding: 8px;
   border: var(--border-in-light);
   border-radius: 18px;
-  background: var(--surface);
+  background: var(--surface-elevated);
   box-shadow: var(--shadow);
   z-index: 30;
 
@@ -1924,11 +1965,24 @@
       pointer-events: auto;
     }
 
-    &:hover {
+    &:hover,
+    &:focus-visible {
       width: 100%;
       background: var(--hover-color);
     }
+
+    &:focus-visible {
+      outline: var(--focus-ring);
+      outline-offset: 2px;
+      box-shadow: var(--focus-ring-shadow);
+    }
   }
+}
+
+.chat-input-action-menu .chat-input-action:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring-shadow);
 }
 
 @media only screen and (max-width: 600px) {
