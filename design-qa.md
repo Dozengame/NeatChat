@@ -724,3 +724,35 @@ Browser QA:
 Known risks:
 
 - Browser role-click remains flaky in this local Browser backend, so opening the menu used DOM-measured button coordinates. Focus return itself was verified through a real Browser Escape keypress and live `document.activeElement` state after the key event.
+
+## Iteration 2026-06-15 model-menu-controls-link
+
+Result: passed.
+
+Target flow:
+
+- App loads -> the top model selector exposes `aria-controls="chat-model-menu"` -> opening the selector renders a dialog with the matching `id` -> closing removes the dialog while the selector keeps the same controls target.
+
+Scope:
+
+- `app/components/chat.tsx`: linked both compact and desktop model selector buttons to the actual model menu with `aria-controls` and a stable menu `id`, without changing model selection, reasoning controls, image size/quality controls, MCP/Jimeng, or message behavior.
+- `test/gemini-visual-migration.test.ts`: locked the model selector-to-menu controls relationship alongside the existing `aria-expanded` and dialog semantics.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the model selector did not expose `aria-controls="chat-model-menu"`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `1440x1024`. Initial model selector existed with `aria-label="选择模型和参数"`, `aria-expanded="false"`, `aria-controls="chat-model-menu"`, measured `147x34` at `left: 397`, `right: 544`, `top: 14`, `bottom: 48`; menu absent; no horizontal overflow. Opening changed the selector to `aria-expanded="true"` and rendered `id="chat-model-menu"`, `role="dialog"`, `aria-label="模型和思考等级"`, measured `left: 318`, `right: 698`, `top: 54`, `bottom: 277`, `width: 380`, `height: 223`; no composer overlap and no horizontal overflow. Closing returned `aria-expanded="false"` and removed the menu. No console warn/error logs.
+- Mobile `390x844`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `390x844`. Initial model selector existed with `aria-label="选择模型"`, `aria-expanded="false"`, `aria-controls="chat-model-menu"`, measured `79x17` at `left: 156`, `right: 234`, `top: 26`, `bottom: 42`; menu absent; no horizontal overflow. Opening changed the selector to `aria-expanded="true"` and rendered `id="chat-model-menu"`, `role="dialog"`, `aria-label="模型和思考等级"`, measured `left: 35`, `right: 355`, `top: 46`, `bottom: 273`, `width: 320`, `height: 227`; no composer overlap and no horizontal overflow. Closing returned `aria-expanded="false"` and removed the menu. No console warn/error logs.
+- Narrow mobile `320x740`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `320x740`. Initial model selector existed with `aria-label="选择模型"`, `aria-expanded="false"`, `aria-controls="chat-model-menu"`, measured `79x17` at `left: 121`, `right: 199`, `top: 26`, `bottom: 42`; menu absent; no horizontal overflow. Opening changed the selector to `aria-expanded="true"` and rendered `id="chat-model-menu"`, `role="dialog"`, `aria-label="模型和思考等级"`, measured `left: 24`, `right: 296`, `top: 46`, `bottom: 273`, `width: 272`, `height: 227`; no composer overlap and no horizontal overflow. Closing returned `aria-expanded="false"` and removed the menu. No console warn/error logs.
+
+Known risks:
+
+- The first Browser QA pass started before the hot-reloaded page exposed the new attributes, so it was discarded. The final evidence above waited for the live selector before each viewport check and verified the running DOM/ARIA state directly.

@@ -2680,6 +2680,7 @@ function useChatInnerView() {
               setExpandedMobileModelSection(null);
               setShowMobileModelSelector((open) => !open);
             }}
+            aria-controls="chat-model-menu"
             aria-expanded={showMobileModelSelector}
           >
             <span>{headerCurrentModelName}</span>
@@ -2727,6 +2728,7 @@ function useChatInnerView() {
                 setExpandedMobileModelSection(null);
                 setShowMobileModelSelector((open) => !open);
               }}
+              aria-controls="chat-model-menu"
               aria-expanded={showMobileModelSelector}
             >
               <span className={styles["chat-desktop-model-name"]}>
@@ -2829,6 +2831,7 @@ function useChatInnerView() {
             onClick={closeMobileModelSelector}
           />
           <div
+            id="chat-model-menu"
             className={
               isCompactScreen
                 ? styles["chat-mobile-model-menu"]
