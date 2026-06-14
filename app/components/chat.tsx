@@ -1944,6 +1944,7 @@ function useChatInnerView() {
   const [showMobileModelSelector, setShowMobileModelSelector] = useState(false);
   const [expandedMobileModelSection, setExpandedMobileModelSection] =
     useState<MobileModelAdvancedSection | null>(null);
+  const modelSelectorButtonRef = useRef<HTMLButtonElement>(null);
   const closeMobileModelSelector = useCallback(() => {
     setShowMobileModelSelector(false);
     setExpandedMobileModelSection(null);
@@ -1955,6 +1956,7 @@ function useChatInnerView() {
       if (event.key === "Escape") {
         event.preventDefault();
         closeMobileModelSelector();
+        requestAnimationFrame(() => modelSelectorButtonRef.current?.focus());
       }
     };
 
@@ -2687,6 +2689,7 @@ function useChatInnerView() {
           </button>
           <button
             type="button"
+            ref={modelSelectorButtonRef}
             className={styles["chat-mobile-model-title"]}
             aria-label="选择模型"
             onClick={() => {
@@ -2735,6 +2738,7 @@ function useChatInnerView() {
             </button>
             <button
               type="button"
+              ref={modelSelectorButtonRef}
               className={styles["chat-desktop-model-title"]}
               aria-label="选择模型和参数"
               onClick={() => {

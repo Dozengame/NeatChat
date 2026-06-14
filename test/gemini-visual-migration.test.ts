@@ -318,6 +318,10 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("data-mobile-sidebar-trigger");
     expect(chat).toContain("onClick={() => navigate(Path.Home)}");
     expect(chat).toContain('aria-label="选择模型"');
+    expect(chat).toContain(
+      "const modelSelectorButtonRef = useRef<HTMLButtonElement>(null);",
+    );
+    expect(chat).toContain("ref={modelSelectorButtonRef}");
     expect(chat).toContain("aria-expanded={showMobileModelSelector}");
     expect(chat).toContain('aria-controls="chat-model-menu"');
     expect(chat).toContain('aria-label="关闭模型选择"');
@@ -326,6 +330,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('aria-label="模型和思考等级"');
     expect(chat).toMatch(
       /if \(!showMobileModelSelector\) return;[\s\S]*const closeModelSelectorOnEscape = \(event: KeyboardEvent\) =>[\s\S]*event\.key === "Escape"[\s\S]*closeMobileModelSelector\(\);[\s\S]*window\.addEventListener\("keydown", closeModelSelectorOnEscape\);[\s\S]*window\.removeEventListener\("keydown", closeModelSelectorOnEscape\);/,
+    );
+    expect(chat).toContain(
+      "requestAnimationFrame(() => modelSelectorButtonRef.current?.focus());",
     );
     expect(chat).toContain('role="listbox"');
     expect(chat).toContain('aria-label="可选模型"');

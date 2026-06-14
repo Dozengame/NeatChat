@@ -788,3 +788,35 @@ Browser QA:
 Known risks:
 
 - This iteration intentionally covers close-on-Escape only. Returning focus after Escape is left as a separate follow-up slice so this commit does not mix behavior contracts.
+
+## Iteration 2026-06-15 model-menu-focus-return
+
+Result: passed.
+
+Target flow:
+
+- App loads -> click the top model selector -> the model menu opens -> pressing Escape closes the model menu and returns keyboard focus to the model selector.
+
+Scope:
+
+- `app/components/chat.tsx`: added a ref to the top model selector button and restored focus to it after Escape closes the model menu.
+- `test/gemini-visual-migration.test.ts`: locked the model selector ref and focus-return contract without changing model selection, reasoning controls, image size/quality controls, MCP/Jimeng, or message behavior.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because there was no model selector ref or focus return after Escape.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `1440x1024`. Initial model selector existed with `aria-label="选择模型和参数"`, `aria-expanded="false"`, `aria-controls="chat-model-menu"`, measured `147x34` at `left: 394`, `right: 541`, `top: 14`, `bottom: 48`; menu absent, `scrollOverflowPx: 0`. Opening changed the selector to `aria-expanded="true"` and `document.activeElement` was the model selector; menu rendered as `id="chat-model-menu"`, `role="dialog"`, `aria-label="模型和思考等级"`, measured `left: 318`, `right: 698`, `top: 54`, `bottom: 277`, `width: 380`, `height: 223`; no composer overlap and no horizontal overflow. Pressing Escape removed the menu, returned `aria-expanded="false"`, and `document.activeElement` remained the model selector with `aria-controls="chat-model-menu"`. No console warn/error logs.
+- Mobile `390x844`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `390x844`. Initial model selector existed with `aria-label="选择模型"`, `aria-expanded="false"`, `aria-controls="chat-model-menu"`, measured `79x17` at `left: 156`, `right: 234`, `top: 26`, `bottom: 42`; menu absent, `scrollOverflowPx: 0`. Opening changed the selector to `aria-expanded="true"` and `document.activeElement` was the model selector; menu rendered as `id="chat-model-menu"`, `role="dialog"`, `aria-label="模型和思考等级"`, measured `left: 35`, `right: 355`, `top: 46`, `bottom: 273`, `width: 320`, `height: 227`; no composer overlap and no horizontal overflow. Pressing Escape removed the menu, returned `aria-expanded="false"`, and `document.activeElement` remained the model selector. No console warn/error logs.
+- Narrow mobile `320x740`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `320x740`. Initial model selector existed with `aria-label="选择模型"`, `aria-expanded="false"`, `aria-controls="chat-model-menu"`, measured `79x17` at `left: 121`, `right: 199`, `top: 26`, `bottom: 42`; menu absent, `scrollOverflowPx: 0`. Opening changed the selector to `aria-expanded="true"` and `document.activeElement` was the model selector; menu rendered as `id="chat-model-menu"`, `role="dialog"`, `aria-label="模型和思考等级"`, measured `left: 24`, `right: 296`, `top: 46`, `bottom: 273`, `width: 272`, `height: 227`; no composer overlap and no horizontal overflow. Pressing Escape removed the menu, returned `aria-expanded="false"`, and `document.activeElement` remained the model selector. No console warn/error logs.
+
+Known risks:
+
+- This iteration intentionally covers focus return after Escape only. Menu-internal arrow-key navigation remains a separate future slice.
