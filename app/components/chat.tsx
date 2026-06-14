@@ -2596,6 +2596,21 @@ function useChatInnerView() {
   const editingImageMessageIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!showChatActionMenu) return;
+
+    const closeChatActionMenuOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setShowChatActionMenu(false);
+      }
+    };
+
+    window.addEventListener("keydown", closeChatActionMenuOnEscape);
+    return () =>
+      window.removeEventListener("keydown", closeChatActionMenuOnEscape);
+  }, [showChatActionMenu]);
+
+  useEffect(() => {
     if (!previewImage) return;
 
     const closePreview = (event: KeyboardEvent) => {

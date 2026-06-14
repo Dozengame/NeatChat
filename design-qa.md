@@ -660,3 +660,35 @@ Browser QA:
 Known risks:
 
 - Browser role-click timed out again in this local Browser backend, so the interaction proof used DOM-measured button coordinates. The verified state changes are live DOM/ARIA state changes from the running app.
+
+## Iteration 2026-06-15 composer-tools-escape-close
+
+Result: passed.
+
+Target flow:
+
+- App loads -> click the composer tools button -> the tools popover opens -> pressing Escape closes the popover and returns the button to collapsed state.
+
+Scope:
+
+- `app/components/chat.tsx`: added an Escape-key listener only while the composer tools popover is open, closing the existing popover via `setShowChatActionMenu(false)`.
+- `test/gemini-visual-migration.test.ts`: locked the Escape close contract without changing tool item behavior.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because there was no Escape listener closing the tools menu.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `1440x1024`, body content present, no framework overlay. Initial tools button `aria-label="打开对话工具"`, `aria-expanded="false"`, `aria-controls="chat-input-action-menu"`, measured `44x44` at `left: 490`, `right: 534`, `top: 460`, `bottom: 504`, popover absent, `scrollOverflowPx: 0`. After coordinate-clicking the button, it changed to `aria-label="关闭对话工具"`, `aria-expanded="true"`; popover rendered as `id="chat-input-action-menu"`, `role="dialog"`, `aria-label="对话工具菜单"`, measured `left: 490`, `right: 826`, `top: 178`, `bottom: 393`, `width: 336`, `height: 215`; no viewport overflow, no input overlap, no button overlap. Pressing Escape removed the popover and returned the button to `aria-label="打开对话工具"`, `aria-expanded="false"` while preserving `aria-controls`. No console warn/error logs.
+- Mobile `390x844`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `390x844`, body content present, no framework overlay. Initial tools button `aria-label="打开对话工具"`, `aria-expanded="false"`, `aria-controls="chat-input-action-menu"`, measured `42x42` at `left: 19`, `right: 61`, `top: 781`, `bottom: 823`, popover absent, `scrollOverflowPx: 0`. After opening, popover rendered as `id="chat-input-action-menu"`, `role="dialog"`, `aria-label="对话工具菜单"`, measured `left: 11`, `right: 331`, `top: 632`, `bottom: 767`, `width: 320`, `height: 135`; no viewport overflow, no input overlap, no button overlap. Pressing Escape removed the popover and returned the button to `aria-label="打开对话工具"`, `aria-expanded="false"`. No console warn/error logs.
+- Narrow mobile `320x740`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `320x740`, body content present, no framework overlay. Initial tools button `aria-label="打开对话工具"`, `aria-expanded="false"`, `aria-controls="chat-input-action-menu"`, measured `42x42` at `left: 19`, `right: 61`, `top: 677`, `bottom: 719`, popover absent, `scrollOverflowPx: 0`. After opening, popover rendered as `id="chat-input-action-menu"`, `role="dialog"`, `aria-label="对话工具菜单"`, measured `left: 11`, `right: 283`, `top: 528`, `bottom: 663`, `width: 272`, `height: 135`; no viewport overflow, no input overlap, no button overlap. Pressing Escape removed the popover and returned the button to `aria-label="打开对话工具"`, `aria-expanded="false"`. No console warn/error logs.
+
+Known risks:
+
+- Browser role-click remains flaky in this local Browser backend, so opening the menu used DOM-measured button coordinates. Escape itself was verified through a real Browser keypress and live DOM/ARIA state after the key event.
