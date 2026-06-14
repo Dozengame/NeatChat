@@ -918,3 +918,36 @@ Browser QA:
 Known risks:
 
 - This iteration does not change message rendering, Markdown behavior, retry/delete/pin/copy actions, TTS, image rendering, or auto-scroll. It only strengthens the reading surface structure and width stability.
+
+## Iteration 2026-06-15 multimodal-menu-primary-heading
+
+Result: passed.
+
+Target flow:
+
+- App loads -> open the composer tool menu -> the primary multimodal section clearly labels file and image entry points before the upload and image generation buttons.
+
+Scope:
+
+- `app/components/chat.tsx`: added a compact primary section heading inside the existing `多模态工具` group: `添加内容` plus `文件和图片`.
+- `app/components/chat.module.scss`: added a full-width heading row with compact title/subtitle text treatment and overflow protection.
+- `test/gemini-visual-migration.test.ts`: locked the heading DOM and heading styles while preserving existing upload, image generation, MCP/Jimeng, prompt hints, session tools, and settings contracts.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the multimodal section heading was missing.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `1440x1024`. Opening the composer tool menu rendered `id="chat-input-action-menu"`, `role="dialog"`, `aria-label="对话工具菜单"`, measured `left: 490`, `right: 826`, `top: 156`, `bottom: 393`, `width: 336`, `height: 237`; multimodal group rendered with `aria-label="多模态工具"`, measured `left: 501`, `right: 823`, `top: 167`, `bottom: 277`, `width: 322`, text `添加内容文件和图片上传附件图片生成`; heading title `添加内容` visible at `left: 513`, `right: 565`, `width: 52`; subtitle `文件和图片` visible at `left: 751`, `right: 811`, `width: 60`; upload button visible at `left: 505`, `right: 819`, `width: 314`; image generation button visible with `aria-pressed="false"` at `left: 505`, `right: 819`, `width: 314`; `pageOverflowPx: 0`, `menuOverflowPx: 0`. No console warn/error logs.
+- Mobile `390x844`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `390x844`. Opening the composer tool menu rendered `role="dialog"`, `aria-label="对话工具菜单"`, measured `left: 11`, `right: 331`, `top: 609`, `bottom: 767`, `width: 320`, `height: 158`; multimodal group rendered with `aria-label="多模态工具"`, measured `left: 24`, `right: 326`, `top: 622`, `bottom: 750`, `width: 302`; heading title `添加内容` visible at `left: 36`, `right: 88`, `width: 52`; subtitle `文件和图片` visible at `left: 254`, `right: 314`, `width: 60`; upload button visible at `left: 28`, `right: 322`, `width: 294`; image generation button visible with `aria-pressed="false"` at `left: 28`, `right: 322`, `width: 294`; `pageOverflowPx: 0`, `menuOverflowPx: 0`. No console warn/error logs.
+- Narrow mobile `320x740`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `320x740`. Opening the composer tool menu rendered `role="dialog"`, `aria-label="对话工具菜单"`, measured `left: 11`, `right: 283`, `top: 505`, `bottom: 663`, `width: 272`, `height: 158`; multimodal group rendered with `aria-label="多模态工具"`, measured `left: 24`, `right: 278`, `top: 518`, `bottom: 646`, `width: 254`; heading title `添加内容` visible at `left: 36`, `right: 88`, `width: 52`; subtitle `文件和图片` visible at `left: 206`, `right: 266`, `width: 60`; upload button visible at `left: 28`, `right: 274`, `width: 246`; image generation button visible with `aria-pressed="false"` at `left: 28`, `right: 274`, `width: 246`; `pageOverflowPx: 0`, `menuOverflowPx: 0`. No console warn/error logs.
+
+Known risks:
+
+- This iteration only clarifies the primary multimodal tool group. It does not change upload handling, image generation activation, MCP/Jimeng checks, prompt hints, session tools, settings, or model behavior.

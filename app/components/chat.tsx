@@ -937,6 +937,14 @@ function useChatActionsView(props: ChatActionsProps) {
           role="group"
           aria-label="多模态工具"
         >
+          <div className={styles["chat-multimodal-section-header"]}>
+            <span className={styles["chat-multimodal-section-title"]}>
+              <span>添加内容</span>
+            </span>
+            <span className={styles["chat-multimodal-section-subtitle"]}>
+              <span>文件和图片</span>
+            </span>
+          </div>
           <ChatAction
             onClick={() => {
               props.uploadAttachments();

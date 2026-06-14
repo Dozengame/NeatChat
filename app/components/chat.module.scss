@@ -204,6 +204,37 @@
   min-width: 0;
 }
 
+.chat-multimodal-section-header {
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 8px 2px;
+}
+
+.chat-multimodal-section-title,
+.chat-multimodal-section-subtitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.chat-multimodal-section-title {
+  color: var(--black);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chat-multimodal-section-subtitle {
+  color: var(--black-50);
+  font-size: 12px;
+  font-weight: 400;
+}
+
 .prompt-toast {
   position: absolute;
   left: 20px;

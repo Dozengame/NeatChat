@@ -158,6 +158,18 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-multimodal-section-primary",
     );
+    const multimodalHeaderBlock = readCssBlock(
+      chatStyles,
+      ".chat-multimodal-section-header",
+    );
+    const multimodalTitleBlock = readCssBlock(
+      chatStyles,
+      ".chat-multimodal-section-title",
+    );
+    const multimodalSubtitleBlock = readCssBlock(
+      chatStyles,
+      ".chat-multimodal-section-subtitle",
+    );
     const messageRowUserBlock = readCssBlock(
       chatStyles,
       ".chat-message-row-user",
@@ -297,6 +309,11 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('aria-label="对话工具菜单"');
     expect(chat).toContain('role="group"');
     expect(chat).toContain('aria-label="多模态工具"');
+    expect(chat).toContain('styles["chat-multimodal-section-header"]');
+    expect(chat).toContain('styles["chat-multimodal-section-title"]');
+    expect(chat).toContain('styles["chat-multimodal-section-subtitle"]');
+    expect(chat).toContain("<span>添加内容</span>");
+    expect(chat).toContain("<span>文件和图片</span>");
     expect(chat).toContain('aria-label="会话工具"');
     expect(chat).toContain("ariaPressed={props.imageGenerationEnabled}");
     expect(chat).toContain("aria-pressed={props.ariaPressed}");
@@ -396,7 +413,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["chat-message-row-user"]');
     expect(chat).toContain('styles["chat-message-row-assistant"]');
     expect(chat).toMatch(
-      /className=\{clsx\([\s\S]*styles\["chat-message-row"\][\s\S]*\)\}[\s\S]*role="listitem"[\s\S]*aria-label=\{`\$\{isUser \? "用户消息" : "助手消息"\} \$\{i \+ 1\}`\}[\s\S]*aria-busy=\{showTyping \? true : undefined\}/,
+      /className=\{clsx\([\s\S]*styles\["chat-message-row"\][\s\S]*\)\}[\s\S]*role="listitem"[\s\S]*aria-label=\{`\$\{isUser \? "用户消息" : "助手消息"\} \$\{\s*i \+ 1\s*\}`\}[\s\S]*aria-busy=\{showTyping \? true : undefined\}/,
     );
     expect(chat).toContain('aria-label="消息操作"');
     expect(chat).toContain('styles["chat-message-action-rail"]');
@@ -585,6 +602,13 @@ describe("Gemini visual migration shell", () => {
     expect(multimodalTrayBlock).toMatch(/display:\s*flex;/);
     expect(multimodalTrayBlock).toMatch(/gap:\s*6px;/);
     expect(multimodalPrimaryBlock).toMatch(/min-width:\s*0;/);
+    expect(multimodalHeaderBlock).toMatch(/display:\s*flex;/);
+    expect(multimodalHeaderBlock).toMatch(/justify-content:\s*space-between;/);
+    expect(multimodalHeaderBlock).toMatch(/width:\s*100%;/);
+    expect(multimodalTitleBlock).toMatch(/font-weight:\s*600;/);
+    expect(chatStyles).toMatch(
+      /\.chat-multimodal-section-subtitle\s*\{[\s\S]*color:\s*var\(--black-50\);/,
+    );
     expect(actionMenuRootDeclarations).toMatch(/box-sizing:\s*border-box;/);
     expect(actionMenuRootDeclarations).toMatch(
       /width:\s*min\(336px,\s*calc\(100vw - 32px\)\);/,
