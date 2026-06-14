@@ -329,7 +329,10 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('aria-label="图片清晰度选项"');
     expect(chat).toContain('role="option"');
     expect(chat).toContain("aria-selected={selected}");
-    expect(chat).toContain('aria-label="打开对话工具"');
+    expect(chat).toContain('"打开对话工具"');
+    expect(chat).toMatch(
+      /aria-label=\{\s*showChatActionMenu\s*\?\s*"关闭对话工具"\s*:\s*"打开对话工具"\s*\}/,
+    );
     expect(chat).toContain("aria-expanded={showChatActionMenu}");
     expect(chat).toContain('aria-label="关闭对话工具"');
     expect(chat).toContain("setShowChatActionMenu(false)");

@@ -3433,7 +3433,9 @@ function useChatInnerView() {
                   expandInput();
                   setShowChatActionMenu((open) => !open);
                 }}
-                aria-label="打开对话工具"
+                aria-label={
+                  showChatActionMenu ? "关闭对话工具" : "打开对话工具"
+                }
                 aria-expanded={showChatActionMenu}
               >
                 <AddIcon />

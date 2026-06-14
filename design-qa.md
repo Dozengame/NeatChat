@@ -596,3 +596,35 @@ Screenshot note:
 Known risks:
 
 - Browser QA clicked one representative suggestion in each viewport. The four suggestion labels share the same `applyEmptySuggestion` path, and all four rendered as buttons with stable geometry, but the remaining three labels were not individually clicked.
+
+## Iteration 2026-06-15 composer-tools-toggle-label
+
+Result: passed.
+
+Target flow:
+
+- App loads -> click the composer tools button -> the same button changes from `打开对话工具` to `关闭对话工具`, opens the tools popover, then returns to `打开对话工具` after closing.
+
+Scope:
+
+- `app/components/chat.tsx`: changed the existing composer tools button `aria-label` to follow `showChatActionMenu`, without changing the click handler, popover contents, upload, image generation, settings, or MCP behavior.
+- `test/gemini-visual-migration.test.ts`: locked the dynamic tools button label contract while preserving the existing `aria-expanded` and popover checks.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the tools button still had a static `aria-label="打开对话工具"`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/`, title `NeatChat`, viewport `1440x1024`, ready state `complete`, meaningful body content present, no framework overlay. Initial tools button `aria-label="打开对话工具"`, `aria-expanded="false"`, measured `44x44` at `left: 490`, `right: 534`, with `buttonInputOverlap: false`, `buttonRightOverflow: 0`, `scrollOverflowPx: 0`. After coordinate-clicking the button, it changed to `aria-label="关闭对话工具"`, `aria-expanded="true"`; popover rendered with `role="dialog"`, `aria-label="对话工具菜单"`, measured `left: 490`, `right: 826`, `top: 178`, `bottom: 393`, `width: 336`, `height: 215`; popover right/bottom overflow `0`, popover/input overlap `false`. Clicking the same button again returned `aria-label="打开对话工具"`, `aria-expanded="false"`, and removed the popover. No console warn/error logs.
+- Mobile `390x844`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, viewport `390x844`, ready state `complete`, no framework overlay. Initial tools button `aria-label="打开对话工具"`, `aria-expanded="false"`, measured `42x42` at `left: 19`, `right: 61`, with no input overlap and no horizontal overflow. After opening, the button changed to `aria-label="关闭对话工具"`, `aria-expanded="true"`; popover rendered as `role="dialog"` with `aria-label="对话工具菜单"`, measured `left: 11`, `right: 331`, `top: 632`, `bottom: 767`, `width: 320`, `height: 135`; right/bottom overflow `0`, popover/input overlap `false`. Closing returned the button to `aria-label="打开对话工具"`, `aria-expanded="false"`. No console warn/error logs.
+- Narrow mobile `320x740`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, viewport `320x740`, ready state `complete`, no framework overlay. Initial tools button `aria-label="打开对话工具"`, `aria-expanded="false"`, measured `42x42` at `left: 19`, `right: 61`, with no input overlap and no horizontal overflow. After opening, the button changed to `aria-label="关闭对话工具"`, `aria-expanded="true"`; popover rendered as `role="dialog"` with `aria-label="对话工具菜单"`, measured `left: 11`, `right: 283`, `top: 528`, `bottom: 663`, `width: 272`, `height: 135`; right/bottom overflow `0`, popover/input overlap `false`. Closing returned the button to `aria-label="打开对话工具"`, `aria-expanded="false"`. No console warn/error logs.
+
+Known risks:
+
+- Browser role-click intermittently timed out in this local Browser backend, so the interaction proof used DOM-measured button coordinates. The verified state changes are DOM/ARIA state changes from the live app, not inferred from source.
