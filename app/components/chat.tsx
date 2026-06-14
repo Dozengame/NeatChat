@@ -2591,6 +2591,7 @@ function useChatInnerView() {
   // 在_Chat组件中添加状态
   const [editingImage, setEditingImage] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const chatInputMenuButtonRef = useRef<HTMLButtonElement>(null);
 
   // 在_Chat组件中添加状态，记录当前编辑图片所属的消息ID
   const editingImageMessageIdRef = useRef<string | null>(null);
@@ -2602,6 +2603,7 @@ function useChatInnerView() {
       if (event.key === "Escape") {
         event.preventDefault();
         setShowChatActionMenu(false);
+        requestAnimationFrame(() => chatInputMenuButtonRef.current?.focus());
       }
     };
 
@@ -3441,6 +3443,7 @@ function useChatInnerView() {
             <div className={styles["chat-input-row"]}>
               <button
                 type="button"
+                ref={chatInputMenuButtonRef}
                 className={clsx(styles["chat-input-menu-button"], {
                   [styles["chat-input-menu-button-active"]]: showChatActionMenu,
                 })}

@@ -692,3 +692,35 @@ Browser QA:
 Known risks:
 
 - Browser role-click remains flaky in this local Browser backend, so opening the menu used DOM-measured button coordinates. Escape itself was verified through a real Browser keypress and live DOM/ARIA state after the key event.
+
+## Iteration 2026-06-15 composer-tools-focus-return
+
+Result: passed.
+
+Target flow:
+
+- App loads -> click the composer tools button -> the tools popover opens -> pressing Escape closes the popover and returns keyboard focus to the tools button.
+
+Scope:
+
+- `app/components/chat.tsx`: added a ref to the composer tools button and restored focus to it after Escape closes the tools popover.
+- `test/gemini-visual-migration.test.ts`: locked the tools button ref and focus-return contract.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because there was no tools button ref or focus return after Escape.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `1440x1024`, body content present, no framework overlay. Initial active element was the textarea; tools button had `aria-label="打开对话工具"`, `aria-expanded="false"`, `aria-controls="chat-input-action-menu"`, measured `44x44` at `left: 490`, `right: 534`, `top: 460`, `bottom: 504`, popover absent, `scrollOverflowPx: 0`. After coordinate-clicking the button, active element was the tools button with `aria-label="关闭对话工具"` and `aria-expanded="true"`; popover rendered as `id="chat-input-action-menu"`, `role="dialog"`, `aria-label="对话工具菜单"`, measured `left: 490`, `right: 826`, `top: 178`, `bottom: 393`, `width: 336`, `height: 215`; no viewport overflow, no input overlap, no button overlap. Pressing Escape removed the popover, returned the button to `aria-label="打开对话工具"`, `aria-expanded="false"`, and `document.activeElement` was the same tools button with `aria-controls="chat-input-action-menu"`. No console warn/error logs.
+- Mobile `390x844`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `390x844`, body content present, no framework overlay. Initial tools button had `aria-label="打开对话工具"`, `aria-expanded="false"`, `aria-controls="chat-input-action-menu"`, measured `42x42` at `left: 19`, `right: 61`, `top: 781`, `bottom: 823`, popover absent, `scrollOverflowPx: 0`. After opening, active element was the tools button with `aria-label="关闭对话工具"`; popover rendered as `id="chat-input-action-menu"`, `role="dialog"`, `aria-label="对话工具菜单"`, measured `left: 11`, `right: 331`, `top: 632`, `bottom: 767`, `width: 320`, `height: 135`; no viewport overflow, no input overlap, no button overlap. Pressing Escape removed the popover and returned `document.activeElement` to the tools button with `aria-label="打开对话工具"` and `aria-expanded="false"`. No console warn/error logs.
+- Narrow mobile `320x740`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `320x740`, body content present, no framework overlay. Initial tools button had `aria-label="打开对话工具"`, `aria-expanded="false"`, `aria-controls="chat-input-action-menu"`, measured `42x42` at `left: 19`, `right: 61`, `top: 677`, `bottom: 719`, popover absent, `scrollOverflowPx: 0`. After opening, active element was the tools button with `aria-label="关闭对话工具"`; popover rendered as `id="chat-input-action-menu"`, `role="dialog"`, `aria-label="对话工具菜单"`, measured `left: 11`, `right: 283`, `top: 528`, `bottom: 663`, `width: 272`, `height: 135`; no viewport overflow, no input overlap, no button overlap. Pressing Escape removed the popover and returned `document.activeElement` to the tools button with `aria-label="打开对话工具"` and `aria-expanded="false"`. No console warn/error logs.
+
+Known risks:
+
+- Browser role-click remains flaky in this local Browser backend, so opening the menu used DOM-measured button coordinates. Focus return itself was verified through a real Browser Escape keypress and live `document.activeElement` state after the key event.
