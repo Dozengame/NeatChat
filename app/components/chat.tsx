@@ -3649,6 +3649,7 @@ function useChatInnerView() {
                   text={isCompactScreen ? undefined : Locale.Chat.Send}
                   className={styles["chat-input-send"]}
                   type="primary"
+                  aria={Locale.Chat.Send}
                   onClick={() => doSubmit(userInput)}
                 />
               </label>

@@ -325,6 +325,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('id="chat-input"');
     expect(chat).toContain("Locale.Chat.MobileInput");
     expect(chat).toContain("rows={isCompactScreen ? 1 : inputRows}");
+    expect(chat).toMatch(
+      /className=\{styles\["chat-input-send"\]\}[\s\S]*aria=\{Locale\.Chat\.Send\}/,
+    );
     expect(chat).toContain('styles["chat-reading-surface"]');
     expect(chat).toContain('styles["chat-message-row"]');
     expect(chat).toContain('styles["chat-message-row-user"]');

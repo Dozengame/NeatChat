@@ -492,3 +492,35 @@ Browser QA:
 Known risks:
 
 - Browser QA did not enable image generation because that path depends on the live MCP availability check. The active row visual state and `aria-pressed` wiring are covered by source tests, while Browser verified the default `false` toggle state rendered correctly.
+
+## Iteration 2026-06-15 composer-send-accessibility
+
+Result: passed.
+
+Target flow:
+
+- App loads -> composer send control renders -> the send button has a stable accessible name while remaining visible, bounded, and separate from the textarea.
+
+Scope:
+
+- `app/components/chat.tsx`: passed `Locale.Chat.Send` to the existing send `IconButton` via its `aria` prop, so the real button has `aria-label="发送"` even when compact layouts hide visible send text.
+- `test/gemini-visual-migration.test.ts`: locked the send button accessibility contract on the existing composer send control.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the send button did not pass `aria={Locale.Chat.Send}`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/`, title `NeatChat`, viewport `1440x1024`, ready state `complete`, meaningful body content present, no framework overlay; send button existed with `aria-label="发送"`, `roleButtonCount: 1`, visible text `发送`, measured `left: 1199`, `right: 1241`, `top: 459`, `bottom: 501`, `width: 42`, `height: 42`; textarea measured `left: 563`, `right: 1137`, `width: 574`; `sendTextareaOverlap: false`, send/panel right overflow `0`, bottom overflow `0`, `scrollOverflowPx: 0`, no console warn/error logs.
+- Mobile `390x844`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, viewport `390x844`, ready state `complete`, meaningful body content present, no framework overlay; icon-only send button existed with `aria-label="发送"`, `roleButtonCount: 1`, visible text empty as expected, measured `left: 331`, `right: 371`, `top: 782`, `bottom: 822`, `width: 40`, `height: 40`; textarea measured `left: 67`, `right: 313`, `width: 246`; `sendTextareaOverlap: false`, send/panel right overflow `0`, bottom overflow `0`, `scrollOverflowPx: 0`, no console warn/error logs.
+- Narrow mobile `320x740`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, viewport `320x740`, ready state `complete`, meaningful body content present, no framework overlay; icon-only send button existed with `aria-label="发送"`, `roleButtonCount: 1`, visible text empty as expected, measured `left: 261`, `right: 301`, `top: 678`, `bottom: 718`, `width: 40`, `height: 40`; textarea measured `left: 67`, `right: 243`, `width: 176`; `sendTextareaOverlap: false`, send/panel right overflow `0`, bottom overflow `0`, `scrollOverflowPx: 0`, no console warn/error logs.
+
+Known risks:
+
+- Browser QA verified the send control entry point and layout, but did not submit a message because this slice intentionally did not change `doSubmit` or model/network behavior.
