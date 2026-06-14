@@ -782,23 +782,6 @@
   pointer-events: none;
 }
 
-.chat-empty-halo {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: min(720px, 64vw);
-  height: 360px;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(120, 190, 255, 0.32),
-    rgba(120, 190, 255, 0.18) 34%,
-    rgba(120, 190, 255, 0) 72%
-  );
-  filter: blur(10px);
-}
-
 .chat-empty-logo {
   position: relative;
   z-index: 1;
@@ -2117,18 +2100,6 @@
     width: min(320px, calc(100% - 32px));
   }
 
-  .chat-empty-halo {
-    top: 64%;
-    width: min(460px, 96vw);
-    height: 460px;
-    background: radial-gradient(
-      circle,
-      rgba(120, 190, 255, 0.42),
-      rgba(120, 190, 255, 0.18) 36%,
-      rgba(120, 190, 255, 0) 72%
-    );
-  }
-
   .chat-empty-logo {
     display: flex;
   }
@@ -2349,11 +2320,6 @@
     top: 34%;
     width: min(820px, calc(100% - 96px));
     gap: 16px;
-  }
-
-  .chat-empty-halo {
-    width: min(780px, 58vw);
-    height: 330px;
   }
 
   .chat-empty-title {

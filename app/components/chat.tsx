@@ -3061,7 +3061,6 @@ function useChatInnerView() {
           >
             {showEmptyHero && (
               <div className={styles["chat-empty-state"]}>
-                <div className={styles["chat-empty-halo"]} />
                 <div className={clsx(styles["chat-empty-logo"], "no-dark")}>
                   <NeatIcon />
                 </div>

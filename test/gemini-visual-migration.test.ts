@@ -82,6 +82,7 @@ describe("Gemini visual migration shell", () => {
       ".chat-input-panel.chat-input-panel-empty",
     );
     const actionMenuBlock = readCssBlock(chatStyles, ".chat-input-action-menu");
+    const emptyStateBlock = readCssBlock(chatStyles, ".chat-empty-state");
     const actionMenuRootDeclarations = readRootDeclarations(actionMenuBlock);
     const mobileActionMenuBlock = readCssBlock(
       mobileStyles,
@@ -177,7 +178,7 @@ describe("Gemini visual migration shell", () => {
 
     expect(chat).toContain('styles["chat-empty-state"]');
     expect(chat).toContain('styles["chat-empty-title"]');
-    expect(chat).toContain('styles["chat-empty-halo"]');
+    expect(chat).not.toContain('styles["chat-empty-halo"]');
     expect(chat).toContain("Locale.Chat.EmptySuggestions");
     expect(chat).toContain('styles["chat-empty-suggestions"]');
     expect(chat).toContain('styles["chat-empty-suggestion"]');
@@ -277,7 +278,8 @@ describe("Gemini visual migration shell", () => {
 
     expect(chatStyles).toContain(".chat-empty-state");
     expect(chatStyles).toContain(".chat-empty-title");
-    expect(chatStyles).toContain(".chat-empty-halo");
+    expect(chatStyles).not.toContain(".chat-empty-halo");
+    expect(emptyStateBlock).toMatch(/pointer-events:\s*none;/);
     expect(chatStyles).toContain(".chat-empty-suggestions");
     expect(chatStyles).toContain(".chat-empty-suggestion");
     expect(chatStyles).toContain(".chat-reading-surface");
