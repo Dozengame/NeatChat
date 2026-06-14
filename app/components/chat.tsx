@@ -2716,8 +2716,18 @@ function useChatInnerView() {
               </span>
             </button>
           </div>
-          <div className="window-actions">
-            <div className="window-action-button">
+          <div
+            className={clsx(
+              "window-actions",
+              styles["chat-desktop-header-actions"],
+            )}
+          >
+            <div
+              className={clsx(
+                "window-action-button",
+                styles["chat-desktop-header-action"],
+              )}
+            >
               <IconButton
                 icon={<ReloadIcon />}
                 bordered
@@ -2728,7 +2738,12 @@ function useChatInnerView() {
                 }}
               />
             </div>
-            <div className="window-action-button">
+            <div
+              className={clsx(
+                "window-action-button",
+                styles["chat-desktop-header-action"],
+              )}
+            >
               <IconButton
                 icon={<RenameIcon />}
                 bordered
@@ -2737,7 +2752,12 @@ function useChatInnerView() {
                 onClick={() => setIsEditingMessage(true)}
               />
             </div>
-            <div className="window-action-button">
+            <div
+              className={clsx(
+                "window-action-button",
+                styles["chat-desktop-header-action"],
+              )}
+            >
               <IconButton
                 icon={<ExportIcon />}
                 bordered
@@ -2748,7 +2768,12 @@ function useChatInnerView() {
               />
             </div>
             {showMaxIcon && (
-              <div className="window-action-button">
+              <div
+                className={clsx(
+                  "window-action-button",
+                  styles["chat-desktop-header-action"],
+                )}
+              >
                 <IconButton
                   icon={config.tightBorder ? <MinIcon /> : <MaxIcon />}
                   bordered

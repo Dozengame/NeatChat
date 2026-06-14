@@ -130,6 +130,14 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-message-actions",
     );
+    const desktopHeaderActionsBlock = readCssBlock(
+      chatStyles,
+      ".chat-desktop-header-actions",
+    );
+    const desktopHeaderActionBlock = readCssBlock(
+      chatStyles,
+      ".chat-desktop-header-action",
+    );
     const messageActionRailBlock = readCssBlock(
       chatStyles,
       ".chat-message-action-rail",
@@ -248,6 +256,8 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["chat-desktop-title-stack"]');
     expect(chat).toContain('styles["chat-desktop-model-title"]');
     expect(chat).toContain('styles["chat-desktop-model-menu"]');
+    expect(chat).toContain('styles["chat-desktop-header-actions"]');
+    expect(chat).toContain('styles["chat-desktop-header-action"]');
     expect(chat).toMatch(/showMobileModelSelector\s*&&\s*\(/);
     expect(chat).toContain('styles["chat-mobile-model-menu"]');
     expect(chat).toContain('aria-controls="mobile-sidebar-drawer"');
@@ -364,6 +374,19 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain(".chat-desktop-title-stack");
     expect(chatStyles).toContain(".chat-desktop-model-title");
     expect(chatStyles).toContain(".chat-desktop-model-menu");
+    expect(chatStyles).toContain(".chat-desktop-header-actions");
+    expect(chatStyles).toContain(".chat-desktop-header-action");
+    expect(desktopHeaderActionsBlock).toMatch(/display:\s*inline-flex;/);
+    expect(desktopHeaderActionsBlock).toMatch(/align-items:\s*center;/);
+    expect(desktopHeaderActionsBlock).toMatch(/gap:\s*4px\s*!important;/);
+    expect(desktopHeaderActionsBlock).toMatch(/padding:\s*3px;/);
+    expect(desktopHeaderActionsBlock).toMatch(/border-radius:\s*999px;/);
+    expect(desktopHeaderActionsBlock).toMatch(/max-width:\s*min\(240px,\s*28vw\);/);
+    expect(desktopHeaderActionBlock).toMatch(/flex:\s*0 0 auto;/);
+    expect(desktopHeaderActionBlock).toMatch(/:global\(button\)[\s\S]*width:\s*34px;/);
+    expect(desktopHeaderActionBlock).toMatch(/:global\(button\)[\s\S]*height:\s*34px;/);
+    expect(desktopHeaderActionBlock).toMatch(/:global\(button\)[\s\S]*border-radius:\s*999px;/);
+    expect(desktopHeaderActionBlock).toMatch(/:global\(button\)[\s\S]*padding:\s*0;/);
     expect(chatStyles).toContain(".chat-mobile-header");
     expect(chatStyles).toContain(".chat-mobile-header-button");
     expect(chatStyles).toMatch(/@media only screen and \(min-width: 901px\)/);

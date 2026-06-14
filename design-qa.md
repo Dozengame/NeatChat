@@ -399,3 +399,34 @@ Browser QA:
 Known risks:
 
 - Browser QA did not click the delete button because desktop delete is destructive without confirmation for non-compact layout. Existing click handlers and confirmation behavior were preserved in source, while Browser verified the rendered entry point, sizing, bounds, accessibility label, and drawer interaction.
+
+## Iteration 2026-06-15 desktop-header-action-cluster
+
+Result: passed.
+
+Scope:
+
+- `app/components/chat.tsx`: added local desktop header action cluster hooks around the existing refresh-title, edit-history, export, and fullscreen buttons without changing their handlers, titles, modal behavior, or routing.
+- `app/components/chat.module.scss`: styled the chat-only desktop header action group as a bounded pill cluster, fixed each header action to a 34px circular hit area, and kept local spacing from being overridden by the generic window action rule.
+- `test/gemini-visual-migration.test.ts`: locked the desktop header action hooks, cluster dimensions, local gap override, button sizing, and rounded hit area.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the desktop header action cluster hooks were missing.
+- Browser QA then found the runtime action gap was still `2px` due to the generic chat window action rule; a follow-up RED assertion locked `gap: 4px !important` before the CSS fix.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: measured one header cluster with `buttonCount: 4` and titles `刷新标题`, `编辑消息记录`, `导出聊天记录`, `全屏`; cluster bounds `left: 1266`, `right: 1422`, `width: 156`, computed `gap: 4px`, `padding: 3px`, `borderRadius: 999px`; first button `34x34`; title/model did not overlap the cluster; cluster right overflow `0`; `horizontalOverflowPx: 0`; no console warn/error logs.
+- Desktop interaction proof: clicked the `编辑消息记录` action in the cluster; the edit-history modal opened (`editModalOpen: true`) and `horizontalOverflowPx` remained `0`.
+- Mobile `390x844`: desktop header cluster absent (`desktopClusterCount: 0`); mobile header bounds `0..390`; three mobile header buttons visible with sidebar `40x40`, model button `79x17`, settings `40x40`; no sidebar/model/settings overlap; right overflow `0`; `horizontalOverflowPx: 0`; no console warn/error logs.
+- Narrow mobile `320x740`: desktop header cluster absent (`desktopClusterCount: 0`); mobile header bounds `0..320`; three mobile header buttons visible with sidebar `40x40`, model button `79x17`, settings `40x40`; no sidebar/model/settings overlap; right overflow `0`; `horizontalOverflowPx: 0`; no console warn/error logs.
+
+Known risks:
+
+- Browser QA used DOM and coordinate click evidence rather than screenshots. The targeted visual contract was bounded layout, hit-area size, overlap, overflow, and preserved edit action behavior.
