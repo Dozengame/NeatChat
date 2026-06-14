@@ -3447,10 +3447,21 @@ function useChatInnerView() {
 
                 {/* 附件容器（包含图片和文件） */}
                 {(attachImages.length > 0 || attachedFiles.length > 0) && (
-                  <div className={styles["attachments-container"]}>
+                  <div
+                    className={styles["attachments-container"]}
+                    role="list"
+                    aria-label="附件预览"
+                  >
                     {/* 图片附件 */}
                     {attachImages.map((image, index) => (
-                      <div className={styles["attach-item"]} key={image}>
+                      <div
+                        className={clsx(
+                          styles["attach-item"],
+                          styles["attach-image-item"],
+                        )}
+                        role="listitem"
+                        key={image}
+                      >
                         <button
                           type="button"
                           className={styles["attach-image"]}
@@ -3474,7 +3485,11 @@ function useChatInnerView() {
                     {/* 文件附件 */}
                     {attachedFiles.map((file, index) => (
                       <div
-                        className={styles["attach-item"]}
+                        className={clsx(
+                          styles["attach-item"],
+                          styles["attach-file-item"],
+                        )}
+                        role="listitem"
                         key={`${file.name}-${file.size}-${file.type}`}
                       >
                         <button

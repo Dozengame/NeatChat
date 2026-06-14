@@ -119,6 +119,37 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-message-action-rail",
     );
+    const attachmentsContainerBlock = readCssBlock(
+      chatStyles,
+      ".attachments-container",
+    );
+    const attachItemBlock = readCssBlock(chatStyles, ".attach-item");
+    const attachImageItemBlock = readCssBlock(
+      chatStyles,
+      ".attach-image-item",
+    );
+    const attachFileItemBlock = readCssBlock(
+      chatStyles,
+      ".attach-file-item",
+    );
+    const attachImageBlock = readCssBlock(chatStyles, ".attach-image");
+    const attachFileBlock = readCssBlock(
+      chatStyles.slice(chatStyles.lastIndexOf("\n.attach-file {")),
+      ".attach-file",
+    );
+    const mobileAttachImageBlock = readCssBlock(mobileStyles, ".attach-image");
+    const mobileAttachFileBlock = readCssBlock(mobileStyles, ".attach-file");
+    const finalMobileAttachmentStyles = chatStyles.slice(
+      chatStyles.lastIndexOf("@media screen and (max-width: 600px)"),
+    );
+    const finalMobileAttachmentsContainerBlock = readCssBlock(
+      finalMobileAttachmentStyles,
+      ".attachments-container",
+    );
+    const finalMobileAttachFileBlock = readCssBlock(
+      finalMobileAttachmentStyles,
+      ".attach-file",
+    );
     const onInputBlock = readFunctionBlock(
       chat,
       "const onInput = (text: string) =>",
@@ -162,6 +193,11 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT");
     expect(chat).toContain("uploadAttachments(");
     expect(chat).toContain('styles["attachments-container"]');
+    expect(chat).toContain('aria-label="附件预览"');
+    expect(chat).toContain('role="list"');
+    expect(chat).toContain('role="listitem"');
+    expect(chat).toContain('styles["attach-image-item"]');
+    expect(chat).toContain('styles["attach-file-item"]');
     expect(chat).toContain('styles["attach-image"]');
     expect(chat).toContain('aria-label="编辑图片附件"');
     expect(chat).toContain('styles["attach-file"]');
@@ -231,6 +267,29 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain(".chat-message-row-user");
     expect(chatStyles).toContain(".chat-message-row-assistant");
     expect(chatStyles).toContain(".chat-message-action-rail");
+    expect(chatStyles).toContain(".attach-image-item");
+    expect(chatStyles).toContain(".attach-file-item");
+    expect(attachmentsContainerBlock).toMatch(/align-items:\s*center;/);
+    expect(attachmentsContainerBlock).toMatch(/gap:\s*8px;/);
+    expect(attachmentsContainerBlock).toMatch(/padding:\s*2px 58px 4px 0;/);
+    expect(attachmentsContainerBlock).toMatch(/scroll-padding-right:\s*58px;/);
+    expect(attachmentsContainerBlock).toMatch(/min-width:\s*0;/);
+    expect(attachmentsContainerBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(attachItemBlock).toMatch(/flex:\s*0 0 auto;/);
+    expect(attachItemBlock).toMatch(/height:\s*64px;/);
+    expect(attachImageItemBlock).toMatch(/width:\s*64px;/);
+    expect(attachFileItemBlock).toMatch(/max-width:\s*min\(220px,\s*68vw\);/);
+    expect(attachImageBlock).toMatch(/width:\s*64px;/);
+    expect(attachImageBlock).toMatch(/height:\s*64px;/);
+    expect(attachFileBlock).toMatch(/height:\s*64px;/);
+    expect(attachFileBlock).toMatch(/min-width:\s*176px;/);
+    expect(mobileAttachImageBlock).toMatch(/width:\s*58px;/);
+    expect(mobileAttachImageBlock).toMatch(/height:\s*58px;/);
+    expect(mobileAttachFileBlock).toMatch(/height:\s*58px;/);
+    expect(finalMobileAttachmentsContainerBlock).toMatch(
+      /padding:\s*2px 50px 4px 0;/,
+    );
+    expect(finalMobileAttachFileBlock).toMatch(/width:\s*min\(170px,\s*55vw\);/);
     expect(messageActionsBlock).toMatch(/margin-top:\s*8px;/);
     expect(messageActionsBlock).toMatch(/transform:\s*translateY\(4px\);/);
     expect(messageActionsBlock).toMatch(/pointer-events:\s*none;/);
