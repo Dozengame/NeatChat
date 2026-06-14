@@ -87,6 +87,10 @@ describe("Gemini visual migration shell", () => {
       mobileStyles,
       ".chat-input-action-menu",
     );
+    const mobileMessageActionsBlock = readCssBlock(
+      mobileStyles,
+      ".chat-message-actions",
+    );
     const mobileHeaderButtonBlock = readCssBlock(
       chatStyles,
       ".chat-mobile-header-button",
@@ -106,6 +110,14 @@ describe("Gemini visual migration shell", () => {
     const messageRowUserOverrideBlock = readCssBlock(
       chatStyles,
       ".chat-reading-surface > .chat-message-row-user",
+    );
+    const messageActionsBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-actions",
+    );
+    const messageActionRailBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-action-rail",
     );
     const onInputBlock = readFunctionBlock(
       chat,
@@ -179,6 +191,10 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["chat-message-row"]');
     expect(chat).toContain('styles["chat-message-row-user"]');
     expect(chat).toContain('styles["chat-message-row-assistant"]');
+    expect(chat).toContain('aria-label="消息操作"');
+    expect(chat).toContain('styles["chat-message-action-rail"]');
+    expect(chat).toContain("aria-label={props.text}");
+    expect(chat).not.toContain('style={{ marginTop: "8px" }}');
     expect(sidebar).toContain('styles["sidebar-primary-nav"]');
     expect(sidebar).toContain('styles["sidebar-content-nav"]');
     expect(sidebar).toContain("Locale.Home.PrimarySection");
@@ -214,6 +230,20 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain(".chat-message-row");
     expect(chatStyles).toContain(".chat-message-row-user");
     expect(chatStyles).toContain(".chat-message-row-assistant");
+    expect(chatStyles).toContain(".chat-message-action-rail");
+    expect(messageActionsBlock).toMatch(/margin-top:\s*8px;/);
+    expect(messageActionsBlock).toMatch(/transform:\s*translateY\(4px\);/);
+    expect(messageActionsBlock).toMatch(/pointer-events:\s*none;/);
+    expect(messageActionRailBlock).toMatch(/display:\s*inline-flex;/);
+    expect(messageActionRailBlock).toMatch(/flex-wrap:\s*wrap;/);
+    expect(messageActionRailBlock).toMatch(/border-radius:\s*999px;/);
+    expect(messageActionRailBlock).toMatch(/max-width:\s*100%;/);
+    expect(messageActionRailBlock).toMatch(/\.chat-input-action[\s\S]*height:\s*30px;/);
+    expect(messageActionRailBlock).toMatch(/\.text[\s\S]*display:\s*none;/);
+    expect(mobileMessageActionsBlock).toMatch(/opacity:\s*1\s*!important;/);
+    expect(mobileMessageActionsBlock).toMatch(/pointer-events:\s*auto\s*!important;/);
+    expect(mobileMessageActionsBlock).toMatch(/transform:\s*none\s*!important;/);
+    expect(mobileMessageActionsBlock).toMatch(/transition:\s*none\s*!important;/);
     expect(messageRowUserBlock).toMatch(/flex-direction:\s*row;/);
     expect(messageRowUserBlock).toMatch(/justify-content:\s*flex-end;/);
     expect(messageRowUserOverrideBlock).toMatch(/flex-direction:\s*row;/);

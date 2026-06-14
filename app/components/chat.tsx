@@ -657,6 +657,7 @@ export function ChatAction(props: {
       className={clsx(styles["chat-input-action"], "clickable", {
         [styles["chat-input-action-active"]]: props.active,
       })}
+      aria-label={props.text}
       onClick={() => {
         void props.onClick();
         setTimeout(updateWidth, 1);
@@ -3285,9 +3286,9 @@ function useChatInnerView() {
                         {showActions && (
                           <div
                             className={styles["chat-message-actions"]}
-                            style={{ marginTop: "8px" }}
+                            aria-label="消息操作"
                           >
-                            <div className={styles["chat-input-actions"]}>
+                            <div className={styles["chat-message-action-rail"]}>
                               <>
                                 <ChatAction
                                   text={Locale.Chat.Actions.Retry}
