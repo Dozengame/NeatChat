@@ -1944,10 +1944,24 @@ function useChatInnerView() {
   const [showMobileModelSelector, setShowMobileModelSelector] = useState(false);
   const [expandedMobileModelSection, setExpandedMobileModelSection] =
     useState<MobileModelAdvancedSection | null>(null);
-  const closeMobileModelSelector = () => {
+  const closeMobileModelSelector = useCallback(() => {
     setShowMobileModelSelector(false);
     setExpandedMobileModelSection(null);
-  };
+  }, []);
+  useEffect(() => {
+    if (!showMobileModelSelector) return;
+
+    const closeModelSelectorOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeMobileModelSelector();
+      }
+    };
+
+    window.addEventListener("keydown", closeModelSelectorOnEscape);
+    return () =>
+      window.removeEventListener("keydown", closeModelSelectorOnEscape);
+  }, [closeMobileModelSelector, showMobileModelSelector]);
   const toggleMobileModelSection = (section: MobileModelAdvancedSection) => {
     setExpandedMobileModelSection((currentSection) =>
       currentSection === section ? null : section,
