@@ -78,6 +78,12 @@ const cn = {
     Rename: "重命名对话",
     Typing: "正在输入…",
     EmptyTitle: "你好！想聊点什么？",
+    EmptySuggestions: [
+      "总结这段内容",
+      "帮我规划今天的任务",
+      "生成一张产品海报",
+      "分析这份文件",
+    ] as string[],
     Input: (submitKey: string) => {
       var inputHints = `${submitKey} 发送`;
       if (submitKey === String(SubmitKey.Enter)) {

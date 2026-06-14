@@ -740,6 +740,73 @@
   text-align: center;
 }
 
+.chat-empty-suggestions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  width: min(640px, 100%);
+  margin-top: 2px;
+  pointer-events: auto;
+}
+
+.chat-empty-suggestion {
+  appearance: none;
+  min-width: 0;
+  max-width: 210px;
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid rgba(60, 64, 67, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #3c4043;
+  box-shadow: 0 4px 18px rgba(60, 64, 67, 0.08);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: rgba(49, 94, 248, 0.22);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow:
+      0 6px 20px rgba(60, 64, 67, 0.1),
+      0 0 0 3px rgba(49, 94, 248, 0.08);
+    transform: translateY(-1px);
+  }
+}
+
+:global(.dark) .chat-empty-title,
+:global(.dark) .chat-empty-suggestion {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+:global(.dark) .chat-empty-suggestion {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.22);
+
+  &:hover,
+  &:focus-visible {
+    border-color: rgba(138, 180, 248, 0.36);
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow:
+      0 7px 22px rgba(0, 0, 0, 0.26),
+      0 0 0 3px rgba(138, 180, 248, 0.12);
+  }
+}
+
 .chat-body-main-title {
   appearance: none;
   border: 0;
@@ -1781,6 +1848,19 @@
   .chat-empty-title {
     font-size: 28px;
     max-width: 300px;
+  }
+
+  .chat-empty-suggestions {
+    max-width: 320px;
+    gap: 8px;
+    margin-top: 0;
+  }
+
+  .chat-empty-suggestion {
+    max-width: 150px;
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 12px;
   }
 
   .chat-input-panel {

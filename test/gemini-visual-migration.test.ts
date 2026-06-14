@@ -88,6 +88,10 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["chat-empty-state"]');
     expect(chat).toContain('styles["chat-empty-title"]');
     expect(chat).toContain('styles["chat-empty-halo"]');
+    expect(chat).toContain("Locale.Chat.EmptySuggestions");
+    expect(chat).toContain('styles["chat-empty-suggestions"]');
+    expect(chat).toContain('styles["chat-empty-suggestion"]');
+    expect(chat).toMatch(/onClick=\{\(\) => applyEmptySuggestion\(suggestion\)\}/);
     expect(chat).toMatch(
       /const showEmptyHero\s*=\s*showEmptyState\s*&&\s*!hasActiveInputContent\s*&&\s*!showChatActionMenu;/,
     );
@@ -107,6 +111,8 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain(".chat-empty-state");
     expect(chatStyles).toContain(".chat-empty-title");
     expect(chatStyles).toContain(".chat-empty-halo");
+    expect(chatStyles).toContain(".chat-empty-suggestions");
+    expect(chatStyles).toContain(".chat-empty-suggestion");
     expect(chatStyles).toContain(".chat-desktop-title-stack");
     expect(chatStyles).toContain(".chat-desktop-model-title");
     expect(chatStyles).toContain(".chat-desktop-model-menu");
@@ -134,9 +140,11 @@ describe("Gemini visual migration shell", () => {
     expect(constants).toContain("DEFAULT_SIDEBAR_WIDTH = 268");
     expect(homeStyles).toContain("rgba(249, 251, 253");
     expect(cnLocale).toContain('EmptyTitle: "你好！想聊点什么？"');
+    expect(cnLocale).toContain("EmptySuggestions:");
     expect(enLocale).toContain(
       'EmptyTitle: "Hello! What would you like to discuss?"',
     );
+    expect(enLocale).toContain("EmptySuggestions:");
     expect(qaNotes).not.toContain("console `warn/error` logs empty");
     expect(qaNotes).toContain("known React dev warning");
     expect(gitignore).toContain("design-prototypes/");

@@ -1540,10 +1540,10 @@ function useChatInnerView() {
     attachedFiles.length > 0 ||
     promptHints.length > 0;
   const shouldExpandChatInput = isInputExpanded || hasActiveInputContent;
-  const expandInput = () => {
+  const expandInput = useCallback(() => {
     ignoreInputCollapseUntil.current = Date.now() + 350;
     setIsInputExpanded(true);
-  };
+  }, []);
 
   const onSearch = useDebouncedCallback(
     (text: string) => {
@@ -2184,6 +2184,18 @@ function useChatInnerView() {
   const showEmptyComposer = showEmptyState && !hasActiveInputContent;
   const showEmptyHero =
     showEmptyState && !hasActiveInputContent && !showChatActionMenu;
+  const applyEmptySuggestion = useCallback(
+    (suggestion: string) => {
+      setShowChatActionMenu(false);
+      setPromptHints([]);
+      expandInput();
+      setUserInput(suggestion);
+      requestAnimationFrame(() => {
+        inputRef.current?.focus();
+      });
+    },
+    [expandInput],
+  );
 
   const onChatBodyScroll = (e: HTMLElement) => {
     const bottomHeight = e.scrollTop + e.clientHeight;
@@ -3014,6 +3026,21 @@ function useChatInnerView() {
                 <h1 className={styles["chat-empty-title"]}>
                   {Locale.Chat.EmptyTitle}
                 </h1>
+                <div
+                  className={styles["chat-empty-suggestions"]}
+                  aria-label="建议问题"
+                >
+                  {Locale.Chat.EmptySuggestions.map((suggestion) => (
+                    <button
+                      type="button"
+                      key={suggestion}
+                      className={styles["chat-empty-suggestion"]}
+                      onClick={() => applyEmptySuggestion(suggestion)}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
             {(showEmptyState ? [] : messages).map((message, i) => {

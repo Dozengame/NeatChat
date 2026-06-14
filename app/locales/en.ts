@@ -79,6 +79,12 @@ const en: LocaleType = {
     Rename: "Rename Chat",
     Typing: "Typing…",
     EmptyTitle: "Hello! What would you like to discuss?",
+    EmptySuggestions: [
+      "Summarize this content",
+      "Plan my day",
+      "Create a product poster",
+      "Analyze this file",
+    ] as string[],
     Input: (submitKey: string) => {
       var inputHints = `${submitKey} to send`;
       if (submitKey === String(SubmitKey.Enter)) {
