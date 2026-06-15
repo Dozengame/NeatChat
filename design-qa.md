@@ -2074,3 +2074,36 @@ Browser QA:
 Known risks:
 
 - Browser QA uses hash routes with a query before the hash for fresh page loads. This iteration only changes the mobile model selector surface. No changes to model selection logic, reasoning/image controls, prompt bar, sending, attachments, image generation, MCP/Jimeng, stores, Tauri config, deployment config, or secrets.
+
+## Iteration 2026-06-16 mobile-model-menu-selected-state
+
+Result: passed.
+
+Target flow:
+
+- Mobile `#/chat` model menu makes the current model easier to scan after opening the header model selector, without changing model selection behavior or desktop menu treatment.
+
+Scope:
+
+- `app/components/chat.module.scss`: scoped selected-option border, primary text, weight, and inset indicator to `.chat-mobile-model-menu`, while preserving the existing selected background globally.
+- `test/gemini-visual-migration.test.ts`: locked the mobile-menu scoped selected-state CSS contract and the transparent border used to avoid selected-state size shifts.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the mobile menu option lacked the transparent border/box sizing contract.
+- After a boundary correction, `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed as expected until the new selected-state affordance was scoped under `.chat-mobile-model-menu`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Mobile `#/chat` at `390x844`: trigger `89x40`, menu rect `320x231` at `x=35 y=60`, inside viewport, selected model `✓gpt-5.4OpenAI` rect `292x60`, `background: rgba(25, 103, 210, 0.1)`, `border-top: 1px solid rgba(25, 103, 210, 0.18)`, `color: rgb(49, 94, 248)`, `font-weight: 600`, `box-shadow: rgba(25, 103, 210, 0.55) 3px 0px 0px inset`, input `246x28`, send `40x40`, `pageOverflowX: 0`, warn/error `0`.
+- Narrow `#/chat` at `320x740`: trigger `89x40`, menu rect `272x231` at `x=24 y=60`, inside viewport, selected model rect `244x60`, same selected background/border/color/weight/inset indicator, input `176x28`, send `40x40`, `pageOverflowX: 0`, warn/error `0`.
+- Desktop `#/chat` at `1440x1024`: desktop menu rect `380x223` at `x=318 y=54`, inside viewport, mobile menu absent, selected model retained only the existing selected background with `border-top-width: 0px`, `box-shadow: none`, `font-weight: 400`, input `478x28`, send `42x42`, `pageOverflowX: 0`, warn/error `0`.
+
+Known risks:
+
+- Browser QA uses hash routes with a query before the hash for fresh page loads. This iteration only scopes stronger selected-state visuals to the mobile model menu. No changes to model/reasoning/image option data, selection handlers, prompt bar, sending, attachments, image generation, MCP/Jimeng, stores, Tauri config, deployment config, or secrets.
