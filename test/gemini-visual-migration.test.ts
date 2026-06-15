@@ -398,6 +398,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /if \(!showChatActionMenu\) return;[\s\S]*const closeChatActionMenuOnEscape = \(event: KeyboardEvent\) =>[\s\S]*event\.key === "Escape"[\s\S]*setShowChatActionMenu\(false\);[\s\S]*window\.addEventListener\("keydown", closeChatActionMenuOnEscape\);[\s\S]*window\.removeEventListener\("keydown", closeChatActionMenuOnEscape\);/,
     );
+    expect(chat).toMatch(
+      /className=\{styles\["chat-input-action-menu-backdrop"\]\}[\s\S]*aria-label="关闭对话工具"[\s\S]*onClick=\{\(\) => \{[\s\S]*setShowChatActionMenu\(false\);[\s\S]*requestAnimationFrame\(\(\) => chatInputMenuButtonRef\.current\?\.focus\(\)\);[\s\S]*\}\}/,
+    );
     expect(chat).toContain(
       "requestAnimationFrame(() => chatInputMenuButtonRef.current?.focus());",
     );

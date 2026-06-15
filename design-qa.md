@@ -1016,3 +1016,35 @@ Browser QA:
 Known risks:
 
 - This iteration only declares modal semantics for the existing composer tool menu. It does not change tool item order, click handlers, Escape handling, focus return, upload, image generation, MCP/Jimeng, prompt hints, settings, model behavior, attachments, or messages.
+
+## Iteration 2026-06-15 composer-tools-backdrop-focus
+
+Result: passed.
+
+Target flow:
+
+- App loads -> open the composer tool menu -> click the backdrop -> the menu closes and focus returns to the composer tool button.
+
+Scope:
+
+- `app/components/chat.tsx`: changed the existing composer tool-menu backdrop click handler so it closes the menu and restores focus to the tool button on the next animation frame.
+- `test/gemini-visual-migration.test.ts`: locked the backdrop close path so it keeps the same focus-return behavior as the Escape close path.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the backdrop close path only called `setShowChatActionMenu(false)` and did not restore focus.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `1440x1024`. Initial tools button existed with `aria-label="打开对话工具"`, `aria-controls="chat-input-action-menu"`, `aria-expanded="false"`, measured `44x44` at `left: 490`, `right: 534`, `top: 460.08`, `bottom: 504.08`; menu and backdrop absent, `pageOverflowPx: 0`. Opening changed the button to `aria-label="关闭对话工具"`, `aria-expanded="true"` and rendered a full-viewport backdrop with `aria-label="关闭对话工具"` plus `id="chat-input-action-menu"`, `role="dialog"`, `aria-modal="true"`, `aria-label="对话工具菜单"`, measured `left: 490`, `right: 826`, `top: 156.48`, `bottom: 393.08`, `width: 336`, `height: 236.59`; menu did not overflow the viewport. Clicking the backdrop removed the menu and backdrop, returned `aria-expanded="false"`, and set `activeElement` to the tools button with `aria-controls="chat-input-action-menu"`. No console warn/error logs.
+- Mobile `390x844`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `390x844`. Initial tools button existed with `aria-label="打开对话工具"`, `aria-controls="chat-input-action-menu"`, `aria-expanded="false"`, measured `42x42` at `left: 19`, `right: 61`, `top: 781`, `bottom: 823`; menu and backdrop absent, `pageOverflowPx: 0`. Opening changed the button to `aria-label="关闭对话工具"`, `aria-expanded="true"` and rendered a full-viewport backdrop plus dialog measured `left: 11`, `right: 331`, `top: 609.41`, `bottom: 767`, `width: 320`, `height: 157.59`; menu did not overflow the viewport. Clicking the backdrop removed the menu and backdrop, returned `aria-expanded="false"`, and set `activeElement` to the tools button. No console warn/error logs.
+- Narrow mobile `320x740`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `320x740`. Initial tools button existed with `aria-label="打开对话工具"`, `aria-controls="chat-input-action-menu"`, `aria-expanded="false"`, measured `42x42` at `left: 19`, `right: 61`, `top: 677`, `bottom: 719`; menu and backdrop absent, `pageOverflowPx: 0`. Opening changed the button to `aria-label="关闭对话工具"`, `aria-expanded="true"` and rendered a full-viewport backdrop plus dialog measured `left: 11`, `right: 283`, `top: 505.41`, `bottom: 663`, `width: 272`, `height: 157.59`; menu did not overflow the viewport. Clicking the backdrop removed the menu and backdrop, returned `aria-expanded="false"`, and set `activeElement` to the tools button. No console warn/error logs.
+
+Known risks:
+
+- This iteration only changes the backdrop close focus return for the existing composer tool menu. It does not change tool ordering, upload handling, image generation activation, MCP/Jimeng checks, prompt hints, settings, model behavior, attachments, or messages.

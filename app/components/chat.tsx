@@ -2678,7 +2678,12 @@ function useChatInnerView() {
           type="button"
           className={styles["chat-input-action-menu-backdrop"]}
           aria-label="关闭对话工具"
-          onClick={() => setShowChatActionMenu(false)}
+          onClick={() => {
+            setShowChatActionMenu(false);
+            requestAnimationFrame(
+              () => chatInputMenuButtonRef.current?.focus(),
+            );
+          }}
         />
       )}
       {isCompactScreen ? (
