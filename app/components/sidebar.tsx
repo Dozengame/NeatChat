@@ -313,7 +313,11 @@ export function SideBar(props: { className?: string }) {
         shouldNarrow={shouldNarrow}
       >
         <div className={styles["sidebar-header-bar"]}>
-          <div className={styles["sidebar-primary-nav"]}>
+          <div
+            className={styles["sidebar-primary-nav"]}
+            role="navigation"
+            aria-label={Locale.Home.PrimarySection}
+          >
             {!shouldNarrow && (
               <div className={styles["sidebar-section-label"]}>
                 {Locale.Home.PrimarySection}
@@ -336,7 +340,11 @@ export function SideBar(props: { className?: string }) {
               </button>
             ))}
           </div>
-          <div className={styles["sidebar-content-nav"]}>
+          <div
+            className={styles["sidebar-content-nav"]}
+            role="navigation"
+            aria-label={Locale.Home.ContentSection}
+          >
             {!shouldNarrow && (
               <div className={styles["sidebar-section-label"]}>
                 {Locale.Home.ContentSection}

@@ -1375,3 +1375,35 @@ Browser QA:
 Known risks:
 
 - This iteration only adds a non-visual popup semantic to the existing tool button. It does not change `ChatActions`, menu placement, click behavior, Escape/backdrop close behavior, attachments, image generation activation, MCP/Jimeng checks, prompt hints, shortcut modal, sending, model selection, settings, stores, messages, or API behavior.
+
+## Iteration 2026-06-16 sidebar-nav-landmarks
+
+Result: passed.
+
+Target flow:
+
+- Open chat -> the sidebar primary navigation and content navigation are exposed as named navigation landmarks -> existing new chat/search/masks/local content/discovery entries remain available -> desktop and mobile layouts keep the page free of horizontal overflow.
+
+Scope:
+
+- `app/components/sidebar.tsx`: added `role="navigation"` and locale-driven `aria-label` values to the existing `sidebar-primary-nav` and `sidebar-content-nav` wrappers.
+- `test/gemini-visual-migration.test.ts`: locked the sidebar landmark contract without changing routes, nav item behavior, history list, drag/delete behavior, settings, stores, messages, MCP/Jimeng, model selection, or API behavior.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the sidebar nav wrappers did not expose named navigation landmarks.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: sidebar exposed `2` navigation landmarks. Primary nav had `role="navigation"`, `aria-label="开始"`, `3` buttons, rect `275x159` at `x=12`, `y=68`; content nav had `role="navigation"`, `aria-label="内容"`, `2` buttons, rect `275x137` at `x=12`, `y=241`. Sidebar measured `300x1024`, chat input and send button remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Mobile `390x844`: sidebar drawer was off-canvas by default, mobile sidebar trigger remained visible with `aria-label="查看消息列表"`. Primary nav had `role="navigation"`, `aria-label="开始"`, `3` buttons; content nav had `role="navigation"`, `aria-label="内容"`, `2` buttons. Chat input and send button remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Narrow mobile `320x740`: sidebar drawer was off-canvas by default, mobile sidebar trigger remained visible with `aria-label="查看消息列表"`. Primary nav had `role="navigation"`, `aria-label="开始"`, `3` buttons; content nav had `role="navigation"`, `aria-label="内容"`, `2` buttons. Chat input and send button remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+
+Known risks:
+
+- This iteration only adds non-visual landmark semantics to existing sidebar groups. It does not change sidebar visual style, width, collapse behavior, nav copy, route targets, history list, drag sorting, deletion, settings, stores, model APIs, MCP/Jimeng checks, attachments, or image generation behavior.

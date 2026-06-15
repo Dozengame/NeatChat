@@ -491,6 +491,12 @@ describe("Gemini visual migration shell", () => {
     expect(sidebar).toContain('styles["sidebar-content-nav"]');
     expect(sidebar).toContain("Locale.Home.PrimarySection");
     expect(sidebar).toContain("Locale.Home.ContentSection");
+    expect(sidebar).toMatch(
+      /className=\{styles\["sidebar-primary-nav"\]\}[\s\S]*role="navigation"[\s\S]*aria-label=\{Locale\.Home\.PrimarySection\}/,
+    );
+    expect(sidebar).toMatch(
+      /className=\{styles\["sidebar-content-nav"\]\}[\s\S]*role="navigation"[\s\S]*aria-label=\{Locale\.Home\.ContentSection\}/,
+    );
     expect(sidebar).toContain("Locale.Home.LocalContent");
     expect(sidebar).toContain("Locale.SearchChat.Name");
     expect(sidebar).toContain("Locale.Mask.Name");
