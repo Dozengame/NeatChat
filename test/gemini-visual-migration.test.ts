@@ -397,6 +397,9 @@ describe("Gemini visual migration shell", () => {
       /className=\{styles\["prompt-hints"\]\}[\s\S]*role="listbox"[\s\S]*aria-label="提示词建议"/,
     );
     expect(chat).toMatch(
+      /className=\{styles\["prompt-hints"\]\}[\s\S]*aria-activedescendant=\{`chat-prompt-hint-\$\{selectIndex\}`\}/,
+    );
+    expect(chat).toMatch(
       /className=\{clsx\(styles\["prompt-hint"\][\s\S]*role="option"[\s\S]*aria-selected=\{i === selectIndex\}/,
     );
     expect(chat).toMatch(

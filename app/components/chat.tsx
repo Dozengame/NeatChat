@@ -597,6 +597,7 @@ export function PromptHints(props: {
       className={styles["prompt-hints"]}
       role="listbox"
       aria-label="提示词建议"
+      aria-activedescendant={`chat-prompt-hint-${selectIndex}`}
     >
       {prompts.map((prompt, i) => (
         <button
