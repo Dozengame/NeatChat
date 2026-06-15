@@ -524,13 +524,32 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["chat-message-row-user"]');
     expect(chat).toContain('styles["chat-message-row-assistant"]');
     expect(chat).toMatch(
-      /className=\{clsx\([\s\S]*styles\["chat-message-row"\][\s\S]*\)\}[\s\S]*role="listitem"[\s\S]*aria-label=\{`\$\{isUser \? "用户消息" : "助手消息"\} \$\{\s*i \+ 1\s*\}`\}[\s\S]*aria-busy=\{showTyping \? true : undefined\}/,
+      /const messageLabel = `\$\{isUser \? "用户消息" : "助手消息"\} \$\{\s*i \+ 1\s*\}`;/,
     );
     expect(chat).toMatch(
-      /className=\{styles\["chat-message-actions"\]\}[\s\S]*role="group"[\s\S]*aria-label=\{`\$\{isUser \? "用户消息" : "助手消息"\} \$\{\s*i \+ 1\s*\} 操作`\}/,
+      /className=\{clsx\([\s\S]*styles\["chat-message-row"\][\s\S]*\)\}[\s\S]*role="listitem"[\s\S]*aria-label=\{messageLabel\}[\s\S]*aria-busy=\{showTyping \? true : undefined\}/,
+    );
+    expect(chat).toMatch(
+      /const messageActionLabel = `\$\{messageLabel\} 操作`;/,
+    );
+    expect(chat).toMatch(
+      /className=\{styles\["chat-message-actions"\]\}[\s\S]*role="group"[\s\S]*aria-label=\{messageActionLabel\}/,
     );
     expect(chat).toContain('styles["chat-message-action-rail"]');
-    expect(chat).toContain("aria-label={props.text}");
+    expect(chat).toContain("ariaLabel?: string;");
+    expect(chat).toContain("aria-label={props.ariaLabel ?? props.text}");
+    expect(chat).toMatch(
+      /text=\{Locale\.Chat\.Actions\.Retry\}[\s\S]*ariaLabel=\{`\$\{messageActionLabel\}：\$\{Locale\.Chat\.Actions\.Retry\}`\}/,
+    );
+    expect(chat).toMatch(
+      /text=\{Locale\.Chat\.Actions\.Delete\}[\s\S]*ariaLabel=\{`\$\{messageActionLabel\}：\$\{Locale\.Chat\.Actions\.Delete\}`\}/,
+    );
+    expect(chat).toMatch(
+      /text=\{Locale\.Chat\.Actions\.Pin\}[\s\S]*ariaLabel=\{`\$\{messageActionLabel\}：\$\{Locale\.Chat\.Actions\.Pin\}`\}/,
+    );
+    expect(chat).toMatch(
+      /text=\{Locale\.Chat\.Actions\.Copy\}[\s\S]*ariaLabel=\{`\$\{messageActionLabel\}：\$\{Locale\.Chat\.Actions\.Copy\}`\}/,
+    );
     expect(chat).not.toContain('style={{ marginTop: "8px" }}');
     expect(sidebar).toContain('styles["sidebar-primary-nav"]');
     expect(sidebar).toContain('styles["sidebar-content-nav"]');

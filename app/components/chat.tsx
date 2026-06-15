@@ -651,6 +651,7 @@ export function ChatAction(props: {
   icon: JSX.Element;
   onClick: () => void | Promise<void>;
   active?: boolean;
+  ariaLabel?: string;
   ariaPressed?: boolean;
   role?: React.AriaRole;
 }) {
@@ -678,7 +679,7 @@ export function ChatAction(props: {
       className={clsx(styles["chat-input-action"], "clickable", {
         [styles["chat-input-action-active"]]: props.active,
       })}
-      aria-label={props.text}
+      aria-label={props.ariaLabel ?? props.text}
       aria-pressed={props.ariaPressed}
       role={props.role}
       onClick={() => {
@@ -3271,6 +3272,10 @@ function useChatInnerView() {
 
                 const shouldShowClearContextDivider =
                   i === clearContextIndex - 1;
+                const messageLabel = `${isUser ? "用户消息" : "助手消息"} ${
+                  i + 1
+                }`;
+                const messageActionLabel = `${messageLabel} 操作`;
 
                 return (
                   <Fragment key={message.id}>
@@ -3285,9 +3290,7 @@ function useChatInnerView() {
                           : styles["chat-message"],
                       )}
                       role="listitem"
-                      aria-label={`${isUser ? "用户消息" : "助手消息"} ${
-                        i + 1
-                      }`}
+                      aria-label={messageLabel}
                       aria-busy={showTyping ? true : undefined}
                     >
                       <div className={styles["chat-message-container"]}>
@@ -3469,29 +3472,31 @@ function useChatInnerView() {
                           <div
                             className={styles["chat-message-actions"]}
                             role="group"
-                            aria-label={`${isUser ? "用户消息" : "助手消息"} ${
-                              i + 1
-                            } 操作`}
+                            aria-label={messageActionLabel}
                           >
                             <div className={styles["chat-message-action-rail"]}>
                               <>
                                 <ChatAction
                                   text={Locale.Chat.Actions.Retry}
+                                  ariaLabel={`${messageActionLabel}：${Locale.Chat.Actions.Retry}`}
                                   icon={<ResetIcon />}
                                   onClick={() => onResend(message)}
                                 />
                                 <ChatAction
                                   text={Locale.Chat.Actions.Delete}
+                                  ariaLabel={`${messageActionLabel}：${Locale.Chat.Actions.Delete}`}
                                   icon={<DeleteIcon />}
                                   onClick={() => onDelete(message.id ?? i)}
                                 />
                                 <ChatAction
                                   text={Locale.Chat.Actions.Pin}
+                                  ariaLabel={`${messageActionLabel}：${Locale.Chat.Actions.Pin}`}
                                   icon={<PinIcon />}
                                   onClick={() => onPinMessage(message)}
                                 />
                                 <ChatAction
                                   text={Locale.Chat.Actions.Copy}
+                                  ariaLabel={`${messageActionLabel}：${Locale.Chat.Actions.Copy}`}
                                   icon={<CopyIcon />}
                                   onClick={() =>
                                     copyToClipboard(
@@ -3507,6 +3512,11 @@ function useChatInnerView() {
                                           ? Locale.Chat.Actions.StopSpeech
                                           : Locale.Chat.Actions.Speech
                                       }
+                                      ariaLabel={`${messageActionLabel}：${
+                                        speechStatus
+                                          ? Locale.Chat.Actions.StopSpeech
+                                          : Locale.Chat.Actions.Speech
+                                      }`}
                                       icon={
                                         speechStatus ? (
                                           <SpeakStopIcon />

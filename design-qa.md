@@ -1769,3 +1769,35 @@ Browser QA:
 Known risks:
 
 - This iteration only changes action group accessible names. It does not change `onResend`, `onDelete`, `onPinMessage`, `copyToClipboard`, TTS, message content, markdown, image preview/download, scrolling, sending, model APIs, MCP/Jimeng, stores, prompt bar, header, Tauri config, deployment config, or secrets.
+
+## Iteration 2026-06-16 message-action-button-labels
+
+Result: passed.
+
+Target flow:
+
+- Each message action button has a contextual accessible name that includes the message role/index action group, so repeated buttons such as copy/delete can be distinguished without changing the visible rail.
+
+Scope:
+
+- `app/components/chat.tsx`: added an optional `ariaLabel` prop to `ChatAction`; extracted `messageLabel` / `messageActionLabel`; kept row labels and action group labels aligned; passed contextual labels to message `Retry`, `Delete`, `Pin`, `Copy`, and optional TTS actions.
+- `test/gemini-visual-migration.test.ts`: locked the contextual message action button labels, the `ChatAction` fallback to visible text, and the shared message/action label contract without changing action order, visible labels, icons, click handlers, rail sizes, desktop reveal behavior, mobile always-visible behavior, message rendering, model controls, prompt bar, MCP/Jimeng, attachments, sending, settings, stores, or API behavior.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because `ChatAction` still used `aria-label={props.text}` and message buttons did not pass contextual `ariaLabel`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: opened the existing `浏览器相关` recent chat without triggering delete/send. The conversation list had `3` listitems and `2` unique message action groups: `用户消息 2 操作`, `助手消息 3 操作`. First group buttons had contextual labels `用户消息 2 操作：重试`, `用户消息 2 操作：删除`, `用户消息 2 操作：固定`, `用户消息 2 操作：复制`; each remained `34x34`. First group default style remained `opacity: 0`, `pointer-events: none`, `transform: matrix(1, 0, 0, 1, 0, 4)`. Chat input rect `562x40`, send button rect `40x40`, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Mobile `390x844`: opened the same recent chat through the drawer. Message action group labels remained `用户消息 2 操作`, `助手消息 3 操作`; first group buttons kept contextual labels `用户消息 2 操作：重试/删除/固定/复制` and remained `34x34`. First group remained visible with `opacity: 1`, `pointer-events: auto`, `transform: none`. Chat input rect `246x26`, send button rect `40x40`, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Narrow mobile `320x740`: opened the same recent chat through the drawer. Message action group labels remained `用户消息 2 操作`, `助手消息 3 操作`; first group buttons kept contextual labels `用户消息 2 操作：重试/删除/固定/复制` and remained `34x34`. First group remained visible with `opacity: 1`, `pointer-events: auto`, `transform: none`. Chat input rect `176x26`, send button rect `40x40`, `pageOverflowX: 0`, console warn/error logs: `0`.
+
+Known risks:
+
+- This iteration only changes accessible names for message action buttons. It does not change visible action text, action order, icons, `onResend`, `onDelete`, `onPinMessage`, `copyToClipboard`, TTS behavior, message content, markdown, image preview/download, scrolling, sending, model APIs, MCP/Jimeng, stores, prompt bar, header, Tauri config, deployment config, or secrets.
