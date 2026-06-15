@@ -440,12 +440,14 @@
   cursor: pointer;
   display: flex;
   align-items: center;
+  position: relative;
   gap: 12px;
   font: inherit;
   font-size: 14px;
   font-weight: 500;
   line-height: 1;
   text-align: left;
+  overflow: hidden;
   transition:
     background-color 0.16s ease,
     color 0.16s ease,
@@ -471,6 +473,9 @@
 
 .sidebar-nav-item-active {
   background-color: rgba(49, 94, 248, 0.1);
+  box-shadow: inset 3px 0 0 var(--primary);
+  color: var(--primary);
+  font-weight: 600;
 }
 
 .sidebar-primary-nav,

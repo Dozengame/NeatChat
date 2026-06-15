@@ -279,6 +279,11 @@ describe("Gemini visual migration shell", () => {
       ".chat-item-selected",
     );
     const chatItemTitleBlock = readCssBlock(homeStyles, ".chat-item-title");
+    const sidebarNavItemBlock = readCssBlock(homeStyles, ".sidebar-nav-item");
+    const sidebarNavItemActiveBlock = readCssBlock(
+      homeStyles,
+      ".sidebar-nav-item-active",
+    );
     const chatItemDeleteBlock = readCssBlock(
       homeStyles.slice(homeStyles.indexOf("\n.chat-item-delete {")),
       ".chat-item-delete",
@@ -603,6 +608,9 @@ describe("Gemini visual migration shell", () => {
     expect(sidebar).toContain("Path.McpMarket");
     expect(sidebar).toContain("Path.Settings");
     expect(sidebar).toContain("Path.Home");
+    expect(sidebar).toMatch(
+      /className=\{clsx\(styles\["sidebar-nav-item"\][\s\S]*location\.pathname === item\.path[\s\S]*aria-current=\{[\s\S]*location\.pathname === item\.path \? "page" : undefined[\s\S]*\}/,
+    );
     expect(sidebar).toContain('id="mobile-sidebar-drawer"');
     expect(sidebar).toContain("isMobileHidden?: boolean");
     expect(sidebar).toMatch(
@@ -936,6 +944,13 @@ describe("Gemini visual migration shell", () => {
     expect(homeStyles).toContain(".sidebar-primary-nav");
     expect(homeStyles).toContain(".sidebar-content-nav");
     expect(homeStyles).toContain(".sidebar-content-card");
+    expect(sidebarNavItemBlock).toMatch(/position:\s*relative;/);
+    expect(sidebarNavItemBlock).toMatch(/overflow:\s*hidden;/);
+    expect(sidebarNavItemActiveBlock).toMatch(/color:\s*var\(--primary\);/);
+    expect(sidebarNavItemActiveBlock).toMatch(/font-weight:\s*600;/);
+    expect(sidebarNavItemActiveBlock).toMatch(
+      /box-shadow:\s*inset 3px 0 0 var\(--primary\);/,
+    );
     expect(chatItemBlock).toMatch(/padding:\s*8px 40px 8px 12px;/);
     expect(chatItemSelectedBlock).toMatch(/&::before[\s\S]*left:\s*0;/);
     expect(chatItemSelectedBlock).toMatch(/&::before[\s\S]*width:\s*3px;/);

@@ -1899,3 +1899,38 @@ Browser QA:
 Known risks:
 
 - This iteration only changes the empty-state suggestion button visual affordance. It does not change `Locale.Chat.EmptySuggestions`, suggestion click behavior, input submission, prompt hints, attachments, image generation, model selection, MCP/Jimeng, message rendering, scrolling, stores, Tauri config, deployment config, or secrets.
+
+## Iteration 2026-06-16 sidebar-primary-active-indicator
+
+Result: passed.
+
+Target flow:
+
+- The primary sidebar navigation exposes the current page to assistive tech and shows a clearer active marker, making the left rail easier to scan without changing navigation behavior.
+
+Scope:
+
+- `app/components/sidebar.tsx`: added `aria-current="page"` to the active primary navigation item driven by the existing `location.pathname === item.path` condition.
+- `app/components/home.module.scss`: strengthened `.sidebar-nav-item-active` with primary color, `font-weight: 600`, and a `3px` inset active indicator; added `position: relative` and `overflow: hidden` to sidebar nav items for stable active rendering.
+- `test/gemini-visual-migration.test.ts`: locked the `aria-current` contract and active nav styling without changing paths, labels, icons, `startNewChat`, `navigate`, mobile drawer logic, history list behavior, settings, prompt bar, MCP/Jimeng, sending, stores, or API behavior.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because primary sidebar nav buttons did not expose `aria-current`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `/new-chat` at `1440x1024`: active primary nav item was `新的聊天` with `aria-current="page"`, `color: rgb(49, 94, 248)`, `font-weight: 600`, and `box-shadow: rgb(49, 94, 248) 3px 0px 0px 0px inset`. Active rect was `275x38`, sidebar rect was `300x1024`, `pageOverflowX: 0`.
+- Mobile `/new-chat` at `390x844`: hidden mobile drawer retained the active `新的聊天` state with `aria-current="page"`, primary color, `font-weight: 600`, and the same `3px` inset indicator. Sidebar rect was off-canvas `304x844`, `aria-hidden="true"`, `pageOverflowX: 0`.
+- Narrow `/new-chat` at `320x740`: hidden mobile drawer retained the active `新的聊天` state with `aria-current="page"`, primary color, `font-weight: 600`, and the same `3px` inset indicator. Sidebar rect was off-canvas `266x740`, `aria-hidden="true"`, `pageOverflowX: 0`.
+- Mobile `/chat` regression at `390x844`: input rect `246x28`, send button rect `40x40`, sidebar drawer remained off-canvas with `aria-hidden="true"`, `pageOverflowX: 0`.
+- Narrow `/chat` regression at `320x740`: input rect `176x28`, send button rect `40x40`, sidebar drawer remained off-canvas with `aria-hidden="true"`, `pageOverflowX: 0`.
+
+Known risks:
+
+- `/new-chat` does not render the chat header drawer trigger on mobile, so mobile active-state QA used the off-canvas drawer DOM state and separate `/chat` input/send regression. This iteration does not change navigation destinations, click handlers, history list ordering/deletion, sidebar width, mobile drawer open/close behavior, settings, prompt bar, model selection, MCP/Jimeng, message rendering, stores, Tauri config, deployment config, or secrets.

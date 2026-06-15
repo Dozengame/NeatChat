@@ -340,6 +340,9 @@ export function SideBar(props: {
                 })}
                 onClick={item.onClick}
                 aria-label={item.label}
+                aria-current={
+                  location.pathname === item.path ? "page" : undefined
+                }
                 title={shouldNarrow ? item.label : undefined}
               >
                 {item.icon}
