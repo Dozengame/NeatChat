@@ -109,6 +109,10 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-empty-suggestion-text",
     );
+    const emptySuggestionAffordanceBlock = readCssBlock(
+      chatStyles,
+      ".chat-empty-suggestion-affordance",
+    );
     const actionMenuRootDeclarations = readRootDeclarations(actionMenuBlock);
     const actionMenuActiveActionBlock = readCssBlock(
       chatStyles,
@@ -645,12 +649,23 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain(".chat-empty-suggestion-item");
     expect(chatStyles).toContain(".chat-empty-suggestion");
     expect(chat).toContain('styles["chat-empty-suggestion-text"]');
+    expect(chat).toContain('styles["chat-empty-suggestion-affordance"]');
     expect(chat).toMatch(
-      /className=\{styles\["chat-empty-suggestion"\]\}[\s\S]*<span[\s\S]*className=\{styles\["chat-empty-suggestion-text"\]\}[\s\S]*>\s*\{suggestion\}\s*<\/span>/,
+      /className=\{styles\["chat-empty-suggestion"\]\}[\s\S]*<span[\s\S]*className=\{styles\["chat-empty-suggestion-text"\]\}[\s\S]*>\s*\{suggestion\}\s*<\/span>[\s\S]*<span[\s\S]*styles\["chat-empty-suggestion-affordance"\][\s\S]*aria-hidden="true"/,
     );
     expect(emptySuggestionBlock).toMatch(/display:\s*inline-flex;/);
     expect(emptySuggestionBlock).toMatch(/align-items:\s*center;/);
     expect(emptySuggestionBlock).toMatch(/justify-content:\s*center;/);
+    expect(emptySuggestionBlock).toMatch(/gap:\s*8px;/);
+    expect(emptySuggestionAffordanceBlock).toMatch(/flex:\s*0 0 18px;/);
+    expect(emptySuggestionAffordanceBlock).toMatch(/width:\s*18px;/);
+    expect(emptySuggestionAffordanceBlock).toMatch(/height:\s*18px;/);
+    expect(emptySuggestionAffordanceBlock).toMatch(
+      /border-radius:\s*999px;/,
+    );
+    expect(emptySuggestionAffordanceBlock).toMatch(
+      /font-size:\s*12px;/,
+    );
     expect(emptySuggestionTextBlock).toMatch(/display:\s*-webkit-box;/);
     expect(emptySuggestionTextBlock).toMatch(/line-height:\s*1\.2;/);
     expect(emptySuggestionTextBlock).toMatch(/max-height:\s*2\.4em;/);

@@ -3271,6 +3271,12 @@ function useChatInnerView() {
                         <span className={styles["chat-empty-suggestion-text"]}>
                           {suggestion}
                         </span>
+                        <span
+                          className={styles["chat-empty-suggestion-affordance"]}
+                          aria-hidden="true"
+                        >
+                          →
+                        </span>
                       </button>
                     </li>
                   ))}

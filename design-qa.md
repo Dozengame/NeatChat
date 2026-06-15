@@ -1866,3 +1866,36 @@ Browser QA:
 Known risks:
 
 - This iteration only adds visible copy to the existing desktop session action group. It does not change menu positioning, section styles, selector contents, ARIA popup state, model selection, image generation enable/disable logic, upload, prompt hints, clear context, theme, realtime chat, sending, scrolling, message rendering, model APIs, MCP/Jimeng, stores, Tauri config, deployment config, or secrets.
+
+## Iteration 2026-06-16 empty-suggestion-affordance
+
+Result: passed.
+
+Target flow:
+
+- Empty-state suggestion buttons read as clickable prompt starters at a glance, while clicking a suggestion still only fills the prompt bar and does not send a message.
+
+Scope:
+
+- `app/components/chat.tsx`: added an `aria-hidden` right-arrow affordance inside each empty-state suggestion button, after the existing suggestion text.
+- `app/components/chat.module.scss`: gave the affordance a fixed `18x18` pill treatment and adjusted suggestion button spacing so the added signal does not crowd text or expand past mobile widths.
+- `test/gemini-visual-migration.test.ts`: locked the suggestion affordance markup, fixed sizing, hidden accessibility state, and spacing without changing suggestion copy, `applyEmptySuggestion`, input handling, prompt bar actions, attachments, image generation, MCP/Jimeng, sending, stores, or API behavior.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because suggestion buttons did not render `chat-empty-suggestion-affordance`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: empty state rendered `4` suggestion buttons. Each button had visible text plus an `aria-hidden="true"` `→` affordance with rect `18x18`; first button rect was `130x40`, suggestions row rect was `640x40`, input rect was `478x28`, send button rect was `42x42`, `pageOverflowX: 0`. Clicking `总结这段内容` focused `#chat-input`, set input value to `总结这段内容`, hid empty suggestions, kept message item count at `0`, and kept `pageOverflowX: 0`.
+- Mobile `390x844`: empty state rendered `4` suggestion buttons in a two-row layout. Each affordance stayed `18x18`; button rects stayed between `124x44` and `150x44`, suggestions rect was `320x96`, input rect was `246x28`, send button rect was `40x40`, message item count was `0`, `pageOverflowX: 0`.
+- Narrow mobile `320x740`: empty state rendered `4` suggestion buttons in a two-row layout. Each affordance stayed `18x18`; button rects stayed between `124x44` and `150x44`, suggestions rect was `288x96`, input rect was `176x28`, send button rect was `40x40`, message item count was `0`, `pageOverflowX: 0`.
+
+Known risks:
+
+- This iteration only changes the empty-state suggestion button visual affordance. It does not change `Locale.Chat.EmptySuggestions`, suggestion click behavior, input submission, prompt hints, attachments, image generation, model selection, MCP/Jimeng, message rendering, scrolling, stores, Tauri config, deployment config, or secrets.
