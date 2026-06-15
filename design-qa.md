@@ -1541,3 +1541,35 @@ Browser QA:
 Known risks:
 
 - Runtime Browser QA used the default GPT-5 reasoning model, so only the visible reasoning section appeared in the mobile menu. The image size and image quality panel ids are covered by the static Jest contract because those sections only render for image-generation models. This iteration does not change `toggleMobileModelSection`, model selection, reasoning/max token logic, image setting values, MCP/Jimeng activation, attachments, sending, settings, stores, messages, or API behavior.
+
+## Iteration 2026-06-16 model-menu-trigger-haspopup
+
+Result: passed.
+
+Target flow:
+
+- On desktop and mobile, the model menu trigger declares that it opens a dialog before it is expanded -> opening the trigger still renders the existing model menu dialog -> composer input and send stay visible with no horizontal overflow.
+
+Scope:
+
+- `app/components/chat.tsx`: added `aria-haspopup="dialog"` to the desktop and mobile model menu trigger buttons.
+- `test/gemini-visual-migration.test.ts`: locked the trigger popup contract without changing model selection, reasoning controls, image size/quality controls, MCP/Jimeng, attachments, sending, settings, stores, messages, or visual layout.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the model menu trigger buttons did not expose `aria-haspopup="dialog"`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: model button had `aria-label="选择模型和参数"`, `aria-controls="chat-model-menu"`, `aria-haspopup="dialog"`, `aria-expanded="false"`, rect `147x34` at `x=394`, `y=14`. Opening via DOM-coordinate fallback changed `aria-expanded="true"` and rendered `#chat-model-menu` with `role="dialog"`, `aria-modal="true"`, `aria-label="模型和思考等级"`, rect `380x223` at `x=318`, `y=54`. Chat input and send button remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Mobile `390x844`: model button had `aria-label="选择模型"`, `aria-controls="chat-model-menu"`, `aria-haspopup="dialog"`, `aria-expanded="false"`, rect `79x17` at `x=156`, `y=26`. Opening changed `aria-expanded="true"` and rendered `#chat-model-menu` with `role="dialog"`, `aria-modal="true"`, `aria-label="模型和思考等级"`, rect `320x227` at `x=35`, `y=46`. Chat input and send button remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Narrow mobile `320x740`: model button had `aria-label="选择模型"`, `aria-controls="chat-model-menu"`, `aria-haspopup="dialog"`, `aria-expanded="false"`, rect `79x17` at `x=121`, `y=26`. Opening changed `aria-expanded="true"` and rendered `#chat-model-menu` with `role="dialog"`, `aria-modal="true"`, `aria-label="模型和思考等级"`, rect `272x227` at `x=24`, `y=46`. Chat input and send button remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+
+Known risks:
+
+- Browser role-locator click timed out on the desktop model trigger, so the verification switched to DOM rect plus coordinate click evidence after the first failure. This iteration only adds non-visual popup semantics to the existing model trigger buttons; it does not change model choice, reasoning/max token logic, image setting values, menu placement, Escape/backdrop close behavior, MCP/Jimeng, attachments, sending, settings, stores, messages, or API behavior.

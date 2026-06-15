@@ -2750,6 +2750,7 @@ function useChatInnerView() {
               setShowMobileModelSelector((open) => !open);
             }}
             aria-controls="chat-model-menu"
+            aria-haspopup="dialog"
             aria-expanded={showMobileModelSelector}
           >
             <span>{headerCurrentModelName}</span>
@@ -2799,6 +2800,7 @@ function useChatInnerView() {
                 setShowMobileModelSelector((open) => !open);
               }}
               aria-controls="chat-model-menu"
+              aria-haspopup="dialog"
               aria-expanded={showMobileModelSelector}
             >
               <span className={styles["chat-desktop-model-name"]}>

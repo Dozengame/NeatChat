@@ -386,6 +386,12 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("ref={modelSelectorButtonRef}");
     expect(chat).toContain("aria-expanded={showMobileModelSelector}");
     expect(chat).toContain('aria-controls="chat-model-menu"');
+    expect(chat).toMatch(
+      /className=\{styles\["chat-mobile-model-title"\]\}[\s\S]*aria-label="选择模型"[\s\S]*aria-controls="chat-model-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showMobileModelSelector\}/,
+    );
+    expect(chat).toMatch(
+      /className=\{styles\["chat-desktop-model-title"\]\}[\s\S]*aria-label="选择模型和参数"[\s\S]*aria-controls="chat-model-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showMobileModelSelector\}/,
+    );
     expect(chat).toContain('aria-label="关闭模型选择"');
     expect(chat).toContain('id="chat-model-menu"');
     expect(chat).toContain('role="dialog"');
