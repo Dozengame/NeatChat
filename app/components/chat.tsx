@@ -3587,6 +3587,9 @@ function useChatInnerView() {
                 {showInputStatusRow && (
                   <div
                     className={styles["chat-input-status-row"]}
+                    role="status"
+                    aria-live="polite"
+                    aria-atomic="true"
                     aria-label="当前输入模式"
                   >
                     {showInputReasoningAction && <ChatInputReasoningAction />}

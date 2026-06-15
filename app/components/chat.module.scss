@@ -2360,7 +2360,11 @@
     }
 
     .chat-input-status-row {
-      display: none;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
 
     .chat-input-send {
@@ -2508,7 +2512,11 @@
     box-shadow: none;
 
     .chat-input-status-row {
-      display: none;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
 
     .chat-input-send {

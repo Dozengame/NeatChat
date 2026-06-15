@@ -309,6 +309,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["chat-input-mode-chip"]');
     expect(chat).toContain('styles["chat-input-image-mode-chip"]');
     expect(chat).toContain('aria-label="当前输入模式"');
+    expect(chat).toMatch(
+      /className=\{styles\["chat-input-status-row"\]\}[\s\S]*role="status"[\s\S]*aria-live="polite"[\s\S]*aria-atomic="true"[\s\S]*aria-label="当前输入模式"/,
+    );
     expect(chat).toContain('aria-label="图片生成模式已开启"');
     expect(chat).toContain("{imageGenerationEnabled && (");
     expect(chat).toContain('styles["chat-multimodal-tray"]');
@@ -399,10 +402,10 @@ describe("Gemini visual migration shell", () => {
       /if \(!showChatActionMenu\) return;[\s\S]*const closeChatActionMenuOnEscape = \(event: KeyboardEvent\) =>[\s\S]*event\.key === "Escape"[\s\S]*setShowChatActionMenu\(false\);[\s\S]*window\.addEventListener\("keydown", closeChatActionMenuOnEscape\);[\s\S]*window\.removeEventListener\("keydown", closeChatActionMenuOnEscape\);/,
     );
     expect(chat).toMatch(
-      /className=\{styles\["chat-input-action-menu-backdrop"\]\}[\s\S]*aria-label="关闭对话工具"[\s\S]*onClick=\{\(\) => \{[\s\S]*setShowChatActionMenu\(false\);[\s\S]*requestAnimationFrame\(\(\) => chatInputMenuButtonRef\.current\?\.focus\(\)\);[\s\S]*\}\}/,
+      /className=\{styles\["chat-input-action-menu-backdrop"\]\}[\s\S]*aria-label="关闭对话工具"[\s\S]*onClick=\{\(\) => \{[\s\S]*setShowChatActionMenu\(false\);[\s\S]*requestAnimationFrame\([\s\S]*\(\) => chatInputMenuButtonRef\.current\?\.focus\(\),?[\s\S]*\);[\s\S]*\}\}/,
     );
-    expect(chat).toContain(
-      "requestAnimationFrame(() => chatInputMenuButtonRef.current?.focus());",
+    expect(chat).toMatch(
+      /requestAnimationFrame\([\s\S]*\(\) => chatInputMenuButtonRef\.current\?\.focus\(\),?[\s\S]*\);/,
     );
     expect(chat).toContain("setShowChatActionMenu(false)");
     expect(chat).toContain('id="chat-input"');
@@ -625,6 +628,15 @@ describe("Gemini visual migration shell", () => {
     expect(inputModeChipBlock).toMatch(/max-width:\s*100%;/);
     expect(inputModeChipBlock).toMatch(/border-radius:\s*15px;/);
     expect(mobileStatusRowBlock).toMatch(/right:\s*52px;/);
+    expect(mobileStyles).not.toMatch(
+      /\.chat-input-panel-inner-collapsed\s*\{[\s\S]*\.chat-input-status-row\s*\{[\s\S]*display:\s*none;/,
+    );
+    expect(mobileStyles).toMatch(
+      /\.chat-input-panel-inner-collapsed\s*\{[\s\S]*\.chat-input-status-row\s*\{[\s\S]*width:\s*1px;/,
+    );
+    expect(mobileStyles).toMatch(
+      /\.chat-input-panel-inner-collapsed\s*\{[\s\S]*\.chat-input-status-row\s*\{[\s\S]*clip-path:\s*inset\(50%\);/,
+    );
     expect(mobileHeaderButtonBlock).toMatch(/appearance:\s*none;/);
     expect(mobileHeaderButtonBlock).toMatch(/border:\s*var\(--border-in-light\);/);
     expect(chatStyles).toContain(".chat-multimodal-tray");

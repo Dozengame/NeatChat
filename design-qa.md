@@ -1048,3 +1048,37 @@ Browser QA:
 Known risks:
 
 - This iteration only changes the backdrop close focus return for the existing composer tool menu. It does not change tool ordering, upload handling, image generation activation, MCP/Jimeng checks, prompt hints, settings, model behavior, attachments, or messages.
+
+## Iteration 2026-06-16 composer-status-live-region
+
+Result: passed.
+
+Target flow:
+
+- App loads -> composer prompt bar renders input mode status -> the status row exposes live-region semantics without changing visible model, image generation, attachment, or send behavior.
+
+Scope:
+
+- `app/components/chat.tsx`: added `role="status"`, `aria-live="polite"`, and `aria-atomic="true"` to the existing composer input status row.
+- `app/components/chat.module.scss`: changed mobile collapsed status-row treatment from `display: none` to a 1px clipped live region so the state remains available without changing visible compact layout.
+- `test/gemini-visual-migration.test.ts`: locked the status-row live semantics and the mobile collapsed CSS contract; also made the existing backdrop focus-return assertion formatting-tolerant.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the status row lacked `role="status"`, `aria-live="polite"`, and `aria-atomic="true"`.
+- A second RED check failed as expected because mobile collapsed CSS still used `display: none` for `.chat-input-status-row`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `1440x1024`. Prompt bar rendered at `left: 490`, `right: 1250`, `top: 450.08`, `bottom: 512.08`, `width: 760`, `height: 62`; status row existed with `role="status"`, `aria-live="polite"`, `aria-atomic="true"`, `aria-label="当前输入模式"`, text `标准⌄`, measured `left: 1109.17`, `right: 1191`, `top: 470.08`, `bottom: 500.08`, `width: 81.83`, `height: 30`; it did not overlap the send button, and the tools button plus textarea remained visible. `pageOverflowPx: 0`, `bodyOverflowPx: 0`. No console warn/error logs.
+- Mobile `390x844`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `390x844`. Prompt bar rendered at `left: 10`, `right: 380`, `top: 772`, `bottom: 832`, `width: 370`, `height: 60`; status row existed with `role="status"`, `aria-live="polite"`, `aria-atomic="true"`, `aria-label="当前输入模式"`, text `标准⌄`, and was visually clipped to `1x1` at `left: 316`, `right: 317`, `top: 820`, `bottom: 821`, preserving mobile compact layout. Tools button, textarea, and send button remained visible; `pageOverflowPx: 0`, `bodyOverflowPx: 0`. No console warn/error logs.
+- Narrow mobile `320x740`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `320x740`. Prompt bar rendered at `left: 10`, `right: 310`, `top: 668`, `bottom: 728`, `width: 300`, `height: 60`; status row existed with `role="status"`, `aria-live="polite"`, `aria-atomic="true"`, `aria-label="当前输入模式"`, text `标准⌄`, and was visually clipped to `1x1` at `left: 246`, `right: 247`, `top: 716`, `bottom: 717`. Tools button, textarea, and send button remained visible; `pageOverflowPx: 0`, `bodyOverflowPx: 0`. No console warn/error logs.
+
+Known risks:
+
+- This iteration only strengthens status-row accessibility. It does not change model selection, reasoning selection, image generation activation, MCP/Jimeng checks, upload handling, prompt hints, settings, message rendering, or send behavior.
