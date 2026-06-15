@@ -361,6 +361,10 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain(
       "const modelSelectorButtonRef = useRef<HTMLButtonElement>(null);",
     );
+    expect(chat).toContain("const restoreModelSelectorFocus = useCallback");
+    expect(chat).toMatch(
+      /setTimeout\(\(\) => \{[\s\S]*requestAnimationFrame\([\s\S]*\(\) => modelSelectorButtonRef\.current\?\.focus\(\),?[\s\S]*\);[\s\S]*\}, 0\);/,
+    );
     expect(chat).toContain("ref={modelSelectorButtonRef}");
     expect(chat).toContain("aria-expanded={showMobileModelSelector}");
     expect(chat).toContain('aria-controls="chat-model-menu"');
@@ -372,10 +376,10 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chat).toContain('aria-label="模型和思考等级"');
     expect(chat).toMatch(
-      /if \(!showMobileModelSelector\) return;[\s\S]*const closeModelSelectorOnEscape = \(event: KeyboardEvent\) =>[\s\S]*event\.key === "Escape"[\s\S]*closeMobileModelSelector\(\);[\s\S]*window\.addEventListener\("keydown", closeModelSelectorOnEscape\);[\s\S]*window\.removeEventListener\("keydown", closeModelSelectorOnEscape\);/,
+      /if \(!showMobileModelSelector\) return;[\s\S]*const closeModelSelectorOnEscape = \(event: KeyboardEvent\) =>[\s\S]*event\.key === "Escape"[\s\S]*closeMobileModelSelector\(\);[\s\S]*restoreModelSelectorFocus\(\);[\s\S]*window\.addEventListener\("keydown", closeModelSelectorOnEscape\);[\s\S]*window\.removeEventListener\("keydown", closeModelSelectorOnEscape\);/,
     );
-    expect(chat).toContain(
-      "requestAnimationFrame(() => modelSelectorButtonRef.current?.focus());",
+    expect(chat).toMatch(
+      /aria-label="关闭模型选择"[\s\S]*onClick=\{\(\) => \{[\s\S]*closeMobileModelSelector\(\);[\s\S]*restoreModelSelectorFocus\(\);[\s\S]*\}\}/,
     );
     expect(chat).toContain('role="listbox"');
     expect(chat).toContain('aria-label="可选模型"');

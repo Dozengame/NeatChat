@@ -1957,6 +1957,11 @@ function useChatInnerView() {
     setShowMobileModelSelector(false);
     setExpandedMobileModelSection(null);
   }, []);
+  const restoreModelSelectorFocus = useCallback(() => {
+    setTimeout(() => {
+      requestAnimationFrame(() => modelSelectorButtonRef.current?.focus());
+    }, 0);
+  }, []);
   useEffect(() => {
     if (!showMobileModelSelector) return;
 
@@ -1964,14 +1969,18 @@ function useChatInnerView() {
       if (event.key === "Escape") {
         event.preventDefault();
         closeMobileModelSelector();
-        requestAnimationFrame(() => modelSelectorButtonRef.current?.focus());
+        restoreModelSelectorFocus();
       }
     };
 
     window.addEventListener("keydown", closeModelSelectorOnEscape);
     return () =>
       window.removeEventListener("keydown", closeModelSelectorOnEscape);
-  }, [closeMobileModelSelector, showMobileModelSelector]);
+  }, [
+    closeMobileModelSelector,
+    restoreModelSelectorFocus,
+    showMobileModelSelector,
+  ]);
   const toggleMobileModelSection = (section: MobileModelAdvancedSection) => {
     setExpandedMobileModelSection((currentSection) =>
       currentSection === section ? null : section,
@@ -2859,7 +2868,10 @@ function useChatInnerView() {
                 : styles["chat-desktop-model-menu-backdrop"]
             }
             aria-label="关闭模型选择"
-            onClick={closeMobileModelSelector}
+            onClick={() => {
+              closeMobileModelSelector();
+              restoreModelSelectorFocus();
+            }}
           />
           <div
             id="chat-model-menu"

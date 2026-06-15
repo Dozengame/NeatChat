@@ -1082,3 +1082,36 @@ Browser QA:
 Known risks:
 
 - This iteration only strengthens status-row accessibility. It does not change model selection, reasoning selection, image generation activation, MCP/Jimeng checks, upload handling, prompt hints, settings, message rendering, or send behavior.
+
+## Iteration 2026-06-16 model-menu-backdrop-focus
+
+Result: passed.
+
+Target flow:
+
+- App loads -> open the top model menu -> click the backdrop -> the menu closes and focus returns to the model selector button.
+
+Scope:
+
+- `app/components/chat.tsx`: added a shared focus-restoration helper for the top model selector and used it for both Escape and backdrop dismissal.
+- `test/gemini-visual-migration.test.ts`: locked the delayed focus-restoration helper and the backdrop dismissal path so pointer close behavior stays aligned with Escape close behavior.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the model-menu backdrop only closed the menu and did not restore focus.
+- Browser QA then exposed a runtime focus timing issue: the first implementation closed the menu but left `document.activeElement` on `BODY` after backdrop click.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `1440x1024`. Initial model button existed with `aria-label="选择模型和参数"`, `aria-controls="chat-model-menu"`, `aria-expanded="false"`, measured `146.5x34` at `left: 394`, `top: 14`. Opening changed the button to `aria-expanded="true"` and rendered a backdrop plus `id="chat-model-menu"`, `role="dialog"`, `aria-modal="true"`, `aria-label="模型和思考等级"`, measured `left: 318`, `right: 698`, `top: 54`, `bottom: 277`, `width: 380`, `height: 223`; menu did not create horizontal overflow. Clicking the backdrop removed the menu and backdrop, returned `aria-expanded="false"`, and set `activeElement` to the model selector button with `aria-label="选择模型和参数"`. No console warn/error logs.
+- Mobile `390x844`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `390x844`. Initial model button existed with `aria-label="选择模型和参数"`, `aria-controls="chat-model-menu"`, `aria-expanded="false"`, measured `132.59x34` at `left: 94`, `top: 14`. Opening rendered the dialog with `role="dialog"`, `aria-modal="true"`, `aria-label="模型和思考等级"`, measured `left: 35`, `right: 355`, `top: 46`, `bottom: 273`, `width: 320`, `height: 227`; no horizontal overflow. Clicking the backdrop removed the menu and backdrop, returned `aria-expanded="false"`, and set `activeElement` to the model selector button with `aria-label="选择模型"`. No console warn/error logs.
+- Narrow mobile `320x740`: page identity `http://localhost:3000/#/chat`, title `NeatChat`, actual viewport `320x740`. Initial model button existed with `aria-label="选择模型"`, `aria-controls="chat-model-menu"`, `aria-expanded="false"`, measured `78.94x16.8` at `left: 120.53`, `top: 25.6`. Opening rendered the dialog with `role="dialog"`, `aria-modal="true"`, `aria-label="模型和思考等级"`, measured `left: 24`, `right: 296`, `top: 46`, `bottom: 273`, `width: 272`, `height: 227`; no horizontal overflow. Clicking the backdrop removed the menu and backdrop, returned `aria-expanded="false"`, and set `activeElement` to the model selector button. No console warn/error logs.
+
+Known risks:
+
+- This iteration only changes close-focus timing for the existing top model menu. It does not change model availability, model selection, reasoning selection, image size or quality selection, MCP/Jimeng checks, input, attachments, messages, settings, or API behavior.
