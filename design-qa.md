@@ -1311,3 +1311,35 @@ Browser QA:
 Known risks:
 
 - This iteration only changes empty-state suggestion chip structure and CSS. It does not change `Locale.Chat.EmptySuggestions`, `applyEmptySuggestion`, empty-state detection, composer placement, prompt hints, sending, upload handling, image generation activation, MCP/Jimeng checks, model selection, settings, stores, messages, or API behavior.
+
+## Iteration 2026-06-16 reading-surface-live-updates
+
+Result: passed.
+
+Target flow:
+
+- Open chat -> the existing conversation reading surface remains the message list -> newly added or streaming message text can be announced politely through the list live region -> empty-state layout, composer, and core entries remain visible without horizontal overflow.
+
+Scope:
+
+- `app/components/chat.tsx`: added `aria-live="polite"`, `aria-relevant="additions text"`, and `aria-atomic="false"` to the existing `role="list"` message reading surface.
+- `test/gemini-visual-migration.test.ts`: locked the live region contract without changing message rendering, message ordering, scroll behavior, sending, retry/delete/pin actions, uploads, image generation, MCP/Jimeng, model selection, settings, stores, messages, or API behavior.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the existing message list did not expose live region attributes.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: chat body `aria-label="聊天消息"` measured `1140x962`, `overflowX: 0`, `pageOverflowX: 0`. Reading list had `role="list"`, `aria-label="会话消息列表"`, `aria-live="polite"`, `aria-relevant="additions text"`, `aria-atomic="false"`, width `920`, stayed within viewport, and empty-state suggestions stayed within viewport at `640x40`. Composer input remained visible. Console warn/error logs: `0`.
+- Mobile `390x844`: chat body measured `390x776`, `overflowX: 0`, `pageOverflowX: 0`. Reading list had the same live region semantics, width `326`, stayed within viewport, and empty-state suggestions stayed within viewport at `320x96`. Composer input remained visible. Console warn/error logs: `0`.
+- Narrow mobile `320x740`: chat body measured `320x672`, `overflowX: 0`, `pageOverflowX: 0`. Reading list had the same live region semantics, width `256`, stayed within viewport, and empty-state suggestions stayed within viewport at `288x96`. Composer input remained visible. Console warn/error logs: `0`.
+
+Known risks:
+
+- This iteration only adds non-visual live region semantics to the existing message list. It does not change `getVisibleChatMessages`, `RenderMessage`, Markdown rendering, message order, scroll behavior, clear-context logic, sending, retry/delete/pin actions, upload handling, image generation activation, MCP/Jimeng checks, model selection, settings, stores, messages, or API behavior.

@@ -3238,6 +3238,9 @@ function useChatInnerView() {
               className={styles["chat-reading-surface"]}
               role="list"
               aria-label="会话消息列表"
+              aria-live="polite"
+              aria-relevant="additions text"
+              aria-atomic="false"
             >
               {(showEmptyState ? [] : messages).map((message, i) => {
                 const isUser = message.role === "user";
