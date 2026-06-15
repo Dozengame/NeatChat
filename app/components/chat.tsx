@@ -975,7 +975,10 @@ function useChatActionsView(props: ChatActionsProps) {
 
           {!isCompactScreen && config.enablePromptHints && (
             <ChatAction
-              onClick={props.showPromptHints}
+              onClick={() => {
+                props.showPromptHints();
+                props.onActionComplete?.();
+              }}
               text={Locale.Chat.InputActions.Prompt}
               icon={<PromptIcon />}
             />

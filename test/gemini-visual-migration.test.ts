@@ -315,6 +315,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("Locale.Chat.EmptyTitle");
     expect(chat).not.toContain("你好！想聊点什么？");
     expect(chat).toContain("<ChatActions");
+    expect(chat).toMatch(
+      /!isCompactScreen && config\.enablePromptHints && \([\s\S]*<ChatAction[\s\S]*onClick=\{\(\) => \{[\s\S]*props\.showPromptHints\(\);[\s\S]*props\.onActionComplete\?\.\(\);[\s\S]*\}\}[\s\S]*text=\{Locale\.Chat\.InputActions\.Prompt\}/,
+    );
     expect(chat).toContain("handleUploadAttachments");
     expect(chat).toContain("setImageGenerationEnabled");
     expect(chat).toContain('styles["chat-input-status-row"]');

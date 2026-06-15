@@ -1442,3 +1442,35 @@ Browser QA:
 Known risks:
 
 - This iteration only changes the accessibility state of the existing off-canvas sidebar. It does not change sidebar styling, drawer width, animation timing, route targets, nav copy, history list, drag sorting, deletion, settings, stores, model APIs, MCP/Jimeng checks, attachments, or image generation behavior.
+
+## Iteration 2026-06-16 composer-prompt-action-close-loop
+
+Result: passed.
+
+Target flow:
+
+- On desktop, open the prompt bar tool menu -> choose the existing prompt action -> the tool menu closes, the prompt hints list opens, and the input is focused with `/` ready for prompt search. On mobile, the compact tool menu keeps prompt search out of the reduced action set.
+
+Scope:
+
+- `app/components/chat.tsx`: changed the desktop prompt action to call `props.showPromptHints()` and then `props.onActionComplete?.()` so the existing tool menu closes after opening prompt hints.
+- `test/gemini-visual-migration.test.ts`: locked the prompt action close-loop contract without changing prompt search, prompt ordering, prompt insertion, keyboard selection, sending, uploads, image generation, MCP/Jimeng, model selection, settings, stores, messages, or API behavior.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the prompt action only called `props.showPromptHints`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: Browser Playwright locator click timed out on the tool button and prompt action, so verification switched to Browser DOM/coordinate evidence after reading visible DOM and menu button rects. The tool button opened `#chat-input-action-menu`; the visible prompt action button had `aria-label="快捷指令"`, size `310x38`, at `x=505`, `y=213`. Clicking its center closed the tool menu, set the menu button `aria-expanded="false"`, focused `#chat-input`, set input value to `/`, set input `aria-controls="chat-prompt-hints"`, opened `#chat-prompt-hints` as `role="listbox"` with `aria-label="提示词建议"` and `407` options, kept input/send visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Mobile `390x844`: compact tool menu opened as `role="dialog"` with `aria-label="对话工具菜单"`, measured `320x158` at `x=11`, `y=609`; menu button `aria-expanded="true"`. Buttons were `上传附件` and `图片生成`, each `294x46`; `hasPromptAction=false`; input/send remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Narrow mobile `320x740`: compact tool menu opened as `role="dialog"` with `aria-label="对话工具菜单"`, measured `272x158` at `x=11`, `y=505`; menu button `aria-expanded="true"`. Buttons were `上传附件` and `图片生成`, each `246x46`; `hasPromptAction=false`; input/send remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+
+Known risks:
+
+- This iteration only closes the existing tool menu after the desktop prompt action opens prompt hints. It does not change prompt matching, prompt data, prompt ordering, selected prompt insertion, Escape/Enter behavior, sending, uploads, image generation activation, MCP/Jimeng checks, model selection, settings, stores, messages, or API behavior.
