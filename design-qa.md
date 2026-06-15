@@ -1671,3 +1671,36 @@ Browser QA:
 Known risks:
 
 - This iteration only names existing desktop header actions and hides that desktop action cluster on mobile. It does not change `IconButton`, button order, button size, refresh title behavior, edit message flow, export modal, full-screen setting, model menu behavior, prompt bar layout, MCP/Jimeng, attachments, sending, settings, stores, messages, or API behavior.
+
+## Iteration 2026-06-16 sidebar-history-delete-focus
+
+Result: passed.
+
+Target flow:
+
+- In the desktop sidebar history list, each delete control keeps the desktop default hidden state but uses the same `34px` hit target as mobile/narrow layouts and becomes discoverable when the history row receives keyboard focus.
+- In the mobile sidebar drawer, history delete controls remain visible enough to discover without requiring hover.
+
+Scope:
+
+- `app/components/home.module.scss`: increased the base history delete hit target from `32px` to `34px`, added row `focus-within` reveal styles, preserved focused delete opacity at `1`, and added a mobile drawer open-state override for visible `0.72` opacity.
+- `test/gemini-visual-migration.test.ts`: locked the desktop `34px` base target, focus-within reveal, and mobile drawer open-state opacity/pointer-events contracts without changing route links, drag handles, delete behavior, store, model controls, prompt bar, MCP/Jimeng, attachments, sending, or messages.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because `.chat-item-delete` still used `32px`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: fresh tab, container `home_tight-container`, first history delete button label `确认删除选中的对话？`, rect `34x34` at `x=249`, `y=439`; default computed style `opacity: 0`, `pointer-events: none`, `display: flex`. Chat input rect `478x28`, send button rect `42x42`, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Mobile `390x844`: drawer trigger `button[aria-label="查看消息列表"]` opened the sidebar; first history delete button label `确认删除选中的对话？`, rect `34x34` at `x=233`, `y=465`; computed style `opacity: 0.72`, `pointer-events: auto`, `display: flex`. Chat input rect `246x28`, send button rect `40x40`, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Narrow mobile `320x740`: drawer trigger opened the sidebar with `aria-expanded="true"` and sidebar rect `266x740` at `x=0`; first history delete button rect `34x34` at `x=191`, `y=465`; computed style `opacity: 0.72`, `pointer-events: auto`, `display: flex`. Chat input rect `176x28`, send button rect `40x40`, `pageOverflowX: 0`, console warn/error logs: `0`.
+
+Known risks:
+
+- This iteration only changes history-list delete affordance styling. It does not change `chat-list.tsx`, route links, drag handles, delete confirmation/direct-delete behavior, session selection, sidebar width, model menu behavior, prompt bar layout, MCP/Jimeng, attachments, sending, settings, stores, messages, or API behavior.

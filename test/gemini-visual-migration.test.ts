@@ -283,9 +283,17 @@ describe("Gemini visual migration shell", () => {
       homeStyles,
       ".chat-item:hover > .chat-item-delete",
     );
+    const chatItemFocusWithinDeleteBlock = readCssBlock(
+      homeStyles,
+      ".chat-item:focus-within > .chat-item-delete",
+    );
     const mobileChatItemDeleteBlock = readCssBlock(
       homeStyles.slice(homeStyles.lastIndexOf("\n  .chat-item-delete {")),
       ".chat-item-delete",
+    );
+    const compactSidebarShowDeleteBlock = readCssBlock(
+      homeStyles,
+      ".sidebar-show .chat-item-delete",
     );
     const narrowSidebarBlock = readCssBlock(homeStyles, ".narrow-sidebar");
     const onInputBlock = readFunctionBlock(
@@ -872,8 +880,8 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chatItemTitleBlock).toMatch(/width:\s*100%;/);
     expect(chatItemDeleteBlock).toMatch(/appearance:\s*none;/);
-    expect(chatItemDeleteBlock).toMatch(/width:\s*32px;/);
-    expect(chatItemDeleteBlock).toMatch(/height:\s*32px;/);
+    expect(chatItemDeleteBlock).toMatch(/width:\s*34px;/);
+    expect(chatItemDeleteBlock).toMatch(/height:\s*34px;/);
     expect(chatItemDeleteBlock).toMatch(/border-radius:\s*999px;/);
     expect(chatItemDeleteBlock).toMatch(/display:\s*inline-flex;/);
     expect(chatItemDeleteBlock).toMatch(/align-items:\s*center;/);
@@ -883,12 +891,16 @@ describe("Gemini visual migration shell", () => {
     expect(chatItemDeleteBlock).toMatch(/&:focus-visible[\s\S]*pointer-events:\s*auto;/);
     expect(chatItemDeleteBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
     expect(chatItemHoverDeleteBlock).toMatch(/pointer-events:\s*auto;/);
+    expect(chatItemFocusWithinDeleteBlock).toMatch(/opacity:\s*0.56;/);
+    expect(chatItemFocusWithinDeleteBlock).toMatch(/pointer-events:\s*auto;/);
     expect(narrowSidebarBlock).toMatch(
       /\.chat-item-delete[\s\S]*width:\s*34px;[\s\S]*height:\s*34px;/,
     );
     expect(mobileChatItemDeleteBlock).toMatch(/opacity:\s*0.72;/);
     expect(mobileChatItemDeleteBlock).toMatch(/width:\s*34px;/);
     expect(mobileChatItemDeleteBlock).toMatch(/height:\s*34px;/);
+    expect(compactSidebarShowDeleteBlock).toMatch(/opacity:\s*0.72;/);
+    expect(compactSidebarShowDeleteBlock).toMatch(/pointer-events:\s*auto;/);
     expect(cnLocale).toContain('EmptyTitle: "你好！想聊点什么？"');
     expect(cnLocale).toContain("EmptySuggestions:");
     expect(cnLocale).toContain("PrimarySection:");

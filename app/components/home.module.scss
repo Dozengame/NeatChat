@@ -359,8 +359,8 @@
   top: 50%;
   right: 4px;
   transform: translateY(-50%);
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   padding: 0;
   border: 0;
   border-radius: 999px;
@@ -404,7 +404,17 @@
   pointer-events: auto;
 }
 
+.chat-item:focus-within > .chat-item-delete {
+  opacity: 0.56;
+  transform: translateY(-50%);
+  pointer-events: auto;
+}
+
 .chat-item:hover > .chat-item-delete:hover {
+  opacity: 1;
+}
+
+.chat-item:focus-within > .chat-item-delete:focus-visible {
   opacity: 1;
 }
 
@@ -761,6 +771,11 @@
     width: 34px;
     height: 34px;
     display: inline-flex;
+    opacity: 0.72;
+    pointer-events: auto;
+  }
+
+  .sidebar-show .chat-item-delete {
     opacity: 0.72;
     pointer-events: auto;
   }
