@@ -1704,3 +1704,36 @@ Browser QA:
 Known risks:
 
 - This iteration only changes history-list delete affordance styling. It does not change `chat-list.tsx`, route links, drag handles, delete confirmation/direct-delete behavior, session selection, sidebar width, model menu behavior, prompt bar layout, MCP/Jimeng, attachments, sending, settings, stores, messages, or API behavior.
+
+## Iteration 2026-06-16 message-action-rail-hit-targets
+
+Result: passed.
+
+Target flow:
+
+- Message action controls remain attached to each readable message, expose a semantic action group, and use a stable `34px` hit target across desktop and mobile reading layouts.
+
+Scope:
+
+- `app/components/chat.tsx`: added `role="group"` to the existing `aria-label="消息操作"` message action container.
+- `app/components/chat.module.scss`: raised the message action rail button target from `30x30` to `34x34`, including hover/focus width, while leaving labels hidden in the rail and preserving the existing desktop hidden/reveal model plus mobile always-visible model.
+- `test/gemini-visual-migration.test.ts`: locked the semantic action group and `34px` rail target contract without changing action order, labels, icons, click handlers, message rendering, model controls, prompt bar, MCP/Jimeng, attachments, sending, settings, stores, or API behavior.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the message action container lacked `role="group"`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: opened the existing `浏览器相关` recent chat without triggering delete/send. The conversation list had `3` listitems and `2` `role="group"` / `aria-label="消息操作"` groups. First action group rect was `154x40`, default computed style `opacity: 0`, `pointer-events: none`; action buttons `重试`, `删除`, `固定`, `复制` were each `34x34`. Chat input rect `562x40`, send button rect `40x40`, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Mobile `390x844`: first message action group was visible with computed `opacity: 1`, `pointer-events: auto`, `transform: none`; action buttons `重试`, `删除`, `固定`, `复制` were each `34x34`. Chat input rect `246x26`, send button rect `40x40`, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Narrow mobile `320x740`: first message action group was visible with computed `opacity: 1`, `pointer-events: auto`, `transform: none`; action buttons `重试`, `删除`, `固定`, `复制` were each `34x34` and fit within the viewport. Chat input rect `176x26`, send button rect `40x40`, `pageOverflowX: 0`, console warn/error logs: `0`.
+
+Known risks:
+
+- Browser hover simulation did not flip desktop `:hover` state in the background Browser runtime, so desktop reveal behavior is covered by the static CSS contract (`.chat-message-container:hover .chat-message-actions` and `:focus-within`). This iteration does not change `onResend`, `onDelete`, `onPinMessage`, `copyToClipboard`, TTS, message content, markdown, image preview/download, scrolling, sending, model APIs, MCP/Jimeng, stores, Tauri config, deployment config, or secrets.

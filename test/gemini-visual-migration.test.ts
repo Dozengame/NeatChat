@@ -526,7 +526,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /className=\{clsx\([\s\S]*styles\["chat-message-row"\][\s\S]*\)\}[\s\S]*role="listitem"[\s\S]*aria-label=\{`\$\{isUser \? "用户消息" : "助手消息"\} \$\{\s*i \+ 1\s*\}`\}[\s\S]*aria-busy=\{showTyping \? true : undefined\}/,
     );
-    expect(chat).toContain('aria-label="消息操作"');
+    expect(chat).toMatch(
+      /className=\{styles\["chat-message-actions"\]\}[\s\S]*role="group"[\s\S]*aria-label="消息操作"/,
+    );
     expect(chat).toContain('styles["chat-message-action-rail"]');
     expect(chat).toContain("aria-label={props.text}");
     expect(chat).not.toContain('style={{ marginTop: "8px" }}');
@@ -647,7 +649,11 @@ describe("Gemini visual migration shell", () => {
     expect(messageActionRailBlock).toMatch(/flex-wrap:\s*wrap;/);
     expect(messageActionRailBlock).toMatch(/border-radius:\s*999px;/);
     expect(messageActionRailBlock).toMatch(/max-width:\s*100%;/);
-    expect(messageActionRailBlock).toMatch(/\.chat-input-action[\s\S]*height:\s*30px;/);
+    expect(messageActionRailBlock).toMatch(/\.chat-input-action[\s\S]*width:\s*34px;/);
+    expect(messageActionRailBlock).toMatch(/\.chat-input-action[\s\S]*height:\s*34px;/);
+    expect(messageActionRailBlock).toMatch(
+      /&:hover,[\s\S]*&:focus-visible[\s\S]*width:\s*34px;/,
+    );
     expect(messageActionRailBlock).toMatch(/\.text[\s\S]*display:\s*none;/);
     expect(mobileMessageActionsBlock).toMatch(/opacity:\s*1\s*!important;/);
     expect(mobileMessageActionsBlock).toMatch(/pointer-events:\s*auto\s*!important;/);
