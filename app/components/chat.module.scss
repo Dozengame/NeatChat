@@ -682,6 +682,30 @@
   box-shadow: inset 3px 0 0 rgba(25, 103, 210, 0.55);
 }
 
+.chat-desktop-model-menu .chat-mobile-model-option {
+  box-sizing: border-box;
+  border: 1px solid transparent;
+}
+
+.chat-desktop-model-menu .chat-mobile-reasoning-option {
+  box-sizing: border-box;
+  border: 1px solid transparent;
+}
+
+.chat-desktop-model-menu .chat-mobile-model-option-selected {
+  border-color: rgba(25, 103, 210, 0.16);
+  color: var(--primary);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 rgba(25, 103, 210, 0.42);
+}
+
+.chat-desktop-model-menu .chat-mobile-reasoning-option-selected {
+  border-color: rgba(25, 103, 210, 0.16);
+  color: var(--primary);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 rgba(25, 103, 210, 0.42);
+}
+
 .chat-mobile-menu-check {
   display: inline-flex;
   align-items: center;

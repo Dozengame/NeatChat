@@ -173,6 +173,14 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-mobile-model-menu .chat-mobile-model-option-selected",
     );
+    const desktopMenuModelOptionBlock = readCssBlock(
+      chatStyles,
+      ".chat-desktop-model-menu .chat-mobile-model-option",
+    );
+    const desktopMenuModelOptionSelectedBlock = readCssBlock(
+      chatStyles,
+      ".chat-desktop-model-menu .chat-mobile-model-option-selected",
+    );
     const mobileMenuCheckBlock = readCssBlock(
       chatStyles,
       ".chat-mobile-menu-check",
@@ -867,6 +875,20 @@ describe("Gemini visual migration shell", () => {
     expect(mobileMenuModelOptionSelectedBlock).toMatch(/font-weight:\s*600;/);
     expect(mobileMenuModelOptionSelectedBlock).toMatch(
       /box-shadow:\s*inset 3px 0 0 rgba\(25,\s*103,\s*210,\s*0\.55\);/,
+    );
+    expect(desktopMenuModelOptionBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(desktopMenuModelOptionBlock).toMatch(
+      /border:\s*1px solid transparent;/,
+    );
+    expect(desktopMenuModelOptionSelectedBlock).toMatch(
+      /border-color:\s*rgba\(25,\s*103,\s*210,\s*0\.16\);/,
+    );
+    expect(desktopMenuModelOptionSelectedBlock).toMatch(
+      /color:\s*var\(--primary\);/,
+    );
+    expect(desktopMenuModelOptionSelectedBlock).toMatch(/font-weight:\s*600;/);
+    expect(desktopMenuModelOptionSelectedBlock).toMatch(
+      /box-shadow:\s*inset 3px 0 0 rgba\(25,\s*103,\s*210,\s*0\.42\);/,
     );
     expect(mobileMenuCheckBlock).toMatch(/display:\s*inline-flex;/);
     expect(mobileMenuCheckBlock).toMatch(/align-items:\s*center;/);

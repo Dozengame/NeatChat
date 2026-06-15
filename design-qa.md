@@ -2107,3 +2107,35 @@ Browser QA:
 Known risks:
 
 - Browser QA uses hash routes with a query before the hash for fresh page loads. This iteration only scopes stronger selected-state visuals to the mobile model menu. No changes to model/reasoning/image option data, selection handlers, prompt bar, sending, attachments, image generation, MCP/Jimeng, stores, Tauri config, deployment config, or secrets.
+
+## Iteration 2026-06-16 desktop-model-menu-selected-state
+
+Result: passed.
+
+Target flow:
+
+- Desktop `#/chat` model menu makes the current model easier to scan after opening the desktop model selector, while preserving the mobile menu selected-state and all model selection behavior.
+
+Scope:
+
+- `app/components/chat.module.scss`: scoped desktop model-menu selected-option border, primary text, weight, and inset indicator to `.chat-desktop-model-menu`, while preserving the existing selected background.
+- `test/gemini-visual-migration.test.ts`: locked the desktop-menu scoped selected-state CSS contract and transparent border used to avoid selected-state size shifts.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the desktop menu lacked the scoped transparent border and selected-state affordance.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `#/chat` at `1440x1024`: desktop trigger `147x34` at `x=394 y=14`, desktop menu rect `380x227` at `x=318 y=54`, inside viewport, mobile menu absent. Selected model `✓gpt-5.4OpenAI` rect `352x60`, `background: rgba(25, 103, 210, 0.1)`, `border-top: 1px solid rgba(25, 103, 210, 0.16)`, `color: rgb(49, 94, 248)`, `font-weight: 600`, `box-shadow: rgba(25, 103, 210, 0.42) 3px 0px 0px inset`, input `478x28`, send `42x42`, `pageOverflowX: 0`, warn/error `0`.
+- Mobile `#/chat` at `390x844`: mobile menu rect `320x231` at `x=35 y=60`, inside viewport, selected model retained mobile styling with `border-top: 1px solid rgba(25, 103, 210, 0.18)`, `font-weight: 600`, `box-shadow: rgba(25, 103, 210, 0.55) 3px 0px 0px inset`, input `246x28`, send `40x40`, `pageOverflowX: 0`, warn/error `0`.
+- Narrow `#/chat` at `320x740`: mobile menu rect `272x231` at `x=24 y=60`, inside viewport, selected model retained mobile styling, input `176x28`, send `40x40`, `pageOverflowX: 0`, warn/error `0`.
+
+Known risks:
+
+- Browser QA uses hash routes with a query before the hash for fresh page loads. This iteration only scopes stronger selected-state visuals to the desktop model menu. No changes to model/reasoning/image option data, selection handlers, prompt bar, sending, attachments, image generation, MCP/Jimeng, stores, Tauri config, deployment config, or secrets.
