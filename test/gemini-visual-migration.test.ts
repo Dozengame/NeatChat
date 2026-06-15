@@ -138,6 +138,10 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-mobile-header-button",
     );
+    const mobileModelTitleBlock = readCssBlock(
+      chatStyles,
+      ".chat-mobile-model-title",
+    );
     const mobileModelMenuBlock = readCssBlock(
       chatStyles,
       ".chat-mobile-model-menu",
@@ -661,6 +665,11 @@ describe("Gemini visual migration shell", () => {
     expect(desktopHeaderActionBlock).toMatch(/:global\(button\)[\s\S]*padding:\s*0;/);
     expect(chatStyles).toContain(".chat-mobile-header");
     expect(chatStyles).toContain(".chat-mobile-header-button");
+    expect(mobileHeaderButtonBlock).toMatch(/width:\s*40px;/);
+    expect(mobileHeaderButtonBlock).toMatch(/height:\s*40px;/);
+    expect(mobileModelTitleBlock).toMatch(/min-height:\s*40px;/);
+    expect(mobileModelTitleBlock).toMatch(/padding:\s*0 12px;/);
+    expect(mobileModelTitleBlock).toMatch(/border-radius:\s*999px;/);
     expect(chatStyles).toMatch(/@media only screen and \(min-width: 901px\)/);
     expect(chatStyles).toContain(".chat-input-action-menu");
     expect(chatStyles).toContain(".chat-input-action-menu-backdrop");

@@ -1573,3 +1573,35 @@ Browser QA:
 Known risks:
 
 - Browser role-locator click timed out on the desktop model trigger, so the verification switched to DOM rect plus coordinate click evidence after the first failure. This iteration only adds non-visual popup semantics to the existing model trigger buttons; it does not change model choice, reasoning/max token logic, image setting values, menu placement, Escape/backdrop close behavior, MCP/Jimeng, attachments, sending, settings, stores, messages, or API behavior.
+
+## Iteration 2026-06-16 mobile-model-trigger-hit-area
+
+Result: passed.
+
+Target flow:
+
+- On mobile, the header model trigger keeps the existing model-menu semantics while exposing a stable 40px touch target matching the adjacent header controls. Opening it still renders the existing model dialog, and composer input/send stay visible with no horizontal overflow.
+
+Scope:
+
+- `app/components/chat.module.scss`: increased the mobile header model trigger hit area to a `40px` minimum height with `12px` horizontal padding and pill radius while preserving text truncation and centered alignment.
+- `test/gemini-visual-migration.test.ts`: locked the mobile header action `40x40` baseline and the mobile model trigger `min-height`, padding, and radius contract without changing model selection, reasoning controls, image settings, MCP/Jimeng, attachments, sending, settings, stores, messages, or desktop layout.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because `.chat-mobile-model-title` did not declare `min-height: 40px`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: model button remained `aria-label="选择模型和参数"`, `aria-controls="chat-model-menu"`, `aria-haspopup="dialog"`, `aria-expanded="false"`, rect `147x34` at `x=394`, `y=14`; opening rendered `#chat-model-menu` with `role="dialog"`, `aria-modal="true"`, `aria-label="模型和思考等级"`, rect `380x223` at `x=318`, `y=54`. Chat input rect `478x28` and send button rect `42x42` remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Mobile `390x844`: model button had `aria-label="选择模型"`, `aria-controls="chat-model-menu"`, `aria-haspopup="dialog"`, `aria-expanded="false"`, computed `min-height: 40px`, `padding-left/right: 12px`, `border-radius: 999px`, rect `87x40` at `x=152`, `y=14`; opening changed `aria-expanded="true"` and rendered `#chat-model-menu` with `role="dialog"`, `aria-modal="true"`, `aria-label="模型和思考等级"`, rect `320x227` at `x=35`, `y=46`. Chat input rect `246x28` and send button rect `40x40` remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Narrow mobile `320x740`: model button had `aria-label="选择模型"`, `aria-controls="chat-model-menu"`, `aria-haspopup="dialog"`, `aria-expanded="false"`, computed `min-height: 40px`, `padding-left/right: 12px`, `border-radius: 999px`, rect `87x40` at `x=117`, `y=14`; opening changed `aria-expanded="true"` and rendered `#chat-model-menu` with `role="dialog"`, `aria-modal="true"`, `aria-label="模型和思考等级"`, rect `272x227` at `x=24`, `y=46`. Chat input rect `176x28` and send button rect `40x40` remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+
+Known risks:
+
+- This iteration only changes the mobile header model trigger hit area. It does not change `chat.tsx`, model choice, reasoning/max token logic, image setting values, menu placement, Escape/backdrop close behavior, MCP/Jimeng, attachments, sending, settings, stores, messages, API behavior, desktop model trigger sizing, or prompt bar layout.
