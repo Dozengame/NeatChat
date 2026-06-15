@@ -1834,3 +1834,35 @@ Browser QA:
 Known risks:
 
 - Runtime QA only covered selector-opening actions visible under the current default model/config. Static tests cover size, quality, style, and plugin action wiring because those controls are conditional. This iteration does not change selector contents, model selection, image generation enable/disable logic, upload, prompt hints, clear context, theme, realtime chat, sending, scrolling, message rendering, model APIs, MCP/Jimeng, stores, Tauri config, deployment config, or secrets.
+
+## Iteration 2026-06-16 prompt-menu-session-header
+
+Result: passed.
+
+Target flow:
+
+- Desktop prompt tool menus visually separate content actions from session actions with matching section headers, so the second group no longer appears as unlabeled controls under the Gemini-style tray.
+
+Scope:
+
+- `app/components/chat.tsx`: added a visible `会话` / `模型和设置` header inside the existing `会话工具` group, reusing the current multimodal section header/title/subtitle classes.
+- `test/gemini-visual-migration.test.ts`: locked the prompt menu session section header under `aria-label="会话工具"` without changing action order, visible button text, icons, selector state, click handlers, compact-screen behavior, prompt layout, MCP/Jimeng, attachments, sending, stores, or API behavior.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the `会话工具` section did not render a visible section header.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: created/opened a chat and opened the prompt bar tool menu without sending/deleting/uploading. Menu rect was `336x300` at `x=490`, `y=93`, bottom `393`, right `826`. It rendered two groups: `多模态工具` with `添加内容` / `文件和图片` and `3` buttons, plus `会话工具` with `会话` / `模型和设置` and `2` buttons. Input rect was `478x120`, send button rect `42x42`, `pageOverflowX: 0`.
+- Mobile `390x844`: opened the prompt bar tool menu. Compact menu still rendered only `多模态工具` with `添加内容` / `文件和图片` and `2` buttons; the new desktop-only session header was not present. Menu rect was `320x158` at `x=11`, `y=609`, bottom `767`, right `331`. Input rect was `246x28`, send button rect `40x40`, `pageOverflowX: 0`.
+- Narrow mobile `320x740`: opened the prompt bar tool menu. Compact menu still rendered only `多模态工具` with `添加内容` / `文件和图片` and `2` buttons; the new desktop-only session header was not present. Menu rect was `272x158` at `x=11`, `y=505`, bottom `663`, right `283`. Input rect was `176x28`, send button rect `40x40`, `pageOverflowX: 0`.
+
+Known risks:
+
+- This iteration only adds visible copy to the existing desktop session action group. It does not change menu positioning, section styles, selector contents, ARIA popup state, model selection, image generation enable/disable logic, upload, prompt hints, clear context, theme, realtime chat, sending, scrolling, message rendering, model APIs, MCP/Jimeng, stores, Tauri config, deployment config, or secrets.

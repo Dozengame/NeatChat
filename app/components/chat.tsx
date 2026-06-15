@@ -1047,6 +1047,14 @@ function useChatActionsView(props: ChatActionsProps) {
             role="group"
             aria-label="会话工具"
           >
+            <div className={styles["chat-multimodal-section-header"]}>
+              <span className={styles["chat-multimodal-section-title"]}>
+                <span>会话</span>
+              </span>
+              <span className={styles["chat-multimodal-section-subtitle"]}>
+                <span>模型和设置</span>
+              </span>
+            </div>
             {couldStop && (
               <ChatAction
                 onClick={stopAll}

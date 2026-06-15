@@ -360,6 +360,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("<span>添加内容</span>");
     expect(chat).toContain("<span>文件和图片</span>");
     expect(chat).toContain('aria-label="会话工具"');
+    expect(chat).toMatch(
+      /aria-label="会话工具"[\s\S]*className=\{styles\["chat-multimodal-section-header"\]\}[\s\S]*className=\{styles\["chat-multimodal-section-title"\]\}[\s\S]*<span>会话<\/span>[\s\S]*className=\{styles\["chat-multimodal-section-subtitle"\]\}[\s\S]*<span>模型和设置<\/span>/,
+    );
     expect(chat).toContain("ariaPressed={props.imageGenerationEnabled}");
     expect(chat).toContain("aria-pressed={props.ariaPressed}");
     expect(chat).toContain("const hasSessionActions =");
