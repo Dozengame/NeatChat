@@ -1737,3 +1737,35 @@ Browser QA:
 Known risks:
 
 - Browser hover simulation did not flip desktop `:hover` state in the background Browser runtime, so desktop reveal behavior is covered by the static CSS contract (`.chat-message-container:hover .chat-message-actions` and `:focus-within`). This iteration does not change `onResend`, `onDelete`, `onPinMessage`, `copyToClipboard`, TTS, message content, markdown, image preview/download, scrolling, sending, model APIs, MCP/Jimeng, stores, Tauri config, deployment config, or secrets.
+
+## Iteration 2026-06-16 message-action-group-unique-labels
+
+Result: passed.
+
+Target flow:
+
+- Each readable message action group has a unique accessible name that includes message role and message index, so repeated action groups can be distinguished while keeping the same visible rail and button behavior.
+
+Scope:
+
+- `app/components/chat.tsx`: changed the message action group label from the repeated `消息操作` to `${isUser ? "用户消息" : "助手消息"} ${i + 1} 操作`.
+- `test/gemini-visual-migration.test.ts`: locked the dynamic role/index action group label without changing row labels, action order, action button labels, icons, click handlers, rail sizes, desktop reveal behavior, mobile always-visible behavior, message rendering, model controls, prompt bar, MCP/Jimeng, attachments, sending, settings, stores, or API behavior.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because message action groups still used the repeated `aria-label="消息操作"`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: opened the existing `浏览器相关` recent chat without triggering delete/send. The conversation list had `3` listitems and `2` message action groups with unique labels: `用户消息 2 操作`, `助手消息 3 操作`. First group default style remained `opacity: 0`, `pointer-events: none`; `重试`, `删除`, `固定`, `复制` buttons each remained `34x34`. Chat input rect `562x40`, send button rect `40x40`, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Mobile `390x844`: message action group labels were `用户消息 2 操作`, `助手消息 3 操作`, unique count matched group count. First group remained visible with `opacity: 1`, `pointer-events: auto`, `transform: none`; action buttons remained `34x34`. Chat input rect `246x26`, send button rect `40x40`, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Narrow mobile `320x740`: message action group labels were `用户消息 2 操作`, `助手消息 3 操作`, unique count matched group count. First group remained visible with `opacity: 1`, `pointer-events: auto`, `transform: none`; action buttons remained `34x34`. Chat input rect `176x26`, send button rect `40x40`, `pageOverflowX: 0`, console warn/error logs: `0`.
+
+Known risks:
+
+- This iteration only changes action group accessible names. It does not change `onResend`, `onDelete`, `onPinMessage`, `copyToClipboard`, TTS, message content, markdown, image preview/download, scrolling, sending, model APIs, MCP/Jimeng, stores, prompt bar, header, Tauri config, deployment config, or secrets.

@@ -3469,7 +3469,9 @@ function useChatInnerView() {
                           <div
                             className={styles["chat-message-actions"]}
                             role="group"
-                            aria-label="消息操作"
+                            aria-label={`${isUser ? "用户消息" : "助手消息"} ${
+                              i + 1
+                            } 操作`}
                           >
                             <div className={styles["chat-message-action-rail"]}>
                               <>

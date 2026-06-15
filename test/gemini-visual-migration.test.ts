@@ -527,7 +527,7 @@ describe("Gemini visual migration shell", () => {
       /className=\{clsx\([\s\S]*styles\["chat-message-row"\][\s\S]*\)\}[\s\S]*role="listitem"[\s\S]*aria-label=\{`\$\{isUser \? "用户消息" : "助手消息"\} \$\{\s*i \+ 1\s*\}`\}[\s\S]*aria-busy=\{showTyping \? true : undefined\}/,
     );
     expect(chat).toMatch(
-      /className=\{styles\["chat-message-actions"\]\}[\s\S]*role="group"[\s\S]*aria-label="消息操作"/,
+      /className=\{styles\["chat-message-actions"\]\}[\s\S]*role="group"[\s\S]*aria-label=\{`\$\{isUser \? "用户消息" : "助手消息"\} \$\{\s*i \+ 1\s*\} 操作`\}/,
     );
     expect(chat).toContain('styles["chat-message-action-rail"]');
     expect(chat).toContain("aria-label={props.text}");
