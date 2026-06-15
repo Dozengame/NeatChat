@@ -680,6 +680,9 @@ describe("Gemini visual migration shell", () => {
       /width:\s*min\(320px,\s*calc\(100vw - 48px\)\);/,
     );
     expect(mobileModelMenuBlock).toMatch(
+      /top:\s*calc\(env\(safe-area-inset-top\) \+ 60px\);/,
+    );
+    expect(mobileModelMenuBlock).toMatch(
       /max-height:\s*min\(640px,\s*calc\(100vh - 96px\)\);/,
     );
     expect(mobileModelMenuBlock).toMatch(/padding:\s*12px;/);

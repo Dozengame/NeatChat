@@ -1605,3 +1605,35 @@ Browser QA:
 Known risks:
 
 - This iteration only changes the mobile header model trigger hit area. It does not change `chat.tsx`, model choice, reasoning/max token logic, image setting values, menu placement, Escape/backdrop close behavior, MCP/Jimeng, attachments, sending, settings, stores, messages, API behavior, desktop model trigger sizing, or prompt bar layout.
+
+## Iteration 2026-06-16 mobile-model-menu-clearance
+
+Result: passed.
+
+Target flow:
+
+- On mobile, the header model trigger opens the existing model dialog below the 40px trigger target with a positive vertical gap. Desktop model menu placement remains unchanged.
+
+Scope:
+
+- `app/components/chat.module.scss`: moved the mobile model menu from `safe-area + 46px` to `safe-area + 60px` so it clears the taller mobile trigger target.
+- `test/gemini-visual-migration.test.ts`: locked the mobile model menu top offset contract without changing model selection, reasoning controls, image settings, MCP/Jimeng, attachments, sending, settings, stores, messages, desktop layout, or menu content.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because `.chat-mobile-model-menu` still used `top: calc(env(safe-area-inset-top) + 46px)`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: model button remained `aria-label="选择模型和参数"`, `aria-controls="chat-model-menu"`, `aria-haspopup="dialog"`, `aria-expanded="false"`, rect `147x34` at `x=394`, `y=14`; opening rendered `#chat-model-menu` with `role="dialog"`, `aria-modal="true"`, `aria-label="模型和思考等级"`, rect `380x223` at `x=318`, `y=54`; vertical gap from button bottom to menu top was `6px`. Chat input rect `478x28` and send button rect `42x42` remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Mobile `390x844`: model button closed state was `aria-label="选择模型"`, `aria-controls="chat-model-menu"`, `aria-haspopup="dialog"`, `aria-expanded="false"`, rect `87x40` at `x=152`, `y=14`; opening changed `aria-expanded="true"` and rendered `#chat-model-menu` with `role="dialog"`, `aria-modal="true"`, `aria-label="模型和思考等级"`, rect `320x227` at `x=35`, `y=60`; vertical gap from button bottom to menu top was `6px`. Chat input rect `246x28` and send button rect `40x40` remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Narrow mobile `320x740`: model button closed state was `aria-label="选择模型"`, `aria-controls="chat-model-menu"`, `aria-haspopup="dialog"`, `aria-expanded="false"`, rect `87x40` at `x=117`, `y=14`; opening changed `aria-expanded="true"` and rendered `#chat-model-menu` with `role="dialog"`, `aria-modal="true"`, `aria-label="模型和思考等级"`, rect `272x227` at `x=24`, `y=60`; vertical gap from button bottom to menu top was `6px`. Chat input rect `176x28` and send button rect `40x40` remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+
+Known risks:
+
+- This iteration only changes the mobile model menu vertical offset. It does not change `chat.tsx`, model choice, reasoning/max token logic, image setting values, menu width, max height, option styling, Escape/backdrop close behavior, MCP/Jimeng, attachments, sending, settings, stores, messages, API behavior, desktop model menu placement, or prompt bar layout.
