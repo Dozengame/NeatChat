@@ -3541,6 +3541,7 @@ function useChatInnerView() {
                   showChatActionMenu ? "关闭对话工具" : "打开对话工具"
                 }
                 aria-controls="chat-input-action-menu"
+                aria-haspopup="dialog"
                 aria-expanded={showChatActionMenu}
               >
                 <AddIcon />

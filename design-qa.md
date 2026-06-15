@@ -1343,3 +1343,35 @@ Browser QA:
 Known risks:
 
 - This iteration only adds non-visual live region semantics to the existing message list. It does not change `getVisibleChatMessages`, `RenderMessage`, Markdown rendering, message order, scroll behavior, clear-context logic, sending, retry/delete/pin actions, upload handling, image generation activation, MCP/Jimeng checks, model selection, settings, stores, messages, or API behavior.
+
+## Iteration 2026-06-16 composer-tool-button-haspopup
+
+Result: passed.
+
+Target flow:
+
+- Open chat -> the prompt bar left tool button remains visible -> assistive semantics identify it as a button that opens the existing dialog-style tool menu -> input and send controls remain visible on desktop and mobile without horizontal overflow.
+
+Scope:
+
+- `app/components/chat.tsx`: added `aria-haspopup="dialog"` to the existing chat input tool menu button.
+- `test/gemini-visual-migration.test.ts`: locked the tool button popup contract without changing tool menu content, menu open/close state, Escape/backdrop handling, uploads, image generation, MCP/Jimeng, prompt hints, shortcut modal, sending, model selection, settings, stores, messages, or API behavior.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the tool menu button did not expose `aria-haspopup="dialog"`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: tool button was a `button type="button"` with `aria-label="打开对话工具"`, `aria-controls="chat-input-action-menu"`, `aria-haspopup="dialog"`, and `aria-expanded="false"`; rect `44x44` at `x=490`, `y=460.08`, within viewport. Composer input rect `478x28` and send button rect `42x42` were within viewport. `pageOverflowX: 0`, chat body `overflowX: 0`, console warn/error logs: `0`.
+- Mobile `390x844`: tool button had the same semantics, rect `42x42` at `x=19`, `y=781`, within viewport. Composer input rect `246x28` and send button rect `40x40` were within viewport. `pageOverflowX: 0`, chat body `overflowX: 0`, console warn/error logs: `0`.
+- Narrow mobile `320x740`: tool button had the same semantics, rect `42x42` at `x=19`, `y=677`, within viewport. Composer input rect `176x28` and send button rect `40x40` were within viewport. `pageOverflowX: 0`, chat body `overflowX: 0`, console warn/error logs: `0`.
+
+Known risks:
+
+- This iteration only adds a non-visual popup semantic to the existing tool button. It does not change `ChatActions`, menu placement, click behavior, Escape/backdrop close behavior, attachments, image generation activation, MCP/Jimeng checks, prompt hints, shortcut modal, sending, model selection, settings, stores, messages, or API behavior.

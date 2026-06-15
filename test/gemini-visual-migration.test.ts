@@ -439,6 +439,7 @@ describe("Gemini visual migration shell", () => {
       /<PromptHints[\s\S]*prompts=\{promptHints\}[\s\S]*onPromptSelect=\{onPromptSelect\}[\s\S]*onClose=\{\(\) => setPromptHints\(\[\]\)\}/,
     );
     expect(chat).toContain('aria-controls="chat-input-action-menu"');
+    expect(chat).toContain('aria-haspopup="dialog"');
     expect(chat).toContain("aria-expanded={showChatActionMenu}");
     expect(chat).toContain(
       "const chatInputMenuButtonRef = useRef<HTMLButtonElement>(null);",
