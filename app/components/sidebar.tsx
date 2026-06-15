@@ -137,6 +137,7 @@ export function SideBarContainer(props: {
   shouldNarrow: boolean;
   className?: string;
   isMobileHidden?: boolean;
+  isMobileOpen?: boolean;
 }) {
   const isMobileScreen = useMobileScreen();
   const isCompactScreen = useCompactScreen();
@@ -144,8 +145,14 @@ export function SideBarContainer(props: {
     () => isIOS() && isMobileScreen,
     [isMobileScreen],
   );
-  const { children, className, isMobileHidden, onDragStart, shouldNarrow } =
-    props;
+  const {
+    children,
+    className,
+    isMobileHidden,
+    isMobileOpen,
+    onDragStart,
+    shouldNarrow,
+  } = props;
   return (
     <div
       id="mobile-sidebar-drawer"
@@ -156,6 +163,8 @@ export function SideBarContainer(props: {
       style={{
         // #3016 disable transition on ios mobile screen
         transition: isCompactScreen && isIOSMobile ? "none" : undefined,
+        display: isMobileHidden ? "none" : undefined,
+        left: isMobileOpen ? 0 : undefined,
       }}
     >
       {children}
@@ -233,6 +242,7 @@ export function SideBarTail(props: {
 export function SideBar(props: {
   className?: string;
   isMobileHidden?: boolean;
+  isMobileOpen?: boolean;
 }) {
   useHotKey();
   const { onDragStart, shouldNarrow } = useDragSideBar();
@@ -313,6 +323,7 @@ export function SideBar(props: {
       shouldNarrow={shouldNarrow}
       className={props.className}
       isMobileHidden={props.isMobileHidden}
+      isMobileOpen={props.isMobileOpen}
     >
       <SideBarHeader
         title="NeatChat"

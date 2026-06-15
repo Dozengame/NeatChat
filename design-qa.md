@@ -1970,3 +1970,41 @@ Browser QA:
 Known risks:
 
 - Browser QA used hash routes (`#/plugins`, `#/mcp-market`, `#/chat`) because direct Next paths return the app-level 404 in this project. This iteration does not change `openDiscoverySelector`, `discoveryItems`, `SimpleSelector`, MCP enabled probing, plugin data, navigation parameters, primary nav, local content card, history list behavior, sidebar sizing, mobile drawer logic, prompt bar, model selection, MCP/Jimeng, stores, Tauri config, deployment config, or secrets.
+
+## Iteration 2026-06-16 new-chat-mobile-sidebar-trigger
+
+Result: passed.
+
+Target flow:
+
+- Mobile `#/new-chat` keeps the visible `返回` action while exposing it as the mobile sidebar trigger and opening the drawer/backdrop from the new-chat start screen.
+
+Scope:
+
+- `app/components/button.tsx`: added optional ARIA/control props and data marker forwarding to `IconButton`.
+- `app/components/new-chat.tsx`: marked the return button as a compact-screen sidebar trigger while preserving `navigate(Path.Home)`.
+- `app/components/new-chat.module.scss`: stabilized the compact header so the mobile return trigger remains fully in-viewport and immediately clickable.
+- `app/components/home.tsx`, `app/components/home.module.scss`, and `app/components/sidebar.tsx`: passed explicit `isMobileOpen` into sidebar, kept hidden mobile sidebars out of layout with `display: none`, and retained responsive left offset for the shown drawer.
+- `app/components/home.module.scss`: added a stronger `.sidebar.sidebar-show` left fallback.
+- `test/gemini-visual-migration.test.ts`: locked the button forwarding, new-chat trigger contract, and sidebar open-state wiring.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because `IconButton` did not forward mobile trigger ARIA props.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `#/new-chat` at `1440x1024` after reload: composer rect `640x74` at `x=550`, sidebar `300x1024` at `x=0`, return button remained `返回` without mobile trigger attrs, `pageOverflowX: 0`, warn/error `0`.
+- Mobile `#/new-chat` at `390x844`: before click return trigger had `aria-controls="mobile-sidebar-drawer"`, `aria-expanded="false"`, `aria-label="查看消息列表"`, trigger rect `77x48` at `y=10`, sidebar `display: none`, `pageOverflowX: 0`. After click hash `#/`, backdrop present, trigger expanded `true`, sidebar `display: flex`, left `0`, rect `304x844` at `x=0`, `pageOverflowX: 0`, warn/error `0`.
+- Narrow `#/new-chat` at `320x740`: same contract; sidebar moved from `display: none` to `display: flex`, rect `266x740` at `x=0`, `pageOverflowX: 0`, warn/error `0`.
+- Mobile `#/chat` at `390x844`: input `246x28`, send `40x40`, sidebar `display: none`, trigger `aria-expanded=false`, `pageOverflowX: 0`, warn/error `0`.
+- Narrow `#/chat` at `320x740`: input `176x28`, send `40x40`, sidebar `display: none`, trigger `aria-expanded=false`, `pageOverflowX: 0`, warn/error `0`.
+
+Known risks:
+
+- Browser QA uses hash routes. No changes to `startChat`, mask selection, confirmation, session creation, model APIs, MCP/Jimeng, attachments, image generation, stores, Tauri config, deployment config, or secrets.

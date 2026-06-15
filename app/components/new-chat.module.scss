@@ -207,6 +207,9 @@
   .new-chat {
     .mask-header {
       padding: 10px;
+      min-height: 68px;
+      align-items: center;
+      animation: none;
     }
 
     .start {

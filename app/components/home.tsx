@@ -176,6 +176,7 @@ function ScreenContent(props: {
           [styles["sidebar-show"]]: isHome,
         })}
         isMobileHidden={isCompactScreen && !isHome}
+        isMobileOpen={isCompactScreen && isHome}
       />
       {isCompactScreen && isHome && (
         <button

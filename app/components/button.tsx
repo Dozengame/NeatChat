@@ -20,6 +20,9 @@ export function IconButton(props: {
   autoFocus?: boolean;
   style?: CSSProperties;
   aria?: string;
+  ariaControls?: string;
+  ariaExpanded?: boolean;
+  dataMobileSidebarTrigger?: boolean;
 }) {
   return (
     <button
@@ -41,6 +44,11 @@ export function IconButton(props: {
       autoFocus={props.autoFocus}
       style={props.style}
       aria-label={props.aria}
+      aria-controls={props.ariaControls}
+      aria-expanded={props.ariaExpanded}
+      data-mobile-sidebar-trigger={
+        props.dataMobileSidebarTrigger ? true : undefined
+      }
     >
       {props.icon && (
         <div

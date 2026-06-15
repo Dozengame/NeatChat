@@ -61,9 +61,12 @@ describe("Gemini visual migration shell", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
     const home = read("app/components/home.tsx");
+    const newChat = read("app/components/new-chat.tsx");
+    const newChatStyles = read("app/components/new-chat.module.scss");
     const sidebar = read("app/components/sidebar.tsx");
     const chatList = read("app/components/chat-list.tsx");
     const homeStyles = read("app/components/home.module.scss");
+    const button = read("app/components/button.tsx");
     const buttonStyles = read("app/components/button.module.scss");
     const globalStyles = read("app/styles/globals.scss");
     const constants = read("app/constant.ts");
@@ -409,6 +412,22 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("aria-expanded={isMobileSidebarOpen}");
     expect(chat).toContain("data-mobile-sidebar-trigger");
     expect(chat).toContain("onClick={() => navigate(Path.Home)}");
+    expect(button).toContain("ariaControls?: string;");
+    expect(button).toContain("ariaExpanded?: boolean;");
+    expect(button).toContain("dataMobileSidebarTrigger?: boolean;");
+    expect(button).toContain("aria-controls={props.ariaControls}");
+    expect(button).toContain("aria-expanded={props.ariaExpanded}");
+    expect(button).toMatch(
+      /data-mobile-sidebar-trigger=\{[\s\S]*props\.dataMobileSidebarTrigger \? true : undefined[\s\S]*\}/,
+    );
+    expect(newChat).toContain("useCompactScreen()");
+    expect(newChat).toContain("const isCompactScreen =");
+    expect(newChat).toMatch(
+      /<IconButton[\s\S]*icon=\{<LeftIcon \/>\}[\s\S]*text=\{Locale\.NewChat\.Return\}[\s\S]*aria=\{[\s\S]*isCompactScreen \? Locale\.Chat\.Actions\.ChatList : Locale\.NewChat\.Return[\s\S]*\}[\s\S]*ariaControls=\{[\s\S]*isCompactScreen \? "mobile-sidebar-drawer" : undefined[\s\S]*\}[\s\S]*ariaExpanded=\{isCompactScreen \? false : undefined\}[\s\S]*dataMobileSidebarTrigger=\{isCompactScreen\}[\s\S]*onClick=\{\(\) => navigate\(Path\.Home\)\}/,
+    );
+    expect(newChatStyles).toMatch(
+      /@media screen and \(max-width: 520px\)[\s\S]*\.mask-header\s*\{[\s\S]*min-height:\s*68px;[\s\S]*align-items:\s*center;[\s\S]*animation:\s*none;/,
+    );
     expect(chat).toContain('aria-label="选择模型"');
     expect(chat).toContain(
       "const modelSelectorButtonRef = useRef<HTMLButtonElement>(null);",
@@ -616,11 +635,21 @@ describe("Gemini visual migration shell", () => {
     );
     expect(sidebar).toContain('id="mobile-sidebar-drawer"');
     expect(sidebar).toContain("isMobileHidden?: boolean");
+    expect(sidebar).toContain("isMobileOpen?: boolean");
     expect(sidebar).toMatch(
       /id="mobile-sidebar-drawer"[\s\S]*aria-hidden=\{isMobileHidden \? true : undefined\}/,
     );
     expect(sidebar).toMatch(
+      /left:\s*isMobileOpen \? 0 : undefined/,
+    );
+    expect(sidebar).toMatch(
+      /display:\s*isMobileHidden \? "none" : undefined/,
+    );
+    expect(sidebar).toMatch(
       /<SideBarContainer[\s\S]*isMobileHidden=\{props\.isMobileHidden\}/,
+    );
+    expect(sidebar).toMatch(
+      /<SideBarContainer[\s\S]*isMobileOpen=\{props\.isMobileOpen\}/,
     );
     expect(sidebar).toContain("<ChatList narrow={shouldNarrow}");
     expect(sidebar).toContain("SimpleSelector");
@@ -645,6 +674,7 @@ describe("Gemini visual migration shell", () => {
     expect(chatList).not.toContain('style={{');
     expect(home).toContain('[styles["sidebar-show"]]: isHome');
     expect(home).toContain("isMobileHidden={isCompactScreen && !isHome}");
+    expect(home).toContain("isMobileOpen={isCompactScreen && isHome}");
     expect(home).toContain("isCompactScreen && isHome");
     expect(home).toContain('styles["sidebar-backdrop"]');
     expect(home).toContain('aria-label="关闭侧边栏"');
@@ -936,12 +966,26 @@ describe("Gemini visual migration shell", () => {
     expect(buttonStyles).toContain("box-shadow: var(--focus-ring-shadow)");
     expect(homeStyles).toContain("rgba(249, 251, 253");
     expect(homeStyles).toContain(
-      "--mobile-sidebar-drawer-width: min(304px, calc(100vw - 54px));",
+      "--mobile-sidebar-drawer-width: 304px;",
+    );
+    expect(homeStyles).toContain("--mobile-sidebar-drawer-offset: -304px;");
+    expect(homeStyles).toContain("@media only screen and (max-width: 358px)");
+    expect(homeStyles).toContain(
+      "--mobile-sidebar-drawer-width: calc(100vw - 54px);",
+    );
+    expect(homeStyles).toContain(
+      "--mobile-sidebar-drawer-offset: calc(54px - 100vw);",
+    );
+    expect(homeStyles).toContain(
+      "left: var(--mobile-sidebar-drawer-offset);",
     );
     expect(homeStyles).toContain(".sidebar-backdrop");
     expect(homeStyles).toContain("z-index: 900");
     expect(homeStyles).toContain("z-index: 1000");
     expect(homeStyles).toMatch(/\.sidebar-show\s*\{\s*left:\s*0;/);
+    expect(homeStyles).toMatch(
+      /\.sidebar\.sidebar-show\s*\{\s*left:\s*0;/,
+    );
     expect(homeStyles).toContain("outline: var(--focus-ring)");
     expect(homeStyles).toContain("box-shadow: var(--focus-ring-shadow)");
     expect(homeStyles).toContain(".sidebar-primary-nav");

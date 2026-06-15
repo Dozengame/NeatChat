@@ -16,6 +16,7 @@ import { useCommand } from "../command";
 import { showConfirm } from "./ui-lib-actions";
 import { BUILTIN_MASK_STORE } from "../masks";
 import clsx from "clsx";
+import { useCompactScreen } from "../utils";
 
 function MaskItem(props: { mask: Mask; onClick?: () => void }) {
   return (
@@ -40,6 +41,7 @@ export function NewChat() {
 
   const navigate = useNavigate();
   const config = useAppConfig();
+  const isCompactScreen = useCompactScreen();
 
   const { state } = useLocation();
 
@@ -67,6 +69,14 @@ export function NewChat() {
         <IconButton
           icon={<LeftIcon />}
           text={Locale.NewChat.Return}
+          aria={
+            isCompactScreen
+              ? Locale.Chat.Actions.ChatList
+              : Locale.NewChat.Return
+          }
+          ariaControls={isCompactScreen ? "mobile-sidebar-drawer" : undefined}
+          ariaExpanded={isCompactScreen ? false : undefined}
+          dataMobileSidebarTrigger={isCompactScreen}
           onClick={() => navigate(Path.Home)}
         ></IconButton>
         {!state?.fromHome && (
