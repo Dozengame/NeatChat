@@ -1474,3 +1474,36 @@ Browser QA:
 Known risks:
 
 - This iteration only closes the existing tool menu after the desktop prompt action opens prompt hints. It does not change prompt matching, prompt data, prompt ordering, selected prompt insertion, Escape/Enter behavior, sending, uploads, image generation activation, MCP/Jimeng checks, model selection, settings, stores, messages, or API behavior.
+
+## Iteration 2026-06-16 reasoning-chip-popup-semantics
+
+Result: passed.
+
+Target flow:
+
+- On desktop GPT-5 reasoning sessions, focus the prompt bar -> the status row reasoning chip announces its current level and popup behavior -> click the chip -> the popup state is reflected by `aria-expanded=true`. Mobile and narrow layouts keep the compact composer behavior where this desktop reasoning chip is not rendered.
+
+Scope:
+
+- `app/components/chat.tsx`: added `aria-label`, `aria-haspopup="listbox"`, and `aria-expanded` to the existing reasoning effort chip.
+- `test/gemini-visual-migration.test.ts`: locked the reasoning chip popup semantic contract without changing reasoning selection, `max_output_tokens`, model APIs, sending, attachments, image generation, MCP/Jimeng, settings, stores, messages, or visual layout.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the reasoning chip did not expose current-level or popup state semantics.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: reasoning chip was visible as `button` with `aria-label="思考等级：标准"`, `aria-haspopup="listbox"`, `aria-expanded="false"`, rect `82x30` at `x=1109`, `y=470`. The surrounding status row kept `role="status"`, `aria-live="polite"`, `aria-atomic="true"`, and `aria-label="当前输入模式"`. Chat input rect `478x28` and send button rect `42x42` were visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Desktop popup check `1440x1024`: Browser Playwright found exactly one button named `思考等级：标准`; clicking it changed the chip to `aria-expanded="true"` while keeping `aria-haspopup="listbox"` and `aria-label="思考等级：标准"`, console warn/error logs: `0`.
+- Mobile `390x844`: compact layout did not render the desktop-only reasoning chip or status row by design; chat input rect `246x28` and send button rect `40x40` remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Narrow mobile `320x740`: compact layout did not render the desktop-only reasoning chip or status row by design; chat input rect `176x28` and send button rect `40x40` remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+
+Known risks:
+
+- This iteration only adds non-visual semantics to the existing desktop reasoning chip. It does not change `reasoningLabels`, `reasoningEfforts`, `Selector`, reasoning effort persistence, `max_output_tokens` calculation, prompt bar sizing, mobile model drawer behavior, model APIs, sending, attachments, image generation activation, MCP/Jimeng checks, settings, stores, messages, or API behavior.

@@ -1375,6 +1375,9 @@ function ChatInputReasoningAction() {
           openReasoningSelector();
         }}
         disabled={reasoningLocked}
+        aria-label={`思考等级：${reasoningLabels[currentReasoningEffort]}`}
+        aria-haspopup="listbox"
+        aria-expanded={showReasoningSelectorModal}
       >
         <BrainIcon />
         <span>{reasoningLabels[currentReasoningEffort]}</span>

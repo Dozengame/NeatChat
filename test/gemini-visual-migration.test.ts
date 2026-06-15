@@ -327,6 +327,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /className=\{styles\["chat-input-status-row"\]\}[\s\S]*role="status"[\s\S]*aria-live="polite"[\s\S]*aria-atomic="true"[\s\S]*aria-label="当前输入模式"/,
     );
+    expect(chat).toMatch(
+      /className=\{clsx\([\s\S]*styles\["chat-input-mode-chip"\][\s\S]*styles\["chat-input-reasoning"\][\s\S]*\)\}[\s\S]*aria-label=\{`思考等级：\$\{reasoningLabels\[currentReasoningEffort\]\}`\}[\s\S]*aria-haspopup="listbox"[\s\S]*aria-expanded=\{showReasoningSelectorModal\}/,
+    );
     expect(chat).toContain('aria-label="图片生成模式已开启"');
     expect(chat).toContain("{imageGenerationEnabled && (");
     expect(chat).toContain('styles["chat-multimodal-tray"]');
