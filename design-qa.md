@@ -1244,3 +1244,36 @@ Browser QA:
 Known risks:
 
 - This iteration only corrects prompt hints ArrowUp/ArrowDown direction. It does not change prompt matching, prompt ordering, Enter selection, click insertion, Escape dismissal, prompt-hints settings behavior, sending, upload handling, image generation activation, MCP/Jimeng checks, model selection, attachments, messages, or API behavior.
+
+## Iteration 2026-06-16 prompt-hints-enter-select
+
+Result: passed.
+
+Target flow:
+
+- Enable prompt hints -> type `/` in the composer -> prompt suggestions open at `chat-prompt-hint-0` -> press Enter -> the active prompt is inserted, the prompt list closes, textarea focus stays in place, no message is sent, and no trailing newline is introduced.
+
+Scope:
+
+- `app/components/chat.tsx`: consumed Enter in the existing prompt hints keydown path, prevented textarea default newline while prompt hints are open, and normalized selected prompt content with `trimEnd()` before filling the composer.
+- `test/gemini-visual-migration.test.ts`: locked the Enter selection event handling and selected-prompt normalization without changing prompt search, prompt ordering, ArrowUp/ArrowDown selection, click insertion, Escape dismissal, ordinary sending, upload handling, image generation, MCP/Jimeng, model behavior, attachments, or messages.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the prompt hints Enter branch did not stop/prevent the event and the textarea keydown path did not prevent Enter while hints were open.
+- Browser QA then exposed a real runtime issue: the first prompt in `public/prompts.json` contains a trailing newline, so selected prompt content was filled with a tail line break. The implementation now trims only trailing whitespace at selection time, without mutating prompt data or changing prompt search/order.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: before opening, `#chat-input` was focused, empty, had no `aria-controls`, and `pageOverflowPx: 0`. Pressing `/` opened `id="chat-prompt-hints"` with `role="listbox"`, `aria-label="提示词建议"`, `aria-activedescendant="chat-prompt-hint-0"`, `407` options, one selected option `chat-prompt-hint-0`, textarea `aria-controls="chat-prompt-hints"`, and `pageOverflowPx: 0`. Pressing Enter removed the list, cleared textarea `aria-controls`, kept focus on `#chat-input`, filled the selected prompt with `valueLength: 1716`, `hasNewline: false`, kept message count at `0`, and produced no console warn/error logs.
+- Mobile `390x844`: the same flow opened the listbox with `407` options, one selected option, `aria-activedescendant="chat-prompt-hint-0"`, and `pageOverflowPx: 0`. Pressing Enter removed the list, kept focus on `#chat-input`, filled the selected prompt with no newline, kept message count at `0`, and produced no console warn/error logs.
+- Narrow mobile `320x740`: the same flow opened the listbox with `407` options, one selected option, `aria-activedescendant="chat-prompt-hint-0"`, and `pageOverflowPx: 0`. Pressing Enter removed the list, kept focus on `#chat-input`, filled the selected prompt with no newline, kept message count at `0`, and produced no console warn/error logs.
+
+Known risks:
+
+- This iteration only fixes Enter selection and trailing whitespace in selected prompt fill. It does not change prompt matching inputs, prompt data, prompt ordering, ArrowUp/ArrowDown selection, click path entry points, Escape dismissal, prompt-hints settings behavior, sending, upload handling, image generation activation, MCP/Jimeng checks, model selection, attachments, messages, or API behavior.

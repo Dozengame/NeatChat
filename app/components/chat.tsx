@@ -578,6 +578,8 @@ export function PromptHints(props: {
       } else if (e.key === "ArrowDown") {
         changeIndex(1);
       } else if (e.key === "Enter") {
+        e.stopPropagation();
+        e.preventDefault();
         const selectedPrompt = prompts.at(selectIndex);
         if (selectedPrompt) {
           onPromptSelect(selectedPrompt);
@@ -1807,14 +1809,15 @@ function useChatInnerView() {
     setTimeout(() => {
       setPromptHints([]);
 
-      const matchedChatCommand = chatCommands.match(prompt.content);
+      const promptContent = prompt.content.trimEnd();
+      const matchedChatCommand = chatCommands.match(promptContent);
       if (matchedChatCommand.matched) {
         // if user is selecting a chat command, just trigger it
         matchedChatCommand.invoke();
         setUserInput("");
       } else {
         // or fill the prompt
-        setUserInput(prompt.content);
+        setUserInput(promptContent);
       }
       inputRef.current?.focus();
     }, 30);
@@ -1862,6 +1865,10 @@ function useChatInnerView() {
       !(e.metaKey || e.altKey || e.ctrlKey)
     ) {
       setUserInput(chatStore.lastInput ?? "");
+      e.preventDefault();
+      return;
+    }
+    if (promptHints.length > 0 && e.key === "Enter") {
       e.preventDefault();
       return;
     }

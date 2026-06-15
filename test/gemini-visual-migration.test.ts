@@ -415,6 +415,15 @@ describe("Gemini visual migration shell", () => {
       /if \(e\.key === "ArrowUp"\) \{[\s\S]*changeIndex\(-1\);[\s\S]*\} else if \(e\.key === "ArrowDown"\) \{[\s\S]*changeIndex\(1\);/,
     );
     expect(chat).toMatch(
+      /else if \(e\.key === "Enter"\) \{[\s\S]*e\.stopPropagation\(\);[\s\S]*e\.preventDefault\(\);[\s\S]*const selectedPrompt = prompts\.at\(selectIndex\);[\s\S]*onPromptSelect\(selectedPrompt\);/,
+    );
+    expect(chat).toMatch(
+      /const onInputKeyDown = \(e: React\.KeyboardEvent<HTMLTextAreaElement>\) => \{[\s\S]*if \(promptHints\.length > 0 && e\.key === "Enter"\) \{[\s\S]*e\.preventDefault\(\);[\s\S]*return;[\s\S]*\}[\s\S]*if \(shouldSubmit\(e\) && promptHints\.length === 0\)/,
+    );
+    expect(chat).toMatch(
+      /const promptContent = prompt\.content\.trimEnd\(\);[\s\S]*const matchedChatCommand = chatCommands\.match\(promptContent\);[\s\S]*setUserInput\(promptContent\);/,
+    );
+    expect(chat).toMatch(
       /<PromptHints[\s\S]*prompts=\{promptHints\}[\s\S]*onPromptSelect=\{onPromptSelect\}[\s\S]*onClose=\{\(\) => setPromptHints\(\[\]\)\}/,
     );
     expect(chat).toContain('aria-controls="chat-input-action-menu"');
