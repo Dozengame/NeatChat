@@ -652,6 +652,8 @@ export function ChatAction(props: {
   onClick: () => void | Promise<void>;
   active?: boolean;
   ariaLabel?: string;
+  ariaHasPopup?: React.AriaAttributes["aria-haspopup"];
+  ariaExpanded?: boolean;
   ariaPressed?: boolean;
   role?: React.AriaRole;
 }) {
@@ -680,6 +682,8 @@ export function ChatAction(props: {
         [styles["chat-input-action-active"]]: props.active,
       })}
       aria-label={props.ariaLabel ?? props.text}
+      aria-haspopup={props.ariaHasPopup}
+      aria-expanded={props.ariaExpanded}
       aria-pressed={props.ariaPressed}
       role={props.role}
       onClick={() => {
@@ -998,6 +1002,10 @@ function useChatActionsView(props: ChatActionsProps) {
               setActionModalOpen("imageGeneration", true);
             }}
             text={props.imageGenerationEnabled ? "关闭图片生成" : "图片生成"}
+            ariaHasPopup={isCompactScreen ? undefined : "listbox"}
+            ariaExpanded={
+              isCompactScreen ? undefined : actionModals.imageGeneration
+            }
             icon={<ImageIcon />}
           />
           {!isCompactScreen && actionModals.imageGeneration && (
@@ -1110,6 +1118,8 @@ function useChatActionsView(props: ChatActionsProps) {
                   setActionModalOpen("model", true);
                 }}
                 text={currentModelName}
+                ariaHasPopup="listbox"
+                ariaExpanded={actionModals.model}
                 icon={<RobotIcon />}
               />
             )}
@@ -1170,6 +1180,8 @@ function useChatActionsView(props: ChatActionsProps) {
               <ChatAction
                 onClick={() => setActionModalOpen("size", true)}
                 text={currentSize}
+                ariaHasPopup="listbox"
+                ariaExpanded={actionModals.size}
                 icon={<SizeIcon />}
               />
             )}
@@ -1202,6 +1214,8 @@ function useChatActionsView(props: ChatActionsProps) {
                 <ChatAction
                   onClick={() => setActionModalOpen("quality", true)}
                   text={currentQuality}
+                  ariaHasPopup="listbox"
+                  ariaExpanded={actionModals.quality}
                   icon={<QualityIcon />}
                 />
               )}
@@ -1233,6 +1247,8 @@ function useChatActionsView(props: ChatActionsProps) {
               <ChatAction
                 onClick={() => setActionModalOpen("style", true)}
                 text={currentStyle}
+                ariaHasPopup="listbox"
+                ariaExpanded={actionModals.style}
                 icon={<StyleIcon />}
               />
             )}
@@ -1261,6 +1277,8 @@ function useChatActionsView(props: ChatActionsProps) {
               <ChatAction
                 onClick={() => setActionModalOpen("plugin", true)}
                 text={Locale.Plugin.Name}
+                ariaHasPopup="listbox"
+                ariaExpanded={actionModals.plugin}
                 icon={<PluginIcon />}
               />
             )}

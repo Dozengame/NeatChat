@@ -1801,3 +1801,36 @@ Browser QA:
 Known risks:
 
 - This iteration only changes accessible names for message action buttons. It does not change visible action text, action order, icons, `onResend`, `onDelete`, `onPinMessage`, `copyToClipboard`, TTS behavior, message content, markdown, image preview/download, scrolling, sending, model APIs, MCP/Jimeng, stores, prompt bar, header, Tauri config, deployment config, or secrets.
+
+## Iteration 2026-06-16 prompt-action-selector-state
+
+Result: passed.
+
+Target flow:
+
+- Prompt bar actions that open a secondary selector expose their popup state, while mobile-only direct actions avoid claiming a popup they do not open.
+
+Scope:
+
+- `app/components/chat.tsx`: added optional `ariaHasPopup` and `ariaExpanded` props to `ChatAction`; passed `aria-haspopup="listbox"` and the matching `actionModals.*` expanded state to desktop selector-opening actions for image generation, model, image size, image quality, image style, and plugins. The image generation action now only exposes popup state on non-compact screens because compact screens toggle the mode directly.
+- `test/gemini-visual-migration.test.ts`: locked the generic `ChatAction` ARIA forwarding contract, all selector-opening prompt actions, and the compact-screen exception for image generation without changing visible text, order, icons, selector contents, click handlers, prompt layout, MCP/Jimeng, attachments, sending, stores, or API behavior.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because `ChatAction` did not support selector popup state.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed again after the first implementation because compact-screen image generation incorrectly exposed popup state.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: opened the prompt bar tool menu without sending/deleting/uploading. Visible selector-opening actions included `图片生成` and `gpt-5.4`, both with `aria-haspopup="listbox"` and `aria-expanded="false"` before opening a selector. Clicking `图片生成` opened its selector state without enabling image generation; the same button changed to `aria-expanded="true"` and kept `aria-pressed="false"`. Menu rect was `336x279` at `x=490`, `y=114`, bottom `393`, right `826`; input rect `478x120`, send button rect `42x42`, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Mobile `390x844`: opened the prompt bar tool menu. Visible actions were `上传附件` and `图片生成`; `图片生成` kept `aria-pressed="false"` and did not expose `aria-haspopup` or `aria-expanded` because compact screens toggle the mode directly. Menu rect was `320x158` at `x=11`, `y=609`, bottom `767`, right `331`; input rect `246x28`, send button rect `40x40`, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Narrow mobile `320x740`: opened the prompt bar tool menu. Visible actions were `上传附件` and `图片生成`; `图片生成` kept `aria-pressed="false"` and did not expose `aria-haspopup` or `aria-expanded`. Menu rect was `272x158` at `x=11`, `y=505`, bottom `663`, right `283`; input rect `176x28`, send button rect `40x40`, `pageOverflowX: 0`, console warn/error logs: `0`.
+
+Known risks:
+
+- Runtime QA only covered selector-opening actions visible under the current default model/config. Static tests cover size, quality, style, and plugin action wiring because those controls are conditional. This iteration does not change selector contents, model selection, image generation enable/disable logic, upload, prompt hints, clear context, theme, realtime chat, sending, scrolling, message rendering, model APIs, MCP/Jimeng, stores, Tauri config, deployment config, or secrets.

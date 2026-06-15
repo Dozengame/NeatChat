@@ -537,7 +537,31 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chat).toContain('styles["chat-message-action-rail"]');
     expect(chat).toContain("ariaLabel?: string;");
+    expect(chat).toContain(
+      'ariaHasPopup?: React.AriaAttributes["aria-haspopup"];',
+    );
+    expect(chat).toContain("ariaExpanded?: boolean;");
     expect(chat).toContain("aria-label={props.ariaLabel ?? props.text}");
+    expect(chat).toContain("aria-haspopup={props.ariaHasPopup}");
+    expect(chat).toContain("aria-expanded={props.ariaExpanded}");
+    expect(chat).toMatch(
+      /text=\{props\.imageGenerationEnabled \? "关闭图片生成" : "图片生成"\}[\s\S]*ariaHasPopup=\{isCompactScreen \? undefined : "listbox"\}[\s\S]*ariaExpanded=\{\s*isCompactScreen \? undefined : actionModals\.imageGeneration\s*\}/,
+    );
+    expect(chat).toMatch(
+      /text=\{currentModelName\}[\s\S]*ariaHasPopup="listbox"[\s\S]*ariaExpanded=\{actionModals\.model\}/,
+    );
+    expect(chat).toMatch(
+      /text=\{currentSize\}[\s\S]*ariaHasPopup="listbox"[\s\S]*ariaExpanded=\{actionModals\.size\}/,
+    );
+    expect(chat).toMatch(
+      /text=\{currentQuality\}[\s\S]*ariaHasPopup="listbox"[\s\S]*ariaExpanded=\{actionModals\.quality\}/,
+    );
+    expect(chat).toMatch(
+      /text=\{currentStyle\}[\s\S]*ariaHasPopup="listbox"[\s\S]*ariaExpanded=\{actionModals\.style\}/,
+    );
+    expect(chat).toMatch(
+      /text=\{Locale\.Plugin\.Name\}[\s\S]*ariaHasPopup="listbox"[\s\S]*ariaExpanded=\{actionModals\.plugin\}/,
+    );
     expect(chat).toMatch(
       /text=\{Locale\.Chat\.Actions\.Retry\}[\s\S]*ariaLabel=\{`\$\{messageActionLabel\}：\$\{Locale\.Chat\.Actions\.Retry\}`\}/,
     );
