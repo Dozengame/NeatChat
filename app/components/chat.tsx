@@ -2972,6 +2972,7 @@ function useChatInnerView() {
                       type="button"
                       className={styles["chat-mobile-reasoning-head"]}
                       aria-expanded={isReasoningSectionExpanded}
+                      aria-controls="chat-mobile-reasoning-options"
                       onClick={() => toggleMobileModelSection("reasoning")}
                     >
                       <span>
@@ -2986,6 +2987,7 @@ function useChatInnerView() {
                     </button>
                     {isReasoningSectionExpanded && (
                       <div
+                        id="chat-mobile-reasoning-options"
                         className={styles["chat-mobile-reasoning-list"]}
                         role="listbox"
                         aria-label="思考等级选项"
@@ -3046,6 +3048,7 @@ function useChatInnerView() {
                         type="button"
                         className={styles["chat-mobile-reasoning-head"]}
                         aria-expanded={isImageSizeSectionExpanded}
+                        aria-controls="chat-mobile-image-size-options"
                         onClick={() => toggleMobileModelSection("image-size")}
                       >
                         <span>
@@ -3058,6 +3061,7 @@ function useChatInnerView() {
                       </button>
                       {isImageSizeSectionExpanded && (
                         <div
+                          id="chat-mobile-image-size-options"
                           className={styles["chat-mobile-reasoning-list"]}
                           role="listbox"
                           aria-label="图片尺寸选项"
@@ -3115,6 +3119,7 @@ function useChatInnerView() {
                           type="button"
                           className={styles["chat-mobile-reasoning-head"]}
                           aria-expanded={isImageQualitySectionExpanded}
+                          aria-controls="chat-mobile-image-quality-options"
                           onClick={() =>
                             toggleMobileModelSection("image-quality")
                           }
@@ -3133,6 +3138,7 @@ function useChatInnerView() {
                         </button>
                         {isImageQualitySectionExpanded && (
                           <div
+                            id="chat-mobile-image-quality-options"
                             className={styles["chat-mobile-reasoning-list"]}
                             role="listbox"
                             aria-label="图片清晰度选项"

@@ -1507,3 +1507,37 @@ Browser QA:
 Known risks:
 
 - This iteration only adds non-visual semantics to the existing desktop reasoning chip. It does not change `reasoningLabels`, `reasoningEfforts`, `Selector`, reasoning effort persistence, `max_output_tokens` calculation, prompt bar sizing, mobile model drawer behavior, model APIs, sending, attachments, image generation activation, MCP/Jimeng checks, settings, stores, messages, or API behavior.
+
+## Iteration 2026-06-16 mobile-model-section-controls
+
+Result: passed.
+
+Target flow:
+
+- On mobile, open the model menu -> each visible advanced section button exposes the controlled panel id through `aria-controls` -> expanding the section reveals a matching `listbox` panel. Desktop model entry remains unchanged.
+
+Scope:
+
+- `app/components/chat.tsx`: added stable `aria-controls` values to the mobile model menu advanced section buttons and matching ids to their option panels.
+- `test/gemini-visual-migration.test.ts`: locked the reasoning, image size, and image quality section-control contracts without changing model selection, reasoning persistence, image settings, MCP/Jimeng, attachments, sending, settings, stores, messages, or visual layout.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the mobile advanced section buttons did not expose `aria-controls` and the option panels did not expose matching ids.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: model button remained visible with `aria-label="选择模型和参数"`, `aria-controls="chat-model-menu"`, `aria-expanded="false"`, rect `147x34` at `x=394`, `y=14`; chat input rect `478x28` and send button rect `42x42` were visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Mobile `390x844`: model menu opened as `#chat-model-menu`, `role="dialog"`, `aria-modal="true"`, `aria-label="模型和思考等级"`, rect `320x227` at `x=35`, `y=46`; model button had `aria-expanded="true"` and `aria-controls="chat-model-menu"`. The visible advanced section button `思考等级标准⌄` had `aria-controls="chat-mobile-reasoning-options"` and `aria-expanded="false"`. Chat input and send button remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Mobile expanded `390x844`: clicking the reasoning section changed `aria-expanded="true"` and revealed `#chat-mobile-reasoning-options` with `role="listbox"`, `aria-label="思考等级选项"`, `3` options, rect `294x178` at `x=48`, `y=260`; input/send remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Narrow mobile `320x740`: model menu opened as `#chat-model-menu`, `role="dialog"`, `aria-modal="true"`, `aria-label="模型和思考等级"`, rect `272x227` at `x=24`, `y=46`; visible reasoning section button had `aria-controls="chat-mobile-reasoning-options"` and `aria-expanded="false"`. Chat input and send button remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Narrow mobile expanded `320x740`: clicking the reasoning section changed `aria-expanded="true"` and revealed `#chat-mobile-reasoning-options` with `role="listbox"`, `aria-label="思考等级选项"`, `3` options, rect `246x178` at `x=37`, `y=260`; input/send remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+
+Known risks:
+
+- Runtime Browser QA used the default GPT-5 reasoning model, so only the visible reasoning section appeared in the mobile menu. The image size and image quality panel ids are covered by the static Jest contract because those sections only render for image-generation models. This iteration does not change `toggleMobileModelSection`, model selection, reasoning/max token logic, image setting values, MCP/Jimeng activation, attachments, sending, settings, stores, messages, or API behavior.

@@ -404,6 +404,15 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('aria-label="思考等级选项"');
     expect(chat).toContain('aria-label="图片尺寸选项"');
     expect(chat).toContain('aria-label="图片清晰度选项"');
+    expect(chat).toMatch(
+      /className=\{styles\["chat-mobile-reasoning-head"\]\}[\s\S]*aria-expanded=\{isReasoningSectionExpanded\}[\s\S]*aria-controls="chat-mobile-reasoning-options"[\s\S]*id="chat-mobile-reasoning-options"[\s\S]*role="listbox"[\s\S]*aria-label="思考等级选项"/,
+    );
+    expect(chat).toMatch(
+      /className=\{styles\["chat-mobile-reasoning-head"\]\}[\s\S]*aria-expanded=\{isImageSizeSectionExpanded\}[\s\S]*aria-controls="chat-mobile-image-size-options"[\s\S]*id="chat-mobile-image-size-options"[\s\S]*role="listbox"[\s\S]*aria-label="图片尺寸选项"/,
+    );
+    expect(chat).toMatch(
+      /className=\{styles\["chat-mobile-reasoning-head"\]\}[\s\S]*aria-expanded=\{isImageQualitySectionExpanded\}[\s\S]*aria-controls="chat-mobile-image-quality-options"[\s\S]*id="chat-mobile-image-quality-options"[\s\S]*role="listbox"[\s\S]*aria-label="图片清晰度选项"/,
+    );
     expect(chat).toContain('role="option"');
     expect(chat).toContain("aria-selected={selected}");
     expect(chat).toContain('"打开对话工具"');
