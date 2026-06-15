@@ -402,6 +402,15 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /className=\{styles\["chat-input"\]\}[\s\S]*aria-controls=\{\s*promptHints\.length > 0 \? "chat-prompt-hints" : undefined\s*\}[\s\S]*aria-haspopup="listbox"/,
     );
+    expect(chat).toMatch(
+      /export function PromptHints\(props: \{[\s\S]*onClose: \(\) => void;/,
+    );
+    expect(chat).toMatch(
+      /if \(e\.key === "Escape"\) \{[\s\S]*e\.stopPropagation\(\);[\s\S]*e\.preventDefault\(\);[\s\S]*onClose\(\);[\s\S]*\}/,
+    );
+    expect(chat).toMatch(
+      /<PromptHints[\s\S]*prompts=\{promptHints\}[\s\S]*onPromptSelect=\{onPromptSelect\}[\s\S]*onClose=\{\(\) => setPromptHints\(\[\]\)\}/,
+    );
     expect(chat).toContain('aria-controls="chat-input-action-menu"');
     expect(chat).toContain("aria-expanded={showChatActionMenu}");
     expect(chat).toContain(

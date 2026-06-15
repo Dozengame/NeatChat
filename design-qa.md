@@ -1148,3 +1148,35 @@ Browser QA:
 Known risks:
 
 - This iteration only strengthens prompt hints semantics and the input/list relationship. It does not change prompt matching, prompt ordering, prompt insertion, prompt-hints settings behavior, sending, upload handling, image generation activation, MCP/Jimeng checks, model selection, attachments, messages, or API behavior.
+
+## Iteration 2026-06-16 prompt-hints-escape-dismiss
+
+Result: passed.
+
+Target flow:
+
+- Enable prompt hints -> type `/` in the composer -> prompt suggestions open -> press Escape -> suggestions close while the textarea keeps focus and the `/` draft stays intact.
+
+Scope:
+
+- `app/components/chat.tsx`: added an `onClose` callback to `PromptHints`, handled Escape in the existing prompt-hints keydown listener, and passed `onClose={() => setPromptHints([])}` from the chat composer.
+- `test/gemini-visual-migration.test.ts`: locked the Escape close path without changing prompt search, arrow-key selection, Enter selection, click insertion, upload, image generation, MCP/Jimeng, model behavior, attachments, or messages.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because `PromptHints` did not expose `onClose` and did not handle Escape.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/#/chat`, prompt hints enabled. Before opening, textarea existed, was focused, had no `aria-controls`, and `pageOverflowPx: 0`. Pressing `/` opened `id="chat-prompt-hints"` with `role="listbox"`, `aria-label="提示词建议"`, `407` options, one selected option, textarea `aria-controls="chat-prompt-hints"`, and `aria-haspopup="listbox"`; list measured `left: 430`, `right: 1312`, `top: 343`, `bottom: 857`, `width: 882`, `height: 514`. Pressing Escape removed the list, cleared textarea `aria-controls`, kept `aria-haspopup="listbox"`, preserved textarea value `/`, and kept focus on `#chat-input`; `pageOverflowPx: 0`. No console warn/error logs.
+- Mobile `390x844`: pressing `/` opened the same listbox semantics with `407` options and one selected option; list measured `left: 10`, `right: 382`, `top: 340`, `bottom: 764`, `width: 372`, `height: 424`. Pressing Escape removed the list, cleared textarea `aria-controls`, preserved value `/`, and kept focus on `#chat-input`; `pageOverflowPx: 0`. No console warn/error logs.
+- Narrow mobile `320x740`: pressing `/` opened the same listbox semantics with `407` options and one selected option; list measured `left: 10`, `right: 312`, `top: 288`, `bottom: 660`, `width: 302`, `height: 372`. Pressing Escape removed the list, cleared textarea `aria-controls`, preserved value `/`, and kept focus on `#chat-input`; `pageOverflowPx: 0`. No console warn/error logs.
+
+Known risks:
+
+- This iteration only adds the Escape dismissal path for existing prompt hints. It does not change prompt matching, prompt ordering, arrow-key selection, Enter selection, click insertion, prompt-hints settings behavior, sending, upload handling, image generation activation, MCP/Jimeng checks, model selection, attachments, messages, or API behavior.

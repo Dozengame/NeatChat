@@ -534,8 +534,9 @@ export type RenderPrompt = Pick<Prompt, "title" | "content">;
 export function PromptHints(props: {
   prompts: RenderPrompt[];
   onPromptSelect: (prompt: RenderPrompt) => void;
+  onClose: () => void;
 }) {
-  const { prompts, onPromptSelect } = props;
+  const { prompts, onClose, onPromptSelect } = props;
   const noPrompts = prompts.length === 0;
   const [selectIndex, setSelectIndex] = useState(0);
   const promptCountRef = useRef(prompts.length);
@@ -551,6 +552,13 @@ export function PromptHints(props: {
       if (noPrompts || e.metaKey || e.altKey || e.ctrlKey) {
         return;
       }
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
       // arrow up / down to select prompt
       const changeIndex = (delta: number) => {
         e.stopPropagation();
@@ -580,7 +588,7 @@ export function PromptHints(props: {
     window.addEventListener("keydown", onKeyDown);
 
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [noPrompts, onPromptSelect, prompts, selectIndex]);
+  }, [noPrompts, onClose, onPromptSelect, prompts, selectIndex]);
 
   if (noPrompts) return null;
   return (
@@ -3502,6 +3510,7 @@ function useChatInnerView() {
             <PromptHints
               prompts={promptHints}
               onPromptSelect={onPromptSelect}
+              onClose={() => setPromptHints([])}
             />
 
             <div className={styles["chat-input-row"]}>
