@@ -388,6 +388,12 @@ export function SideBar(props: {
               })}
               onClick={openDiscoverySelector}
               aria-label={Locale.Discovery.Name}
+              aria-current={
+                location.pathname === Path.Plugins ||
+                location.pathname === Path.McpMarket
+                  ? "page"
+                  : undefined
+              }
               title={shouldNarrow ? Locale.Discovery.Name : undefined}
             >
               <DiscoveryIcon />

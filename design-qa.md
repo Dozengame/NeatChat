@@ -1934,3 +1934,39 @@ Browser QA:
 Known risks:
 
 - `/new-chat` does not render the chat header drawer trigger on mobile, so mobile active-state QA used the off-canvas drawer DOM state and separate `/chat` input/send regression. This iteration does not change navigation destinations, click handlers, history list ordering/deletion, sidebar width, mobile drawer open/close behavior, settings, prompt bar, model selection, MCP/Jimeng, message rendering, stores, Tauri config, deployment config, or secrets.
+
+## Iteration 2026-06-16 sidebar-discovery-active-state
+
+Result: passed.
+
+Target flow:
+
+- The sidebar content navigation exposes `发现` as the current page on both plugin discovery routes, matching the existing active visual treatment and assistive-tech state.
+
+Scope:
+
+- `app/components/sidebar.tsx`: added `aria-current="page"` to the existing `发现` button when `location.pathname` is `Path.Plugins` or `Path.McpMarket`.
+- `test/gemini-visual-migration.test.ts`: locked the discovery current-page contract against the same `Path.Plugins` / `Path.McpMarket` condition without changing selector opening, MCP probing, navigation destinations, mobile drawer behavior, prompt bar, stores, or API behavior.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the discovery button did not expose `aria-current`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `#/plugins` at `1440x1024`: `发现` rendered once with `aria-current="page"`, active class, `color: rgb(49, 94, 248)`, `font-weight: 600`, and `box-shadow: rgb(49, 94, 248) 3px 0px 0px 0px inset`; button rect `275x38`, sidebar rect `300x1024`, `pageOverflowX: 0`.
+- Desktop `#/mcp-market` at `1440x1024`: `发现` retained the same `aria-current="page"`, active class, primary color, `font-weight: 600`, and `3px` inset indicator; sidebar rect `300x1024`, `pageOverflowX: 0`.
+- Mobile `#/plugins` at `390x844`: off-canvas sidebar DOM retained active `发现` with `aria-current="page"`, primary color, `font-weight: 600`, and `3px` inset indicator; sidebar rect `300x844` at `x=-390`, `pageOverflowX: 0`.
+- Narrow `#/plugins` at `320x740`: off-canvas sidebar DOM retained active `发现` with `aria-current="page"`, primary color, `font-weight: 600`, and `3px` inset indicator; sidebar rect `300x740` at `x=-320`, `pageOverflowX: 0`.
+- Mobile `#/chat` regression at `390x844`: input rect `246x28`, send button rect `40x40`, sidebar off-canvas, `pageOverflowX: 0`.
+- Narrow `#/chat` regression at `320x740`: input rect `176x28`, send button rect `40x40`, sidebar off-canvas, `pageOverflowX: 0`.
+- Browser console warn/error logs: `0`.
+
+Known risks:
+
+- Browser QA used hash routes (`#/plugins`, `#/mcp-market`, `#/chat`) because direct Next paths return the app-level 404 in this project. This iteration does not change `openDiscoverySelector`, `discoveryItems`, `SimpleSelector`, MCP enabled probing, plugin data, navigation parameters, primary nav, local content card, history list behavior, sidebar sizing, mobile drawer logic, prompt bar, model selection, MCP/Jimeng, stores, Tauri config, deployment config, or secrets.

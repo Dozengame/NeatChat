@@ -611,6 +611,9 @@ describe("Gemini visual migration shell", () => {
     expect(sidebar).toMatch(
       /className=\{clsx\(styles\["sidebar-nav-item"\][\s\S]*location\.pathname === item\.path[\s\S]*aria-current=\{[\s\S]*location\.pathname === item\.path \? "page" : undefined[\s\S]*\}/,
     );
+    expect(sidebar).toMatch(
+      /aria-label=\{Locale\.Discovery\.Name\}[\s\S]*aria-current=\{[\s\S]*location\.pathname === Path\.Plugins \|\|[\s\S]*location\.pathname === Path\.McpMarket[\s\S]*\?\s*"page"\s*:\s*undefined[\s\S]*\}/,
+    );
     expect(sidebar).toContain('id="mobile-sidebar-drawer"');
     expect(sidebar).toContain("isMobileHidden?: boolean");
     expect(sidebar).toMatch(
