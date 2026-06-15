@@ -392,6 +392,16 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /aria-label=\{\s*showChatActionMenu\s*\?\s*"关闭对话工具"\s*:\s*"打开对话工具"\s*\}/,
     );
+    expect(chat).toContain('id="chat-prompt-hints"');
+    expect(chat).toMatch(
+      /className=\{styles\["prompt-hints"\]\}[\s\S]*role="listbox"[\s\S]*aria-label="提示词建议"/,
+    );
+    expect(chat).toMatch(
+      /className=\{clsx\(styles\["prompt-hint"\][\s\S]*role="option"[\s\S]*aria-selected=\{i === selectIndex\}/,
+    );
+    expect(chat).toMatch(
+      /className=\{styles\["chat-input"\]\}[\s\S]*aria-controls=\{\s*promptHints\.length > 0 \? "chat-prompt-hints" : undefined\s*\}[\s\S]*aria-haspopup="listbox"/,
+    );
     expect(chat).toContain('aria-controls="chat-input-action-menu"');
     expect(chat).toContain("aria-expanded={showChatActionMenu}");
     expect(chat).toContain(

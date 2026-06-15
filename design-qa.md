@@ -1115,3 +1115,36 @@ Browser QA:
 Known risks:
 
 - This iteration only changes close-focus timing for the existing top model menu. It does not change model availability, model selection, reasoning selection, image size or quality selection, MCP/Jimeng checks, input, attachments, messages, settings, or API behavior.
+
+## Iteration 2026-06-16 prompt-hints-listbox-semantics
+
+Result: passed.
+
+Target flow:
+
+- Enable prompt hints -> return to chat -> type `/` in the composer -> prompt suggestions open with listbox semantics and the input explicitly points at the suggestion list.
+
+Scope:
+
+- `app/components/chat.tsx`: added `id="chat-prompt-hints"`, `role="listbox"`, and `aria-label="提示词建议"` to the existing prompt hints container; added stable option ids, `role="option"`, and `aria-selected` to each prompt hint button; connected the textarea to the list with conditional `aria-controls` and `aria-haspopup="listbox"`.
+- `test/gemini-visual-migration.test.ts`: locked the prompt hints listbox, option selection semantics, and textarea/list association without changing prompt search, prompt insertion, upload, image generation, MCP/Jimeng, model behavior, attachments, or messages.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the prompt hints container did not expose `id="chat-prompt-hints"` or listbox semantics.
+- `yarn lint` initially warned that `aria-expanded` is not supported on the textarea's implicit `textbox` role, so the implementation was corrected to use `aria-haspopup="listbox"` while keeping the `aria-controls` association.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: prompt hints were enabled through the Settings UI, then the existing chat was opened through the sidebar route without reloading the app state. Typing `/` rendered `id="chat-prompt-hints"`, `role="listbox"`, `aria-label="提示词建议"`, `407` options, and exactly one selected option with `id="chat-prompt-hint-0"`, `role="option"`, `aria-selected="true"`. The textarea reported `aria-controls="chat-prompt-hints"`, `aria-haspopup="listbox"`, and no `aria-expanded`; hint list measured `left: 430`, `right: 1312`, `top: 343`, `bottom: 857`, `width: 882`, `height: 514`; `pageOverflowPx: 0`. No console warn/error logs.
+- Mobile `390x844`: typing `/` rendered the same listbox/option semantics with `407` options and one selected option. The textarea reported `aria-controls="chat-prompt-hints"`, `aria-haspopup="listbox"`, and no `aria-expanded`; hint list measured `left: 10`, `right: 382`, `top: 271`, `bottom: 695`, `width: 372`, `height: 424`; `pageOverflowPx: 0`. No console warn/error logs.
+- Narrow mobile `320x740`: typing `/` rendered the same listbox/option semantics with `407` options and one selected option. The textarea reported `aria-controls="chat-prompt-hints"`, `aria-haspopup="listbox"`, and no `aria-expanded`; hint list measured `left: 10`, `right: 312`, `top: 288`, `bottom: 660`, `width: 302`, `height: 372`; `pageOverflowPx: 0`. No console warn/error logs.
+
+Known risks:
+
+- This iteration only strengthens prompt hints semantics and the input/list relationship. It does not change prompt matching, prompt ordering, prompt insertion, prompt-hints settings behavior, sending, upload handling, image generation activation, MCP/Jimeng checks, model selection, attachments, messages, or API behavior.

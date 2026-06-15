@@ -584,14 +584,22 @@ export function PromptHints(props: {
 
   if (noPrompts) return null;
   return (
-    <div className={styles["prompt-hints"]}>
+    <div
+      id="chat-prompt-hints"
+      className={styles["prompt-hints"]}
+      role="listbox"
+      aria-label="提示词建议"
+    >
       {prompts.map((prompt, i) => (
         <button
           type="button"
+          id={`chat-prompt-hint-${i}`}
           ref={i === selectIndex ? selectedRef : null}
           className={clsx(styles["prompt-hint"], {
             [styles["prompt-hint-selected"]]: i === selectIndex,
           })}
+          role="option"
+          aria-selected={i === selectIndex}
           key={prompt.title + i.toString()}
           onClick={() => onPromptSelect(prompt)}
           onMouseEnter={() => setSelectIndex(i)}
@@ -3578,6 +3586,10 @@ function useChatInnerView() {
                       ? Locale.Chat.MobileInput
                       : Locale.Chat.Input(submitKey)
                   }
+                  aria-controls={
+                    promptHints.length > 0 ? "chat-prompt-hints" : undefined
+                  }
+                  aria-haspopup="listbox"
                   onChange={(e) => onInput(e.currentTarget.value)}
                   value={userInput}
                   onKeyDown={onInputKeyDown}
