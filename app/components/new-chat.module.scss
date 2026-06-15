@@ -18,11 +18,13 @@
     z-index: 2;
     display: flex;
     justify-content: space-between;
+    align-items: center;
     gap: 12px;
     width: 100%;
+    min-height: 72px;
     padding: 14px 16px;
     box-sizing: border-box;
-    animation: slide-in-from-top ease 0.3s;
+    animation: none;
 
     button {
       min-height: 44px;

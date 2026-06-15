@@ -2008,3 +2008,37 @@ Browser QA:
 Known risks:
 
 - Browser QA uses hash routes. No changes to `startChat`, mask selection, confirmation, session creation, model APIs, MCP/Jimeng, attachments, image generation, stores, Tauri config, deployment config, or secrets.
+
+## Iteration 2026-06-16 new-chat-header-viewport-stability
+
+Result: passed.
+
+Target flow:
+
+- `#/new-chat` top actions stay fully inside the viewport on desktop, mobile, and narrow mobile, so the return/sidebar entry is not clipped while the start-chat layout and existing behavior remain unchanged.
+
+Scope:
+
+- `app/components/new-chat.module.scss`: made the root `.mask-header` a stable `72px` minimum-height flex row with centered children and no top slide-in animation.
+- `test/gemini-visual-migration.test.ts`: fixed the mobile return-trigger contract matcher so it survives formatter line wraps, then locked the root header `min-height`, `align-items`, and `animation` contract.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` first exposed an existing brittle matcher after formatter line wrapping; after tightening that matcher, the new header assertion failed as expected because root `.mask-header` lacked `min-height: 72px`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `#/new-chat` at `1440x1024`: header rect `1140x72` at `y=0`, `min-height: 72px`, `align-items: center`, `animation-name: none`; return button rect `65x44` at `y=14`, fully inside header, no mobile trigger attrs, composer `640x74` at `x=550`, sidebar `300x1024` at `x=0`, `pageOverflowX: 0`, warn/error `0`.
+- Mobile `#/new-chat` at `390x844`: header rect `390x68`, return button rect `77x48` at `y=10`, fully inside header, `aria-controls="mobile-sidebar-drawer"`, `aria-expanded="false"`, `aria-label="查看消息列表"`, `data-mobile-sidebar-trigger="true"`, sidebar `display: none`, `pageOverflowX: 0`, warn/error `0`.
+- Narrow `#/new-chat` at `320x740`: header rect `316x68`, return button rect `77x48` at `y=10`, fully inside header, same mobile trigger attrs, sidebar `display: none`, `pageOverflowX: 0`, warn/error `0`.
+- Mobile `#/chat` at `390x844`: input `246x28`, send `40x40`, mobile sidebar trigger `40x40` with `aria-expanded=false`, sidebar `display: none`, `pageOverflowX: 0`.
+- Narrow `#/chat` at `320x740`: input `176x28`, send `40x40`, mobile sidebar trigger `40x40` with `aria-expanded=false`, sidebar `display: none`, `pageOverflowX: 0`.
+
+Known risks:
+
+- Browser QA uses hash routes. This iteration only stabilizes `new-chat` header geometry and a formatter-tolerant test matcher. No changes to `startChat`, `navigate(Path.Home)`, `navigate(Path.Chat)`, `navigate(Path.Masks)`, mask selection, confirmation, model APIs, MCP/Jimeng, attachments, image generation, stores, Tauri config, deployment config, or secrets.

@@ -276,6 +276,10 @@ describe("Gemini visual migration shell", () => {
       finalMobileAttachmentStyles,
       ".attach-file",
     );
+    const newChatHeaderBlock = readCssBlock(
+      newChatStyles,
+      ".mask-header",
+    );
     const chatItemBlock = readCssBlock(homeStyles, ".chat-item");
     const chatItemSelectedBlock = readCssBlock(
       homeStyles,
@@ -423,8 +427,11 @@ describe("Gemini visual migration shell", () => {
     expect(newChat).toContain("useCompactScreen()");
     expect(newChat).toContain("const isCompactScreen =");
     expect(newChat).toMatch(
-      /<IconButton[\s\S]*icon=\{<LeftIcon \/>\}[\s\S]*text=\{Locale\.NewChat\.Return\}[\s\S]*aria=\{[\s\S]*isCompactScreen \? Locale\.Chat\.Actions\.ChatList : Locale\.NewChat\.Return[\s\S]*\}[\s\S]*ariaControls=\{[\s\S]*isCompactScreen \? "mobile-sidebar-drawer" : undefined[\s\S]*\}[\s\S]*ariaExpanded=\{isCompactScreen \? false : undefined\}[\s\S]*dataMobileSidebarTrigger=\{isCompactScreen\}[\s\S]*onClick=\{\(\) => navigate\(Path\.Home\)\}/,
+      /<IconButton[\s\S]*icon=\{<LeftIcon \/>\}[\s\S]*text=\{Locale\.NewChat\.Return\}[\s\S]*aria=\{[\s\S]*isCompactScreen[\s\S]*\? Locale\.Chat\.Actions\.ChatList[\s\S]*: Locale\.NewChat\.Return[\s\S]*\}[\s\S]*ariaControls=\{isCompactScreen \? "mobile-sidebar-drawer" : undefined\}[\s\S]*ariaExpanded=\{isCompactScreen \? false : undefined\}[\s\S]*dataMobileSidebarTrigger=\{isCompactScreen\}[\s\S]*onClick=\{\(\) => navigate\(Path\.Home\)\}/,
     );
+    expect(newChatHeaderBlock).toMatch(/min-height:\s*72px;/);
+    expect(newChatHeaderBlock).toMatch(/align-items:\s*center;/);
+    expect(newChatHeaderBlock).toMatch(/animation:\s*none;/);
     expect(newChatStyles).toMatch(
       /@media screen and \(max-width: 520px\)[\s\S]*\.mask-header\s*\{[\s\S]*min-height:\s*68px;[\s\S]*align-items:\s*center;[\s\S]*animation:\s*none;/,
     );
