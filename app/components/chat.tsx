@@ -2830,6 +2830,7 @@ function useChatInnerView() {
                 icon={<ReloadIcon />}
                 bordered
                 title={Locale.Chat.Actions.RefreshTitle}
+                aria={Locale.Chat.Actions.RefreshTitle}
                 onClick={() => {
                   showToast(Locale.Chat.Actions.RefreshToast);
                   chatStore.summarizeSession(true, session);
@@ -2860,6 +2861,7 @@ function useChatInnerView() {
                 icon={<ExportIcon />}
                 bordered
                 title={Locale.Chat.Actions.Export}
+                aria={Locale.Chat.Actions.Export}
                 onClick={() => {
                   setShowExport(true);
                 }}

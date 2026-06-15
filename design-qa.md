@@ -1637,3 +1637,37 @@ Browser QA:
 Known risks:
 
 - This iteration only changes the mobile model menu vertical offset. It does not change `chat.tsx`, model choice, reasoning/max token logic, image setting values, menu width, max height, option styling, Escape/backdrop close behavior, MCP/Jimeng, attachments, sending, settings, stores, messages, API behavior, desktop model menu placement, or prompt bar layout.
+
+## Iteration 2026-06-16 desktop-header-action-labels
+
+Result: passed.
+
+Target flow:
+
+- On desktop, the header action cluster exposes named controls for refresh title, edit messages, export, and full screen. On mobile, the desktop header action cluster is hidden so it does not compete with the mobile header controls.
+
+Scope:
+
+- `app/components/chat.tsx`: added button-level `aria` labels to the refresh title and export header actions, matching their existing visible tooltip/title copy.
+- `app/components/chat.module.scss`: hides `.chat-desktop-header-actions` in the primary mobile breakpoint.
+- `test/gemini-visual-migration.test.ts`: locked the refresh/export button label contract and the mobile hidden-state contract without changing header button order, click behavior, export modal, edit flow, model menu, prompt bar, MCP/Jimeng, attachments, sending, settings, stores, messages, or API behavior.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because refresh/export lacked button-level `aria` labels.
+- A second RED check failed as expected because mobile CSS did not hide `.chat-desktop-header-actions`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: header action group displayed as `flex`, rect `156x42` at `x=1266`, `y=10`; all 4 visible buttons had names and titles: `刷新标题`, `编辑消息记录`, `导出聊天记录`, `全屏`, each `34x34`. Chat input rect `478x28` and send button rect `42x42` remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Mobile `390x844`: desktop header action group did not render; visible desktop header action count was `0`. Mobile sidebar trigger remained `40x40` at `x=16`, `y=14` with `aria-controls="mobile-sidebar-drawer"` and `aria-expanded="false"`; model trigger remained `87x40` at `x=152`, `y=14` with `aria-controls="chat-model-menu"` and `aria-expanded="false"`. Chat input rect `246x28` and send button rect `40x40` remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Narrow mobile `320x740`: desktop header action group did not render; visible desktop header action count was `0`. Mobile sidebar trigger remained `40x40` at `x=16`, `y=14`; model trigger remained `87x40` at `x=117`, `y=14`; input rect `176x28` and send button rect `40x40` remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+
+Known risks:
+
+- This iteration only names existing desktop header actions and hides that desktop action cluster on mobile. It does not change `IconButton`, button order, button size, refresh title behavior, edit message flow, export modal, full-screen setting, model menu behavior, prompt bar layout, MCP/Jimeng, attachments, sending, settings, stores, messages, or API behavior.

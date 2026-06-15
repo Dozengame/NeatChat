@@ -222,6 +222,10 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-desktop-header-action",
     );
+    const mobileDesktopHeaderActionsBlock = readCssBlock(
+      mobileStyles,
+      ".chat-desktop-header-actions",
+    );
     const messageActionRailBlock = readCssBlock(
       chatStyles,
       ".chat-message-action-rail",
@@ -372,6 +376,12 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["chat-desktop-model-menu"]');
     expect(chat).toContain('styles["chat-desktop-header-actions"]');
     expect(chat).toContain('styles["chat-desktop-header-action"]');
+    expect(chat).toMatch(
+      /<IconButton[\s\S]*icon=\{<ReloadIcon \/>\}[\s\S]*title=\{Locale\.Chat\.Actions\.RefreshTitle\}[\s\S]*aria=\{Locale\.Chat\.Actions\.RefreshTitle\}/,
+    );
+    expect(chat).toMatch(
+      /<IconButton[\s\S]*icon=\{<ExportIcon \/>\}[\s\S]*title=\{Locale\.Chat\.Actions\.Export\}[\s\S]*aria=\{Locale\.Chat\.Actions\.Export\}/,
+    );
     expect(chat).toMatch(/showMobileModelSelector\s*&&\s*\(/);
     expect(chat).toContain('styles["chat-mobile-model-menu"]');
     expect(chat).toContain('aria-controls="mobile-sidebar-drawer"');
@@ -663,6 +673,7 @@ describe("Gemini visual migration shell", () => {
     expect(desktopHeaderActionBlock).toMatch(/:global\(button\)[\s\S]*height:\s*34px;/);
     expect(desktopHeaderActionBlock).toMatch(/:global\(button\)[\s\S]*border-radius:\s*999px;/);
     expect(desktopHeaderActionBlock).toMatch(/:global\(button\)[\s\S]*padding:\s*0;/);
+    expect(mobileDesktopHeaderActionsBlock).toMatch(/display:\s*none;/);
     expect(chatStyles).toContain(".chat-mobile-header");
     expect(chatStyles).toContain(".chat-mobile-header-button");
     expect(mobileHeaderButtonBlock).toMatch(/width:\s*40px;/);

@@ -2198,6 +2198,10 @@
 }
 
 @media only screen and (max-width: 600px) {
+  .chat-desktop-header-actions {
+    display: none;
+  }
+
   .chat-message-actions {
     margin-top: 6px;
     opacity: 1 !important;
