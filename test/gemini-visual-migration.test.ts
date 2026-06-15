@@ -803,11 +803,27 @@ describe("Gemini visual migration shell", () => {
     expect(mobileHeaderButtonBlock).toMatch(/height:\s*40px;/);
     expect(mobileModelTitleBlock).toMatch(/min-height:\s*40px;/);
     expect(mobileModelTitleBlock).toMatch(/padding:\s*0 12px;/);
+    expect(mobileModelTitleBlock).toMatch(
+      /border:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.1\);/,
+    );
     expect(mobileModelTitleBlock).toMatch(/border-radius:\s*999px;/);
+    expect(mobileModelTitleBlock).toMatch(
+      /background:\s*rgba\(255,\s*255,\s*255,\s*0\.78\);/,
+    );
+    expect(mobileModelTitleBlock).toMatch(
+      /box-shadow:\s*0 2px 10px rgba\(60,\s*64,\s*67,\s*0\.1\);/,
+    );
+    expect(mobileModelTitleBlock).toMatch(/backdrop-filter:\s*blur\(14px\);/);
+    expect(mobileModelTitleBlock).toMatch(
+      /&:hover[\s\S]*background:\s*var\(--hover-color\);/,
+    );
     expect(chatStyles).toMatch(/@media only screen and \(min-width: 901px\)/);
     expect(chatStyles).toContain(".chat-input-action-menu");
     expect(chatStyles).toContain(".chat-input-action-menu-backdrop");
     expect(chatStyles).toContain(".chat-mobile-model-title[aria-expanded");
+    expect(chatStyles).toMatch(
+      /\.chat-mobile-model-title\[aria-expanded="true"\][\s\S]*background:\s*var\(--surface-elevated\);[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\);/,
+    );
     expect(chatStyles).toContain(".chat-mobile-model-menu-backdrop");
     expect(chatStyles).toContain(".chat-mobile-model-menu");
     expect(mobileModelMenuBlock).toMatch(

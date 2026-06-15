@@ -510,9 +510,11 @@
   max-width: calc(100% - 112px);
   padding: 0 12px;
   box-sizing: border-box;
-  border: 0;
+  border: 1px solid rgba(60, 64, 67, 0.1);
   border-radius: 999px;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 2px 10px rgba(60, 64, 67, 0.1);
+  backdrop-filter: blur(14px);
   color: var(--black);
   cursor: pointer;
   font: inherit;
@@ -527,6 +529,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+
+  &:hover {
+    background: var(--hover-color);
+  }
 }
 
 .chat-mobile-model-title-arrow {
@@ -539,6 +545,8 @@
 
 .chat-mobile-model-title[aria-expanded="true"] {
   color: var(--black);
+  background: var(--surface-elevated);
+  box-shadow: var(--focus-ring-shadow);
 
   .chat-mobile-model-title-arrow {
     transform: rotate(180deg) translateY(-1px);

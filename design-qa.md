@@ -2042,3 +2042,35 @@ Browser QA:
 Known risks:
 
 - Browser QA uses hash routes. This iteration only stabilizes `new-chat` header geometry and a formatter-tolerant test matcher. No changes to `startChat`, `navigate(Path.Home)`, `navigate(Path.Chat)`, `navigate(Path.Masks)`, mask selection, confirmation, model APIs, MCP/Jimeng, attachments, image generation, stores, Tauri config, deployment config, or secrets.
+
+## Iteration 2026-06-16 mobile-model-title-surface
+
+Result: passed.
+
+Target flow:
+
+- Mobile `#/chat` header model selector reads as a stable clickable pill with a lightweight surface, clear expanded state, and unchanged model menu behavior.
+
+Scope:
+
+- `app/components/chat.module.scss`: added a subtle surface, border, shadow, blur, hover state, and expanded state to the mobile model title pill.
+- `test/gemini-visual-migration.test.ts`: locked the mobile model title surface and expanded-state CSS contract.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because `.chat-mobile-model-title` still had `border: 0` and transparent background.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Mobile `#/chat` at `390x844`: model pill rect `89x40` at `x=151 y=14`, `background: rgba(255, 255, 255, 0.78)`, `border-top: 1px solid rgba(60, 64, 67, 0.1)`, `box-shadow: rgba(60, 64, 67, 0.1) 0px 2px 10px`, `backdrop-filter: blur(14px)`, `aria-controls="chat-model-menu"`, `aria-haspopup="dialog"`, `aria-expanded=false`. After click `aria-expanded=true`, expanded background `rgba(255, 255, 255, 0.96)`, focus-ring shadow visible, menu rect `320x227` at `x=35 y=60`, menu inside viewport, input `246x28`, send `40x40`, `pageOverflowX: 0`, warn/error `0`.
+- Narrow `#/chat` at `320x740`: model pill rect `89x40` at `x=116 y=14`, same surface/border/shadow/blur and ARIA contract. After click `aria-expanded=true`, menu rect `272x227` at `x=24 y=60`, menu inside viewport, input `176x28`, send `40x40`, `pageOverflowX: 0`, warn/error `0`.
+- Desktop `#/chat` at `1440x1024`: desktop model selector present with rect `147x34` at `x=394 y=14`, mobile model title absent, input `478x28`, send `42x42`, `pageOverflowX: 0`, warn/error `0`.
+
+Known risks:
+
+- Browser QA uses hash routes with a query before the hash for fresh page loads. This iteration only changes the mobile model selector surface. No changes to model selection logic, reasoning/image controls, prompt bar, sending, attachments, image generation, MCP/Jimeng, stores, Tauri config, deployment config, or secrets.
