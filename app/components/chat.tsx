@@ -574,9 +574,9 @@ export function PromptHints(props: {
       };
 
       if (e.key === "ArrowUp") {
-        changeIndex(1);
-      } else if (e.key === "ArrowDown") {
         changeIndex(-1);
+      } else if (e.key === "ArrowDown") {
+        changeIndex(1);
       } else if (e.key === "Enter") {
         const selectedPrompt = prompts.at(selectIndex);
         if (selectedPrompt) {

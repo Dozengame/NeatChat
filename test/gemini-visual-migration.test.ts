@@ -412,6 +412,9 @@ describe("Gemini visual migration shell", () => {
       /if \(e\.key === "Escape"\) \{[\s\S]*e\.stopPropagation\(\);[\s\S]*e\.preventDefault\(\);[\s\S]*onClose\(\);[\s\S]*\}/,
     );
     expect(chat).toMatch(
+      /if \(e\.key === "ArrowUp"\) \{[\s\S]*changeIndex\(-1\);[\s\S]*\} else if \(e\.key === "ArrowDown"\) \{[\s\S]*changeIndex\(1\);/,
+    );
+    expect(chat).toMatch(
       /<PromptHints[\s\S]*prompts=\{promptHints\}[\s\S]*onPromptSelect=\{onPromptSelect\}[\s\S]*onClose=\{\(\) => setPromptHints\(\[\]\)\}/,
     );
     expect(chat).toContain('aria-controls="chat-input-action-menu"');

@@ -1212,3 +1212,35 @@ Browser QA:
 Known risks:
 
 - This iteration only exposes the existing prompt-hints selection state through listbox semantics. It does not change prompt matching, prompt ordering, arrow-key selection math, Enter selection, click insertion, Escape dismissal, prompt-hints settings behavior, sending, upload handling, image generation activation, MCP/Jimeng checks, model selection, attachments, messages, or API behavior.
+
+## Iteration 2026-06-16 prompt-hints-arrow-direction
+
+Result: passed.
+
+Target flow:
+
+- Enable prompt hints -> type `/` in the composer -> prompt suggestions open at `chat-prompt-hint-0` -> ArrowDown moves to `chat-prompt-hint-1` -> ArrowUp returns to `chat-prompt-hint-0` -> Escape closes the list while preserving focus and the `/` draft.
+
+Scope:
+
+- `app/components/chat.tsx`: corrected the existing prompt hints keydown mapping so ArrowDown advances the selected prompt and ArrowUp moves back.
+- `test/gemini-visual-migration.test.ts`: locked the direction-key contract without changing prompt search, Enter selection, click insertion, Escape dismissal, sending, upload, image generation, MCP/Jimeng, model behavior, attachments, or messages.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because ArrowUp called `changeIndex(1)` and ArrowDown called `changeIndex(-1)`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: page identity `http://localhost:3000/#/chat`, title `NeatChat`. Before opening, `#chat-input` was focused, empty, had no `aria-controls`, kept `aria-haspopup="listbox"`, and `pageOverflowPx: 0`. Pressing `/` opened `id="chat-prompt-hints"` with `role="listbox"`, `aria-label="提示词建议"`, `aria-activedescendant="chat-prompt-hint-0"`, `407` options, and one selected option `chat-prompt-hint-0`; the list measured `left: 430`, `right: 1312`, `top: 343.109375`, `bottom: 857.109375`, `width: 882`, `height: 514`; `listOverflowsViewport: false`, `pageOverflowPx: 0`. Pressing ArrowDown moved both `aria-activedescendant` and the only selected option to `chat-prompt-hint-1`; pressing ArrowUp moved both back to `chat-prompt-hint-0`. Pressing Escape removed the list, cleared textarea `aria-controls`, preserved value `/`, and kept focus on `#chat-input`. No console warn/error logs.
+- Mobile `390x844`: pressing `/` opened the same listbox semantics with `aria-activedescendant="chat-prompt-hint-0"`, `407` options, and one selected option `chat-prompt-hint-0`; list measured `left: 10`, `right: 382`, `top: 271.109375`, `bottom: 695.109375`, `width: 372`, `height: 424`; `listOverflowsViewport: false`, `pageOverflowPx: 0`. ArrowDown moved active descendant and selected option to `chat-prompt-hint-1`; ArrowUp moved both back to `chat-prompt-hint-0`. Escape removed the list, preserved `/`, kept focus on `#chat-input`, and no console warn/error logs appeared.
+- Narrow mobile `320x740`: pressing `/` opened the same listbox semantics with `aria-activedescendant="chat-prompt-hint-0"`, `407` options, and one selected option `chat-prompt-hint-0`; list measured `left: 10`, `right: 312`, `top: 219.109375`, `bottom: 591.109375`, `width: 302`, `height: 372`; `listOverflowsViewport: false`, `pageOverflowPx: 0`. ArrowDown moved active descendant and selected option to `chat-prompt-hint-1`; ArrowUp moved both back to `chat-prompt-hint-0`. Escape removed the list, preserved `/`, kept focus on `#chat-input`, and no console warn/error logs appeared.
+
+Known risks:
+
+- This iteration only corrects prompt hints ArrowUp/ArrowDown direction. It does not change prompt matching, prompt ordering, Enter selection, click insertion, Escape dismissal, prompt-hints settings behavior, sending, upload handling, image generation activation, MCP/Jimeng checks, model selection, attachments, messages, or API behavior.
