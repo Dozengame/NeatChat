@@ -136,6 +136,7 @@ export function SideBarContainer(props: {
   onDragStart: (e: MouseEvent) => void;
   shouldNarrow: boolean;
   className?: string;
+  isMobileHidden?: boolean;
 }) {
   const isMobileScreen = useMobileScreen();
   const isCompactScreen = useCompactScreen();
@@ -143,10 +144,12 @@ export function SideBarContainer(props: {
     () => isIOS() && isMobileScreen,
     [isMobileScreen],
   );
-  const { children, className, onDragStart, shouldNarrow } = props;
+  const { children, className, isMobileHidden, onDragStart, shouldNarrow } =
+    props;
   return (
     <div
       id="mobile-sidebar-drawer"
+      aria-hidden={isMobileHidden ? true : undefined}
       className={clsx(styles.sidebar, className, {
         [styles["narrow-sidebar"]]: shouldNarrow,
       })}
@@ -227,7 +230,10 @@ export function SideBarTail(props: {
   );
 }
 
-export function SideBar(props: { className?: string }) {
+export function SideBar(props: {
+  className?: string;
+  isMobileHidden?: boolean;
+}) {
   useHotKey();
   const { onDragStart, shouldNarrow } = useDragSideBar();
   const isCompactScreen = useCompactScreen();
@@ -305,7 +311,8 @@ export function SideBar(props: { className?: string }) {
     <SideBarContainer
       onDragStart={onDragStart}
       shouldNarrow={shouldNarrow}
-      {...props}
+      className={props.className}
+      isMobileHidden={props.isMobileHidden}
     >
       <SideBarHeader
         title="NeatChat"

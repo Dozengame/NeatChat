@@ -1407,3 +1407,38 @@ Browser QA:
 Known risks:
 
 - This iteration only adds non-visual landmark semantics to existing sidebar groups. It does not change sidebar visual style, width, collapse behavior, nav copy, route targets, history list, drag sorting, deletion, settings, stores, model APIs, MCP/Jimeng checks, attachments, or image generation behavior.
+
+## Iteration 2026-06-16 mobile-sidebar-hidden-state
+
+Result: passed.
+
+Target flow:
+
+- On mobile, open chat with the sidebar drawer closed -> the off-canvas sidebar is hidden from assistive technology -> tap the mobile sidebar trigger -> the drawer opens, becomes accessible again, and the backdrop exposes the expanded state -> desktop sidebar remains accessible as before.
+
+Scope:
+
+- `app/components/home.tsx`: passes `isMobileHidden={isCompactScreen && !isHome}` into the sidebar so only the compact closed route hides the off-canvas drawer.
+- `app/components/sidebar.tsx`: maps `isMobileHidden` to `aria-hidden` on `#mobile-sidebar-drawer`.
+- `test/gemini-visual-migration.test.ts`: locks the mobile hidden-state contract without changing visual layout, drawer width, animation, routes, nav item behavior, history list behavior, settings, stores, MCP/Jimeng, model selection, or API behavior.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the sidebar did not expose `isMobileHidden` or `aria-hidden`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024` at `#/chat`: drawer had no `aria-hidden`, measured `300x1024` at `x=0`, `navCount: 2`, no mobile trigger, chat input and send button remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Mobile `390x844` closed at `#/chat`: drawer had `aria-hidden="true"`, measured `304x844` at `x=-304`; mobile trigger was visible with `aria-label="查看消息列表"`, `aria-controls="mobile-sidebar-drawer"`, `aria-expanded="false"`, size `40x40`; chat input and send button remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Mobile `390x844` opened after trigger: URL moved to `#/`, drawer removed `aria-hidden`, class included `sidebar-show`, measured `304x844` at `x=0`; backdrop existed with `aria-controls="mobile-sidebar-drawer"` and `aria-expanded="true"`; trigger also reported `aria-expanded="true"`; chat input and send button remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Narrow mobile `320x740` closed at `#/chat`: drawer had `aria-hidden="true"`, measured `266x740` at `x=-266`; mobile trigger was visible with `aria-expanded="false"`, size `40x40`; chat input and send button remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+- Narrow mobile `320x740` opened after trigger: URL moved to `#/`, drawer removed `aria-hidden`, class included `sidebar-show`, measured `266x740` at `x=0`; backdrop and trigger both reported `aria-expanded="true"`; chat input and send button remained visible, `pageOverflowX: 0`, console warn/error logs: `0`.
+
+Known risks:
+
+- This iteration only changes the accessibility state of the existing off-canvas sidebar. It does not change sidebar styling, drawer width, animation timing, route targets, nav copy, history list, drag sorting, deletion, settings, stores, model APIs, MCP/Jimeng checks, attachments, or image generation behavior.

@@ -175,6 +175,7 @@ function ScreenContent(props: {
         className={clsx({
           [styles["sidebar-show"]]: isHome,
         })}
+        isMobileHidden={isCompactScreen && !isHome}
       />
       {isCompactScreen && isHome && (
         <button

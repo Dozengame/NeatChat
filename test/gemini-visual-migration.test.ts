@@ -509,6 +509,13 @@ describe("Gemini visual migration shell", () => {
     expect(sidebar).toContain("Path.Settings");
     expect(sidebar).toContain("Path.Home");
     expect(sidebar).toContain('id="mobile-sidebar-drawer"');
+    expect(sidebar).toContain("isMobileHidden?: boolean");
+    expect(sidebar).toMatch(
+      /id="mobile-sidebar-drawer"[\s\S]*aria-hidden=\{isMobileHidden \? true : undefined\}/,
+    );
+    expect(sidebar).toMatch(
+      /<SideBarContainer[\s\S]*isMobileHidden=\{props\.isMobileHidden\}/,
+    );
     expect(sidebar).toContain("<ChatList narrow={shouldNarrow}");
     expect(sidebar).toContain("SimpleSelector");
     expect(chatList).toContain('role="list"');
@@ -531,6 +538,7 @@ describe("Gemini visual migration shell", () => {
     expect(chatList).toContain('styles["chat-item-delete"]');
     expect(chatList).not.toContain('style={{');
     expect(home).toContain('[styles["sidebar-show"]]: isHome');
+    expect(home).toContain("isMobileHidden={isCompactScreen && !isHome}");
     expect(home).toContain("isCompactScreen && isHome");
     expect(home).toContain('styles["sidebar-backdrop"]');
     expect(home).toContain('aria-label="关闭侧边栏"');
