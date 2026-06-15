@@ -3225,7 +3225,9 @@ function useChatInnerView() {
                         className={styles["chat-empty-suggestion"]}
                         onClick={() => applyEmptySuggestion(suggestion)}
                       >
-                        {suggestion}
+                        <span className={styles["chat-empty-suggestion-text"]}>
+                          {suggestion}
+                        </span>
                       </button>
                     </li>
                   ))}

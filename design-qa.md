@@ -1277,3 +1277,37 @@ Browser QA:
 Known risks:
 
 - This iteration only fixes Enter selection and trailing whitespace in selected prompt fill. It does not change prompt matching inputs, prompt data, prompt ordering, ArrowUp/ArrowDown selection, click path entry points, Escape dismissal, prompt-hints settings behavior, sending, upload handling, image generation activation, MCP/Jimeng checks, model selection, attachments, messages, or API behavior.
+
+## Iteration 2026-06-16 empty-suggestion-touch-wrap
+
+Result: passed.
+
+Target flow:
+
+- Open a new empty chat -> the empty-state suggestion chips are visible -> desktop keeps a compact row -> mobile and narrow mobile wrap cleanly into two rows with stable touch targets -> no chip or text overflows the suggestion area or viewport.
+
+Scope:
+
+- `app/components/chat.tsx`: wrapped each empty-state suggestion label in a dedicated text span so text wrapping can be controlled without changing the existing button click path.
+- `app/components/chat.module.scss`: converted suggestion buttons to centered inline-flex touch targets, moved multiline handling to the text span, added a two-line height fallback, and raised mobile chip height to `44px`.
+- `test/gemini-visual-migration.test.ts`: locked the empty-suggestion structure, touch target, wrapping, and two-line fallback contracts without changing suggestion content, click-to-fill behavior, empty-state routing, sending, uploads, image generation, MCP/Jimeng, model selection, settings, stores, messages, or API behavior.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because empty suggestions were single-line `nowrap` buttons and mobile chips did not expose the new touch/wrap contract.
+- Browser QA then exposed a runtime-verification gap: `-webkit-line-clamp` existed in the stylesheet, but Browser computed style did not expose it as a reliable value. A second RED added the explicit `line-height: 1.2` and `max-height: 2.4em` fallback contract before CSS was updated.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn jest test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: empty suggestion area had `4` items, `4` buttons, and `4` text spans. Suggestion list measured `640x40`; buttons measured `110-149px` wide and `40px` tall, each stayed within the list and viewport. Text spans used `white-space: normal`, `overflow: hidden`, `max-height: 31.2px`, and actual span height `15.59px`, satisfying the two-line height cap. `pageOverflowX: 0`; console warn/error logs: `0`.
+- Mobile `390x844`: empty suggestion area had `4` items, `4` buttons, and `4` text spans. Suggestion list measured `320x96`; buttons measured `98-134px` wide and `44px` tall, each stayed within the list and viewport. Text spans used `white-space: normal`, `overflow: hidden`, `max-height: 28.8px`, and actual span height `14.4px`, satisfying the two-line height cap. `pageOverflowX: 0`; console warn/error logs: `0`.
+- Narrow mobile `320x740`: empty suggestion area had `4` items, `4` buttons, and `4` text spans. Suggestion list measured `288x96`; buttons measured `98-134px` wide and `44px` tall, each stayed within the list and viewport. Text spans used `white-space: normal`, `overflow: hidden`, `max-height: 28.8px`, and actual span height `14.4px`, satisfying the two-line height cap. `pageOverflowX: 0`; console warn/error logs: `0`.
+
+Known risks:
+
+- This iteration only changes empty-state suggestion chip structure and CSS. It does not change `Locale.Chat.EmptySuggestions`, `applyEmptySuggestion`, empty-state detection, composer placement, prompt hints, sending, upload handling, image generation activation, MCP/Jimeng checks, model selection, settings, stores, messages, or API behavior.

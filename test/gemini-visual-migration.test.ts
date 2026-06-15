@@ -101,6 +101,14 @@ describe("Gemini visual migration shell", () => {
     );
     const actionMenuBlock = readCssBlock(chatStyles, ".chat-input-action-menu");
     const emptyStateBlock = readCssBlock(chatStyles, ".chat-empty-state");
+    const emptySuggestionBlock = readCssBlock(
+      chatStyles,
+      ".chat-empty-suggestion",
+    );
+    const emptySuggestionTextBlock = readCssBlock(
+      chatStyles,
+      ".chat-empty-suggestion-text",
+    );
     const actionMenuRootDeclarations = readRootDeclarations(actionMenuBlock);
     const actionMenuActiveActionBlock = readCssBlock(
       chatStyles,
@@ -113,6 +121,10 @@ describe("Gemini visual migration shell", () => {
     const mobileStatusRowBlock = readCssBlock(
       mobileStyles,
       ".chat-input-status-row",
+    );
+    const mobileEmptySuggestionBlock = readCssBlock(
+      mobileStyles,
+      ".chat-empty-suggestion",
     );
     const inputStatusBlock = readCssBlock(
       chatStyles,
@@ -523,6 +535,22 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain(".chat-empty-suggestions");
     expect(chatStyles).toContain(".chat-empty-suggestion-item");
     expect(chatStyles).toContain(".chat-empty-suggestion");
+    expect(chat).toContain('styles["chat-empty-suggestion-text"]');
+    expect(chat).toMatch(
+      /className=\{styles\["chat-empty-suggestion"\]\}[\s\S]*<span[\s\S]*className=\{styles\["chat-empty-suggestion-text"\]\}[\s\S]*>\s*\{suggestion\}\s*<\/span>/,
+    );
+    expect(emptySuggestionBlock).toMatch(/display:\s*inline-flex;/);
+    expect(emptySuggestionBlock).toMatch(/align-items:\s*center;/);
+    expect(emptySuggestionBlock).toMatch(/justify-content:\s*center;/);
+    expect(emptySuggestionTextBlock).toMatch(/display:\s*-webkit-box;/);
+    expect(emptySuggestionTextBlock).toMatch(/line-height:\s*1\.2;/);
+    expect(emptySuggestionTextBlock).toMatch(/max-height:\s*2\.4em;/);
+    expect(emptySuggestionTextBlock).toMatch(/-webkit-line-clamp:\s*2;/);
+    expect(emptySuggestionTextBlock).toMatch(
+      /-webkit-box-orient:\s*vertical;/,
+    );
+    expect(emptySuggestionTextBlock).toMatch(/white-space:\s*normal;/);
+    expect(mobileEmptySuggestionBlock).toMatch(/min-height:\s*44px;/);
     expect(chatStyles).toContain(".chat-reading-surface");
     expect(chatStyles).toContain(".chat-message-row");
     expect(chatStyles).toContain(".chat-message-row-user");
