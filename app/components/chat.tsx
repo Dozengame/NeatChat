@@ -2459,10 +2459,49 @@ function useChatInnerView() {
     };
   }, [unfinishedInputKey]);
 
-  const appendAttachmentsRef = useRef(appendAttachments);
-  useEffect(() => {
-    appendAttachmentsRef.current = appendAttachments;
-  }, [appendAttachments]);
+  const appendAttachments = useCallback(
+    (fileInfos: FileInfo[], imageUrls: string[]) => {
+      const messages: string[] = [];
+
+      const currentAttachedFiles = attachedFilesRef.current;
+      const currentAttachImages = attachImagesRef.current;
+
+      if (fileInfos.length > 0) {
+        const remainingFileSlots = Math.max(0, 5 - currentAttachedFiles.length);
+        const filesToAdd = fileInfos.slice(0, remainingFileSlots);
+
+        if (filesToAdd.length > 0) {
+          setAttachedFiles([...currentAttachedFiles, ...filesToAdd]);
+          messages.push(`已添加 ${filesToAdd.length} 个文件`);
+        }
+
+        if (fileInfos.length > remainingFileSlots) {
+          messages.push("最多只能上传5个文件，已保留前5个");
+        }
+      }
+
+      if (imageUrls.length > 0) {
+        const remainingImageSlots = Math.max(0, 3 - currentAttachImages.length);
+        const imagesToAdd = imageUrls.slice(0, remainingImageSlots);
+
+        if (imagesToAdd.length > 0) {
+          setAttachImages([...currentAttachImages, ...imagesToAdd]);
+          messages.push(`已添加 ${imagesToAdd.length} 张图片`);
+        }
+
+        if (imageUrls.length > remainingImageSlots) {
+          messages.push("最多只能上传3张图片，已保留前3张");
+        }
+      }
+
+      if (messages.length > 0) {
+        showToast(messages.join("，"));
+      }
+    },
+    // All state reads go through refs; setAttachedFiles/setAttachImages are stable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   useEffect(() => {
     const handleDragEnter = (e: DragEvent) => {
@@ -2565,7 +2604,7 @@ function useChatInnerView() {
           const { fileInfos, imageUrls } =
             await processAttachmentFiles(filesToProcess);
           if (!isMounted.current) return;
-          appendAttachmentsRef.current(fileInfos, imageUrls);
+          appendAttachments(fileInfos, imageUrls);
         } catch (error) {
           if (!isMounted.current) return;
           console.error("读取拖拽附件失败:", error);
@@ -2589,46 +2628,7 @@ function useChatInnerView() {
       window.removeEventListener("dragleave", handleDragLeave);
       window.removeEventListener("drop", handleDrop);
     };
-  }, []);
-
-  function appendAttachments(fileInfos: FileInfo[], imageUrls: string[]) {
-    const messages: string[] = [];
-
-    const currentAttachedFiles = attachedFilesRef.current;
-    const currentAttachImages = attachImagesRef.current;
-
-    if (fileInfos.length > 0) {
-      const remainingFileSlots = Math.max(0, 5 - currentAttachedFiles.length);
-      const filesToAdd = fileInfos.slice(0, remainingFileSlots);
-
-      if (filesToAdd.length > 0) {
-        setAttachedFiles([...currentAttachedFiles, ...filesToAdd]);
-        messages.push(`已添加 ${filesToAdd.length} 个文件`);
-      }
-
-      if (fileInfos.length > remainingFileSlots) {
-        messages.push("最多只能上传5个文件，已保留前5个");
-      }
-    }
-
-    if (imageUrls.length > 0) {
-      const remainingImageSlots = Math.max(0, 3 - currentAttachImages.length);
-      const imagesToAdd = imageUrls.slice(0, remainingImageSlots);
-
-      if (imagesToAdd.length > 0) {
-        setAttachImages([...currentAttachImages, ...imagesToAdd]);
-        messages.push(`已添加 ${imagesToAdd.length} 张图片`);
-      }
-
-      if (imageUrls.length > remainingImageSlots) {
-        messages.push("最多只能上传3张图片，已保留前3张");
-      }
-    }
-
-    if (messages.length > 0) {
-      showToast(messages.join("，"));
-    }
-  }
+  }, [appendAttachments]);
 
   const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const clipboardData = e.clipboardData;
@@ -2905,7 +2905,6 @@ function useChatInnerView() {
         className={clsx(styles["chat-input-action-menu-backdrop"], {
           [styles["chat-input-action-menu-backdrop-open"]]: showChatActionMenu,
         })}
-        /* className={styles["chat-input-action-menu-backdrop"]} */
         aria-label="关闭对话工具"
         onClick={() => {
           setShowChatActionMenu(false);
@@ -3788,7 +3787,6 @@ function useChatInnerView() {
               className={clsx(styles["chat-input-action-menu"], {
                 [styles["chat-input-action-menu-open"]]: showChatActionMenu,
               })}
-              /* className={styles["chat-input-action-menu"]} */
               role="dialog"
               aria-modal="true"
               aria-label="对话工具菜单"
