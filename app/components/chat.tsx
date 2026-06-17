@@ -1626,6 +1626,25 @@ function useChatInnerView() {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<FileInfo[]>([]);
   const [imageGenerationEnabled, setImageGenerationEnabled] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const dragCounter = useRef(0);
+
+  const isMounted = useRef(true);
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  const attachedFilesRef = useRef(attachedFiles);
+  const attachImagesRef = useRef(attachImages);
+  useEffect(() => {
+    attachedFilesRef.current = attachedFiles;
+  }, [attachedFiles]);
+  useEffect(() => {
+    attachImagesRef.current = attachImages;
+  }, [attachImages]);
 
   // prompt hints
   const promptStore = usePromptStore();
@@ -2440,15 +2459,150 @@ function useChatInnerView() {
     };
   }, [unfinishedInputKey]);
 
+  const appendAttachmentsRef = useRef(appendAttachments);
+  useEffect(() => {
+    appendAttachmentsRef.current = appendAttachments;
+  }, [appendAttachments]);
+
+  useEffect(() => {
+    const handleDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (
+        e.dataTransfer &&
+        e.dataTransfer.types &&
+        Array.from(e.dataTransfer.types).includes("Files")
+      ) {
+        dragCounter.current += 1;
+        if (dragCounter.current === 1) {
+          setDragActive(true);
+        }
+      }
+    };
+
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const handleDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (
+        e.dataTransfer &&
+        e.dataTransfer.types &&
+        Array.from(e.dataTransfer.types).includes("Files")
+      ) {
+        dragCounter.current -= 1;
+        if (dragCounter.current <= 0) {
+          dragCounter.current = 0;
+          setDragActive(false);
+        }
+      }
+    };
+
+    const handleDrop = async (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter.current = 0;
+      setDragActive(false);
+
+      if (
+        e.dataTransfer &&
+        e.dataTransfer.types &&
+        Array.from(e.dataTransfer.types).includes("Files") &&
+        e.dataTransfer.files &&
+        e.dataTransfer.files.length > 0
+      ) {
+        const files = Array.from(e.dataTransfer.files);
+
+        // 15MB size limit check
+        const MAX_SIZE = 15 * 1024 * 1024;
+        const validSizeFiles = files.filter((file) => {
+          if (file.size > MAX_SIZE) {
+            showToast(`文件 ${file.name} 超过 15MB 限制，已忽略`);
+            return false;
+          }
+          return true;
+        });
+
+        // Classify
+        const images = validSizeFiles.filter((file) =>
+          file.type.startsWith("image/"),
+        );
+        const documents = validSizeFiles.filter(
+          (file) => !file.type.startsWith("image/"),
+        );
+
+        // Slots calculation
+        const remainingFileSlots = Math.max(
+          0,
+          5 - attachedFilesRef.current.length,
+        );
+        const remainingImageSlots = Math.max(
+          0,
+          3 - attachImagesRef.current.length,
+        );
+
+        if (images.length > remainingImageSlots) {
+          showToast("最多只能上传3张图片，已保留前3张");
+        }
+        if (documents.length > remainingFileSlots) {
+          showToast("最多只能上传5个文件，已保留前5个");
+        }
+
+        const slicedImages = images.slice(0, remainingImageSlots);
+        const slicedDocuments = documents.slice(0, remainingFileSlots);
+
+        const filesToProcess = [...slicedImages, ...slicedDocuments];
+
+        if (filesToProcess.length === 0) {
+          return;
+        }
+
+        setUploading(true);
+        try {
+          const { fileInfos, imageUrls } =
+            await processAttachmentFiles(filesToProcess);
+          if (!isMounted.current) return;
+          appendAttachmentsRef.current(fileInfos, imageUrls);
+        } catch (error) {
+          if (!isMounted.current) return;
+          console.error("读取拖拽附件失败:", error);
+          showToast("读取拖拽附件失败");
+        } finally {
+          if (isMounted.current) {
+            setUploading(false);
+          }
+        }
+      }
+    };
+
+    window.addEventListener("dragenter", handleDragEnter);
+    window.addEventListener("dragover", handleDragOver);
+    window.addEventListener("dragleave", handleDragLeave);
+    window.addEventListener("drop", handleDrop);
+
+    return () => {
+      window.removeEventListener("dragenter", handleDragEnter);
+      window.removeEventListener("dragover", handleDragOver);
+      window.removeEventListener("dragleave", handleDragLeave);
+      window.removeEventListener("drop", handleDrop);
+    };
+  }, []);
+
   function appendAttachments(fileInfos: FileInfo[], imageUrls: string[]) {
     const messages: string[] = [];
 
+    const currentAttachedFiles = attachedFilesRef.current;
+    const currentAttachImages = attachImagesRef.current;
+
     if (fileInfos.length > 0) {
-      const remainingFileSlots = Math.max(0, 5 - attachedFiles.length);
+      const remainingFileSlots = Math.max(0, 5 - currentAttachedFiles.length);
       const filesToAdd = fileInfos.slice(0, remainingFileSlots);
 
       if (filesToAdd.length > 0) {
-        setAttachedFiles([...attachedFiles, ...filesToAdd]);
+        setAttachedFiles([...currentAttachedFiles, ...filesToAdd]);
         messages.push(`已添加 ${filesToAdd.length} 个文件`);
       }
 
@@ -2458,11 +2612,11 @@ function useChatInnerView() {
     }
 
     if (imageUrls.length > 0) {
-      const remainingImageSlots = Math.max(0, 3 - attachImages.length);
+      const remainingImageSlots = Math.max(0, 3 - currentAttachImages.length);
       const imagesToAdd = imageUrls.slice(0, remainingImageSlots);
 
       if (imagesToAdd.length > 0) {
-        setAttachImages([...attachImages, ...imagesToAdd]);
+        setAttachImages([...currentAttachImages, ...imagesToAdd]);
         messages.push(`已添加 ${imagesToAdd.length} 张图片`);
       }
 
@@ -2731,19 +2885,33 @@ function useChatInnerView() {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {showChatActionMenu && (
-        <button
-          type="button"
-          className={styles["chat-input-action-menu-backdrop"]}
-          aria-label="关闭对话工具"
-          onClick={() => {
-            setShowChatActionMenu(false);
-            requestAnimationFrame(
-              () => chatInputMenuButtonRef.current?.focus(),
-            );
-          }}
-        />
-      )}
+      <div
+        className={clsx(
+          styles["chat-dropzone"],
+          dragActive && styles["chat-dropzone-active"],
+        )}
+      >
+        <div className={styles["chat-dropzone-content"]}>
+          <div className={styles["chat-dropzone-icon"]}>
+            <AttachmentIcon />
+          </div>
+          <p className={styles["chat-dropzone-text"]}>
+            拖拽文件或图片到此处上传
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        className={clsx(styles["chat-input-action-menu-backdrop"], {
+          [styles["chat-input-action-menu-backdrop-open"]]: showChatActionMenu,
+        })}
+        /* className={styles["chat-input-action-menu-backdrop"]} */
+        aria-label="关闭对话工具"
+        onClick={() => {
+          setShowChatActionMenu(false);
+          requestAnimationFrame(() => chatInputMenuButtonRef.current?.focus());
+        }}
+      />
       {isCompactScreen ? (
         <div className={styles["chat-mobile-header"]} data-tauri-drag-region>
           <button
@@ -2913,117 +3081,251 @@ function useChatInnerView() {
         </div>
       )}
 
-      {showMobileModelSelector && (
-        <>
-          <button
-            type="button"
-            className={
-              isCompactScreen
-                ? styles["chat-mobile-model-menu-backdrop"]
-                : styles["chat-desktop-model-menu-backdrop"]
-            }
-            aria-label="关闭模型选择"
-            onClick={() => {
-              closeMobileModelSelector();
-              restoreModelSelectorFocus();
-            }}
-          />
-          <div
-            id="chat-model-menu"
-            className={
-              isCompactScreen
-                ? styles["chat-mobile-model-menu"]
-                : styles["chat-desktop-model-menu"]
-            }
-            role="dialog"
-            aria-modal="true"
-            aria-label="模型和思考等级"
-          >
-            <div
-              className={styles["chat-mobile-model-list"]}
-              role="listbox"
-              aria-label="可选模型"
-            >
-              {headerAvailableModels.length === 0 ? (
-                <div className={styles["chat-mobile-model-empty"]}>
-                  暂无可用模型
-                </div>
-              ) : (
-                headerAvailableModels.map((model) => {
-                  const providerName = model?.provider?.providerName;
-                  const selected =
-                    model.name === headerCurrentModel &&
-                    providerName === headerCurrentProviderName;
-                  return (
-                    <button
-                      type="button"
-                      key={`${model.name}@${providerName}`}
-                      className={clsx(styles["chat-mobile-model-option"], {
-                        [styles["chat-mobile-model-option-selected"]]: selected,
-                      })}
-                      role="option"
-                      aria-selected={selected}
-                      onClick={() =>
-                        selectHeaderModel(`${model.name}@${providerName}`)
-                      }
-                    >
-                      <span className={styles["chat-mobile-menu-check"]}>
-                        {selected ? "✓" : ""}
-                      </span>
-                      <span className={styles["chat-mobile-model-copy"]}>
-                        <span className={styles["chat-mobile-model-name"]}>
-                          {model.displayName || model.name}
-                        </span>
-                        {providerName && (
-                          <span
-                            className={styles["chat-mobile-model-provider"]}
-                          >
-                            {providerName}
-                          </span>
-                        )}
-                      </span>
-                    </button>
-                  );
-                })
-              )}
+      {/* 
+        We always render the model menu in the DOM to support smooth CSS exit transitions.
+        We toggle its visibility via class name instead of: showMobileModelSelector && (
+      */}
+      <button
+        type="button"
+        className={clsx(
+          isCompactScreen
+            ? styles["chat-mobile-model-menu-backdrop"]
+            : styles["chat-desktop-model-menu-backdrop"],
+          {
+            [styles["chat-model-menu-visible"]]: showMobileModelSelector,
+          },
+        )}
+        aria-label="关闭模型选择"
+        onClick={() => {
+          closeMobileModelSelector();
+          restoreModelSelectorFocus();
+        }}
+      />
+      <div
+        id="chat-model-menu"
+        className={clsx(
+          isCompactScreen
+            ? styles["chat-mobile-model-menu"]
+            : styles["chat-desktop-model-menu"],
+          {
+            [styles["chat-model-menu-visible"]]: showMobileModelSelector,
+          },
+        )}
+        role="dialog"
+        aria-modal="true"
+        aria-label="模型和思考等级"
+      >
+        <div
+          className={styles["chat-mobile-model-list"]}
+          role="listbox"
+          aria-label="可选模型"
+        >
+          {headerAvailableModels.length === 0 ? (
+            <div className={styles["chat-mobile-model-empty"]}>
+              暂无可用模型
             </div>
+          ) : (
+            headerAvailableModels.map((model) => {
+              const providerName = model?.provider?.providerName;
+              const selected =
+                model.name === headerCurrentModel &&
+                providerName === headerCurrentProviderName;
+              return (
+                <button
+                  type="button"
+                  key={`${model.name}@${providerName}`}
+                  className={clsx(styles["chat-mobile-model-option"], {
+                    [styles["chat-mobile-model-option-selected"]]: selected,
+                  })}
+                  role="option"
+                  aria-selected={selected}
+                  onClick={() =>
+                    selectHeaderModel(`${model.name}@${providerName}`)
+                  }
+                >
+                  <span className={styles["chat-mobile-menu-check"]}>
+                    {selected ? "✓" : ""}
+                  </span>
+                  <span className={styles["chat-mobile-model-copy"]}>
+                    <span className={styles["chat-mobile-model-name"]}>
+                      {model.displayName || model.name}
+                    </span>
+                    {providerName && (
+                      <span className={styles["chat-mobile-model-provider"]}>
+                        {providerName}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              );
+            })
+          )}
+        </div>
 
-            {(showHeaderReasoningControl || showHeaderImageControls) && (
+        {(showHeaderReasoningControl || showHeaderImageControls) && (
+          <>
+            <div className={styles["chat-mobile-model-divider"]} />
+            {showHeaderReasoningControl && (
+              <div className={styles["chat-mobile-model-section"]}>
+                <button
+                  type="button"
+                  className={styles["chat-mobile-reasoning-head"]}
+                  aria-expanded={isReasoningSectionExpanded}
+                  aria-controls="chat-mobile-reasoning-options"
+                  onClick={() => toggleMobileModelSection("reasoning")}
+                >
+                  <span>
+                    <strong>思考等级</strong>
+                    <small>
+                      {reasoningLabels[headerCurrentReasoningEffort]}
+                    </small>
+                  </span>
+                  <span className={styles["chat-mobile-reasoning-caret"]}>
+                    {isReasoningSectionExpanded ? "⌃" : "⌄"}
+                  </span>
+                </button>
+                {isReasoningSectionExpanded && (
+                  <div
+                    id="chat-mobile-reasoning-options"
+                    className={styles["chat-mobile-reasoning-list"]}
+                    role="listbox"
+                    aria-label="思考等级选项"
+                  >
+                    {reasoningEfforts.map((effort) => {
+                      const selected = effort === headerCurrentReasoningEffort;
+                      return (
+                        <button
+                          type="button"
+                          key={effort}
+                          className={clsx(
+                            styles["chat-mobile-reasoning-option"],
+                            {
+                              [styles["chat-mobile-reasoning-option-selected"]]:
+                                selected,
+                            },
+                          )}
+                          role="option"
+                          aria-selected={selected}
+                          onClick={() => selectHeaderReasoningEffort(effort)}
+                        >
+                          <span className={styles["chat-mobile-menu-check"]}>
+                            {selected ? "✓" : ""}
+                          </span>
+                          <span className={styles["chat-mobile-model-copy"]}>
+                            <span className={styles["chat-mobile-model-name"]}>
+                              {reasoningLabels[effort]}
+                            </span>
+                            <span
+                              className={styles["chat-mobile-model-provider"]}
+                            >
+                              {reasoningDescriptions[effort]}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+            {showHeaderImageControls && (
               <>
-                <div className={styles["chat-mobile-model-divider"]} />
-                {showHeaderReasoningControl && (
+                <div className={styles["chat-mobile-model-section"]}>
+                  <button
+                    type="button"
+                    className={styles["chat-mobile-reasoning-head"]}
+                    aria-expanded={isImageSizeSectionExpanded}
+                    aria-controls="chat-mobile-image-size-options"
+                    onClick={() => toggleMobileModelSection("image-size")}
+                  >
+                    <span>
+                      <strong>图片尺寸</strong>
+                      <small>{headerCurrentSize}</small>
+                    </span>
+                    <span className={styles["chat-mobile-reasoning-caret"]}>
+                      {isImageSizeSectionExpanded ? "⌃" : "⌄"}
+                    </span>
+                  </button>
+                  {isImageSizeSectionExpanded && (
+                    <div
+                      id="chat-mobile-image-size-options"
+                      className={styles["chat-mobile-reasoning-list"]}
+                      role="listbox"
+                      aria-label="图片尺寸选项"
+                    >
+                      {headerImageSizes.map((size) => {
+                        const selected = size === headerCurrentSize;
+                        return (
+                          <button
+                            type="button"
+                            key={size}
+                            className={clsx(
+                              styles["chat-mobile-reasoning-option"],
+                              {
+                                [styles[
+                                  "chat-mobile-reasoning-option-selected"
+                                ]]: selected,
+                              },
+                            )}
+                            role="option"
+                            aria-selected={selected}
+                            onClick={() =>
+                              selectHeaderImageSize(size as OpenAIImageSize)
+                            }
+                          >
+                            <span className={styles["chat-mobile-menu-check"]}>
+                              {selected ? "✓" : ""}
+                            </span>
+                            <span className={styles["chat-mobile-model-copy"]}>
+                              <span
+                                className={styles["chat-mobile-model-name"]}
+                              >
+                                {size}
+                              </span>
+                              <span
+                                className={styles["chat-mobile-model-provider"]}
+                              >
+                                生成图片尺寸
+                              </span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                {headerImageQualitys.length > 0 && (
                   <div className={styles["chat-mobile-model-section"]}>
                     <button
                       type="button"
                       className={styles["chat-mobile-reasoning-head"]}
-                      aria-expanded={isReasoningSectionExpanded}
-                      aria-controls="chat-mobile-reasoning-options"
-                      onClick={() => toggleMobileModelSection("reasoning")}
+                      aria-expanded={isImageQualitySectionExpanded}
+                      aria-controls="chat-mobile-image-quality-options"
+                      onClick={() => toggleMobileModelSection("image-quality")}
                     >
                       <span>
-                        <strong>思考等级</strong>
+                        <strong>图片清晰度</strong>
                         <small>
-                          {reasoningLabels[headerCurrentReasoningEffort]}
+                          {getImageQualityLabel(headerCurrentQuality)}
                         </small>
                       </span>
                       <span className={styles["chat-mobile-reasoning-caret"]}>
-                        {isReasoningSectionExpanded ? "⌃" : "⌄"}
+                        {isImageQualitySectionExpanded ? "⌃" : "⌄"}
                       </span>
                     </button>
-                    {isReasoningSectionExpanded && (
+                    {isImageQualitySectionExpanded && (
                       <div
-                        id="chat-mobile-reasoning-options"
+                        id="chat-mobile-image-quality-options"
                         className={styles["chat-mobile-reasoning-list"]}
                         role="listbox"
-                        aria-label="思考等级选项"
+                        aria-label="图片清晰度选项"
                       >
-                        {reasoningEfforts.map((effort) => {
-                          const selected =
-                            effort === headerCurrentReasoningEffort;
+                        {headerImageQualitys.map((quality) => {
+                          const selected = quality === headerCurrentQuality;
                           return (
                             <button
                               type="button"
-                              key={effort}
+                              key={quality}
                               className={clsx(
                                 styles["chat-mobile-reasoning-option"],
                                 {
@@ -3035,7 +3337,9 @@ function useChatInnerView() {
                               role="option"
                               aria-selected={selected}
                               onClick={() =>
-                                selectHeaderReasoningEffort(effort)
+                                selectHeaderImageQuality(
+                                  quality as OpenAIImageQuality,
+                                )
                               }
                             >
                               <span
@@ -3049,14 +3353,16 @@ function useChatInnerView() {
                                 <span
                                   className={styles["chat-mobile-model-name"]}
                                 >
-                                  {reasoningLabels[effort]}
+                                  {getImageQualityLabel(
+                                    quality as OpenAIImageQuality,
+                                  )}
                                 </span>
                                 <span
                                   className={
                                     styles["chat-mobile-model-provider"]
                                   }
                                 >
-                                  {reasoningDescriptions[effort]}
+                                  {quality}
                                 </span>
                               </span>
                             </button>
@@ -3066,169 +3372,11 @@ function useChatInnerView() {
                     )}
                   </div>
                 )}
-                {showHeaderImageControls && (
-                  <>
-                    <div className={styles["chat-mobile-model-section"]}>
-                      <button
-                        type="button"
-                        className={styles["chat-mobile-reasoning-head"]}
-                        aria-expanded={isImageSizeSectionExpanded}
-                        aria-controls="chat-mobile-image-size-options"
-                        onClick={() => toggleMobileModelSection("image-size")}
-                      >
-                        <span>
-                          <strong>图片尺寸</strong>
-                          <small>{headerCurrentSize}</small>
-                        </span>
-                        <span className={styles["chat-mobile-reasoning-caret"]}>
-                          {isImageSizeSectionExpanded ? "⌃" : "⌄"}
-                        </span>
-                      </button>
-                      {isImageSizeSectionExpanded && (
-                        <div
-                          id="chat-mobile-image-size-options"
-                          className={styles["chat-mobile-reasoning-list"]}
-                          role="listbox"
-                          aria-label="图片尺寸选项"
-                        >
-                          {headerImageSizes.map((size) => {
-                            const selected = size === headerCurrentSize;
-                            return (
-                              <button
-                                type="button"
-                                key={size}
-                                className={clsx(
-                                  styles["chat-mobile-reasoning-option"],
-                                  {
-                                    [styles[
-                                      "chat-mobile-reasoning-option-selected"
-                                    ]]: selected,
-                                  },
-                                )}
-                                role="option"
-                                aria-selected={selected}
-                                onClick={() =>
-                                  selectHeaderImageSize(size as OpenAIImageSize)
-                                }
-                              >
-                                <span
-                                  className={styles["chat-mobile-menu-check"]}
-                                >
-                                  {selected ? "✓" : ""}
-                                </span>
-                                <span
-                                  className={styles["chat-mobile-model-copy"]}
-                                >
-                                  <span
-                                    className={styles["chat-mobile-model-name"]}
-                                  >
-                                    {size}
-                                  </span>
-                                  <span
-                                    className={
-                                      styles["chat-mobile-model-provider"]
-                                    }
-                                  >
-                                    生成图片尺寸
-                                  </span>
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                    {headerImageQualitys.length > 0 && (
-                      <div className={styles["chat-mobile-model-section"]}>
-                        <button
-                          type="button"
-                          className={styles["chat-mobile-reasoning-head"]}
-                          aria-expanded={isImageQualitySectionExpanded}
-                          aria-controls="chat-mobile-image-quality-options"
-                          onClick={() =>
-                            toggleMobileModelSection("image-quality")
-                          }
-                        >
-                          <span>
-                            <strong>图片清晰度</strong>
-                            <small>
-                              {getImageQualityLabel(headerCurrentQuality)}
-                            </small>
-                          </span>
-                          <span
-                            className={styles["chat-mobile-reasoning-caret"]}
-                          >
-                            {isImageQualitySectionExpanded ? "⌃" : "⌄"}
-                          </span>
-                        </button>
-                        {isImageQualitySectionExpanded && (
-                          <div
-                            id="chat-mobile-image-quality-options"
-                            className={styles["chat-mobile-reasoning-list"]}
-                            role="listbox"
-                            aria-label="图片清晰度选项"
-                          >
-                            {headerImageQualitys.map((quality) => {
-                              const selected = quality === headerCurrentQuality;
-                              return (
-                                <button
-                                  type="button"
-                                  key={quality}
-                                  className={clsx(
-                                    styles["chat-mobile-reasoning-option"],
-                                    {
-                                      [styles[
-                                        "chat-mobile-reasoning-option-selected"
-                                      ]]: selected,
-                                    },
-                                  )}
-                                  role="option"
-                                  aria-selected={selected}
-                                  onClick={() =>
-                                    selectHeaderImageQuality(
-                                      quality as OpenAIImageQuality,
-                                    )
-                                  }
-                                >
-                                  <span
-                                    className={styles["chat-mobile-menu-check"]}
-                                  >
-                                    {selected ? "✓" : ""}
-                                  </span>
-                                  <span
-                                    className={styles["chat-mobile-model-copy"]}
-                                  >
-                                    <span
-                                      className={
-                                        styles["chat-mobile-model-name"]
-                                      }
-                                    >
-                                      {getImageQualityLabel(
-                                        quality as OpenAIImageQuality,
-                                      )}
-                                    </span>
-                                    <span
-                                      className={
-                                        styles["chat-mobile-model-provider"]
-                                      }
-                                    >
-                                      {quality}
-                                    </span>
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </>
-                )}
               </>
             )}
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
 
       <div className={styles["chat-main"]}>
         <div className={styles["chat-body-container"]}>
@@ -3344,6 +3492,10 @@ function useChatInnerView() {
                   message.content.length > 0 &&
                   !isContext;
                 const showTyping = message.preview || message.streaming;
+                const isWaiting =
+                  !isUser &&
+                  (message.preview ||
+                    (message.streaming && message.content.length === 0));
 
                 const shouldShowClearContextDivider =
                   i === clearContextIndex - 1;
@@ -3483,15 +3635,16 @@ function useChatInnerView() {
                           )}
                         </div>
 
-                        <div className={styles["chat-message-item"]}>
+                        <div
+                          className={clsx(
+                            styles["chat-message-item"],
+                            isWaiting && styles["chat-message-shimmer"],
+                          )}
+                        >
                           <Markdown
                             key={message.streaming ? "loading" : "done"}
                             content={getMessageTextContent(message)}
-                            loading={
-                              (message.preview || message.streaming) &&
-                              message.content.length === 0 &&
-                              !isUser
-                            }
+                            loading={isWaiting}
                             fontSize={fontSize}
                             fontFamily={fontFamily}
                             isUser={isUser}
@@ -3630,43 +3783,44 @@ function useChatInnerView() {
               onClose={() => setPromptHints([])}
             />
 
-            {showChatActionMenu && (
-              <div
-                id="chat-input-action-menu"
-                className={styles["chat-input-action-menu"]}
-                role="dialog"
-                aria-modal="true"
-                aria-label="对话工具菜单"
-              >
-                <ChatActions
-                  uploadAttachments={handleUploadAttachments}
-                  setAttachImages={setAttachImages}
-                  setUploading={setUploading}
-                  showPromptModal={() => setShowPromptModal(true)}
-                  scrollToBottom={scrollToBottom}
-                  hitBottom={hitBottom}
-                  uploading={uploading}
-                  showPromptHints={() => {
-                    expandInput();
-                    // Click again to close
-                    if (promptHints.length > 0) {
-                      setPromptHints([]);
-                      return;
-                    }
+            <div
+              id="chat-input-action-menu"
+              className={clsx(styles["chat-input-action-menu"], {
+                [styles["chat-input-action-menu-open"]]: showChatActionMenu,
+              })}
+              /* className={styles["chat-input-action-menu"]} */
+              role="dialog"
+              aria-modal="true"
+              aria-label="对话工具菜单"
+            >
+              <ChatActions
+                uploadAttachments={handleUploadAttachments}
+                setAttachImages={setAttachImages}
+                setUploading={setUploading}
+                showPromptModal={() => setShowPromptModal(true)}
+                scrollToBottom={scrollToBottom}
+                hitBottom={hitBottom}
+                uploading={uploading}
+                showPromptHints={() => {
+                  expandInput();
+                  // Click again to close
+                  if (promptHints.length > 0) {
+                    setPromptHints([]);
+                    return;
+                  }
 
-                    inputRef.current?.focus();
-                    setUserInput("/");
-                    onSearch("");
-                  }}
-                  setShowShortcutKeyModal={setShowShortcutKeyModal}
-                  setUserInput={setUserInput}
-                  setShowChatSidePanel={setShowChatSidePanel}
-                  imageGenerationEnabled={imageGenerationEnabled}
-                  setImageGenerationEnabled={setImageGenerationEnabled}
-                  onActionComplete={() => setShowChatActionMenu(false)}
-                />
-              </div>
-            )}
+                  inputRef.current?.focus();
+                  setUserInput("/");
+                  onSearch("");
+                }}
+                setShowShortcutKeyModal={setShowShortcutKeyModal}
+                setUserInput={setUserInput}
+                setShowChatSidePanel={setShowChatSidePanel}
+                imageGenerationEnabled={imageGenerationEnabled}
+                setImageGenerationEnabled={setImageGenerationEnabled}
+                onActionComplete={() => setShowChatActionMenu(false)}
+              />
+            </div>
 
             <div className={styles["chat-input-row"]}>
               <button
