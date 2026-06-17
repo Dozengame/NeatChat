@@ -1215,17 +1215,15 @@ function useChatActionsView(props: ChatActionsProps) {
                 />
               )}
 
-            {false &&
-              isOpenAIImageGeneration &&
-              imageQualitys.length > 0 && (
-                <ChatAction
-                  onClick={() => setActionModalOpen("quality", true)}
-                  text={currentQuality}
-                  ariaHasPopup="listbox"
-                  ariaExpanded={actionModals.quality}
-                  icon={<QualityIcon />}
-                />
-              )}
+            {false && isOpenAIImageGeneration && imageQualitys.length > 0 && (
+              <ChatAction
+                onClick={() => setActionModalOpen("quality", true)}
+                text={currentQuality}
+                ariaHasPopup="listbox"
+                ariaExpanded={actionModals.quality}
+                icon={<QualityIcon />}
+              />
+            )}
 
             {!isCompactScreen &&
               isOpenAIImageGeneration &&
@@ -2876,6 +2874,7 @@ function useChatInnerView() {
               className={clsx(
                 "window-action-button",
                 styles["chat-desktop-header-action"],
+                styles["chat-desktop-header-action-export"],
               )}
             >
               <IconButton
@@ -2893,6 +2892,7 @@ function useChatInnerView() {
                 className={clsx(
                   "window-action-button",
                   styles["chat-desktop-header-action"],
+                  styles["chat-desktop-header-action-fullscreen"],
                 )}
               >
                 <IconButton
@@ -3262,15 +3262,64 @@ function useChatInnerView() {
                         className={styles["chat-empty-suggestion"]}
                         onClick={() => applyEmptySuggestion(suggestion)}
                       >
-                        <span className={styles["chat-empty-suggestion-text"]}>
-                          {suggestion}
-                        </span>
-                        <span
-                          className={styles["chat-empty-suggestion-affordance"]}
-                          aria-hidden="true"
-                        >
-                          →
-                        </span>
+                        <div className={styles["chat-empty-suggestion-header"]}>
+                          <span
+                            className={styles["chat-empty-suggestion-title"]}
+                          >
+                            {(() => {
+                              const isZh =
+                                Locale.Chat.EmptySuggestions[0] ===
+                                "总结这段内容";
+                              const idx =
+                                Locale.Chat.EmptySuggestions.indexOf(
+                                  suggestion,
+                                );
+                              return (
+                                [
+                                  isZh ? "总结文本" : "Summarize text",
+                                  isZh ? "规划日程" : "Plan schedule",
+                                  isZh ? "创意绘图" : "Creative poster",
+                                  isZh ? "分析文档" : "Analyze document",
+                                ][idx] || suggestion
+                              );
+                            })()}
+                          </span>
+                          <span
+                            className={styles["chat-empty-suggestion-text"]}
+                          >
+                            {suggestion}
+                          </span>
+                        </div>
+                        <div className={styles["chat-empty-suggestion-footer"]}>
+                          <div
+                            className={
+                              styles["chat-empty-suggestion-icon-wrapper"]
+                            }
+                          >
+                            {(() => {
+                              const idx =
+                                Locale.Chat.EmptySuggestions.indexOf(
+                                  suggestion,
+                                );
+                              const icons = [
+                                FileIcon,
+                                AutoIcon,
+                                StyleIcon,
+                                BrainIcon,
+                              ];
+                              const IconComponent = icons[idx] || FileIcon;
+                              return <IconComponent />;
+                            })()}
+                          </div>
+                          <span
+                            className={
+                              styles["chat-empty-suggestion-affordance"]
+                            }
+                            aria-hidden="true"
+                          >
+                            →
+                          </span>
+                        </div>
                       </button>
                     </li>
                   ))}
