@@ -10,6 +10,7 @@ import DragIcon from "../icons/drag.svg";
 import DiscoveryIcon from "../icons/discovery.svg";
 import NeatIcon from "../icons/neat.svg";
 import FileIcon from "../icons/file.svg";
+import MenuIcon from "../icons/menu.svg";
 
 import Locale from "../locales";
 
@@ -129,6 +130,7 @@ export function useDragSideBar() {
   return {
     onDragStart,
     shouldNarrow,
+    toggleSideBar,
   };
 }
 export function SideBarContainer(props: {
@@ -184,8 +186,9 @@ export function SideBarHeader(props: {
   logo?: React.ReactNode;
   children?: React.ReactNode;
   shouldNarrow?: boolean;
+  onToggle?: () => void;
 }) {
-  const { title, subTitle, logo, children, shouldNarrow } = props;
+  const { title, subTitle, logo, children, shouldNarrow, onToggle } = props;
   return (
     <Fragment>
       <div
@@ -194,6 +197,17 @@ export function SideBarHeader(props: {
         })}
         data-tauri-drag-region
       >
+        {onToggle && (
+          <button
+            type="button"
+            className={clsx("clickable", styles["sidebar-toggle-button"])}
+            onClick={onToggle}
+            aria-label={shouldNarrow ? "展开栏" : "折叠栏"}
+            title={shouldNarrow ? "展开栏" : "折叠栏"}
+          >
+            <MenuIcon />
+          </button>
+        )}
         <div className={styles["sidebar-title-container"]}>
           <div
             className={clsx(styles["sidebar-title"], "logo-text")}
@@ -245,7 +259,7 @@ export function SideBar(props: {
   isMobileOpen?: boolean;
 }) {
   useHotKey();
-  const { onDragStart, shouldNarrow } = useDragSideBar();
+  const { onDragStart, shouldNarrow, toggleSideBar } = useDragSideBar();
   const isCompactScreen = useCompactScreen();
   const [showPluginSelector, setShowPluginSelector] = useState(false);
   const navigate = useNavigate();
@@ -329,6 +343,7 @@ export function SideBar(props: {
         title="NeatChat"
         logo={<NeatIcon width={32} height={32} />}
         shouldNarrow={shouldNarrow}
+        onToggle={isCompactScreen ? undefined : toggleSideBar}
       >
         <div className={styles["sidebar-header-bar"]}>
           <div
@@ -439,7 +454,7 @@ export function SideBar(props: {
             {Locale.SearchChat.Page.Recent}
           </div>
         )}
-        <ChatList narrow={shouldNarrow} />
+        {!shouldNarrow && <ChatList narrow={shouldNarrow} />}
       </SideBarBody>
       <SideBarTail
         primaryAction={
@@ -492,16 +507,7 @@ export function SideBar(props: {
             </div>
           )
         }
-        secondaryAction={
-          isCompactScreen ? null : (
-            <IconButton
-              icon={<AddIcon />}
-              text={shouldNarrow ? undefined : Locale.Home.NewChat}
-              onClick={startNewChat}
-              shadow
-            />
-          )
-        }
+        secondaryAction={null}
       />
     </SideBarContainer>
   );

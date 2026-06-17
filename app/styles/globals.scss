@@ -118,6 +118,7 @@
   --window-content-width: calc(100% - var(--sidebar-width));
   --message-max-width: min(78%, 820px);
   --full-height: 100%;
+  --full-height: 100dvh;
 }
 
 @media only screen and (max-width: 767px) {

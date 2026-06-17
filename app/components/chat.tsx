@@ -947,8 +947,7 @@ function useChatActionsView(props: ChatActionsProps) {
   const hasSessionActions =
     couldStop ||
     !props.hitBottom ||
-    (config.enableClearContext && hasClearableContext) ||
-    !isCompactScreen;
+    (config.enableClearContext && hasClearableContext);
 
   return (
     <div className={styles["chat-input-actions"]}>
@@ -1069,7 +1068,7 @@ function useChatActionsView(props: ChatActionsProps) {
                 icon={<BottomIcon />}
               />
             )}
-            {!isCompactScreen && props.hitBottom && (
+            {false && props.hitBottom && (
               <ChatAction
                 onClick={() => {
                   props.showPromptModal();
@@ -1080,7 +1079,7 @@ function useChatActionsView(props: ChatActionsProps) {
               />
             )}
 
-            {!isCompactScreen && config.enableThemeChange && (
+            {false && config.enableThemeChange && (
               <ChatAction
                 onClick={nextTheme}
                 text={Locale.Chat.InputActions.Theme[theme]}
@@ -1116,7 +1115,7 @@ function useChatActionsView(props: ChatActionsProps) {
               />
             )}
 
-            {!isCompactScreen && (
+            {false && (
               <ChatAction
                 onClick={() => {
                   if (modelLocked) {
@@ -1184,7 +1183,7 @@ function useChatActionsView(props: ChatActionsProps) {
               />
             )}
 
-            {!isCompactScreen && isOpenAIImageGeneration && (
+            {false && isOpenAIImageGeneration && (
               <ChatAction
                 onClick={() => setActionModalOpen("size", true)}
                 text={currentSize}
@@ -1216,7 +1215,7 @@ function useChatActionsView(props: ChatActionsProps) {
                 />
               )}
 
-            {!isCompactScreen &&
+            {false &&
               isOpenAIImageGeneration &&
               imageQualitys.length > 0 && (
                 <ChatAction
@@ -1251,7 +1250,7 @@ function useChatActionsView(props: ChatActionsProps) {
                 />
               )}
 
-            {!isCompactScreen && isDalle3Model && (
+            {false && isDalle3Model && (
               <ChatAction
                 onClick={() => setActionModalOpen("style", true)}
                 text={currentStyle}
@@ -1281,7 +1280,7 @@ function useChatActionsView(props: ChatActionsProps) {
               />
             )}
 
-            {!isCompactScreen && shouldShowPluginAction && (
+            {false && shouldShowPluginAction && (
               <ChatAction
                 onClick={() => setActionModalOpen("plugin", true)}
                 text={Locale.Plugin.Name}
@@ -2715,12 +2714,7 @@ function useChatInnerView() {
     return () => window.removeEventListener("keydown", closePreview);
   }, [previewImage]);
 
-  const showInputReasoningAction =
-    !isCompactScreen &&
-    isOpenAIGpt5OrNewerModelConfig({
-      model: session.mask.modelConfig.model,
-      providerName: session.mask.modelConfig.providerName,
-    });
+  const showInputReasoningAction = false;
   const showInputStatusRow = showInputReasoningAction || imageGenerationEnabled;
   const isMobileSidebarOpen = location.pathname === Path.Home;
   const promptToast = (
@@ -3587,6 +3581,44 @@ function useChatInnerView() {
               onClose={() => setPromptHints([])}
             />
 
+            {showChatActionMenu && (
+              <div
+                id="chat-input-action-menu"
+                className={styles["chat-input-action-menu"]}
+                role="dialog"
+                aria-modal="true"
+                aria-label="对话工具菜单"
+              >
+                <ChatActions
+                  uploadAttachments={handleUploadAttachments}
+                  setAttachImages={setAttachImages}
+                  setUploading={setUploading}
+                  showPromptModal={() => setShowPromptModal(true)}
+                  scrollToBottom={scrollToBottom}
+                  hitBottom={hitBottom}
+                  uploading={uploading}
+                  showPromptHints={() => {
+                    expandInput();
+                    // Click again to close
+                    if (promptHints.length > 0) {
+                      setPromptHints([]);
+                      return;
+                    }
+
+                    inputRef.current?.focus();
+                    setUserInput("/");
+                    onSearch("");
+                  }}
+                  setShowShortcutKeyModal={setShowShortcutKeyModal}
+                  setUserInput={setUserInput}
+                  setShowChatSidePanel={setShowChatSidePanel}
+                  imageGenerationEnabled={imageGenerationEnabled}
+                  setImageGenerationEnabled={setImageGenerationEnabled}
+                  onActionComplete={() => setShowChatActionMenu(false)}
+                />
+              </div>
+            )}
+
             <div className={styles["chat-input-row"]}>
               <button
                 type="button"
@@ -3607,43 +3639,6 @@ function useChatInnerView() {
               >
                 <AddIcon />
               </button>
-              {showChatActionMenu && (
-                <div
-                  id="chat-input-action-menu"
-                  className={styles["chat-input-action-menu"]}
-                  role="dialog"
-                  aria-modal="true"
-                  aria-label="对话工具菜单"
-                >
-                  <ChatActions
-                    uploadAttachments={handleUploadAttachments}
-                    setAttachImages={setAttachImages}
-                    setUploading={setUploading}
-                    showPromptModal={() => setShowPromptModal(true)}
-                    scrollToBottom={scrollToBottom}
-                    hitBottom={hitBottom}
-                    uploading={uploading}
-                    showPromptHints={() => {
-                      expandInput();
-                      // Click again to close
-                      if (promptHints.length > 0) {
-                        setPromptHints([]);
-                        return;
-                      }
-
-                      inputRef.current?.focus();
-                      setUserInput("/");
-                      onSearch("");
-                    }}
-                    setShowShortcutKeyModal={setShowShortcutKeyModal}
-                    setUserInput={setUserInput}
-                    setShowChatSidePanel={setShowChatSidePanel}
-                    imageGenerationEnabled={imageGenerationEnabled}
-                    setImageGenerationEnabled={setImageGenerationEnabled}
-                    onActionComplete={() => setShowChatActionMenu(false)}
-                  />
-                </div>
-              )}
               <label
                 className={clsx(styles["chat-input-panel-inner"], {
                   [styles["chat-input-panel-inner-collapsed"]]:
