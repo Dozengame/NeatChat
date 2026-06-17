@@ -903,21 +903,38 @@ summary,
 
 .markdown-body table th {
   font-weight: var(--base-text-weight-semibold, 600);
+  /* R4: Gemini-style table header */
+  background-color: rgba(60, 64, 67, 0.04);
+  color: var(--color-fg-default);
+}
+
+:global(.dark) .markdown-body table th {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .markdown-body table th,
 .markdown-body table td {
-  padding: 6px 13px;
-  border: 1px solid var(--color-border-default);
+  padding: 8px 16px;
+  /* R4: Only horizontal separators – borderless columns */
+  border: none;
+  border-bottom: 1px solid var(--color-border-muted);
 }
 
 .markdown-body table tr {
   background-color: var(--color-canvas-default);
-  border-top: 1px solid var(--color-border-muted);
+  border-top: none;
+}
+
+.markdown-body table tr:hover {
+  background-color: rgba(60, 64, 67, 0.04);
+}
+
+:global(.dark) .markdown-body table tr:hover {
+  background-color: rgba(255, 255, 255, 0.04);
 }
 
 .markdown-body table tr:nth-child(2n) {
-  background-color: var(--color-canvas-subtle);
+  background-color: transparent;
 }
 
 .markdown-body table img {
@@ -1073,12 +1090,22 @@ summary,
 
 .markdown-body .highlight pre,
 .markdown-body pre {
-  padding: 16px 16px 8px 16px;
+  /* R4: Gemini-style refined code block card */
+  padding: 12px 16px 12px 16px;
   overflow: auto;
   font-size: 85%;
-  line-height: 1.45;
-  border-radius: 6px;
+  line-height: 1.6;
+  border-radius: 10px;
   direction: ltr;
+  background-color: #f8f9fa;
+  border: 1px solid rgba(60, 64, 67, 0.1);
+  position: relative;
+}
+
+:global(.dark) .markdown-body .highlight pre,
+:global(.dark) .markdown-body pre {
+  background-color: #1e1e2e;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .markdown-body pre code,
