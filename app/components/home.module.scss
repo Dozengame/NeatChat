@@ -130,7 +130,10 @@
   width: var(--sidebar-width);
   box-sizing: border-box;
   padding: 18px 12px 14px;
-  background-color: rgba(249, 251, 253, 0.96);
+  /* R5: Glassmorphism sidebar — semi-transparent with blur */
+  background-color: rgba(249, 251, 253, 0.82);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   display: flex;
   flex-direction: column;
   box-shadow: none;
@@ -138,8 +141,29 @@
   transition: width ease 0.05s;
   border-right: 1px solid rgba(60, 64, 67, 0.1);
 
+  /* R5: Ultra-thin scrollbar — hidden until hover */
+  :global {
+    ::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background-color: transparent;
+      border-radius: 3px;
+      transition: background-color 0.2s ease;
+    }
+
+    ::-webkit-scrollbar-track {
+      background-color: transparent;
+    }
+  }
+
+  &:hover :global(::-webkit-scrollbar-thumb) {
+    background-color: var(--scrollbar-thumb-color);
+  }
+
   :global(.dark) & {
-    background-color: var(--surface);
+    background-color: rgba(19, 20, 22, 0.82);
     border-right-color: var(--border-in-light);
   }
 
