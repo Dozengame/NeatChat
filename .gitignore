@@ -50,3 +50,19 @@ dev
 cicd.sh
 masks.json
 app/mcp/mcp_config.json
+
+# local dev / ai-iteration artifacts (not part of source)
+capture.js
+capture-dropzone.js
+capture-screenshots.js
+screenshot.spec.js
+test-screenshot.js
+stage_m1.sh
+/test-results/
+PROJECT.md
+progress.md
+
+# debug/scratch tests generated during iteration (not official test suite)
+test/capture-dropzone.test.ts
+test/custom-debug.test.ts
+test/drag-drop.test.tsx
