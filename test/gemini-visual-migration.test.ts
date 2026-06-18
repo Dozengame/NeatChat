@@ -1611,6 +1611,51 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps Gemini-style markdown blockquote callouts", () => {
+    const markdownStyles = read("app/styles/markdown.scss");
+    const blockquoteBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body blockquote",
+    );
+    const darkBlockquoteBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body blockquote",
+    );
+    const detailsBlockquoteBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body details blockquote,\n.markdown-body details > p > blockquote",
+    );
+    const darkDetailsBlockquoteBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body details blockquote,\n.dark .markdown-body details > p > blockquote",
+    );
+
+    expect(blockquoteBlock).toMatch(/padding:\s*10px 14px;/);
+    expect(blockquoteBlock).toMatch(
+      /border-left:\s*3px solid rgba\(66,\s*133,\s*244,\s*0\.48\);/,
+    );
+    expect(blockquoteBlock).toMatch(/border-radius:\s*12px;/);
+    expect(blockquoteBlock).toMatch(
+      /background:\s*rgba\(60,\s*64,\s*67,\s*0\.045\);/,
+    );
+    expect(blockquoteBlock).toMatch(/line-height:\s*1\.65;/);
+    expect(blockquoteBlock).toMatch(
+      /box-shadow:\s*inset 0 0 0 1px rgba\(60,\s*64,\s*67,\s*0\.05\);/,
+    );
+    expect(darkBlockquoteBlock).toMatch(
+      /background:\s*rgba\(232,\s*234,\s*237,\s*0\.06\);/,
+    );
+    expect(darkBlockquoteBlock).toMatch(
+      /border-left-color:\s*rgba\(138,\s*180,\s*248,\s*0\.5\);/,
+    );
+    expect(detailsBlockquoteBlock).toMatch(/background:\s*transparent;/);
+    expect(detailsBlockquoteBlock).toMatch(/border-radius:\s*0;/);
+    expect(detailsBlockquoteBlock).toMatch(/box-shadow:\s*none;/);
+    expect(detailsBlockquoteBlock).toMatch(/line-height:\s*inherit;/);
+    expect(darkDetailsBlockquoteBlock).toMatch(/background:\s*transparent;/);
+    expect(darkDetailsBlockquoteBlock).toMatch(/box-shadow:\s*none;/);
+  });
+
   test("keeps chat image preview overlay focus-restoring and bounded", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
