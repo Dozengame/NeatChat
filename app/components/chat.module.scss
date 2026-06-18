@@ -984,7 +984,7 @@
 .chat-empty-suggestions {
   position: relative;
   z-index: 1;
-  display: none !important;
+  display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   width: min(840px, 100%);
@@ -3394,4 +3394,3 @@
     }
   }
 }
-

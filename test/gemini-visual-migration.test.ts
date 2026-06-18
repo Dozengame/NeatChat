@@ -104,6 +104,10 @@ describe("Gemini visual migration shell", () => {
     );
     const actionMenuBlock = readCssBlock(chatStyles, ".chat-input-action-menu");
     const emptyStateBlock = readCssBlock(chatStyles, ".chat-empty-state");
+    const emptySuggestionsBlock = readCssBlock(
+      chatStyles,
+      ".chat-empty-suggestions",
+    );
     const emptySuggestionBlock = readCssBlock(
       chatStyles,
       ".chat-empty-suggestion",
@@ -710,6 +714,8 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).not.toContain(".chat-empty-halo");
     expect(emptyStateBlock).toMatch(/pointer-events:\s*none;/);
     expect(chatStyles).toContain(".chat-empty-suggestions");
+    expect(emptySuggestionsBlock).toMatch(/display:\s*grid;/);
+    expect(emptySuggestionsBlock).not.toMatch(/display:\s*none/);
     expect(chatStyles).toContain(".chat-empty-suggestion-item");
     expect(chatStyles).toContain(".chat-empty-suggestion");
     expect(chat).toContain('styles["chat-empty-suggestion-text"]');
