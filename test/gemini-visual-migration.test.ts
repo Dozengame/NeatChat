@@ -103,6 +103,10 @@ describe("Gemini visual migration shell", () => {
       ".chat-input-panel.chat-input-panel-empty",
     );
     const actionMenuBlock = readCssBlock(chatStyles, ".chat-input-action-menu");
+    const scrollToBottomBlock = readCssBlock(
+      chatStyles,
+      ".chat-scroll-to-bottom",
+    );
     const emptyStateBlock = readCssBlock(chatStyles, ".chat-empty-state");
     const emptySuggestionsBlock = readCssBlock(
       chatStyles,
@@ -128,6 +132,10 @@ describe("Gemini visual migration shell", () => {
     const mobileActionMenuBlock = readCssBlock(
       mobileStyles,
       ".chat-input-action-menu",
+    );
+    const mobileScrollToBottomBlock = readCssBlock(
+      mobileStyles,
+      ".chat-scroll-to-bottom",
     );
     const mobileStatusRowBlock = readCssBlock(
       mobileStyles,
@@ -603,6 +611,10 @@ describe("Gemini visual migration shell", () => {
     expect(inputStatusBlock).toContain(".chat-input");
     expect(inputStatusBlock).toContain("width: calc(100% - 96px)");
     expect(chat).toContain('styles["chat-reading-surface"]');
+    expect(chat).toContain('styles["chat-scroll-to-bottom"]');
+    expect(chat).toMatch(
+      /className=\{clsx\(styles\["chat-input-panel"\][\s\S]*\)\}[\s\S]*\{!showEmptyState && !hitBottom && !showChatActionMenu && \([\s\S]*className=\{styles\["chat-scroll-to-bottom"\]\}[\s\S]*aria-label=\{Locale\.Chat\.InputActions\.ToBottom\}[\s\S]*onClick=\{scrollToBottom\}[\s\S]*<BottomIcon \/>[\s\S]*\)\}[\s\S]*<PromptHints/,
+    );
     expect(chat).toMatch(
       /className=\{styles\["chat-reading-surface"\]\}[\s\S]*role="list"[\s\S]*aria-label="会话消息列表"/,
     );
@@ -827,6 +839,19 @@ describe("Gemini visual migration shell", () => {
     expect(messageRowUserOverrideBlock).toMatch(/justify-content:\s*flex-end;/);
     expect(messageContainerBlock).toMatch(/min-width:\s*0;/);
     expect(chatMessageItemBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(scrollToBottomBlock).toMatch(/position:\s*absolute;/);
+    expect(scrollToBottomBlock).toMatch(/left:\s*50%;/);
+    expect(scrollToBottomBlock).toMatch(/top:\s*-56px;/);
+    expect(scrollToBottomBlock).toMatch(/z-index:\s*20;/);
+    expect(scrollToBottomBlock).toMatch(/width:\s*42px;/);
+    expect(scrollToBottomBlock).toMatch(/height:\s*42px;/);
+    expect(scrollToBottomBlock).toMatch(/border-radius:\s*999px;/);
+    expect(scrollToBottomBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
+    expect(scrollToBottomBlock).toMatch(/backdrop-filter:\s*blur\(18px\) saturate\(160%\);/);
+    expect(scrollToBottomBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(mobileScrollToBottomBlock).toMatch(/top:\s*-52px;/);
+    expect(mobileScrollToBottomBlock).toMatch(/width:\s*40px;/);
+    expect(mobileScrollToBottomBlock).toMatch(/height:\s*40px;/);
     expect(chatStyles.indexOf(".chat-reading-surface > .chat-message-row-user")).toBeGreaterThan(
       chatStyles.indexOf(".chat-message-user"),
     );

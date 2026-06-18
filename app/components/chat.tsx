@@ -3785,6 +3785,16 @@ function useChatInnerView() {
               [styles["chat-input-panel-empty"]]: showEmptyComposer,
             })}
           >
+            {!showEmptyState && !hitBottom && !showChatActionMenu && (
+              <button
+                type="button"
+                className={styles["chat-scroll-to-bottom"]}
+                aria-label={Locale.Chat.InputActions.ToBottom}
+                onClick={scrollToBottom}
+              >
+                <BottomIcon />
+              </button>
+            )}
             <PromptHints
               prompts={promptHints}
               onPromptSelect={onPromptSelect}
