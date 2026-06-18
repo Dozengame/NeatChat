@@ -3504,6 +3504,8 @@ function useChatInnerView() {
                   !isUser &&
                   (message.preview ||
                     (message.streaming && message.content.length === 0));
+                const isStreamingReveal =
+                  !isUser && message.streaming && message.content.length > 0;
 
                 const shouldShowClearContextDivider =
                   i === clearContextIndex - 1;
@@ -3647,6 +3649,8 @@ function useChatInnerView() {
                           className={clsx(
                             styles["chat-message-item"],
                             isWaiting && styles["chat-message-shimmer"],
+                            isStreamingReveal &&
+                              styles["chat-message-streaming-reveal"],
                           )}
                         >
                           <Markdown

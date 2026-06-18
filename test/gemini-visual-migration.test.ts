@@ -1417,12 +1417,24 @@ describe("Gemini visual migration shell", () => {
   });
 
   test("keeps streaming wait state as a polished Gemini-style skeleton", () => {
+    const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
     const shimmerBlock = readCssBlock(chatStyles, ".chat-message-shimmer");
+    const streamingRevealBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-streaming-reveal",
+    );
     const reducedMotionBlock = chatStyles.slice(
       chatStyles.indexOf("@media (prefers-reduced-motion: reduce)"),
     );
 
+    expect(chat).toContain("const isStreamingReveal");
+    expect(chat).toMatch(
+      /const isStreamingReveal =\s*!isUser && message\.streaming && message\.content\.length > 0;/,
+    );
+    expect(chat).toMatch(
+      /isStreamingReveal &&\s*styles\["chat-message-streaming-reveal"\]/,
+    );
     expect(shimmerBlock).toMatch(/min-height:\s*72px;/);
     expect(shimmerBlock).toContain("&::after");
     expect(shimmerBlock).toContain(":global(.markdown-body)::before");
@@ -1430,7 +1442,11 @@ describe("Gemini visual migration shell", () => {
     expect(shimmerBlock).toMatch(/display:\s*none !important;/);
     expect(shimmerBlock).toMatch(/animation:\s*shimmer 1\.6s infinite linear/);
     expect(shimmerBlock).not.toContain("* {");
+    expect(streamingRevealBlock).toMatch(/transition:\s*border-color 0\.18s ease/);
+    expect(streamingRevealBlock).toContain(":global(.markdown-body-container)");
+    expect(streamingRevealBlock).toMatch(/animation:\s*streamingTextReveal 0\.18s ease-out both;/);
     expect(reducedMotionBlock).toContain(".chat-message-shimmer");
+    expect(reducedMotionBlock).toContain(".chat-message-streaming-reveal");
     expect(reducedMotionBlock).toContain("animation: none !important");
   });
 });

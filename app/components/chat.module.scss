@@ -3339,6 +3339,17 @@
   }
 }
 
+@keyframes streamingTextReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .chat-message-shimmer {
   min-height: 72px;
   overflow: hidden;
@@ -3389,6 +3400,15 @@
     width: min(34%, 180px);
     height: 10px;
     margin-top: 12px;
+  }
+}
+
+.chat-message-streaming-reveal {
+  transition: border-color 0.18s ease;
+
+  :global(.markdown-body-container) {
+    animation: streamingTextReveal 0.18s ease-out both;
+    will-change: opacity, transform;
   }
 }
 
@@ -3520,6 +3540,14 @@
     :global(.markdown-body)::after {
       animation: none !important;
       background-position: 0 0 !important;
+    }
+  }
+
+  .chat-message-streaming-reveal {
+    :global(.markdown-body-container) {
+      animation: none !important;
+      transform: none !important;
+      will-change: auto;
     }
   }
 
