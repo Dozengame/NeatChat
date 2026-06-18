@@ -332,6 +332,14 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       "@media (hover: none), (pointer: coarse), (max-width: 600px)",
     );
+    const touchAttachmentsContainerBlock = readCssBlock(
+      touchAttachmentStyles,
+      ".attachments-container",
+    );
+    const touchAttachItemBlock = readCssBlock(
+      touchAttachmentStyles,
+      ".attach-item",
+    );
     const touchAttachImageMaskBlock = readCssBlock(
       touchAttachmentStyles,
       ".attach-image-mask",
@@ -972,6 +980,12 @@ describe("Gemini visual migration shell", () => {
     expect(attachmentsContainerBlock).toMatch(/scroll-padding-right:\s*58px;/);
     expect(attachmentsContainerBlock).toMatch(/min-width:\s*0;/);
     expect(attachmentsContainerBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(attachmentsContainerBlock).not.toMatch(
+      /overscroll-behavior-x:\s*contain;/,
+    );
+    expect(attachmentsContainerBlock).not.toMatch(
+      /-webkit-overflow-scrolling:\s*touch;/,
+    );
     expect(attachItemBlock).toMatch(/flex:\s*0 0 auto;/);
     expect(attachItemBlock).toMatch(/height:\s*64px;/);
     expect(attachImageItemBlock).toMatch(/width:\s*64px;/);
@@ -984,6 +998,16 @@ describe("Gemini visual migration shell", () => {
       /\.attach-item:hover \.attach-image-mask,\s*\.attach-image-mask:focus-within\s*\{\s*opacity:\s*1;/,
     );
     expect(deleteImageBlock).toMatch(/pointer-events:\s*auto;/);
+    expect(touchAttachmentsContainerBlock).toMatch(
+      /overscroll-behavior-x:\s*contain;/,
+    );
+    expect(touchAttachmentsContainerBlock).toMatch(
+      /-webkit-overflow-scrolling:\s*touch;/,
+    );
+    expect(touchAttachmentsContainerBlock).toMatch(
+      /scroll-snap-type:\s*x proximity;/,
+    );
+    expect(touchAttachItemBlock).toMatch(/scroll-snap-align:\s*start;/);
     expect(touchAttachImageMaskBlock).toMatch(/opacity:\s*1;/);
     expect(touchAttachImageMaskBlock).toMatch(/pointer-events:\s*none;/);
     expect(touchDeleteImageBlock).toMatch(/width:\s*28px;/);

@@ -77,6 +77,16 @@
 }
 
 @media (hover: none), (pointer: coarse), (max-width: 600px) {
+  .attachments-container {
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .attach-item {
+    scroll-snap-align: start;
+  }
+
   .attach-image-mask {
     opacity: 1;
     pointer-events: none;
