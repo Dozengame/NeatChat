@@ -100,6 +100,10 @@ describe("Gemini visual migration shell", () => {
     const desktopStyles = chatStyles.slice(
       chatStyles.indexOf("@media only screen and (min-width: 901px)"),
     );
+    const reducedMotionBlock = readCssBlock(
+      chatStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
     const desktopChatRootDeclarations = readRootDeclarations(
       readCssBlock(desktopStyles, ".chat"),
     );
@@ -132,6 +136,10 @@ describe("Gemini visual migration shell", () => {
     const emptySuggestionAffordanceBlock = readCssBlock(
       chatStyles,
       ".chat-empty-suggestion-affordance",
+    );
+    const emptySuggestionFocusAffordanceBlock = readCssBlock(
+      chatStyles,
+      ".chat-empty-suggestion:focus-visible .chat-empty-suggestion-affordance",
     );
     const actionMenuRootDeclarations = readRootDeclarations(actionMenuBlock);
     const actionMenuActiveActionBlock = readCssBlock(
@@ -878,6 +886,10 @@ describe("Gemini visual migration shell", () => {
     expect(emptySuggestionBlock).toMatch(/align-items:\s*center;/);
     expect(emptySuggestionBlock).toMatch(/justify-content:\s*center;/);
     expect(emptySuggestionBlock).toMatch(/gap:\s*8px;/);
+    expect(emptySuggestionBlock).toContain("&:active");
+    expect(emptySuggestionBlock).toMatch(
+      /&:active[\s\S]*transform:\s*translateY\(0\) scale\(0\.995\);/,
+    );
     expect(emptySuggestionAffordanceBlock).toMatch(/flex:\s*0 0 18px;/);
     expect(emptySuggestionAffordanceBlock).toMatch(/width:\s*18px;/);
     expect(emptySuggestionAffordanceBlock).toMatch(/height:\s*18px;/);
@@ -886,6 +898,18 @@ describe("Gemini visual migration shell", () => {
     );
     expect(emptySuggestionAffordanceBlock).toMatch(
       /font-size:\s*12px;/,
+    );
+    expect(emptySuggestionFocusAffordanceBlock).toMatch(
+      /transform:\s*translateX\(2px\);/,
+    );
+    expect(emptySuggestionFocusAffordanceBlock).toMatch(
+      /background-color:\s*rgba\(49,\s*94,\s*248,\s*0\.1\);/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-empty-suggestion,\s*\.chat-empty-suggestion-affordance\s*\{[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-empty-suggestion:hover,\s*\.chat-empty-suggestion:focus-visible,\s*\.chat-empty-suggestion:active,\s*\.chat-empty-suggestion:hover \.chat-empty-suggestion-affordance,\s*\.chat-empty-suggestion:focus-visible \.chat-empty-suggestion-affordance\s*\{[\s\S]*transform:\s*none !important;/,
     );
     expect(emptySuggestionTextBlock).toMatch(/display:\s*-webkit-box;/);
     expect(emptySuggestionTextBlock).toMatch(/line-height:\s*1\.2;/);

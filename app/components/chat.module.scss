@@ -1098,6 +1098,14 @@
       0 0 0 3px rgba(49, 94, 248, 0.08);
     transform: translateY(-2px);
   }
+
+  &:active {
+    border-color: rgba(49, 94, 248, 0.22);
+    box-shadow:
+      0 3px 12px rgba(60, 64, 67, 0.08),
+      0 0 0 3px rgba(49, 94, 248, 0.06);
+    transform: translateY(0) scale(0.995);
+  }
 }
 
 .chat-empty-suggestion-header {
@@ -1175,7 +1183,8 @@
   transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
-.chat-empty-suggestion:hover .chat-empty-suggestion-affordance {
+.chat-empty-suggestion:hover .chat-empty-suggestion-affordance,
+.chat-empty-suggestion:focus-visible .chat-empty-suggestion-affordance {
   transform: translateX(2px);
   background-color: rgba(49, 94, 248, 0.1);
   color: rgba(49, 94, 248, 1);
@@ -1220,7 +1229,10 @@
   color: rgba(255, 255, 255, 0.78);
 }
 
-:global(.dark) .chat-empty-suggestion:hover .chat-empty-suggestion-affordance {
+:global(.dark) .chat-empty-suggestion:hover .chat-empty-suggestion-affordance,
+:global(.dark)
+  .chat-empty-suggestion:focus-visible
+  .chat-empty-suggestion-affordance {
   background-color: rgba(138, 180, 248, 0.15);
   color: rgba(138, 180, 248, 1);
 }
@@ -3616,6 +3628,19 @@
   .chat-dropzone-content {
     transform: none !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .chat-empty-suggestion,
+  .chat-empty-suggestion-affordance {
+    transition-duration: 0.01ms !important;
+  }
+
+  .chat-empty-suggestion:hover,
+  .chat-empty-suggestion:focus-visible,
+  .chat-empty-suggestion:active,
+  .chat-empty-suggestion:hover .chat-empty-suggestion-affordance,
+  .chat-empty-suggestion:focus-visible .chat-empty-suggestion-affordance {
+    transform: none !important;
   }
 
   .chat-message-shimmer {
