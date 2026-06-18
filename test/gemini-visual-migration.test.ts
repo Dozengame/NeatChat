@@ -1240,7 +1240,16 @@ describe("Gemini visual migration shell", () => {
     expect(homeStyles).toContain("z-index: 900");
     expect(homeStyles).toContain("z-index: 1000");
     expect(compactContainerSidebarBlock).toMatch(
-      /background:\s*rgba\(249,\s*251,\s*253,\s*0\.78\);/,
+      /background:[\s\S]*radial-gradient\(\s*circle at 18% 16%,\s*rgba\(66,\s*133,\s*244,\s*0\.14\)/,
+    );
+    expect(compactContainerSidebarBlock).toMatch(
+      /background:[\s\S]*linear-gradient\(\s*145deg,\s*rgba\(255,\s*255,\s*255,\s*0\.58\)/,
+    );
+    expect(compactContainerSidebarBlock).toMatch(
+      /background:[\s\S]*rgba\(249,\s*251,\s*253,\s*0\.52\)/,
+    );
+    expect(compactContainerSidebarBlock).toMatch(
+      /background-blend-mode:\s*screen,\s*normal,\s*normal;/,
     );
     expect(compactContainerSidebarBlock).toMatch(
       /backdrop-filter:\s*blur\(24px\) saturate\(185%\);/,
@@ -1259,7 +1268,13 @@ describe("Gemini visual migration shell", () => {
       /box-shadow:\s*0 24px 72px rgba\(32,\s*33,\s*36,\s*0\.28\);/,
     );
     expect(compactContainerSidebarBlock).toMatch(
-      /:global\(\.dark\) &[\s\S]*background:\s*rgba\(19,\s*20,\s*22,\s*0\.78\);/,
+      /:global\(\.dark\) &[\s\S]*background:[\s\S]*radial-gradient\(\s*circle at 20% 18%,\s*rgba\(138,\s*180,\s*248,\s*0\.14\)/,
+    );
+    expect(compactContainerSidebarBlock).toMatch(
+      /:global\(\.dark\) &[\s\S]*background:[\s\S]*linear-gradient\(\s*145deg,\s*rgba\(40,\s*43,\s*52,\s*0\.52\)/,
+    );
+    expect(compactContainerSidebarBlock).toMatch(
+      /:global\(\.dark\) &[\s\S]*background:[\s\S]*rgba\(19,\s*20,\s*22,\s*0\.56\)/,
     );
     expect(compactSidebarBackdropBlock).toMatch(
       /backdrop-filter:\s*blur\(8px\) saturate\(135%\);/,
