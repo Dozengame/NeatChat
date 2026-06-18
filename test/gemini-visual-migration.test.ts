@@ -324,6 +324,23 @@ describe("Gemini visual migration shell", () => {
       ".attach-file-item",
     );
     const attachImageBlock = readCssBlock(chatStyles, ".attach-image");
+    const attachImageMaskBlock = readCssBlock(
+      chatStyles,
+      ".attach-image-mask",
+    );
+    const touchAttachmentStyles = readCssBlock(
+      chatStyles,
+      "@media (hover: none), (pointer: coarse), (max-width: 600px)",
+    );
+    const touchAttachImageMaskBlock = readCssBlock(
+      touchAttachmentStyles,
+      ".attach-image-mask",
+    );
+    const touchDeleteImageBlock = readCssBlock(
+      touchAttachmentStyles,
+      ".delete-image",
+    );
+    const deleteImageBlock = readCssBlock(chatStyles, ".delete-image");
     const attachFileBlock = readCssBlock(
       chatStyles.slice(chatStyles.lastIndexOf("\n.attach-file {")),
       ".attach-file",
@@ -961,6 +978,16 @@ describe("Gemini visual migration shell", () => {
     expect(attachFileItemBlock).toMatch(/max-width:\s*min\(220px,\s*68vw\);/);
     expect(attachImageBlock).toMatch(/width:\s*64px;/);
     expect(attachImageBlock).toMatch(/height:\s*64px;/);
+    expect(attachImageMaskBlock).toMatch(/opacity:\s*0;/);
+    expect(attachImageMaskBlock).toMatch(/pointer-events:\s*none;/);
+    expect(chatStyles).toMatch(
+      /\.attach-item:hover \.attach-image-mask,\s*\.attach-image-mask:focus-within\s*\{\s*opacity:\s*1;/,
+    );
+    expect(deleteImageBlock).toMatch(/pointer-events:\s*auto;/);
+    expect(touchAttachImageMaskBlock).toMatch(/opacity:\s*1;/);
+    expect(touchAttachImageMaskBlock).toMatch(/pointer-events:\s*none;/);
+    expect(touchDeleteImageBlock).toMatch(/width:\s*28px;/);
+    expect(touchDeleteImageBlock).toMatch(/height:\s*28px;/);
     expect(attachFileBlock).toMatch(/height:\s*64px;/);
     expect(attachFileBlock).toMatch(/min-width:\s*176px;/);
     expect(mobileAttachImageBlock).toMatch(/width:\s*58px;/);

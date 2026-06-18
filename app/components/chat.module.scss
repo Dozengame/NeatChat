@@ -76,6 +76,45 @@
   pointer-events: auto;
 }
 
+@media (hover: none), (pointer: coarse), (max-width: 600px) {
+  .attach-image-mask {
+    opacity: 1;
+    pointer-events: none;
+    background: radial-gradient(
+      circle at top right,
+      rgba(60, 64, 67, 0.16) 0,
+      rgba(60, 64, 67, 0.08) 34px,
+      transparent 52px
+    );
+  }
+
+  .delete-image {
+    top: 4px;
+    right: 4px;
+    width: 28px;
+    height: 28px;
+    background-color: rgba(255, 255, 255, 0.92);
+    border-color: rgba(60, 64, 67, 0.16);
+    box-shadow: 0 8px 24px rgba($color: #000, $alpha: 0.14);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  :global(.dark) .attach-image-mask {
+    background: radial-gradient(
+      circle at top right,
+      rgba(232, 234, 237, 0.18) 0,
+      rgba(232, 234, 237, 0.08) 34px,
+      transparent 52px
+    );
+  }
+
+  :global(.dark) .delete-image {
+    background-color: rgba(32, 33, 36, 0.88);
+    border-color: rgba(232, 234, 237, 0.18);
+  }
+}
+
 .attach-image {
   appearance: none;
   box-sizing: border-box;
