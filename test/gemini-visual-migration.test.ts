@@ -1757,6 +1757,54 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps Gemini-style markdown links readable and accessible", () => {
+    const markdownStyles = read("app/styles/markdown.scss");
+    const linkBlock = readCssBlock(markdownStyles, ".markdown-body a");
+    const darkLinkBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body a",
+    );
+    const linkHoverBlock = readCssBlock(markdownStyles, ".markdown-body a:hover");
+    const linkFocusVisibleBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body a:focus-visible,\n.markdown-body [role=\"button\"]:focus-visible,\n.markdown-body input[type=\"radio\"]:focus-visible,\n.markdown-body input[type=\"checkbox\"]:focus-visible",
+    );
+    const focusOffsetResetBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body a:not([class]):focus,\n.markdown-body a:not([class]):focus-visible,\n.markdown-body input[type=\"radio\"]:focus,\n.markdown-body input[type=\"radio\"]:focus-visible,\n.markdown-body input[type=\"checkbox\"]:focus,\n.markdown-body input[type=\"checkbox\"]:focus-visible",
+    );
+    const anchorWithoutHrefBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body a:not([href])",
+    );
+    const headingAnchorHoverBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body h1:hover .anchor,\n.markdown-body h2:hover .anchor,\n.markdown-body h3:hover .anchor,\n.markdown-body h4:hover .anchor,\n.markdown-body h5:hover .anchor,\n.markdown-body h6:hover .anchor",
+    );
+
+    expect(linkBlock).toMatch(/color:\s*rgba\(26,\s*115,\s*232,\s*1\);/);
+    expect(linkBlock).toMatch(/text-decoration:\s*underline;/);
+    expect(linkBlock).toMatch(
+      /text-decoration-color:\s*rgba\(26,\s*115,\s*232,\s*0\.34\);/,
+    );
+    expect(linkBlock).toMatch(/text-underline-offset:\s*3px;/);
+    expect(linkBlock).toMatch(/text-decoration-thickness:\s*1px;/);
+    expect(darkLinkBlock).toMatch(/color:\s*rgba\(138,\s*180,\s*248,\s*1\);/);
+    expect(darkLinkBlock).toMatch(
+      /text-decoration-color:\s*rgba\(138,\s*180,\s*248,\s*0\.4\);/,
+    );
+    expect(linkHoverBlock).toMatch(
+      /text-decoration-color:\s*currentColor;/,
+    );
+    expect(linkHoverBlock).toMatch(/text-decoration-thickness:\s*1\.5px;/);
+    expect(linkFocusVisibleBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(linkFocusVisibleBlock).toMatch(/outline-offset:\s*2px;/);
+    expect(focusOffsetResetBlock).toMatch(/outline-offset:\s*0;/);
+    expect(anchorWithoutHrefBlock).toMatch(/color:\s*inherit;/);
+    expect(anchorWithoutHrefBlock).toMatch(/text-decoration:\s*none;/);
+    expect(headingAnchorHoverBlock).toMatch(/text-decoration:\s*none;/);
+  });
+
   test("keeps Gemini-style markdown blockquote callouts", () => {
     const markdownStyles = read("app/styles/markdown.scss");
     const blockquoteBlock = readCssBlock(
