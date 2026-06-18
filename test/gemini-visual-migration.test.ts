@@ -311,6 +311,29 @@ describe("Gemini visual migration shell", () => {
       homeStyles,
       ".sidebar-nav-item-active",
     );
+    const compactContainerBlock = readCssBlock(
+      homeStyles,
+      ".compact-container",
+    );
+    const compactSidebarBackdropBlock = readCssBlock(
+      homeStyles,
+      ".compact-container .sidebar-backdrop",
+    );
+    const compactContainerSidebarBlock = readCssBlock(
+      compactContainerBlock,
+      ".sidebar",
+    );
+    const homeMobileStyles = homeStyles.slice(
+      homeStyles.indexOf("@media only screen and (max-width: 767px)"),
+    );
+    const homeMobileCompactBlock = readCssBlock(
+      homeMobileStyles,
+      ".compact-container",
+    );
+    const homeMobileCompactSidebarBlock = readCssBlock(
+      homeMobileCompactBlock,
+      ".sidebar",
+    );
     const chatItemDeleteBlock = readCssBlock(
       homeStyles.slice(homeStyles.indexOf("\n.chat-item-delete {")),
       ".chat-item-delete",
@@ -1055,6 +1078,34 @@ describe("Gemini visual migration shell", () => {
     expect(homeStyles).toContain(".sidebar-backdrop");
     expect(homeStyles).toContain("z-index: 900");
     expect(homeStyles).toContain("z-index: 1000");
+    expect(compactContainerSidebarBlock).toMatch(
+      /background:\s*rgba\(249,\s*251,\s*253,\s*0\.78\);/,
+    );
+    expect(compactContainerSidebarBlock).toMatch(
+      /backdrop-filter:\s*blur\(24px\) saturate\(185%\);/,
+    );
+    expect(compactContainerSidebarBlock).toMatch(
+      /border-right:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.12\);/,
+    );
+    expect(compactContainerSidebarBlock).toMatch(
+      /box-shadow:\s*0 24px 72px rgba\(32,\s*33,\s*36,\s*0\.28\);/,
+    );
+    expect(homeStyles).not.toContain("0 20px 64px rgba(32, 33, 36, 0.22)");
+    expect(homeMobileCompactSidebarBlock).not.toMatch(/background(?:-color)?:/);
+    expect(homeMobileCompactSidebarBlock).not.toMatch(/backdrop-filter:/);
+    expect(homeMobileCompactSidebarBlock).not.toMatch(/border-right:/);
+    expect(homeMobileCompactSidebarBlock).toMatch(
+      /box-shadow:\s*0 24px 72px rgba\(32,\s*33,\s*36,\s*0\.28\);/,
+    );
+    expect(compactContainerSidebarBlock).toMatch(
+      /:global\(\.dark\) &[\s\S]*background:\s*rgba\(19,\s*20,\s*22,\s*0\.78\);/,
+    );
+    expect(compactSidebarBackdropBlock).toMatch(
+      /backdrop-filter:\s*blur\(8px\) saturate\(135%\);/,
+    );
+    expect(compactSidebarBackdropBlock).toMatch(
+      /background:[\s\S]*linear-gradient\(90deg,\s*rgba\(49,\s*94,\s*248,\s*0\.12\)/,
+    );
     expect(homeStyles).toMatch(/\.sidebar-show\s*\{\s*left:\s*0;/);
     expect(homeStyles).toMatch(
       /\.sidebar\.sidebar-show\s*\{\s*left:\s*0;/,
