@@ -1246,6 +1246,78 @@ describe("Gemini visual migration shell", () => {
     expect(copyButtonBlock).toMatch(/stroke:\s*currentColor !important;/);
   });
 
+  test("keeps Gemini-style markdown image media cards", () => {
+    const markdown = read("app/components/markdown.tsx");
+    const markdownStyles = read("app/styles/markdown.scss");
+    const imageFrameBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-image-frame",
+    );
+    const imagePreviewButtonBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-image-preview-button",
+    );
+    const imagePreviewBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body img.markdown-image-preview",
+    );
+    const imageDownloadBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-image-download",
+    );
+
+    expect(markdown).toContain('className="markdown-image-frame"');
+    expect(markdown).toContain('className="markdown-image-preview-button"');
+    expect(markdown).toContain('className="markdown-image-preview"');
+    expect(markdown).toContain('className="markdown-image-download"');
+    expect(imageFrameBlock).toMatch(/display:\s*inline-flex;/);
+    expect(imageFrameBlock).toMatch(/max-width:\s*min\(100%, 760px\);/);
+    expect(imageFrameBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(imageFrameBlock).toMatch(/overflow:\s*hidden;/);
+    expect(imageFrameBlock).toMatch(/padding:\s*4px;/);
+    expect(imageFrameBlock).toMatch(/border-radius:\s*18px;/);
+    expect(imageFrameBlock).toMatch(
+      /border:\s*1px solid rgba\(60, 64, 67, 0\.12\);/,
+    );
+    expect(imageFrameBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
+    expect(imageFrameBlock).toMatch(
+      /box-shadow:\s*0 10px 28px rgba\(60, 64, 67, 0\.12\);/,
+    );
+    expect(imageFrameBlock).toMatch(
+      /&:hover,\s*&:focus-within[\s\S]*transform:\s*translateY\(-1px\);/,
+    );
+    expect(imageFrameBlock).toMatch(
+      /&:hover,\s*&:focus-within[\s\S]*\.markdown-image-download[\s\S]*opacity:\s*1;[\s\S]*pointer-events:\s*auto;/,
+    );
+    expect(imagePreviewButtonBlock).toMatch(/border-radius:\s*14px;/);
+    expect(imagePreviewButtonBlock).toMatch(/overflow:\s*hidden;/);
+    expect(imagePreviewButtonBlock).toMatch(
+      /&:focus-visible[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\);/,
+    );
+    expect(imagePreviewBlock).toMatch(/max-width:\s*100%;/);
+    expect(imagePreviewBlock).toMatch(/border-radius:\s*14px;/);
+    expect(imagePreviewBlock).toMatch(/border:\s*0;/);
+    expect(imageDownloadBlock).toMatch(/top:\s*8px;/);
+    expect(imageDownloadBlock).toMatch(/right:\s*8px;/);
+    expect(imageDownloadBlock).toMatch(/opacity:\s*0;/);
+    expect(imageDownloadBlock).toMatch(/pointer-events:\s*none;/);
+    expect(imageDownloadBlock).toMatch(
+      /&:focus-visible[\s\S]*opacity:\s*1;/,
+    );
+    expect(imageDownloadBlock).toMatch(
+      /&:focus-visible[\s\S]*box-shadow:\s*0 0 0 3px rgba\(66, 133, 244, 0\.28\), 0 8px 24px rgba\(\$color: #000, \$alpha: 0\.24\);/,
+    );
+    expect(markdownStyles).toMatch(
+      /@media \(hover: none\), \(max-width: 600px\)[\s\S]*\.markdown-body \.markdown-image-frame[\s\S]*padding:\s*3px;[\s\S]*border-radius:\s*16px;/,
+    );
+    expect(markdownStyles).toMatch(
+      /@media \(hover: none\), \(max-width: 600px\)[\s\S]*\.markdown-body \.markdown-image-frame[\s\S]*&:hover,\s*&:focus-within[\s\S]*transform:\s*none;/,
+    );
+    expect(markdownStyles).toMatch(
+      /@media \(hover: none\), \(max-width: 600px\)[\s\S]*\.markdown-body \.markdown-image-download[\s\S]*opacity:\s*1;[\s\S]*pointer-events:\s*auto;/,
+    );
+  });
+
   test("keeps file drag-and-drop scoped and visually polished", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
