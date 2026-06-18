@@ -1512,6 +1512,74 @@ describe("Gemini visual migration shell", () => {
     expect(imagePreviewImageBlock).toMatch(/max-height:\s*100%;/);
   });
 
+  test("keeps shortcut key modal bounded on compact screens", () => {
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const shortcutMobileMediaIndex = chatStyles.indexOf(
+      "@media screen and (max-width: 600px)",
+      chatStyles.indexOf(".shortcut-key span"),
+    );
+    const mobileStyles = chatStyles.slice(shortcutMobileMediaIndex);
+    const shortcutContainerBlock = readCssBlock(
+      chatStyles,
+      ".shortcut-key-container",
+    );
+    const shortcutGridBlock = readCssBlock(chatStyles, ".shortcut-key-grid");
+    const shortcutItemBlock = readCssBlock(chatStyles, ".shortcut-key-item");
+    const shortcutTitleBlock = readCssBlock(chatStyles, ".shortcut-key-title");
+    const shortcutKeysBlock = readCssBlock(chatStyles, ".shortcut-key-keys");
+    const shortcutKeyBlock = readCssBlock(chatStyles, ".shortcut-key");
+    const shortcutKeyTextBlock = readCssBlock(
+      chatStyles,
+      ".shortcut-key span",
+    );
+    const mobileShortcutContainerBlock = readCssBlock(
+      mobileStyles,
+      ".shortcut-key-container",
+    );
+    const mobileShortcutGridBlock = readCssBlock(
+      mobileStyles,
+      ".shortcut-key-grid",
+    );
+    const mobileShortcutItemBlock = readCssBlock(
+      mobileStyles,
+      ".shortcut-key-item",
+    );
+    const mobileShortcutKeysBlock = readCssBlock(
+      mobileStyles,
+      ".shortcut-key-keys",
+    );
+
+    expect(chat).toContain("export function ShortcutKeyModal");
+    expect(chat).toContain('styles["shortcut-key-container"]');
+    expect(chat).toContain('styles["shortcut-key-grid"]');
+    expect(chat).toContain("showShortcutKeyModal &&");
+    expect(shortcutContainerBlock).toMatch(/max-height:\s*min\(70vh, 560px\);/);
+    expect(shortcutContainerBlock).toMatch(/overflow-x:\s*hidden;/);
+    expect(shortcutGridBlock).toMatch(
+      /grid-template-columns:\s*repeat\(auto-fit, minmax\(min\(100%, 350px\), 1fr\)\);/,
+    );
+    expect(shortcutGridBlock).toMatch(/min-width:\s*0;/);
+    expect(shortcutItemBlock).toMatch(/min-width:\s*0;/);
+    expect(shortcutItemBlock).toMatch(/gap:\s*12px;/);
+    expect(shortcutItemBlock).toMatch(/border-radius:\s*14px;/);
+    expect(shortcutTitleBlock).toMatch(/min-width:\s*0;/);
+    expect(shortcutTitleBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(shortcutKeysBlock).toMatch(/flex-wrap:\s*wrap;/);
+    expect(shortcutKeysBlock).toMatch(/justify-content:\s*flex-end;/);
+    expect(shortcutKeysBlock).toMatch(/min-width:\s*0;/);
+    expect(shortcutKeyBlock).toMatch(/min-height:\s*30px;/);
+    expect(shortcutKeyTextBlock).toMatch(/white-space:\s*nowrap;/);
+    expect(mobileShortcutContainerBlock).toMatch(
+      /max-height:\s*min\(62vh, 520px\);/,
+    );
+    expect(mobileShortcutGridBlock).toMatch(
+      /grid-template-columns:\s*minmax\(0, 1fr\);/,
+    );
+    expect(mobileShortcutItemBlock).toMatch(/align-items:\s*flex-start;/);
+    expect(mobileShortcutKeysBlock).toMatch(/justify-content:\s*flex-start;/);
+  });
+
   test("keeps file drag-and-drop scoped and visually polished", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");

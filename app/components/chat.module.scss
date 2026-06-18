@@ -3074,35 +3074,48 @@
 }
 
 .shortcut-key-container {
-  padding: 10px;
+  padding: 6px;
+  max-height: min(70vh, 560px);
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }
 
 .shortcut-key-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr));
+  gap: 12px;
+  min-width: 0;
 }
 
 .shortcut-key-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  min-width: 0;
   overflow: hidden;
   padding: 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(60, 64, 67, 0.1);
   background-color: var(--white);
 }
 
 .shortcut-key-title {
+  min-width: 0;
   font-size: 14px;
+  line-height: 1.4;
   color: var(--black);
+  overflow-wrap: anywhere;
 }
 
 .shortcut-key-keys {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
+  min-width: 0;
 }
 
 .shortcut-key {
@@ -3114,11 +3127,13 @@
   padding: 4px;
   background-color: var(--gray);
   min-width: 32px;
+  min-height: 30px;
 }
 
 .shortcut-key span {
   font-size: 12px;
   color: var(--black);
+  white-space: nowrap;
 }
 
 .chat-main {
@@ -3294,6 +3309,24 @@
 }
 
 @media screen and (max-width: 600px) {
+  .shortcut-key-container {
+    padding: 0;
+    max-height: min(62vh, 520px);
+  }
+
+  .shortcut-key-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .shortcut-key-item {
+    align-items: flex-start;
+  }
+
+  .shortcut-key-keys {
+    justify-content: flex-start;
+  }
+
   .chat-input-panel-inner {
     min-width: 0;
   }
