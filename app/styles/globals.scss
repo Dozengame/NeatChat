@@ -340,32 +340,64 @@ pre {
 
   &:hover .copy-code-button {
     pointer-events: all;
-    transform: translateX(0px);
-    opacity: 0.5;
+    transform: translateY(0);
+    opacity: 0.72;
   }
 
   .copy-code-button {
     position: absolute;
-    right: 10px;
-    top: 1em;
+    right: 12px;
+    top: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
     cursor: pointer;
-    padding: 0px 5px;
-    background-color: var(--black);
-    color: var(--white);
-    border: var(--border-in-light);
-    border-radius: 10px;
-    transform: translateX(10px);
+    padding: 0;
+    background-color: rgba(60, 64, 67, 0.08);
+    color: rgba(60, 64, 67, 0.74);
+    border: 1px solid rgba(60, 64, 67, 0.08);
+    border-radius: 999px;
+    transform: translateY(-2px);
     pointer-events: none;
     opacity: 0;
     transition: all ease 0.3s;
 
-    &:after {
-      content: "copy";
+    svg {
+      width: 15px;
+      height: 15px;
+      fill: currentColor;
+
+      path {
+        stroke: currentColor !important;
+      }
     }
 
     &:hover {
       opacity: 1;
+      background-color: rgba(60, 64, 67, 0.12);
+      color: rgba(60, 64, 67, 0.9);
     }
+
+    &:focus-visible {
+      pointer-events: all;
+      opacity: 1;
+      outline: var(--focus-ring);
+      outline-offset: 2px;
+      transform: translateY(0);
+    }
+  }
+}
+
+.dark pre .copy-code-button {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.78);
+  border-color: rgba(255, 255, 255, 0.08);
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.96);
   }
 }
 

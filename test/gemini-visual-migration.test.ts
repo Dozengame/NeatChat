@@ -1120,4 +1120,47 @@ describe("Gemini visual migration shell", () => {
     expect(gitignore).toContain("design-prototypes/");
     expect(gitignore).toContain(".DS_Store");
   });
+
+  test("keeps Gemini-style markdown code block chrome", () => {
+    const markdown = read("app/components/markdown.tsx");
+    const markdownStyles = read("app/styles/markdown.scss");
+    const globalStyles = read("app/styles/globals.scss");
+    const refinedCodeStyles = markdownStyles.slice(
+      Math.max(
+        0,
+        markdownStyles.indexOf(
+          "/* R4: Gemini-style refined code block card */",
+        ) - 120,
+      ),
+    );
+    const preBlock = readCssBlock(refinedCodeStyles, ".markdown-body pre");
+    const copyButtonStyles = globalStyles.slice(
+      globalStyles.indexOf(".copy-code-button {\n    position"),
+    );
+    const copyButtonBlock = readCssBlock(copyButtonStyles, ".copy-code-button");
+    const languageLabelBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-code-language",
+    );
+
+    expect(markdown).toContain("function getCodeLanguage");
+    expect(markdown).toContain("formatCodeLanguage");
+    expect(markdown).toContain("markdown-code-block-labeled");
+    expect(markdown).toContain('className="markdown-code-language"');
+    expect(markdown).toContain("{codeLanguage}");
+    expect(markdown).toContain("CopyIcon");
+    expect(markdown).toContain(
+      'aria-label={codeLanguage ? `复制 ${codeLanguage} 代码` : "复制代码"}',
+    );
+    expect(preBlock).toMatch(/padding:\s*14px 64px 14px 16px;/);
+    expect(languageLabelBlock).toMatch(/position:\s*absolute;/);
+    expect(languageLabelBlock).toMatch(/right:\s*52px;/);
+    expect(languageLabelBlock).toMatch(/top:\s*12px;/);
+    expect(languageLabelBlock).toMatch(/pointer-events:\s*none;/);
+    expect(copyButtonBlock).toMatch(/width:\s*32px;/);
+    expect(copyButtonBlock).toMatch(/height:\s*32px;/);
+    expect(copyButtonBlock).toMatch(/right:\s*12px;/);
+    expect(copyButtonBlock).toMatch(/top:\s*12px;/);
+    expect(copyButtonBlock).toMatch(/stroke:\s*currentColor !important;/);
+  });
 });

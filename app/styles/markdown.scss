@@ -1091,7 +1091,7 @@ summary,
 .markdown-body .highlight pre,
 .markdown-body pre {
   /* R4: Gemini-style refined code block card */
-  padding: 12px 16px 12px 16px;
+  padding: 14px 64px 14px 16px;
   overflow: auto;
   font-size: 85%;
   line-height: 1.6;
@@ -1102,10 +1102,31 @@ summary,
   position: relative;
 }
 
+.markdown-code-language {
+  position: absolute;
+  top: 12px;
+  right: 52px;
+  z-index: 1;
+  max-width: min(160px, calc(100% - 96px));
+  overflow: hidden;
+  color: rgba(60, 64, 67, 0.56);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 32px;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 :global(.dark) .markdown-body .highlight pre,
 :global(.dark) .markdown-body pre {
   background-color: #1e1e2e;
   border-color: rgba(255, 255, 255, 0.08);
+}
+
+:global(.dark) .markdown-code-language {
+  color: rgba(255, 255, 255, 0.54);
 }
 
 .markdown-body pre code,

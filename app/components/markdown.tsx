@@ -19,6 +19,7 @@ import { copyToClipboard, useWindowSize } from "../utils";
 import Locale from "../locales";
 import LoadingIcon from "../icons/three-dots.svg";
 import DownloadIcon from "../icons/download.svg";
+import CopyIcon from "../icons/copy.svg";
 import { useDebouncedCallback } from "use-debounce";
 import { showToast } from "./ui-lib-actions";
 
@@ -51,6 +52,66 @@ function Summary(props: { children: React.ReactNode }) {
   return <summary>{props.children}</summary>;
 }
 
+function formatCodeLanguage(language: string) {
+  const normalized = language.trim().toLowerCase();
+  const languageLabels: Record<string, string> = {
+    bash: "Bash",
+    c: "C",
+    cpp: "C++",
+    csharp: "C#",
+    css: "CSS",
+    go: "Go",
+    html: "HTML",
+    java: "Java",
+    js: "JavaScript",
+    json: "JSON",
+    jsx: "JSX",
+    markdown: "Markdown",
+    md: "Markdown",
+    plaintext: "Text",
+    py: "Python",
+    python: "Python",
+    scss: "SCSS",
+    sh: "Shell",
+    shell: "Shell",
+    sql: "SQL",
+    text: "Text",
+    ts: "TypeScript",
+    tsx: "TSX",
+    txt: "Text",
+    yaml: "YAML",
+    yml: "YAML",
+    zsh: "Zsh",
+  };
+
+  if (languageLabels[normalized]) {
+    return languageLabels[normalized];
+  }
+
+  return normalized
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((part) =>
+      part.length <= 3
+        ? part.toUpperCase()
+        : part[0].toUpperCase() + part.slice(1),
+    )
+    .join(" ");
+}
+
+function getCodeLanguage(children: React.ReactNode) {
+  const codeElement = React.Children.toArray(children).find(
+    (child): child is React.ReactElement<{ className?: string }> =>
+      React.isValidElement<{ className?: string }>(child) &&
+      typeof child.props.className === "string" &&
+      child.props.className.includes("language-"),
+  );
+  const rawLanguage =
+    codeElement?.props.className?.match(/language-([\w-]+)/)?.[1];
+
+  return rawLanguage ? formatCodeLanguage(rawLanguage) : "";
+}
+
 export function PreCode(props: { children: any }) {
   const ref = useRef<HTMLPreElement>(null);
   const [mermaidCode, setMermaidCode] = useState("");
@@ -78,8 +139,8 @@ export function PreCode(props: { children: any }) {
 
   const config = useAppConfig();
   const features = useContext(MarkdownFeatureContext);
-  const enableArtifacts =
-    features.enableArtifacts && config.enableArtifacts;
+  const enableArtifacts = features.enableArtifacts && config.enableArtifacts;
+  const codeLanguage = getCodeLanguage(props.children);
 
   //Wrap the paragraph for plain-text
   useEffect(() => {
@@ -111,11 +172,22 @@ export function PreCode(props: { children: any }) {
 
   return (
     <>
-      <pre ref={ref}>
+      <pre
+        ref={ref}
+        className={clsx(
+          "markdown-code-block",
+          codeLanguage && "markdown-code-block-labeled",
+        )}
+      >
+        {codeLanguage && (
+          <span className="markdown-code-language" aria-hidden="true">
+            {codeLanguage}
+          </span>
+        )}
         <button
           type="button"
           className="copy-code-button"
-          aria-label="复制代码"
+          aria-label={codeLanguage ? `复制 ${codeLanguage} 代码` : "复制代码"}
           onClick={() => {
             if (ref.current) {
               copyToClipboard(
@@ -123,7 +195,9 @@ export function PreCode(props: { children: any }) {
               );
             }
           }}
-        ></button>
+        >
+          <CopyIcon />
+        </button>
         {props.children}
       </pre>
       {mermaidCode.length > 0 && (
