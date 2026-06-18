@@ -537,10 +537,14 @@ function useSubmitHandler() {
 
 export type RenderPrompt = Pick<Prompt, "title" | "content">;
 
+type PromptHintsCloseOptions = {
+  restoreFocus?: boolean;
+};
+
 export function PromptHints(props: {
   prompts: RenderPrompt[];
   onPromptSelect: (prompt: RenderPrompt) => void;
-  onClose: () => void;
+  onClose: (options?: PromptHintsCloseOptions) => void;
 }) {
   const { prompts, onClose, onPromptSelect } = props;
   const noPrompts = prompts.length === 0;
@@ -560,8 +564,9 @@ export function PromptHints(props: {
       }
       if (e.key === "Escape") {
         e.stopPropagation();
+        e.stopImmediatePropagation();
         e.preventDefault();
-        onClose();
+        onClose({ restoreFocus: true });
         return;
       }
 
@@ -1668,6 +1673,12 @@ function useChatInnerView() {
   const expandInput = useCallback(() => {
     ignoreInputCollapseUntil.current = Date.now() + 350;
     setIsInputExpanded(true);
+  }, []);
+  const closePromptHints = useCallback((options?: PromptHintsCloseOptions) => {
+    setPromptHints([]);
+    if (options?.restoreFocus) {
+      inputRef.current?.focus();
+    }
   }, []);
 
   const onSearch = useDebouncedCallback(
@@ -3802,7 +3813,7 @@ function useChatInnerView() {
             <PromptHints
               prompts={promptHints}
               onPromptSelect={onPromptSelect}
-              onClose={() => setPromptHints([])}
+              onClose={closePromptHints}
             />
 
             <div
