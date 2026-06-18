@@ -1707,6 +1707,11 @@ describe("Gemini visual migration shell", () => {
 
   test("keeps Gemini-style markdown table dark surfaces", () => {
     const markdownStyles = read("app/styles/markdown.scss");
+    const tableBlock = readCssBlock(markdownStyles, ".markdown-body table");
+    const darkTableBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body table",
+    );
     const tableHeaderBlock = readCssBlock(
       markdownStyles,
       ".markdown-body table th",
@@ -1724,6 +1729,20 @@ describe("Gemini visual migration shell", () => {
       ".dark .markdown-body table tr:hover",
     );
 
+    expect(tableBlock).toMatch(/border:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.1\);/);
+    expect(tableBlock).toMatch(/border-radius:\s*12px;/);
+    expect(tableBlock).toMatch(/background:\s*rgba\(255,\s*255,\s*255,\s*0\.35\);/);
+    expect(tableBlock).toMatch(/overflow-x:\s*auto;/);
+    expect(tableBlock).toMatch(/overflow-y:\s*hidden;/);
+    expect(tableBlock).toMatch(/overscroll-behavior-x:\s*contain;/);
+    expect(tableBlock).toMatch(/-webkit-overflow-scrolling:\s*touch;/);
+    expect(tableBlock).toMatch(/scrollbar-width:\s*thin;/);
+    expect(darkTableBlock).toMatch(
+      /background:\s*rgba\(255,\s*255,\s*255,\s*0\.03\);/,
+    );
+    expect(darkTableBlock).toMatch(
+      /border-color:\s*rgba\(255,\s*255,\s*255,\s*0\.08\);/,
+    );
     expect(tableHeaderBlock).toMatch(
       /background-color:\s*rgba\(60,\s*64,\s*67,\s*0\.04\);/,
     );

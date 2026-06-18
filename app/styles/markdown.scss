@@ -581,7 +581,19 @@ summary,
   display: block;
   width: max-content;
   max-width: 100%;
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(60, 64, 67, 0.1);
+  border-radius: 12px;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dark .markdown-body table {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .markdown-body td,
