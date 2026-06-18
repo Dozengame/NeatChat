@@ -1656,6 +1656,43 @@ describe("Gemini visual migration shell", () => {
     expect(darkDetailsBlockquoteBlock).toMatch(/box-shadow:\s*none;/);
   });
 
+  test("keeps Gemini-style markdown list rhythm", () => {
+    const markdownStyles = read("app/styles/markdown.scss");
+    const listBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body ul,\n.markdown-body ol",
+    );
+    const listItemBlock = readCssBlock(markdownStyles, ".markdown-body li");
+    const markerBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body li::marker",
+    );
+    const darkMarkerBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body li::marker",
+    );
+    const siblingItemBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body li + li",
+    );
+    const taskListItemBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .task-list-item",
+    );
+
+    expect(listBlock).toMatch(/padding-left:\s*1\.7em;/);
+    expect(listBlock).toMatch(/line-height:\s*1\.65;/);
+    expect(listItemBlock).toMatch(/padding-left:\s*0\.16em;/);
+    expect(listItemBlock).toMatch(/line-height:\s*inherit;/);
+    expect(markerBlock).toMatch(/color:\s*rgba\(66,\s*133,\s*244,\s*0\.72\);/);
+    expect(markerBlock).toMatch(/font-weight:\s*600;/);
+    expect(darkMarkerBlock).toMatch(
+      /color:\s*rgba\(138,\s*180,\s*248,\s*0\.78\);/,
+    );
+    expect(siblingItemBlock).toMatch(/margin-top:\s*0\.38em;/);
+    expect(taskListItemBlock).toMatch(/list-style-type:\s*none;/);
+  });
+
   test("keeps chat image preview overlay focus-restoring and bounded", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");

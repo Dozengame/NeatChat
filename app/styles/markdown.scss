@@ -733,7 +733,22 @@ summary,
 .markdown-body ol {
   margin-top: 0;
   margin-bottom: 0;
-  padding-left: 2em;
+  padding-left: 1.7em;
+  line-height: 1.65;
+}
+
+.markdown-body li {
+  padding-left: 0.16em;
+  line-height: inherit;
+}
+
+.markdown-body li::marker {
+  color: rgba(66, 133, 244, 0.72);
+  font-weight: 600;
+}
+
+.dark .markdown-body li::marker {
+  color: rgba(138, 180, 248, 0.78);
 }
 
 .markdown-body ol ol,
@@ -966,7 +981,7 @@ summary,
 }
 
 .markdown-body li + li {
-  margin-top: 0.25em;
+  margin-top: 0.38em;
 }
 
 .markdown-body dl {
