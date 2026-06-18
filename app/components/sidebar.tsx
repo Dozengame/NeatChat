@@ -491,8 +491,14 @@ export function SideBar(props: {
               </div>
               <Link
                 to={Path.Settings}
-                className={styles["sidebar-mobile-account-settings"]}
+                className={clsx(styles["sidebar-mobile-account-settings"], {
+                  [styles["sidebar-settings-link-active"]]:
+                    location.pathname === Path.Settings,
+                })}
                 aria-label={Locale.Settings.Title}
+                aria-current={
+                  location.pathname === Path.Settings ? "page" : undefined
+                }
               >
                 <IconButton
                   aria={Locale.Settings.Title}
@@ -503,7 +509,16 @@ export function SideBar(props: {
             </div>
           ) : (
             <div className={styles["sidebar-action"]}>
-              <Link to={Path.Settings}>
+              <Link
+                to={Path.Settings}
+                className={clsx(styles["sidebar-settings-link"], {
+                  [styles["sidebar-settings-link-active"]]:
+                    location.pathname === Path.Settings,
+                })}
+                aria-current={
+                  location.pathname === Path.Settings ? "page" : undefined
+                }
+              >
                 <IconButton
                   aria={Locale.Settings.Title}
                   icon={<SettingsIcon />}

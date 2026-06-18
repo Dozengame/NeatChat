@@ -331,6 +331,10 @@ describe("Gemini visual migration shell", () => {
       homeStyles,
       ".sidebar-content-card-active",
     );
+    const sidebarSettingsLinkActiveBlock = readCssBlock(
+      homeStyles,
+      ".sidebar-settings-link-active",
+    );
     const darkSidebarContentCardActiveBlock = readCssBlock(
       homeStyles,
       ":global(.dark) .sidebar-content-card-active",
@@ -719,6 +723,12 @@ describe("Gemini visual migration shell", () => {
     );
     expect(sidebar).toMatch(
       /aria-label=\{Locale\.Discovery\.Name\}[\s\S]*aria-current=\{[\s\S]*location\.pathname === Path\.Plugins \|\|[\s\S]*location\.pathname === Path\.McpMarket[\s\S]*\?\s*"page"\s*:\s*undefined[\s\S]*\}/,
+    );
+    expect(sidebar).toMatch(
+      /className=\{clsx\([\s\S]*styles\["sidebar-mobile-account-settings"\][\s\S]*\[styles\["sidebar-settings-link-active"\]\]:\s*location\.pathname === Path\.Settings[\s\S]*aria-current=\{[\s\S]*location\.pathname === Path\.Settings \? "page" : undefined[\s\S]*\}/,
+    );
+    expect(sidebar).toMatch(
+      /<Link[\s\S]*to=\{Path\.Settings\}[\s\S]*className=\{clsx\([\s\S]*styles\["sidebar-settings-link"\][\s\S]*\[styles\["sidebar-settings-link-active"\]\]:\s*location\.pathname === Path\.Settings[\s\S]*aria-current=\{[\s\S]*location\.pathname === Path\.Settings \? "page" : undefined[\s\S]*\}/,
     );
     expect(sidebar).toContain('id="mobile-sidebar-drawer"');
     expect(sidebar).toContain("isMobileHidden?: boolean");
@@ -1207,6 +1217,12 @@ describe("Gemini visual migration shell", () => {
     );
     expect(narrowSidebarBlock).toMatch(
       /\.sidebar-content-card-active\s*\{[\s\S]*background-color:\s*rgba\(25,\s*103,\s*210,\s*0\.08\);[\s\S]*color:\s*var\(--primary\);/,
+    );
+    expect(sidebarSettingsLinkActiveBlock).toMatch(
+      /button\s*\{[\s\S]*background:\s*rgba\(25,\s*103,\s*210,\s*0\.1\);/,
+    );
+    expect(sidebarSettingsLinkActiveBlock).toMatch(
+      /box-shadow:\s*0 0 0 1px rgba\(49,\s*94,\s*248,\s*0\.22\)/,
     );
     expect(sidebarNavItemActiveBlock).toMatch(
       /box-shadow:\s*inset 3px 0 0 var\(--primary\);/,
