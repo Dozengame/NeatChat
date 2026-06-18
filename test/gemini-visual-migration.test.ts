@@ -170,6 +170,18 @@ describe("Gemini visual migration shell", () => {
       mobileStyles,
       ".chat-empty-suggestion",
     );
+    const narrowEmptyContainerBlock = readCssBlock(
+      chatStyles,
+      "@container chat-container (max-width: 480px)",
+    );
+    const narrowEmptySuggestionsBlock = readCssBlock(
+      narrowEmptyContainerBlock,
+      ".chat-empty-suggestions",
+    );
+    const narrowEmptySuggestionBlock = readCssBlock(
+      narrowEmptyContainerBlock,
+      ".chat-empty-suggestion",
+    );
     const inputStatusBlock = readCssBlock(
       chatStyles,
       ".chat-input-panel-inner-status",
@@ -886,6 +898,7 @@ describe("Gemini visual migration shell", () => {
     expect(emptySuggestionBlock).toMatch(/align-items:\s*center;/);
     expect(emptySuggestionBlock).toMatch(/justify-content:\s*center;/);
     expect(emptySuggestionBlock).toMatch(/gap:\s*8px;/);
+    expect(emptySuggestionBlock).toMatch(/width:\s*100%;/);
     expect(emptySuggestionBlock).toContain("&:active");
     expect(emptySuggestionBlock).toMatch(
       /&:active[\s\S]*transform:\s*translateY\(0\) scale\(0\.995\);/,
@@ -920,6 +933,15 @@ describe("Gemini visual migration shell", () => {
     );
     expect(emptySuggestionTextBlock).toMatch(/white-space:\s*normal;/);
     expect(mobileEmptySuggestionBlock).toMatch(/min-height:\s*44px;/);
+    expect(narrowEmptySuggestionsBlock).toMatch(
+      /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)\s*!important;/,
+    );
+    expect(narrowEmptySuggestionsBlock).toMatch(
+      /width:\s*min\(360px,\s*100%\)\s*!important;/,
+    );
+    expect(narrowEmptySuggestionBlock).toMatch(
+      /min-height:\s*48px\s*!important;/,
+    );
     expect(chatStyles).toContain(".chat-reading-surface");
     expect(chatStyles).toContain(".chat-message-row");
     expect(chatStyles).toContain(".chat-message-row-user");
