@@ -1500,6 +1500,14 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-code-language",
     );
+    const darkPreBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body .highlight pre,\n.dark .markdown-body pre",
+    );
+    const darkLanguageLabelBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-code-language",
+    );
     const labeledCodeBlock = readCssBlock(
       markdownStyles,
       ".markdown-body pre.markdown-code-block-labeled",
@@ -1521,6 +1529,13 @@ describe("Gemini visual migration shell", () => {
     expect(languageLabelBlock).toMatch(/right:\s*52px;/);
     expect(languageLabelBlock).toMatch(/top:\s*12px;/);
     expect(languageLabelBlock).toMatch(/pointer-events:\s*none;/);
+    expect(darkPreBlock).toMatch(/background-color:\s*#1e1e2e;/);
+    expect(darkPreBlock).toMatch(
+      /border-color:\s*rgba\(255,\s*255,\s*255,\s*0\.08\);/,
+    );
+    expect(darkLanguageLabelBlock).toMatch(
+      /color:\s*rgba\(255,\s*255,\s*255,\s*0\.54\);/,
+    );
     expect(copyButtonBlock).toMatch(/width:\s*34px;/);
     expect(copyButtonBlock).toMatch(/height:\s*34px;/);
     expect(copyButtonBlock).toMatch(/right:\s*12px;/);
@@ -1537,6 +1552,69 @@ describe("Gemini visual migration shell", () => {
     expect(touchCopyButtonBlock).toMatch(/pointer-events:\s*all;/);
     expect(touchCopyButtonBlock).toMatch(/opacity:\s*1;/);
     expect(touchCopyButtonBlock).toMatch(/transform:\s*translateY\(0\);/);
+  });
+
+  test("keeps Gemini-style markdown inline code pills", () => {
+    const markdownStyles = read("app/styles/markdown.scss");
+    const inlineCodeStyles = markdownStyles.slice(
+      markdownStyles.lastIndexOf(".markdown-body code,\n.markdown-body tt"),
+    );
+    const inlineCodeBlock = readCssBlock(
+      inlineCodeStyles,
+      ".markdown-body code,\n.markdown-body tt",
+    );
+    const darkInlineCodeBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body code,\n.dark .markdown-body tt",
+    );
+    const preCodeBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body pre > code",
+    );
+    const darkPreCodeBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body pre code,\n.dark .markdown-body pre tt",
+    );
+    const delCodeBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body del code",
+    );
+    const darkDelCodeBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body del code",
+    );
+
+    expect(inlineCodeBlock).toMatch(/padding:\s*0\.12em 0\.36em;/);
+    expect(inlineCodeBlock).toMatch(/line-height:\s*1\.55;/);
+    expect(inlineCodeBlock).toMatch(/white-space:\s*break-spaces;/);
+    expect(inlineCodeBlock).toMatch(
+      /background:\s*rgba\(66,\s*133,\s*244,\s*0\.08\);/,
+    );
+    expect(inlineCodeBlock).toMatch(
+      /border:\s*1px solid rgba\(66,\s*133,\s*244,\s*0\.12\);/,
+    );
+    expect(inlineCodeBlock).toMatch(/border-radius:\s*6px;/);
+    expect(inlineCodeBlock).toMatch(/box-decoration-break:\s*clone;/);
+    expect(inlineCodeBlock).toMatch(/-webkit-box-decoration-break:\s*clone;/);
+    expect(darkInlineCodeBlock).toMatch(
+      /background:\s*rgba\(138,\s*180,\s*248,\s*0\.12\);/,
+    );
+    expect(darkInlineCodeBlock).toMatch(
+      /border-color:\s*rgba\(138,\s*180,\s*248,\s*0\.18\);/,
+    );
+    expect(preCodeBlock).toMatch(/padding:\s*0;/);
+    expect(preCodeBlock).toMatch(/background:\s*transparent;/);
+    expect(preCodeBlock).toMatch(/border:\s*0;/);
+    expect(preCodeBlock).toMatch(/box-shadow:\s*none;/);
+    expect(darkPreCodeBlock).toMatch(/background:\s*transparent;/);
+    expect(darkPreCodeBlock).toMatch(/border:\s*0;/);
+    expect(darkPreCodeBlock).toMatch(/box-shadow:\s*none;/);
+    expect(delCodeBlock).toMatch(/text-decoration:\s*inherit;/);
+    expect(delCodeBlock).toMatch(/background:\s*transparent;/);
+    expect(delCodeBlock).toMatch(/border:\s*0;/);
+    expect(delCodeBlock).toMatch(/line-height:\s*inherit;/);
+    expect(darkDelCodeBlock).toMatch(/background:\s*transparent;/);
+    expect(darkDelCodeBlock).toMatch(/border:\s*0;/);
   });
 
   test("keeps Gemini-style markdown image media cards", () => {
@@ -1710,6 +1788,14 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body h2 .anchor",
     );
+    const headingCodeBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body h1 tt,\n.markdown-body h1 code,\n.markdown-body h2 tt,\n.markdown-body h2 code,\n.markdown-body h3 tt,\n.markdown-body h3 code,\n.markdown-body h4 tt,\n.markdown-body h4 code,\n.markdown-body h5 tt,\n.markdown-body h5 code,\n.markdown-body h6 tt,\n.markdown-body h6 code",
+    );
+    const darkHeadingCodeBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body h1 tt,\n.dark .markdown-body h1 code,\n.dark .markdown-body h2 tt,\n.dark .markdown-body h2 code,\n.dark .markdown-body h3 tt,\n.dark .markdown-body h3 code,\n.dark .markdown-body h4 tt,\n.dark .markdown-body h4 code,\n.dark .markdown-body h5 tt,\n.dark .markdown-body h5 code,\n.dark .markdown-body h6 tt,\n.dark .markdown-body h6 code",
+    );
     const summaryHeadingBlock = readCssBlock(
       markdownStyles,
       ".markdown-body summary h1,\n.markdown-body summary h2",
@@ -1736,6 +1822,11 @@ describe("Gemini visual migration shell", () => {
     );
     expect(h2AnchorBlock).toMatch(/margin-left:\s*-32px;/);
     expect(h3Block).toMatch(/font-size:\s*1\.12em;/);
+    expect(headingCodeBlock).toMatch(/line-height:\s*inherit;/);
+    expect(headingCodeBlock).toMatch(/background:\s*transparent;/);
+    expect(headingCodeBlock).toMatch(/border:\s*0;/);
+    expect(darkHeadingCodeBlock).toMatch(/background:\s*transparent;/);
+    expect(darkHeadingCodeBlock).toMatch(/border:\s*0;/);
     expect(summaryHeadingBlock).toMatch(/padding-left:\s*0;/);
     expect(summaryHeadingBlock).toMatch(/&::before[\s\S]*display:\s*none;/);
   });
