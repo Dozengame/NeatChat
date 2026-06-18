@@ -558,6 +558,12 @@ export function PromptHints(props: {
   }
 
   useEffect(() => {
+    selectedRef.current?.scrollIntoView({
+      block: "nearest",
+    });
+  }, [selectIndex]);
+
+  useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (noPrompts || e.metaKey || e.altKey || e.ctrlKey) {
         return;
@@ -570,24 +576,29 @@ export function PromptHints(props: {
         return;
       }
 
-      // arrow up / down to select prompt
-      const changeIndex = (delta: number) => {
+      const selectPromptIndex = (nextIndex: number) => {
         e.stopPropagation();
         e.preventDefault();
+        setSelectIndex(nextIndex);
+      };
+
+      // arrow up / down to select prompt
+      const changeIndex = (delta: number) => {
         const nextIndex = Math.max(
           0,
           Math.min(prompts.length - 1, selectIndex + delta),
         );
-        setSelectIndex(nextIndex);
-        selectedRef.current?.scrollIntoView({
-          block: "center",
-        });
+        selectPromptIndex(nextIndex);
       };
 
       if (e.key === "ArrowUp") {
         changeIndex(-1);
       } else if (e.key === "ArrowDown") {
         changeIndex(1);
+      } else if (e.key === "Home") {
+        selectPromptIndex(0);
+      } else if (e.key === "End") {
+        selectPromptIndex(prompts.length - 1);
       } else if (e.key === "Enter") {
         e.stopPropagation();
         e.preventDefault();

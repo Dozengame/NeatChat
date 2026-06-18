@@ -582,6 +582,15 @@ describe("Gemini visual migration shell", () => {
       /if \(e\.key === "ArrowUp"\) \{[\s\S]*changeIndex\(-1\);[\s\S]*\} else if \(e\.key === "ArrowDown"\) \{[\s\S]*changeIndex\(1\);/,
     );
     expect(chat).toMatch(
+      /const selectPromptIndex = \(nextIndex: number\) => \{[\s\S]*e\.stopPropagation\(\);[\s\S]*e\.preventDefault\(\);[\s\S]*setSelectIndex\(nextIndex\);[\s\S]*\};/,
+    );
+    expect(chat).toMatch(
+      /if \(e\.key === "ArrowUp"\) \{[\s\S]*changeIndex\(-1\);[\s\S]*\} else if \(e\.key === "ArrowDown"\) \{[\s\S]*changeIndex\(1\);[\s\S]*\} else if \(e\.key === "Home"\) \{[\s\S]*selectPromptIndex\(0\);[\s\S]*\} else if \(e\.key === "End"\) \{[\s\S]*selectPromptIndex\(prompts\.length - 1\);/,
+    );
+    expect(chat).toMatch(
+      /useEffect\(\(\) => \{[\s\S]*selectedRef\.current\?\.scrollIntoView\(\{[\s\S]*block:\s*"nearest",[\s\S]*\}\);[\s\S]*\}, \[selectIndex\]\);/,
+    );
+    expect(chat).toMatch(
       /else if \(e\.key === "Enter"\) \{[\s\S]*e\.stopPropagation\(\);[\s\S]*e\.preventDefault\(\);[\s\S]*const selectedPrompt = prompts\.at\(selectIndex\);[\s\S]*onPromptSelect\(selectedPrompt\);/,
     );
     expect(chat).toMatch(
