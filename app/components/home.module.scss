@@ -147,6 +147,18 @@
   cursor: pointer;
 }
 
+:global(.dark) .compact-container .sidebar-backdrop {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(138, 180, 248, 0.1),
+      rgba(196, 140, 255, 0.08)
+    ),
+    rgba(8, 10, 14, 0.48);
+  backdrop-filter: blur(10px) saturate(145%);
+  -webkit-backdrop-filter: blur(10px) saturate(145%);
+}
+
 @media only screen and (min-width: 600px) {
   .tight-container {
     --window-width: 100vw;

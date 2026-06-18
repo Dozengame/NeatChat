@@ -409,6 +409,10 @@ describe("Gemini visual migration shell", () => {
       homeStyles,
       ".compact-container .sidebar-backdrop",
     );
+    const darkCompactSidebarBackdropBlock = readCssBlock(
+      homeStyles,
+      ":global(.dark) .compact-container .sidebar-backdrop",
+    );
     const compactContainerSidebarBlock = readCssBlock(
       compactContainerBlock,
       ".sidebar",
@@ -1354,6 +1358,18 @@ describe("Gemini visual migration shell", () => {
     );
     expect(compactSidebarBackdropBlock).toMatch(
       /background:[\s\S]*linear-gradient\(90deg,\s*rgba\(49,\s*94,\s*248,\s*0\.12\)/,
+    );
+    expect(darkCompactSidebarBackdropBlock).toMatch(
+      /background:[\s\S]*linear-gradient\(\s*90deg,\s*rgba\(138,\s*180,\s*248,\s*0\.1\),\s*rgba\(196,\s*140,\s*255,\s*0\.08\)\s*\)/,
+    );
+    expect(darkCompactSidebarBackdropBlock).toMatch(
+      /rgba\(8,\s*10,\s*14,\s*0\.48\)/,
+    );
+    expect(darkCompactSidebarBackdropBlock).toMatch(
+      /backdrop-filter:\s*blur\(10px\) saturate\(145%\);/,
+    );
+    expect(darkCompactSidebarBackdropBlock).toMatch(
+      /-webkit-backdrop-filter:\s*blur\(10px\) saturate\(145%\);/,
     );
     expect(homeStyles).toMatch(/\.sidebar-show\s*\{\s*left:\s*0;/);
     expect(homeStyles).toMatch(
