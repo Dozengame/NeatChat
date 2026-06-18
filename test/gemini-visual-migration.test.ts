@@ -1693,6 +1693,53 @@ describe("Gemini visual migration shell", () => {
     expect(taskListItemBlock).toMatch(/list-style-type:\s*none;/);
   });
 
+  test("keeps Gemini-style markdown heading hierarchy", () => {
+    const markdownStyles = read("app/styles/markdown.scss");
+    const headingBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body h1,\n.markdown-body h2,\n.markdown-body h3,\n.markdown-body h4,\n.markdown-body h5,\n.markdown-body h6",
+    );
+    const h1Block = readCssBlock(markdownStyles, ".markdown-body h1");
+    const h2Block = readCssBlock(markdownStyles, ".markdown-body h2");
+    const h3Block = readCssBlock(markdownStyles, ".markdown-body h3");
+    const darkH2RailBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body h2::before",
+    );
+    const h2AnchorBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body h2 .anchor",
+    );
+    const summaryHeadingBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body summary h1,\n.markdown-body summary h2",
+    );
+
+    expect(headingBlock).toMatch(/margin-top:\s*22px;/);
+    expect(headingBlock).toMatch(/margin-bottom:\s*10px;/);
+    expect(headingBlock).toMatch(/line-height:\s*1\.32;/);
+    expect(headingBlock).toMatch(/letter-spacing:\s*0;/);
+    expect(h1Block).toMatch(/font-size:\s*1\.55em;/);
+    expect(h1Block).toMatch(/padding-bottom:\s*0;/);
+    expect(h1Block).toMatch(/border-bottom:\s*0;/);
+    expect(h2Block).toMatch(/position:\s*relative;/);
+    expect(h2Block).toMatch(/padding-left:\s*12px;/);
+    expect(h2Block).toMatch(/padding-bottom:\s*0;/);
+    expect(h2Block).toMatch(/font-size:\s*1\.28em;/);
+    expect(h2Block).toMatch(/border-bottom:\s*0;/);
+    expect(h2Block).toMatch(/&::before[\s\S]*width:\s*3px;/);
+    expect(h2Block).toMatch(
+      /&::before[\s\S]*background:\s*rgba\(66,\s*133,\s*244,\s*0\.42\);/,
+    );
+    expect(darkH2RailBlock).toMatch(
+      /background:\s*rgba\(138,\s*180,\s*248,\s*0\.46\);/,
+    );
+    expect(h2AnchorBlock).toMatch(/margin-left:\s*-32px;/);
+    expect(h3Block).toMatch(/font-size:\s*1\.12em;/);
+    expect(summaryHeadingBlock).toMatch(/padding-left:\s*0;/);
+    expect(summaryHeadingBlock).toMatch(/&::before[\s\S]*display:\s*none;/);
+  });
+
   test("keeps chat image preview overlay focus-restoring and bounded", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
