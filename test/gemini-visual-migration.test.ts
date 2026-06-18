@@ -510,18 +510,28 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain(
       "const modelSelectorButtonRef = useRef<HTMLButtonElement>(null);",
     );
+    expect(chat).toContain("const modelMenuRef = useRef<HTMLDivElement>(null);");
     expect(chat).toContain("const restoreModelSelectorFocus = useCallback");
     expect(chat).toMatch(
       /setTimeout\(\(\) => \{[\s\S]*requestAnimationFrame\([\s\S]*\(\) => modelSelectorButtonRef\.current\?\.focus\(\),?[\s\S]*\);[\s\S]*\}, 0\);/,
+    );
+    expect(chat).toMatch(
+      /const getModelMenuControls = useCallback\(\(\) => \{[\s\S]*modelMenuRef\.current\?\.querySelectorAll<HTMLButtonElement>\(\s*'\[role="option"\], button\[aria-controls\]',\s*\)[\s\S]*filter\(\(control\) => !control\.disabled && control\.offsetParent !== null\);[\s\S]*\}, \[\]\);/,
+    );
+    expect(chat).toMatch(
+      /const focusModelMenuControl = useCallback\(\s*\(key: string\) => \{[\s\S]*case "ArrowDown":[\s\S]*case "ArrowUp":[\s\S]*case "Home":[\s\S]*case "End":[\s\S]*nextControl\.focus\(\);[\s\S]*nextControl\.scrollIntoView\(\{ block: "nearest" \}\);[\s\S]*\},\s*\[getModelMenuControls\],\s*\);/,
+    );
+    expect(chat).toMatch(
+      /const handleModelMenuKeyDown = \(event: React\.KeyboardEvent<HTMLElement>\) => \{[\s\S]*if \(!showMobileModelSelector\) return;[\s\S]*if \(!\["ArrowDown", "ArrowUp", "Home", "End"\]\.includes\(event\.key\)\) return;[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);[\s\S]*focusModelMenuControl\(event\.key\);[\s\S]*\};/,
     );
     expect(chat).toContain("ref={modelSelectorButtonRef}");
     expect(chat).toContain("aria-expanded={showMobileModelSelector}");
     expect(chat).toContain('aria-controls="chat-model-menu"');
     expect(chat).toMatch(
-      /className=\{styles\["chat-mobile-model-title"\]\}[\s\S]*aria-label="选择模型"[\s\S]*aria-controls="chat-model-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showMobileModelSelector\}/,
+      /className=\{styles\["chat-mobile-model-title"\]\}[\s\S]*aria-label="选择模型"[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*aria-controls="chat-model-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showMobileModelSelector\}/,
     );
     expect(chat).toMatch(
-      /className=\{styles\["chat-desktop-model-title"\]\}[\s\S]*aria-label="选择模型和参数"[\s\S]*aria-controls="chat-model-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showMobileModelSelector\}/,
+      /className=\{styles\["chat-desktop-model-title"\]\}[\s\S]*aria-label="选择模型和参数"[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*aria-controls="chat-model-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showMobileModelSelector\}/,
     );
     expect(chat).toContain('aria-label="关闭模型选择"');
     expect(chat).toContain('id="chat-model-menu"');
@@ -530,6 +540,9 @@ describe("Gemini visual migration shell", () => {
       /id="chat-model-menu"[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*aria-label="模型和思考等级"/,
     );
     expect(chat).toContain('aria-label="模型和思考等级"');
+    expect(chat).toMatch(
+      /id="chat-model-menu"[\s\S]*ref=\{modelMenuRef\}[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*role="dialog"[\s\S]*aria-modal="true"/,
+    );
     expect(chat).toMatch(
       /if \(!showMobileModelSelector\) return;[\s\S]*const closeModelSelectorOnEscape = \(event: KeyboardEvent\) =>[\s\S]*event\.key === "Escape"[\s\S]*closeMobileModelSelector\(\);[\s\S]*restoreModelSelectorFocus\(\);[\s\S]*window\.addEventListener\("keydown", closeModelSelectorOnEscape\);[\s\S]*window\.removeEventListener\("keydown", closeModelSelectorOnEscape\);/,
     );

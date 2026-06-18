@@ -2054,6 +2054,7 @@ function useChatInnerView() {
   const [expandedMobileModelSection, setExpandedMobileModelSection] =
     useState<MobileModelAdvancedSection | null>(null);
   const modelSelectorButtonRef = useRef<HTMLButtonElement>(null);
+  const modelMenuRef = useRef<HTMLDivElement>(null);
   const closeMobileModelSelector = useCallback(() => {
     setShowMobileModelSelector(false);
     setExpandedMobileModelSection(null);
@@ -2063,6 +2064,60 @@ function useChatInnerView() {
       requestAnimationFrame(() => modelSelectorButtonRef.current?.focus());
     }, 0);
   }, []);
+  const getModelMenuControls = useCallback(() => {
+    return Array.from(
+      modelMenuRef.current?.querySelectorAll<HTMLButtonElement>(
+        '[role="option"], button[aria-controls]',
+      ) ?? [],
+    ).filter((control) => !control.disabled && control.offsetParent !== null);
+  }, []);
+  const focusModelMenuControl = useCallback(
+    (key: string) => {
+      const controls = getModelMenuControls();
+      if (controls.length === 0) return;
+
+      const currentIndex = controls.findIndex(
+        (control) => control === document.activeElement,
+      );
+      let nextIndex = currentIndex;
+
+      switch (key) {
+        case "ArrowDown":
+          nextIndex =
+            currentIndex < 0
+              ? 0
+              : Math.min(currentIndex + 1, controls.length - 1);
+          break;
+        case "ArrowUp":
+          nextIndex =
+            currentIndex < 0
+              ? controls.length - 1
+              : Math.max(currentIndex - 1, 0);
+          break;
+        case "Home":
+          nextIndex = 0;
+          break;
+        case "End":
+          nextIndex = controls.length - 1;
+          break;
+        default:
+          return;
+      }
+
+      const nextControl = controls[nextIndex];
+      nextControl.focus();
+      nextControl.scrollIntoView({ block: "nearest" });
+    },
+    [getModelMenuControls],
+  );
+  const handleModelMenuKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (!showMobileModelSelector) return;
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    focusModelMenuControl(event.key);
+  };
   useEffect(() => {
     if (!showMobileModelSelector) return;
 
@@ -2961,6 +3016,7 @@ function useChatInnerView() {
             ref={modelSelectorButtonRef}
             className={styles["chat-mobile-model-title"]}
             aria-label="选择模型"
+            onKeyDown={handleModelMenuKeyDown}
             onClick={() => {
               setShowChatActionMenu(false);
               setExpandedMobileModelSection(null);
@@ -3011,6 +3067,7 @@ function useChatInnerView() {
               ref={modelSelectorButtonRef}
               className={styles["chat-desktop-model-title"]}
               aria-label="选择模型和参数"
+              onKeyDown={handleModelMenuKeyDown}
               onClick={() => {
                 setShowChatActionMenu(false);
                 setExpandedMobileModelSection(null);
@@ -3133,6 +3190,7 @@ function useChatInnerView() {
       />
       <div
         id="chat-model-menu"
+        ref={modelMenuRef}
         className={clsx(
           isCompactScreen
             ? styles["chat-mobile-model-menu"]
@@ -3141,6 +3199,7 @@ function useChatInnerView() {
             [styles["chat-model-menu-visible"]]: showMobileModelSelector,
           },
         )}
+        onKeyDown={handleModelMenuKeyDown}
         role="dialog"
         aria-modal="true"
         aria-label="模型和思考等级"
