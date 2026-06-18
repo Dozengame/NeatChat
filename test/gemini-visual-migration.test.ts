@@ -624,10 +624,28 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain(
       "const chatInputMenuButtonRef = useRef<HTMLButtonElement>(null);",
     );
+    expect(chat).toContain(
+      "const chatInputActionMenuRef = useRef<HTMLDivElement>(null);",
+    );
+    expect(chat).toMatch(
+      /const getChatActionMenuControls = useCallback\(\(\) => \{[\s\S]*chatInputActionMenuRef\.current\?\.querySelectorAll<HTMLButtonElement>\(\s*`button\.\$\{styles\["chat-input-action"\]\}`,?\s*\)[\s\S]*\.filter\(\s*\(control\) =>[\s\S]*!control\.disabled &&[\s\S]*control\.offsetParent !== null &&[\s\S]*!control\.closest\('\[role="listbox"\]'\),[\s\S]*\);[\s\S]*\}, \[\]\);/,
+    );
+    expect(chat).toMatch(
+      /const focusChatActionMenuControl = useCallback\(\s*\(key: string\) => \{[\s\S]*case "ArrowDown":[\s\S]*case "ArrowUp":[\s\S]*case "Home":[\s\S]*case "End":[\s\S]*nextControl\.focus\(\);[\s\S]*nextControl\.scrollIntoView\(\{ block: "nearest" \}\);[\s\S]*\},\s*\[getChatActionMenuControls\],\s*\);/,
+    );
+    expect(chat).toMatch(
+      /const handleChatActionMenuKeyDown = \(\s*event: React\.KeyboardEvent<HTMLElement>,?\s*\) => \{[\s\S]*if \(!showChatActionMenu\) return;[\s\S]*if \(!\["ArrowDown", "ArrowUp", "Home", "End"\]\.includes\(event\.key\)\) return;[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);[\s\S]*focusChatActionMenuControl\(event\.key\);[\s\S]*\};/,
+    );
+    expect(chat).toMatch(
+      /if \(\(event\.target as HTMLElement \| null\)\?\.closest\('\[role="listbox"\]'\)\) \{[\s\S]*return;[\s\S]*\}/,
+    );
     expect(chat).toContain("ref={chatInputMenuButtonRef}");
     expect(chat).toContain('aria-label="关闭对话工具"');
     expect(chat).toMatch(
-      /id="chat-input-action-menu"[\s\S]*className=\{clsx\(styles\["chat-input-action-menu"\][\s\S]*\)[\s\S]*\}[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*aria-label="对话工具菜单"/,
+      /id="chat-input-action-menu"[\s\S]*ref=\{chatInputActionMenuRef\}[\s\S]*className=\{clsx\(styles\["chat-input-action-menu"\][\s\S]*\)[\s\S]*\}[\s\S]*onKeyDown=\{handleChatActionMenuKeyDown\}[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*aria-label="对话工具菜单"/,
+    );
+    expect(chat).toMatch(
+      /ref=\{chatInputMenuButtonRef\}[\s\S]*onKeyDown=\{handleChatActionMenuKeyDown\}[\s\S]*aria-controls="chat-input-action-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showChatActionMenu\}/,
     );
     expect(chat).toMatch(
       /if \(!showChatActionMenu\) return;[\s\S]*const closeChatActionMenuOnEscape = \(event: KeyboardEvent\) =>[\s\S]*event\.key === "Escape"[\s\S]*setShowChatActionMenu\(false\);[\s\S]*window\.addEventListener\("keydown", closeChatActionMenuOnEscape\);[\s\S]*window\.removeEventListener\("keydown", closeChatActionMenuOnEscape\);/,

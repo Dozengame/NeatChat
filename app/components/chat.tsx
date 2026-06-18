@@ -2919,9 +2919,77 @@ function useChatInnerView() {
   const [editingImage, setEditingImage] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const chatInputMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const chatInputActionMenuRef = useRef<HTMLDivElement>(null);
 
   // 在_Chat组件中添加状态，记录当前编辑图片所属的消息ID
   const editingImageMessageIdRef = useRef<string | null>(null);
+
+  const getChatActionMenuControls = useCallback(() => {
+    return Array.from(
+      chatInputActionMenuRef.current?.querySelectorAll<HTMLButtonElement>(
+        `button.${styles["chat-input-action"]}`,
+      ) ?? [],
+    ).filter(
+      (control) =>
+        !control.disabled &&
+        control.offsetParent !== null &&
+        !control.closest('[role="listbox"]'),
+    );
+  }, []);
+  const focusChatActionMenuControl = useCallback(
+    (key: string) => {
+      const controls = getChatActionMenuControls();
+      if (controls.length === 0) return;
+
+      const currentIndex = controls.findIndex(
+        (control) => control === document.activeElement,
+      );
+      let nextIndex = currentIndex;
+
+      switch (key) {
+        case "ArrowDown":
+          nextIndex =
+            currentIndex < 0
+              ? 0
+              : Math.min(currentIndex + 1, controls.length - 1);
+          break;
+        case "ArrowUp":
+          nextIndex =
+            currentIndex < 0
+              ? controls.length - 1
+              : Math.max(currentIndex - 1, 0);
+          break;
+        case "Home":
+          nextIndex = 0;
+          break;
+        case "End":
+          nextIndex = controls.length - 1;
+          break;
+        default:
+          return;
+      }
+
+      const nextControl = controls[nextIndex];
+      if (!nextControl) return;
+
+      nextControl.focus();
+      nextControl.scrollIntoView({ block: "nearest" });
+    },
+    [getChatActionMenuControls],
+  );
+  const handleChatActionMenuKeyDown = (
+    event: React.KeyboardEvent<HTMLElement>,
+  ) => {
+    if (!showChatActionMenu) return;
+    if ((event.target as HTMLElement | null)?.closest('[role="listbox"]')) {
+      return;
+    }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    focusChatActionMenuControl(event.key);
+  };
 
   useEffect(() => {
     if (!showChatActionMenu) return;
@@ -3888,9 +3956,11 @@ function useChatInnerView() {
 
             <div
               id="chat-input-action-menu"
+              ref={chatInputActionMenuRef}
               className={clsx(styles["chat-input-action-menu"], {
                 [styles["chat-input-action-menu-open"]]: showChatActionMenu,
               })}
+              onKeyDown={handleChatActionMenuKeyDown}
               role="dialog"
               aria-modal="true"
               aria-label="对话工具菜单"
@@ -3931,6 +4001,7 @@ function useChatInnerView() {
                 className={clsx(styles["chat-input-menu-button"], {
                   [styles["chat-input-menu-button-active"]]: showChatActionMenu,
                 })}
+                onKeyDown={handleChatActionMenuKeyDown}
                 onClick={() => {
                   expandInput();
                   setShowChatActionMenu((open) => !open);
