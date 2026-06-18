@@ -3526,6 +3526,8 @@
 
 .chat-message-streaming-reveal {
   transition: border-color 0.18s ease;
+  overflow-anchor: none;
+  isolation: isolate;
 
   &::after {
     content: "";
@@ -3548,6 +3550,7 @@
   :global(.markdown-body-container) {
     position: relative;
     z-index: 2;
+    transform-origin: top left;
     animation: streamingTextReveal 0.18s ease-out both;
     will-change: opacity, transform;
   }

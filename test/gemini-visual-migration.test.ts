@@ -1901,7 +1901,10 @@ describe("Gemini visual migration shell", () => {
     expect(shimmerBlock).not.toContain("* {");
     expect(chatStyles).toContain("@keyframes streamingShimmerFade");
     expect(streamingRevealBlock).toMatch(/transition:\s*border-color 0\.18s ease/);
+    expect(streamingRevealBlock).toMatch(/overflow-anchor:\s*none;/);
+    expect(streamingRevealBlock).toMatch(/isolation:\s*isolate;/);
     expect(streamingRevealBlock).toContain(":global(.markdown-body-container)");
+    expect(streamingRevealBlock).toMatch(/transform-origin:\s*top left;/);
     expect(streamingRevealBlock).toMatch(/animation:\s*streamingTextReveal 0\.18s ease-out both;/);
     expect(streamingRevealBlock).toContain("&::after");
     expect(streamingRevealBlock).toMatch(/pointer-events:\s*none;/);
