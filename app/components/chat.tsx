@@ -1609,6 +1609,7 @@ function useChatInnerView() {
   );
   const { submitKey, shouldSubmit } = useSubmitHandler();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const readingSurfaceRef = useRef<HTMLDivElement>(null);
   const isScrolledToBottom = scrollRef?.current
     ? Math.abs(
         scrollRef.current.scrollHeight -
@@ -1641,6 +1642,21 @@ function useChatInnerView() {
   const [hitBottom, setHitBottom] = useState(true);
   const isMobileScreen = useMobileScreen();
   const isCompactScreen = useCompactScreen();
+  const syncHitBottomState = useCallback(
+    (e: HTMLElement, syncAutoScroll = false) => {
+      const bottomHeight = e.scrollTop + e.clientHeight;
+      const isHitBottom =
+        bottomHeight >= e.scrollHeight - (isMobileScreen ? 4 : 10);
+
+      setHitBottom(isHitBottom);
+      if (syncAutoScroll) {
+        setAutoScroll(isHitBottom);
+      }
+
+      return { bottomHeight, isHitBottom };
+    },
+    [isMobileScreen, setAutoScroll],
+  );
   const navigate = useNavigate();
   const location = useLocation();
   const [attachImages, setAttachImages] = useState<string[]>([]);
@@ -1667,6 +1683,45 @@ function useChatInnerView() {
   useEffect(() => {
     attachImagesRef.current = attachImages;
   }, [attachImages]);
+
+  useEffect(() => {
+    let resizeFrame = 0;
+
+    const syncHitBottomAfterResize = () => {
+      if (resizeFrame) {
+        cancelAnimationFrame(resizeFrame);
+      }
+
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = 0;
+
+        const dom = scrollRef.current;
+        if (dom) {
+          syncHitBottomState(dom);
+        }
+      });
+    };
+
+    let contentResizeObserver: ResizeObserver | undefined;
+    const readingSurface = readingSurfaceRef.current;
+    if (typeof ResizeObserver !== "undefined" && readingSurface) {
+      contentResizeObserver = new ResizeObserver(syncHitBottomAfterResize);
+      contentResizeObserver.observe(readingSurface);
+    }
+
+    syncHitBottomAfterResize();
+    window.addEventListener("resize", syncHitBottomAfterResize);
+
+    return () => {
+      window.removeEventListener("resize", syncHitBottomAfterResize);
+
+      if (resizeFrame) {
+        cancelAnimationFrame(resizeFrame);
+      }
+
+      contentResizeObserver?.disconnect();
+    };
+  }, [messageScrollSignal, scrollRef, session.id, syncHitBottomState]);
 
   // prompt hints
   const promptStore = usePromptStore();
@@ -2430,13 +2485,11 @@ function useChatInnerView() {
   );
 
   const onChatBodyScroll = (e: HTMLElement) => {
-    const bottomHeight = e.scrollTop + e.clientHeight;
+    const { bottomHeight } = syncHitBottomState(e, true);
     const edgeThreshold = e.clientHeight;
 
     const isTouchTopEdge = e.scrollTop <= edgeThreshold;
     const isTouchBottomEdge = bottomHeight >= e.scrollHeight - edgeThreshold;
-    const isHitBottom =
-      bottomHeight >= e.scrollHeight - (isMobileScreen ? 4 : 10);
 
     const prevPageMsgIndex = msgRenderIndex - CHAT_PAGE_SIZE;
     const nextPageMsgIndex = msgRenderIndex + CHAT_PAGE_SIZE;
@@ -2446,9 +2499,6 @@ function useChatInnerView() {
     } else if (isTouchBottomEdge) {
       setMsgRenderIndex(nextPageMsgIndex);
     }
-
-    setHitBottom(isHitBottom);
-    setAutoScroll(isHitBottom);
 
     if (
       isCompactScreen &&
@@ -3557,6 +3607,7 @@ function useChatInnerView() {
       <div className={styles["chat-main"]}>
         <div className={styles["chat-body-container"]}>
           <section
+            id="chat-scroll-body"
             className={clsx(styles["chat-body"], {
               [styles["chat-body-empty"]]: showEmptyHero,
             })}
@@ -3652,6 +3703,7 @@ function useChatInnerView() {
             )}
             <div
               className={styles["chat-reading-surface"]}
+              ref={readingSurfaceRef}
               role="list"
               aria-label="会话消息列表"
               aria-live="polite"
@@ -3962,6 +4014,7 @@ function useChatInnerView() {
                 type="button"
                 className={styles["chat-scroll-to-bottom"]}
                 aria-label={Locale.Chat.InputActions.ToBottom}
+                aria-controls="chat-scroll-body"
                 onClick={scrollToBottom}
               >
                 <BottomIcon />

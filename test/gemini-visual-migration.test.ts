@@ -671,10 +671,34 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["chat-reading-surface"]');
     expect(chat).toContain('styles["chat-scroll-to-bottom"]');
     expect(chat).toMatch(
-      /className=\{clsx\(styles\["chat-input-panel"\][\s\S]*\)\}[\s\S]*\{!showEmptyState && !hitBottom && !showChatActionMenu && \([\s\S]*className=\{styles\["chat-scroll-to-bottom"\]\}[\s\S]*aria-label=\{Locale\.Chat\.InputActions\.ToBottom\}[\s\S]*onClick=\{scrollToBottom\}[\s\S]*<BottomIcon \/>[\s\S]*\)\}[\s\S]*<PromptHints/,
+      /<section[\s\S]*id="chat-scroll-body"[\s\S]*className=\{clsx\(styles\["chat-body"\][\s\S]*ref=\{scrollRef\}[\s\S]*aria-label="聊天消息"[\s\S]*onScroll=\{\(e\) => onChatBodyScroll\(e\.currentTarget\)\}/,
     );
     expect(chat).toMatch(
-      /className=\{styles\["chat-reading-surface"\]\}[\s\S]*role="list"[\s\S]*aria-label="会话消息列表"/,
+      /className=\{clsx\(styles\["chat-input-panel"\][\s\S]*\)\}[\s\S]*\{!showEmptyState && !hitBottom && !showChatActionMenu && \([\s\S]*className=\{styles\["chat-scroll-to-bottom"\]\}[\s\S]*aria-label=\{Locale\.Chat\.InputActions\.ToBottom\}[\s\S]*aria-controls="chat-scroll-body"[\s\S]*onClick=\{scrollToBottom\}[\s\S]*<BottomIcon \/>[\s\S]*\)\}[\s\S]*<PromptHints/,
+    );
+    expect(chat).toMatch(
+      /const syncHitBottomState = useCallback\(\s*\(e: HTMLElement, syncAutoScroll = false\) => \{[\s\S]*const bottomHeight = e\.scrollTop \+ e\.clientHeight;[\s\S]*setHitBottom\(isHitBottom\);[\s\S]*if \(syncAutoScroll\) \{[\s\S]*setAutoScroll\(isHitBottom\);[\s\S]*\}[\s\S]*return \{ bottomHeight, isHitBottom \};[\s\S]*\},\s*\[isMobileScreen, setAutoScroll\],\s*\);/,
+    );
+    expect(chat).toMatch(
+      /const onChatBodyScroll = \(e: HTMLElement\) => \{[\s\S]*const \{ bottomHeight \} = syncHitBottomState\(e, true\);/,
+    );
+    expect(chat).toMatch(
+      /window\.addEventListener\("resize", syncHitBottomAfterResize\);[\s\S]*window\.removeEventListener\("resize", syncHitBottomAfterResize\);[\s\S]*cancelAnimationFrame\(resizeFrame\);/,
+    );
+    expect(chat).toMatch(
+      /syncHitBottomAfterResize\(\);[\s\S]*window\.addEventListener\("resize", syncHitBottomAfterResize\);/,
+    );
+    expect(chat).toMatch(
+      /\}, \[messageScrollSignal, scrollRef, session\.id, syncHitBottomState\]\);/,
+    );
+    expect(chat).toContain(
+      "const readingSurfaceRef = useRef<HTMLDivElement>(null);",
+    );
+    expect(chat).toMatch(
+      /const readingSurface = readingSurfaceRef\.current;[\s\S]*new ResizeObserver\(syncHitBottomAfterResize\);[\s\S]*contentResizeObserver\.observe\(readingSurface\);[\s\S]*contentResizeObserver\?\.disconnect\(\);/,
+    );
+    expect(chat).toMatch(
+      /className=\{styles\["chat-reading-surface"\]\}[\s\S]*ref=\{readingSurfaceRef\}[\s\S]*role="list"[\s\S]*aria-label="会话消息列表"/,
     );
     expect(chat).toMatch(
       /className=\{styles\["chat-reading-surface"\]\}[\s\S]*role="list"[\s\S]*aria-label="会话消息列表"[\s\S]*aria-live="polite"[\s\S]*aria-relevant="additions text"[\s\S]*aria-atomic="false"/,
