@@ -3573,6 +3573,19 @@
   }
 }
 
+:global(.dark) .chat-message-streaming-reveal {
+  &::after {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(138, 180, 248, 0.2) 32%,
+      rgba(196, 140, 255, 0.16) 50%,
+      rgba(255, 139, 180, 0.14) 66%,
+      transparent 100%
+    );
+  }
+}
+
 .chat-dropzone {
   position: absolute;
   inset: 0;

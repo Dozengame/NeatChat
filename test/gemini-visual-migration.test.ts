@@ -2217,6 +2217,10 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-message-streaming-reveal",
     );
+    const darkStreamingRevealBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-message-streaming-reveal",
+    );
     const reducedMotionBlock = chatStyles.slice(
       chatStyles.indexOf("@media (prefers-reduced-motion: reduce)"),
     );
@@ -2249,6 +2253,16 @@ describe("Gemini visual migration shell", () => {
     );
     expect(streamingRevealBlock).toMatch(
       /background:\s*linear-gradient\(\s*90deg,\s*transparent 0%,[\s\S]*rgba\(66,\s*133,\s*244,\s*0\.18\)/,
+    );
+    expect(darkStreamingRevealBlock).toContain("&::after");
+    expect(darkStreamingRevealBlock).toMatch(
+      /background:\s*linear-gradient\(\s*90deg,\s*transparent 0%,[\s\S]*rgba\(138,\s*180,\s*248,\s*0\.2\)/,
+    );
+    expect(darkStreamingRevealBlock).toMatch(
+      /rgba\(196,\s*140,\s*255,\s*0\.16\)/,
+    );
+    expect(darkStreamingRevealBlock).toMatch(
+      /rgba\(255,\s*139,\s*180,\s*0\.14\)/,
     );
     expect(reducedMotionBlock).toContain(".chat-message-shimmer");
     expect(reducedMotionBlock).toContain(".chat-message-streaming-reveal");
