@@ -1212,4 +1212,22 @@ describe("Gemini visual migration shell", () => {
     expect(dropzoneContentBlock).toMatch(/opacity:\s*1;/);
     expect(reducedMotionBlock).toContain(".chat-dropzone-content");
   });
+
+  test("keeps streaming wait state as a polished Gemini-style skeleton", () => {
+    const chatStyles = read("app/components/chat.module.scss");
+    const shimmerBlock = readCssBlock(chatStyles, ".chat-message-shimmer");
+    const reducedMotionBlock = chatStyles.slice(
+      chatStyles.indexOf("@media (prefers-reduced-motion: reduce)"),
+    );
+
+    expect(shimmerBlock).toMatch(/min-height:\s*72px;/);
+    expect(shimmerBlock).toContain("&::after");
+    expect(shimmerBlock).toContain(":global(.markdown-body)::before");
+    expect(shimmerBlock).toContain(":global(.markdown-body)::after");
+    expect(shimmerBlock).toMatch(/display:\s*none !important;/);
+    expect(shimmerBlock).toMatch(/animation:\s*shimmer 1\.6s infinite linear/);
+    expect(shimmerBlock).not.toContain("* {");
+    expect(reducedMotionBlock).toContain(".chat-message-shimmer");
+    expect(reducedMotionBlock).toContain("animation: none !important");
+  });
 });

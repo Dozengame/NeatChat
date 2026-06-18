@@ -3277,25 +3277,72 @@
 }
 
 .chat-message-shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(66, 133, 244, 0.15) 0%,   // Classic Blue
-    rgba(155, 81, 224, 0.15) 25%,  // Purple
-    rgba(233, 30, 99, 0.15) 50%,   // Pink
-    rgba(234, 67, 53, 0.15) 75%,   // Red
-    rgba(66, 133, 244, 0.15) 100%  // Loop to Classic Blue
-  ) !important;
-  background-size: 200% 100% !important;
-  animation: shimmer 1.5s infinite linear !important;
+  min-height: 72px;
+  overflow: hidden;
+  border-color: rgba(66, 133, 244, 0.16) !important;
 
-  svg,
-  :global(.markdown-body) svg {
+  :global(.markdown-body-container),
+  :global(.markdown-body) {
+    min-height: 48px;
+  }
+
+  :global(.markdown-body) {
+    position: relative;
+    display: block;
+  }
+
+  :global(.markdown-body) > svg {
     display: none !important;
   }
 
-  color: transparent !important;
-  * {
-    color: transparent !important;
+  &::after,
+  :global(.markdown-body)::before,
+  :global(.markdown-body)::after {
+    content: "";
+    display: block;
+    height: 12px;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      rgba(66, 133, 244, 0.12) 0%,
+      rgba(155, 81, 224, 0.18) 34%,
+      rgba(233, 30, 99, 0.16) 55%,
+      rgba(66, 133, 244, 0.12) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s infinite linear;
+  }
+
+  :global(.markdown-body)::before {
+    width: min(76%, 420px);
+    margin: 2px 0 12px;
+  }
+
+  :global(.markdown-body)::after {
+    width: min(54%, 280px);
+  }
+
+  &::after {
+    width: min(34%, 180px);
+    height: 10px;
+    margin-top: 12px;
+  }
+}
+
+:global(.dark) .chat-message-shimmer {
+  border-color: rgba(138, 180, 248, 0.18) !important;
+
+  &::after,
+  :global(.markdown-body)::before,
+  :global(.markdown-body)::after {
+    background: linear-gradient(
+      90deg,
+      rgba(138, 180, 248, 0.16) 0%,
+      rgba(196, 140, 255, 0.2) 38%,
+      rgba(255, 139, 180, 0.18) 58%,
+      rgba(138, 180, 248, 0.16) 100%
+    );
+    background-size: 200% 100%;
   }
 }
 
@@ -3402,6 +3449,15 @@
   .chat-dropzone-content {
     transform: none !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .chat-message-shimmer {
+    &::after,
+    :global(.markdown-body)::before,
+    :global(.markdown-body)::after {
+      animation: none !important;
+      background-position: 0 0 !important;
+    }
   }
 
   .chat-mobile-model-menu.chat-model-menu-visible,
