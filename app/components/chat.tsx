@@ -351,7 +351,7 @@ function MessageImagePreview(props: {
   src: string;
   alt?: string;
   className: string;
-  onPreview: (src: string) => void;
+  onPreview: (src: string, trigger?: HTMLButtonElement | null) => void;
   onDownload: (src: string) => void | Promise<void>;
 }) {
   return (
@@ -360,7 +360,7 @@ function MessageImagePreview(props: {
         type="button"
         className={styles["chat-message-image-preview-button"]}
         aria-label={props.alt || "预览图片"}
-        onClick={() => props.onPreview(props.src)}
+        onClick={(event) => props.onPreview(props.src, event.currentTarget)}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -2918,6 +2918,7 @@ function useChatInnerView() {
   // 在_Chat组件中添加状态
   const [editingImage, setEditingImage] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const imagePreviewTriggerRef = useRef<HTMLButtonElement | null>(null);
   const chatInputMenuButtonRef = useRef<HTMLButtonElement>(null);
   const chatInputActionMenuRef = useRef<HTMLDivElement>(null);
 
@@ -2990,6 +2991,23 @@ function useChatInnerView() {
     event.stopPropagation();
     focusChatActionMenuControl(event.key);
   };
+  const openImagePreview = useCallback(
+    (src: string, trigger?: HTMLButtonElement | null) => {
+      imagePreviewTriggerRef.current = trigger ?? null;
+      setPreviewImage(src);
+    },
+    [],
+  );
+  const closeImagePreview = useCallback(() => {
+    setPreviewImage(null);
+    requestAnimationFrame(() => {
+      const previewTrigger = imagePreviewTriggerRef.current;
+      if (previewTrigger?.isConnected) {
+        previewTrigger.focus();
+      }
+      imagePreviewTriggerRef.current = null;
+    });
+  }, []);
 
   useEffect(() => {
     if (!showChatActionMenu) return;
@@ -3012,13 +3030,14 @@ function useChatInnerView() {
 
     const closePreview = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setPreviewImage(null);
+        event.preventDefault();
+        closeImagePreview();
       }
     };
 
     window.addEventListener("keydown", closePreview);
     return () => window.removeEventListener("keydown", closePreview);
-  }, [previewImage]);
+  }, [closeImagePreview, previewImage]);
 
   const showInputReasoningAction = false;
   const showInputStatusRow = showInputReasoningAction || imageGenerationEnabled;
@@ -3819,14 +3838,14 @@ function useChatInnerView() {
                               session.mask?.enableCodeFold !== false
                             }
                             onContentChange={scrollDomToBottom}
-                            onPreviewImage={setPreviewImage}
+                            onPreviewImage={openImagePreview}
                             onDownloadImage={downloadImage}
                           />
                           {getMessageImages(message).length == 1 && (
                             <MessageImagePreview
                               className={styles["chat-message-item-image"]}
                               src={getMessageImages(message)[0]}
-                              onPreview={setPreviewImage}
+                              onPreview={openImagePreview}
                               onDownload={downloadImage}
                             />
                           )}
@@ -3848,7 +3867,7 @@ function useChatInnerView() {
                                     }
                                     key={image}
                                     src={image}
-                                    onPreview={setPreviewImage}
+                                    onPreview={openImagePreview}
                                     onDownload={downloadImage}
                                   />
                                 );
@@ -4315,7 +4334,15 @@ function useChatInnerView() {
           className={styles["image-preview-mask"]}
           aria-modal="true"
           aria-label="图片预览"
-          onCancel={() => setPreviewImage(null)}
+          onCancel={(event) => {
+            event.preventDefault();
+            closeImagePreview();
+          }}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              closeImagePreview();
+            }
+          }}
         >
           <div className={styles["image-preview-toolbar"]}>
             <button
@@ -4332,7 +4359,7 @@ function useChatInnerView() {
               className={styles["image-preview-button"]}
               aria-label="关闭预览"
               title="关闭预览"
-              onClick={() => setPreviewImage(null)}
+              onClick={closeImagePreview}
             >
               <CancelIcon />
             </button>

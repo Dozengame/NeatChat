@@ -1456,6 +1456,62 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps chat image preview overlay focus-restoring and bounded", () => {
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const imagePreviewMaskBlock = readCssBlock(chatStyles, ".image-preview-mask");
+    const imagePreviewButtonBlock = readCssBlock(
+      chatStyles,
+      ".image-preview-button",
+    );
+    const imagePreviewButtonFocusBlock = readCssBlock(
+      imagePreviewButtonBlock,
+      "&:focus-visible",
+    );
+    const imagePreviewImageBlock = readCssBlock(
+      chatStyles,
+      ".image-preview-image",
+    );
+
+    expect(chat).toMatch(
+      /function MessageImagePreview\([\s\S]*onPreview: \(src: string, trigger\?: HTMLButtonElement \| null\) => void;[\s\S]*onClick=\{\(event\) => props\.onPreview\(props\.src, event\.currentTarget\)\}/,
+    );
+    expect(chat).toContain(
+      "const imagePreviewTriggerRef = useRef<HTMLButtonElement | null>(null);",
+    );
+    expect(chat).toMatch(
+      /const openImagePreview = useCallback\(\s*\(src: string, trigger\?: HTMLButtonElement \| null\) => \{[\s\S]*imagePreviewTriggerRef\.current = trigger \?\? null;[\s\S]*setPreviewImage\(src\);[\s\S]*\},\s*\[\]\s*\);/,
+    );
+    expect(chat).toMatch(
+      /const closeImagePreview = useCallback\(\(\) => \{[\s\S]*setPreviewImage\(null\);[\s\S]*requestAnimationFrame\(\(\) => \{[\s\S]*const previewTrigger = imagePreviewTriggerRef\.current;[\s\S]*if \(previewTrigger\?\.isConnected\) \{[\s\S]*previewTrigger\.focus\(\);[\s\S]*\}[\s\S]*imagePreviewTriggerRef\.current = null;[\s\S]*\}\);[\s\S]*\}, \[\]\);/,
+    );
+    expect(chat).toContain("onPreviewImage={openImagePreview}");
+    expect(chat).toContain("onPreview={openImagePreview}");
+    expect(chat).toMatch(
+      /const closePreview = \(event: KeyboardEvent\) => \{[\s\S]*if \(event\.key === "Escape"\) \{[\s\S]*event\.preventDefault\(\);[\s\S]*closeImagePreview\(\);[\s\S]*\}[\s\S]*\};/,
+    );
+    expect(chat).toMatch(
+      /onCancel=\{\(event\) => \{[\s\S]*event\.preventDefault\(\);[\s\S]*closeImagePreview\(\);[\s\S]*\}\}/,
+    );
+    expect(chat).toMatch(
+      /onClick=\{\(event\) => \{[\s\S]*if \(event\.target === event\.currentTarget\) \{[\s\S]*closeImagePreview\(\);[\s\S]*\}[\s\S]*\}\}/,
+    );
+    expect(chat).toContain('aria-label="关闭预览"');
+    expect(chat).toMatch(
+      /aria-label="关闭预览"[\s\S]*onClick=\{closeImagePreview\}/,
+    );
+    expect(imagePreviewMaskBlock).toMatch(/position:\s*fixed;/);
+    expect(imagePreviewMaskBlock).toMatch(/inset:\s*0;/);
+    expect(imagePreviewMaskBlock).toMatch(/display:\s*flex;/);
+    expect(imagePreviewMaskBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(imagePreviewButtonFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(imagePreviewButtonFocusBlock).toMatch(
+      /box-shadow:\s*var\(--focus-ring-shadow\),/,
+    );
+    expect(imagePreviewImageBlock).toMatch(/max-width:\s*min\(100%, 1600px\);/);
+    expect(imagePreviewImageBlock).toMatch(/max-height:\s*100%;/);
+  });
+
   test("keeps file drag-and-drop scoped and visually polished", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");

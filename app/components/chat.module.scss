@@ -2007,6 +2007,13 @@
     background: rgba($color: #111, $alpha: 0.9);
   }
 
+  &:focus-visible {
+    outline: var(--focus-ring);
+    box-shadow:
+      var(--focus-ring-shadow),
+      0 12px 32px rgba($color: #000, $alpha: 0.32);
+  }
+
   svg {
     width: 18px;
     height: 18px;
