@@ -1624,6 +1624,10 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body .markdown-image-frame",
     );
+    const darkImageFrameBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body .markdown-image-frame",
+    );
     const imagePreviewButtonBlock = readCssBlock(
       markdownStyles,
       ".markdown-body .markdown-image-preview-button",
@@ -1653,6 +1657,18 @@ describe("Gemini visual migration shell", () => {
     expect(imageFrameBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
     expect(imageFrameBlock).toMatch(
       /box-shadow:\s*0 10px 28px rgba\(60, 64, 67, 0\.12\);/,
+    );
+    expect(darkImageFrameBlock).toMatch(
+      /border-color:\s*rgba\(232,\s*234,\s*237,\s*0\.12\);/,
+    );
+    expect(darkImageFrameBlock).toMatch(
+      /box-shadow:\s*0 14px 36px rgba\(0,\s*0,\s*0,\s*0\.28\);/,
+    );
+    expect(darkImageFrameBlock).toMatch(
+      /&:hover,\s*&:focus-within[\s\S]*border-color:\s*rgba\(138,\s*180,\s*248,\s*0\.28\);/,
+    );
+    expect(darkImageFrameBlock).toMatch(
+      /&:hover,\s*&:focus-within[\s\S]*box-shadow:\s*0 16px 40px rgba\(0,\s*0,\s*0,\s*0\.34\);/,
     );
     expect(imageFrameBlock).toMatch(
       /&:hover,\s*&:focus-within[\s\S]*transform:\s*translateY\(-1px\);/,
@@ -1686,6 +1702,39 @@ describe("Gemini visual migration shell", () => {
     );
     expect(markdownStyles).toMatch(
       /@media \(hover: none\), \(max-width: 600px\)[\s\S]*\.markdown-body \.markdown-image-download[\s\S]*opacity:\s*1;[\s\S]*pointer-events:\s*auto;/,
+    );
+  });
+
+  test("keeps Gemini-style markdown table dark surfaces", () => {
+    const markdownStyles = read("app/styles/markdown.scss");
+    const tableHeaderBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body table th",
+    );
+    const darkTableHeaderBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body table th",
+    );
+    const tableRowHoverBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body table tr:hover",
+    );
+    const darkTableRowHoverBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body table tr:hover",
+    );
+
+    expect(tableHeaderBlock).toMatch(
+      /background-color:\s*rgba\(60,\s*64,\s*67,\s*0\.04\);/,
+    );
+    expect(darkTableHeaderBlock).toMatch(
+      /background-color:\s*rgba\(255,\s*255,\s*255,\s*0\.05\);/,
+    );
+    expect(tableRowHoverBlock).toMatch(
+      /background-color:\s*rgba\(60,\s*64,\s*67,\s*0\.04\);/,
+    );
+    expect(darkTableRowHoverBlock).toMatch(
+      /background-color:\s*rgba\(255,\s*255,\s*255,\s*0\.04\);/,
     );
   });
 

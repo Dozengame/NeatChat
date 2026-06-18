@@ -365,7 +365,7 @@ summary,
   }
 }
 
-:global(.dark) .markdown-body .markdown-image-frame {
+.dark .markdown-body .markdown-image-frame {
   border-color: rgba(232, 234, 237, 0.12);
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
 
@@ -1042,7 +1042,7 @@ summary,
   color: var(--color-fg-default);
 }
 
-:global(.dark) .markdown-body table th {
+.dark .markdown-body table th {
   background-color: rgba(255, 255, 255, 0.05);
 }
 
@@ -1063,7 +1063,7 @@ summary,
   background-color: rgba(60, 64, 67, 0.04);
 }
 
-:global(.dark) .markdown-body table tr:hover {
+.dark .markdown-body table tr:hover {
   background-color: rgba(255, 255, 255, 0.04);
 }
 
