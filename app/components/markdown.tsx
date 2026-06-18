@@ -53,7 +53,6 @@ function Summary(props: { children: React.ReactNode }) {
 }
 
 function formatCodeLanguage(language: string) {
-  const normalized = language.trim().toLowerCase();
   const languageLabels: Record<string, string> = {
     bash: "Bash",
     c: "C",
@@ -63,11 +62,13 @@ function formatCodeLanguage(language: string) {
     go: "Go",
     html: "HTML",
     java: "Java",
+    javascript: "JavaScript",
     js: "JavaScript",
     json: "JSON",
     jsx: "JSX",
     markdown: "Markdown",
     md: "Markdown",
+    mcp: "MCP",
     plaintext: "Text",
     py: "Python",
     python: "Python",
@@ -77,6 +78,7 @@ function formatCodeLanguage(language: string) {
     sql: "SQL",
     text: "Text",
     ts: "TypeScript",
+    typescript: "TypeScript",
     tsx: "TSX",
     txt: "Text",
     yaml: "YAML",
@@ -84,19 +86,40 @@ function formatCodeLanguage(language: string) {
     zsh: "Zsh",
   };
 
-  if (languageLabels[normalized]) {
-    return languageLabels[normalized];
+  const formatToken = (token: string) => {
+    const normalized = token.trim().toLowerCase();
+
+    if (languageLabels[normalized]) {
+      return languageLabels[normalized];
+    }
+
+    return normalized
+      .split(/[-_]/)
+      .filter(Boolean)
+      .map((part) =>
+        part.length <= 3
+          ? part.toUpperCase()
+          : part[0].toUpperCase() + part.slice(1),
+      )
+      .join(" ");
+  };
+  const segments = language
+    .trim()
+    .replace(/\{[^}]*\}/g, "")
+    .split(":")
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .filter((segment) => !/^client[-_]?id$/i.test(segment));
+
+  if (segments.length > 1) {
+    return segments.slice(0, 2).map(formatToken).join(" ");
   }
 
-  return normalized
-    .split(/[-_]/)
-    .filter(Boolean)
-    .map((part) =>
-      part.length <= 3
-        ? part.toUpperCase()
-        : part[0].toUpperCase() + part.slice(1),
-    )
-    .join(" ");
+  if (segments.length === 1) {
+    return formatToken(segments[0]);
+  }
+
+  return formatToken(language);
 }
 
 function getCodeLanguage(children: React.ReactNode) {
@@ -106,8 +129,9 @@ function getCodeLanguage(children: React.ReactNode) {
       typeof child.props.className === "string" &&
       child.props.className.includes("language-"),
   );
-  const rawLanguage =
-    codeElement?.props.className?.match(/language-([\w-]+)/)?.[1];
+  const rawLanguage = codeElement?.props.className?.match(
+    /(?:^|\s)language-([^\s]+)/,
+  )?.[1];
 
   return rawLanguage ? formatCodeLanguage(rawLanguage) : "";
 }
@@ -159,8 +183,10 @@ export function PreCode(props: { children: any }) {
         "latex",
       ];
       codeElements.forEach((codeElement) => {
-        let languageClass = codeElement.className.match(/language-(\w+)/);
-        let name = languageClass ? languageClass[1] : "";
+        let languageClass = codeElement.className.match(
+          /(?:^|\s)language-([^\s]+)/,
+        );
+        let name = languageClass ? languageClass[1].split(":")[0] : "";
         if (wrapLanguages.includes(name)) {
           codeElement.style.whiteSpace = "pre-wrap";
         }
