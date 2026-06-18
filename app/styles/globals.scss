@@ -351,8 +351,8 @@ pre {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     cursor: pointer;
     padding: 0;
     background-color: rgba(60, 64, 67, 0.08);
@@ -362,7 +362,12 @@ pre {
     transform: translateY(-2px);
     pointer-events: none;
     opacity: 0;
-    transition: all ease 0.3s;
+    transition:
+      opacity ease 0.18s,
+      transform ease 0.18s,
+      background-color ease 0.18s,
+      color ease 0.18s,
+      border-color ease 0.18s;
 
     svg {
       width: 15px;
@@ -398,6 +403,14 @@ pre {
   &:hover {
     background-color: rgba(255, 255, 255, 0.16);
     color: rgba(255, 255, 255, 0.96);
+  }
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 600px) {
+  pre .copy-code-button {
+    pointer-events: all;
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

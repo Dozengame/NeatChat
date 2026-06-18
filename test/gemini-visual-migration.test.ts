@@ -1216,10 +1216,23 @@ describe("Gemini visual migration shell", () => {
       ),
     );
     const preBlock = readCssBlock(refinedCodeStyles, ".markdown-body pre");
+    const globalPreBlock = readCssBlock(globalStyles, "pre");
+    const desktopHoverBlock = readCssBlock(
+      globalPreBlock,
+      "&:hover .copy-code-button",
+    );
     const copyButtonStyles = globalStyles.slice(
       globalStyles.indexOf(".copy-code-button {\n    position"),
     );
     const copyButtonBlock = readCssBlock(copyButtonStyles, ".copy-code-button");
+    const focusVisibleBlock = readCssBlock(copyButtonBlock, "&:focus-visible");
+    const touchCopyButtonBlock = readCssBlock(
+      readCssBlock(
+        globalStyles,
+        "@media (hover: none), (pointer: coarse), (max-width: 600px)",
+      ),
+      "pre .copy-code-button",
+    );
     const languageLabelBlock = readCssBlock(
       markdownStyles,
       ".markdown-code-language",
@@ -1239,11 +1252,22 @@ describe("Gemini visual migration shell", () => {
     expect(languageLabelBlock).toMatch(/right:\s*52px;/);
     expect(languageLabelBlock).toMatch(/top:\s*12px;/);
     expect(languageLabelBlock).toMatch(/pointer-events:\s*none;/);
-    expect(copyButtonBlock).toMatch(/width:\s*32px;/);
-    expect(copyButtonBlock).toMatch(/height:\s*32px;/);
+    expect(copyButtonBlock).toMatch(/width:\s*34px;/);
+    expect(copyButtonBlock).toMatch(/height:\s*34px;/);
     expect(copyButtonBlock).toMatch(/right:\s*12px;/);
     expect(copyButtonBlock).toMatch(/top:\s*12px;/);
+    expect(copyButtonBlock).toMatch(/pointer-events:\s*none;/);
+    expect(copyButtonBlock).toMatch(/opacity:\s*0;/);
     expect(copyButtonBlock).toMatch(/stroke:\s*currentColor !important;/);
+    expect(desktopHoverBlock).toMatch(/pointer-events:\s*all;/);
+    expect(desktopHoverBlock).toMatch(/opacity:\s*0\.72;/);
+    expect(desktopHoverBlock).toMatch(/transform:\s*translateY\(0\);/);
+    expect(focusVisibleBlock).toMatch(/pointer-events:\s*all;/);
+    expect(focusVisibleBlock).toMatch(/opacity:\s*1;/);
+    expect(focusVisibleBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(touchCopyButtonBlock).toMatch(/pointer-events:\s*all;/);
+    expect(touchCopyButtonBlock).toMatch(/opacity:\s*1;/);
+    expect(touchCopyButtonBlock).toMatch(/transform:\s*translateY\(0\);/);
   });
 
   test("keeps Gemini-style markdown image media cards", () => {
