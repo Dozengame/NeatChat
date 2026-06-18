@@ -327,6 +327,14 @@ describe("Gemini visual migration shell", () => {
       homeStyles,
       ".sidebar-nav-item-active",
     );
+    const sidebarContentCardActiveBlock = readCssBlock(
+      homeStyles,
+      ".sidebar-content-card-active",
+    );
+    const darkSidebarContentCardActiveBlock = readCssBlock(
+      homeStyles,
+      ":global(.dark) .sidebar-content-card-active",
+    );
     const compactContainerBlock = readCssBlock(
       homeStyles,
       ".compact-container",
@@ -579,7 +587,7 @@ describe("Gemini visual migration shell", () => {
       /const promptContent = prompt\.content\.trimEnd\(\);[\s\S]*const matchedChatCommand = chatCommands\.match\(promptContent\);[\s\S]*setUserInput\(promptContent\);/,
     );
     expect(chat).toMatch(
-      /const closePromptHints = useCallback\(\s*\(options\?: PromptHintsCloseOptions\) => \{[\s\S]*setPromptHints\(\[\]\);[\s\S]*if \(options\?\.restoreFocus\) \{[\s\S]*inputRef\.current\?\.focus\(\);[\s\S]*\}[\s\S]*\},\s*\[\],\s*\);/,
+      /const closePromptHints = useCallback\(\s*\(options\?: PromptHintsCloseOptions\) => \{[\s\S]*setPromptHints\(\[\]\);[\s\S]*if \(options\?\.restoreFocus\) \{[\s\S]*inputRef\.current\?\.focus\(\);[\s\S]*\}[\s\S]*\},\s*\[\]\s*\);/,
     );
     expect(chat).toMatch(
       /<PromptHints[\s\S]*prompts=\{promptHints\}[\s\S]*onPromptSelect=\{onPromptSelect\}[\s\S]*onClose=\{closePromptHints\}/,
@@ -705,6 +713,9 @@ describe("Gemini visual migration shell", () => {
     expect(sidebar).toContain("Path.Home");
     expect(sidebar).toMatch(
       /className=\{clsx\(styles\["sidebar-nav-item"\][\s\S]*location\.pathname === item\.path[\s\S]*aria-current=\{[\s\S]*location\.pathname === item\.path \? "page" : undefined[\s\S]*\}/,
+    );
+    expect(sidebar).toMatch(
+      /className=\{clsx\(styles\["sidebar-content-card"\][\s\S]*\[styles\["sidebar-content-card-active"\]\]:\s*location\.pathname === Path\.SearchChat[\s\S]*aria-current=\{[\s\S]*location\.pathname === Path\.SearchChat \? "page" : undefined[\s\S]*\}/,
     );
     expect(sidebar).toMatch(
       /aria-label=\{Locale\.Discovery\.Name\}[\s\S]*aria-current=\{[\s\S]*location\.pathname === Path\.Plugins \|\|[\s\S]*location\.pathname === Path\.McpMarket[\s\S]*\?\s*"page"\s*:\s*undefined[\s\S]*\}/,
@@ -1181,6 +1192,22 @@ describe("Gemini visual migration shell", () => {
     expect(sidebarNavItemBlock).toMatch(/overflow:\s*hidden;/);
     expect(sidebarNavItemActiveBlock).toMatch(/color:\s*var\(--primary\);/);
     expect(sidebarNavItemActiveBlock).toMatch(/font-weight:\s*600;/);
+    expect(sidebarContentCardActiveBlock).toMatch(
+      /border-color:\s*rgba\(49,\s*94,\s*248,\s*0\.22\);/,
+    );
+    expect(sidebarContentCardActiveBlock).toMatch(
+      /background:\s*rgba\(25,\s*103,\s*210,\s*0\.1\);/,
+    );
+    expect(sidebarContentCardActiveBlock).toMatch(
+      /box-shadow:\s*inset 3px 0 0 var\(--primary\);/,
+    );
+    expect(sidebarContentCardActiveBlock).toMatch(/color:\s*var\(--primary\);/);
+    expect(darkSidebarContentCardActiveBlock).toMatch(
+      /background:\s*rgba\(138,\s*180,\s*248,\s*0\.14\);/,
+    );
+    expect(narrowSidebarBlock).toMatch(
+      /\.sidebar-content-card-active\s*\{[\s\S]*background-color:\s*rgba\(25,\s*103,\s*210,\s*0\.08\);[\s\S]*color:\s*var\(--primary\);/,
+    );
     expect(sidebarNavItemActiveBlock).toMatch(
       /box-shadow:\s*inset 3px 0 0 var\(--primary\);/,
     );

@@ -388,9 +388,15 @@ export function SideBar(props: {
             )}
             <button
               type="button"
-              className={styles["sidebar-content-card"]}
+              className={clsx(styles["sidebar-content-card"], {
+                [styles["sidebar-content-card-active"]]:
+                  location.pathname === Path.SearchChat,
+              })}
               onClick={() => navigate(Path.SearchChat)}
               aria-label={Locale.Home.LocalContent.Title}
+              aria-current={
+                location.pathname === Path.SearchChat ? "page" : undefined
+              }
               title={shouldNarrow ? Locale.Home.LocalContent.Title : undefined}
             >
               <FileIcon />
