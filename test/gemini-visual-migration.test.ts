@@ -306,6 +306,14 @@ describe("Gemini visual migration shell", () => {
       ".chat-item-selected",
     );
     const chatItemTitleBlock = readCssBlock(homeStyles, ".chat-item-title");
+    const sidebarBlock = readCssBlock(
+      homeStyles.slice(homeStyles.indexOf("\n.sidebar {")),
+      ".sidebar",
+    );
+    const sidebarBodyBlock = readCssBlock(
+      homeStyles.slice(homeStyles.lastIndexOf("\n.sidebar-body {")),
+      ".sidebar-body",
+    );
     const sidebarNavItemBlock = readCssBlock(homeStyles, ".sidebar-nav-item");
     const sidebarNavItemActiveBlock = readCssBlock(
       homeStyles,
@@ -1115,6 +1123,29 @@ describe("Gemini visual migration shell", () => {
     expect(homeStyles).toContain(".sidebar-primary-nav");
     expect(homeStyles).toContain(".sidebar-content-nav");
     expect(homeStyles).toContain(".sidebar-content-card");
+    expect(sidebarBlock).toMatch(/scrollbar-width:\s*thin;/);
+    expect(sidebarBlock).toMatch(
+      /scrollbar-color:\s*transparent transparent;/,
+    );
+    expect(sidebarBlock).toMatch(
+      /-ms-overflow-style:\s*-ms-autohiding-scrollbar;/,
+    );
+    expect(sidebarBlock).toMatch(
+      /&:hover,\s*&:focus-within[\s\S]*scrollbar-color:\s*var\(--scrollbar-thumb-color\) transparent;/,
+    );
+    expect(sidebarBlock).toMatch(
+      /&:hover,\s*&:focus-within[\s\S]*\.sidebar-body[\s\S]*scrollbar-color:\s*var\(--scrollbar-thumb-color\) transparent;[\s\S]*&::-webkit-scrollbar-thumb[\s\S]*background-color:\s*var\(--scrollbar-thumb-color\);/,
+    );
+    expect(sidebarBodyBlock).toMatch(/scrollbar-width:\s*thin;/);
+    expect(sidebarBodyBlock).toMatch(
+      /scrollbar-color:\s*transparent transparent;/,
+    );
+    expect(sidebarBodyBlock).toMatch(
+      /-ms-overflow-style:\s*-ms-autohiding-scrollbar;/,
+    );
+    expect(sidebarBodyBlock).toMatch(
+      /&::-webkit-scrollbar-thumb[\s\S]*background-color:\s*transparent;/,
+    );
     expect(sidebarNavItemBlock).toMatch(/position:\s*relative;/);
     expect(sidebarNavItemBlock).toMatch(/overflow:\s*hidden;/);
     expect(sidebarNavItemActiveBlock).toMatch(/color:\s*var\(--primary\);/);
