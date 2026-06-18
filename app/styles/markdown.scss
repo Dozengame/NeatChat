@@ -1162,6 +1162,11 @@ summary,
   position: relative;
 }
 
+.markdown-body pre.markdown-code-block-labeled {
+  padding-top: 52px;
+  scroll-padding-top: 52px;
+}
+
 .markdown-code-language {
   position: absolute;
   top: 12px;

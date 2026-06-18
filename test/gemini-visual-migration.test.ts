@@ -1427,6 +1427,10 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-code-language",
     );
+    const labeledCodeBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body pre.markdown-code-block-labeled",
+    );
 
     expect(markdown).toContain("function getCodeLanguage");
     expect(markdown).toContain("formatCodeLanguage");
@@ -1438,6 +1442,8 @@ describe("Gemini visual migration shell", () => {
       'aria-label={codeLanguage ? `复制 ${codeLanguage} 代码` : "复制代码"}',
     );
     expect(preBlock).toMatch(/padding:\s*14px 64px 14px 16px;/);
+    expect(labeledCodeBlock).toMatch(/padding-top:\s*52px;/);
+    expect(labeledCodeBlock).toMatch(/scroll-padding-top:\s*52px;/);
     expect(languageLabelBlock).toMatch(/position:\s*absolute;/);
     expect(languageLabelBlock).toMatch(/right:\s*52px;/);
     expect(languageLabelBlock).toMatch(/top:\s*12px;/);
