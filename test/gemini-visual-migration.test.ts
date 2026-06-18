@@ -1163,4 +1163,53 @@ describe("Gemini visual migration shell", () => {
     expect(copyButtonBlock).toMatch(/top:\s*12px;/);
     expect(copyButtonBlock).toMatch(/stroke:\s*currentColor !important;/);
   });
+
+  test("keeps file drag-and-drop scoped and visually polished", () => {
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const dragEnterBlock = readFunctionBlock(
+      chat,
+      "const handleDragEnter = (e: DragEvent) => {",
+    );
+    const dragOverBlock = readFunctionBlock(
+      chat,
+      "const handleDragOver = (e: DragEvent) => {",
+    );
+    const dragLeaveBlock = readFunctionBlock(
+      chat,
+      "const handleDragLeave = (e: DragEvent) => {",
+    );
+    const dropBlock = readFunctionBlock(
+      chat,
+      "const handleDrop = async (e: DragEvent) => {",
+    );
+    const dropzoneBlock = readCssBlock(chatStyles, ".chat-dropzone");
+    const dropzoneContentBlock = readCssBlock(
+      chatStyles,
+      ".chat-dropzone-content",
+    );
+    const reducedMotionBlock = chatStyles.slice(
+      chatStyles.indexOf("@media (prefers-reduced-motion: reduce)"),
+    );
+
+    expect(chat).toContain("function hasDraggedFiles");
+    expect(dragEnterBlock).toMatch(
+      /if \(!hasDraggedFiles\(dataTransfer\)\) \{\s*return;\s*\}/,
+    );
+    expect(dragOverBlock).toMatch(
+      /if \(!hasDraggedFiles\(dataTransfer\)\) \{\s*return;\s*\}/,
+    );
+    expect(dragOverBlock).toContain('dataTransfer.dropEffect = "copy";');
+    expect(dragLeaveBlock).toMatch(
+      /if \(!hasDraggedFiles\(dataTransfer\)\) \{\s*return;\s*\}/,
+    );
+    expect(dropBlock).toMatch(
+      /if \(!hasDraggedFiles\(dataTransfer\)\) \{\s*return;\s*\}/,
+    );
+    expect(dropzoneBlock).toMatch(/isolation:\s*isolate;/);
+    expect(dropzoneContentBlock).toMatch(/scale\(0\.96\)/);
+    expect(dropzoneContentBlock).toMatch(/border-color:\s*rgba\(66, 133, 244, 0\.55\);/);
+    expect(dropzoneContentBlock).toMatch(/opacity:\s*1;/);
+    expect(reducedMotionBlock).toContain(".chat-dropzone-content");
+  });
 });

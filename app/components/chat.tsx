@@ -213,6 +213,12 @@ const closedChatActionModals: ChatActionModals = {
   style: false,
 };
 
+function hasDraggedFiles(
+  dataTransfer: DataTransfer | null,
+): dataTransfer is DataTransfer {
+  return Array.from(dataTransfer?.types ?? []).includes("Files");
+}
+
 function chatActionModalsReducer(
   state: ChatActionModals,
   action: { key: ChatActionModalKey; value: boolean },
@@ -2505,55 +2511,58 @@ function useChatInnerView() {
 
   useEffect(() => {
     const handleDragEnter = (e: DragEvent) => {
+      const dataTransfer = e.dataTransfer;
+      if (!hasDraggedFiles(dataTransfer)) {
+        return;
+      }
+
       e.preventDefault();
       e.stopPropagation();
-      if (
-        e.dataTransfer &&
-        e.dataTransfer.types &&
-        Array.from(e.dataTransfer.types).includes("Files")
-      ) {
-        dragCounter.current += 1;
-        if (dragCounter.current === 1) {
-          setDragActive(true);
-        }
+      dragCounter.current += 1;
+      if (dragCounter.current === 1) {
+        setDragActive(true);
       }
     };
 
     const handleDragOver = (e: DragEvent) => {
+      const dataTransfer = e.dataTransfer;
+      if (!hasDraggedFiles(dataTransfer)) {
+        return;
+      }
+
       e.preventDefault();
       e.stopPropagation();
+      dataTransfer.dropEffect = "copy";
     };
 
     const handleDragLeave = (e: DragEvent) => {
+      const dataTransfer = e.dataTransfer;
+      if (!hasDraggedFiles(dataTransfer)) {
+        return;
+      }
+
       e.preventDefault();
       e.stopPropagation();
-      if (
-        e.dataTransfer &&
-        e.dataTransfer.types &&
-        Array.from(e.dataTransfer.types).includes("Files")
-      ) {
-        dragCounter.current -= 1;
-        if (dragCounter.current <= 0) {
-          dragCounter.current = 0;
-          setDragActive(false);
-        }
+      dragCounter.current -= 1;
+      if (dragCounter.current <= 0) {
+        dragCounter.current = 0;
+        setDragActive(false);
       }
     };
 
     const handleDrop = async (e: DragEvent) => {
+      const dataTransfer = e.dataTransfer;
+      if (!hasDraggedFiles(dataTransfer)) {
+        return;
+      }
+
       e.preventDefault();
       e.stopPropagation();
       dragCounter.current = 0;
       setDragActive(false);
 
-      if (
-        e.dataTransfer &&
-        e.dataTransfer.types &&
-        Array.from(e.dataTransfer.types).includes("Files") &&
-        e.dataTransfer.files &&
-        e.dataTransfer.files.length > 0
-      ) {
-        const files = Array.from(e.dataTransfer.files);
+      if (dataTransfer.files.length > 0) {
+        const files = Array.from(dataTransfer.files);
 
         // 15MB size limit check
         const MAX_SIZE = 15 * 1024 * 1024;
