@@ -3108,17 +3108,27 @@ function useChatInnerView() {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
+      <span
+        className={styles["chat-dropzone-live-status"]}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {dragActive ? "拖拽文件或图片到此处上传" : ""}
+      </span>
       <div
         className={clsx(
           styles["chat-dropzone"],
           dragActive && styles["chat-dropzone-active"],
         )}
+        aria-hidden={!dragActive}
+        data-drop-active={dragActive ? "true" : "false"}
       >
         <div className={styles["chat-dropzone-content"]}>
           <div className={styles["chat-dropzone-icon"]}>
             <AttachmentIcon />
           </div>
-          <p className={styles["chat-dropzone-text"]}>
+          <p id="chat-dropzone-status" className={styles["chat-dropzone-text"]}>
             拖拽文件或图片到此处上传
           </p>
         </div>

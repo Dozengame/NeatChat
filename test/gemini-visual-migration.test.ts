@@ -1624,6 +1624,10 @@ describe("Gemini visual migration shell", () => {
       "const handleDrop = async (e: DragEvent) => {",
     );
     const dropzoneBlock = readCssBlock(chatStyles, ".chat-dropzone");
+    const liveStatusBlock = readCssBlock(
+      chatStyles,
+      ".chat-dropzone-live-status",
+    );
     const dropzoneContentBlock = readCssBlock(
       chatStyles,
       ".chat-dropzone-content",
@@ -1646,7 +1650,23 @@ describe("Gemini visual migration shell", () => {
     expect(dropBlock).toMatch(
       /if \(!hasDraggedFiles\(dataTransfer\)\) \{\s*return;\s*\}/,
     );
+    expect(chat).not.toContain('role={dragActive ? "status" : undefined}');
+    expect(chat).not.toContain(
+      'aria-live={dragActive ? "polite" : undefined}',
+    );
+    expect(chat).toMatch(
+      /className=\{styles\["chat-dropzone-live-status"\]\}[\s\S]*role="status"[\s\S]*aria-live="polite"[\s\S]*aria-atomic="true"[\s\S]*\{dragActive \? "拖拽文件或图片到此处上传" : ""\}/,
+    );
+    expect(chat).toContain('aria-atomic="true"');
+    expect(chat).toContain("aria-hidden={!dragActive}");
+    expect(chat).toContain('data-drop-active={dragActive ? "true" : "false"}');
+    expect(chat).toContain('id="chat-dropzone-status"');
     expect(dropzoneBlock).toMatch(/isolation:\s*isolate;/);
+    expect(liveStatusBlock).toMatch(/position:\s*absolute;/);
+    expect(liveStatusBlock).toMatch(/width:\s*1px;/);
+    expect(liveStatusBlock).toMatch(/height:\s*1px;/);
+    expect(liveStatusBlock).toMatch(/clip-path:\s*inset\(50%\);/);
+    expect(liveStatusBlock).toMatch(/white-space:\s*nowrap;/);
     expect(dropzoneContentBlock).toMatch(/scale\(0\.96\)/);
     expect(dropzoneContentBlock).toMatch(/border-color:\s*rgba\(66, 133, 244, 0\.55\);/);
     expect(dropzoneContentBlock).toMatch(/opacity:\s*1;/);
