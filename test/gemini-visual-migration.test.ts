@@ -92,6 +92,11 @@ describe("Gemini visual migration shell", () => {
     const mobileStyles = chatStyles.slice(
       chatStyles.lastIndexOf("@media only screen and (max-width: 600px)"),
     );
+    const tabletStyles = chatStyles.slice(
+      chatStyles.indexOf(
+        "@media only screen and (min-width: 601px) and (max-width: 900px)",
+      ),
+    );
     const desktopStyles = chatStyles.slice(
       chatStyles.indexOf("@media only screen and (min-width: 901px)"),
     );
@@ -101,6 +106,10 @@ describe("Gemini visual migration shell", () => {
     const mobileEmptyInputPanelBlock = readCssBlock(
       mobileStyles,
       ".chat-input-panel.chat-input-panel-empty",
+    );
+    const mobileEmptyStatusRowBlock = readCssBlock(
+      mobileEmptyInputPanelBlock,
+      ".chat-input-status-row",
     );
     const actionMenuBlock = readCssBlock(chatStyles, ".chat-input-action-menu");
     const scrollToBottomBlock = readCssBlock(
@@ -139,6 +148,14 @@ describe("Gemini visual migration shell", () => {
     );
     const mobileStatusRowBlock = readCssBlock(
       mobileStyles,
+      ".chat-input-status-row",
+    );
+    const tabletCollapsedInputPanelBlock = readCssBlock(
+      tabletStyles,
+      ".chat-input-panel-inner-collapsed",
+    );
+    const tabletCollapsedStatusRowBlock = readCssBlock(
+      tabletCollapsedInputPanelBlock,
       ".chat-input-status-row",
     );
     const mobileEmptySuggestionBlock = readCssBlock(
@@ -1092,15 +1109,11 @@ describe("Gemini visual migration shell", () => {
     expect(inputModeChipBlock).toMatch(/max-width:\s*100%;/);
     expect(inputModeChipBlock).toMatch(/border-radius:\s*15px;/);
     expect(mobileStatusRowBlock).toMatch(/right:\s*52px;/);
-    expect(mobileStyles).not.toMatch(
-      /\.chat-input-panel-inner-collapsed\s*\{[\s\S]*\.chat-input-status-row\s*\{[\s\S]*display:\s*none;/,
-    );
-    expect(mobileStyles).toMatch(
-      /\.chat-input-panel-inner-collapsed\s*\{[\s\S]*\.chat-input-status-row\s*\{[\s\S]*width:\s*1px;/,
-    );
-    expect(mobileStyles).toMatch(
-      /\.chat-input-panel-inner-collapsed\s*\{[\s\S]*\.chat-input-status-row\s*\{[\s\S]*clip-path:\s*inset\(50%\);/,
-    );
+    expect(mobileEmptyStatusRowBlock).toMatch(/width:\s*1px;/);
+    expect(mobileEmptyStatusRowBlock).toMatch(/clip-path:\s*inset\(50%\);/);
+    expect(tabletCollapsedStatusRowBlock).not.toMatch(/display:\s*none;/);
+    expect(tabletCollapsedStatusRowBlock).toMatch(/width:\s*1px;/);
+    expect(tabletCollapsedStatusRowBlock).toMatch(/clip-path:\s*inset\(50%\);/);
     expect(mobileHeaderButtonBlock).toMatch(/appearance:\s*none;/);
     expect(mobileHeaderButtonBlock).toMatch(/border:\s*var\(--border-in-light\);/);
     expect(chatStyles).toContain(".chat-multimodal-tray");
@@ -1699,11 +1712,23 @@ describe("Gemini visual migration shell", () => {
     expect(shimmerBlock).toMatch(/display:\s*none !important;/);
     expect(shimmerBlock).toMatch(/animation:\s*shimmer 1\.6s infinite linear/);
     expect(shimmerBlock).not.toContain("* {");
+    expect(chatStyles).toContain("@keyframes streamingShimmerFade");
     expect(streamingRevealBlock).toMatch(/transition:\s*border-color 0\.18s ease/);
     expect(streamingRevealBlock).toContain(":global(.markdown-body-container)");
     expect(streamingRevealBlock).toMatch(/animation:\s*streamingTextReveal 0\.18s ease-out both;/);
+    expect(streamingRevealBlock).toContain("&::after");
+    expect(streamingRevealBlock).toMatch(/pointer-events:\s*none;/);
+    expect(streamingRevealBlock).toMatch(
+      /animation:\s*streamingShimmerFade 0\.36s ease-out both;/,
+    );
+    expect(streamingRevealBlock).toMatch(
+      /background:\s*linear-gradient\(\s*90deg,\s*transparent 0%,[\s\S]*rgba\(66,\s*133,\s*244,\s*0\.18\)/,
+    );
     expect(reducedMotionBlock).toContain(".chat-message-shimmer");
     expect(reducedMotionBlock).toContain(".chat-message-streaming-reveal");
     expect(reducedMotionBlock).toContain("animation: none !important");
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-message-streaming-reveal[\s\S]*&::after[\s\S]*display:\s*none;/,
+    );
   });
 });
