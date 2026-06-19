@@ -3266,3 +3266,48 @@ Known risks:
 
 - Browser QA used generated local clipboard content only and did not send a message, call a model/API, upload personal files, edit production data, or persist production configuration.
 - The focus target is the remaining attachment edit button rather than the next delete button, so keyboard users land on a stable attachment action after the removed delete control disappears.
+
+## Iteration 2026-06-20 attachment-scroll-edge-hints
+
+Result: passed.
+
+Target flow:
+
+- A horizontally overflowing composer attachment strip should advertise hidden content with a subtle edge hint in the available scroll direction.
+- The hint must update as the user scrolls: right only at the start, both sides in the middle, left only at the end, and no hint when the strip does not overflow.
+- The hint must never block attachment edit/delete hit targets, change upload/paste limits, or alter model, account, sync, backend, production, or deployment semantics.
+
+Design direction:
+
+- Creative Production style intake selected: keep the existing Gemini-style compact attachment strip and add a lightweight gradient affordance only when overflow exists.
+- The final implementation conditionally renders decorative `aria-hidden` edge overlays instead of opacity-controlled pseudo-elements. Browser QA exposed unreliable opacity cascade/computed behavior in dev mode, so rendering only the active hint is the more robust UI contract.
+
+Scope:
+
+- `app/components/chat.tsx`: added scroll state for the composer attachment list, resize/attachment-count synchronization, directional overflow data attributes, and conditional non-interactive edge overlays.
+- `app/components/chat.module.scss`: added the attachment strip shell and left/right gradient overlay styles with dark-mode surface tuning.
+- `test/gemini-visual-migration.test.ts`: added a source contract that locks the non-blocking conditional edge hints, scroll state calculation, wrapper data attributes, and gradient styling.
+- No upload parsing, attachment limits, image/file edit behavior, send behavior, model config semantics, account/secret/sync, backend/API, production config, or deployment config were changed.
+
+Automated checks:
+
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="attachment strip overflow hints"` failed first as expected before the edge hint contract was implemented.
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="attachment strip overflow hints"`
+- `npx jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `git diff --check`
+
+Browser QA:
+
+- Narrow Browser viewport `390x844` at `http://localhost:3000/`: pasted one generated clipboard PNG and five long-text clipboard attachments, verified the attachment strip overflowed horizontally while the page did not (`bodyOverflowX: false`), with `data-overflow-start="false"`, `data-overflow-end="true"`, no left hint, and one right hint with `pointer-events: none`.
+- After a real horizontal scroll to the end, verified `scrollLeft` reached `maxScrollLeft`, `data-overflow-start="true"`, `data-overflow-end="false"`, left hint rendered, and right hint was removed.
+- After a real horizontal scroll back toward the middle, verified both hints rendered and both had `pointer-events: none`.
+- Deleted the fifth file attachment while the strip was scrolled and verified the file count dropped from 5 to 4, confirming the overlay did not intercept attachment controls.
+- Desktop Browser viewport `1440x1024`: verified the same attachment strip did not overflow, both overflow data attributes were false, neither edge hint rendered, and `bodyOverflowX: false`.
+- Browser console warn/error output contained only expected Next.js Fast Refresh full-reload development warnings from file edits, with no app runtime errors.
+
+Known risks:
+
+- Browser QA used generated clipboard content only and did not send a message, call a model/API, upload personal files, edit production data, or persist production configuration.
+- Because the hint is conditionally rendered rather than opacity-animated, it prioritizes deterministic visibility and hit-target safety over a fade transition in this slice.

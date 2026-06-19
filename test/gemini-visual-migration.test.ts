@@ -1554,6 +1554,53 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps composer attachment strip overflow hints non-blocking", () => {
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const attachmentShellBlock = readCssBlock(
+      chatStyles,
+      ".attachments-scroll-shell",
+    );
+    const attachmentFadeBlock = readCssBlock(
+      chatStyles,
+      ".attachment-scroll-fade",
+    );
+    const attachmentFadeStartBlock = readCssBlock(
+      chatStyles,
+      ".attachment-scroll-fade-start",
+    );
+    const attachmentFadeEndBlock = readCssBlock(
+      chatStyles,
+      ".attachment-scroll-fade-end",
+    );
+
+    expect(chat).toContain(
+      "const [attachmentScrollHint, setAttachmentScrollHint] = useState({",
+    );
+    expect(chat).toMatch(
+      /const syncAttachmentScrollHint = useCallback\(\(\) => \{[\s\S]*const attachmentContainer = attachmentsContainerRef\.current;[\s\S]*const maxScrollLeft = Math\.max\([\s\S]*attachmentContainer\.scrollWidth - attachmentContainer\.clientWidth[\s\S]*start: attachmentContainer\.scrollLeft > 1,[\s\S]*end: maxScrollLeft - attachmentContainer\.scrollLeft > 1,[\s\S]*setAttachmentScrollHint\(\(current\) =>/,
+    );
+    expect(chat).toMatch(
+      /className=\{styles\["attachments-scroll-shell"\]\}[\s\S]*data-overflow-start=\{\s*attachmentScrollHint\.start \? "true" : "false"\s*\}[\s\S]*data-overflow-end=\{\s*attachmentScrollHint\.end \? "true" : "false"\s*\}[\s\S]*ref=\{attachmentsContainerRef\}[\s\S]*onScroll=\{syncAttachmentScrollHint\}/,
+    );
+    expect(chat).toMatch(
+      /\{attachmentScrollHint\.start && \([\s\S]*<span[\s\S]*aria-hidden="true"[\s\S]*styles\["attachment-scroll-fade"\][\s\S]*styles\["attachment-scroll-fade-start"\]/,
+    );
+    expect(chat).toMatch(
+      /\{attachmentScrollHint\.end && \([\s\S]*<span[\s\S]*aria-hidden="true"[\s\S]*styles\["attachment-scroll-fade"\][\s\S]*styles\["attachment-scroll-fade-end"\]/,
+    );
+    expect(attachmentShellBlock).toMatch(/position:\s*relative;/);
+    expect(attachmentShellBlock).toMatch(/min-width:\s*0;/);
+    expect(attachmentFadeBlock).toMatch(/position:\s*absolute;/);
+    expect(attachmentFadeBlock).toMatch(/pointer-events:\s*none;/);
+    expect(attachmentFadeBlock).toMatch(/width:\s*28px;/);
+    expect(attachmentFadeStartBlock).toMatch(/linear-gradient\(\s*90deg/);
+    expect(attachmentFadeEndBlock).toMatch(/linear-gradient\(\s*270deg/);
+    expect(chatStyles).toMatch(
+      /:global\(\.dark\) \.attachments-scroll-shell[\s\S]*--attachment-edge-surface:/,
+    );
+  });
+
   test("keeps clear-context divider as a Gemini-style reversible status chip", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");

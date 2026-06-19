@@ -29,6 +29,45 @@
   }
 }
 
+.attachment-scroll-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 28px;
+  pointer-events: none;
+}
+
+.attachment-scroll-fade-start {
+  left: 0;
+  background: linear-gradient(
+    90deg,
+    var(--attachment-edge-surface) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.attachment-scroll-fade-end {
+  right: 0;
+  background: linear-gradient(
+    270deg,
+    var(--attachment-edge-surface) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.attachments-scroll-shell {
+  --attachment-edge-surface: rgba(255, 255, 255, 0.96);
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+:global(.dark) .attachments-scroll-shell {
+  --attachment-edge-surface: rgba(32, 33, 36, 0.92);
+}
+
 .attach-item {
   position: relative;
   flex: 0 0 auto;
