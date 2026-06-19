@@ -21,6 +21,7 @@ import Locale from "../locales";
 import LoadingIcon from "../icons/three-dots.svg";
 import DownloadIcon from "../icons/download.svg";
 import CopyIcon from "../icons/copy.svg";
+import ConfirmIcon from "../icons/confirm.svg";
 import { useDebouncedCallback } from "use-debounce";
 import { showToast } from "./ui-lib-actions";
 
@@ -141,6 +142,8 @@ export function PreCode(props: { children: any }) {
   const ref = useRef<HTMLPreElement>(null);
   const [mermaidCode, setMermaidCode] = useState("");
   const [htmlCode, setHtmlCode] = useState("");
+  const [copied, setCopied] = useState(false);
+  const copyResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { height } = useWindowSize();
 
   const renderArtifacts = useDebouncedCallback(() => {
@@ -197,6 +200,22 @@ export function PreCode(props: { children: any }) {
     }
   }, [renderArtifacts]);
 
+  useEffect(() => {
+    return () => {
+      if (copyResetTimerRef.current) {
+        clearTimeout(copyResetTimerRef.current);
+      }
+    };
+  }, []);
+
+  const codeCopyLabel = codeLanguage
+    ? copied
+      ? `已复制 ${codeLanguage} 代码`
+      : `复制 ${codeLanguage} 代码`
+    : copied
+    ? "已复制代码"
+    : "复制代码";
+
   return (
     <>
       <pre
@@ -214,16 +233,27 @@ export function PreCode(props: { children: any }) {
         <button
           type="button"
           className="copy-code-button"
-          aria-label={codeLanguage ? `复制 ${codeLanguage} 代码` : "复制代码"}
+          aria-label={codeCopyLabel}
+          data-copy-state={copied ? "copied" : "idle"}
           onClick={() => {
             if (ref.current) {
               copyToClipboard(
                 ref.current.querySelector("code")?.innerText ?? "",
               );
+              setCopied(true);
+
+              if (copyResetTimerRef.current) {
+                clearTimeout(copyResetTimerRef.current);
+              }
+
+              copyResetTimerRef.current = setTimeout(() => {
+                setCopied(false);
+                copyResetTimerRef.current = null;
+              }, 1400);
             }
           }}
         >
-          <CopyIcon />
+          {copied ? <ConfirmIcon /> : <CopyIcon />}
         </button>
         {props.children}
       </pre>

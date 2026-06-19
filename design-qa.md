@@ -2567,3 +2567,51 @@ Known risks:
 
 - Browser QA did not click a live persisted long-code block because current local history has no code-block messages and creating one would mutate user data or risk model/API paths. Render-level tests cover the real Markdown component behavior for a deterministic long TypeScript block.
 - Browser screenshots were not used for this iteration. DOM/CSSOM metrics, console logs, render-level tests, source/CSS contracts, read-only review, lint/type checks, and production build cover the targeted behavior.
+
+## Iteration 2026-06-19 markdown-code-copy-feedback
+
+Result: passed.
+
+Target flow:
+
+- AI-rendered Markdown code blocks keep the existing copy affordance, but copying now gives a short-lived Gemini-style success state with a check icon, green-tinted light/dark surface, and an updated accessible label before returning to idle.
+
+Design direction:
+
+- Creative Production style intake selected: keep the code block chrome quiet, make copy success visible without moving layout, use Google-green feedback color sparingly, preserve hover/mobile visibility rules, and avoid any model/API/account/sync/deploy/backend behavior changes.
+
+Scope:
+
+- `app/components/markdown.tsx`: added a local copied state, reset timer cleanup, copied/idle `aria-label`, `data-copy-state`, and `ConfirmIcon` swap for the existing code-copy button. The copied state resets after `1400ms`; repeated clicks clear the previous timer before starting a new one.
+- `app/styles/globals.scss`: added light/dark copied-state button styling and a copied-only SVG fill override so the filled confirm icon inherits the current success color without changing the idle copy icon shape.
+- `test/markdown-code-language.test.tsx`: added render-level coverage for clicking the code-copy button, the temporary copied accessible label/state, and reset back to idle.
+- `test/gemini-visual-migration.test.ts`: locked the source/CSS contract for the copied state, timer cleanup, `data-copy-state`, confirm icon usage, light/dark success colors, and copied-only SVG fill override.
+- No model config semantics, account/secret/sync, production config, deployment config, backend logic, token math, localStorage keys, upload limits, copy payload selection, Mermaid rendering, HTML preview, or code language labels were changed.
+
+Automated checks:
+
+- `yarn jest test/markdown-code-language.test.tsx --runInBand` failed first as expected because the old copy button had no temporary `已复制 ... 代码` state.
+- Post-review `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected after adding the SVG-fill contract, because the copied state did not yet override the filled confirm icon's inline `fill:#333`.
+- `yarn jest test/gemini-visual-migration.test.ts test/markdown-code-language.test.tsx --runInBand`
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts test/markdown-code-language.test.tsx test/markdown-code-fold.test.tsx test/markdown-performance.test.tsx test/markdown-file-attachment.test.tsx test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+- `git diff --check`
+
+Review:
+
+- Read-only sub-agent review found one real P2 issue: the filled `ConfirmIcon` could keep its inline `fill:#333` instead of inheriting copied-state green. This was fixed with a copied-only `svg path { fill: currentColor !important; }` rule and a migration-test assertion.
+- The review also noted a P3 limitation: `copyToClipboard` is a project-wide async helper that reports failure through toast but does not return a success boolean. This slice intentionally preserves that global API shape and keeps the copied state optimistic, matching the existing app copy behavior.
+- Post-review checks passed: targeted Jest, full related `test:ci` matrix, `yarn lint`, `npx tsc --noEmit`, `yarn build`, and `git diff --check`.
+
+Browser QA:
+
+- Desktop `1440x1024`: opened the local chat route without sending a prompt. Current local history had no code block DOM, as expected; runtime CSSOM confirmed the copied-state rule and dark copied-state rule were loaded, the chat input stayed within viewport bounds, `horizontalOverflowPx: 0`, and no console warn/error logs.
+- Mobile `390x844`: opened the same route without sending a prompt. Runtime CSSOM confirmed the copied-state and touch-visible copy-button rules were loaded, the input stayed within viewport bounds, `horizontalOverflowPx: 0`, and no console warn/error logs.
+- Narrow mobile `320x740`: repeated the route check with the same CSSOM confirmations, input bounds, `horizontalOverflowPx: 0`, and no console warn/error logs.
+
+Known risks:
+
+- Browser QA did not click a live persisted code-copy button because current local history has no code-block messages and creating one would mutate user data or risk model/API paths. Render-level tests cover the real `PreCode` click/reset behavior for a deterministic TypeScript block.
+- The copied state remains optimistic because the existing `copyToClipboard` helper does not expose success/failure to callers. Changing that helper would affect many app copy paths and is outside this narrow UI slice.

@@ -1691,7 +1691,19 @@ describe("Gemini visual migration shell", () => {
       globalStyles.indexOf(".copy-code-button {\n    position"),
     );
     const copyButtonBlock = readCssBlock(copyButtonStyles, ".copy-code-button");
+    const copyButtonCopiedBlock = readCssBlock(
+      copyButtonBlock,
+      '&[data-copy-state="copied"]',
+    );
     const focusVisibleBlock = readCssBlock(copyButtonBlock, "&:focus-visible");
+    const darkCopyButtonBlock = readCssBlock(
+      globalStyles,
+      ".dark pre .copy-code-button",
+    );
+    const darkCopyButtonCopiedBlock = readCssBlock(
+      darkCopyButtonBlock,
+      '&[data-copy-state="copied"]',
+    );
     const touchCopyButtonBlock = readCssBlock(
       readCssBlock(
         globalStyles,
@@ -1738,13 +1750,16 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toContain('className="markdown-code-language"');
     expect(markdown).toContain("{codeLanguage}");
     expect(markdown).toContain("CopyIcon");
+    expect(markdown).toContain("ConfirmIcon");
+    expect(markdown).toContain("const [copied, setCopied] = useState(false)");
+    expect(markdown).toContain("copyResetTimerRef");
+    expect(markdown).toContain("const codeCopyLabel = codeLanguage");
+    expect(markdown).toContain("aria-label={codeCopyLabel}");
+    expect(markdown).toContain('data-copy-state={copied ? "copied" : "idle"}');
     expect(markdown).toContain("id={codeBlockId}");
     expect(markdown).toContain("aria-controls={codeBlockId}");
     expect(markdown).toContain("aria-expanded={!collapsed}");
     expect(markdown).toContain("aria-label={Locale.NewChat.CodeBlockExpand}");
-    expect(markdown).toContain(
-      'aria-label={codeLanguage ? `复制 ${codeLanguage} 代码` : "复制代码"}',
-    );
     expect(preBlock).toMatch(/padding:\s*14px 64px 14px 16px;/);
     expect(labeledCodeBlock).toMatch(/padding-top:\s*52px;/);
     expect(labeledCodeBlock).toMatch(/scroll-padding-top:\s*52px;/);
@@ -1766,6 +1781,23 @@ describe("Gemini visual migration shell", () => {
     expect(copyButtonBlock).toMatch(/pointer-events:\s*none;/);
     expect(copyButtonBlock).toMatch(/opacity:\s*0;/);
     expect(copyButtonBlock).toMatch(/stroke:\s*currentColor !important;/);
+    expect(copyButtonCopiedBlock).toMatch(/pointer-events:\s*all;/);
+    expect(copyButtonCopiedBlock).toMatch(/opacity:\s*1;/);
+    expect(copyButtonCopiedBlock).toMatch(/transform:\s*translateY\(0\);/);
+    expect(copyButtonCopiedBlock).toMatch(
+      /background-color:\s*rgba\(52,\s*168,\s*83,\s*0\.12\);/,
+    );
+    expect(copyButtonCopiedBlock).toMatch(
+      /color:\s*rgba\(24,\s*128,\s*56,\s*0\.94\);/,
+    );
+    expect(copyButtonCopiedBlock).toContain("svg path");
+    expect(copyButtonCopiedBlock).toMatch(/fill:\s*currentColor !important;/);
+    expect(darkCopyButtonCopiedBlock).toMatch(
+      /background-color:\s*rgba\(129,\s*201,\s*149,\s*0\.14\);/,
+    );
+    expect(darkCopyButtonCopiedBlock).toMatch(
+      /color:\s*rgba\(129,\s*201,\s*149,\s*0\.96\);/,
+    );
     expect(desktopHoverBlock).toMatch(/pointer-events:\s*all;/);
     expect(desktopHoverBlock).toMatch(/opacity:\s*0\.72;/);
     expect(desktopHoverBlock).toMatch(/transform:\s*translateY\(0\);/);

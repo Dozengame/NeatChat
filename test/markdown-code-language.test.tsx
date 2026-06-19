@@ -5,6 +5,11 @@ jest.mock("../app/store/config", () => ({
   })),
 }));
 
+jest.mock("../app/utils", () => ({
+  copyToClipboard: jest.fn(),
+  useWindowSize: jest.fn(() => ({ width: 1024, height: 768 })),
+}));
+
 jest.mock("react-markdown", () => {
   const React = require("react");
   return {
@@ -28,14 +33,22 @@ jest.mock("../app/icons/copy.svg", () => {
   };
 });
 
+jest.mock("../app/icons/confirm.svg", () => {
+  const React = require("react");
+  return function ConfirmIconMock() {
+    return React.createElement("svg", { "data-testid": "confirm-icon" });
+  };
+});
+
 jest.mock("next/dynamic", () => {
   return () => function DynamicPlaceholder() {
     return null;
   };
 });
 
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { PreCode } from "../app/components/markdown";
+import { copyToClipboard } from "../app/utils";
 
 function renderCodeBlock(className: string) {
   render(
@@ -46,6 +59,11 @@ function renderCodeBlock(className: string) {
 }
 
 describe("PreCode language labels", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useRealTimers();
+  });
+
   test.each([
     ["language-js", "JavaScript"],
     ["language-typescript", "TypeScript"],
@@ -70,5 +88,29 @@ describe("PreCode language labels", () => {
       screen.getByRole("button", { name: "复制 JSON MCP 代码" }),
     ).toBeInTheDocument();
     expect(screen.queryByText(/clientId/i)).not.toBeInTheDocument();
+  });
+
+  test("shows a temporary copied state after copying code", () => {
+    jest.useFakeTimers();
+    renderCodeBlock("language-typescript");
+
+    const copyButton = screen.getByRole("button", {
+      name: "复制 TypeScript 代码",
+    });
+
+    fireEvent.click(copyButton);
+
+    expect(copyToClipboard).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByRole("button", { name: "已复制 TypeScript 代码" }),
+    ).toHaveAttribute("data-copy-state", "copied");
+
+    act(() => {
+      jest.advanceTimersByTime(1400);
+    });
+
+    expect(
+      screen.getByRole("button", { name: "复制 TypeScript 代码" }),
+    ).toHaveAttribute("data-copy-state", "idle");
   });
 });
