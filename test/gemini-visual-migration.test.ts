@@ -1536,6 +1536,24 @@ describe("Gemini visual migration shell", () => {
     expect(gitignore).toContain(".DS_Store");
   });
 
+  test("keeps composer attachment deletion focus handoff predictable", () => {
+    const chat = read("app/components/chat.tsx");
+
+    expect(chat).toContain(
+      "const attachmentsContainerRef = useRef<HTMLDivElement>(null);",
+    );
+    expect(chat).toContain("ref={attachmentsContainerRef}");
+    expect(chat).toMatch(
+      /const focusComposerAttachmentAfterRemoval = useCallback\(\s*\(nextAttachmentIndex: number\) => \{[\s\S]*requestAnimationFrame\(\(\) => \{[\s\S]*attachmentsContainerRef\.current\?\.querySelectorAll<HTMLButtonElement>\(\s*`button\.\$\{styles\["attach-image"\]\}, button\.\$\{styles\["attach-file"\]\}`[\s\S]*const nextControl =[\s\S]*attachmentControls\[[\s\S]*inputRef\.current;[\s\S]*nextControl\?\.focus\(\);[\s\S]*\}\);[\s\S]*\},\s*\[\],?\s*\);/,
+    );
+    expect(chat).toMatch(
+      /function deleteAttachedFile\(index: number\) \{[\s\S]*setAttachedFiles\(attachedFiles\.filter\(\(_, i\) => i !== index\)\);[\s\S]*focusComposerAttachmentAfterRemoval\(attachImages\.length \+ index\);[\s\S]*\}/,
+    );
+    expect(chat).toMatch(
+      /ariaLabel=\{`删除第 \$\{index \+ 1\} 张图片附件`\}[\s\S]*deleteImage=\{\(e\) => \{[\s\S]*setAttachImages\([\s\S]*attachImages\.filter\(\(_, i\) => i !== index\),[\s\S]*\);[\s\S]*focusComposerAttachmentAfterRemoval\(index\);[\s\S]*\}\}/,
+    );
+  });
+
   test("keeps clear-context divider as a Gemini-style reversible status chip", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
@@ -3058,7 +3076,7 @@ describe("Gemini visual migration shell", () => {
       /showPromptModal=\{\(\) =>\s*openPromptModal\(chatInputMenuButtonRef\.current\)\s*\}/,
     );
     expect(chat).toMatch(
-      /\{showPromptModal && \(\s*<SessionConfigModel onClose=\{closePromptModal\} \/>\s*\)\}/,
+      /\{showPromptModal && (?:\(\s*)?<SessionConfigModel onClose=\{closePromptModal\} \/>(?:\s*\))?\}/,
     );
 
     expect(promptToastBlock).toMatch(/pointer-events:\s*none;/);

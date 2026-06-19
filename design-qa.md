@@ -3226,3 +3226,43 @@ Known risks:
 
 - Browser QA used a built-in mask session and did not send messages, edit context values, call any model/API, or persist production data.
 - The global toast action opened by pinning a message records the active element if available; if that transient toast action is removed before close, focus restoration safely does nothing instead of guessing another target.
+
+## Iteration 2026-06-20 attachment-delete-focus-return
+
+Result: passed.
+
+Target flow:
+
+- Deleting an image or file attachment from the composer should not leave focus on a removed delete button or fall back to `body`.
+- After deletion, focus should move to the next remaining editable attachment, fall back to the previous remaining attachment when deleting the last item, and return to the chat input when no attachments remain.
+- The change must preserve existing attachment upload, paste, edit, count-limit, send, model, account, sync, backend, production, and deployment behavior.
+
+Design direction:
+
+- Creative Production style intake selected: keep the current Gemini-style compact attachment strip visuals unchanged and improve interaction polish through deterministic keyboard focus handoff. This treats attachment deletion as a reversible composer edit, not a data or upload-flow change.
+
+Scope:
+
+- `app/components/chat.tsx`: added a composer attachment container ref and a shared `focusComposerAttachmentAfterRemoval` helper. Image and file deletion now restore focus after React commits the updated attachment list.
+- `test/gemini-visual-migration.test.ts`: added a source contract for the attachment deletion focus handoff and relaxed an existing prompt modal assertion so it accepts equivalent JSX wrapping while preserving the same modal behavior requirement.
+- No upload limits, attachment parsing, image/file content, edit modal behavior, send behavior, model config semantics, account/secret/sync, backend/API, production config, or deployment config were changed.
+
+Automated checks:
+
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="composer attachment deletion focus handoff"` failed first as expected because the composer attachment list had no deletion focus handoff.
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="composer attachment deletion focus handoff"`
+- `npx jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `git diff --check`
+- `yarn build`
+
+Browser QA:
+
+- Desktop Browser viewport `1440x1024` at `http://localhost:3000/`: pasted a data URL image to create `编辑第 1 张图片附件`, pasted long text to create `编辑第 1 个文件附件：粘贴的文本.txt`, deleted the image attachment, and verified focus moved to the file attachment button; deleted the final file attachment and verified focus returned to `#chat-input`. `bodyOverflowX: false`, attachment container removed when empty, and console error logs were empty.
+- Narrow mobile Browser viewport `390x844` on the same local app: repeated the image + long-text paste flow, verified the attachment strip itself could overflow horizontally while the page did not (`bodyOverflowX: false`), deleted the image attachment and saw focus move to the file attachment button, then deleted the final file and saw focus return to `#chat-input`. Console error logs were empty.
+
+Known risks:
+
+- Browser QA used generated local clipboard content only and did not send a message, call a model/API, upload personal files, edit production data, or persist production configuration.
+- The focus target is the remaining attachment edit button rather than the next delete button, so keyboard users land on a stable attachment action after the removed delete control disappears.

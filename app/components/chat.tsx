@@ -1699,6 +1699,7 @@ function useChatInnerView() {
   const [uploading, setUploading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<FileInfo[]>([]);
+  const attachmentsContainerRef = useRef<HTMLDivElement>(null);
   const [imageGenerationEnabled, setImageGenerationEnabled] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const dragCounter = useRef(0);
@@ -3136,9 +3137,29 @@ function useChatInnerView() {
     touchEndXRef.current = 0;
   };
 
+  const focusComposerAttachmentAfterRemoval = useCallback(
+    (nextAttachmentIndex: number) => {
+      requestAnimationFrame(() => {
+        const attachmentControls = Array.from(
+          attachmentsContainerRef.current?.querySelectorAll<HTMLButtonElement>(
+            `button.${styles["attach-image"]}, button.${styles["attach-file"]}`,
+          ) ?? [],
+        ).filter((control) => control.isConnected && !control.disabled);
+        const nextControl =
+          attachmentControls[
+            Math.min(nextAttachmentIndex, attachmentControls.length - 1)
+          ] ?? inputRef.current;
+
+        nextControl?.focus();
+      });
+    },
+    [],
+  );
+
   // 添加删除单个文件函数
   function deleteAttachedFile(index: number) {
     setAttachedFiles(attachedFiles.filter((_, i) => i !== index));
+    focusComposerAttachmentAfterRemoval(attachImages.length + index);
   }
 
   // 在 ChatInner 组件内添加新状态
@@ -4397,6 +4418,7 @@ function useChatInnerView() {
                 {/* 附件容器（包含图片和文件） */}
                 {(attachImages.length > 0 || attachedFiles.length > 0) && (
                   <div
+                    ref={attachmentsContainerRef}
                     className={styles["attachments-container"]}
                     role="list"
                     aria-label="附件预览"
@@ -4431,6 +4453,7 @@ function useChatInnerView() {
                               setAttachImages(
                                 attachImages.filter((_, i) => i !== index),
                               );
+                              focusComposerAttachmentAfterRemoval(index);
                             }}
                           />
                         </div>
