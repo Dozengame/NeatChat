@@ -2503,6 +2503,84 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps token metadata as a quiet non-overlapping chip", () => {
+    const markdown = read("app/components/markdown.tsx");
+    const markdownStyles = read("app/styles/markdown.scss");
+    const containerBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body-container",
+    );
+    const tokenInfoBlock = readCssBlock(markdownStyles, ".token-info");
+    const darkTokenInfoBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body-container .token-info",
+    );
+    const mobileBlock = markdownStyles.slice(
+      markdownStyles.indexOf("@media only screen and (max-width: 600px)"),
+    );
+    const reducedMotionBlock = markdownStyles.slice(
+      markdownStyles.indexOf("@media (prefers-reduced-motion: reduce)"),
+    );
+
+    expect(markdown).toContain("const tokenFirstCharDelay = tokenInfo?.firstCharDelay");
+    expect(markdown).toContain("const showTokenDelay = Boolean");
+    expect(markdown).toContain("const tokenDelayText = tokenFirstCharDelay");
+    expect(markdown).toContain(
+      "Locale.Chat.TokenInfo.FirstDelay(tokenFirstCharDelay)",
+    );
+    expect(markdown).toContain("aria-pressed={showTokenDelay}");
+    expect(markdown).toContain(
+      'data-token-info-expanded={showTokenDelay ? "true" : "false"}',
+    );
+    expect(markdown).toMatch(/showTokenDelay\s*\?\s*tokenDelayText/);
+    expect(containerBlock).toMatch(/display:\s*flex;/);
+    expect(containerBlock).toMatch(/flex-direction:\s*column;/);
+    expect(containerBlock).toMatch(/align-items:\s*flex-start;/);
+    expect(containerBlock).toMatch(/gap:\s*6px;/);
+    expect(containerBlock).toMatch(/width:\s*100%;/);
+    expect(containerBlock).toContain(".markdown-body");
+    expect(containerBlock).toMatch(/min-width:\s*0;/);
+    expect(tokenInfoBlock).toMatch(/position:\s*static;/);
+    expect(tokenInfoBlock).not.toMatch(/position:\s*absolute;/);
+    expect(tokenInfoBlock).not.toMatch(/bottom:\s*-28px;/);
+    expect(tokenInfoBlock).toMatch(/align-self:\s*flex-end;/);
+    expect(tokenInfoBlock).toMatch(/display:\s*inline-flex;/);
+    expect(tokenInfoBlock).toMatch(/min-height:\s*26px;/);
+    expect(tokenInfoBlock).toMatch(/padding:\s*4px 9px;/);
+    expect(tokenInfoBlock).toMatch(/border-radius:\s*999px;/);
+    expect(tokenInfoBlock).toMatch(/letter-spacing:\s*0;/);
+    expect(tokenInfoBlock).toMatch(/font-size:\s*11px;/);
+    expect(tokenInfoBlock).toMatch(
+      /border:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.1\);/,
+    );
+    expect(tokenInfoBlock).toMatch(
+      /background:\s*rgba\(248,\s*251,\s*255,\s*0\.72\);/,
+    );
+    expect(tokenInfoBlock).toMatch(
+      /box-shadow:\s*0 1px 2px rgba\(60,\s*64,\s*67,\s*0\.08\)/,
+    );
+    expect(tokenInfoBlock).toMatch(/&:focus-visible/);
+    expect(tokenInfoBlock).toMatch(/outline:\s*none;/);
+    expect(tokenInfoBlock).toMatch(
+      /&\[data-token-info-expanded="true"\]/,
+    );
+    expect(darkTokenInfoBlock).toMatch(
+      /background:\s*rgba\(32,\s*33,\s*36,\s*0\.72\);/,
+    );
+    expect(darkTokenInfoBlock).toMatch(
+      /border-color:\s*rgba\(232,\s*234,\s*237,\s*0\.1\);/,
+    );
+    expect(mobileBlock).toContain(".markdown-body-container .token-info");
+    expect(mobileBlock).toMatch(/align-self:\s*flex-start;/);
+    expect(mobileBlock).toMatch(/white-space:\s*normal;/);
+    expect(mobileBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(reducedMotionBlock).toContain(".markdown-body-container .token-info");
+    expect(reducedMotionBlock).toMatch(
+      /transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(reducedMotionBlock).toMatch(/transform:\s*none !important;/);
+  });
+
   test("keeps streaming wait state as a polished Gemini-style skeleton", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");

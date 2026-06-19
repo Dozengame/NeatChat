@@ -1654,33 +1654,117 @@ summary,
 }
 
 .markdown-body-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
   position: relative;
   width: 100%;
+  min-width: 0;
+
+  .markdown-body {
+    width: 100%;
+    min-width: 0;
+  }
 
   .token-info {
-    position: absolute;
-    right: 0;
-    bottom: -28px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--color-fg-subtle);
-    font-family:
-      ui-monospace,
-      SFMono-Regular,
-      SF Mono,
-      Menlo,
-      Consolas,
-      Liberation Mono,
-      monospace;
-    font-size: 12px;
+    position: static;
+    align-self: flex-end;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    min-height: 26px;
+    padding: 4px 9px;
+    border: 1px solid rgba(60, 64, 67, 0.1);
+    border-radius: 999px;
+    background: rgba(248, 251, 255, 0.72);
+    color: rgba(95, 99, 104, 0.9);
+    box-shadow:
+      0 1px 2px rgba(60, 64, 67, 0.08),
+      0 8px 18px rgba(60, 64, 67, 0.04);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: 0;
     white-space: nowrap;
     cursor: pointer;
-    opacity: 0.8;
-    transition: opacity 0.3s ease;
+    opacity: 0.86;
+    transition:
+      background 0.18s ease,
+      border-color 0.18s ease,
+      box-shadow 0.18s ease,
+      color 0.18s ease,
+      opacity 0.18s ease,
+      transform 0.18s ease;
 
-    &:hover {
-      opacity: 1 !important;
+    &:hover,
+    &:focus-visible,
+    &[data-token-info-expanded="true"] {
+      border-color: rgba(66, 133, 244, 0.22);
+      background: rgba(241, 246, 255, 0.92);
+      color: rgba(32, 33, 36, 0.92);
+      opacity: 1;
+      transform: translateY(-1px);
+      box-shadow:
+        0 1px 2px rgba(60, 64, 67, 0.1),
+        0 10px 24px rgba(66, 133, 244, 0.08);
     }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow:
+        var(--focus-ring-shadow),
+        0 1px 2px rgba(60, 64, 67, 0.1),
+        0 10px 24px rgba(66, 133, 244, 0.08);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+.dark .markdown-body-container .token-info {
+  border-color: rgba(232, 234, 237, 0.1);
+  background: rgba(32, 33, 36, 0.72);
+  color: rgba(232, 234, 237, 0.74);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.22),
+    0 8px 18px rgba(0, 0, 0, 0.16);
+
+  &:hover,
+  &:focus-visible,
+  &[data-token-info-expanded="true"] {
+    border-color: rgba(138, 180, 248, 0.24);
+    background: rgba(40, 43, 48, 0.9);
+    color: rgba(248, 250, 255, 0.9);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.24),
+      0 10px 24px rgba(138, 180, 248, 0.08);
+  }
+
+  &:focus-visible {
+    box-shadow:
+      var(--focus-ring-shadow),
+      0 1px 2px rgba(0, 0, 0, 0.24),
+      0 10px 24px rgba(138, 180, 248, 0.08);
+  }
+}
+
+@media only screen and (max-width: 600px) {
+  .markdown-body-container .token-info {
+    align-self: flex-start;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .markdown-body-container .token-info {
+    transform: none !important;
+    transition-duration: 0.01ms !important;
   }
 }

@@ -2390,3 +2390,47 @@ Browser QA:
 Known risks:
 
 - The Browser sample message path can trigger the app's normal model proxy if sent as a real chat prompt. Further verification avoided relying on live model/API behavior; no model config, account/secret/sync, production, deployment, upload, or backend logic was changed.
+
+## Iteration 2026-06-19 token-metadata-chip
+
+Result: passed.
+
+Target flow:
+
+- Completed Markdown responses show token count and optional first-response latency as a quiet Gemini-style metadata chip, adjacent to message content instead of floating under it, while preserving the existing token count and `first_char_delay_*` localStorage semantics.
+
+Design direction:
+
+- Creative Production style intake selected: quiet metadata capsule, content-adjacent placement, subtle Google-blue focus, dark-mode readable surface, hover/click latency reveal, keyboard state, reduced-motion safe, mobile wrap-safe, and no model/API/storage semantic changes.
+
+Scope:
+
+- `app/components/markdown.tsx`: added explicit pressed/expanded state attributes for the existing token info button and reused the existing hover/click state to reveal first-response latency.
+- `app/styles/markdown.scss`: changed `.markdown-body-container` into a column flow and replaced the old transparent absolute-positioned token text with a small elevated capsule, dark-mode variant, mobile wrapping, focus ring, and reduced-motion guard.
+- `test/markdown-performance.test.tsx`: added render-level coverage for token count, delayed latency reveal, `aria-pressed`, `data-token-info-expanded`, and unchanged `encode(content)` use.
+- `test/gemini-visual-migration.test.ts`: locked the non-overlapping chip layout, no legacy `bottom: -28px`, dark/mobile/reduced-motion rules, and state hooks.
+- No model config semantics, account/secret/sync, production config, deployment config, upload limits, backend logic, token math, or localStorage keys were changed.
+
+Automated checks:
+
+- `yarn jest test/markdown-performance.test.tsx test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the old token info button lacked `aria-pressed`, `data-token-info-expanded`, and the new chip style contract.
+- `npx tsc --noEmit` then caught the `firstCharDelay` nullable narrowing issue; the UI text was refactored through `tokenFirstCharDelay` / `tokenDelayText` without changing runtime behavior.
+- Read-only sub-agent review found no blocking issues. Its Browser visual-regression concern was covered by the desktop/mobile/narrow Browser checks below; its accessible-name suggestion remains a non-blocking follow-up.
+- `yarn jest test/markdown-performance.test.tsx test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts test/markdown-performance.test.tsx test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: opened the existing local `测试消息` conversation from recent chats without sending any prompt. Browser measured 3 `.token-info` buttons, the first chip as `position: static`, `display: flex`, `align-self: flex-end`, `min-height: 26px`, `border-radius: 999px`, `aria-pressed="false"`, `data-token-info-expanded="false"`, container `display: flex`, `flex-direction: column`, `gap: 6px`, `horizontalOverflowPx: 0`, and no console warn/error logs.
+- Desktop empty chat route before opening history had no token DOM, as expected, but runtime CSSOM confirmed the loaded token chip base rule, dark rule, mobile rule, reduced-motion rule, and absence of legacy `bottom: -28px`.
+- Mobile `390x844`: opened the same existing local conversation from the mobile drawer. Browser measured 3 token chips, first chip `position: static`, `align-self: flex-start`, `white-space: normal`, `overflow-wrap: anywhere`, `min-height: 26px`, input panel `370px` wide inside the viewport, `horizontalOverflowPx: 0`, and no console warn/error logs.
+- Narrow mobile `320x740`: first chip stayed `position: static`, `align-self: flex-start`, `white-space: normal`, `overflow-wrap: anywhere`; input panel stayed within `left: 10`, `right: 310`, and `horizontalOverflowPx: 0`.
+
+Known risks:
+
+- The token chip accessible name remains the fixed `Token 信息`; screen readers get the button state via `aria-pressed` but not the current token/latency value in the accessible name. This is not a regression from the previous fixed label and can be addressed in a future accessibility-focused slice.
+- Browser screenshots were not used for this iteration. DOM/layout metrics, runtime CSSOM, console logs, source contracts, render-level tests, read-only review, and production build cover the targeted behavior.

@@ -857,6 +857,11 @@ export function Markdown(
 
   // 添加鼠标悬停状态
   const [isHovering, setIsHovering] = useState(false);
+  const tokenFirstCharDelay = tokenInfo?.firstCharDelay;
+  const showTokenDelay = Boolean(tokenFirstCharDelay && isHovering);
+  const tokenDelayText = tokenFirstCharDelay
+    ? Locale.Chat.TokenInfo.FirstDelay(tokenFirstCharDelay)
+    : "";
 
   // 初始化消息发送时间
   useLayoutEffect(() => {
@@ -937,17 +942,19 @@ export function Markdown(
           type="button"
           className="token-info"
           aria-label="Token 信息"
-          onMouseEnter={() => tokenInfo.firstCharDelay && setIsHovering(true)}
+          aria-pressed={showTokenDelay}
+          data-token-info-expanded={showTokenDelay ? "true" : "false"}
+          onMouseEnter={() => tokenFirstCharDelay && setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
           onClick={() => {
             // 点击时切换显示状态
-            if (tokenInfo.firstCharDelay) {
+            if (tokenFirstCharDelay) {
               setIsHovering(!isHovering);
             }
           }}
         >
-          {isHovering && tokenInfo.firstCharDelay
-            ? Locale.Chat.TokenInfo.FirstDelay(tokenInfo.firstCharDelay)
+          {showTokenDelay
+            ? tokenDelayText
             : Locale.Chat.TokenInfo.TokenCount(tokenInfo.count)}
         </button>
       )}
