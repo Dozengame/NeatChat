@@ -412,7 +412,7 @@ export function SessionConfigModel(props: { onClose: () => void }) {
   const navigate = useNavigate();
 
   return (
-    <div className="modal-mask">
+    <div className="modal-mask" id="session-config-modal">
       <Modal
         title={Locale.Context.Edit}
         onClose={() => props.onClose()}
@@ -488,6 +488,10 @@ function PromptToast(props: {
         <button
           type="button"
           className={clsx(styles["prompt-toast-inner"], "clickable")}
+          aria-label={Locale.Context.Toast(context.length)}
+          aria-haspopup="dialog"
+          aria-controls="session-config-modal"
+          aria-expanded={props.showModal}
           onClick={() => props.setShowModal(true)}
         >
           <BrainIcon />

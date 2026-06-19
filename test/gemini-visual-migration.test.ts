@@ -3001,4 +3001,79 @@ describe("Gemini visual migration shell", () => {
       /\.chat-message-streaming-reveal[\s\S]*animation:\s*none !important;[\s\S]*box-shadow:\s*none !important;/,
     );
   });
+
+  test("keeps the context prompt toast as a Gemini-style contextual chip", () => {
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const promptToastBlock = readCssBlock(chatStyles, ".prompt-toast");
+    const promptToastInnerBlock = readCssBlock(
+      chatStyles,
+      ".prompt-toast-inner",
+    );
+    const promptToastContentBlock = readCssBlock(
+      chatStyles,
+      ".prompt-toast-content",
+    );
+    const darkPromptToastInnerBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .prompt-toast-inner",
+    );
+    const reducedMotionBlock = readCssBlock(
+      chatStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+
+    expect(chat).toContain('id="session-config-modal"');
+    expect(chat).toContain("aria-label={Locale.Context.Toast(context.length)}");
+    expect(chat).toContain('aria-haspopup="dialog"');
+    expect(chat).toContain('aria-controls="session-config-modal"');
+    expect(chat).toContain("aria-expanded={props.showModal}");
+    expect(chat).toMatch(
+      /onClick=\{\(\) => props\.setShowModal\(true\)\}/,
+    );
+    expect(chat).toMatch(
+      /\{props\.showModal && \(\s*<SessionConfigModel onClose=\{\(\) => props\.setShowModal\(false\)\} \/>\s*\)\}/,
+    );
+
+    expect(promptToastBlock).toMatch(/pointer-events:\s*none;/);
+    expect(promptToastBlock).toMatch(/top:\s*calc\(100% \+ 8px\);/);
+    expect(promptToastBlock).toMatch(/bottom:\s*auto;/);
+    expect(promptToastBlock).toMatch(/padding:\s*0 16px;/);
+
+    expect(promptToastInnerBlock).toMatch(/appearance:\s*none;/);
+    expect(promptToastInnerBlock).toMatch(/pointer-events:\s*auto;/);
+    expect(promptToastInnerBlock).toMatch(/max-width:\s*min\(420px, 100%\);/);
+    expect(promptToastInnerBlock).toMatch(/min-height:\s*36px;/);
+    expect(promptToastInnerBlock).toMatch(/padding:\s*7px 12px;/);
+    expect(promptToastInnerBlock).toMatch(/border-radius:\s*999px;/);
+    expect(promptToastInnerBlock).toMatch(/background:\s*rgba\(248,\s*251,\s*255,\s*0\.86\);/);
+    expect(promptToastInnerBlock).toMatch(/backdrop-filter:\s*blur\(18px\);/);
+    expect(promptToastInnerBlock).toMatch(/box-shadow:[\s\S]*0 10px 26px rgba\(60,\s*64,\s*67,\s*0\.1\)/);
+    expect(promptToastInnerBlock).toMatch(
+      /transition:[\s\S]*transform 0\.16s ease,[\s\S]*background-color 0\.16s ease,[\s\S]*box-shadow 0\.16s ease/,
+    );
+    expect(promptToastInnerBlock).toContain("&:focus-visible");
+    expect(promptToastInnerBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(promptToastInnerBlock).toContain("&[aria-expanded=\"true\"]");
+    expect(promptToastInnerBlock).toMatch(
+      /&\[aria-expanded="true"\][\s\S]*background:\s*rgba\(232,\s*240,\s*254,\s*0\.94\);/,
+    );
+    expect(promptToastInnerBlock).not.toMatch(/border:\s*var\(--border-in-light\);/);
+    expect(promptToastInnerBlock).not.toMatch(/box-shadow:\s*var\(--card-shadow\);/);
+    expect(promptToastContentBlock).toMatch(/min-width:\s*0;/);
+    expect(promptToastContentBlock).toMatch(/overflow:\s*hidden;/);
+    expect(promptToastContentBlock).toMatch(/text-overflow:\s*ellipsis;/);
+    expect(promptToastContentBlock).toMatch(/white-space:\s*nowrap;/);
+
+    expect(darkPromptToastInnerBlock).toMatch(
+      /background:\s*rgba\(32,\s*33,\s*36,\s*0\.84\);/,
+    );
+    expect(darkPromptToastInnerBlock).toMatch(
+      /color:\s*rgba\(232,\s*234,\s*237,\s*0\.92\);/,
+    );
+    expect(reducedMotionBlock).toContain(".prompt-toast-inner");
+    expect(reducedMotionBlock).toMatch(
+      /\.prompt-toast-inner[\s\S]*animation:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+  });
 });

@@ -3092,3 +3092,50 @@ Known risks:
 
 - Browser QA used paste-created long-text file attachments, not the native OS file picker, to avoid external dialogs and persistent user data changes. This slice intentionally changes only prompt naming and prompt input accessibility, so the paste-created file covers the active composer file edit path without touching upload, file picker, delete, send, or API semantics.
 - Earlier Browser runs showed intermittent in-app Browser tab navigation/id issues and repeated screenshot timeout. The final recorded desktop and narrow QA passes completed after cleaning Browser tabs and avoiding screenshot as a blocking assertion.
+
+## Iteration 2026-06-19 prompt-toast-context-chip
+
+Result: passed.
+
+Target flow:
+
+- The context prompt toast still appears only when the current session has context prompts and the chat is detached from the bottom, and still opens `SessionConfigModel` without changing context, mask, model, upload, send, API, account, sync, production, or deployment semantics.
+- The toast trigger now behaves as a contextual Gemini-style chip: compact, translucent, focus-visible, dark-mode aware, reduced-motion safe, pointer-transparent outside the chip, and explicitly connected to the modal with `aria-haspopup`, `aria-controls`, and `aria-expanded`.
+
+Design direction:
+
+- Creative Production style intake selected: replace the old white floating toast button with a quiet contextual chip visually aligned with `ClearContextDivider`, preserve its existing header-anchored placement, keep it out of the composer hit path with `pointer-events: none` on the wrapper, and avoid backend or model semantic changes.
+
+Scope:
+
+- `app/components/chat.tsx`: added `id="session-config-modal"` to the existing `SessionConfigModel` mask and added `aria-label`, `aria-haspopup="dialog"`, `aria-controls`, and `aria-expanded` to the prompt toast trigger.
+- `app/components/chat.module.scss`: restyled `.prompt-toast` / `.prompt-toast-inner` as a translucent bounded chip with focus, hover, active, expanded, dark-mode, and reduced-motion states.
+- `test/gemini-visual-migration.test.ts`: added a source/CSS contract for the prompt toast ARIA relationship, chip sizing, dark mode, and reduced-motion behavior.
+- No model config semantics, account/secret/sync, production config, deployment config, backend logic, upload limits, attachment behavior, send behavior, prompt/context data shape, persisted storage keys, or API behavior were changed.
+
+Automated checks:
+
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the prompt toast had no `session-config-modal` relationship and still used the old toast styling.
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts test/chat-render.test.ts test/markdown-file-attachment.test.tsx --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+- `git diff --check`
+
+Review:
+
+- Read-only code review found no blocking issues. The sub-agent review attempt failed because the external usage limit was reached, so the final review was completed locally against the current diff.
+- The review confirmed `session-config-modal` is only defined on `SessionConfigModel`, `PromptToast` is rendered through a single header path per viewport, the ARIA trigger relationship does not change modal data flow, and the SCSS keeps the non-chip wrapper pointer-transparent to avoid blocking composer/header hit targets.
+- Residual risk: the source/CSS contract is intentionally refactor-sensitive, and Browser QA covered a built-in mask session rather than every possible custom mask/context combination.
+
+Browser QA:
+
+- Desktop default Browser viewport `1280x720` at `http://localhost:3000/#/masks`: opened the built-in `以文搜图` mask session, used CUA scroll to detach from the bottom, verified exactly one prompt chip named `包含 4 条预设提示词`, `aria-controls="session-config-modal"`, `aria-haspopup="dialog"`, `aria-expanded` changed from `false` to `true` after click, modal `#session-config-modal` opened with title `当前对话设置`, close button existed, `horizontalOverflowPx: 0`, chip rect `left: 710`, `right: 870`, `top: 70`, `bottom: 106`, header bottom `62`, screenshot captured successfully, and no relevant console warn/error logs.
+- Narrow mobile `320x740` at the same built-in mask flow: verified the same chip name and ARIA relationship, modal open/title, `horizontalOverflowPx: 0`, chip rect `left: 80`, `right: 240`, `top: 76`, `bottom: 112`, header bottom `68`, screenshot captured successfully, and no relevant console warn/error logs.
+- Browser viewport was reset to the default after QA.
+
+Known risks:
+
+- Browser QA used a built-in mask session with preset context prompts and did not send a message, call a model, edit context content, or persist production data. The route creates only a local temporary mask chat state for UI verification.
+- Closing the whole Browser tab was used for cleanup after opening the settings modal; this slice changes only the trigger chip and modal association, not the existing modal close implementation.
