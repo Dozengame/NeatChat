@@ -1536,12 +1536,15 @@ export function EditMessageModal(props: { onClose: () => void }) {
   );
 }
 
-export function DeleteImageButton(props: { deleteImage: (e?: any) => void }) {
+export function DeleteImageButton(props: {
+  ariaLabel: string;
+  deleteImage: (e?: any) => void;
+}) {
   return (
     <button
       type="button"
       className={styles["delete-image"]}
-      aria-label={Locale.Chat.Actions.Delete}
+      aria-label={props.ariaLabel}
       onClick={props.deleteImage}
     >
       <DeleteIcon />
@@ -4379,6 +4382,7 @@ function useChatInnerView() {
                         />
                         <div className={styles["attach-image-mask"]}>
                           <DeleteImageButton
+                            ariaLabel={`删除第 ${index + 1} 张图片附件`}
                             deleteImage={(e) => {
                               e.stopPropagation(); // 防止触发图片点击事件
                               setAttachImages(
@@ -4457,6 +4461,9 @@ function useChatInnerView() {
                         </button>
                         <div className={styles["attach-image-mask"]}>
                           <DeleteImageButton
+                            ariaLabel={`删除第 ${index + 1} 个文件附件：${
+                              file.name
+                            }`}
                             deleteImage={(e) => {
                               e.stopPropagation(); // 防止触发文件点击事件
                               deleteAttachedFile(index);

@@ -2856,3 +2856,47 @@ Browser QA:
 Known risks:
 
 - Browser QA did not click a live persisted image preview button because the current Browser profile had no visible image-frame messages, and creating one would require mutating user data or triggering real model/API image generation. Helper tests cover the label derivation, and source-contract tests cover Markdown/chat preview context propagation into the modal image alt.
+
+## Iteration 2026-06-19 attachment-delete-context-labels
+
+Result: passed.
+
+Target flow:
+
+- Composer attachment strip keeps the existing image edit, file edit, delete, upload, and submit behavior, but image and file delete controls now expose contextual labels instead of repeated generic `删除`.
+
+Design direction:
+
+- Creative Production style intake selected: no visual layout churn, preserve the compact Gemini-style attachment strip, improve multimodal keyboard and screen-reader clarity, keep attachment state semantics unchanged, and avoid model/API/account/sync/deploy/backend semantic changes.
+
+Scope:
+
+- `app/components/chat.tsx`: made `DeleteImageButton` accept an explicit `ariaLabel`, labeled image deletes as `删除第 N 张图片附件`, and labeled file deletes as `删除第 N 个文件附件：文件名`.
+- `test/gemini-visual-migration.test.ts`: added source-contract coverage for contextual image/file attachment delete labels.
+- No model config semantics, account/secret/sync, production config, deployment config, backend logic, upload limits, attachment content shape, edit/delete handlers, send behavior, persisted storage keys, or API behavior were changed.
+
+Automated checks:
+
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts --runInBand` failed first as expected because attachment delete buttons still used generic `删除`.
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts test/image-action-labels.test.ts test/markdown-file-attachment.test.tsx test/markdown-code-language.test.tsx test/markdown-code-fold.test.tsx test/markdown-performance.test.tsx test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+- `git diff --check`
+
+Review:
+
+- Read-only sub-agent review found no blocking issues. Minor feedback requested disambiguating repeated file names with an index and replacing the pending review note; both were fixed before commit.
+
+Browser QA:
+
+- Desktop default Browser viewport `1280x720` at `/#/chat`: pasted one image data URL and one long-text file attachment through the real composer paste path. Page rendered with title `NeatChat`, no framework overlay, `horizontalOverflowPx: 0`, `itemCount: 2`, `imageButtonCount: 1`, file name `粘贴的文本.txt`, delete labels `删除第 1 张图片附件` and `删除第 1 个文件附件：粘贴的文本.txt`, composer input rect `left: 423`, `right: 1113`, panel rect `left: 350`, `right: 1230`, and no console warn/error logs for the QA window.
+- Desktop delete sequence: `删除第 1 个文件附件：粘贴的文本.txt` resolved to exactly one button and removed the file, leaving only `删除第 1 张图片附件`; `删除第 1 张图片附件` then resolved to exactly one button and removed the image, leaving `itemCount: 0`, no framework overlay, `horizontalOverflowPx: 0`, and no console warn/error logs for the QA window.
+- Mobile `390x844` at `/#/chat`: the same paste-created image/file attachment strip rendered with contextual delete labels, no framework overlay, `horizontalOverflowPx: 0`, input rect `left: 67`, `right: 313`, panel rect `left: 10`, `right: 380`, and no console warn/error logs for the QA window.
+- Narrow mobile `320x740` with the same attachments: page rendered with title `NeatChat`, composer input present, contextual delete labels still present, no framework overlay, `horizontalOverflowPx: 0`, `itemCount: 2`, and no console warn/error logs for the QA window.
+- Browser viewport was reset to the default `1280x720`; reset check reported no framework overlay, `horizontalOverflowPx: 0`, and `itemCount: 0`.
+
+Known risks:
+
+- Browser QA used paste-created image and long-text file attachments, not the native OS file picker, to avoid external dialogs and persistent user data changes. The slice intentionally changes only accessible names, so this covers the active composer attachment strip without touching upload or file picker semantics.

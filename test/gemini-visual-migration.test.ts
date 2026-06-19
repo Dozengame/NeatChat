@@ -539,6 +539,15 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["attach-image"]');
     expect(chat).toContain('aria-label="编辑图片附件"');
     expect(chat).toContain('styles["attach-file"]');
+    expect(chat).toMatch(
+      /function DeleteImageButton\(props: \{[\s\S]*ariaLabel: string;[\s\S]*deleteImage: \(e\?: any\) => void[\s\S]*aria-label=\{props\.ariaLabel\}/,
+    );
+    expect(chat).toContain(
+      'ariaLabel={`删除第 ${index + 1} 张图片附件`}',
+    );
+    expect(chat).toMatch(
+      /ariaLabel=\{`删除第 \$\{index \+ 1\} 个文件附件：\$\{\s*file\.name\s*\}`\}/,
+    );
     expect(chat).toContain('styles["chat-desktop-title-stack"]');
     expect(chat).toContain('styles["chat-desktop-model-title"]');
     expect(chat).toContain('styles["chat-desktop-model-menu"]');
