@@ -2352,3 +2352,41 @@ Browser QA:
 Known risks:
 
 - Browser cannot supply a real OS file payload for drag/drop in this environment. Existing source review and Jest source contracts cover file-only activation, accepted file limits, and drop guards; Browser covered visible/runtime CSS, layout bounds, console health, and non-file drag non-activation.
+
+## Iteration 2026-06-19 rendered-file-attachment-card
+
+Result: passed.
+
+Target flow:
+
+- File blocks rendered inside AI/user Markdown responses appear as compact Gemini-style attachment capsules, remain keyboard accessible, preserve click-to-copy behavior, and no longer rely on a `file://` Markdown URL that `react-markdown` sanitizes away.
+
+Design direction:
+
+- Creative Production style intake selected: compact elevated row, content-first capsule, subtle Google-blue accent, dark-mode balanced, keyboard focus ring, active press feedback, metadata chips, mobile full-width safe, reduced-motion safe, no new dependencies, and no backend/model semantics changes.
+
+Scope:
+
+- `app/components/file-attachment.tsx`: added a formatted size label, accessible attachment label, interactive class hook, keyboard-safe click behavior, metadata chips, and inline-safe `span` structure so the card can render inside Markdown paragraphs without invalid DOM nesting.
+- `app/components/file-attachment.module.scss`: replaced the old gray block with an elevated grid capsule, light/dark surfaces, focus ring, hover/active feedback, mobile/coarse-pointer bounds, and reduced-motion guard.
+- `app/components/markdown.tsx`: changed the internal generated attachment href from `file://...` to `#neatchat-file-attachment?...` so `react-markdown` default URL sanitization still routes to the custom attachment renderer; the original file block detection and copy-source lookup remain unchanged.
+- `test/gemini-visual-migration.test.ts`: locked the visual contract for the rendered file attachment capsule and the internal hash-based attachment href path.
+- `test/markdown-file-attachment.test.tsx`: added render-level coverage that a raw `文件名/类型/大小/正文` block becomes a clickable attachment card, click copies the original body, no `file://` link remains, and unsafe `javascript:` links are still downgraded to text.
+
+Automated checks:
+
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the previous file attachment card had no Gemini capsule contract and still depended on `file://`.
+- `yarn test:ci --runTestsByPath test/markdown-file-attachment.test.tsx --runInBand` initially exposed a React DOM nesting warning from rendering `div` inside Markdown `p`; the component was converted to inline-safe `span` structure and the test then passed without warnings.
+- Read-only sub-agent review found no blocker. It flagged a P3 gap that the first pass over-relied on source/CSS string contracts; this was addressed by adding the render-level file attachment behavior test.
+- `yarn test:ci --runTestsByPath test/markdown-file-attachment.test.tsx test/gemini-visual-migration.test.ts --runInBand`
+
+Browser QA:
+
+- Desktop default viewport: a real local Markdown file-block message rendered one attachment card with `role="button"`, `tabindex="0"`, `aria-label="文件附件：Gemini-UX-audit.pdf，application/pdf，24.00 KB。点击复制文件内容。"`, `display: grid`, `grid-template-columns: 36px ...`, `border-radius: 14px`, light gradient surface, filename `Gemini-UX-audit.pdf`, metadata `24.00 KB` and `application/pdf`, and no console warn/error logs.
+- Clicking the card showed the existing `文件内容已复制到剪贴板` toast. The Browser-isolated clipboard read returned empty, so copy payload correctness is covered by `test/markdown-file-attachment.test.tsx`.
+- Mobile `390x844`: the same card stayed inside the viewport with `rootMaxWidth: 100%`, no transform on touch/coarse-pointer rules, and filename overflow bounds intact.
+- Browser screenshot capture still times out at `Page.captureScreenshot`, matching earlier project QA limitations. This iteration is verified by Browser DOM/CSSOM/layout metrics, console logs, render-level tests, source/CSS contracts, read-only review, and automated checks instead of screenshot output.
+
+Known risks:
+
+- The Browser sample message path can trigger the app's normal model proxy if sent as a real chat prompt. Further verification avoided relying on live model/API behavior; no model config, account/secret/sync, production, deployment, upload, or backend logic was changed.

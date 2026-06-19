@@ -1783,6 +1783,152 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps Gemini-style rendered file attachment cards", () => {
+    const markdown = read("app/components/markdown.tsx");
+    const fileAttachment = read("app/components/file-attachment.tsx");
+    const fileAttachmentStyles = read(
+      "app/components/file-attachment.module.scss",
+    );
+    const rootBlock = readCssBlock(fileAttachmentStyles, ".file-attachment");
+    const interactiveBlock = readCssBlock(
+      fileAttachmentStyles,
+      ".file-attachment-interactive",
+    );
+    const cardBlock = readCssBlock(
+      fileAttachmentStyles,
+      ".file-attachment-card",
+    );
+    const iconBlock = readCssBlock(
+      fileAttachmentStyles,
+      ".file-attachment-icon",
+    );
+    const infoBlock = readCssBlock(
+      fileAttachmentStyles,
+      ".file-attachment-info",
+    );
+    const nameBlock = readCssBlock(
+      fileAttachmentStyles,
+      ".file-attachment-name",
+    );
+    const metaBlock = readCssBlock(
+      fileAttachmentStyles,
+      ".file-attachment-meta",
+    );
+    const metaChipBlock = readCssBlock(
+      fileAttachmentStyles,
+      ".file-attachment-meta span",
+    );
+    const interactiveHoverBlock = readCssBlock(
+      fileAttachmentStyles,
+      ".file-attachment-interactive:hover .file-attachment-card,\n.file-attachment-interactive:focus-visible .file-attachment-card",
+    );
+    const interactiveActiveBlock = readCssBlock(
+      fileAttachmentStyles,
+      ".file-attachment-interactive:active .file-attachment-card",
+    );
+    const interactiveFocusBlock = readCssBlock(
+      fileAttachmentStyles,
+      ".file-attachment-interactive:focus-visible",
+    );
+    const darkCardBlock = readCssBlock(
+      fileAttachmentStyles,
+      ":global(.dark) .file-attachment-card",
+    );
+    const darkIconBlock = readCssBlock(
+      fileAttachmentStyles,
+      ":global(.dark) .file-attachment-icon",
+    );
+    const touchBlock = readCssBlock(
+      fileAttachmentStyles,
+      "@media (hover: none), (pointer: coarse), (max-width: 600px)",
+    );
+    const touchRootBlock = readCssBlock(touchBlock, ".file-attachment");
+    const touchCardBlock = readCssBlock(touchBlock, ".file-attachment-card");
+    const reducedMotionBlock = readCssBlock(
+      fileAttachmentStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+
+    expect(markdown).toContain(
+      'const fileAttachmentHrefPrefix = "#neatchat-file-attachment?"',
+    );
+    expect(markdown).toContain(
+      "const createFileAttachmentHref = (file: DetectedFileAttachment) =>",
+    );
+    expect(markdown).toContain("new URLSearchParams");
+    expect(markdown).toContain(
+      "if (href.startsWith(fileAttachmentHrefPrefix))",
+    );
+    expect(markdown).toMatch(
+      /const params = new URLSearchParams\(\s*href\.slice\(fileAttachmentHrefPrefix\.length\),?\s*\);/,
+    );
+    expect(markdown).not.toContain("file://");
+    expect(fileAttachment).toContain("const formattedFileSize");
+    expect(fileAttachment).toContain("const attachmentLabel");
+    expect(fileAttachment).toContain('styles["file-attachment-interactive"]');
+    expect(fileAttachment).toContain('title={fileName}');
+    expect(fileAttachment).toContain('"aria-label": attachmentLabel');
+    expect(fileAttachment).toContain('styles["file-attachment-meta"]');
+    expect(fileAttachment).toMatch(
+      /<span className=\{styles\["file-attachment-size"\]\}>\s*\{formattedFileSize\}\s*<\/span>/,
+    );
+    expect(fileAttachment).toMatch(
+      /<span className=\{styles\["file-attachment-type"\]\}>\s*\{fileType\}\s*<\/span>/,
+    );
+    expect(rootBlock).toMatch(/display:\s*inline-flex;/);
+    expect(rootBlock).toMatch(/max-width:\s*min\(100%, 440px\);/);
+    expect(rootBlock).toMatch(/min-width:\s*0;/);
+    expect(rootBlock).toMatch(/vertical-align:\s*middle;/);
+    expect(interactiveBlock).toMatch(/cursor:\s*pointer;/);
+    expect(cardBlock).toMatch(/grid-template-columns:\s*36px minmax\(0, 1fr\);/);
+    expect(cardBlock).toMatch(/gap:\s*10px;/);
+    expect(cardBlock).toMatch(/padding:\s*9px 12px 9px 10px;/);
+    expect(cardBlock).toMatch(/border-radius:\s*14px;/);
+    expect(cardBlock).toMatch(/border:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.12\);/);
+    expect(cardBlock).toMatch(/background:\s*linear-gradient\(/);
+    expect(cardBlock).toMatch(
+      /box-shadow:\s*0 8px 24px rgba\(60,\s*64,\s*67,\s*0\.1\);/,
+    );
+    expect(cardBlock).not.toMatch(/var\(--gray\)/);
+    expect(iconBlock).toMatch(/width:\s*36px;/);
+    expect(iconBlock).toMatch(/height:\s*36px;/);
+    expect(iconBlock).toMatch(/border-radius:\s*10px;/);
+    expect(iconBlock).toMatch(/color:\s*rgba\(66,\s*133,\s*244,\s*0\.92\);/);
+    expect(iconBlock).toMatch(/background:[\s\S]*rgba\(66,\s*133,\s*244,\s*0\.13\)/);
+    expect(infoBlock).toMatch(/min-width:\s*0;/);
+    expect(nameBlock).toMatch(/font-weight:\s*520;/);
+    expect(nameBlock).toMatch(/letter-spacing:\s*0;/);
+    expect(nameBlock).toMatch(/text-overflow:\s*ellipsis;/);
+    expect(metaBlock).toMatch(/display:\s*flex;/);
+    expect(metaBlock).toMatch(/flex-wrap:\s*wrap;/);
+    expect(metaBlock).toMatch(/gap:\s*5px;/);
+    expect(metaChipBlock).toMatch(/border-radius:\s*999px;/);
+    expect(metaChipBlock).toMatch(/background:\s*rgba\(66,\s*133,\s*244,\s*0\.08\);/);
+    expect(interactiveHoverBlock).toMatch(/transform:\s*translateY\(-1px\);/);
+    expect(interactiveHoverBlock).toMatch(
+      /border-color:\s*rgba\(66,\s*133,\s*244,\s*0\.32\);/,
+    );
+    expect(interactiveActiveBlock).toMatch(
+      /transform:\s*translateY\(0\) scale\(0\.985\);/,
+    );
+    expect(interactiveFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(interactiveFocusBlock).toMatch(/outline-offset:\s*3px;/);
+    expect(darkCardBlock).toMatch(
+      /border-color:\s*rgba\(232,\s*234,\s*237,\s*0\.12\);/,
+    );
+    expect(darkCardBlock).toMatch(
+      /background:\s*linear-gradient\(135deg,\s*rgba\(36,\s*40,\s*48,\s*0\.9\),\s*rgba\(24,\s*27,\s*34,\s*0\.82\)\);/,
+    );
+    expect(darkIconBlock).toMatch(/color:\s*rgba\(138,\s*180,\s*248,\s*0\.94\);/);
+    expect(touchRootBlock).toMatch(/width:\s*100%;/);
+    expect(touchRootBlock).toMatch(/max-width:\s*100%;/);
+    expect(touchCardBlock).toMatch(/width:\s*100%;/);
+    expect(touchCardBlock).toMatch(/transform:\s*none;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.file-attachment-card,\s*\.file-attachment-interactive:hover \.file-attachment-card,\s*\.file-attachment-interactive:focus-visible \.file-attachment-card,\s*\.file-attachment-interactive:active \.file-attachment-card\s*\{[\s\S]*transition-duration:\s*0\.01ms !important;[\s\S]*transform:\s*none !important;/,
+    );
+  });
+
   test("keeps Gemini-style markdown table dark surfaces", () => {
     const markdownStyles = read("app/styles/markdown.scss");
     const tableBlock = readCssBlock(markdownStyles, ".markdown-body table");

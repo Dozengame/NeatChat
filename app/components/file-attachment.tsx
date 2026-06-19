@@ -13,12 +13,17 @@ export interface FileAttachmentProps {
 
 export function FileAttachment(props: FileAttachmentProps) {
   const { fileName, fileType, fileSize, onClick } = props;
+  const formattedFileSize = `${(fileSize / 1024).toFixed(2)} KB`;
+  const attachmentLabel = onClick
+    ? `文件附件：${fileName}，${fileType}，${formattedFileSize}。点击复制文件内容。`
+    : `文件附件：${fileName}，${fileType}，${formattedFileSize}。`;
   const interactiveProps = onClick
     ? {
         role: "button",
         tabIndex: 0,
+        "aria-label": attachmentLabel,
         onClick,
-        onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
+        onKeyDown: (e: React.KeyboardEvent<HTMLSpanElement>) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             onClick();
@@ -28,24 +33,36 @@ export function FileAttachment(props: FileAttachmentProps) {
     : {};
 
   return (
-    <div className={styles["file-attachment"]} {...interactiveProps}>
-      <div className={styles["file-attachment-card"]}>
-        <div
+    <span
+      className={clsx(
+        styles["file-attachment"],
+        onClick && styles["file-attachment-interactive"],
+      )}
+      title={fileName}
+      {...interactiveProps}
+    >
+      <span className={styles["file-attachment-card"]}>
+        <span
           className={clsx(
             styles["file-attachment-icon"],
             getFileIconClass(fileType),
           )}
         >
           <FileIcon />
-        </div>
-        <div className={styles["file-attachment-info"]}>
-          <div className={styles["file-attachment-name"]}>{fileName}</div>
-          <div className={styles["file-attachment-size"]}>
-            {(fileSize / 1024).toFixed(2)} KB
-          </div>
-          <div className={styles["file-attachment-type"]}>{fileType}</div>
-        </div>
-      </div>
-    </div>
+        </span>
+        <span className={styles["file-attachment-info"]}>
+          <span className={styles["file-attachment-name"]}>{fileName}</span>
+          <span
+            className={styles["file-attachment-meta"]}
+            aria-label={`类型 ${fileType}，大小 ${formattedFileSize}`}
+          >
+            <span className={styles["file-attachment-size"]}>
+              {formattedFileSize}
+            </span>
+            <span className={styles["file-attachment-type"]}>{fileType}</span>
+          </span>
+        </span>
+      </span>
+    </span>
   );
 }

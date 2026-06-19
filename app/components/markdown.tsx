@@ -481,11 +481,28 @@ type MarkdownImageActionProps = {
   onDownloadImage?: (src: string) => void | Promise<void>;
 };
 
-function detectFileAttachments(content: string) {
+type DetectedFileAttachment = {
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  content: string;
+};
+
+const fileAttachmentHrefPrefix = "#neatchat-file-attachment?";
+
+const createFileAttachmentHref = (file: DetectedFileAttachment) => {
+  const params = new URLSearchParams();
+  params.set("name", file.fileName);
+  params.set("type", file.fileType);
+  params.set("size", String(file.fileSize));
+  return `${fileAttachmentHrefPrefix}${params.toString()}`;
+};
+
+function detectFileAttachments(content: string): DetectedFileAttachment[] {
   const fileRegex =
     /文件名: (.+?)\n类型: (.+?)\n大小: (.+?) KB\n\n([\s\S]+?)(?=\n\n---|$)/g;
   let match;
-  const files = [];
+  const files: DetectedFileAttachment[] = [];
 
   while ((match = fileRegex.exec(content)) !== null) {
     files.push({
@@ -512,9 +529,9 @@ function replaceFileAttachments(content: string) {
     const fileMarker = `文件名: ${file.fileName}\n类型: ${
       file.fileType
     }\n大小: ${(file.fileSize / 1024).toFixed(2)} KB\n\n`;
-    const replacement = `[📄 ${file.fileName}](file://${encodeURIComponent(
-      file.fileName,
-    )}?type=${encodeURIComponent(file.fileType)}&size=${file.fileSize})`;
+    const replacement = `[📄 ${file.fileName}](${createFileAttachmentHref(
+      file,
+    )})`;
     const startIndex = newContent.indexOf(fileMarker);
 
     if (startIndex >= 0) {
@@ -620,12 +637,14 @@ function MarkDownContentInner(
           }
 
           // 处理文件附件链接
-          if (href.startsWith("file://")) {
+          if (href.startsWith(fileAttachmentHrefPrefix)) {
             try {
-              const url = new URL(href);
-              const fileName = decodeURIComponent(url.pathname.substring(2)); // 去掉 '//'
-              const fileType = url.searchParams.get("type") || "未知类型";
-              const fileSize = parseFloat(url.searchParams.get("size") || "0");
+              const params = new URLSearchParams(
+                href.slice(fileAttachmentHrefPrefix.length),
+              );
+              const fileName = params.get("name") || "";
+              const fileType = params.get("type") || "未知类型";
+              const fileSize = parseFloat(params.get("size") || "0");
 
               // 忽略链接文本，直接使用 FileAttachment 组件
               return (
