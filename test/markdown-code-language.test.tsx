@@ -77,7 +77,7 @@ describe("PreCode language labels", () => {
     expect(screen.getByText(label)).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: `复制 ${label} 代码` }),
-    ).toBeInTheDocument();
+    ).toHaveAttribute("title", `复制 ${label} 代码`);
   });
 
   test("renders qualified fence info as a short readable label", () => {
@@ -86,8 +86,20 @@ describe("PreCode language labels", () => {
     expect(screen.getByText("JSON MCP")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "复制 JSON MCP 代码" }),
-    ).toBeInTheDocument();
+    ).toHaveAttribute("title", "复制 JSON MCP 代码");
     expect(screen.queryByText(/clientId/i)).not.toBeInTheDocument();
+  });
+
+  test("exposes copy feedback through a polite live button label", () => {
+    renderCodeBlock("language-typescript");
+
+    const copyButton = screen.getByRole("button", {
+      name: "复制 TypeScript 代码",
+    });
+
+    expect(copyButton).toHaveAttribute("aria-live", "polite");
+    expect(copyButton).toHaveAttribute("aria-atomic", "true");
+    expect(copyButton).toHaveAttribute("title", "复制 TypeScript 代码");
   });
 
   test("shows a temporary copied state after copying code", () => {
@@ -104,6 +116,9 @@ describe("PreCode language labels", () => {
     expect(
       screen.getByRole("button", { name: "已复制 TypeScript 代码" }),
     ).toHaveAttribute("data-copy-state", "copied");
+    expect(
+      screen.getByRole("button", { name: "已复制 TypeScript 代码" }),
+    ).toHaveAttribute("title", "已复制 TypeScript 代码");
 
     act(() => {
       jest.advanceTimersByTime(1400);

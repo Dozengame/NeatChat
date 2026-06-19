@@ -1755,6 +1755,9 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toContain("copyResetTimerRef");
     expect(markdown).toContain("const codeCopyLabel = codeLanguage");
     expect(markdown).toContain("aria-label={codeCopyLabel}");
+    expect(markdown).toContain('aria-live="polite"');
+    expect(markdown).toContain('aria-atomic="true"');
+    expect(markdown).toContain("title={codeCopyLabel}");
     expect(markdown).toContain('data-copy-state={copied ? "copied" : "idle"}');
     expect(markdown).toContain("id={codeBlockId}");
     expect(markdown).toContain("aria-controls={codeBlockId}");

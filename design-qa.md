@@ -2615,3 +2615,49 @@ Known risks:
 
 - Browser QA did not click a live persisted code-copy button because current local history has no code-block messages and creating one would mutate user data or risk model/API paths. Render-level tests cover the real `PreCode` click/reset behavior for a deterministic TypeScript block.
 - The copied state remains optimistic because the existing `copyToClipboard` helper does not expose success/failure to callers. Changing that helper would affect many app copy paths and is outside this narrow UI slice.
+
+## Iteration 2026-06-19 markdown-code-copy-live-label
+
+Result: passed.
+
+Target flow:
+
+- AI-rendered Markdown code blocks keep the existing copy button visual treatment, but the icon-only copy control now exposes the same `复制 ... 代码` / `已复制 ... 代码` state through a native tooltip and polite live label so keyboard and assistive users get clearer feedback.
+
+Design direction:
+
+- Creative Production style intake selected: no visual churn, preserve the quiet Gemini-style code chrome, make the copied state more perceivable, avoid layout movement, keep the existing optimistic copy behavior, and do not change model/API/account/sync/deploy/backend semantics.
+
+Scope:
+
+- `app/components/markdown.tsx`: added `title={codeCopyLabel}`, `aria-live="polite"`, and `aria-atomic="true"` to the existing Markdown code-copy button. The title and accessible label are derived from the same `codeCopyLabel`, so initial and copied states stay in sync.
+- `test/markdown-code-language.test.tsx`: locked the initial tooltip for normal and qualified code languages, the live-region attributes, and the copied-state tooltip.
+- `test/gemini-visual-migration.test.ts`: locked the source contract so future code-block chrome changes keep the copy button's tooltip/live attributes.
+- No model config semantics, account/secret/sync, production config, deployment config, backend logic, token math, localStorage keys, upload limits, copy payload selection, copied timer behavior, copied icon styling, Mermaid rendering, HTML preview, code folding, or code language labels were changed.
+
+Automated checks:
+
+- `yarn jest test/markdown-code-language.test.tsx --runInBand` failed first as expected because the old icon-only copy button had no `title`, `aria-live`, or `aria-atomic`.
+- `yarn jest test/markdown-code-language.test.tsx --runInBand`
+- `yarn jest test/markdown-code-language.test.tsx test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts test/markdown-code-language.test.tsx test/markdown-code-fold.test.tsx test/markdown-performance.test.tsx test/markdown-file-attachment.test.tsx test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+
+Review:
+
+- Read-only sub-agent review found no blocking issues. It noted that some screen readers may announce `aria-label` changes on a focusable live-region button less consistently than a separate `role="status"` node; this slice keeps the change narrow and avoids adding hidden DOM or altering copy behavior.
+- The review also noted that tests do not explicitly assert the timer-reset tooltip after copied state. The implementation uses the same `codeCopyLabel` for `aria-label` and `title`, and the reset accessible name is covered by the copied-state timer test.
+
+Browser QA:
+
+- Desktop `1440x1024` at `/`: page rendered with title `NeatChat`, composer input `left: 563`, `right: 1137`, panel `left: 490`, `right: 1250`, no framework overlay, `horizontalOverflowPx: 0`, copied-state CSS loaded, and code-language ellipsis CSS loaded.
+- Mobile `390x844` at `/#/chat`: composer input `left: 67`, `right: 313`, panel `left: 10`, `right: 380`, no framework overlay, `horizontalOverflowPx: 0`, copied-state CSS loaded, and code-language ellipsis CSS loaded.
+- Narrow mobile `320x740` at `/#/chat`: composer input `left: 67`, `right: 243`, panel `left: 10`, `right: 310`, no framework overlay, `horizontalOverflowPx: 0`, copied-state CSS loaded, and code-language ellipsis CSS loaded.
+- Browser log reads retained one unscoped `Event` error with the same timestamp across fresh tabs. No Next overlay rendered and no distinct new warn/error entry was observed during the stable-route checks, but this iteration is not recorded as console-clean because that buffered entry is still present.
+
+Known risks:
+
+- Browser QA did not click a live persisted code-copy button because current local history has no code-block messages and creating one would mutate user data or risk model/API paths. Render-level tests cover the real `PreCode` tooltip/live-label behavior for deterministic code blocks.
+- A separate hidden status node may be more consistently announced by every screen reader, but that would add DOM and state plumbing beyond this narrow copy-button affordance slice.

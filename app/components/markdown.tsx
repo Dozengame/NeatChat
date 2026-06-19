@@ -234,6 +234,9 @@ export function PreCode(props: { children: any }) {
           type="button"
           className="copy-code-button"
           aria-label={codeCopyLabel}
+          aria-live="polite"
+          aria-atomic="true"
+          title={codeCopyLabel}
           data-copy-state={copied ? "copied" : "idle"}
           onClick={() => {
             if (ref.current) {
