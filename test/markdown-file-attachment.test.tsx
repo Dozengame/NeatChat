@@ -107,3 +107,37 @@ describe("Markdown file attachments", () => {
     expect(screen.queryByRole("link", { name: "bad" })).not.toBeInTheDocument();
   });
 });
+
+describe("Markdown image actions", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    window.localStorage.clear();
+  });
+
+  test("labels preview and download actions with the image alt text", () => {
+    const onPreviewImage = jest.fn();
+    const onDownloadImage = jest.fn();
+
+    render(
+      <Markdown
+        content="![generated sunrise](https://example.com/sunrise.png)"
+        onPreviewImage={onPreviewImage}
+        onDownloadImage={onDownloadImage}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "预览 generated sunrise" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "下载 generated sunrise 原图" }),
+    );
+
+    expect(onPreviewImage).toHaveBeenCalledWith(
+      "https://example.com/sunrise.png",
+    );
+    expect(onDownloadImage).toHaveBeenCalledWith(
+      "https://example.com/sunrise.png",
+    );
+  });
+});

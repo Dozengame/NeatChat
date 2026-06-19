@@ -77,6 +77,10 @@ import {
   showPlugins,
   safeLocalStorage,
 } from "../utils";
+import {
+  getImageActionLabels,
+  getMessageImageLabel,
+} from "../utils/image-action-labels";
 
 import dynamic from "next/dynamic";
 
@@ -351,6 +355,7 @@ function MessageImagePreview(props: {
   src: string;
   alt?: string;
   className: string;
+  actionLabels: ReturnType<typeof getImageActionLabels>;
   onPreview: (src: string, trigger?: HTMLButtonElement | null) => void;
   onDownload: (src: string) => void | Promise<void>;
 }) {
@@ -359,7 +364,7 @@ function MessageImagePreview(props: {
       <button
         type="button"
         className={styles["chat-message-image-preview-button"]}
-        aria-label={props.alt || "预览图片"}
+        aria-label={props.actionLabels.preview}
         onClick={(event) => props.onPreview(props.src, event.currentTarget)}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -372,8 +377,8 @@ function MessageImagePreview(props: {
       <button
         type="button"
         className={styles["chat-message-image-download"]}
-        aria-label="下载原图"
-        title="下载原图"
+        aria-label={props.actionLabels.download}
+        title={props.actionLabels.download}
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -3881,6 +3886,8 @@ function useChatInnerView() {
                   i + 1
                 }`;
                 const messageActionLabel = `${messageLabel} 操作`;
+                const messageImages = getMessageImages(message);
+                const singleMessageImageLabel = getMessageImageLabel(0, 1);
 
                 return (
                   <Fragment key={message.id}>
@@ -4041,25 +4048,33 @@ function useChatInnerView() {
                             onPreviewImage={openImagePreview}
                             onDownloadImage={downloadImage}
                           />
-                          {getMessageImages(message).length == 1 && (
+                          {messageImages.length == 1 && (
                             <MessageImagePreview
                               className={styles["chat-message-item-image"]}
-                              src={getMessageImages(message)[0]}
+                              src={messageImages[0]}
+                              alt={singleMessageImageLabel}
+                              actionLabels={getImageActionLabels(
+                                singleMessageImageLabel,
+                              )}
                               onPreview={openImagePreview}
                               onDownload={downloadImage}
                             />
                           )}
-                          {getMessageImages(message).length > 1 && (
+                          {messageImages.length > 1 && (
                             <div
                               className={styles["chat-message-item-images"]}
                               style={
                                 {
-                                  "--image-count":
-                                    getMessageImages(message).length,
+                                  "--image-count": messageImages.length,
                                 } as React.CSSProperties
                               }
                             >
-                              {getMessageImages(message).map((image, index) => {
+                              {messageImages.map((image, index) => {
+                                const imageLabel = getMessageImageLabel(
+                                  index,
+                                  messageImages.length,
+                                );
+
                                 return (
                                   <MessageImagePreview
                                     className={
@@ -4067,6 +4082,10 @@ function useChatInnerView() {
                                     }
                                     key={image}
                                     src={image}
+                                    alt={imageLabel}
+                                    actionLabels={getImageActionLabels(
+                                      imageLabel,
+                                    )}
                                     onPreview={openImagePreview}
                                     onDownload={downloadImage}
                                   />

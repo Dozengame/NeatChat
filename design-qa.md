@@ -2709,3 +2709,54 @@ Known risks:
 
 - Browser QA did not click a live persisted code-copy button because current local history has no code-block messages and creating one would mutate user data or risk model/API paths. Render-level tests cover the real `PreCode` sibling status behavior for deterministic code blocks.
 - The next high-value UI slice identified by read-only exploration is image message action context labels, especially for existing local image conversations such as `日出东方图`.
+
+## Iteration 2026-06-19 image-action-context-labels
+
+Result: passed.
+
+Target flow:
+
+- AI-rendered Markdown images and chat message images keep the existing preview/download behavior, but image action buttons now expose image-specific accessible names instead of repeated generic labels such as `下载原图`.
+
+Design direction:
+
+- Creative Production style intake selected: no visual churn, preserve Gemini-style media card treatment, improve multimodal result clarity for keyboard and assistive users, keep all download/preview callbacks unchanged, and do not change model/API/account/sync/deploy/backend semantics.
+
+Scope:
+
+- `app/utils/image-action-labels.ts`: added shared helpers for preview/download action labels and single/multi-message image labels.
+- `app/components/markdown.tsx`: Markdown image preview/download buttons now use `预览 <alt>` and `下载 <alt> 原图` when alt text exists, with fallback labels for images without alt text.
+- `app/components/chat.tsx`: message image preview/download buttons now receive contextual labels. Single image messages use `图片`; multi-image messages use `第 N 张图片`.
+- `test/markdown-file-attachment.test.tsx`: added render-level coverage for Markdown image action labels and callback payloads.
+- `test/gemini-visual-migration.test.ts`: locked the chat/Markdown source contract so future media-card changes keep contextual labels wired.
+- `test/image-action-labels.test.ts`: added direct helper coverage for fallback, alt-text, single-image, and multi-image labels.
+- No model config semantics, account/secret/sync, production config, deployment config, backend logic, image download source selection, proxy logic, generated-image result parsing, message content shape, upload limits, preview modal behavior, or persisted storage keys were changed.
+
+Automated checks:
+
+- `yarn test:ci test/markdown-file-attachment.test.tsx test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the old Markdown buttons were named `generated sunrise` / `下载原图`, and the chat path did not yet import/use the shared image-label helpers.
+- `yarn test:ci test/markdown-file-attachment.test.tsx test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/image-action-labels.test.ts test/gemini-visual-migration.test.ts test/markdown-file-attachment.test.tsx test/markdown-code-language.test.tsx test/markdown-code-fold.test.tsx test/markdown-performance.test.tsx test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+- `git diff --check`
+
+Review:
+
+- Read-only sub-agent review found no Critical issues and no implementation-level accessibility/download/preview regression.
+- The Important finding was a commit hygiene risk: the new helper file was still untracked at review time. This is resolved by including `app/utils/image-action-labels.ts` in the final staged commit.
+- The Minor test-gap recommendation was addressed by adding `test/image-action-labels.test.ts` for fallback and multi-image helper labels.
+
+Browser QA:
+
+- Desktop default Browser viewport `1280x720` at `/`: page rendered with title `NeatChat`, no framework overlay, `horizontalOverflowPx: 0`, and no console warn/error logs. Browser screenshot capture timed out, so DOM/layout metrics were used.
+- Existing `日出东方图` local chat was opened read-only; current local history had no visible image frame in this browser profile, so no live image action button was clicked.
+- Mobile `390x844` at `/#/chat`: page rendered after reload, no framework overlay, `horizontalOverflowPx: 0`, and no console warn/error logs.
+- Narrow mobile `320x740` at `/#/chat`: page rendered after reload, no framework overlay, `horizontalOverflowPx: 0`, and no console warn/error logs.
+- Browser viewport was reset to the default `1280x720` after QA.
+
+Known risks:
+
+- Browser QA did not click a live persisted image preview/download button because the current Browser profile had no visible image-frame messages, and creating one would require mutating user data or triggering real model/API image generation. Render-level tests cover the Markdown image button behavior, and source-contract tests cover the chat image wiring.
+- The preview modal toolbar download button still uses the generic `下载原图` label. That toolbar has only one active preview image at a time; making the modal inherit the originating image label would require carrying preview metadata through `previewImage`, which is a separate slice.

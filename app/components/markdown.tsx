@@ -17,6 +17,7 @@ import React, {
   useId,
 } from "react";
 import { copyToClipboard, useWindowSize } from "../utils";
+import { getImageActionLabels } from "../utils/image-action-labels";
 import Locale from "../locales";
 import LoadingIcon from "../icons/three-dots.svg";
 import DownloadIcon from "../icons/download.svg";
@@ -780,6 +781,7 @@ function MarkDownContentInner(
           const src =
             typeof imgProps.src === "string" ? imgProps.src.trim() : "";
           const alt = typeof imgProps.alt === "string" ? imgProps.alt : "";
+          const imageActionLabels = getImageActionLabels(alt);
 
           if (!src || (!props.onPreviewImage && !props.onDownloadImage)) {
             return (
@@ -795,7 +797,7 @@ function MarkDownContentInner(
               <button
                 type="button"
                 className="markdown-image-preview-button"
-                aria-label={alt || "预览图片"}
+                aria-label={imageActionLabels.preview}
                 onClick={(event) => {
                   event.preventDefault();
                   props.onPreviewImage?.(src);
@@ -813,8 +815,8 @@ function MarkDownContentInner(
                 <button
                   type="button"
                   className="markdown-image-download"
-                  aria-label="下载原图"
-                  title="下载原图"
+                  aria-label={imageActionLabels.download}
+                  title={imageActionLabels.download}
                   onClick={(event) => {
                     event.preventDefault();
                     event.stopPropagation();

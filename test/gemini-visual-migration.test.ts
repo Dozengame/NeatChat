@@ -2037,6 +2037,31 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("labels image actions with image-specific context", () => {
+    const chat = read("app/components/chat.tsx");
+    const markdown = read("app/components/markdown.tsx");
+
+    expect(chat).toMatch(
+      /import \{\s*getImageActionLabels,\s*getMessageImageLabel,\s*\} from "\.\.\/utils\/image-action-labels";/,
+    );
+    expect(markdown).toContain(
+      'import { getImageActionLabels } from "../utils/image-action-labels";',
+    );
+    expect(markdown).toContain("const imageActionLabels = getImageActionLabels(alt);");
+    expect(markdown).toContain("aria-label={imageActionLabels.preview}");
+    expect(markdown).toContain("aria-label={imageActionLabels.download}");
+    expect(chat).toContain("actionLabels: ReturnType<typeof getImageActionLabels>;");
+    expect(chat).toContain("aria-label={props.actionLabels.preview}");
+    expect(chat).toContain("aria-label={props.actionLabels.download}");
+    expect(chat).toContain("const messageImages = getMessageImages(message);");
+    expect(chat).toMatch(
+      /const singleMessageImageLabel = getMessageImageLabel\(0, 1\);[\s\S]*src=\{messageImages\[0\]\}[\s\S]*actionLabels=\{getImageActionLabels\(\s*singleMessageImageLabel,\s*\)\}/,
+    );
+    expect(chat).toMatch(
+      /const imageLabel = getMessageImageLabel\(\s*index,\s*messageImages\.length,\s*\);[\s\S]*actionLabels=\{getImageActionLabels\(\s*imageLabel,\s*\)\}/,
+    );
+  });
+
   test("keeps Gemini-style rendered file attachment cards", () => {
     const markdown = read("app/components/markdown.tsx");
     const fileAttachment = read("app/components/file-attachment.tsx");
