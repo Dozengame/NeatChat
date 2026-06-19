@@ -116,7 +116,12 @@ export function showConfirm(content: any) {
   });
 }
 
-export function showPrompt(content: any, value = "", rows = 3) {
+export function showPrompt(
+  content: any,
+  value = "",
+  rows = 3,
+  options?: { ariaLabel?: string },
+) {
   const div = document.createElement("div");
   div.className = "modal-mask";
   document.body.appendChild(div);
@@ -165,6 +170,7 @@ export function showPrompt(content: any, value = "", rows = 3) {
           onChange={(val) => (userInput = val)}
           value={value}
           rows={rows}
+          ariaLabel={options?.ariaLabel}
         ></PromptInput>
       </Modal>,
     );

@@ -4407,86 +4407,94 @@ function useChatInnerView() {
                     ))}
 
                     {/* 文件附件 */}
-                    {attachedFiles.map((file, index) => (
-                      <div
-                        className={clsx(
-                          styles["attach-item"],
-                          styles["attach-file-item"],
-                        )}
-                        role="listitem"
-                        key={`${file.name}-${file.size}-${file.type}`}
-                      >
-                        <button
-                          type="button"
-                          className={styles["attach-file"]}
-                          aria-label={`编辑第 ${index + 1} 个文件附件：${
-                            file.name
-                          }`}
-                          onClick={async () => {
-                            // 使用与消息编辑相同的showPrompt函数
-                            const newContent = await showPrompt(
-                              `编辑文件：${file.name}`,
-                              file.content,
-                              20, // 更多行数以便于编辑文件内容
-                            );
+                    {attachedFiles.map((file, index) => {
+                      const fileEditContextLabel = `编辑第 ${
+                        index + 1
+                      } 个文件附件：${file.name}`;
 
-                            if (newContent) {
-                              // 更新文件内容
-                              const updatedFiles = attachedFiles.map((f, i) => {
-                                if (i === index) {
-                                  // 更新文件大小
-                                  const newSize = new Blob([newContent]).size;
-                                  return {
-                                    ...f,
-                                    content: newContent,
-                                    size: newSize,
-                                    originalFile: new File(
-                                      [newContent],
-                                      f.name,
-                                      {
-                                        type: f.type,
-                                      },
-                                    ),
-                                  };
-                                }
-                                return f;
-                              });
-                              setAttachedFiles(updatedFiles);
-                            }
-                          }}
+                      return (
+                        <div
+                          className={clsx(
+                            styles["attach-item"],
+                            styles["attach-file-item"],
+                          )}
+                          role="listitem"
+                          key={`${file.name}-${file.size}-${file.type}`}
                         >
-                          <div className={styles["attach-file-card"]}>
-                            <div
-                              className={clsx(
-                                styles["attach-file-icon"],
-                                getFileIconClass(file.type),
-                              )}
-                            >
-                              <FileIcon />
-                            </div>
-                            <div className={styles["attach-file-info"]}>
-                              <div className={styles["attach-file-name"]}>
-                                {file.name}
-                              </div>
-                              <div className={styles["attach-file-size"]}>
-                                {(file.size / 1024).toFixed(2)} KB
-                              </div>
-                            </div>
-                          </div>
-                        </button>
-                        <div className={styles["attach-image-mask"]}>
-                          <DeleteImageButton
-                            ariaLabel={`删除第 ${index + 1} 个文件附件：${
-                              file.name
-                            }`}
-                            deleteImage={(e) => {
-                              e.stopPropagation(); // 防止触发文件点击事件
-                              deleteAttachedFile(index);
+                          <button
+                            type="button"
+                            className={styles["attach-file"]}
+                            aria-label={fileEditContextLabel}
+                            onClick={async () => {
+                              // 使用与消息编辑相同的showPrompt函数
+                              const newContent = await showPrompt(
+                                fileEditContextLabel,
+                                file.content,
+                                20, // 更多行数以便于编辑文件内容
+                                { ariaLabel: `${fileEditContextLabel}内容` },
+                              );
+
+                              if (newContent) {
+                                // 更新文件内容
+                                const updatedFiles = attachedFiles.map(
+                                  (f, i) => {
+                                    if (i === index) {
+                                      // 更新文件大小
+                                      const newSize = new Blob([newContent])
+                                        .size;
+                                      return {
+                                        ...f,
+                                        content: newContent,
+                                        size: newSize,
+                                        originalFile: new File(
+                                          [newContent],
+                                          f.name,
+                                          {
+                                            type: f.type,
+                                          },
+                                        ),
+                                      };
+                                    }
+                                    return f;
+                                  },
+                                );
+                                setAttachedFiles(updatedFiles);
+                              }
                             }}
-                          />
+                          >
+                            <div className={styles["attach-file-card"]}>
+                              <div
+                                className={clsx(
+                                  styles["attach-file-icon"],
+                                  getFileIconClass(file.type),
+                                )}
+                              >
+                                <FileIcon />
+                              </div>
+                              <div className={styles["attach-file-info"]}>
+                                <div className={styles["attach-file-name"]}>
+                                  {file.name}
+                                </div>
+                                <div className={styles["attach-file-size"]}>
+                                  {(file.size / 1024).toFixed(2)} KB
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                          <div className={styles["attach-image-mask"]}>
+                            <DeleteImageButton
+                              ariaLabel={`删除第 ${index + 1} 个文件附件：${
+                                file.name
+                              }`}
+                              deleteImage={(e) => {
+                                e.stopPropagation(); // 防止触发文件点击事件
+                                deleteAttachedFile(index);
+                              }}
+                            />
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 

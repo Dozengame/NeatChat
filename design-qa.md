@@ -3044,3 +3044,51 @@ Known risks:
 
 - Browser QA used paste-created data URL attachments, not the native OS file picker, to avoid external dialogs and persistent user data changes.
 - Earlier Browser runs showed intermittent in-app Browser tab navigation/id issues and one screenshot timeout; the final recorded desktop and narrow QA passes are DOM/layout/console based and completed after cleaning Browser tabs.
+
+## Iteration 2026-06-19 file-attachment-edit-prompt-context
+
+Result: passed.
+
+Target flow:
+
+- Composer file attachments keep the existing paste, upload limit, edit, cancel, confirm, delete, size update, original file update, and submit behavior, but opening the file editor now names both the prompt title and textarea by attachment context: `编辑第 N 个文件附件：<file name>`.
+- The file edit textarea accessible name must describe the target attachment, not expose the entire edited file body as its label.
+
+Design direction:
+
+- Creative Production style intake selected: no decorative layout churn, preserve the compact Gemini-style attachment strip and existing modal prompt surface, align file edit context with the already contextual attachment edit/delete labels, and avoid model/API/account/sync/deploy/backend semantic changes.
+
+Scope:
+
+- `app/components/chat.tsx`: reused a single `fileEditContextLabel` for the file attachment edit button, prompt title, and prompt textarea label option.
+- `app/components/ui-lib-actions.tsx`: added an optional `ariaLabel` option to `showPrompt` while keeping the existing positional arguments and default behavior for all other callers.
+- `app/components/ui-lib-prompt-input.tsx`: added an optional explicit `ariaLabel` prop with the existing value-derived fallback unchanged.
+- `test/prompt-input-label.test.tsx` and `test/gemini-visual-migration.test.ts`: added render/source contracts for the explicit prompt input label and contextual file edit prompt wiring.
+- No model config semantics, account/secret/sync, production config, deployment config, backend logic, upload limits, attachment content shape, file picker behavior, image attachment behavior, send behavior, persisted storage keys, or API behavior were changed.
+
+Automated checks:
+
+- `yarn test:ci --runTestsByPath test/prompt-input-label.test.tsx test/gemini-visual-migration.test.ts --runInBand` failed first as expected because `PromptInput` still used the edited file body as the textarea `aria-label`, and the chat source had no contextual file edit prompt label.
+- `yarn test:ci --runTestsByPath test/prompt-input-label.test.tsx test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/prompt-input-label.test.tsx test/gemini-visual-migration.test.ts test/markdown-file-attachment.test.tsx test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+- `git diff --check`
+
+Review:
+
+- Read-only code review found no blocking issues and confirmed the `showPrompt` optional fourth argument preserves existing callers, `PromptInput` fallback behavior remains compatible, and file attachment edit content/size/originalFile update plus delete/send/upload semantics were unchanged.
+- Review feedback noted the source-string contract remains refactor-sensitive and asked to avoid committing a stale pending-review note; this entry was updated before commit, and fallback label coverage was added to `test/prompt-input-label.test.tsx`.
+
+Browser QA:
+
+- Desktop default Browser viewport `1280x720` at `http://localhost:3000/`: pasted long text through the real composer paste path, rendered exactly one `编辑第 1 个文件附件：粘贴的文本.txt` button, opened the prompt with visible title `编辑第 1 个文件附件：粘贴的文本.txt`, found exactly one textarea named `编辑第 1 个文件附件：粘贴的文本.txt内容`, canceled the prompt, deleted the attachment, cleanup left `remainingEditButtonsAfterDelete: 0`, and no relevant console warn/error logs.
+- Narrow mobile `320x740` at `http://localhost:3000/`: after loading the page, switched viewport to 320px, repeated the same paste-created file edit prompt path, verified the same contextual prompt title and textarea label, canceled, deleted the attachment, cleanup left `remainingEditButtonsAfterDelete: 0`, and no relevant console warn/error logs.
+- Browser screenshot capture was attempted after opening the prompt and failed with the in-app Browser CDP error `Timed out running CDP command "Page.captureScreenshot"`. DOM, role, title, cleanup, and console checks remain the recorded evidence for this slice.
+- Browser viewport was reset to the default after QA.
+
+Known risks:
+
+- Browser QA used paste-created long-text file attachments, not the native OS file picker, to avoid external dialogs and persistent user data changes. This slice intentionally changes only prompt naming and prompt input accessibility, so the paste-created file covers the active composer file edit path without touching upload, file picker, delete, send, or API semantics.
+- Earlier Browser runs showed intermittent in-app Browser tab navigation/id issues and repeated screenshot timeout. The final recorded desktop and narrow QA passes completed after cleaning Browser tabs and avoiding screenshot as a blocking assertion.

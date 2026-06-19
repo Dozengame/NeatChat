@@ -68,6 +68,8 @@ describe("Gemini visual migration shell", () => {
     const homeStyles = read("app/components/home.module.scss");
     const button = read("app/components/button.tsx");
     const buttonStyles = read("app/components/button.module.scss");
+    const uiLibActions = read("app/components/ui-lib-actions.tsx");
+    const promptInput = read("app/components/ui-lib-prompt-input.tsx");
     const globalStyles = read("app/styles/globals.scss");
     const constants = read("app/constant.ts");
     const cnLocale = read("app/locales/cn.ts");
@@ -548,9 +550,19 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chat).toContain("title={editingImageTitle}");
     expect(chat).toContain('styles["attach-file"]');
+    expect(chat).toContain("aria-label={fileEditContextLabel}");
     expect(chat).toMatch(
-      /aria-label=\{`编辑第 \$\{index \+ 1\} 个文件附件：\$\{\s*file\.name\s*\}`\}/,
+      /const fileEditContextLabel = `编辑第 \$\{[\s\S]*index \+ 1[\s\S]*\} 个文件附件：\$\{file\.name\}`;/,
     );
+    expect(chat).toContain("const newContent = await showPrompt(");
+    expect(chat).toContain("fileEditContextLabel,");
+    expect(chat).toContain("file.content,");
+    expect(chat).toContain(
+      "{ ariaLabel: `${fileEditContextLabel}内容` },",
+    );
+    expect(uiLibActions).toContain("ariaLabel?: string");
+    expect(uiLibActions).toContain("ariaLabel={options?.ariaLabel}");
+    expect(promptInput).toContain("ariaLabel?: string");
     expect(chat).toMatch(
       /function DeleteImageButton\(props: \{[\s\S]*ariaLabel: string;[\s\S]*deleteImage: \(e\?: any\) => void[\s\S]*aria-label=\{props\.ariaLabel\}/,
     );
