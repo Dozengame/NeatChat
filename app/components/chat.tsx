@@ -412,7 +412,13 @@ export function SessionConfigModel(props: { onClose: () => void }) {
   const navigate = useNavigate();
 
   return (
-    <div className="modal-mask" id="session-config-modal">
+    <div
+      className="modal-mask"
+      id="session-config-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label={Locale.Context.Edit}
+    >
       <Modal
         title={Locale.Context.Edit}
         onClose={() => props.onClose()}

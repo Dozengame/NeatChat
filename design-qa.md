@@ -3139,3 +3139,47 @@ Known risks:
 
 - Browser QA used a built-in mask session with preset context prompts and did not send a message, call a model, edit context content, or persist production data. The route creates only a local temporary mask chat state for UI verification.
 - Closing the whole Browser tab was used for cleanup after opening the settings modal; this slice changes only the trigger chip and modal association, not the existing modal close implementation.
+
+## Iteration 2026-06-20 session-config-dialog-aria
+
+Result: passed.
+
+Target flow:
+
+- Opening the context prompt chip still shows the existing current chat settings modal with the same mask/context editing UI and actions, but the controlled target `#session-config-modal` is now a named `dialog` with `aria-modal="true"` and `aria-label={Locale.Context.Edit}`.
+- The change must not alter context prompt data, mask updates, model config, reset/save-as-mask handlers, upload, send, API, account, sync, production, or deployment behavior.
+
+Design direction:
+
+- Creative Production style intake selected: keep the existing modal surface and layout unchanged, only strengthen the semantic bridge from the Gemini-style prompt chip to the settings dialog so assistive tech can identify the opened surface.
+
+Scope:
+
+- `app/components/chat.tsx`: added `role="dialog"`, `aria-modal="true"`, and `aria-label={Locale.Context.Edit}` to the existing `SessionConfigModel` wrapper that already owns `id="session-config-modal"`.
+- `test/gemini-visual-migration.test.ts`: extended the prompt toast source contract to require the controlled modal target to be a named dialog.
+- No visual sizing, context/mask/model semantics, generic `Modal` component behavior, upload/send paths, persisted storage keys, backend/API, or production/deployment configuration were changed.
+
+Automated checks:
+
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts --runInBand` failed first as expected because `#session-config-modal` had no `role="dialog"`, `aria-modal`, or modal label.
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts test/chat-render.test.ts test/markdown-file-attachment.test.tsx --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+- `git diff --check`
+
+Review:
+
+- Read-only local code review found no blocking issues. The review confirmed the change is scoped to `SessionConfigModel` semantics, does not touch its mask/context update handlers, and keeps the existing prompt chip `aria-controls` target unique.
+
+Browser QA:
+
+- Desktop default Browser viewport at `http://localhost:3000/#/masks`: opened the built-in `以文搜图` mask session, scrolled away from bottom to reveal the prompt chip, clicked `包含 4 条预设提示词`, and verified `getByRole("dialog", { name: "当前对话设置" })` found exactly one dialog with `aria-modal="true"`, `aria-label="当前对话设置"`, chip `aria-controls` matched `session-config-modal`, chip `aria-expanded` became `true`, `horizontalOverflowPx: 0`, and no relevant console warn/error logs.
+- Narrow mobile `320x740` after page load: repeated the same built-in mask flow and verified the same named dialog, `aria-modal`, label, controls match, expanded state, `horizontalOverflowPx: 0`, and no relevant console warn/error logs.
+- Browser viewport was reset to the default after QA.
+
+Known risks:
+
+- Browser QA used a built-in mask session and did not send a message, edit context data, or call any model/API. This slice is semantic-only for the existing settings modal wrapper.
+- Browser first pass hit transient in-app Browser tab/session mapping and `Page.navigate` timeouts; both final desktop and narrow passes completed after cleaning tabs and retrying one viewport at a time.

@@ -3024,6 +3024,9 @@ describe("Gemini visual migration shell", () => {
     );
 
     expect(chat).toContain('id="session-config-modal"');
+    expect(chat).toMatch(
+      /id="session-config-modal"[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*aria-label=\{Locale\.Context\.Edit\}/,
+    );
     expect(chat).toContain("aria-label={Locale.Context.Toast(context.length)}");
     expect(chat).toContain('aria-haspopup="dialog"');
     expect(chat).toContain('aria-controls="session-config-modal"');
