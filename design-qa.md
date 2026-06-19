@@ -2139,3 +2139,37 @@ Browser QA:
 Known risks:
 
 - Browser QA uses hash routes with a query before the hash for fresh page loads. This iteration only scopes stronger selected-state visuals to the desktop model menu. No changes to model/reasoning/image option data, selection handlers, prompt bar, sending, attachments, image generation, MCP/Jimeng, stores, Tauri config, deployment config, or secrets.
+
+## Iteration 2026-06-19 scroll-to-bottom-microinteraction
+
+Result: passed.
+
+Target flow:
+
+- In an existing conversation, scrolling away from the latest message reveals a compact Gemini-style `滚到最新` affordance; it keeps the existing click-to-bottom behavior while adding a clearer pressed state, dark hover treatment, and reduced-motion guard.
+
+Scope:
+
+- `app/components/chat.module.scss`: added active-state compression and shadow, dark hover border/shadow contrast, and a reduced-motion rule that keeps the button centered without hover/press motion.
+- `test/gemini-visual-migration.test.ts`: locked the active, dark-hover, and reduced-motion visual contracts without changing scroll detection, message rendering, sending, model APIs, MCP/Jimeng, stores, Tauri config, deployment config, or secrets.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the reduced-motion scroll-button contract was missing.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build` passed after rerunning outside the filesystem sandbox because `tsx` IPC binding is blocked in the sandbox.
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `#/chat` at default Browser viewport: opened the existing `浏览器相关` local session, scrolled the message body to `scrollTop: 260`, and verified the button rendered with `aria-label="滚到最新"`, `aria-controls="chat-scroll-body"`, rect `42x42` at `x=769 y=554`, elevated glass background `rgba(255, 255, 255, 0.96)`, primary color `rgb(49, 94, 248)`, blur `18px`, no horizontal overflow, and no console warn/error logs.
+- Runtime CSSOM confirmed the loaded CSS Modules rules for `.chat-scroll-to-bottom:hover`, `.chat-scroll-to-bottom:active`, `.dark .chat-scroll-to-bottom:hover`, and the reduced-motion block, including the new active `scale(0.96)` and dark hover shadow.
+- Mobile `390x844`: opened the same session from the mobile drawer, scrolled to `scrollTop: 260`, and verified the button rendered as `40x40` at `x=175 y=714`, input rect `246x26`, send rect `40x40`, `pageOverflowX: 0`, and no console warn/error logs.
+- Mobile click regression: clicking `滚到最新` completed the scroll to bottom after the animation frame; final `bottomDelta` was approximately `0`, and the button disappeared.
+
+Known risks:
+
+- Browser screenshot capture still times out at `Page.captureScreenshot`, matching earlier project QA limitations. This iteration is verified by Browser DOM/layout metrics, runtime CSSOM, click interaction evidence, console logs, and automated tests instead of screenshot output.

@@ -120,6 +120,10 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-scroll-to-bottom",
     );
+    const darkScrollToBottomHoverBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-scroll-to-bottom:hover",
+    );
     const emptyStateBlock = readCssBlock(chatStyles, ".chat-empty-state");
     const emptySuggestionsBlock = readCssBlock(
       chatStyles,
@@ -953,6 +957,9 @@ describe("Gemini visual migration shell", () => {
     expect(reducedMotionBlock).toMatch(
       /\.chat-empty-suggestion:hover,\s*\.chat-empty-suggestion:focus-visible,\s*\.chat-empty-suggestion:active,\s*\.chat-empty-suggestion:hover \.chat-empty-suggestion-affordance,\s*\.chat-empty-suggestion:focus-visible \.chat-empty-suggestion-affordance\s*\{[\s\S]*transform:\s*none !important;/,
     );
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-scroll-to-bottom,\s*\.chat-scroll-to-bottom:hover,\s*\.chat-scroll-to-bottom:active\s*\{[\s\S]*transform:\s*translateX\(-50%\) !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
     expect(emptySuggestionTextBlock).toMatch(/display:\s*-webkit-box;/);
     expect(emptySuggestionTextBlock).toMatch(/line-height:\s*1\.2;/);
     expect(emptySuggestionTextBlock).toMatch(/max-height:\s*2\.4em;/);
@@ -1057,7 +1064,19 @@ describe("Gemini visual migration shell", () => {
     expect(scrollToBottomBlock).toMatch(/border-radius:\s*999px;/);
     expect(scrollToBottomBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
     expect(scrollToBottomBlock).toMatch(/backdrop-filter:\s*blur\(18px\) saturate\(160%\);/);
+    expect(scrollToBottomBlock).toMatch(
+      /&:active[\s\S]*transform:\s*translateX\(-50%\) translateY\(0\) scale\(0\.96\);/,
+    );
+    expect(scrollToBottomBlock).toMatch(
+      /&:active[\s\S]*box-shadow:[\s\S]*0 6px 18px rgba\(60,\s*64,\s*67,\s*0\.14\)/,
+    );
     expect(scrollToBottomBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(darkScrollToBottomHoverBlock).toMatch(
+      /border-color:\s*rgba\(138,\s*180,\s*248,\s*0\.28\);/,
+    );
+    expect(darkScrollToBottomHoverBlock).toMatch(
+      /box-shadow:[\s\S]*0 12px 32px rgba\(0,\s*0,\s*0,\s*0\.34\)/,
+    );
     expect(mobileScrollToBottomBlock).toMatch(/top:\s*-52px;/);
     expect(mobileScrollToBottomBlock).toMatch(/width:\s*40px;/);
     expect(mobileScrollToBottomBlock).toMatch(/height:\s*40px;/);
