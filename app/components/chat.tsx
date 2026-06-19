@@ -645,28 +645,38 @@ export function PromptHints(props: {
   );
 }
 
-function ClearContextDivider() {
-  const chatStore = useChatStore();
-  const session = chatStore.currentSession();
+const ClearContextDivider = React.forwardRef<HTMLButtonElement>(
+  function ClearContextDivider(_, ref) {
+    const chatStore = useChatStore();
+    const session = chatStore.currentSession();
 
-  return (
-    <button
-      type="button"
-      className={styles["clear-context"]}
-      onClick={() =>
-        chatStore.updateTargetSession(
-          session,
-          (session) => (session.clearContextIndex = undefined),
-        )
-      }
-    >
-      <div className={styles["clear-context-tips"]}>{Locale.Context.Clear}</div>
-      <div className={styles["clear-context-revert-btn"]}>
-        {Locale.Context.Revert}
-      </div>
-    </button>
-  );
-}
+    return (
+      <button
+        type="button"
+        ref={ref}
+        className={styles["clear-context"]}
+        aria-label={`${Locale.Context.Clear}，${Locale.Context.Revert}`}
+        title={Locale.Context.Revert}
+        onClick={() =>
+          chatStore.updateTargetSession(
+            session,
+            (session) => (session.clearContextIndex = undefined),
+          )
+        }
+      >
+        <span className={styles["clear-context-status"]}>
+          <span className={styles["clear-context-mark"]} aria-hidden="true" />
+          <span className={styles["clear-context-tips"]}>
+            {Locale.Context.Clear}
+          </span>
+        </span>
+        <span className={styles["clear-context-revert-btn"]}>
+          {Locale.Context.Revert}
+        </span>
+      </button>
+    );
+  },
+);
 
 export function ChatAction(props: {
   text: string;
@@ -1132,6 +1142,7 @@ function useChatActionsView(props: ChatActionsProps) {
                       session.memoryPrompt = ""; // will clear memory
                     }
                   });
+                  requestAnimationFrame(() => props.scrollToBottom());
                   completeMobileAction();
                 }}
               />
@@ -2450,11 +2461,14 @@ function useChatInnerView() {
   const [msgRenderIndex, _setMsgRenderIndex] = useState(() =>
     Math.max(0, renderMessages.length - CHAT_PAGE_SIZE),
   );
-  function setMsgRenderIndex(newIndex: number) {
-    newIndex = Math.min(renderMessages.length - CHAT_PAGE_SIZE, newIndex);
-    newIndex = Math.max(0, newIndex);
-    _setMsgRenderIndex(newIndex);
-  }
+  const setMsgRenderIndex = useCallback(
+    (newIndex: number) => {
+      newIndex = Math.min(renderMessages.length - CHAT_PAGE_SIZE, newIndex);
+      newIndex = Math.max(0, newIndex);
+      _setMsgRenderIndex(newIndex);
+    },
+    [renderMessages.length],
+  );
 
   const messages = useMemo(() => {
     const endRenderIndex = Math.min(
@@ -2509,16 +2523,135 @@ function useChatInnerView() {
       setIsInputExpanded(false);
     }
   };
-  function scrollToBottom() {
+  const scrollToBottom = useCallback(() => {
     setMsgRenderIndex(renderMessages.length - CHAT_PAGE_SIZE);
     scrollDomToBottom();
-  }
+  }, [renderMessages.length, scrollDomToBottom, setMsgRenderIndex]);
+  const clearContextDividerRef = useRef<HTMLButtonElement>(null);
+  const chatInputPanelRef = useRef<HTMLDivElement>(null);
+  const getClearContextBottomInset = useCallback(() => {
+    if (!isCompactScreen) return 96;
+
+    const inputPanel = chatInputPanelRef.current;
+    const scrollDom = scrollRef.current;
+    if (!inputPanel || !scrollDom) return 118;
+
+    const inputPanelRect = inputPanel.getBoundingClientRect();
+    const scrollRect = scrollDom.getBoundingClientRect();
+    const inputPanelOverlap = scrollRect.bottom - inputPanelRect.top + 40;
+
+    return Math.max(118, inputPanelOverlap);
+  }, [isCompactScreen, scrollRef]);
+  const scrollClearContextDividerIntoView = useCallback(() => {
+    const divider = clearContextDividerRef.current;
+    const scrollDom = scrollRef.current;
+    if (!divider) return;
+
+    divider.scrollIntoView({
+      block: "end",
+      inline: "nearest",
+    });
+
+    if (!scrollDom) return;
+
+    const dividerRect = divider.getBoundingClientRect();
+    const scrollRect = scrollDom.getBoundingClientRect();
+    const bottomInset = getClearContextBottomInset();
+    const dividerOverflow =
+      dividerRect.bottom - (scrollRect.bottom - bottomInset);
+
+    if (dividerOverflow > 0) {
+      scrollDom.scrollTo(0, scrollDom.scrollTop + dividerOverflow);
+    }
+  }, [getClearContextBottomInset, scrollRef]);
+  const isClearContextDividerSafelyVisible = useCallback(() => {
+    const divider = clearContextDividerRef.current;
+    const scrollDom = scrollRef.current;
+    if (!divider || !scrollDom) return false;
+
+    const dividerRect = divider.getBoundingClientRect();
+    const scrollRect = scrollDom.getBoundingClientRect();
+    const bottomInset = getClearContextBottomInset();
+
+    return (
+      dividerRect.top >= scrollRect.top &&
+      dividerRect.bottom <= scrollRect.bottom - bottomInset
+    );
+  }, [getClearContextBottomInset, scrollRef]);
 
   // clear context index = context length + index in messages
   const clearContextIndex =
     (session.clearContextIndex ?? -1) >= 0
       ? session.clearContextIndex! + context.length - msgRenderIndex
       : -1;
+  const clearContextScrollKeyRef = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    const sourceClearContextIndex = session.clearContextIndex ?? -1;
+    if (sourceClearContextIndex < 0) {
+      clearContextScrollKeyRef.current = null;
+      return;
+    }
+
+    const clearContextScrollKey = `${session.id}:${sourceClearContextIndex}`;
+    if (clearContextScrollKeyRef.current === clearContextScrollKey) {
+      return;
+    }
+
+    clearContextScrollKeyRef.current = clearContextScrollKey;
+    let revealFrame = 0;
+    const scrollFrame = requestAnimationFrame(() => {
+      scrollToBottom();
+      revealFrame = requestAnimationFrame(() => {
+        scrollClearContextDividerIntoView();
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(scrollFrame);
+      if (revealFrame) cancelAnimationFrame(revealFrame);
+    };
+  }, [
+    scrollClearContextDividerIntoView,
+    scrollToBottom,
+    session.clearContextIndex,
+    session.id,
+  ]);
+  useEffect(() => {
+    if ((session.clearContextIndex ?? -1) < 0) return;
+
+    let resizeFrame = 0;
+    const revealClearContextAfterResize = () => {
+      if (resizeFrame) cancelAnimationFrame(resizeFrame);
+
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = 0;
+
+        if (!isClearContextDividerSafelyVisible()) {
+          scrollClearContextDividerIntoView();
+        }
+      });
+    };
+
+    revealClearContextAfterResize();
+    window.addEventListener("resize", revealClearContextAfterResize);
+    const inputPanelResizeObserver =
+      typeof ResizeObserver !== "undefined" && chatInputPanelRef.current
+        ? new ResizeObserver(revealClearContextAfterResize)
+        : undefined;
+    if (chatInputPanelRef.current) {
+      inputPanelResizeObserver?.observe(chatInputPanelRef.current);
+    }
+
+    return () => {
+      window.removeEventListener("resize", revealClearContextAfterResize);
+      inputPanelResizeObserver?.disconnect();
+      if (resizeFrame) cancelAnimationFrame(resizeFrame);
+    };
+  }, [
+    isClearContextDividerSafelyVisible,
+    scrollClearContextDividerIntoView,
+    session.clearContextIndex,
+  ]);
 
   const [showPromptModal, setShowPromptModal] = useState(false);
 
@@ -4012,13 +4145,16 @@ function useChatInnerView() {
                         )}
                       </div>
                     </div>
-                    {shouldShowClearContextDivider && <ClearContextDivider />}
+                    {shouldShowClearContextDivider && (
+                      <ClearContextDivider ref={clearContextDividerRef} />
+                    )}
                   </Fragment>
                 );
               })}
             </div>
           </section>
           <div
+            ref={chatInputPanelRef}
             className={clsx(styles["chat-input-panel"], {
               [styles["chat-input-panel-collapsed"]]: !shouldExpandChatInput,
               [styles["chat-input-panel-empty"]]: showEmptyComposer,

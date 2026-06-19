@@ -1501,6 +1501,174 @@ describe("Gemini visual migration shell", () => {
     expect(gitignore).toContain(".DS_Store");
   });
 
+  test("keeps clear-context divider as a Gemini-style reversible status chip", () => {
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const mobileStyles = chatStyles.slice(
+      chatStyles.indexOf("@media only screen and (max-width: 600px)"),
+    );
+    const narrowMobileStyles = chatStyles.slice(
+      chatStyles.indexOf("@media only screen and (max-width: 358px)"),
+    );
+    const reducedMotionBlock = chatStyles.slice(
+      chatStyles.indexOf("@media (prefers-reduced-motion: reduce)"),
+    );
+    const clearContextBlock = readCssBlock(chatStyles, ".clear-context");
+    const clearContextStatusBlock = readCssBlock(
+      chatStyles,
+      ".clear-context-status",
+    );
+    const clearContextMarkBlock = readCssBlock(
+      chatStyles,
+      ".clear-context-mark",
+    );
+    const clearContextTipsBlock = readCssBlock(
+      chatStyles,
+      ".clear-context-tips",
+    );
+    const clearContextRevertBlock = readCssBlock(
+      chatStyles,
+      ".clear-context-revert-btn",
+    );
+    const darkClearContextBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .clear-context",
+    );
+    const mobileClearContextBlock = readCssBlock(
+      mobileStyles,
+      ".clear-context",
+    );
+    const narrowMobileClearContextBlock = readCssBlock(
+      narrowMobileStyles,
+      ".clear-context",
+    );
+
+    expect(chat).toContain("React.forwardRef<HTMLButtonElement>");
+    expect(chat).toContain("function ClearContextDivider(_, ref)");
+    expect(chat).toContain("ref={ref}");
+    expect(chat).toMatch(
+      /aria-label=\{`\$\{Locale\.Context\.Clear\}，\$\{Locale\.Context\.Revert\}`\}/,
+    );
+    expect(chat).toContain("title={Locale.Context.Revert}");
+    expect(chat).toContain('styles["clear-context-status"]');
+    expect(chat).toContain('styles["clear-context-mark"]');
+    expect(chat).toContain('aria-hidden="true"');
+    expect(chat).toContain('styles["clear-context-tips"]');
+    expect(chat).toContain('styles["clear-context-revert-btn"]');
+    expect(chat).toMatch(
+      /chatStore\.updateTargetSession\(\s*session,\s*\(session\) => \(session\.clearContextIndex = undefined\),\s*\)/,
+    );
+    expect(chat).toMatch(
+      /text=\{Locale\.Chat\.InputActions\.Clear\}[\s\S]*session\.clearContextIndex = session\.messages\.length;[\s\S]*requestAnimationFrame\(\(\) => props\.scrollToBottom\(\)\);[\s\S]*completeMobileAction\(\);/,
+    );
+    expect(chat).toMatch(
+      /const clearContextScrollKeyRef = useRef<string \| null>\(null\);/,
+    );
+    expect(chat).toMatch(
+      /const clearContextDividerRef = useRef<HTMLButtonElement>\(null\);/,
+    );
+    expect(chat).toMatch(
+      /const chatInputPanelRef = useRef<HTMLDivElement>\(null\);/,
+    );
+    expect(chat).toMatch(/ref=\{chatInputPanelRef\}/);
+    expect(chat).toMatch(
+      /divider\.scrollIntoView\(\{\s*block: "end",\s*inline: "nearest",\s*\}\);/,
+    );
+    expect(chat).toContain(
+      "const getClearContextBottomInset = useCallback(() => {",
+    );
+    expect(chat).toContain("const inputPanel = chatInputPanelRef.current;");
+    expect(chat).toContain(
+      "scrollRect.bottom - inputPanelRect.top + 40",
+    );
+    expect(chat).toContain("return Math.max(118, inputPanelOverlap);");
+    expect(chat).toContain(
+      "const isClearContextDividerSafelyVisible = useCallback(() => {",
+    );
+    expect(chat).toContain("const bottomInset = getClearContextBottomInset();");
+    expect(chat).toContain(
+      "dividerRect.bottom <= scrollRect.bottom - bottomInset",
+    );
+    expect(chat).toContain("}, [getClearContextBottomInset, scrollRef]);");
+    expect(chat).toMatch(
+      /const dividerOverflow =\s*dividerRect\.bottom - \(scrollRect\.bottom - bottomInset\);[\s\S]*scrollDom\.scrollTo\(0, scrollDom\.scrollTop \+ dividerOverflow\);/,
+    );
+    expect(chat).toMatch(
+      /if \(clearContextScrollKeyRef\.current === clearContextScrollKey\) \{\s*return;\s*\}/,
+    );
+    expect(chat).not.toContain(
+      "clearContextScrollKeyRef.current === clearContextScrollKey &&",
+    );
+    expect(chat).toMatch(
+      /useLayoutEffect\(\(\) => \{\s*const sourceClearContextIndex = session\.clearContextIndex \?\? -1;[\s\S]*if \(sourceClearContextIndex < 0\) \{[\s\S]*clearContextScrollKeyRef\.current = null;[\s\S]*return;[\s\S]*const clearContextScrollKey = `\$\{session\.id\}:\$\{sourceClearContextIndex\}`;[\s\S]*if \(clearContextScrollKeyRef\.current === clearContextScrollKey\) \{[\s\S]*return;[\s\S]*clearContextScrollKeyRef\.current = clearContextScrollKey;[\s\S]*let revealFrame = 0;[\s\S]*const scrollFrame = requestAnimationFrame\(\(\) => \{[\s\S]*scrollToBottom\(\);[\s\S]*revealFrame = requestAnimationFrame\(\(\) => \{[\s\S]*scrollClearContextDividerIntoView\(\);[\s\S]*\}\);[\s\S]*return \(\) => \{[\s\S]*cancelAnimationFrame\(scrollFrame\);[\s\S]*if \(revealFrame\) cancelAnimationFrame\(revealFrame\);[\s\S]*\};[\s\S]*\}, \[[\s\S]*scrollClearContextDividerIntoView,[\s\S]*scrollToBottom,[\s\S]*session\.clearContextIndex,[\s\S]*session\.id,[\s\S]*\]\);/,
+    );
+    expect(chat).toMatch(
+      /const revealClearContextAfterResize = \(\) => \{[\s\S]*if \(!isClearContextDividerSafelyVisible\(\)\) \{[\s\S]*scrollClearContextDividerIntoView\(\);[\s\S]*window\.addEventListener\("resize", revealClearContextAfterResize\);[\s\S]*window\.removeEventListener\("resize", revealClearContextAfterResize\);/,
+    );
+    expect(chat).toMatch(
+      /const inputPanelResizeObserver =\s*typeof ResizeObserver !== "undefined" && chatInputPanelRef\.current\s*\? new ResizeObserver\(revealClearContextAfterResize\)\s*: undefined;[\s\S]*inputPanelResizeObserver\?\.observe\(chatInputPanelRef\.current\);[\s\S]*inputPanelResizeObserver\?\.disconnect\(\);/,
+    );
+    expect(chat).toMatch(
+      /const shouldShowClearContextDivider =\s*i === clearContextIndex - 1;/,
+    );
+    expect(chat).toMatch(
+      /\{shouldShowClearContextDivider && \(\s*<ClearContextDivider ref=\{clearContextDividerRef\} \/>\s*\)\}/,
+    );
+    expect(chatStyles).not.toContain("mask-image");
+    expect(clearContextBlock).toMatch(/appearance:\s*none;/);
+    expect(clearContextBlock).toMatch(/align-self:\s*center;/);
+    expect(clearContextBlock).toMatch(
+      /width:\s*min\(520px,\s*calc\(100% - 32px\)\);/,
+    );
+    expect(clearContextBlock).toMatch(/display:\s*inline-flex;/);
+    expect(clearContextBlock).toMatch(/gap:\s*10px;/);
+    expect(clearContextBlock).toMatch(/border-radius:\s*999px;/);
+    expect(clearContextBlock).toMatch(/scroll-margin-bottom:\s*96px;/);
+    expect(clearContextBlock).toMatch(
+      /border:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.1\);/,
+    );
+    expect(clearContextBlock).toMatch(
+      /background:\s*rgba\(248,\s*251,\s*255,\s*0\.78\);/,
+    );
+    expect(clearContextBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(clearContextBlock).toMatch(/&:focus-visible/);
+    expect(clearContextBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(clearContextBlock).not.toMatch(/border-top:/);
+    expect(clearContextBlock).not.toMatch(/border-bottom:/);
+    expect(clearContextBlock).not.toMatch(/box-shadow:\s*var\(--card-shadow\) inset/);
+    expect(clearContextStatusBlock).toMatch(/display:\s*inline-flex;/);
+    expect(clearContextStatusBlock).toMatch(/min-width:\s*0;/);
+    expect(clearContextMarkBlock).toMatch(/width:\s*6px;/);
+    expect(clearContextMarkBlock).toMatch(/height:\s*6px;/);
+    expect(clearContextMarkBlock).toMatch(/border-radius:\s*999px;/);
+    expect(clearContextTipsBlock).toMatch(/font-weight:\s*500;/);
+    expect(clearContextTipsBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(clearContextRevertBlock).toMatch(/color:\s*var\(--primary\);/);
+    expect(clearContextRevertBlock).toMatch(/font-weight:\s*600;/);
+    expect(clearContextRevertBlock).not.toMatch(/position:\s*absolute;/);
+    expect(clearContextRevertBlock).not.toMatch(/opacity:\s*0;/);
+    expect(darkClearContextBlock).toMatch(
+      /background:\s*rgba\(32,\s*33,\s*36,\s*0\.72\);/,
+    );
+    expect(darkClearContextBlock).toMatch(
+      /border-color:\s*rgba\(232,\s*234,\s*237,\s*0\.1\);/,
+    );
+    expect(mobileClearContextBlock).toMatch(
+      /width:\s*min\(100%,\s*calc\(100% - 24px\)\);/,
+    );
+    expect(mobileClearContextBlock).toMatch(/justify-content:\s*flex-start;/);
+    expect(mobileClearContextBlock).toMatch(
+      /scroll-margin-bottom:\s*calc\(118px \+ env\(safe-area-inset-bottom\)\);/,
+    );
+    expect(narrowMobileClearContextBlock).toMatch(
+      /margin-bottom:\s*calc\(88px \+ env\(safe-area-inset-bottom\)\);/,
+    );
+    expect(reducedMotionBlock).toContain(".clear-context");
+    expect(reducedMotionBlock).toMatch(
+      /\.clear-context,\s*\.clear-context:hover,\s*\.clear-context:active\s*\{[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+  });
+
   test("keeps Gemini-style markdown code block chrome", () => {
     const markdown = read("app/components/markdown.tsx");
     const markdownStyles = read("app/styles/markdown.scss");

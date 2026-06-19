@@ -2434,3 +2434,42 @@ Known risks:
 
 - The token chip accessible name remains the fixed `Token 信息`; screen readers get the button state via `aria-pressed` but not the current token/latency value in the accessible name. This is not a regression from the previous fixed label and can be addressed in a future accessibility-focused slice.
 - Browser screenshots were not used for this iteration. DOM/layout metrics, runtime CSSOM, console logs, source contracts, render-level tests, read-only review, and production build cover the targeted behavior.
+
+## Iteration 2026-06-19 clear-context-divider
+
+Result: passed.
+
+Target flow:
+
+- The clear-context divider appears as a compact Gemini-style reversible status chip, remains visible above the fixed composer on desktop and mobile, and preserves the existing `clearContextIndex` set/revert semantics.
+
+Design direction:
+
+- Creative Production style intake selected: quiet status capsule, explicit reversible action, subtle Google-blue status mark, light/dark readable surface, focus ring, reduced-motion safe, narrow-screen safe, and no model/API/account/sync/deploy/backend semantic changes.
+
+Scope:
+
+- `app/components/chat.tsx`: converted `ClearContextDivider` to a ref-forwarding button with explicit `aria-label` and title, kept revert behavior as `session.clearContextIndex = undefined`, and added one-shot clear-context reveal logic that scrolls the divider into view after clearing or loading an already-cleared session without repeatedly stealing scroll on the same clear key.
+- `app/components/chat.tsx`: added a composer panel ref, dynamic bottom inset calculation from actual composer height, and a `ResizeObserver`/window resize reveal guard so mobile divider positioning adapts when the composer height changes.
+- `app/components/chat.module.scss`: replaced the masked horizontal divider with an elevated pill, added status/revert sub-elements, dark/mobile/reduced-motion rules, scroll margins, and narrow-screen spacing so the divider does not hide behind the composer.
+- `test/gemini-visual-migration.test.ts`: locked the new divider structure, accessibility hooks, non-legacy CSS, scroll/reveal behavior, mobile/narrow bounds, reduced-motion behavior, and unchanged clear/revert state writes.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected on the missing Gemini-style divider contract.
+- Follow-up red tests exposed the persisted/narrow clear-state overlap path; implementation added `scrollIntoView`, `scroll-margin-bottom`, safe visibility checks, and a resize reveal guard.
+- Read-only sub-agent review found no P0/blocker but flagged two real risks: repeated same-key scroll stealing and fixed mobile `118px` composer inset. Both were addressed with an unconditional same-key guard, actual composer-height inset calculation, and a composer `ResizeObserver`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+
+Browser QA:
+
+- Desktop `1440x1024`: existing local `测试消息` conversation showed one divider with `aria-label="上下文已清除，恢复上下文"`, `title="恢复上下文"`, `display: flex`, `justify-content: center`, `gap: 10px`, `border-radius: 999px`, `scroll-margin-bottom: 96px`, no horizontal overflow, about `137px` gap above the input panel, and no console warn/error logs.
+- Desktop CUA click on the divider center restored context and removed the divider (`dividerCount: 0`), confirming the revert click path still clears `session.clearContextIndex`.
+- Mobile `390x844`: CUA opened the chat tool menu, clicked visible `清除上下文`, and produced one divider with `justify-content: flex-start`, `width: 298px`, `scroll-margin-bottom: 118px`, about `40px` gap above the input panel, no horizontal overflow, and no console warn/error logs. After the dynamic-inset fix, a real viewport resize rechecked the same path with `gapToInputPanelPx: 40.21`.
+- Mobile `390x844` with locator-filled multi-line input: React accepted a `38` character multi-line value, the composer stayed at the current mobile collapsed `78px` height, and the divider remained visible with no horizontal overflow.
+- Narrow mobile `320x740`: after the dynamic-inset fix, the resize reveal guard left about `107px` gap above the input panel, `width: 228px`, `margin-bottom: 88px`, `scroll-margin-bottom: 118px`, no horizontal overflow, and no console warn/error logs.
+
+Known risks:
+
+- Browser's direct `window.location.reload`/URL navigation APIs are restricted in the in-app Browser evaluate sandbox, so persisted-load behavior was verified through component-level source contracts, target tests, manual `scrollIntoView` behavior, and a real viewport resize path rather than a full Browser reload. The underlying mount path uses the same ref and `scrollIntoView` code.
+- Browser evaluate also blocks direct DOM mutation helpers such as synthetic `setAttribute` on the composer panel, so the high-composer risk is covered by code-level dynamic inset/ResizeObserver contracts plus real mobile input fill metrics rather than an artificial tall-panel Browser mutation.
