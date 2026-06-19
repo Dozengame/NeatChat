@@ -36,6 +36,7 @@ const BRUSH_SIZES = [2, 5, 10, 20];
 
 export function ImageEditor(props: {
   imageUrl: string;
+  title?: string;
   onClose: () => void;
   onSave: (editedImageUrl: string) => void;
 }) {
@@ -44,6 +45,7 @@ export function ImageEditor(props: {
 
 function useImageEditorView(props: {
   imageUrl: string;
+  title?: string;
   onClose: () => void;
   onSave: (editedImageUrl: string) => void;
 }) {
@@ -408,7 +410,7 @@ function useImageEditorView(props: {
   return (
     <div className="modal-mask">
       <Modal
-        title="编辑图片"
+        title={props.title ?? "编辑图片"}
         onClose={props.onClose}
         actions={[
           <IconButton

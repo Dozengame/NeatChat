@@ -252,7 +252,11 @@ export type ToastProps = {
 export function Toast(props: ToastProps) {
   return (
     <div className={styles["toast-container"]}>
-      <div className={styles["toast-content"]}>
+      <div
+        className={clsx(styles["toast-content"], {
+          [styles["toast-content-passive"]]: !props.action,
+        })}
+      >
         <span>{props.content}</span>
         {props.action && (
           <button

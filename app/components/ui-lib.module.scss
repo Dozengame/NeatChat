@@ -221,6 +221,10 @@
     align-items: center;
     pointer-events: all;
 
+    &.toast-content-passive {
+      pointer-events: none;
+    }
+
     .toast-action {
       padding-left: 20px;
       color: var(--primary);

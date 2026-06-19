@@ -2994,3 +2994,53 @@ Browser QA:
 Known risks:
 
 - Browser QA did not click a live persisted image preview button because the current Browser profile had no visible image-frame messages, and creating one would require mutating user data or triggering real model/API image generation. Helper tests cover dialog label derivation, and source-contract tests cover Markdown/chat preview context propagation into the dialog `aria-label`.
+
+## Iteration 2026-06-19 image-editor-context-title
+
+Result: passed.
+
+Target flow:
+
+- Composer image attachments keep the existing paste, upload limit, edit, save, close, delete, and submit behavior, but opening the image editor from an attachment now names the modal by attachment context: `编辑第 N 张图片附件`.
+- Immediate edit clicks after paste should remain reliable on narrow touch-sized layouts: the delete button must not cover the thumbnail center, and passive upload toasts must not intercept the edit target.
+
+Design direction:
+
+- Creative Production style intake selected: no decorative layout churn, preserve the compact Gemini-style attachment strip and existing image editor surface, make contextual naming visible inside the modal header, improve the touch hit target conflict discovered in Browser QA, and avoid model/API/account/sync/deploy/backend semantic changes.
+
+Scope:
+
+- `app/components/chat.tsx`: added image-editor title state, set it from the clicked image attachment index, passed it into `ImageEditor`, and reset it on close/save.
+- `app/components/image-editor.tsx`: accepted an optional `title` prop while keeping `编辑图片` as the default for other call sites.
+- `app/components/chat.module.scss`: reduced the touch/coarse attachment delete button from `28px` to `24px` so it no longer covers the center of the `58px` image thumbnail.
+- `app/components/ui-lib-components.tsx` and `app/components/ui-lib.module.scss`: made passive toasts pointer-transparent while preserving action toast interactivity.
+- `test/image-editor-context.test.tsx`, `test/toast-pointer-events.test.tsx`, and `test/gemini-visual-migration.test.ts`: added render/source contracts for contextual editor titles, passive toast click-through behavior, and the touch delete hit target.
+- No model config semantics, account/secret/sync, production config, deployment config, backend logic, upload limits, attachment content shape, image save output, file attachment behavior, send behavior, persisted storage keys, or API behavior were changed.
+
+Automated checks:
+
+- `yarn test:ci --runTestsByPath test/image-editor-context.test.tsx test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the modal still rendered fixed `编辑图片` and there was no `editingImageTitle` state.
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts --runInBand` failed first as expected after Browser QA exposed the `28px` touch delete hit target overlap.
+- `yarn test:ci --runTestsByPath test/toast-pointer-events.test.tsx --runInBand` failed first as expected because passive toasts still used only `toast-content`.
+- `yarn test:ci --runTestsByPath test/toast-pointer-events.test.tsx test/image-editor-context.test.tsx test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/toast-pointer-events.test.tsx test/image-editor-context.test.tsx test/gemini-visual-migration.test.ts test/image-action-labels.test.ts test/markdown-file-attachment.test.tsx test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+- `git diff --check`
+
+Review:
+
+- Read-only code review found no blocking issues and confirmed the diff stayed within chat UI, ImageEditor title, Toast styling, and tests/QA documentation without touching model config, account/secret/sync, production/deploy config, backend/API, upload/save/send semantics, or persisted storage.
+- The review noted residual test gaps around source-contract limits, action toast click callback coverage, and the smaller touch delete target. Action toast callback/onClose coverage was added before commit; Browser QA covers the click-through and center-hit behavior that JSDOM cannot prove.
+
+Browser QA:
+
+- Desktop default Browser viewport `1280x720` at `http://localhost:3000/`: pasted one image data URL through the real composer paste path, clicked `编辑第 1 张图片附件`, and the editor opened with contextual title `编辑第 1 张图片附件`, no generic `编辑图片` title, canvas visible, no framework overlay, `horizontalOverflowPx: 0`, cleanup `itemCount: 0`, and no console warn/error logs for the QA window.
+- Narrow mobile `320x740` at `http://localhost:3000/`: pasted one image data URL, clicked the thumbnail edit target immediately without waiting for the passive toast to disappear, and the center stack resolved first to `button[aria-label="编辑第 1 张图片附件"]`; delete rect was `24x24`, edit rect was `58x58`, `deleteContainsEditCenter: false`, editor title/canvas opened correctly, cleanup left `itemCount: 0`, `horizontalOverflowPx: 0`, and no console warn/error logs.
+- Browser viewport was reset to the default after QA.
+
+Known risks:
+
+- Browser QA used paste-created data URL attachments, not the native OS file picker, to avoid external dialogs and persistent user data changes.
+- Earlier Browser runs showed intermittent in-app Browser tab navigation/id issues and one screenshot timeout; the final recorded desktop and narrow QA passes are DOM/layout/console based and completed after cleaning Browser tabs.

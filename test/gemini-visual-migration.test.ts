@@ -540,6 +540,13 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain(
       'aria-label={`编辑第 ${index + 1} 张图片附件`}',
     );
+    expect(chat).toContain(
+      'const [editingImageTitle, setEditingImageTitle] = useState("编辑图片");',
+    );
+    expect(chat).toMatch(
+      /onClick=\{\(\) => \{[\s\S]*setEditingImageTitle\(\s*`编辑第 \$\{index \+ 1\} 张图片附件`,?\s*\);[\s\S]*setEditingImage\(image\);[\s\S]*\}\}/,
+    );
+    expect(chat).toContain("title={editingImageTitle}");
     expect(chat).toContain('styles["attach-file"]');
     expect(chat).toMatch(
       /aria-label=\{`编辑第 \$\{index \+ 1\} 个文件附件：\$\{\s*file\.name\s*\}`\}/,
@@ -1035,8 +1042,10 @@ describe("Gemini visual migration shell", () => {
     expect(touchAttachItemBlock).toMatch(/scroll-snap-align:\s*start;/);
     expect(touchAttachImageMaskBlock).toMatch(/opacity:\s*1;/);
     expect(touchAttachImageMaskBlock).toMatch(/pointer-events:\s*none;/);
-    expect(touchDeleteImageBlock).toMatch(/width:\s*28px;/);
-    expect(touchDeleteImageBlock).toMatch(/height:\s*28px;/);
+    expect(touchDeleteImageBlock).toMatch(/width:\s*24px;/);
+    expect(touchDeleteImageBlock).toMatch(/height:\s*24px;/);
+    expect(touchDeleteImageBlock).not.toMatch(/width:\s*28px;/);
+    expect(touchDeleteImageBlock).not.toMatch(/height:\s*28px;/);
     expect(attachFileBlock).toMatch(/height:\s*64px;/);
     expect(attachFileBlock).toMatch(/min-width:\s*176px;/);
     expect(mobileAttachImageBlock).toMatch(/width:\s*58px;/);

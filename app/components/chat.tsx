@@ -3118,6 +3118,7 @@ function useChatInnerView() {
 
   // 在_Chat组件中添加状态
   const [editingImage, setEditingImage] = useState<string | null>(null);
+  const [editingImageTitle, setEditingImageTitle] = useState("编辑图片");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewImageActionLabels, setPreviewImageActionLabels] = useState(
     getImageActionLabels(),
@@ -4384,7 +4385,12 @@ function useChatInnerView() {
                           className={styles["attach-image"]}
                           aria-label={`编辑第 ${index + 1} 张图片附件`}
                           style={{ backgroundImage: `url("${image}")` }}
-                          onClick={() => setEditingImage(image)}
+                          onClick={() => {
+                            setEditingImageTitle(
+                              `编辑第 ${index + 1} 张图片附件`,
+                            );
+                            setEditingImage(image);
+                          }}
                         />
                         <div className={styles["attach-image-mask"]}>
                           <DeleteImageButton
@@ -4641,8 +4647,10 @@ function useChatInnerView() {
       {editingImage && (
         <ImageEditor
           imageUrl={editingImage}
+          title={editingImageTitle}
           onClose={() => {
             setEditingImage(null);
+            setEditingImageTitle("编辑图片");
             editingImageMessageIdRef.current = null; // 清除消息ID
           }}
           onSave={(editedImage) => {
@@ -4695,6 +4703,7 @@ function useChatInnerView() {
             }
 
             setEditingImage(null);
+            setEditingImageTitle("编辑图片");
             editingImageMessageIdRef.current = null; // 清除消息ID
           }}
         />
