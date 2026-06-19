@@ -1715,13 +1715,33 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body pre.markdown-code-block-labeled",
     );
+    const showHideButtonBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body pre .show-hide-button",
+    );
+    const showHideActionBlock = readCssBlock(
+      showHideButtonBlock,
+      "button",
+    );
+    const darkShowHideButtonBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body pre .show-hide-button",
+    );
+    const reducedMotionBlock = markdownStyles.slice(
+      markdownStyles.lastIndexOf("@media (prefers-reduced-motion: reduce)"),
+    );
 
     expect(markdown).toContain("function getCodeLanguage");
     expect(markdown).toContain("formatCodeLanguage");
+    expect(markdown).toContain("const codeBlockId = useId()");
     expect(markdown).toContain("markdown-code-block-labeled");
     expect(markdown).toContain('className="markdown-code-language"');
     expect(markdown).toContain("{codeLanguage}");
     expect(markdown).toContain("CopyIcon");
+    expect(markdown).toContain("id={codeBlockId}");
+    expect(markdown).toContain("aria-controls={codeBlockId}");
+    expect(markdown).toContain("aria-expanded={!collapsed}");
+    expect(markdown).toContain("aria-label={Locale.NewChat.CodeBlockExpand}");
     expect(markdown).toContain(
       'aria-label={codeLanguage ? `复制 ${codeLanguage} 代码` : "复制代码"}',
     );
@@ -1755,6 +1775,24 @@ describe("Gemini visual migration shell", () => {
     expect(touchCopyButtonBlock).toMatch(/pointer-events:\s*all;/);
     expect(touchCopyButtonBlock).toMatch(/opacity:\s*1;/);
     expect(touchCopyButtonBlock).toMatch(/transform:\s*translateY\(0\);/);
+    expect(showHideButtonBlock).toMatch(/position:\s*sticky;/);
+    expect(showHideButtonBlock).toMatch(/bottom:\s*-14px;/);
+    expect(showHideButtonBlock).toMatch(/pointer-events:\s*none;/);
+    expect(showHideButtonBlock).toMatch(
+      /background:\s*linear-gradient\(\s*180deg,\s*rgba\(248,\s*249,\s*250,\s*0\),\s*rgba\(248,\s*249,\s*250,\s*0\.96\)\s*58%\s*\);/,
+    );
+    expect(showHideActionBlock).toMatch(/pointer-events:\s*auto;/);
+    expect(showHideActionBlock).toMatch(/border-radius:\s*999px;/);
+    expect(showHideActionBlock).toMatch(/letter-spacing:\s*0;/);
+    expect(showHideActionBlock).toMatch(/margin:\s*0;/);
+    expect(showHideActionBlock).toMatch(/min-height:\s*32px;/);
+    expect(darkShowHideButtonBlock).toMatch(
+      /background:\s*linear-gradient\(\s*180deg,\s*rgba\(30,\s*30,\s*46,\s*0\),\s*rgba\(30,\s*30,\s*46,\s*0\.96\)\s*58%\s*\);/,
+    );
+    expect(reducedMotionBlock).toContain(".markdown-body pre .show-hide-button button");
+    expect(reducedMotionBlock).toMatch(
+      /transition-duration:\s*0\.01ms !important;/,
+    );
   });
 
   test("keeps Gemini-style markdown inline code pills", () => {

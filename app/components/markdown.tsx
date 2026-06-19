@@ -14,6 +14,7 @@ import React, {
   useEffect,
   useMemo,
   useLayoutEffect,
+  useId,
 } from "react";
 import { copyToClipboard, useWindowSize } from "../utils";
 import Locale from "../locales";
@@ -245,6 +246,7 @@ function CustomCode(props: { children: any; className?: string }) {
   const features = useContext(MarkdownFeatureContext);
   const enableCodeFold = features.enableCodeFold && config.enableCodeFold;
 
+  const codeBlockId = useId();
   const ref = useRef<HTMLPreElement>(null);
   const [collapsed, setCollapsed] = useState(true);
   const [showToggle, setShowToggle] = useState(false);
@@ -264,6 +266,7 @@ function CustomCode(props: { children: any; className?: string }) {
   return (
     <>
       <code
+        id={codeBlockId}
         className={clsx(props?.className)}
         ref={ref}
         style={{
@@ -281,8 +284,14 @@ function CustomCode(props: { children: any; className?: string }) {
             expanded: !collapsed,
           })}
         >
-          <button type="button" onClick={toggleCollapsed}>
-            {Locale.NewChat.More}
+          <button
+            type="button"
+            aria-label={Locale.NewChat.CodeBlockExpand}
+            aria-controls={codeBlockId}
+            aria-expanded={!collapsed}
+            onClick={toggleCollapsed}
+          >
+            <span aria-hidden="true">{Locale.NewChat.More}</span>
           </button>
         </div>
       )}

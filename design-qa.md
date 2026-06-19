@@ -2519,3 +2519,51 @@ Known risks:
 
 - Browser QA used existing local conversation data instead of sending a real prompt, to avoid model/API/account dependencies. Render-level tests cover deterministic token and latency accessible-name values.
 - Browser screenshots were not used for this iteration. DOM/ARIA/layout metrics, runtime CSSOM, console logs, render-level tests, read-only review, type/lint checks, and production build cover the targeted behavior.
+
+## Iteration 2026-06-19 markdown-code-fold-control
+
+Result: passed.
+
+Target flow:
+
+- Long AI-rendered Markdown code blocks keep the existing 400px collapsed preview, but the expand affordance now reads as a Gemini-style bottom action, exposes a clear accessible name, points to the controlled code block, and disappears after expanding without changing copy, language labels, Mermaid/HTML preview, token count, or code-fold semantics.
+
+Design direction:
+
+- Creative Production style intake selected: code-first reading surface, subtle bottom gradient, compact pill action, light/dark contrast, keyboard focus clarity, reduced-motion safe hover, and no model/API/storage/backend behavior changes.
+
+Scope:
+
+- `app/components/markdown.tsx`: added a stable `useId()` code block id and wired the existing one-way expand button with `aria-label`, `aria-controls`, and `aria-expanded`; visible copy still uses existing `Locale.NewChat.More`, and clicking still only changes the collapsed `maxHeight` from `400px` to `none`.
+- `app/styles/markdown.scss`: styled `.show-hide-button` as a sticky bottom gradient action strip inside `pre`, added light/dark button surfaces, focus/hover states, explicit `margin: 0` to override old global button margins, and reduced-motion suppression.
+- `app/locales/cn.ts` / `app/locales/en.ts`: added `CodeBlockExpand` accessible-label copy.
+- `test/markdown-code-fold.test.tsx`: added render-level coverage for long code blocks, `aria-controls`, `aria-expanded`, controlled code id, collapsed `maxHeight: 400px`, click-to-expand, and button removal after expansion.
+- `test/gemini-visual-migration.test.ts`: locked the Markdown code block chrome contract, bottom action strip CSS, dark/reduced-motion rules, and margin reset against global button styles.
+- No model config semantics, account/secret/sync, production config, deployment config, backend logic, token math, localStorage keys, upload limits, copy-code behavior, Mermaid rendering, HTML preview, or code language labels were changed.
+
+Automated checks:
+
+- `yarn jest test/markdown-code-fold.test.tsx test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the old button only exposed `Find More` with no controls/expanded state and no new style contract.
+- `yarn jest test/markdown-code-fold.test.tsx test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts test/markdown-code-fold.test.tsx test/markdown-code-language.test.tsx test/markdown-performance.test.tsx test/markdown-file-attachment.test.tsx test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+- `git diff --check`
+
+Review:
+
+- Read-only sub-agent review found one P2 issue: the new button could inherit old global `margin-top: 3em` / `margin-bottom: 4em` from `globals.scss`. This was fixed with explicit `margin: 0` in the local button rule and a migration-test assertion.
+- Post-review checks passed: `yarn jest test/markdown-code-fold.test.tsx test/gemini-visual-migration.test.ts --runInBand`, full related `test:ci` matrix, `yarn lint`, `npx tsc --noEmit`, `yarn build`, and `git diff --check`.
+
+Browser QA:
+
+- Desktop `1440x1024`: runtime CSSOM confirmed the new local `.markdown-body pre .show-hide-button button` rule includes `min-height: 32px`, `margin: 0px`, `border-radius: 999px`, zero letter spacing, and the reduced-motion rule. Runtime also confirmed no horizontal overflow and no console warn/error logs.
+- Desktop CSSOM also confirmed the old global `pre .show-hide-button button` rule still exists, but is overridden by the more specific Markdown rule with `margin: 0px`.
+- Existing local history items checked (`测试消息`, `浏览器相关`, `能力介绍`, `主题提取要求`) did not contain code blocks, so no live persisted long-code message was available without creating or sending new content.
+- Empty desktop/mobile/narrow routes verified CSSOM loading and no horizontal overflow; the actual long-code expand interaction is covered by `test/markdown-code-fold.test.tsx` to avoid writing test data into user history or triggering model/API requests.
+
+Known risks:
+
+- Browser QA did not click a live persisted long-code block because current local history has no code-block messages and creating one would mutate user data or risk model/API paths. Render-level tests cover the real Markdown component behavior for a deterministic long TypeScript block.
+- Browser screenshots were not used for this iteration. DOM/CSSOM metrics, console logs, render-level tests, source/CSS contracts, read-only review, lint/type checks, and production build cover the targeted behavior.
