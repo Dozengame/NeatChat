@@ -482,7 +482,7 @@ export function SessionConfigModel(props: { onClose: () => void }) {
 function PromptToast(props: {
   showToast?: boolean;
   showModal?: boolean;
-  setShowModal: (_: boolean) => void;
+  onOpen: (_: HTMLButtonElement) => void;
 }) {
   const chatStore = useChatStore();
   const session = chatStore.currentSession();
@@ -498,16 +498,13 @@ function PromptToast(props: {
           aria-haspopup="dialog"
           aria-controls="session-config-modal"
           aria-expanded={props.showModal}
-          onClick={() => props.setShowModal(true)}
+          onClick={(event) => props.onOpen(event.currentTarget)}
         >
           <BrainIcon />
           <span className={styles["prompt-toast-content"]}>
             {Locale.Context.Toast(context.length)}
           </span>
         </button>
-      )}
-      {props.showModal && (
-        <SessionConfigModel onClose={() => props.setShowModal(false)} />
       )}
     </div>
   );
@@ -2138,7 +2135,7 @@ function useChatInnerView() {
     showToast(Locale.Chat.Actions.PinToastContent, {
       text: Locale.Chat.Actions.PinToastAction,
       onClick: () => {
-        setShowPromptModal(true);
+        openPromptModal();
       },
     });
   };
@@ -2682,6 +2679,28 @@ function useChatInnerView() {
   ]);
 
   const [showPromptModal, setShowPromptModal] = useState(false);
+  const promptModalTriggerRef = useRef<HTMLElement | null>(null);
+
+  const openPromptModal = (trigger?: HTMLElement | null) => {
+    promptModalTriggerRef.current =
+      trigger ??
+      (typeof document !== "undefined" &&
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null);
+    setShowPromptModal(true);
+  };
+
+  const closePromptModal = () => {
+    setShowPromptModal(false);
+    requestAnimationFrame(() => {
+      const promptModalTrigger = promptModalTriggerRef.current;
+      if (promptModalTrigger?.isConnected) {
+        promptModalTrigger.focus();
+      }
+      promptModalTriggerRef.current = null;
+    });
+  };
 
   const clientConfig = useMemo(() => getClientConfig(), []);
 
@@ -3278,7 +3297,7 @@ function useChatInnerView() {
     <PromptToast
       showToast={!hitBottom}
       showModal={showPromptModal}
-      setShowModal={setShowPromptModal}
+      onOpen={openPromptModal}
     />
   );
 
@@ -3369,10 +3388,10 @@ function useChatInnerView() {
             bordered
             title={Locale.Chat.InputActions.Settings}
             aria={Locale.Chat.InputActions.Settings}
-            onClick={() => {
+            onClick={(event) => {
               closeMobileModelSelector();
               setShowChatActionMenu(false);
-              setShowPromptModal(true);
+              openPromptModal(event.currentTarget);
             }}
           />
           {promptToast}
@@ -4255,7 +4274,9 @@ function useChatInnerView() {
                 uploadAttachments={handleUploadAttachments}
                 setAttachImages={setAttachImages}
                 setUploading={setUploading}
-                showPromptModal={() => setShowPromptModal(true)}
+                showPromptModal={() =>
+                  openPromptModal(chatInputMenuButtonRef.current)
+                }
                 scrollToBottom={scrollToBottom}
                 hitBottom={hitBottom}
                 uploading={uploading}
@@ -4553,6 +4574,8 @@ function useChatInnerView() {
       {showShortcutKeyModal && (
         <ShortcutKeyModal onClose={() => setShowShortcutKeyModal(false)} />
       )}
+
+      {showPromptModal && <SessionConfigModel onClose={closePromptModal} />}
 
       {showFileEditModal && editingFile && (
         <div className="modal-mask">

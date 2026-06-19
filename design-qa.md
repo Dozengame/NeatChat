@@ -3183,3 +3183,46 @@ Known risks:
 
 - Browser QA used a built-in mask session and did not send a message, edit context data, or call any model/API. This slice is semantic-only for the existing settings modal wrapper.
 - Browser first pass hit transient in-app Browser tab/session mapping and `Page.navigate` timeouts; both final desktop and narrow passes completed after cleaning tabs and retrying one viewport at a time.
+
+## Iteration 2026-06-20 prompt-toast-focus-return
+
+Result: passed.
+
+Target flow:
+
+- Opening `当前对话设置` from the context prompt chip must preserve the existing mask/context settings UI and return focus to the prompt chip after close.
+- Opening the same settings modal from the compact header settings button must return focus to that header button after close, not jump to the prompt chip.
+- The modal must remain clickable even though the prompt chip wrapper stays pointer-transparent to avoid blocking chat/header interactions.
+
+Design direction:
+
+- Creative Production style intake selected: keep the previous Gemini-style contextual chip visuals, but make the modal behave like an opener-aware overlay. The prompt chip remains a quiet contextual affordance; the modal is promoted to the chat view overlay layer so it does not inherit the chip wrapper's `pointer-events: none`.
+
+Scope:
+
+- `app/components/chat.tsx`: moved `SessionConfigModel` ownership from `PromptToast` to `ChatInner`, added opener-aware `openPromptModal` / `closePromptModal`, and restored focus only to the element that opened the modal when it is still connected.
+- `app/components/button.tsx`: widened `IconButton.onClick` to receive the native button click event so the compact header settings button can pass its `event.currentTarget` as the opener. Existing no-argument click handlers remain valid.
+- `test/gemini-visual-migration.test.ts`: replaced the brittle Fragment/inline close-handler contract with an opener-aware source contract that keeps `SessionConfigModel` out of `PromptToast`, requires the shared trigger ref, and locks the main-layer modal close path.
+- No model config semantics, context/mask mutation rules, account/secret/sync, production config, deployment config, backend logic, upload/send behavior, persisted storage keys, or API behavior were changed.
+
+Automated checks:
+
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the old implementation always restored focus to `promptToastButtonRef` and rendered `SessionConfigModel` inside `PromptToast`.
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts --runInBand`
+
+Review:
+
+- Read-only sub-agent review found one P2 issue: closing the modal after opening it from the compact header settings button would incorrectly focus the prompt chip. The implementation was changed to record the real opener and clear it after close.
+- The same review noted the previous test contract was too JSX-shape-specific; the test was adjusted to assert behavior-relevant ownership and opener-aware focus logic instead.
+
+Browser QA:
+
+- Desktop Browser viewport `1280x720` on `http://localhost:3001/#/masks`: opened built-in `以文搜图`, revealed `包含 4 条预设提示词`, opened `当前对话设置`, verified mask pointer events `auto`, close button pointer events `auto`, close hit target under SVG parent `Close modal`, closed the modal, and verified `modalCount: 0`, chip `aria-expanded: false`, and focus returned to the prompt chip.
+- Narrow Browser viewport `390x844` on the same built-in mask flow: verified the same prompt chip opener path, modal clickability, `modalCount: 0`, chip `aria-expanded: false`, and focus returned to the prompt chip.
+- Narrow Browser viewport `390x844` compact header path: opened `当前对话设置` from the header `对话设置` button, closed the modal, and verified `modalCount: 0` and focus returned to the `对话设置` header button.
+- Browser viewport was reset after QA. `localhost:3000` was stuck on a loading shell after Fast Refresh/full reload, so a clean `localhost:3001` dev server was used for final Browser verification.
+
+Known risks:
+
+- Browser QA used a built-in mask session and did not send messages, edit context values, call any model/API, or persist production data.
+- The global toast action opened by pinning a message records the active element if available; if that transient toast action is removed before close, focus restoration safely does nothing instead of guessing another target.

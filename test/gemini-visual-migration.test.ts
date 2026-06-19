@@ -3022,6 +3022,10 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       "@media (prefers-reduced-motion: reduce)",
     );
+    const promptToastSection = chat.slice(
+      chat.indexOf("function PromptToast"),
+      chat.indexOf("function useSubmitHandler"),
+    );
 
     expect(chat).toContain('id="session-config-modal"');
     expect(chat).toMatch(
@@ -3031,11 +3035,30 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('aria-haspopup="dialog"');
     expect(chat).toContain('aria-controls="session-config-modal"');
     expect(chat).toContain("aria-expanded={props.showModal}");
+    expect(chat).toContain(
+      "const promptModalTriggerRef = useRef<HTMLElement | null>(null);",
+    );
+    expect(chat).toContain(
+      "const openPromptModal = (trigger?: HTMLElement | null) => {",
+    );
+    expect(chat).toContain("promptModalTriggerRef.current =");
+    expect(chat).toContain("const closePromptModal = () => {");
+    expect(chat).toContain("const promptModalTrigger = promptModalTriggerRef.current;");
+    expect(chat).toContain("if (promptModalTrigger?.isConnected) {");
+    expect(chat).toContain("promptModalTrigger.focus();");
+    expect(chat).toContain("promptModalTriggerRef.current = null;");
+    expect(promptToastSection).toContain("onOpen: (_: HTMLButtonElement) => void;");
     expect(chat).toMatch(
-      /onClick=\{\(\) => props\.setShowModal\(true\)\}/,
+      /onClick=\{\(event\) => props\.onOpen\(event\.currentTarget\)\}/,
+    );
+    expect(promptToastSection).not.toContain("SessionConfigModel");
+    expect(promptToastSection).not.toContain("setShowModal");
+    expect(chat).toContain("openPromptModal(event.currentTarget);");
+    expect(chat).toMatch(
+      /showPromptModal=\{\(\) =>\s*openPromptModal\(chatInputMenuButtonRef\.current\)\s*\}/,
     );
     expect(chat).toMatch(
-      /\{props\.showModal && \(\s*<SessionConfigModel onClose=\{\(\) => props\.setShowModal\(false\)\} \/>\s*\)\}/,
+      /\{showPromptModal && \(\s*<SessionConfigModel onClose=\{closePromptModal\} \/>\s*\)\}/,
     );
 
     expect(promptToastBlock).toMatch(/pointer-events:\s*none;/);
