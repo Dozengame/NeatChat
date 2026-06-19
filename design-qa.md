@@ -2212,3 +2212,43 @@ Browser QA:
 Known risks:
 
 - Browser screenshot capture still times out at `Page.captureScreenshot`, matching earlier project QA limitations. This iteration is verified by Browser DOM/layout metrics, runtime CSSOM, click interaction evidence, console logs, and automated tests instead of screenshot output.
+
+## Iteration 2026-06-19 inline-image-card-controls
+
+Result: passed.
+
+Target flow:
+
+- In an existing image-generation conversation, the inline generated image card keeps preview and download behavior while making the download control match the Gemini-style glass media controls used by the full preview overlay.
+
+Design direction:
+
+- Creative Production style intake selected: media card, glass control, bounded corners, reveal-on-hover, press compression, reduced-motion-safe, translucent ink, dark-mode blue edge, and white-icon contrast.
+
+Scope:
+
+- `app/styles/markdown.scss`: upgraded the inline image download control to a blurred glass button, added hover/press/focus states, dark-mode contrast, touch/coarse-pointer/narrow always-visible sizing, and reduced-motion transform suppression.
+- `test/gemini-visual-migration.test.ts`: locked the media-card control contract, dark variant, touch/coarse-pointer/narrow visibility override, hover/press transforms, focus ring, and reduced-motion rule without changing preview/download behavior, message rendering, model APIs, MCP/Jimeng, stores, Tauri config, deployment config, or secrets.
+- `design-qa.md`: recorded the TDD failures, Browser QA measurements, review result, and validation commands for this slice.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the previous inline download button was still `34px` and lacked the new glass-control contract.
+- After Browser mobile QA exposed that the no-hover rule did not win for `opacity` and `transform`, `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed again as expected until the touch/narrow override required `!important`.
+- Read-only sub-agent review found no blocking issues. It flagged a low-risk touch-device gap; this was addressed by broadening the media query to `(hover: none), (pointer: coarse), (max-width: 600px)`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `#/chat` at `1440x1024`: opened the existing local `日出东方图` conversation, verified one inline image card with frame rect `722x411` at `x=427 y=768`, image rect `712x401`, no horizontal overflow, card radius `18px`, image radius `14px`, elevated surface shadow, and download control `36x36` with `aria-label="下载原图"`, `opacity: 0`, `pointer-events: none`, `transform: translateY(-4px)`, background `rgba(31, 31, 31, 0.52)`, border `rgba(255, 255, 255, 0.18)`, and `blur(16px) saturate(1.2)`.
+- Mobile `390x844`: opened the same session from the mobile sidebar, verified one inline image card with frame rect `284x163`, image rect `276x155`, download control `38x38` with `opacity: 1`, `pointer-events: auto`, `transform: none`, touch/narrow media query matched, and `horizontalOverflowPx: 0`.
+- Runtime CSSOM confirmed the loaded `markdown-image-download` base rule, touch/narrow override, dark rule, and reduced-motion rule before the follow-up coarse-pointer broadening. The final coarse-pointer condition is locked by Jest. Browser CUA pointer hover did not trigger `:hover` reliably in this session, so hover/press motion is verified by CSSOM plus the Jest contract rather than live pointer state.
+
+Known risks:
+
+- Browser screenshot capture still times out at `Page.captureScreenshot`, matching earlier project QA limitations. This iteration is verified by Browser DOM/layout metrics, runtime CSSOM, read-only review, and automated tests instead of screenshot output.

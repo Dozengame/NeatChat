@@ -371,6 +371,19 @@ summary,
       pointer-events: auto;
     }
   }
+
+  .markdown-image-download:hover {
+    border-color: rgba($color: #fff, $alpha: 0.3);
+    background: rgba($color: #1f1f1f, $alpha: 0.68);
+    box-shadow: 0 12px 26px rgba($color: #000, $alpha: 0.3);
+    transform: translateY(-1px);
+  }
+
+  .markdown-image-download:active {
+    background: rgba($color: #1f1f1f, $alpha: 0.6);
+    box-shadow: 0 5px 14px rgba($color: #000, $alpha: 0.26);
+    transform: translateY(0) scale(0.96);
+  }
 }
 
 .dark .markdown-body .markdown-image-frame {
@@ -433,13 +446,15 @@ summary,
   top: 8px;
   right: 8px;
   z-index: 2;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  border: 1px solid rgba($color: #fff, $alpha: 0.34);
+  border: 1px solid rgba($color: #fff, $alpha: 0.18);
   border-radius: 999px;
-  background: rgba($color: #000, $alpha: 0.64);
-  box-shadow: 0 8px 24px rgba($color: #000, $alpha: 0.24);
+  background: rgba($color: #1f1f1f, $alpha: 0.52);
+  box-shadow: 0 8px 22px rgba($color: #000, $alpha: 0.24);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -450,18 +465,24 @@ summary,
   transition:
     opacity 0.18s ease,
     transform 0.18s ease,
-    background 0.18s ease;
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 
   &:hover {
-    background: rgba($color: #000, $alpha: 0.78);
+    border-color: rgba($color: #fff, $alpha: 0.3);
+    background: rgba($color: #1f1f1f, $alpha: 0.68);
+    box-shadow: 0 12px 26px rgba($color: #000, $alpha: 0.3);
   }
 
   &:focus-visible {
-    outline: none;
+    outline: var(--focus-ring);
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
-    box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.28), 0 8px 24px rgba($color: #000, $alpha: 0.24);
+    box-shadow:
+      var(--focus-ring-shadow),
+      0 8px 22px rgba($color: #000, $alpha: 0.24);
   }
 
   svg {
@@ -471,7 +492,12 @@ summary,
   }
 }
 
-@media (hover: none), (max-width: 600px) {
+.dark .markdown-body .markdown-image-download {
+  border-color: rgba($color: #8ab4f8, $alpha: 0.18);
+  background: rgba($color: #202124, $alpha: 0.62);
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 600px) {
   .markdown-body .markdown-image-frame {
     max-width: 100%;
     padding: 3px;
@@ -490,11 +516,23 @@ summary,
   }
 
   .markdown-body .markdown-image-download {
-    width: 36px;
-    height: 36px;
-    opacity: 1;
+    width: 38px;
+    height: 38px;
+    opacity: 1 !important;
     pointer-events: auto;
-    transform: none;
+    transform: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .markdown-body .markdown-image-frame,
+  .markdown-body .markdown-image-frame:hover,
+  .markdown-body .markdown-image-frame:focus-within,
+  .markdown-body .markdown-image-download,
+  .markdown-body .markdown-image-download:hover,
+  .markdown-body .markdown-image-download:active {
+    transform: none !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

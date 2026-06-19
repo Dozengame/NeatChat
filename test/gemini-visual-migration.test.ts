@@ -1675,6 +1675,14 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body .markdown-image-download",
     );
+    const darkImageDownloadBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body .markdown-image-download",
+    );
+    const markdownReducedMotionBlock = readCssBlock(
+      markdownStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
 
     expect(markdown).toContain('className="markdown-image-frame"');
     expect(markdown).toContain('className="markdown-image-preview-button"');
@@ -1721,22 +1729,57 @@ describe("Gemini visual migration shell", () => {
     expect(imagePreviewBlock).toMatch(/border:\s*0;/);
     expect(imageDownloadBlock).toMatch(/top:\s*8px;/);
     expect(imageDownloadBlock).toMatch(/right:\s*8px;/);
+    expect(imageDownloadBlock).toMatch(/width:\s*36px;/);
+    expect(imageDownloadBlock).toMatch(/height:\s*36px;/);
+    expect(imageDownloadBlock).toMatch(
+      /border:\s*1px solid rgba\(\$color:\s*#fff,\s*\$alpha:\s*0\.18\);/,
+    );
+    expect(imageDownloadBlock).toMatch(
+      /background:\s*rgba\(\$color:\s*#1f1f1f,\s*\$alpha:\s*0\.52\);/,
+    );
+    expect(imageDownloadBlock).toMatch(
+      /backdrop-filter:\s*blur\(16px\) saturate\(1\.2\);/,
+    );
     expect(imageDownloadBlock).toMatch(/opacity:\s*0;/);
     expect(imageDownloadBlock).toMatch(/pointer-events:\s*none;/);
+    expect(imageDownloadBlock).toMatch(
+      /transition:[\s\S]*opacity 0\.18s ease,[\s\S]*transform 0\.18s ease,[\s\S]*background 0\.18s ease,[\s\S]*border-color 0\.18s ease,[\s\S]*box-shadow 0\.18s ease;/,
+    );
+    expect(imageFrameBlock).toMatch(
+      /\.markdown-image-download:hover[\s\S]*transform:\s*translateY\(-1px\);/,
+    );
+    expect(imageFrameBlock).toMatch(
+      /\.markdown-image-download:active[\s\S]*transform:\s*translateY\(0\) scale\(0\.96\);/,
+    );
     expect(imageDownloadBlock).toMatch(
       /&:focus-visible[\s\S]*opacity:\s*1;/,
     );
     expect(imageDownloadBlock).toMatch(
-      /&:focus-visible[\s\S]*box-shadow:\s*0 0 0 3px rgba\(66, 133, 244, 0\.28\), 0 8px 24px rgba\(\$color: #000, \$alpha: 0\.24\);/,
+      /&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/,
+    );
+    expect(imageDownloadBlock).toMatch(
+      /&:focus-visible[\s\S]*box-shadow:[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 8px 22px rgba\(\$color:\s*#000,\s*\$alpha:\s*0\.24\);/,
+    );
+    expect(darkImageDownloadBlock).toMatch(
+      /border-color:\s*rgba\(\$color:\s*#8ab4f8,\s*\$alpha:\s*0\.18\);/,
+    );
+    expect(darkImageDownloadBlock).toMatch(
+      /background:\s*rgba\(\$color:\s*#202124,\s*\$alpha:\s*0\.62\);/,
     );
     expect(markdownStyles).toMatch(
-      /@media \(hover: none\), \(max-width: 600px\)[\s\S]*\.markdown-body \.markdown-image-frame[\s\S]*padding:\s*3px;[\s\S]*border-radius:\s*16px;/,
+      /@media \(hover: none\), \(pointer: coarse\), \(max-width: 600px\)[\s\S]*\.markdown-body \.markdown-image-frame[\s\S]*padding:\s*3px;[\s\S]*border-radius:\s*16px;/,
     );
     expect(markdownStyles).toMatch(
-      /@media \(hover: none\), \(max-width: 600px\)[\s\S]*\.markdown-body \.markdown-image-frame[\s\S]*&:hover,\s*&:focus-within[\s\S]*transform:\s*none;/,
+      /@media \(hover: none\), \(pointer: coarse\), \(max-width: 600px\)[\s\S]*\.markdown-body \.markdown-image-frame[\s\S]*&:hover,\s*&:focus-within[\s\S]*transform:\s*none;/,
     );
     expect(markdownStyles).toMatch(
-      /@media \(hover: none\), \(max-width: 600px\)[\s\S]*\.markdown-body \.markdown-image-download[\s\S]*opacity:\s*1;[\s\S]*pointer-events:\s*auto;/,
+      /@media \(hover: none\), \(pointer: coarse\), \(max-width: 600px\)[\s\S]*\.markdown-body \.markdown-image-download[\s\S]*opacity:\s*1(?: !important)?;[\s\S]*pointer-events:\s*auto;/,
+    );
+    expect(markdownStyles).toMatch(
+      /@media \(hover: none\), \(pointer: coarse\), \(max-width: 600px\)[\s\S]*\.markdown-body \.markdown-image-download[\s\S]*opacity:\s*1 !important;[\s\S]*transform:\s*none !important;/,
+    );
+    expect(markdownReducedMotionBlock).toMatch(
+      /\.markdown-body \.markdown-image-frame,[\s\S]*\.markdown-body \.markdown-image-frame:hover,[\s\S]*\.markdown-body \.markdown-image-frame:focus-within,[\s\S]*\.markdown-body \.markdown-image-download,[\s\S]*\.markdown-body \.markdown-image-download:hover,[\s\S]*\.markdown-body \.markdown-image-download:active[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
     );
   });
 
