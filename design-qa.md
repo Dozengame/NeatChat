@@ -2808,3 +2808,51 @@ Browser QA:
 Known risks:
 
 - Browser QA did not click a live persisted image preview/download button because the current Browser profile had no visible image-frame messages, and creating one would require mutating user data or triggering real model/API image generation. Render-level tests cover the Markdown preview label payload, and source-contract tests cover the chat preview modal label wiring.
+
+## Iteration 2026-06-19 image-preview-alt-context
+
+Result: passed.
+
+Target flow:
+
+- Opening a Markdown image or chat message image keeps the existing preview modal, download behavior, focus return, and toolbar labels, but the rendered preview image itself now uses the originating image context as its `alt` text instead of always exposing generic `图片预览`.
+
+Design direction:
+
+- Creative Production style intake selected: no visual layout change, preserve the Gemini-style image preview modal, make modal image naming consistent with inline media controls and toolbar download labels, keep preview/download source semantics unchanged, and avoid model/API/account/sync/deploy/backend semantic changes.
+
+Scope:
+
+- `app/utils/image-action-labels.ts`: added `getImagePreviewAlt`, which trims supplied context and falls back to `图片预览` when no useful label exists.
+- `app/components/chat.tsx`: added `previewImageAlt` state, set it from Markdown alt or chat message image label when opening the modal, reset it on close, and bound the Next `Image` alt to that state.
+- `test/image-action-labels.test.ts`: added helper coverage for fallback, trimmed alt text, and numbered multi-image labels.
+- `test/gemini-visual-migration.test.ts`: locked the preview image alt state, open/reset path, helper import, and `alt={previewImageAlt}` binding.
+- No model config semantics, account/secret/sync, production config, deployment config, backend logic, image download source selection, proxy logic, generated-image result parsing, message content shape, upload limits, preview image `src`, modal close behavior, focus restore, or persisted storage keys were changed.
+
+Automated checks:
+
+- `yarn test:ci --runTestsByPath test/image-action-labels.test.ts test/gemini-visual-migration.test.ts --runInBand` failed first as expected because `getImagePreviewAlt` did not exist and the chat preview modal had no contextual alt state.
+- `yarn test:ci --runTestsByPath test/image-action-labels.test.ts test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/image-action-labels.test.ts test/gemini-visual-migration.test.ts test/markdown-file-attachment.test.tsx test/markdown-code-language.test.tsx test/markdown-code-fold.test.tsx test/markdown-performance.test.tsx test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+- `git diff --check`
+
+Review:
+
+- Read-only sub-agent review found no Critical or Important issues.
+- The only Minor finding was that this QA entry still had pending review wording while review was complete; this was fixed before commit.
+- The review confirmed the helper fallback/trim behavior, open-time `previewImageAlt` assignment, close-time reset, unchanged `previewImage` source/download path, Markdown alt propagation, chat message image label propagation, and source/helper test coverage.
+
+Browser QA:
+
+- Desktop default Browser viewport at `http://localhost:3000/#/chat`: page rendered with title `NeatChat`, no framework overlay, `horizontalOverflowPx: 0`, composer input rect `left: 483`, `right: 1057`, panel rect `left: 410`, `right: 1170`, `imageFrameCount: 0`, `previewDialogCount: 0`, and no console warn/error logs.
+- Mobile `390x844` at `/#/chat`: page rendered with title `NeatChat`, no framework overlay, `horizontalOverflowPx: 0`, composer input rect `left: 67`, `right: 313`, panel rect `left: 10`, `right: 380`, `imageFrameCount: 0`, `previewDialogCount: 0`, and no console warn/error logs.
+- Narrow mobile `320x740` at `/#/chat`: page rendered with title `NeatChat`, no framework overlay, `horizontalOverflowPx: 0`, composer input rect `left: 67`, `right: 243`, panel rect `left: 10`, `right: 310`, `imageFrameCount: 0`, `previewDialogCount: 0`, and no console warn/error logs.
+- Browser screenshot capture timed out at `Page.captureScreenshot`, matching prior project limitations; this iteration is verified by Browser DOM/layout metrics, console logs, read-only review, and automated tests instead of screenshot output.
+- Browser viewport was reset to the default after QA.
+
+Known risks:
+
+- Browser QA did not click a live persisted image preview button because the current Browser profile had no visible image-frame messages, and creating one would require mutating user data or triggering real model/API image generation. Helper tests cover the label derivation, and source-contract tests cover Markdown/chat preview context propagation into the modal image alt.

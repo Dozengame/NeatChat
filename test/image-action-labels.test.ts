@@ -1,6 +1,7 @@
 import {
   getImageActionLabels,
   getMessageImageLabel,
+  getImagePreviewAlt,
 } from "../app/utils/image-action-labels";
 
 describe("image action labels", () => {
@@ -21,5 +22,11 @@ describe("image action labels", () => {
   test("uses stable labels for single and multi-image message groups", () => {
     expect(getMessageImageLabel(0, 1)).toBe("图片");
     expect(getMessageImageLabel(1, 3)).toBe("第 2 张图片");
+  });
+
+  test("uses image context for the preview image alt text", () => {
+    expect(getImagePreviewAlt()).toBe("图片预览");
+    expect(getImagePreviewAlt(" generated sunrise ")).toBe("generated sunrise");
+    expect(getImagePreviewAlt("第 2 张图片")).toBe("第 2 张图片");
   });
 });

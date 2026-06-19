@@ -79,6 +79,7 @@ import {
 } from "../utils";
 import {
   getImageActionLabels,
+  getImagePreviewAlt,
   getMessageImageLabel,
 } from "../utils/image-action-labels";
 
@@ -3117,6 +3118,7 @@ function useChatInnerView() {
   const [previewImageActionLabels, setPreviewImageActionLabels] = useState(
     getImageActionLabels(),
   );
+  const [previewImageAlt, setPreviewImageAlt] = useState(getImagePreviewAlt());
   const imagePreviewTriggerRef = useRef<HTMLButtonElement | null>(null);
   const chatInputMenuButtonRef = useRef<HTMLButtonElement>(null);
   const chatInputActionMenuRef = useRef<HTMLDivElement>(null);
@@ -3197,6 +3199,7 @@ function useChatInnerView() {
     ) => {
       imagePreviewTriggerRef.current = options?.trigger ?? null;
       setPreviewImageActionLabels(getImageActionLabels(options?.label));
+      setPreviewImageAlt(getImagePreviewAlt(options?.label));
       setPreviewImage(src);
     },
     [],
@@ -3208,6 +3211,7 @@ function useChatInnerView() {
   const closeImagePreview = useCallback(() => {
     setPreviewImage(null);
     setPreviewImageActionLabels(getImageActionLabels());
+    setPreviewImageAlt(getImagePreviewAlt());
     requestAnimationFrame(() => {
       const previewTrigger = imagePreviewTriggerRef.current;
       if (previewTrigger?.isConnected) {
@@ -4610,7 +4614,7 @@ function useChatInnerView() {
           <Image
             className={styles["image-preview-image"]}
             src={previewImage}
-            alt="图片预览"
+            alt={previewImageAlt}
             width={1600}
             height={1200}
             unoptimized

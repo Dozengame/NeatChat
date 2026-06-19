@@ -14,6 +14,10 @@ export function getImageActionLabels(label?: string) {
   };
 }
 
+export function getImagePreviewAlt(label?: string) {
+  return label?.trim() || "图片预览";
+}
+
 export function getMessageImageLabel(index: number, total: number) {
   return total > 1 ? `第 ${index + 1} 张图片` : "图片";
 }
