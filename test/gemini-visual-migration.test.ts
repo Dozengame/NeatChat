@@ -2309,11 +2309,40 @@ describe("Gemini visual migration shell", () => {
   });
 
   test("keeps Gemini-style markdown table dark surfaces", () => {
+    const markdown = read("app/components/markdown.tsx");
     const markdownStyles = read("app/styles/markdown.scss");
-    const tableBlock = readCssBlock(markdownStyles, ".markdown-body table");
-    const darkTableBlock = readCssBlock(
+    const tableShellBlock = readCssBlock(
       markdownStyles,
-      ".dark .markdown-body table",
+      ".markdown-table-scroll-shell",
+    );
+    const tableShellSpacingBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-table-scroll-shell",
+    );
+    const tableViewportBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-table-scroll-viewport",
+    );
+    const tableFadeBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-table-scroll-fade",
+    );
+    const tableFadeStartBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-table-scroll-fade-start",
+    );
+    const tableFadeEndBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-table-scroll-fade-end",
+    );
+    const tableBlock = readCssBlock(markdownStyles, ".markdown-body table");
+    const tableInsideShellBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-table-scroll-viewport > table",
+    );
+    const darkTableShellBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-table-scroll-shell",
     );
     const tableHeaderBlock = readCssBlock(
       markdownStyles,
@@ -2332,18 +2361,54 @@ describe("Gemini visual migration shell", () => {
       ".dark .markdown-body table tr:hover",
     );
 
-    expect(tableBlock).toMatch(/border:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.1\);/);
-    expect(tableBlock).toMatch(/border-radius:\s*12px;/);
-    expect(tableBlock).toMatch(/background:\s*rgba\(255,\s*255,\s*255,\s*0\.35\);/);
-    expect(tableBlock).toMatch(/overflow-x:\s*auto;/);
-    expect(tableBlock).toMatch(/overflow-y:\s*hidden;/);
-    expect(tableBlock).toMatch(/overscroll-behavior-x:\s*contain;/);
-    expect(tableBlock).toMatch(/-webkit-overflow-scrolling:\s*touch;/);
-    expect(tableBlock).toMatch(/scrollbar-width:\s*thin;/);
-    expect(darkTableBlock).toMatch(
+    expect(markdown).toContain("function MarkdownTable");
+    expect(markdown).toContain("const [tableScrollHint, setTableScrollHint]");
+    expect(markdown).toMatch(
+      /const syncTableScrollHint = useCallback\(\(\) => \{[\s\S]*const tableShell = tableScrollRef\.current;[\s\S]*const maxScrollLeft = Math\.max\([\s\S]*tableShell\.scrollWidth - tableShell\.clientWidth[\s\S]*start: tableShell\.scrollLeft > 1,[\s\S]*end: maxScrollLeft - tableShell\.scrollLeft > 1,/,
+    );
+    expect(markdown).toMatch(
+      /className="markdown-table-scroll-shell"[\s\S]*data-overflow-start=\{tableScrollHint\.start \? "true" : "false"\}[\s\S]*data-overflow-end=\{tableScrollHint\.end \? "true" : "false"\}[\s\S]*className="markdown-table-scroll-viewport"[\s\S]*onScroll=\{syncTableScrollHint\}/,
+    );
+    expect(markdown).toMatch(
+      /typeof ResizeObserver === "undefined"[\s\S]*const tableResizeObserver = new ResizeObserver\(\(\) => \{[\s\S]*syncTableScrollHint\(\);[\s\S]*tableResizeObserver\.observe\(tableShell\)/,
+    );
+    expect(markdown).toContain("node: _node");
+    expect(markdown).toContain("<table {...tableProps} />");
+    expect(markdown).toMatch(
+      /\{tableScrollHint\.start && \([\s\S]*className="markdown-table-scroll-fade markdown-table-scroll-fade-start"/,
+    );
+    expect(markdown).toMatch(
+      /\{tableScrollHint\.end && \([\s\S]*className="markdown-table-scroll-fade markdown-table-scroll-fade-end"/,
+    );
+    expect(markdown).toContain("table: MarkdownTable");
+    expect(tableShellBlock).toMatch(/position:\s*relative;/);
+    expect(tableShellBlock).toMatch(/border:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.1\);/);
+    expect(tableShellBlock).toMatch(/border-radius:\s*12px;/);
+    expect(tableShellBlock).toMatch(/background:\s*rgba\(255,\s*255,\s*255,\s*0\.35\);/);
+    expect(tableShellBlock).toMatch(/overflow:\s*hidden;/);
+    expect(tableShellSpacingBlock).toMatch(/margin-top:\s*0;/);
+    expect(tableShellSpacingBlock).toMatch(/margin-bottom:\s*16px;/);
+    expect(tableViewportBlock).toMatch(/overflow-x:\s*auto;/);
+    expect(tableViewportBlock).toMatch(/overflow-y:\s*hidden;/);
+    expect(tableViewportBlock).toMatch(/overscroll-behavior-x:\s*contain;/);
+    expect(tableViewportBlock).toMatch(/-webkit-overflow-scrolling:\s*touch;/);
+    expect(tableViewportBlock).toMatch(/scrollbar-width:\s*thin;/);
+    expect(tableFadeBlock).toMatch(/position:\s*absolute;/);
+    expect(tableFadeBlock).toMatch(/top:\s*0;/);
+    expect(tableFadeBlock).toMatch(/bottom:\s*0;/);
+    expect(tableFadeBlock).toMatch(/pointer-events:\s*none;/);
+    expect(tableFadeBlock).toMatch(/width:\s*28px;/);
+    expect(tableFadeStartBlock).toMatch(/linear-gradient\(\s*90deg/);
+    expect(tableFadeEndBlock).toMatch(/linear-gradient\(\s*270deg/);
+    expect(tableBlock).toMatch(/width:\s*max-content;/);
+    expect(tableBlock).toMatch(/min-width:\s*100%;/);
+    expect(tableBlock).toMatch(/background:\s*transparent;/);
+    expect(tableBlock).not.toMatch(/overflow-x:\s*auto;/);
+    expect(tableInsideShellBlock).toMatch(/margin-bottom:\s*0;/);
+    expect(darkTableShellBlock).toMatch(
       /background:\s*rgba\(255,\s*255,\s*255,\s*0\.03\);/,
     );
-    expect(darkTableBlock).toMatch(
+    expect(darkTableShellBlock).toMatch(
       /border-color:\s*rgba\(255,\s*255,\s*255,\s*0\.08\);/,
     );
     expect(tableHeaderBlock).toMatch(

@@ -622,25 +622,79 @@ summary,
   content: "";
 }
 
-.markdown-body table {
-  border-spacing: 0;
-  border-collapse: collapse;
-  display: block;
-  width: max-content;
+.markdown-table-scroll-shell {
+  --markdown-table-edge-surface: rgba(255, 255, 255, 0.86);
+  position: relative;
+  width: 100%;
   max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
   background: rgba(255, 255, 255, 0.35);
   border: 1px solid rgba(60, 64, 67, 0.1);
   border-radius: 12px;
+}
+
+.markdown-table-scroll-viewport {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
 }
 
-.dark .markdown-body table {
+.markdown-body .markdown-table-scroll-shell {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.dark .markdown-table-scroll-shell {
+  --markdown-table-edge-surface: rgba(30, 30, 46, 0.9);
   background: rgba(255, 255, 255, 0.03);
   border-color: rgba(255, 255, 255, 0.08);
+}
+
+.markdown-table-scroll-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 28px;
+  min-width: 28px;
+  min-height: 100%;
+  pointer-events: none;
+}
+
+.markdown-table-scroll-fade-start {
+  left: 0;
+  background: linear-gradient(
+    90deg,
+    var(--markdown-table-edge-surface) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.markdown-table-scroll-fade-end {
+  right: 0;
+  background: linear-gradient(
+    270deg,
+    var(--markdown-table-edge-surface) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.markdown-body table {
+  border-spacing: 0;
+  border-collapse: collapse;
+  display: table;
+  width: max-content;
+  min-width: 100%;
+  max-width: none;
+  background: transparent;
+}
+
+.markdown-body .markdown-table-scroll-viewport > table {
+  margin-bottom: 0;
 }
 
 .markdown-body td,

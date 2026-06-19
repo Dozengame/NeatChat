@@ -15,6 +15,7 @@ import React, {
   useMemo,
   useLayoutEffect,
   useId,
+  useCallback,
 } from "react";
 import { copyToClipboard, useWindowSize } from "../utils";
 import { getImageActionLabels } from "../utils/image-action-labels";
@@ -338,6 +339,94 @@ function CustomCode(props: { children: any; className?: string }) {
         </div>
       )}
     </>
+  );
+}
+
+function MarkdownTable({
+  node: _node,
+  ...tableProps
+}: React.TableHTMLAttributes<HTMLTableElement> & { node?: unknown }) {
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+  const [tableScrollHint, setTableScrollHint] = useState({
+    start: false,
+    end: false,
+  });
+
+  const syncTableScrollHint = useCallback(() => {
+    const tableShell = tableScrollRef.current;
+    if (!tableShell) {
+      setTableScrollHint((current) =>
+        current.start || current.end ? { start: false, end: false } : current,
+      );
+      return;
+    }
+
+    const maxScrollLeft = Math.max(
+      0,
+      tableShell.scrollWidth - tableShell.clientWidth,
+    );
+    const nextHint = {
+      start: tableShell.scrollLeft > 1,
+      end: maxScrollLeft - tableShell.scrollLeft > 1,
+    };
+
+    setTableScrollHint((current) =>
+      current.start === nextHint.start && current.end === nextHint.end
+        ? current
+        : nextHint,
+    );
+  }, []);
+
+  useLayoutEffect(() => {
+    const scrollHintFrame = requestAnimationFrame(syncTableScrollHint);
+    return () => cancelAnimationFrame(scrollHintFrame);
+  }, [tableProps.children, syncTableScrollHint]);
+
+  useEffect(() => {
+    const tableShell = tableScrollRef.current;
+    if (!tableShell || typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", syncTableScrollHint);
+      return () => window.removeEventListener("resize", syncTableScrollHint);
+    }
+
+    const tableResizeObserver = new ResizeObserver(() => {
+      syncTableScrollHint();
+    });
+    tableResizeObserver.observe(tableShell);
+    window.addEventListener("resize", syncTableScrollHint);
+
+    return () => {
+      tableResizeObserver.disconnect();
+      window.removeEventListener("resize", syncTableScrollHint);
+    };
+  }, [syncTableScrollHint]);
+
+  return (
+    <div
+      className="markdown-table-scroll-shell"
+      data-overflow-start={tableScrollHint.start ? "true" : "false"}
+      data-overflow-end={tableScrollHint.end ? "true" : "false"}
+    >
+      <div
+        ref={tableScrollRef}
+        className="markdown-table-scroll-viewport"
+        onScroll={syncTableScrollHint}
+      >
+        <table {...tableProps} />
+      </div>
+      {tableScrollHint.start && (
+        <span
+          aria-hidden="true"
+          className="markdown-table-scroll-fade markdown-table-scroll-fade-start"
+        />
+      )}
+      {tableScrollHint.end && (
+        <span
+          aria-hidden="true"
+          className="markdown-table-scroll-fade markdown-table-scroll-fade-end"
+        />
+      )}
+    </div>
   );
 }
 
@@ -777,6 +866,7 @@ function MarkDownContentInner(
         },
         pre: PreCode,
         code: CustomCode,
+        table: MarkdownTable,
         img: (imgProps) => {
           const src =
             typeof imgProps.src === "string" ? imgProps.src.trim() : "";

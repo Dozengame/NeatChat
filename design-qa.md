@@ -3311,3 +3311,62 @@ Known risks:
 
 - Browser QA used generated clipboard content only and did not send a message, call a model/API, upload personal files, edit production data, or persist production configuration.
 - Because the hint is conditionally rendered rather than opacity-animated, it prioritizes deterministic visibility and hit-target safety over a fade transition in this slice.
+
+## Iteration 2026-06-20 markdown-table-scroll-edge-hints
+
+Result: passed.
+
+Target flow:
+
+- Wide AI-rendered Markdown tables should advertise hidden horizontal content with a subtle edge hint in the available scroll direction.
+- The hint must update as the table scrolls: right only at the start, left only at the end, and no blocking layer over table content or nearby code actions.
+- Existing Markdown code block language labels, copy behavior, table readability, model config semantics, account/secret/sync, backend/API, production config, and deployment config must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: keep the Gemini-style quiet Markdown surface and add the smallest possible overflow affordance to make dense AI tables scannable on desktop and compact mobile widths.
+- The table chrome stays on a scroll shell while the actual `<table>` keeps semantic table display. Decorative edge hints are `aria-hidden` and non-interactive.
+
+Scope:
+
+- `app/components/markdown.tsx`: added `MarkdownTable`, directional scroll-hint state, content synchronization, `ResizeObserver`-backed container resize synchronization, data attributes, a dedicated scroll viewport, and non-interactive start/end fade elements for rendered Markdown tables.
+- `app/styles/markdown.scss`: moved table card chrome to `.markdown-table-scroll-shell`, moved horizontal scrolling to `.markdown-table-scroll-viewport`, kept the semantic table layout, reset inner table spacing, and added light/dark edge surfaces for the directional hints.
+- `test/gemini-visual-migration.test.ts`: extended the Markdown table contract to cover the shell/viewport structure, overflow calculation, container resize observer, non-blocking absolute overlay hints, block spacing, and table/card styling.
+- No model config semantics, account/secret/sync, backend/API, production config, deployment config, upload/send behavior, or persisted app store keys were changed.
+
+Automated checks:
+
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="markdown table dark surfaces"` failed first as expected because `MarkdownTable` and directional table hint state did not exist yet.
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="markdown table dark surfaces"`
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="markdown table dark surfaces"` failed again after review tightening because the table still lacked a dedicated scroll viewport / absolute overlay contract.
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="markdown table dark surfaces"`
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="markdown table dark surfaces"` failed again after the second review tightened the contract to strip ReactMarkdown `node` metadata before spreading table props to the DOM.
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="markdown table dark surfaces"`
+- `npx jest test/markdown-code-language.test.tsx --runInBand`
+- `npx jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `git diff --check`
+- `yarn build`
+
+Review:
+
+- Read-only code review found two Important issues before commit: outer Markdown block spacing had not fully moved from the inner table to the wrapper, and overflow hint synchronization only covered mount/content/scroll/window resize.
+- Fixed by moving block spacing to `.markdown-table-scroll-shell`, resetting the inner viewport table margin, and adding `ResizeObserver` for container-level size changes.
+- Follow-up Browser QA exposed that the initial sticky hint spans had `0px` height in real Chrome. The structure was changed to outer shell + inner scroll viewport + absolute overlays, which gives the fade hints the full shell height while preserving scrolling on the viewport.
+- Second read-only review found no Critical or Important issues. Its remaining Minor DOM cleanliness item was fixed by stripping ReactMarkdown `node` metadata before spreading props onto the real `<table>`.
+
+Browser QA:
+
+- Desktop Chrome viewport `1440x1024` at `http://localhost:3000/`: injected and selected a local temporary assistant message with a wide Markdown table and TypeScript code block. At scroll start, the viewport had `scrollWidth: 1388`, `clientWidth: 722`, `data-overflow-start="false"`, `data-overflow-end="true"`, shell `overflow: hidden`, viewport `overflow-x: auto`, shell `margin-bottom: 16px`, inner table `margin-bottom: 0px`, right hint `28px x 152px`, `pointer-events: none`, shell-to-code gap `16px`, and code language label `TypeScript`.
+- After a real horizontal scroll to the end on desktop, verified `scrollLeft: 666`, `maxScrollLeft: 666`, `data-overflow-start="true"`, `data-overflow-end="false"`, left hint `28px x 152px`, and no right hint.
+- Desktop container resize probe without window resize: after shrinking the viewport from `722px` to `542px` at the previous end position, `ResizeObserver` refreshed the state to `data-overflow-start="true"` and `data-overflow-end="true"`.
+- Compact mobile Chrome viewport `390x844`: verified the same table overflow behavior with `scrollWidth: 1388`, `clientWidth: 288`, shell `margin-bottom: 16px`, inner table `margin-bottom: 0px`, right hint `28px x 152px`, `pointer-events: none`, shell-to-code gap `16px`, and code language label `TypeScript`.
+- After a real horizontal scroll to the end on mobile, verified `scrollLeft: 1100`, `maxScrollLeft: 1100`, `data-overflow-start="true"`, `data-overflow-end="false"`, left hint `28px x 152px`, and no right hint.
+- Mobile container resize probe without window resize: after shrinking the viewport to `180px` at the previous end position, `ResizeObserver` refreshed the state to `data-overflow-start="true"` and `data-overflow-end="true"`.
+- Browser QA used a local temporary IndexedDB access/chat state in an isolated Chrome automation context, selected the temporary local session from the sidebar, did not send a message, did not call a model/API, and did not persist production data.
+
+Known risks:
+
+- Browser QA validates a representative wide Markdown table and code block in the live chat surface, but does not exhaust every table density or nested Markdown combination.
+- The hint is conditionally rendered for deterministic hit-target safety; if future design requires animated opacity, it should be re-tested against pointer interception and dev-mode computed styles.
