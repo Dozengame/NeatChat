@@ -528,7 +528,7 @@ ${quotedContent}
 }
 
 type MarkdownImageActionProps = {
-  onPreviewImage?: (src: string) => void;
+  onPreviewImage?: (src: string, label?: string) => void;
   onDownloadImage?: (src: string) => void | Promise<void>;
 };
 
@@ -800,7 +800,7 @@ function MarkDownContentInner(
                 aria-label={imageActionLabels.preview}
                 onClick={(event) => {
                   event.preventDefault();
-                  props.onPreviewImage?.(src);
+                  props.onPreviewImage?.(src, alt);
                 }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}

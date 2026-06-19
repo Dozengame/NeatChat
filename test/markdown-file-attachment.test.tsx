@@ -135,6 +135,7 @@ describe("Markdown image actions", () => {
 
     expect(onPreviewImage).toHaveBeenCalledWith(
       "https://example.com/sunrise.png",
+      "generated sunrise",
     );
     expect(onDownloadImage).toHaveBeenCalledWith(
       "https://example.com/sunrise.png",

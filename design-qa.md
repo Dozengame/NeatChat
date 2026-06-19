@@ -2759,4 +2759,52 @@ Browser QA:
 Known risks:
 
 - Browser QA did not click a live persisted image preview/download button because the current Browser profile had no visible image-frame messages, and creating one would require mutating user data or triggering real model/API image generation. Render-level tests cover the Markdown image button behavior, and source-contract tests cover the chat image wiring.
-- The preview modal toolbar download button still uses the generic `下载原图` label. That toolbar has only one active preview image at a time; making the modal inherit the originating image label would require carrying preview metadata through `previewImage`, which is a separate slice.
+- Fixed in the next slice: preview modal toolbar download labels now inherit originating image context.
+
+## Iteration 2026-06-19 image-preview-context-labels
+
+Result: passed.
+
+Target flow:
+
+- Opening a Markdown image or chat message image keeps the existing preview modal, download behavior, and focus return, but the preview modal toolbar download button now inherits the originating image context instead of falling back to generic `下载原图`.
+
+Design direction:
+
+- Creative Production style intake selected: no visible layout change, preserve the Gemini-style image preview modal, make the toolbar label consistent with inline image controls, keep the download URL/source logic unchanged, and avoid model/API/account/sync/deploy/backend semantic changes.
+
+Scope:
+
+- `app/components/markdown.tsx`: extended `onPreviewImage` to pass the Markdown image alt text as preview context.
+- `app/components/chat.tsx`: added `previewImageActionLabels`, `openMarkdownImagePreview`, and an option-based `openImagePreview` call path so Markdown images pass `{ label }`, chat message images pass `{ trigger, label }`, and close resets labels to the default.
+- `app/components/chat.tsx`: changed the preview modal toolbar download button to use `previewImageActionLabels.download` for both `aria-label` and `title`.
+- `test/markdown-file-attachment.test.tsx`: added render-level coverage that Markdown preview clicks pass the alt label with the image URL.
+- `test/gemini-visual-migration.test.ts`: locked the preview modal label state, reset, Markdown wrapper, message-image trigger+label path, and toolbar binding.
+- No model config semantics, account/secret/sync, production config, deployment config, backend logic, image download source selection, proxy logic, generated-image result parsing, message content shape, upload limits, preview image `src`, modal close behavior, or persisted storage keys were changed.
+
+Automated checks:
+
+- `yarn test:ci --runTestsByPath test/markdown-file-attachment.test.tsx test/gemini-visual-migration.test.ts --runInBand` failed first as expected because Markdown preview clicks only passed `src`, chat still used the old `openImagePreview(src, trigger?)` contract, and the preview modal toolbar still used fixed `下载原图`.
+- `yarn test:ci --runTestsByPath test/markdown-file-attachment.test.tsx test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/image-action-labels.test.ts test/gemini-visual-migration.test.ts test/markdown-file-attachment.test.tsx test/markdown-code-language.test.tsx test/markdown-code-fold.test.tsx test/markdown-performance.test.tsx test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+- `git diff --check`
+
+Review:
+
+- Read-only sub-agent review found no Critical, Important, or blocking Minor issues.
+- The review confirmed Markdown alt -> `openMarkdownImagePreview` -> `openImagePreview` -> `previewImageActionLabels.download`, message image alt -> `MessageImagePreview` -> `openImagePreview`, close-time reset, focus return, and unchanged `downloadImage(previewImage)` behavior.
+- The only optional note was that a future stable chat render harness could add a true DOM-level message-image preview test; this slice keeps the existing source-contract pattern.
+
+Browser QA:
+
+- Desktop default Browser viewport `1280x720` at `/`: page rendered with title `NeatChat`, no framework overlay, `horizontalOverflowPx: 0`, `imageFrameCount: 0`, and no console warn/error logs.
+- Mobile `390x844` at `/#/chat`: page rendered after reload, no framework overlay, `horizontalOverflowPx: 0`, `imageFrameCount: 0`, and no console warn/error logs.
+- Narrow mobile `320x740` at `/#/chat`: page rendered after reload, no framework overlay, `horizontalOverflowPx: 0`, `imageFrameCount: 0`, and no console warn/error logs.
+- Browser viewport was reset to the default `1280x720`; reset check reported no framework overlay, `horizontalOverflowPx: 0`, and no console warn/error logs.
+
+Known risks:
+
+- Browser QA did not click a live persisted image preview/download button because the current Browser profile had no visible image-frame messages, and creating one would require mutating user data or triggering real model/API image generation. Render-level tests cover the Markdown preview label payload, and source-contract tests cover the chat preview modal label wiring.

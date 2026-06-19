@@ -2452,6 +2452,7 @@ describe("Gemini visual migration shell", () => {
 
   test("keeps chat image preview overlay focus-restoring and bounded", () => {
     const chat = read("app/components/chat.tsx");
+    const markdown = read("app/components/markdown.tsx");
     const chatStyles = read("app/components/chat.module.scss");
     const imagePreviewMaskBlock = readCssBlock(chatStyles, ".image-preview-mask");
     const reducedMotionBlock = readCssBlock(
@@ -2484,19 +2485,26 @@ describe("Gemini visual migration shell", () => {
     );
 
     expect(chat).toMatch(
-      /function MessageImagePreview\([\s\S]*onPreview: \(src: string, trigger\?: HTMLButtonElement \| null\) => void;[\s\S]*onClick=\{\(event\) => props\.onPreview\(props\.src, event\.currentTarget\)\}/,
+      /function MessageImagePreview\([\s\S]*onPreview: \(\s*src: string,\s*options\?: \{ trigger\?: HTMLButtonElement \| null; label\?: string \},\s*\) => void;[\s\S]*onClick=\{\(event\) =>\s*props\.onPreview\(props\.src, \{[\s\S]*trigger: event\.currentTarget,[\s\S]*label: props\.alt,[\s\S]*\}\)[\s\S]*\}/,
     );
     expect(chat).toContain(
       "const imagePreviewTriggerRef = useRef<HTMLButtonElement | null>(null);",
     );
     expect(chat).toMatch(
-      /const openImagePreview = useCallback\(\s*\(src: string, trigger\?: HTMLButtonElement \| null\) => \{[\s\S]*imagePreviewTriggerRef\.current = trigger \?\? null;[\s\S]*setPreviewImage\(src\);[\s\S]*\},\s*\[\]\s*\);/,
+      /const \[previewImageActionLabels, setPreviewImageActionLabels\] =\s*useState\(\s*getImageActionLabels\(\),?\s*\);/,
     );
     expect(chat).toMatch(
-      /const closeImagePreview = useCallback\(\(\) => \{[\s\S]*setPreviewImage\(null\);[\s\S]*requestAnimationFrame\(\(\) => \{[\s\S]*const previewTrigger = imagePreviewTriggerRef\.current;[\s\S]*if \(previewTrigger\?\.isConnected\) \{[\s\S]*previewTrigger\.focus\(\);[\s\S]*\}[\s\S]*imagePreviewTriggerRef\.current = null;[\s\S]*\}\);[\s\S]*\}, \[\]\);/,
+      /const openImagePreview = useCallback\(\s*\(\s*src: string,\s*options\?: \{ trigger\?: HTMLButtonElement \| null; label\?: string \},\s*\) => \{[\s\S]*imagePreviewTriggerRef\.current = options\?\.trigger \?\? null;[\s\S]*setPreviewImageActionLabels\(getImageActionLabels\(options\?\.label\)\);[\s\S]*setPreviewImage\(src\);[\s\S]*\},\s*\[\]\s*\);/,
     );
-    expect(chat).toContain("onPreviewImage={openImagePreview}");
+    expect(chat).toMatch(
+      /const closeImagePreview = useCallback\(\(\) => \{[\s\S]*setPreviewImage\(null\);[\s\S]*setPreviewImageActionLabels\(getImageActionLabels\(\)\);[\s\S]*requestAnimationFrame\(\(\) => \{[\s\S]*const previewTrigger = imagePreviewTriggerRef\.current;[\s\S]*if \(previewTrigger\?\.isConnected\) \{[\s\S]*previewTrigger\.focus\(\);[\s\S]*\}[\s\S]*imagePreviewTriggerRef\.current = null;[\s\S]*\}\);[\s\S]*\}, \[\]\);/,
+    );
+    expect(chat).toMatch(
+      /const openMarkdownImagePreview = useCallback\(\s*\(src: string, label\?: string\) => openImagePreview\(src, \{ label \}\),\s*\[openImagePreview\],\s*\);/,
+    );
+    expect(chat).toContain("onPreviewImage={openMarkdownImagePreview}");
     expect(chat).toContain("onPreview={openImagePreview}");
+    expect(markdown).toContain("props.onPreviewImage?.(src, alt);");
     expect(chat).toMatch(
       /const closePreview = \(event: KeyboardEvent\) => \{[\s\S]*if \(event\.key === "Escape"\) \{[\s\S]*event\.preventDefault\(\);[\s\S]*closeImagePreview\(\);[\s\S]*\}[\s\S]*\};/,
     );
@@ -2507,6 +2515,8 @@ describe("Gemini visual migration shell", () => {
       /onClick=\{\(event\) => \{[\s\S]*if \(event\.target === event\.currentTarget\) \{[\s\S]*closeImagePreview\(\);[\s\S]*\}[\s\S]*\}\}/,
     );
     expect(chat).toContain('aria-label="关闭预览"');
+    expect(chat).toContain("aria-label={previewImageActionLabels.download}");
+    expect(chat).toContain("title={previewImageActionLabels.download}");
     expect(chat).toMatch(
       /aria-label="关闭预览"[\s\S]*onClick=\{closeImagePreview\}/,
     );

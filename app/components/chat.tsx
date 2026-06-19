@@ -356,7 +356,10 @@ function MessageImagePreview(props: {
   alt?: string;
   className: string;
   actionLabels: ReturnType<typeof getImageActionLabels>;
-  onPreview: (src: string, trigger?: HTMLButtonElement | null) => void;
+  onPreview: (
+    src: string,
+    options?: { trigger?: HTMLButtonElement | null; label?: string },
+  ) => void;
   onDownload: (src: string) => void | Promise<void>;
 }) {
   return (
@@ -365,7 +368,12 @@ function MessageImagePreview(props: {
         type="button"
         className={styles["chat-message-image-preview-button"]}
         aria-label={props.actionLabels.preview}
-        onClick={(event) => props.onPreview(props.src, event.currentTarget)}
+        onClick={(event) =>
+          props.onPreview(props.src, {
+            trigger: event.currentTarget,
+            label: props.alt,
+          })
+        }
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -3106,6 +3114,9 @@ function useChatInnerView() {
   // 在_Chat组件中添加状态
   const [editingImage, setEditingImage] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewImageActionLabels, setPreviewImageActionLabels] = useState(
+    getImageActionLabels(),
+  );
   const imagePreviewTriggerRef = useRef<HTMLButtonElement | null>(null);
   const chatInputMenuButtonRef = useRef<HTMLButtonElement>(null);
   const chatInputActionMenuRef = useRef<HTMLDivElement>(null);
@@ -3180,14 +3191,23 @@ function useChatInnerView() {
     focusChatActionMenuControl(event.key);
   };
   const openImagePreview = useCallback(
-    (src: string, trigger?: HTMLButtonElement | null) => {
-      imagePreviewTriggerRef.current = trigger ?? null;
+    (
+      src: string,
+      options?: { trigger?: HTMLButtonElement | null; label?: string },
+    ) => {
+      imagePreviewTriggerRef.current = options?.trigger ?? null;
+      setPreviewImageActionLabels(getImageActionLabels(options?.label));
       setPreviewImage(src);
     },
     [],
   );
+  const openMarkdownImagePreview = useCallback(
+    (src: string, label?: string) => openImagePreview(src, { label }),
+    [openImagePreview],
+  );
   const closeImagePreview = useCallback(() => {
     setPreviewImage(null);
+    setPreviewImageActionLabels(getImageActionLabels());
     requestAnimationFrame(() => {
       const previewTrigger = imagePreviewTriggerRef.current;
       if (previewTrigger?.isConnected) {
@@ -4045,7 +4065,7 @@ function useChatInnerView() {
                               session.mask?.enableCodeFold !== false
                             }
                             onContentChange={scrollDomToBottom}
-                            onPreviewImage={openImagePreview}
+                            onPreviewImage={openMarkdownImagePreview}
                             onDownloadImage={downloadImage}
                           />
                           {messageImages.length == 1 && (
@@ -4571,8 +4591,8 @@ function useChatInnerView() {
             <button
               type="button"
               className={styles["image-preview-button"]}
-              aria-label="下载原图"
-              title="下载原图"
+              aria-label={previewImageActionLabels.download}
+              title={previewImageActionLabels.download}
               onClick={() => downloadImage(previewImage)}
             >
               <DownloadIcon />
