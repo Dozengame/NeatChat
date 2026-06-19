@@ -2661,3 +2661,51 @@ Known risks:
 
 - Browser QA did not click a live persisted code-copy button because current local history has no code-block messages and creating one would mutate user data or risk model/API paths. Render-level tests cover the real `PreCode` tooltip/live-label behavior for deterministic code blocks.
 - A separate hidden status node may be more consistently announced by every screen reader, but that would add DOM and state plumbing beyond this narrow copy-button affordance slice.
+
+## Iteration 2026-06-19 markdown-code-copy-status-node
+
+Result: passed.
+
+Target flow:
+
+- AI-rendered Markdown code blocks keep the existing copy button visual treatment, tooltip, copied state, and optimistic copy behavior, but copied feedback is now also exposed through a dedicated visually hidden `role="status"` node outside the native button so assistive announcements do not depend only on the focusable button's own label mutation.
+
+Design direction:
+
+- Creative Production style intake selected: no visible layout change, preserve Gemini-style code chrome, make copy feedback more robust for assistive technology, keep the status node quiet while idle, and avoid model/API/account/sync/deploy/backend semantic changes.
+
+Scope:
+
+- `app/components/markdown.tsx`: added a sibling `.copy-code-status` node after the code-copy button, with `role="status"`, `aria-live="polite"`, and `aria-atomic="true"`. It stays empty while idle and announces `codeCopyLabel` only while the copied state is active.
+- `app/styles/globals.scss`: added `pre .copy-code-status` visually-hidden styling so the status node does not affect the fixed 34px copy button or code-block layout.
+- `test/markdown-code-language.test.tsx`: added render-level coverage for the status node, copied/idle text transitions, and the structure guarantee that the status node is not nested inside the button.
+- `test/gemini-visual-migration.test.ts`: locked the source/CSS contract for the sibling status node and its hidden style.
+- No model config semantics, account/secret/sync, production config, deployment config, backend logic, token math, localStorage keys, upload limits, copy payload selection, copied timer behavior, copied icon styling, Mermaid rendering, HTML preview, code folding, code language labels, or visible code block layout were changed.
+
+Automated checks:
+
+- `yarn jest test/markdown-code-language.test.tsx --runInBand` failed first as expected because the old code-copy affordance had no dedicated `role="status"` node.
+- Read-only review found a P1 issue in the first implementation: the status node was inside the native button, so it might be folded into the button's accessibility tree. A follow-up RED assertion `expect(copyButton).not.toContainElement(status)` reproduced the issue.
+- The P1 was fixed by moving `.copy-code-status` after the button as a sibling and moving the hidden style to `pre .copy-code-status`.
+- `yarn jest test/markdown-code-language.test.tsx test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts test/markdown-code-language.test.tsx test/markdown-code-fold.test.tsx test/markdown-performance.test.tsx test/markdown-file-attachment.test.tsx test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+
+Review:
+
+- Initial read-only review found the nested status P1 and a test gap; both were fixed with sibling placement and a structure assertion.
+- Follow-up read-only review found no blocking issues. It confirmed `.copy-code-status` is a button sibling, the hidden CSS is scoped under `pre`, and copy payload/timer/visual styles/model/API/backend semantics were not changed.
+
+Browser QA:
+
+- Desktop `1440x1024` at `/`: after restarting the dev server, the app rendered with title `NeatChat`, composer input `left: 563`, `right: 1137`, panel `left: 490`, `right: 1250`, no framework overlay, `horizontalOverflowPx: 0`, copied-state CSS loaded, hidden status CSS loaded, and no console warn/error logs.
+- Mobile `390x844` at `/#/chat`: composer input `left: 67`, `right: 313`, panel `left: 10`, `right: 380`, no framework overlay, `horizontalOverflowPx: 0`, copied-state CSS loaded, hidden status CSS loaded, and no console warn/error logs.
+- Narrow mobile `320x740` at `/#/chat`: composer input `left: 67`, `right: 243`, panel `left: 10`, `right: 310`, no framework overlay, `horizontalOverflowPx: 0`, copied-state CSS loaded, hidden status CSS loaded, and no console warn/error logs.
+- A Browser check immediately after `yarn build` left the app body empty until the dev server was restarted; after restart, the same routes rendered normally. This is recorded as a dev-server runtime artifact, not a product-code change.
+
+Known risks:
+
+- Browser QA did not click a live persisted code-copy button because current local history has no code-block messages and creating one would mutate user data or risk model/API paths. Render-level tests cover the real `PreCode` sibling status behavior for deterministic code blocks.
+- The next high-value UI slice identified by read-only exploration is image message action context labels, especially for existing local image conversations such as `日出东方图`.

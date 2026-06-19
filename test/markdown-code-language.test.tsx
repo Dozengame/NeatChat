@@ -102,6 +102,32 @@ describe("PreCode language labels", () => {
     expect(copyButton).toHaveAttribute("title", "复制 TypeScript 代码");
   });
 
+  test("keeps copied feedback in a dedicated hidden status", () => {
+    jest.useFakeTimers();
+    renderCodeBlock("language-typescript");
+
+    const copyButton = screen.getByRole("button", {
+      name: "复制 TypeScript 代码",
+    });
+    const status = screen.getByRole("status");
+
+    expect(copyButton).not.toContainElement(status);
+    expect(status).toHaveClass("copy-code-status");
+    expect(status).toHaveAttribute("aria-live", "polite");
+    expect(status).toHaveAttribute("aria-atomic", "true");
+    expect(status).toHaveTextContent("");
+
+    fireEvent.click(copyButton);
+
+    expect(status).toHaveTextContent("已复制 TypeScript 代码");
+
+    act(() => {
+      jest.advanceTimersByTime(1400);
+    });
+
+    expect(status).toHaveTextContent("");
+  });
+
   test("shows a temporary copied state after copying code", () => {
     jest.useFakeTimers();
     renderCodeBlock("language-typescript");

@@ -1695,6 +1695,10 @@ describe("Gemini visual migration shell", () => {
       copyButtonBlock,
       '&[data-copy-state="copied"]',
     );
+    const copyButtonStatusBlock = readCssBlock(
+      globalPreBlock,
+      ".copy-code-status",
+    );
     const focusVisibleBlock = readCssBlock(copyButtonBlock, "&:focus-visible");
     const darkCopyButtonBlock = readCssBlock(
       globalStyles,
@@ -1758,6 +1762,9 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toContain('aria-live="polite"');
     expect(markdown).toContain('aria-atomic="true"');
     expect(markdown).toContain("title={codeCopyLabel}");
+    expect(markdown).toContain('className="copy-code-status"');
+    expect(markdown).toContain('role="status"');
+    expect(markdown).toContain("{copied ? codeCopyLabel : \"\"}");
     expect(markdown).toContain('data-copy-state={copied ? "copied" : "idle"}');
     expect(markdown).toContain("id={codeBlockId}");
     expect(markdown).toContain("aria-controls={codeBlockId}");
@@ -1784,6 +1791,12 @@ describe("Gemini visual migration shell", () => {
     expect(copyButtonBlock).toMatch(/pointer-events:\s*none;/);
     expect(copyButtonBlock).toMatch(/opacity:\s*0;/);
     expect(copyButtonBlock).toMatch(/stroke:\s*currentColor !important;/);
+    expect(copyButtonStatusBlock).toMatch(/position:\s*absolute;/);
+    expect(copyButtonStatusBlock).toMatch(/width:\s*1px;/);
+    expect(copyButtonStatusBlock).toMatch(/height:\s*1px;/);
+    expect(copyButtonStatusBlock).toMatch(/overflow:\s*hidden;/);
+    expect(copyButtonStatusBlock).toMatch(/clip:\s*rect\(0,\s*0,\s*0,\s*0\);/);
+    expect(copyButtonStatusBlock).toMatch(/white-space:\s*nowrap;/);
     expect(copyButtonCopiedBlock).toMatch(/pointer-events:\s*all;/);
     expect(copyButtonCopiedBlock).toMatch(/opacity:\s*1;/);
     expect(copyButtonCopiedBlock).toMatch(/transform:\s*translateY\(0\);/);

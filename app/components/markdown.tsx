@@ -258,6 +258,14 @@ export function PreCode(props: { children: any }) {
         >
           {copied ? <ConfirmIcon /> : <CopyIcon />}
         </button>
+        <span
+          className="copy-code-status"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {copied ? codeCopyLabel : ""}
+        </span>
         {props.children}
       </pre>
       {mermaidCode.length > 0 && (
