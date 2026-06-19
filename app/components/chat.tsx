@@ -4376,7 +4376,7 @@ function useChatInnerView() {
                         <button
                           type="button"
                           className={styles["attach-image"]}
-                          aria-label="编辑图片附件"
+                          aria-label={`编辑第 ${index + 1} 张图片附件`}
                           style={{ backgroundImage: `url("${image}")` }}
                           onClick={() => setEditingImage(image)}
                         />
@@ -4407,6 +4407,9 @@ function useChatInnerView() {
                         <button
                           type="button"
                           className={styles["attach-file"]}
+                          aria-label={`编辑第 ${index + 1} 个文件附件：${
+                            file.name
+                          }`}
                           onClick={async () => {
                             // 使用与消息编辑相同的showPrompt函数
                             const newContent = await showPrompt(

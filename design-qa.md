@@ -2900,3 +2900,49 @@ Browser QA:
 Known risks:
 
 - Browser QA used paste-created image and long-text file attachments, not the native OS file picker, to avoid external dialogs and persistent user data changes. The slice intentionally changes only accessible names, so this covers the active composer attachment strip without touching upload or file picker semantics.
+
+## Iteration 2026-06-19 attachment-edit-context-labels
+
+Result: passed.
+
+Target flow:
+
+- Composer attachment strip keeps the existing image edit, file edit, delete, upload, and submit behavior, but image and file edit controls now expose contextual labels instead of generic or implicit names.
+
+Design direction:
+
+- Creative Production style intake selected: no visual layout churn, continue the Gemini-style compact attachment strip, make edit and delete controls use the same contextual naming model, keep attachment state/edit semantics unchanged, and avoid model/API/account/sync/deploy/backend semantic changes.
+
+Scope:
+
+- `app/components/chat.tsx`: labeled image edit buttons as `编辑第 N 张图片附件` and file edit buttons as `编辑第 N 个文件附件：文件名`.
+- `test/gemini-visual-migration.test.ts`: added source-contract coverage for contextual image/file attachment edit labels.
+- No model config semantics, account/secret/sync, production config, deployment config, backend logic, upload limits, attachment content shape, image editor path, file edit prompt path, delete handlers, send behavior, persisted storage keys, or API behavior were changed.
+
+Automated checks:
+
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts --runInBand` failed first as expected because image edit was still labeled `编辑图片附件` and file edit had no explicit action label.
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts test/image-action-labels.test.ts test/markdown-file-attachment.test.tsx test/markdown-code-language.test.tsx test/markdown-code-fold.test.tsx test/markdown-performance.test.tsx test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+- `git diff --check`
+
+Review:
+
+- Read-only code review found no blocking issues. Minor feedback requested replacing the pending review note before commit; this entry was updated before commit.
+
+Browser QA:
+
+- First Browser pass exposed a stale dev bundle after prior build work: runtime attachment edit labels still showed the old `编辑图片附件`. The dev server was restarted and the QA pass below is from the fresh dev process.
+- Desktop default Browser viewport `1280x720` at `/#/chat`: pasted one image data URL and one long-text file attachment through the real composer paste path. Page rendered with title `NeatChat`, no framework overlay, `horizontalOverflowPx: 0`, `itemCount: 2`, file name `粘贴的文本.txt`, labels `编辑第 1 张图片附件`, `删除第 1 张图片附件`, `编辑第 1 个文件附件：粘贴的文本.txt`, and `删除第 1 个文件附件：粘贴的文本.txt`; composer input rect `left: 423`, `right: 1113`, panel rect `left: 350`, `right: 1230`, and no console warn/error logs for the QA window.
+- Desktop role checks found exactly one `编辑第 1 张图片附件` button and exactly one `编辑第 1 个文件附件：粘贴的文本.txt` button.
+- Mobile `390x844` at `/#/chat`: the same paste-created image/file attachment strip rendered with contextual edit/delete labels, no framework overlay, `horizontalOverflowPx: 0`, input rect `left: 67`, `right: 313`, panel rect `left: 10`, `right: 380`, and no console warn/error logs for the QA window. Role checks again found exactly one image edit button and one file edit button.
+- Narrow mobile `320x740` with the same attachments: page rendered with title `NeatChat`, composer input present, contextual edit/delete labels still present, no framework overlay, `horizontalOverflowPx: 0`, `itemCount: 2`, and no console warn/error logs for the QA window. Role checks again found exactly one image edit button and one file edit button.
+- Browser viewport was reset to the default `1280x720`; cleanup removed the paste-created attachments, leaving `itemCount: 0`, no framework overlay, `horizontalOverflowPx: 0`, and no cleanup console warn/error logs.
+- Browser viewport screenshot capture completed without timeout in this pass; DOM/layout metrics remain the primary recorded evidence because they directly cover labels, bounds, overflow, and console health for this narrow slice.
+
+Known risks:
+
+- Browser QA used paste-created image and long-text file attachments, not the native OS file picker, to avoid external dialogs and persistent user data changes. The slice intentionally changes only accessible names, so this covers the active composer attachment strip without touching upload, file picker, image editor, or file edit prompt semantics.
