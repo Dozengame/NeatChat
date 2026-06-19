@@ -2361,16 +2361,31 @@ describe("Gemini visual migration shell", () => {
     expect(shimmerBlock).toMatch(/animation:\s*shimmer 1\.6s infinite linear/);
     expect(shimmerBlock).not.toContain("* {");
     expect(chatStyles).toContain("@keyframes streamingShimmerFade");
+    expect(chatStyles).toContain("@keyframes streamingSurfaceHandoff");
+    expect(chatStyles).toMatch(
+      /@keyframes streamingShimmerFade[\s\S]*100%[\s\S]*opacity:\s*0;[\s\S]*transform:\s*translateX\(18%\) scaleX\(1\.02\);/,
+    );
+    expect(chatStyles).toMatch(
+      /@keyframes streamingSurfaceHandoff[\s\S]*0%[\s\S]*box-shadow:[\s\S]*inset 0 0 0 1px rgba\(66,\s*133,\s*244,\s*0\.1\)[\s\S]*100%[\s\S]*box-shadow:[\s\S]*rgba\(66,\s*133,\s*244,\s*0\)/,
+    );
     expect(streamingRevealBlock).toMatch(/transition:\s*border-color 0\.18s ease/);
     expect(streamingRevealBlock).toMatch(/overflow-anchor:\s*none;/);
     expect(streamingRevealBlock).toMatch(/isolation:\s*isolate;/);
+    expect(streamingRevealBlock).toMatch(
+      /animation:\s*streamingSurfaceHandoff 0\.42s cubic-bezier\(0\.2,\s*0,\s*0,\s*1\) both;/,
+    );
     expect(streamingRevealBlock).toContain(":global(.markdown-body-container)");
     expect(streamingRevealBlock).toMatch(/transform-origin:\s*top left;/);
-    expect(streamingRevealBlock).toMatch(/animation:\s*streamingTextReveal 0\.18s ease-out both;/);
+    expect(streamingRevealBlock).toMatch(
+      /animation:\s*streamingTextReveal 0\.24s cubic-bezier\(0\.2,\s*0,\s*0,\s*1\) both;/,
+    );
     expect(streamingRevealBlock).toContain("&::after");
+    expect(streamingRevealBlock).toMatch(/position:\s*absolute;/);
+    expect(streamingRevealBlock).toMatch(/inset:\s*0;/);
+    expect(streamingRevealBlock).toMatch(/z-index:\s*1;/);
     expect(streamingRevealBlock).toMatch(/pointer-events:\s*none;/);
     expect(streamingRevealBlock).toMatch(
-      /animation:\s*streamingShimmerFade 0\.36s ease-out both;/,
+      /animation:\s*streamingShimmerFade 0\.42s cubic-bezier\(0\.2,\s*0,\s*0,\s*1\) both;/,
     );
     expect(streamingRevealBlock).toMatch(
       /background:\s*linear-gradient\(\s*90deg,\s*transparent 0%,[\s\S]*rgba\(66,\s*133,\s*244,\s*0\.18\)/,
@@ -2390,6 +2405,9 @@ describe("Gemini visual migration shell", () => {
     expect(reducedMotionBlock).toContain("animation: none !important");
     expect(reducedMotionBlock).toMatch(
       /\.chat-message-streaming-reveal[\s\S]*&::after[\s\S]*display:\s*none;/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-message-streaming-reveal[\s\S]*animation:\s*none !important;[\s\S]*box-shadow:\s*none !important;/,
     );
   });
 });

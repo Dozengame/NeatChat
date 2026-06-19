@@ -2252,3 +2252,42 @@ Browser QA:
 Known risks:
 
 - Browser screenshot capture still times out at `Page.captureScreenshot`, matching earlier project QA limitations. This iteration is verified by Browser DOM/layout metrics, runtime CSSOM, read-only review, and automated tests instead of screenshot output.
+
+## Iteration 2026-06-19 streaming-handoff-polish
+
+Result: passed.
+
+Target flow:
+
+- When an assistant response switches from the waiting skeleton to first streamed text, the handoff keeps the Gemini-style shimmer continuity while avoiding layout shift, abrupt surface flash, or persistent motion after content appears.
+
+Design direction:
+
+- Creative Production style intake selected: soft handoff, low latency, reveal sweep, reduced-motion safe, thin prism glow, no layout shift, content-first, dark-mode balanced, CSS-only, no API semantics, and browser-verifiable.
+
+Scope:
+
+- `app/components/chat.module.scss`: added a short surface handoff animation, softened the shimmer fade path, lengthened the first-text reveal to a calmer cubic-bezier curve, and disabled the new surface/shimmer/text animations under reduced motion.
+- `test/gemini-visual-migration.test.ts`: locked the streaming handoff keyframe, timing curve, shimmer fade timing, text reveal timing, and reduced-motion stop without changing message streaming semantics, model APIs, MCP/Jimeng, stores, account/sync, Tauri config, deployment config, or secrets.
+- `design-qa.md`: recorded the design direction, Browser QA, screenshot limitation, review result, and validation commands for this slice.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the previous streaming reveal state had no `streamingSurfaceHandoff` keyframe or surface animation contract.
+- Read-only sub-agent review found no blocking issues. It flagged a low-risk test gap around the shimmer `::after` layout contract; this was addressed by locking absolute positioning, full inset, layer order, pointer safety, and the final transparent shimmer state in Jest.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop default viewport at `http://localhost:3000/?qa=streaming-handoff`: page rendered with NeatChat shell, recent chats, empty-chat suggestions, and composer visible; control console had no warn/error entries. Runtime CSSOM confirmed hashed loaded rules for `streamingSurfaceHandoff`, `streamingShimmerFade`, `streamingTextReveal`, `.chat-message-streaming-reveal`, the shimmer `::after`, markdown-body reveal, and the reduced-motion stop.
+- Mobile `390x844`: after the normal client-side hydration step, the chat screen rendered with composer and suggestions visible, `horizontalOverflowPx: 0`, the streaming handoff keyframe loaded, the reduced-motion stop loaded, and control console had no warn/error entries.
+- Live API streaming was not invoked because this slice is CSS-only and must not require real accounts/API keys. The transient streaming visual state is verified through source tests plus Browser CSSOM on the running app.
+
+Known risks:
+
+- Browser screenshot capture still times out at `Page.captureScreenshot`, matching earlier project QA limitations. This iteration is verified by Browser DOM/layout metrics, runtime CSSOM, console logs, read-only review, and automated tests instead of screenshot output.
