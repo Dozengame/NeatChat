@@ -2946,3 +2946,51 @@ Browser QA:
 Known risks:
 
 - Browser QA used paste-created image and long-text file attachments, not the native OS file picker, to avoid external dialogs and persistent user data changes. The slice intentionally changes only accessible names, so this covers the active composer attachment strip without touching upload, file picker, image editor, or file edit prompt semantics.
+
+## Iteration 2026-06-19 image-preview-dialog-context-label
+
+Result: passed.
+
+Target flow:
+
+- Opening a Markdown image or chat message image keeps the existing preview modal, image source, alt text, toolbar download label, close behavior, focus return, and download semantics, but the preview dialog itself now exposes the originating image context instead of always being named `图片预览`.
+
+Design direction:
+
+- Creative Production style intake selected: no visible layout change, continue the Gemini-style preview overlay, keep dialog naming aligned with inline preview labels, modal image alt, and toolbar download labels, and avoid model/API/account/sync/deploy/backend semantic changes.
+
+Scope:
+
+- `app/utils/image-action-labels.ts`: added `getImagePreviewDialogLabel`, which trims supplied context, returns `图片预览` by default or for generic `图片`, and returns `图片预览：<context>` when non-default image context exists.
+- `app/components/chat.tsx`: added `previewImageDialogLabel` state, set it from Markdown alt or chat message image label when opening the preview, reset it on close, and bound the dialog `aria-label` to that state.
+- `test/image-action-labels.test.ts`: added helper coverage for default, whitespace-only, generic `图片`, trimmed alt text, and numbered multi-image labels.
+- `test/gemini-visual-migration.test.ts`: locked the helper import, preview dialog label state, open/reset path, and removed the fixed `aria-label="图片预览"` contract.
+- No model config semantics, account/secret/sync, production config, deployment config, backend logic, image download source selection, proxy logic, generated-image result parsing, message content shape, upload limits, preview image `src`, modal image `alt`, toolbar labels, close behavior, focus restore, or persisted storage keys were changed.
+
+Automated checks:
+
+- `yarn test:ci --runTestsByPath test/image-action-labels.test.ts test/gemini-visual-migration.test.ts --runInBand` failed first as expected because `getImagePreviewDialogLabel` and the `previewImageDialogLabel` state did not exist, and the dialog still used fixed `aria-label="图片预览"`.
+- `yarn test:ci --runTestsByPath test/image-action-labels.test.ts test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/image-action-labels.test.ts test/gemini-visual-migration.test.ts test/markdown-file-attachment.test.tsx test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+- `git diff --check`
+
+Review:
+
+- Read-only code review found no blocking issues and confirmed the preview dialog label state updates with the same source context as `previewImageAlt` / `previewImageActionLabels`, while preview `src`, download, close handlers, and focus restore stay unchanged.
+- The review suggested locking whitespace-only fallback and avoiding the redundant single-image label `图片预览：图片`; both were handled in `getImagePreviewDialogLabel` and helper tests before commit.
+- The remaining optional note was that a future stable chat render harness could add a true DOM-level preview dialog click test. This slice keeps the existing helper/source-contract pattern because Browser had no visible persisted image-frame messages.
+
+Browser QA:
+
+- Desktop default Browser viewport `1280x720` at `http://localhost:3000/#/chat`: page rendered with title `NeatChat`, no framework overlay, `horizontalOverflowPx: 0`, composer input rect `left: 483`, `right: 1057`, panel rect `left: 410`, `right: 1170`, `imageFrameCount: 0`, `previewDialogCount: 0`, and no console warn/error logs.
+- Mobile `390x844` at `/#/chat`: page rendered with title `NeatChat`, no framework overlay, `horizontalOverflowPx: 0`, composer input rect `left: 67`, `right: 313`, panel rect `left: 10`, `right: 380`, `imageFrameCount: 0`, `previewDialogCount: 0`, and no console warn/error logs.
+- Narrow mobile `320x740` at `/#/chat`: page rendered with title `NeatChat`, no framework overlay, `horizontalOverflowPx: 0`, composer input rect `left: 67`, `right: 243`, panel rect `left: 10`, `right: 310`, `imageFrameCount: 0`, `previewDialogCount: 0`, and no console warn/error logs.
+- Browser viewport screenshot capture completed successfully. DOM/layout metrics remain the primary recorded evidence because they directly cover route health, bounds, overflow, and console state for this narrow slice.
+- Browser viewport was reset to the default after QA.
+
+Known risks:
+
+- Browser QA did not click a live persisted image preview button because the current Browser profile had no visible image-frame messages, and creating one would require mutating user data or triggering real model/API image generation. Helper tests cover dialog label derivation, and source-contract tests cover Markdown/chat preview context propagation into the dialog `aria-label`.

@@ -2,6 +2,7 @@ import {
   getImageActionLabels,
   getMessageImageLabel,
   getImagePreviewAlt,
+  getImagePreviewDialogLabel,
 } from "../app/utils/image-action-labels";
 
 describe("image action labels", () => {
@@ -28,5 +29,17 @@ describe("image action labels", () => {
     expect(getImagePreviewAlt()).toBe("图片预览");
     expect(getImagePreviewAlt(" generated sunrise ")).toBe("generated sunrise");
     expect(getImagePreviewAlt("第 2 张图片")).toBe("第 2 张图片");
+  });
+
+  test("uses image context for the preview dialog label", () => {
+    expect(getImagePreviewDialogLabel()).toBe("图片预览");
+    expect(getImagePreviewDialogLabel("   ")).toBe("图片预览");
+    expect(getImagePreviewDialogLabel("图片")).toBe("图片预览");
+    expect(getImagePreviewDialogLabel(" generated sunrise ")).toBe(
+      "图片预览：generated sunrise",
+    );
+    expect(getImagePreviewDialogLabel("第 2 张图片")).toBe(
+      "图片预览：第 2 张图片",
+    );
   });
 });

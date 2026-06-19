@@ -79,6 +79,7 @@ import {
 } from "../utils";
 import {
   getImageActionLabels,
+  getImagePreviewDialogLabel,
   getImagePreviewAlt,
   getMessageImageLabel,
 } from "../utils/image-action-labels";
@@ -3122,6 +3123,9 @@ function useChatInnerView() {
     getImageActionLabels(),
   );
   const [previewImageAlt, setPreviewImageAlt] = useState(getImagePreviewAlt());
+  const [previewImageDialogLabel, setPreviewImageDialogLabel] = useState(
+    getImagePreviewDialogLabel(),
+  );
   const imagePreviewTriggerRef = useRef<HTMLButtonElement | null>(null);
   const chatInputMenuButtonRef = useRef<HTMLButtonElement>(null);
   const chatInputActionMenuRef = useRef<HTMLDivElement>(null);
@@ -3203,6 +3207,7 @@ function useChatInnerView() {
       imagePreviewTriggerRef.current = options?.trigger ?? null;
       setPreviewImageActionLabels(getImageActionLabels(options?.label));
       setPreviewImageAlt(getImagePreviewAlt(options?.label));
+      setPreviewImageDialogLabel(getImagePreviewDialogLabel(options?.label));
       setPreviewImage(src);
     },
     [],
@@ -3215,6 +3220,7 @@ function useChatInnerView() {
     setPreviewImage(null);
     setPreviewImageActionLabels(getImageActionLabels());
     setPreviewImageAlt(getImagePreviewAlt());
+    setPreviewImageDialogLabel(getImagePreviewDialogLabel());
     requestAnimationFrame(() => {
       const previewTrigger = imagePreviewTriggerRef.current;
       if (previewTrigger?.isConnected) {
@@ -4590,7 +4596,7 @@ function useChatInnerView() {
           open
           className={styles["image-preview-mask"]}
           aria-modal="true"
-          aria-label="图片预览"
+          aria-label={previewImageDialogLabel}
           onCancel={(event) => {
             event.preventDefault();
             closeImagePreview();
