@@ -3474,3 +3474,50 @@ Known risks:
 
 - in-app Browser evaluate is read-only and blocks temporary DOM construction via `document.createElement`, so live DOM shape is covered by the source/Jest contract and runtime CSSOM rather than injected DOM measurement.
 - Read-only exploration identified the next recommended UI slice as the shortcut key modal's dialog semantics and narrow-screen key-row readability.
+
+## Iteration 2026-06-20 shortcut-modal-semantics
+
+Result: passed.
+
+Target flow:
+
+- The keyboard shortcut modal should be announced as a real dialog with a stable title, and its shortcuts should read as a concise list rather than a set of unlabelled visual rows.
+- Compact screens should keep shortcut labels and key tokens readable without horizontal overflow or compressed key groups.
+- The change must not alter model config semantics, shortcut behavior, account/secret/sync, backend/API, production config, deployment config, persisted store keys, or existing modal close behavior.
+
+Design direction:
+
+- Creative Production style intake selected: keep the existing Gemini-style utility modal surface, improve its semantic structure, and make compact key rows scan as title-first rows with key chips below.
+- The visual change stays quiet and layout-focused: no new colors, assets, copy, dependencies, or backend behavior.
+
+Scope:
+
+- `app/components/chat.tsx`: added `shortcut-key-modal` dialog semantics, `aria-modal`, title association via `shortcut-key-modal-title`, and list/listitem semantics with readable shortcut labels.
+- `app/components/chat.module.scss`: added flex sizing for shortcut titles/key rows and switched compact shortcut rows to a vertical title + key-token layout.
+- `test/gemini-visual-migration.test.ts`: extended the shortcut modal contract to cover dialog title association, list semantics, item labels, and compact key-row layout rules.
+- No model config semantics, shortcut key mappings, account/secret/sync, backend/API, production config, deployment config, or persisted app store keys were changed.
+
+Automated checks:
+
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="keeps shortcut key modal bounded"` failed first as expected because the shortcut modal lacked the new semantic and compact-layout contract.
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="keeps shortcut key modal bounded"`
+- `npx jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `git diff --check`
+- `yarn build`
+
+Review:
+
+- Read-only code review found no Critical or Important issues.
+- Remaining risk noted by review: source/CSS static tests alone cannot prove actual assistive technology output, but Browser QA verified the runtime dialog/list semantics and compact layout.
+
+Browser QA:
+
+- in-app Browser at `http://localhost:3000/`, desktop viewport `1440x1024`: opened the modal with `Control+/`, verified `role="dialog"`, `aria-modal="true"`, `aria-labelledby="shortcut-key-modal-title"`, title text `键盘快捷方式`, `role="list"`, 5 `role="listitem"` shortcut rows, readable item labels, row layout `row`, no horizontal overflow, and console warn/error logs: `0`.
+- in-app Browser compact viewport `390x844`: repeated the semantic checks, verified the 5 shortcut rows switched to `flex-direction: column`, key rows used `justify-content: flex-start`, key row width stayed inside item width, page horizontal overflow stayed `0`, and console warn/error logs: `0`.
+- Browser QA did not send a message, did not call a model/API, did not upload files, and did not persist production data.
+
+Known risks:
+
+- QA covered the Chinese locale runtime labels and current keyboard shortcut set. If future shortcut names become much longer, the compact row should be rechecked around 320px width.

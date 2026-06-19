@@ -2846,8 +2846,23 @@ describe("Gemini visual migration shell", () => {
     );
 
     expect(chat).toContain("export function ShortcutKeyModal");
+    expect(chat).toContain(
+      'const shortcutKeyModalTitleId = "shortcut-key-modal-title";',
+    );
+    expect(chat).toMatch(
+      /<div[\s\S]*className="modal-mask"[\s\S]*id="shortcut-key-modal"[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*aria-labelledby=\{shortcutKeyModalTitleId\}/,
+    );
+    expect(chat).toMatch(
+      /title=\{\s*<span id=\{shortcutKeyModalTitleId\}>[\s\S]*Locale\.Chat\.ShortcutKey\.Title[\s\S]*<\/span>\s*\}/,
+    );
     expect(chat).toContain('styles["shortcut-key-container"]');
     expect(chat).toContain('styles["shortcut-key-grid"]');
+    expect(chat).toMatch(
+      /className=\{styles\["shortcut-key-grid"\]\}[\s\S]*role="list"[\s\S]*aria-label=\{Locale\.Chat\.ShortcutKey\.Title\}/,
+    );
+    expect(chat).toMatch(
+      /role="listitem"[\s\S]*aria-label=\{\`\$\{shortcut\.title\}: \$\{shortcut\.keys\.join\(" \+ "\)\}\`\}/,
+    );
     expect(chat).toContain("showShortcutKeyModal &&");
     expect(shortcutContainerBlock).toMatch(/max-height:\s*min\(70vh, 560px\);/);
     expect(shortcutContainerBlock).toMatch(/overflow-x:\s*hidden;/);
@@ -2858,10 +2873,12 @@ describe("Gemini visual migration shell", () => {
     expect(shortcutItemBlock).toMatch(/min-width:\s*0;/);
     expect(shortcutItemBlock).toMatch(/gap:\s*12px;/);
     expect(shortcutItemBlock).toMatch(/border-radius:\s*14px;/);
+    expect(shortcutTitleBlock).toMatch(/flex:\s*1 1 auto;/);
     expect(shortcutTitleBlock).toMatch(/min-width:\s*0;/);
     expect(shortcutTitleBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(shortcutKeysBlock).toMatch(/flex-wrap:\s*wrap;/);
     expect(shortcutKeysBlock).toMatch(/justify-content:\s*flex-end;/);
+    expect(shortcutKeysBlock).toMatch(/flex:\s*0 1 auto;/);
     expect(shortcutKeysBlock).toMatch(/min-width:\s*0;/);
     expect(shortcutKeyBlock).toMatch(/min-height:\s*30px;/);
     expect(shortcutKeyTextBlock).toMatch(/white-space:\s*nowrap;/);
@@ -2872,7 +2889,9 @@ describe("Gemini visual migration shell", () => {
       /grid-template-columns:\s*minmax\(0, 1fr\);/,
     );
     expect(mobileShortcutItemBlock).toMatch(/align-items:\s*flex-start;/);
+    expect(mobileShortcutItemBlock).toMatch(/flex-direction:\s*column;/);
     expect(mobileShortcutKeysBlock).toMatch(/justify-content:\s*flex-start;/);
+    expect(mobileShortcutKeysBlock).toMatch(/width:\s*100%;/);
   });
 
   test("keeps file drag-and-drop scoped and visually polished", () => {

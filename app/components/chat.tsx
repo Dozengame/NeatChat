@@ -1565,6 +1565,7 @@ export function DeleteImageButton(props: {
 
 export function ShortcutKeyModal(props: { onClose: () => void }) {
   const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+  const shortcutKeyModalTitleId = "shortcut-key-modal-title";
   const shortcuts = [
     {
       title: Locale.Chat.ShortcutKey.newChat,
@@ -1585,9 +1586,19 @@ export function ShortcutKeyModal(props: { onClose: () => void }) {
     },
   ];
   return (
-    <div className="modal-mask">
+    <div
+      className="modal-mask"
+      id="shortcut-key-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={shortcutKeyModalTitleId}
+    >
       <Modal
-        title={Locale.Chat.ShortcutKey.Title}
+        title={
+          <span id={shortcutKeyModalTitleId}>
+            {Locale.Chat.ShortcutKey.Title}
+          </span>
+        }
         onClose={props.onClose}
         actions={[
           <IconButton
@@ -1602,9 +1613,18 @@ export function ShortcutKeyModal(props: { onClose: () => void }) {
         ]}
       >
         <div className={styles["shortcut-key-container"]}>
-          <div className={styles["shortcut-key-grid"]}>
+          <div
+            className={styles["shortcut-key-grid"]}
+            role="list"
+            aria-label={Locale.Chat.ShortcutKey.Title}
+          >
             {shortcuts.map((shortcut) => (
-              <div key={shortcut.title} className={styles["shortcut-key-item"]}>
+              <div
+                key={shortcut.title}
+                className={styles["shortcut-key-item"]}
+                role="listitem"
+                aria-label={`${shortcut.title}: ${shortcut.keys.join(" + ")}`}
+              >
                 <div className={styles["shortcut-key-title"]}>
                   {shortcut.title}
                 </div>

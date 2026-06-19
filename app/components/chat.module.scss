@@ -3400,6 +3400,7 @@
 }
 
 .shortcut-key-title {
+  flex: 1 1 auto;
   min-width: 0;
   font-size: 14px;
   line-height: 1.4;
@@ -3408,6 +3409,7 @@
 }
 
 .shortcut-key-keys {
+  flex: 0 1 auto;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -3416,6 +3418,7 @@
 }
 
 .shortcut-key {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3618,10 +3621,12 @@
 
   .shortcut-key-item {
     align-items: flex-start;
+    flex-direction: column;
   }
 
   .shortcut-key-keys {
     justify-content: flex-start;
+    width: 100%;
   }
 
   .chat-input-panel-inner {
