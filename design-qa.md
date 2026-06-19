@@ -3427,3 +3427,50 @@ Known risks:
 
 - QA covers representative `DataTransfer.files`, `DataTransfer.items`, empty-MIME image, normal, partial overflow, and full-slot states, but does not exhaust every browser-native drag payload shape.
 - Computed `display` appears as `flex` in Chrome because the summary chip is blockified as a flex item, while the authored CSS contract remains `display: inline-flex`.
+
+## Iteration 2026-06-20 markdown-thinking-card
+
+Result: passed.
+
+Target flow:
+
+- AI-rendered `<think>` sections should look like the rest of the Gemini-style Markdown surface instead of a raw disclosure row with a legacy spinner.
+- The live thinking state should keep a visible low-motion status indicator, while completed thinking sections keep the same disclosure behavior and timing text.
+- The change must not alter model config semantics, reasoning effort settings, message streaming, account/secret/sync, backend/API, production config, deployment config, or persisted store keys.
+
+Design direction:
+
+- Creative Production style intake selected: quiet reasoning card, translucent glass surface, compact status pill, three-dot thinking pulse, dark-mode balanced, reduced-motion safe, content-first, no new assets, and no backend/model semantics changes.
+
+Scope:
+
+- `app/components/markdown.tsx`: preserved `details` / `summary` HTML attributes from `rehype-raw`, added dedicated `markdown-thinking` and `markdown-thinking-summary` classes to generated `<think>` sections, and marked the decorative loader `aria-hidden`.
+- `app/styles/markdown.scss`: added the thinking card surface, summary pill, open-state caret, three-dot pulse, dark-mode tuning, and reduced-motion stop rules scoped only to `.markdown-thinking`.
+- `test/gemini-visual-migration.test.ts`: locked the generated class hooks, attribute passthrough, light/dark/reduced-motion CSS, and non-legacy loader contract.
+- No model config semantics, reasoning effort values, upload/send behavior, account/secret/sync, backend/API, production config, deployment config, or persisted app store keys were changed.
+
+Automated checks:
+
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="thinking details" --silent` failed first as expected because thinking sections did not have dedicated classes, the custom `Details`/`Summary` wrappers dropped raw HTML attributes, and the styling contract was absent.
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="thinking details" --silent`
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --silent`
+- `npx jest test/markdown-file-attachment.test.tsx test/markdown-code-language.test.tsx test/markdown-code-fold.test.tsx --runInBand --silent`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `git diff --check`
+- `yarn build`
+
+Review:
+
+- Read-only sub-agent review found no Critical or Important issues. It verified the `details` / `summary` attribute passthrough does not add executable raw HTML behavior with the current `react-markdown@8` + `rehype-raw` stack, ordinary details are not affected by the scoped `.markdown-thinking` selectors, and reduced-motion coverage is effective.
+
+Browser QA:
+
+- in-app Browser desktop default viewport at `http://localhost:3000/?qa=thinking-card`: verified runtime CSSOM loaded the `details.markdown-thinking` shell with `backdrop-filter: blur(14px) saturate(160%)`, the `summary.markdown-thinking-summary` inline-flex pill, the `.thinking-loader` pulse rule, dark-mode thinking rules, `horizontalOverflowPx: 0`, and no console warn/error logs.
+- in-app Browser mobile `390x844` and narrow `320x740`: repeated the CSSOM and overflow checks; thinking shell/summary/loader/dark rules stayed loaded, `horizontalOverflowPx: 0`, and no console warn/error logs.
+- Runtime CSSOM confirmed the reduced-motion media rule for `.markdown-body details.markdown-thinking .thinking-loader` and `summary.markdown-thinking-summary::before`; Chrome serializes `animation: none` as a full animation shorthand, so the source/Jest contract remains the clearer reduced-motion assertion.
+
+Known risks:
+
+- in-app Browser evaluate is read-only and blocks temporary DOM construction via `document.createElement`, so live DOM shape is covered by the source/Jest contract and runtime CSSOM rather than injected DOM measurement.
+- Read-only exploration identified the next recommended UI slice as the shortcut key modal's dialog semantics and narrow-screen key-row readability.

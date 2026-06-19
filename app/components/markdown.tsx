@@ -49,11 +49,18 @@ const MarkdownFeatureContext = createContext({
   enableCodeFold: true,
 });
 
-function Details(props: { children: React.ReactNode }) {
-  return <details open>{props.children}</details>;
+function Details({
+  node: _node,
+  ...props
+}: React.DetailsHTMLAttributes<HTMLDetailsElement> & { node?: unknown }) {
+  return <details {...props} open />;
 }
-function Summary(props: { children: React.ReactNode }) {
-  return <summary>{props.children}</summary>;
+
+function Summary({
+  node: _node,
+  ...props
+}: React.HTMLAttributes<HTMLElement> & { node?: unknown }) {
+  return <summary {...props} />;
 }
 
 function formatCodeLanguage(language: string) {
@@ -585,8 +592,8 @@ function formatThinkText(text: string): string {
       .map((line: string) => (line.trim() ? `> ${line}` : ">"))
       .join("\n");
 
-    return `<details open>
-<summary>${Locale.NewChat.Thinking} <span class="thinking-loader"></span></summary>
+    return `<details open class="markdown-thinking">
+<summary class="markdown-thinking-summary">${Locale.NewChat.Thinking} <span class="thinking-loader" aria-hidden="true"></span></summary>
 
 ${quotedContent}
 
@@ -607,8 +614,8 @@ ${quotedContent}
     const duration = handleThinkingTime(thinkContent);
     const durationText = duration ? Locale.NewChat.ThinkingTime(duration) : "";
 
-    return `<details open>
-<summary>${Locale.NewChat.Think}${durationText}</summary>
+    return `<details open class="markdown-thinking">
+<summary class="markdown-thinking-summary">${Locale.NewChat.Think}${durationText}</summary>
 
 ${quotedContent}
 

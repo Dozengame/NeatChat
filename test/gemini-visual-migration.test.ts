@@ -2518,6 +2518,80 @@ describe("Gemini visual migration shell", () => {
     expect(darkDetailsBlockquoteBlock).toMatch(/box-shadow:\s*none;/);
   });
 
+  test("keeps thinking details as a Gemini-style reasoning card", () => {
+    const markdown = read("app/components/markdown.tsx");
+    const markdownStyles = read("app/styles/markdown.scss");
+    const thinkingBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body details.markdown-thinking",
+    );
+    const thinkingSummaryBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body details.markdown-thinking > summary.markdown-thinking-summary",
+    );
+    const thinkingLoaderBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body details.markdown-thinking .thinking-loader",
+    );
+    const darkThinkingBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body details.markdown-thinking",
+    );
+    const darkThinkingSummaryBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body details.markdown-thinking > summary.markdown-thinking-summary",
+    );
+    const reducedMotionBlock = markdownStyles.slice(
+      markdownStyles.indexOf("@media (prefers-reduced-motion: reduce)"),
+    );
+
+    expect(markdown).toContain("class=\"markdown-thinking\"");
+    expect(markdown).toContain("class=\"markdown-thinking-summary\"");
+    expect(markdown).toContain("class=\"thinking-loader\" aria-hidden=\"true\"");
+    expect(markdown).toContain("return <details {...props} open />");
+    expect(markdown).toContain("return <summary {...props} />");
+    expect(thinkingBlock).toMatch(/padding:\s*10px 12px;/);
+    expect(thinkingBlock).toMatch(/border-radius:\s*16px;/);
+    expect(thinkingBlock).toMatch(
+      /border:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.08\);/,
+    );
+    expect(thinkingBlock).toMatch(
+      /background:\s*rgba\(248,\s*251,\s*255,\s*0\.58\);/,
+    );
+    expect(thinkingBlock).toMatch(/backdrop-filter:\s*blur\(14px\) saturate\(160%\);/);
+    expect(thinkingBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(thinkingSummaryBlock).toMatch(/display:\s*inline-flex;/);
+    expect(thinkingSummaryBlock).toMatch(/align-items:\s*center;/);
+    expect(thinkingSummaryBlock).toMatch(/gap:\s*8px;/);
+    expect(thinkingSummaryBlock).toMatch(/min-height:\s*30px;/);
+    expect(thinkingSummaryBlock).toMatch(/padding:\s*5px 10px;/);
+    expect(thinkingSummaryBlock).toMatch(/border-radius:\s*999px;/);
+    expect(thinkingSummaryBlock).toMatch(/letter-spacing:\s*0;/);
+    expect(thinkingSummaryBlock).toMatch(/list-style:\s*none;/);
+    expect(thinkingSummaryBlock).toMatch(/&::-webkit-details-marker[\s\S]*display:\s*none;/);
+    expect(thinkingSummaryBlock).toMatch(/&::before[\s\S]*content:\s*"⌄";/);
+    expect(thinkingLoaderBlock).toMatch(/width:\s*6px;/);
+    expect(thinkingLoaderBlock).toMatch(/height:\s*6px;/);
+    expect(thinkingLoaderBlock).toMatch(/border:\s*0;/);
+    expect(thinkingLoaderBlock).toMatch(
+      /box-shadow:\s*10px 0 0 rgba\(66,\s*133,\s*244,\s*0\.45\),\s*20px 0 0 rgba\(52,\s*168,\s*83,\s*0\.38\);/,
+    );
+    expect(thinkingLoaderBlock).toMatch(
+      /animation:\s*thinking-dot-pulse 1\.2s ease-in-out infinite;/,
+    );
+    expect(markdownStyles).toContain("@keyframes thinking-dot-pulse");
+    expect(darkThinkingBlock).toMatch(
+      /background:\s*rgba\(32,\s*33,\s*36,\s*0\.56\);/,
+    );
+    expect(darkThinkingSummaryBlock).toMatch(
+      /background:\s*rgba\(138,\s*180,\s*248,\s*0\.12\);/,
+    );
+    expect(reducedMotionBlock).toContain(
+      ".markdown-body details.markdown-thinking .thinking-loader",
+    );
+    expect(reducedMotionBlock).toMatch(/animation:\s*none !important;/);
+  });
+
   test("keeps Gemini-style markdown list rhythm", () => {
     const markdownStyles = read("app/styles/markdown.scss");
     const listBlock = readCssBlock(
