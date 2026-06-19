@@ -2224,6 +2224,10 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-dropzone-live-status",
     );
+    const dropzoneHintBlock = readCssBlock(
+      chatStyles,
+      ".chat-dropzone-hint",
+    );
     const dropzoneContentBlock = readCssBlock(
       chatStyles,
       ".chat-dropzone-content",
@@ -2268,12 +2272,27 @@ describe("Gemini visual migration shell", () => {
       'aria-live={dragActive ? "polite" : undefined}',
     );
     expect(chat).toMatch(
-      /className=\{styles\["chat-dropzone-live-status"\]\}[\s\S]*role="status"[\s\S]*aria-live="polite"[\s\S]*aria-atomic="true"[\s\S]*\{dragActive \? "拖拽文件或图片到此处上传" : ""\}/,
+      /className=\{styles\["chat-dropzone-live-status"\]\}[\s\S]*role="status"[\s\S]*aria-live="polite"[\s\S]*aria-atomic="true"[\s\S]*dragActive[\s\S]*"拖拽文件或图片到此处上传，释放后添加到输入框。最多3张图片、5个文件。"[\s\S]*: ""/,
     );
     expect(chat).toContain('aria-atomic="true"');
     expect(chat).toContain("aria-hidden={!dragActive}");
     expect(chat).toContain('data-drop-active={dragActive ? "true" : "false"}');
     expect(chat).toContain('id="chat-dropzone-status"');
+    expect(chat).toContain('className={styles["chat-dropzone-hint"]}');
+    expect(chat).toContain("释放后添加到输入框");
+    expect(chat).toContain("最多3张图片、5个文件");
+    expect(chat).toMatch(
+      /const remainingFileSlots = Math\.max\(0,\s*5 - currentAttachedFiles\.length\);/,
+    );
+    expect(chat).toMatch(
+      /const remainingImageSlots = Math\.max\(0,\s*3 - currentAttachImages\.length\);/,
+    );
+    expect(dropBlock).toMatch(
+      /const remainingFileSlots = Math\.max\(\s*0,\s*5 - attachedFilesRef\.current\.length,\s*\);/,
+    );
+    expect(dropBlock).toMatch(
+      /const remainingImageSlots = Math\.max\(\s*0,\s*3 - attachImagesRef\.current\.length,\s*\);/,
+    );
     expect(dropzoneBlock).toMatch(/isolation:\s*isolate;/);
     expect(dropzoneBlock).toMatch(/pointer-events:\s*none;/);
     expect(liveStatusBlock).toMatch(/position:\s*absolute;/);
@@ -2281,6 +2300,11 @@ describe("Gemini visual migration shell", () => {
     expect(liveStatusBlock).toMatch(/height:\s*1px;/);
     expect(liveStatusBlock).toMatch(/clip-path:\s*inset\(50%\);/);
     expect(liveStatusBlock).toMatch(/white-space:\s*nowrap;/);
+    expect(dropzoneHintBlock).toMatch(/font-size:\s*13px;/);
+    expect(dropzoneHintBlock).toMatch(/line-height:\s*1\.45;/);
+    expect(dropzoneHintBlock).toMatch(/color:\s*rgba\(95,\s*99,\s*104,\s*0\.92\);/);
+    expect(dropzoneHintBlock).toMatch(/text-align:\s*center;/);
+    expect(dropzoneHintBlock).toMatch(/margin:\s*-6px 0 0;/);
     expect(dropzoneBeforeBlock).toMatch(/content:\s*"";/);
     expect(dropzoneBeforeBlock).toMatch(/position:\s*absolute;/);
     expect(dropzoneBeforeBlock).toMatch(/inset:\s*0;/);
@@ -2322,6 +2346,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(darkDropzoneContentBlock).toMatch(
       /background:\s*linear-gradient\(\s*135deg,\s*rgba\(38,\s*42,\s*52,\s*0\.78\),\s*rgba\(18,\s*20,\s*26,\s*0\.72\)\s*\);/,
+    );
+    expect(dropzoneHintBlock).toMatch(
+      /:global\(\.dark\) &[\s\S]*color:\s*rgba\(232,\s*234,\s*237,\s*0\.78\);/,
     );
     expect(reducedMotionBlock).toContain(".chat-dropzone-content");
     expect(reducedMotionBlock).toContain(".chat-dropzone::before");

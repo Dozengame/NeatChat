@@ -3848,6 +3848,20 @@
   }
 }
 
+.chat-dropzone-hint {
+  max-width: 280px;
+  margin: -6px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 400;
+  text-align: center;
+  color: rgba(95, 99, 104, 0.92);
+
+  :global(.dark) & {
+    color: rgba(232, 234, 237, 0.78);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .chat-mobile-model-menu,
   .chat-desktop-model-menu,

@@ -2291,3 +2291,64 @@ Browser QA:
 Known risks:
 
 - Browser screenshot capture still times out at `Page.captureScreenshot`, matching earlier project QA limitations. This iteration is verified by Browser DOM/layout metrics, runtime CSSOM, console logs, read-only review, and automated tests instead of screenshot output.
+
+## Handoff Audit 2026-06-19 commits-since-8b7
+
+Scope:
+
+- Reviewed `git log --reverse 8b7da1a7e30221c0a1a6ff55a50cadd295624267^..HEAD` through `9aefcdcf`, plus the current R2 dropzone clarity working-tree slice.
+- Confirmed the handoff's base R1-R6 commits are present locally and that later commits continued the same Gemini UI migration rather than reverting those surfaces.
+
+Coverage result:
+
+- R1 rainbow shimmer loading: covered by `8b7da1a7`, then refined by `cbe21a21`, `19c44289`, `3b3a6901`, `80d7c88e`, `f0627d1b`, and `9aefcdcf`. Current source keeps the empty-content waiting shimmer, streaming reveal class, dark reveal, reduced-motion guards, and source tests for the handoff from skeleton to first text.
+- R2 multimodal drag/drop: covered by `bb30c490`, then hardened by `b6094f12`, `8518cff9`, `8e103d37`, `58880aff`, `f38366fa`, and this current slice. Current source keeps file-only drag activation, full-screen glass dropzone, live status, attachment strip semantics, touch delete affordance, and explicit drop guidance/limits without changing upload limits.
+- R3 starting-style motion: covered by `afdc9a0a`, then strengthened by keyboard/focus work in `a8947361`, `47928847`, `7ebbaaca`, and related model/tools menu accessibility iterations. The old Safari fallback remains the documented CSS graceful-degradation tradeoff; no JS animation dependency was introduced.
+- R4 markdown code/table typography: covered by `5e91acff`, then completed by `1d9db257`, `b70624f3`, `f720c911`, `ce299502`, `8fdcbd8d`, `65c62aa9`, `7a3f60a0`, `e1b81fa1`, `cadd52ff`, `22897f0e`, `37c40219`, and `2d9e4e72`. Current tests lock language labels, copy-button safe spacing, inline code, images, blockquotes, list rhythm, headings, links, and table surfaces.
+- R5 sidebar glass and scrollbar: covered by `9302e519`, then refined by `28b7b3e6`, `423a77aa`, `53dba00b`, `b3ddbf3d`, and sidebar active-state/delete/focus iterations. Current source keeps desktop glass, mobile/dark drawer surface, cross-browser scrollbar rules, current-state indicators, and bounded drawer layout.
+- R6 engineering cleanup: covered by `e2d3d8a7`, `8641a9b8`, and `e81b13f2`; later local hygiene kept `.agents/`, `.codex/`, plans, screenshots, and scratch artifacts out of committed scope. No model config semantics, account/secret/sync, production, deployment, or backend logic changes were required for the reviewed UI slices.
+
+Remaining non-blocking boundaries:
+
+- Real native file picker and OS-level file drag payloads are not automated in Browser because they require OS chooser / real file payload control. Source review and Jest source contracts cover limits and guards, while Browser validates rendered state, CSSOM, overflow, console, and non-file drag guard.
+- Old Safari parity for `@starting-style` remains a deliberate graceful-degradation decision from the handoff; adding JS animation fallback or a motion dependency would cross the current pause condition for new dependency / broader module changes.
+
+## Iteration 2026-06-19 dropzone-limit-hint
+
+Result: passed.
+
+Target flow:
+
+- Dragging files over the chat surface shows the existing Gemini-style glass dropzone while making the next action and upload limits explicit: release to add to the input, up to 3 images and 5 files.
+
+Design direction:
+
+- Creative Production style intake selected: multimodal clarity, glass panel, limit-aware copy, content-first, reduced-motion safe, dark-mode balanced, no layout shift, CSS-only plus copy, and browser-verifiable.
+
+Scope:
+
+- `app/components/chat.tsx`: updated the dropzone live status and visible panel copy to explain release behavior and the existing 3-image / 5-file limits.
+- `app/components/chat.module.scss`: added a compact centered hint style with light/dark contrast, without changing the dropzone positioning, pointer-events, drag activation, file limits, upload processing, MCP/Jimeng, model behavior, stores, account/sync, Tauri config, production config, deployment config, or secrets.
+- `test/gemini-visual-migration.test.ts`: locked the new live status copy, visible hint hook, hint typography, light/dark colors, and existing file-only drag guard.
+- `design-qa.md`: recorded the handoff audit, design direction, Browser QA, screenshot limitation, review result, and validation commands for this slice.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the previous dropzone had no limit-aware hint or expanded live status copy.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop default viewport at `http://localhost:3000/?qa=dropzone-clarity#/chat`: after hydration, the app rendered the NeatChat shell and composer with `horizontalOverflowPx: 0` and no console warn/error logs. Runtime CSSOM confirmed `.chat-dropzone-hint` and the dark hint color rule. Runtime DOM measured the hidden overlay as `data-drop-active="false"`, `aria-hidden="true"`, `opacity: 0`, `pointer-events: none`, rect `980x720`, and the hint as `251x18` with `font-size: 13px`, `line-height: 18.85px`, `color: rgba(95, 99, 104, 0.92)`, `text-align: center`, and `max-width: 280px`.
+- Non-file Browser drag gesture from page coordinates did not activate the dropzone: `data-drop-active` stayed false, live status text stayed empty, overlay opacity stayed `0`, and `horizontalOverflowPx` stayed `0`.
+- Mobile `390x844`: after the normal client-side hydration step, the chat screen rendered with `horizontalOverflowPx: 0` and no console warn/error logs. The hidden overlay measured `390x844`, content measured `336x191`, and the hint measured `251x18`, inside the viewport.
+- Browser screenshot capture still times out at `Page.captureScreenshot`, matching earlier project QA limitations. This iteration is verified by Browser DOM/layout metrics, runtime CSSOM, non-file drag guard, console logs, read-only review, and automated tests instead of screenshot output.
+
+Known risks:
+
+- Browser cannot supply a real OS file payload for drag/drop in this environment. Existing source review and Jest source contracts cover file-only activation, accepted file limits, and drop guards; Browser covered visible/runtime CSS, layout bounds, console health, and non-file drag non-activation.

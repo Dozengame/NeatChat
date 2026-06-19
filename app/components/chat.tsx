@@ -3114,7 +3114,9 @@ function useChatInnerView() {
         aria-live="polite"
         aria-atomic="true"
       >
-        {dragActive ? "拖拽文件或图片到此处上传" : ""}
+        {dragActive
+          ? "拖拽文件或图片到此处上传，释放后添加到输入框。最多3张图片、5个文件。"
+          : ""}
       </span>
       <div
         className={clsx(
@@ -3130,6 +3132,9 @@ function useChatInnerView() {
           </div>
           <p id="chat-dropzone-status" className={styles["chat-dropzone-text"]}>
             拖拽文件或图片到此处上传
+          </p>
+          <p className={styles["chat-dropzone-hint"]}>
+            释放后添加到输入框 · 最多3张图片、5个文件
           </p>
         </div>
       </div>
