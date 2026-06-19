@@ -2473,3 +2473,49 @@ Known risks:
 
 - Browser's direct `window.location.reload`/URL navigation APIs are restricted in the in-app Browser evaluate sandbox, so persisted-load behavior was verified through component-level source contracts, target tests, manual `scrollIntoView` behavior, and a real viewport resize path rather than a full Browser reload. The underlying mount path uses the same ref and `scrollIntoView` code.
 - Browser evaluate also blocks direct DOM mutation helpers such as synthetic `setAttribute` on the composer panel, so the high-composer risk is covered by code-level dynamic inset/ResizeObserver contracts plus real mobile input fill metrics rather than an artificial tall-panel Browser mutation.
+
+## Iteration 2026-06-19 token-chip-accessible-name
+
+Result: passed.
+
+Target flow:
+
+- Completed Markdown responses expose the token metadata chip as a compact visual capsule and as a meaningful screen-reader control: the accessible name includes the current token count, and includes first-response latency when that value exists, without changing visible chip text or token/latency semantics.
+
+Design direction:
+
+- Creative Production style intake selected: keep the quiet Gemini-style metadata capsule from the prior slice, improve assistive clarity in place, preserve locale-derived token and latency copy, avoid visual churn, remain mobile wrap-safe, and keep model/API/storage/backend behavior untouched.
+
+Scope:
+
+- `app/components/markdown.tsx`: derived `tokenCountText` and `tokenInfoLabel` from the existing `tokenInfo.count` and `tokenDelayText`, then wired the token chip to `aria-label={tokenInfoLabel}`. The visible button text still toggles between token count and latency exactly as before.
+- `test/markdown-performance.test.tsx`: added render-level coverage that token chips with and without stored first-char delay expose accessible names containing the current values, while retaining `aria-pressed`, `data-token-info-expanded`, and unchanged `encode(content)` behavior.
+- `test/gemini-visual-migration.test.ts`: locked the source contract against returning to a fixed `aria-label="Token 信息"` while avoiding an overly brittle exact implementation-string assertion after read-only review.
+- Closed the prior `token-metadata-chip` known risk where the chip accessible name remained the fixed `Token 信息`.
+- No model config semantics, account/secret/sync, production config, deployment config, backend logic, token math, localStorage keys, upload limits, or visible chip layout were changed.
+
+Automated checks:
+
+- `yarn jest test/markdown-performance.test.tsx --runInBand` failed first as expected because the existing button still exposed only the fixed accessible name `Token 信息`.
+- `yarn jest test/markdown-performance.test.tsx test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts test/markdown-performance.test.tsx test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+- Read-only sub-agent review found no blocking issues. It flagged one P3 brittle static-test concern, which was addressed by removing the exact array/join implementation assertion.
+- Post-review: `yarn jest test/markdown-performance.test.tsx test/gemini-visual-migration.test.ts --runInBand`
+- Post-review: `npx tsc --noEmit`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `1440x1024`: opened the existing local `测试消息` conversation without sending any prompt. Browser measured 3 token chips with labels `Token 信息，14 Tokens`, `Token 信息，82 Tokens`, and `Token 信息，60 Tokens，首字延迟: 1829ms`; each chip stayed `position: static`, `display: flex`, `min-height: 26px`, `aria-pressed="false"`, `data-token-info-expanded="false"`, `horizontalOverflowPx: 0`, and no console warn/error logs.
+- Desktop interaction: clicked the delayed chip. Visible text changed to `首字延迟: 1829ms`, `aria-pressed` and `data-token-info-expanded` changed to `true`, and the accessible name still retained both `60 Tokens` and `首字延迟: 1829ms`.
+- Mobile `390x844`: the same local conversation rendered 3 token chips; all accessible names included their visible token text, no chip had the fixed-only label `Token 信息`, mobile styles stayed `align-self: flex-start`, `white-space: normal`, `overflow-wrap: anywhere`, input panel stayed within `left: 10`, `right: 380`, `horizontalOverflowPx: 0`, and no console warn/error logs.
+- Narrow mobile `320x740`: the same checks passed with input panel within `left: 10`, `right: 310`, all labels including visible token text, no fixed-only label, and no horizontal overflow.
+- Empty chat routes in desktop/mobile/narrow viewports had no token DOM, as expected, while runtime CSSOM confirmed the existing token chip base/dark/mobile/reduced-motion rules remained loaded and the legacy `bottom: -28px` offset did not return.
+
+Known risks:
+
+- Browser QA used existing local conversation data instead of sending a real prompt, to avoid model/API/account dependencies. Render-level tests cover deterministic token and latency accessible-name values.
+- Browser screenshots were not used for this iteration. DOM/ARIA/layout metrics, runtime CSSOM, console logs, render-level tests, read-only review, type/lint checks, and production build cover the targeted behavior.

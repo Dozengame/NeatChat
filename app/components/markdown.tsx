@@ -862,6 +862,12 @@ export function Markdown(
   const tokenDelayText = tokenFirstCharDelay
     ? Locale.Chat.TokenInfo.FirstDelay(tokenFirstCharDelay)
     : "";
+  const tokenCountText = tokenInfo
+    ? Locale.Chat.TokenInfo.TokenCount(tokenInfo.count)
+    : "";
+  const tokenInfoLabel = tokenInfo
+    ? ["Token 信息", tokenCountText, tokenDelayText].filter(Boolean).join("，")
+    : "Token 信息";
 
   // 初始化消息发送时间
   useLayoutEffect(() => {
@@ -941,7 +947,7 @@ export function Markdown(
         <button
           type="button"
           className="token-info"
-          aria-label="Token 信息"
+          aria-label={tokenInfoLabel}
           aria-pressed={showTokenDelay}
           data-token-info-expanded={showTokenDelay ? "true" : "false"}
           onMouseEnter={() => tokenFirstCharDelay && setIsHovering(true)}
@@ -953,9 +959,7 @@ export function Markdown(
             }
           }}
         >
-          {showTokenDelay
-            ? tokenDelayText
-            : Locale.Chat.TokenInfo.TokenCount(tokenInfo.count)}
+          {showTokenDelay ? tokenDelayText : tokenCountText}
         </button>
       )}
     </div>

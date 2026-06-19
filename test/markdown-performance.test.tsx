@@ -98,9 +98,14 @@ describe("Markdown performance", () => {
       <Markdown content="hello world" messageId="m2" streaming={false} />,
     );
 
-    const tokenChip = screen.getByRole("button", { name: "Token 信息" });
+    const tokenChip = screen.getByRole("button", {
+      name: "Token 信息，11 Tokens，First Response: 512ms",
+    });
 
     expect(tokenChip.textContent).toBe("11 Tokens");
+    expect(tokenChip.getAttribute("aria-label")).toBe(
+      "Token 信息，11 Tokens，First Response: 512ms",
+    );
     expect(tokenChip.getAttribute("aria-pressed")).toBe("false");
     expect(tokenChip.getAttribute("data-token-info-expanded")).toBe("false");
     expect(encode).toHaveBeenCalledWith("hello world");
@@ -117,5 +122,19 @@ describe("Markdown performance", () => {
     fireEvent.click(tokenChip);
     expect(tokenChip.textContent).toContain("512ms");
     expect(tokenChip.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  test("includes token count in the metadata chip accessible name without latency", () => {
+    render(
+      <Markdown content="hello world" messageId="m3" streaming={false} />,
+    );
+
+    const tokenChip = screen.getByRole("button", {
+      name: "Token 信息，11 Tokens",
+    });
+
+    expect(tokenChip.textContent).toBe("11 Tokens");
+    expect(tokenChip.getAttribute("aria-pressed")).toBe("false");
+    expect(tokenChip.getAttribute("data-token-info-expanded")).toBe("false");
   });
 });

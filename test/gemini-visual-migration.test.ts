@@ -2696,6 +2696,13 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toContain(
       "Locale.Chat.TokenInfo.FirstDelay(tokenFirstCharDelay)",
     );
+    expect(markdown).toContain("const tokenCountText = tokenInfo");
+    expect(markdown).toContain(
+      "Locale.Chat.TokenInfo.TokenCount(tokenInfo.count)",
+    );
+    expect(markdown).toContain("const tokenInfoLabel = tokenInfo");
+    expect(markdown).toContain("aria-label={tokenInfoLabel}");
+    expect(markdown).not.toContain('aria-label="Token 信息"');
     expect(markdown).toContain("aria-pressed={showTokenDelay}");
     expect(markdown).toContain(
       'data-token-info-expanded={showTokenDelay ? "true" : "false"}',
