@@ -1,10 +1,29 @@
 import {
   extractClipboardImageUrls,
+  getDraggedAttachmentSummary,
   getFileTypeByExtension,
   isAttachmentImage,
   isSupportedAttachmentFile,
 } from "../app/utils/file";
 import { isVisionModel } from "../app/utils";
+
+function dragTransferFromFiles(files: File[]) {
+  return {
+    files,
+    items: [],
+  } as unknown as DataTransfer;
+}
+
+function dragTransferFromItems(files: File[]) {
+  return {
+    files: [],
+    items: files.map((file) => ({
+      kind: "file",
+      type: file.type,
+      getAsFile: () => file,
+    })),
+  } as unknown as DataTransfer;
+}
 
 describe("attachment file type support", () => {
   test("supports laya, cocos, and lua code attachments", () => {
@@ -32,6 +51,53 @@ describe("attachment file type support", () => {
     expect(
       isAttachmentImage(new File(["image"], "pasted.heif", { type: "" })),
     ).toBe(true);
+  });
+
+  test("summarizes dragged attachments by remaining slots", () => {
+    const png = new File(["image"], "gemini.png", { type: "image/png" });
+    const note = new File(["notes"], "notes.txt", { type: "text/plain" });
+
+    expect(getDraggedAttachmentSummary(dragTransferFromFiles([png, note]), 0, 0))
+      .toEqual({
+        text: "将添加 1 张图片、1 个文件",
+        hint: "释放后添加到输入框 · 最多3张图片、5个文件",
+        willAdd: true,
+      });
+    expect(getDraggedAttachmentSummary(dragTransferFromFiles([png, note]), 3, 5))
+      .toEqual({
+        text: "附件数量已达上限",
+        hint: "释放后不会添加新附件",
+        willAdd: false,
+      });
+    expect(getDraggedAttachmentSummary(dragTransferFromFiles([png, note]), 3, 0))
+      .toEqual({
+        text: "将添加 1 个文件，其余会自动忽略",
+        hint: "释放后添加到输入框 · 最多3张图片、5个文件",
+        willAdd: true,
+      });
+  });
+
+  test("summarizes empty-mime dragged images using the real extension fallback", () => {
+    const pastedPng = new File(["image"], "pasted.png", { type: "" });
+
+    expect(getDraggedAttachmentSummary(dragTransferFromFiles([pastedPng]), 0, 0))
+      .toEqual({
+        text: "将添加 1 张图片",
+        hint: "释放后添加到输入框 · 最多3张图片、5个文件",
+        willAdd: true,
+      });
+    expect(getDraggedAttachmentSummary(dragTransferFromItems([pastedPng]), 0, 0))
+      .toEqual({
+        text: "将添加 1 张图片",
+        hint: "释放后添加到输入框 · 最多3张图片、5个文件",
+        willAdd: true,
+      });
+    expect(getDraggedAttachmentSummary(dragTransferFromFiles([pastedPng]), 0, 5))
+      .toEqual({
+        text: "将添加 1 张图片",
+        hint: "释放后添加到输入框 · 最多3张图片、5个文件",
+        willAdd: true,
+      });
   });
 
   test("treats gpt-5.5 as image-input capable", () => {

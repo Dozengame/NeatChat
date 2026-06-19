@@ -3370,3 +3370,60 @@ Known risks:
 
 - Browser QA validates a representative wide Markdown table and code block in the live chat surface, but does not exhaust every table density or nested Markdown combination.
 - The hint is conditionally rendered for deterministic hit-target safety; if future design requires animated opacity, it should be re-tested against pointer interception and dev-mode computed styles.
+
+## Iteration 2026-06-20 drag-drop-payload-summary
+
+Result: passed.
+
+Target flow:
+
+- The full-screen Dropzone should tell the user what will be added while files are dragged over the chat surface, instead of only repeating static upload guidance.
+- The summary must distinguish image and document counts, respect the existing remaining slots of 3 images and 5 files, and clear immediately after drag leave or drop.
+- The change must not alter upload parsing, size checks, slot limits, toast behavior, send behavior, model config semantics, account/secret/sync, backend/API, production config, or deployment config.
+
+Design direction:
+
+- Creative Production style intake selected: keep the existing Gemini-style glass Dropzone and add a compact contextual chip between the title and quota hint.
+- The chip uses the current primary blue as a low-contrast state accent, with a separate dark-mode surface, so the overlay feels informative without competing with the main composer.
+
+Scope:
+
+- `app/utils/file.ts`: added a reusable dragged attachment summary helper that reuses the existing `isAttachmentImage(file)` extension fallback and returns structured `text`, `hint`, and `willAdd` state.
+- `app/components/chat.tsx`: wired drag-state summary storage, live-status copy, visible summary chip, blocked-state hint copy, summary cleanup on leave/drop, and aligned drop slot pre-classification to `isAttachmentImage(file)`.
+- `app/components/chat.module.scss`: added the Dropzone summary chip surface, spacing, dark-mode tuning, and wrapping safeguards.
+- `test/gemini-visual-migration.test.ts`: extended the Dropzone contract to cover the summary helper, drag enter/over/leave/drop state handling, live status fallback, visible summary element, and chip styling.
+- `test/attachment-file-types.test.ts`: added behavior coverage for normal image+file dragging, full-slot blocked state, partial overflow, empty-MIME image extension fallback through both `DataTransfer.files` and `DataTransfer.items`, and the file-slots-full / image-slot-open empty-MIME edge case.
+- No model config semantics, account/secret/sync, backend/API, production config, deployment config, upload/send behavior, or persisted app store keys were changed.
+
+Automated checks:
+
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="file drag-and-drop" --silent` failed first as expected because `getDraggedAttachmentSummary` and `dragPayloadSummary` did not exist yet.
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="file drag-and-drop" --silent`
+- `npx jest test/attachment-file-types.test.ts --runInBand --silent`
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="file drag-and-drop" --silent` after review fixes.
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --silent`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `git diff --check`
+- `yarn build`
+
+Review:
+
+- Read-only code review found two Important issues before commit: full-slot states could still say “release to add”, and empty-MIME image files could be summarized as files even though real upload handling treats image extensions as images.
+- Fixed by moving summary calculation to `app/utils/file.ts`, reusing `isAttachmentImage(file)`, returning structured hint state, and changing full-slot visible/live copy to `释放后不会添加新附件`.
+- Added behavior tests for normal, partial overflow, full-slot blocked, and empty-MIME image fallback cases.
+- Follow-up read-only review found one remaining Important issue: `drop` slot pre-classification still used MIME-only image detection. Fixed by changing the pre-classification to `isAttachmentImage(file)` and adding a source contract plus behavior coverage for an empty-MIME `.png` when file slots are full.
+
+Browser QA:
+
+- in-app Browser at `http://localhost:3000/`: loaded the local app, confirmed the chat UI and Dropzone DOM were available, and checked console output for app runtime errors before event-level testing.
+- Temporary isolated Chrome QA desktop viewport `1440x1024`: intercepted only the temporary browser's local `/api/config` response to disable the access gate, dispatched synthetic local `File` objects for one PNG and one text file, and verified `data-drop-active="true"`, summary text `将添加 1 张图片、1 个文件`, live status with the same summary, chip min-height `28px`, font weight `500`, background `rgba(66, 133, 244, 0.12)`, no horizontal overflow, and inactive status/live text cleanup after drag leave.
+- Temporary isolated Chrome QA desktop viewport `1440x1024` after review fixes: verified normal drag `将添加 1 张图片、1 个文件`, empty-MIME `camera.png` drag `将添加 1 张图片`, and after filling the temporary composer with 3 synthetic PNGs and 5 local text files, verified full-slot drag `附件数量已达上限`, hint `释放后不会添加新附件`, live status `附件数量已达上限，释放后不会添加新附件。`, and no horizontal overflow.
+- Temporary isolated Chrome QA mobile viewport `390x844`: repeated the normal, empty-MIME, full-slot, live-status, cleanup, and overflow checks; the summary chip stayed inside viewport bounds.
+- Temporary isolated Chrome QA after the follow-up review fix: in both `1440x1024` and `390x844`, filled only the 5 file slots, then dragged and dropped an empty-MIME `camera.png`; verified the summary stayed `将添加 1 张图片`, the composer produced `编辑第 1 张图片附件`, the 5 file attachments remained, and `bodyOverflowX: false`.
+- Browser QA used synthetic local `File` objects only, did not upload personal files, did not send a message, did not call a model/API, and did not persist production data.
+
+Known risks:
+
+- QA covers representative `DataTransfer.files`, `DataTransfer.items`, empty-MIME image, normal, partial overflow, and full-slot states, but does not exhaust every browser-native drag payload shape.
+- Computed `display` appears as `flex` in Chrome because the summary chip is blockified as a flex item, while the authored CSS contract remains `display: inline-flex`.

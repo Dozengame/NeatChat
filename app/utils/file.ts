@@ -1185,6 +1185,122 @@ export function isAttachmentImage(file: File) {
   );
 }
 
+const DRAG_ATTACHMENT_ADD_HINT = "释放后添加到输入框 · 最多3张图片、5个文件";
+const DRAG_ATTACHMENT_BLOCKED_HINT = "释放后不会添加新附件";
+
+type DraggedAttachmentEntry = {
+  file?: File;
+  type: string;
+};
+
+export type DraggedAttachmentSummary = {
+  text: string;
+  hint: string;
+  willAdd: boolean;
+};
+
+function getDraggedAttachmentEntries(dataTransfer: DataTransfer) {
+  const draggedFiles = Array.from(dataTransfer.files ?? []).map((file) => ({
+    file,
+    type: file.type || "",
+  }));
+
+  if (draggedFiles.length > 0) {
+    return draggedFiles;
+  }
+
+  return Array.from(dataTransfer.items ?? [])
+    .filter((item) => item.kind === "file")
+    .map((item) => {
+      const file = item.getAsFile();
+
+      return {
+        file: file ?? undefined,
+        type: file?.type || item.type || "",
+      };
+    });
+}
+
+function isDraggedAttachmentImage(entry: DraggedAttachmentEntry) {
+  return entry.file
+    ? isAttachmentImage(entry.file)
+    : entry.type.startsWith("image/");
+}
+
+function getDraggedAttachmentLimitText(
+  imageCount: number,
+  fileCount: number,
+  remainingImageSlots: number,
+  remainingFileSlots: number,
+) {
+  const blockedParts: string[] = [];
+
+  if (imageCount > 0 && remainingImageSlots <= 0) {
+    blockedParts.push("图片已达 3 张上限");
+  }
+  if (fileCount > 0 && remainingFileSlots <= 0) {
+    blockedParts.push("文件已达 5 个上限");
+  }
+
+  return blockedParts.length === 1 ? blockedParts[0] : "附件数量已达上限";
+}
+
+export function getDraggedAttachmentSummary(
+  dataTransfer: DataTransfer,
+  currentImageCount: number,
+  currentFileCount: number,
+): DraggedAttachmentSummary {
+  const draggedEntries = getDraggedAttachmentEntries(dataTransfer);
+
+  if (draggedEntries.length === 0) {
+    return {
+      text: "释放后识别附件",
+      hint: DRAG_ATTACHMENT_ADD_HINT,
+      willAdd: true,
+    };
+  }
+
+  const imageCount = draggedEntries.filter((entry) =>
+    isDraggedAttachmentImage(entry),
+  ).length;
+  const fileCount = draggedEntries.length - imageCount;
+  const remainingImageSlots = Math.max(0, 3 - currentImageCount);
+  const remainingFileSlots = Math.max(0, 5 - currentFileCount);
+  const acceptedImageCount = Math.min(imageCount, remainingImageSlots);
+  const acceptedFileCount = Math.min(fileCount, remainingFileSlots);
+  const acceptedParts: string[] = [];
+
+  if (acceptedImageCount > 0) {
+    acceptedParts.push(`${acceptedImageCount} 张图片`);
+  }
+  if (acceptedFileCount > 0) {
+    acceptedParts.push(`${acceptedFileCount} 个文件`);
+  }
+  if (acceptedParts.length === 0) {
+    return {
+      text: getDraggedAttachmentLimitText(
+        imageCount,
+        fileCount,
+        remainingImageSlots,
+        remainingFileSlots,
+      ),
+      hint: DRAG_ATTACHMENT_BLOCKED_HINT,
+      willAdd: false,
+    };
+  }
+
+  const hasOverflow =
+    imageCount > remainingImageSlots || fileCount > remainingFileSlots;
+
+  return {
+    text: hasOverflow
+      ? `将添加 ${acceptedParts.join("、")}，其余会自动忽略`
+      : `将添加 ${acceptedParts.join("、")}`,
+    hint: DRAG_ATTACHMENT_ADD_HINT,
+    willAdd: true,
+  };
+}
+
 export function isSupportedAttachmentFile(file: File) {
   if (isAttachmentImage(file)) {
     return true;

@@ -2804,6 +2804,7 @@ describe("Gemini visual migration shell", () => {
   test("keeps file drag-and-drop scoped and visually polished", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
+    const fileUtils = read("app/utils/file.ts");
     const dragEnterBlock = readFunctionBlock(
       chat,
       "const handleDragEnter = (e: DragEvent) => {",
@@ -2850,6 +2851,10 @@ describe("Gemini visual migration shell", () => {
       ".chat-dropzone.chat-dropzone-active .chat-dropzone-content::before",
     );
     const dropzoneIconBlock = readCssBlock(chatStyles, ".chat-dropzone-icon");
+    const dropzoneSummaryBlock = readCssBlock(
+      chatStyles,
+      ".chat-dropzone-summary",
+    );
     const darkDropzoneBeforeBlock = readCssBlock(
       chatStyles,
       ":global(.dark) .chat-dropzone.chat-dropzone-active::before",
@@ -2876,18 +2881,56 @@ describe("Gemini visual migration shell", () => {
     expect(dropBlock).toMatch(
       /if \(!hasDraggedFiles\(dataTransfer\)\) \{\s*return;\s*\}/,
     );
+    expect(dropBlock).toContain(
+      "const images = validSizeFiles.filter((file) =>",
+    );
+    expect(dropBlock).toContain("isAttachmentImage(file)");
+    expect(dropBlock).not.toContain('file.type.startsWith("image/")');
+    expect(chat).toContain("getDraggedAttachmentSummary,");
+    expect(chat).toContain("isAttachmentImage,");
+    expect(fileUtils).toContain("export function getDraggedAttachmentSummary");
+    expect(fileUtils).toContain("export type DraggedAttachmentSummary");
+    expect(chat).toMatch(
+      /const \[dragPayloadSummary, setDragPayloadSummary\] =\s*useState<DraggedAttachmentSummary \| null>\(null\);/,
+    );
+    expect(fileUtils).toMatch(
+      /const draggedFiles = Array\.from\(dataTransfer\.files \?\? \[\]\)[\s\S]*const draggedEntries = getDraggedAttachmentEntries\(dataTransfer\);/,
+    );
+    expect(fileUtils).toMatch(
+      /return Array\.from\(dataTransfer\.items \?\? \[\]\)[\s\S]*item\.kind === "file"[\s\S]*item\.getAsFile\(\)/,
+    );
+    expect(fileUtils).toMatch(
+      /entry\.file\s*\?\s*isAttachmentImage\(entry\.file\)\s*:\s*entry\.type\.startsWith\("image\/"\)/,
+    );
+    expect(fileUtils).toMatch(
+      /text:\s*getDraggedAttachmentLimitText\([\s\S]*hint:\s*DRAG_ATTACHMENT_BLOCKED_HINT[\s\S]*willAdd:\s*false/,
+    );
+    expect(fileUtils).toMatch(
+      /const acceptedImageCount = Math\.min\(imageCount, remainingImageSlots\);/,
+    );
+    expect(fileUtils).toMatch(
+      /const acceptedFileCount = Math\.min\(fileCount, remainingFileSlots\);/,
+    );
+    expect(chat).toContain("setDragPayloadSummary(");
+    expect(dragEnterBlock).toContain("getDraggedAttachmentSummary(");
+    expect(dragOverBlock).toContain("getDraggedAttachmentSummary(");
+    expect(dragLeaveBlock).toContain("setDragPayloadSummary(null);");
+    expect(dropBlock).toContain("setDragPayloadSummary(null);");
     expect(chat).not.toContain('role={dragActive ? "status" : undefined}');
     expect(chat).not.toContain(
       'aria-live={dragActive ? "polite" : undefined}',
     );
     expect(chat).toMatch(
-      /className=\{styles\["chat-dropzone-live-status"\]\}[\s\S]*role="status"[\s\S]*aria-live="polite"[\s\S]*aria-atomic="true"[\s\S]*dragActive[\s\S]*"拖拽文件或图片到此处上传，释放后添加到输入框。最多3张图片、5个文件。"[\s\S]*: ""/,
+      /className=\{styles\["chat-dropzone-live-status"\]\}[\s\S]*role="status"[\s\S]*aria-live="polite"[\s\S]*aria-atomic="true"[\s\S]*dragActive[\s\S]*dragPayloadSummary\?\.text[\s\S]*"拖拽文件或图片到此处上传"[\s\S]*dragPayloadSummary\?\.hint[\s\S]*: ""/,
     );
     expect(chat).toContain('aria-atomic="true"');
     expect(chat).toContain("aria-hidden={!dragActive}");
     expect(chat).toContain('data-drop-active={dragActive ? "true" : "false"}');
     expect(chat).toContain('id="chat-dropzone-status"');
+    expect(chat).toContain('className={styles["chat-dropzone-summary"]}');
+    expect(chat).toContain("{dragPayloadSummary?.text ??");
     expect(chat).toContain('className={styles["chat-dropzone-hint"]}');
+    expect(chat).toContain("{dragPayloadSummary?.hint ??");
     expect(chat).toContain("释放后添加到输入框");
     expect(chat).toContain("最多3张图片、5个文件");
     expect(chat).toMatch(
@@ -2949,6 +2992,16 @@ describe("Gemini visual migration shell", () => {
     );
     expect(dropzoneIconBlock).toMatch(
       /box-shadow:\s*0 12px 32px rgba\(66,\s*133,\s*244,\s*0\.18\);/,
+    );
+    expect(dropzoneSummaryBlock).toMatch(/display:\s*inline-flex;/);
+    expect(dropzoneSummaryBlock).toMatch(/min-height:\s*28px;/);
+    expect(dropzoneSummaryBlock).toMatch(/border-radius:\s*999px;/);
+    expect(dropzoneSummaryBlock).toMatch(
+      /background:\s*rgba\(66,\s*133,\s*244,\s*0\.12\);/,
+    );
+    expect(dropzoneSummaryBlock).toMatch(/font-weight:\s*500;/);
+    expect(dropzoneSummaryBlock).toMatch(
+      /:global\(\.dark\) &[\s\S]*background:\s*rgba\(138,\s*180,\s*248,\s*0\.14\);/,
     );
     expect(darkDropzoneBeforeBlock).toMatch(
       /rgba\(138,\s*180,\s*248,\s*0\.2\)/,

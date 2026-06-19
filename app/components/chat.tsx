@@ -151,9 +151,12 @@ import { getModelProvider } from "../utils/model";
 import { RealtimeChat } from "@/app/components/realtime-chat";
 import clsx from "clsx";
 import {
+  type DraggedAttachmentSummary,
   FileInfo,
   extractClipboardImageUrls,
+  getDraggedAttachmentSummary,
   getFileIconClass,
+  isAttachmentImage,
   processAttachmentFiles,
   uploadAttachments,
 } from "../utils/file";
@@ -1706,6 +1709,8 @@ function useChatInnerView() {
   });
   const [imageGenerationEnabled, setImageGenerationEnabled] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [dragPayloadSummary, setDragPayloadSummary] =
+    useState<DraggedAttachmentSummary | null>(null);
   const dragCounter = useRef(0);
 
   const isMounted = useRef(true);
@@ -2831,6 +2836,13 @@ function useChatInnerView() {
       e.preventDefault();
       e.stopPropagation();
       dragCounter.current += 1;
+      setDragPayloadSummary(
+        getDraggedAttachmentSummary(
+          dataTransfer,
+          attachImagesRef.current.length,
+          attachedFilesRef.current.length,
+        ),
+      );
       if (dragCounter.current === 1) {
         setDragActive(true);
       }
@@ -2845,6 +2857,13 @@ function useChatInnerView() {
       e.preventDefault();
       e.stopPropagation();
       dataTransfer.dropEffect = "copy";
+      setDragPayloadSummary(
+        getDraggedAttachmentSummary(
+          dataTransfer,
+          attachImagesRef.current.length,
+          attachedFilesRef.current.length,
+        ),
+      );
     };
 
     const handleDragLeave = (e: DragEvent) => {
@@ -2859,6 +2878,7 @@ function useChatInnerView() {
       if (dragCounter.current <= 0) {
         dragCounter.current = 0;
         setDragActive(false);
+        setDragPayloadSummary(null);
       }
     };
 
@@ -2872,6 +2892,7 @@ function useChatInnerView() {
       e.stopPropagation();
       dragCounter.current = 0;
       setDragActive(false);
+      setDragPayloadSummary(null);
 
       if (dataTransfer.files.length > 0) {
         const files = Array.from(dataTransfer.files);
@@ -2887,11 +2908,9 @@ function useChatInnerView() {
         });
 
         // Classify
-        const images = validSizeFiles.filter((file) =>
-          file.type.startsWith("image/"),
-        );
+        const images = validSizeFiles.filter((file) => isAttachmentImage(file));
         const documents = validSizeFiles.filter(
-          (file) => !file.type.startsWith("image/"),
+          (file) => !isAttachmentImage(file),
         );
 
         // Slots calculation
@@ -3383,7 +3402,10 @@ function useChatInnerView() {
         aria-atomic="true"
       >
         {dragActive
-          ? "拖拽文件或图片到此处上传，释放后添加到输入框。最多3张图片、5个文件。"
+          ? `${dragPayloadSummary?.text ?? "拖拽文件或图片到此处上传"}，${
+              dragPayloadSummary?.hint ??
+              "释放后添加到输入框 · 最多3张图片、5个文件"
+            }。`
           : ""}
       </span>
       <div
@@ -3401,8 +3423,12 @@ function useChatInnerView() {
           <p id="chat-dropzone-status" className={styles["chat-dropzone-text"]}>
             拖拽文件或图片到此处上传
           </p>
+          <p className={styles["chat-dropzone-summary"]}>
+            {dragPayloadSummary?.text ?? "检测拖拽附件"}
+          </p>
           <p className={styles["chat-dropzone-hint"]}>
-            释放后添加到输入框 · 最多3张图片、5个文件
+            {dragPayloadSummary?.hint ??
+              "释放后添加到输入框 · 最多3张图片、5个文件"}
           </p>
         </div>
       </div>
