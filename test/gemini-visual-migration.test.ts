@@ -1986,9 +1986,25 @@ describe("Gemini visual migration shell", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
     const imagePreviewMaskBlock = readCssBlock(chatStyles, ".image-preview-mask");
+    const reducedMotionBlock = readCssBlock(
+      chatStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const imagePreviewToolbarBlock = readCssBlock(
+      chatStyles,
+      ".image-preview-toolbar",
+    );
     const imagePreviewButtonBlock = readCssBlock(
       chatStyles,
       ".image-preview-button",
+    );
+    const imagePreviewButtonHoverBlock = readCssBlock(
+      imagePreviewButtonBlock,
+      "&:hover",
+    );
+    const imagePreviewButtonActiveBlock = readCssBlock(
+      imagePreviewButtonBlock,
+      "&:active",
     );
     const imagePreviewButtonFocusBlock = readCssBlock(
       imagePreviewButtonBlock,
@@ -2028,14 +2044,41 @@ describe("Gemini visual migration shell", () => {
     );
     expect(imagePreviewMaskBlock).toMatch(/position:\s*fixed;/);
     expect(imagePreviewMaskBlock).toMatch(/inset:\s*0;/);
+    expect(imagePreviewMaskBlock).toMatch(/width:\s*100vw;/);
+    expect(imagePreviewMaskBlock).toMatch(/height:\s*100dvh;/);
+    expect(imagePreviewMaskBlock).toMatch(/max-width:\s*none;/);
+    expect(imagePreviewMaskBlock).toMatch(/max-height:\s*none;/);
+    expect(imagePreviewMaskBlock).toMatch(/margin:\s*0;/);
     expect(imagePreviewMaskBlock).toMatch(/display:\s*flex;/);
     expect(imagePreviewMaskBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(imagePreviewToolbarBlock).toMatch(/padding:\s*4px;/);
+    expect(imagePreviewToolbarBlock).toMatch(
+      /border:\s*1px solid rgba\(\$color:\s*#fff,\s*\$alpha:\s*0\.18\);/,
+    );
+    expect(imagePreviewToolbarBlock).toMatch(
+      /background:\s*rgba\(\$color:\s*#1f1f1f,\s*\$alpha:\s*0\.46\);/,
+    );
+    expect(imagePreviewToolbarBlock).toMatch(
+      /backdrop-filter:\s*blur\(18px\) saturate\(1\.25\);/,
+    );
+    expect(imagePreviewButtonBlock).toMatch(
+      /transition:[\s\S]*background 0\.16s ease,[\s\S]*border-color 0\.16s ease,[\s\S]*transform 0\.16s ease,[\s\S]*box-shadow 0\.16s ease;/,
+    );
+    expect(imagePreviewButtonHoverBlock).toMatch(
+      /transform:\s*translateY\(-1px\);/,
+    );
+    expect(imagePreviewButtonActiveBlock).toMatch(
+      /transform:\s*translateY\(0\) scale\(0\.96\);/,
+    );
     expect(imagePreviewButtonFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
     expect(imagePreviewButtonFocusBlock).toMatch(
       /box-shadow:\s*var\(--focus-ring-shadow\),/,
     );
     expect(imagePreviewImageBlock).toMatch(/max-width:\s*min\(100%, 1600px\);/);
     expect(imagePreviewImageBlock).toMatch(/max-height:\s*100%;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.image-preview-button,\s*\.image-preview-button:hover,\s*\.image-preview-button:active\s*\{[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
   });
 
   test("keeps shortcut key modal bounded on compact screens", () => {

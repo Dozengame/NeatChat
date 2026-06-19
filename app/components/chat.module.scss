@@ -2040,6 +2040,11 @@
   border: 0;
   position: fixed;
   inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
   z-index: 9999;
   display: flex;
   align-items: center;
@@ -2071,7 +2076,14 @@
   right: calc(env(safe-area-inset-right) + 18px);
   z-index: 10000;
   display: flex;
-  gap: 10px;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid rgba($color: #fff, $alpha: 0.18);
+  border-radius: 999px;
+  background: rgba($color: #1f1f1f, $alpha: 0.46);
+  box-shadow: 0 18px 48px rgba($color: #000, $alpha: 0.34);
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
 }
 
 .image-preview-button {
@@ -2079,17 +2091,31 @@
   height: 42px;
   padding: 0;
   border-radius: 999px;
-  border: 1px solid rgba($color: #fff, $alpha: 0.24);
-  background: rgba($color: #111, $alpha: 0.74);
+  border: 1px solid rgba($color: #fff, $alpha: 0.18);
+  background: rgba($color: #fff, $alpha: 0.08);
   color: #fff;
-  box-shadow: 0 12px 32px rgba($color: #000, $alpha: 0.32);
+  box-shadow: 0 8px 20px rgba($color: #000, $alpha: 0.24);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
 
   &:hover {
-    background: rgba($color: #111, $alpha: 0.9);
+    border-color: rgba($color: #fff, $alpha: 0.3);
+    background: rgba($color: #fff, $alpha: 0.16);
+    box-shadow: 0 12px 26px rgba($color: #000, $alpha: 0.3);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    background: rgba($color: #fff, $alpha: 0.12);
+    box-shadow: 0 5px 14px rgba($color: #000, $alpha: 0.26);
+    transform: translateY(0) scale(0.96);
   }
 
   &:focus-visible {
@@ -2104,6 +2130,11 @@
     height: 18px;
     filter: invert(1);
   }
+}
+
+:global(.dark) .image-preview-toolbar {
+  border-color: rgba($color: #8ab4f8, $alpha: 0.18);
+  background: rgba($color: #202124, $alpha: 0.62);
 }
 
 .image-preview-image {
@@ -3828,6 +3859,13 @@
   .chat-scroll-to-bottom:hover,
   .chat-scroll-to-bottom:active {
     transform: translateX(-50%) !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .image-preview-button,
+  .image-preview-button:hover,
+  .image-preview-button:active {
+    transform: none !important;
     transition-duration: 0.01ms !important;
   }
 

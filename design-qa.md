@@ -2173,3 +2173,42 @@ Browser QA:
 Known risks:
 
 - Browser screenshot capture still times out at `Page.captureScreenshot`, matching earlier project QA limitations. This iteration is verified by Browser DOM/layout metrics, runtime CSSOM, click interaction evidence, console logs, and automated tests instead of screenshot output.
+
+## Iteration 2026-06-19 image-preview-toolbar-polish
+
+Result: passed.
+
+Target flow:
+
+- In an existing image-generation conversation, clicking a generated image opens the full preview overlay; the overlay keeps download and close behavior while making the toolbar feel like a Gemini-style glass control rail across desktop and mobile.
+
+Design direction:
+
+- Creative Production style intake selected: glass rail, floating controls, bounded overlay, soft hover lift, press feedback, reduced-motion safe, dark translucent glass, Google-blue focus, and high-contrast icons.
+
+Scope:
+
+- `app/components/chat.module.scss`: made the image preview `dialog` explicitly fill the viewport, removed UA max-size/margin defaults, converted the toolbar into a translucent blurred rail, added button hover/press transitions, dark-toolbar contrast, and reduced-motion transform suppression.
+- `test/gemini-visual-migration.test.ts`: locked the viewport-filling dialog contract, toolbar glass rail styling, button hover/press motion contract, and reduced-motion guard without changing preview open/close, download, message rendering, model APIs, MCP/Jimeng, stores, Tauri config, deployment config, or secrets.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the toolbar lacked the new glass rail padding/border/background/backdrop-filter contract.
+- After Browser mobile QA exposed the `dialog` UA sizing issue, `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed again as expected because `.image-preview-mask` did not yet declare `100vw`, `100dvh`, `max-width: none`, `max-height: none`, and `margin: 0`.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn test:ci --runTestsByPath test/gemini-visual-migration.test.ts test/chat-render.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `yarn build`
+- `git diff --check`
+
+Browser QA:
+
+- Desktop `#/chat` at `1440x1024`: opened the existing local `日出东方图` conversation, clicked `generated image 1`, and verified the preview mask rect `1440x1024` at `x=0 y=0`, toolbar rect `98x52` at `x=1324 y=18`, background `rgba(31, 31, 31, 0.46)`, border `1px solid rgba(255, 255, 255, 0.18)`, blur `18px saturate(1.25)`, gap `4px`, padding `4px`, two controls at `42x42`, image rect `1392x783`, and `horizontalOverflowPx: 0`.
+- Mobile `390x844`: opened the same session from the mobile sidebar, clicked `generated image 1`, and first observed the preview mask constrained to `390x294` at `y=275` by `dialog` defaults. After the viewport contract fix, the mask measured `390x844` at `x=0 y=0`, toolbar rect `102x54` at `x=274 y=14`, buttons `44x44`, image rect `366x206`, and `horizontalOverflowPx: 0`.
+- Runtime CSSOM confirmed the loaded toolbar glass styles and button transition contract. Browser pointer hover did not trigger `:hover` reliably in this session, so hover/press motion is verified by CSSOM plus the Jest contract rather than live pointer state.
+- Console warn/error logs contained only the pre-existing Next.js LCP warning for the remote generated image URL in the historical session; no new app errors were observed.
+
+Known risks:
+
+- Browser screenshot capture still times out at `Page.captureScreenshot`, matching earlier project QA limitations. This iteration is verified by Browser DOM/layout metrics, runtime CSSOM, click interaction evidence, console logs, and automated tests instead of screenshot output.
