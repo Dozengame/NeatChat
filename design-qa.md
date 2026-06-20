@@ -4278,3 +4278,56 @@ Known risks:
 
 - Browser QA validated the live CSS/DOM contract with a same-origin fixture because the Browser sandbox blocked direct persistent chat-state injection. The React state wiring is covered by source-contract tests plus existing rendered `PreCode` language and fold tests, not by a live stored assistant message in the app.
 - Browser viewport override was unavailable in this session, so compact verification used a narrow container rather than a real mobile viewport.
+
+## Iteration 2026-06-20 composer-tools-modified-key-passthrough
+
+Result: passed.
+
+Target flow:
+
+- Opening the composer tools menu should keep the existing focus handoff to the first visible enabled tool action.
+- `Tab` and `Shift+Tab` should still stay inside `#chat-input-action-menu`.
+- Modified direction keys such as `Shift+ArrowDown`, `Alt+ArrowDown`, `Ctrl+ArrowDown`, and `Meta+ArrowDown` should pass through without moving tools-menu focus or calling `preventDefault`.
+- Plain `ArrowDown`, `ArrowUp`, `Home`, and `End` should keep moving focus inside the tools menu.
+- Nested listbox surfaces, Escape close, backdrop close, upload behavior, prompt hints, shortcut modal behavior, image generation behavior, model config semantics, account/secret/sync, backend/API, production config, deployment config, persisted store keys, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: treat the composer tools menu as a compact Gemini-style command surface that supports keyboard power-user chords without stealing browser/system shortcuts.
+- This slice changes keyboard event routing only; no geometry, ordering, iconography, copy, tool handlers, upload/image-generation behavior, prompt data, model list, request, or store semantics changed.
+
+Scope:
+
+- `app/components/chat.tsx`: added a modifier-key early return in `handleChatActionMenuKeyDown`, after the existing listbox guard and Tab trap, and before unmodified Arrow/Home/End handling.
+- `test/gemini-visual-migration.test.ts`: tightened the composer tools source contract with a focused function-block assertion, locking listbox guard, Tab handling, modifier passthrough, and plain Arrow/Home/End handling order.
+- No CSS, tool ordering, upload behavior, prompt hints, shortcut modal behavior, image generation settings, model config semantics, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"` failed first as expected because `handleChatActionMenuKeyDown` had no modifier-key guard.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"`
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `git diff --check`
+
+Browser QA:
+
+- in-app Browser page identity: `http://localhost:3000/#/chat`, title `NeatChat`, meaningful app controls rendered, no framework overlay, initial horizontal overflow `0`, and the composer tools trigger exposed `aria-controls="chat-input-action-menu"`, `aria-label="打开对话工具"`, and `aria-expanded="false"`.
+- Opening the trigger rendered `#chat-input-action-menu` with `role="dialog"`, `aria-modal="true"`, `aria-label="对话工具菜单"`, `aria-expanded="true"` on the trigger, visible enabled controls `上传附件`, `快捷指令`, `图片生成`, and focus on control index `0` (`上传附件`).
+- Pressing `Shift+ArrowDown` kept focus on index `0` and kept the menu open, proving the modified arrow key was not intercepted by the tools-menu roving focus path.
+- Pressing plain `ArrowDown` moved focus to index `1` (`快捷指令`), proving existing unmodified ArrowDown navigation still works.
+- Pressing `Home` then `Shift+Tab` moved focus from the first tool action to index `2` (`图片生成`), proving the existing Tab trap still runs before the modifier guard.
+- Pressing Escape returned focus to the trigger with `aria-label="打开对话工具"` and `aria-expanded="false"`; horizontal overflow stayed `0`.
+- Browser console QA had no warn/error logs.
+- Browser screenshot capture still failed with `Timed out running CDP command "Page.captureScreenshot"` on this local app tab, so evidence is DOM/interaction/console state rather than screenshots.
+- Browser QA did not send a message, call a model/API, select a model, upload files, open an OS file picker, trigger image generation, or persist production data.
+
+Review:
+
+- Read-only reviewer found no Critical, Important, or Minor issues. It confirmed the final handler order is show-menu guard, nested listbox guard, Tab/Shift+Tab trap, modifier guard, then unmodified Arrow/Home/End roving focus.
+- Reviewer also confirmed the source contract covers the new ordering without binding tool order, upload, shortcut, image generation, prompt hint, model config, API/store, or deploy semantics.
+- Main-thread review verified the final diff is limited to keyboard routing, the source-contract test, and this QA record.
+
+Known risks:
+
+- Runtime Browser QA directly exercised `Shift+ArrowDown`, plain `ArrowDown`, `Home`, `Shift+Tab`, and Escape. `Alt` / `Ctrl` / `Meta` passthrough is covered by the source-contract test because OS/browser handling of those combinations can vary.
+- Browser screenshot and viewport override were unavailable in this session, so this slice uses interaction and DOM evidence from the default in-app Browser viewport.

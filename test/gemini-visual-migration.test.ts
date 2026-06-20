@@ -77,6 +77,10 @@ describe("Gemini visual migration shell", () => {
     const enLocale = read("app/locales/en.ts");
     const qaNotes = read("design-qa.md");
     const gitignore = read(".gitignore");
+    const chatActionMenuKeyDownBlock = readFunctionBlock(
+      chat,
+      "const handleChatActionMenuKeyDown = (",
+    );
     const chatRootDeclarations = readRootDeclarations(
       readCssBlock(chatStyles, ".chat"),
     );
@@ -833,6 +837,28 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chat).toMatch(
       /const handleChatActionMenuKeyDown = \(\s*event: React\.KeyboardEvent<HTMLElement>,?\s*\) => \{[\s\S]*if \(!showChatActionMenu\) return;[\s\S]*if \(\(event\.target as HTMLElement \| null\)\?\.closest\('\[role="listbox"\]'\)\) \{[\s\S]*return;[\s\S]*\}[\s\S]*if \(event\.key === "Tab"\) \{[\s\S]*trapChatActionMenuTab\(event\);[\s\S]*return;[\s\S]*\}[\s\S]*if \(!\["ArrowDown", "ArrowUp", "Home", "End"\]\.includes\(event\.key\)\) return;[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);[\s\S]*focusChatActionMenuControl\(event\.key\);[\s\S]*\};/,
+    );
+    expect(chatActionMenuKeyDownBlock).toMatch(
+      /if \(event\.key === "Tab"\) \{[\s\S]*trapChatActionMenuTab\(event\);[\s\S]*return;[\s\S]*\}/,
+    );
+    expect(chatActionMenuKeyDownBlock).toMatch(
+      /if \(event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey \|\| event\.shiftKey\) \{[\s\S]*return;[\s\S]*\}/,
+    );
+    expect(
+      chatActionMenuKeyDownBlock.indexOf('if (event.key === "Tab")'),
+    ).toBeLessThan(
+      chatActionMenuKeyDownBlock.indexOf(
+        "if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey)",
+      ),
+    );
+    expect(
+      chatActionMenuKeyDownBlock.indexOf(
+        "if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey)",
+      ),
+    ).toBeLessThan(
+      chatActionMenuKeyDownBlock.indexOf(
+        'if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;',
+      ),
     );
     expect(chat).toMatch(
       /if \(\(event\.target as HTMLElement \| null\)\?\.closest\('\[role="listbox"\]'\)\) \{[\s\S]*return;[\s\S]*\}/,

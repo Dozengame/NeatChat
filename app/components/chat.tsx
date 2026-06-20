@@ -3642,6 +3642,9 @@ function useChatInnerView() {
       trapChatActionMenuTab(event);
       return;
     }
+    if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) {
+      return;
+    }
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
 
     event.preventDefault();
