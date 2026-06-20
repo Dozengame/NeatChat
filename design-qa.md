@@ -4907,3 +4907,57 @@ Known risks:
 
 - Browser did not render a real in-app file attachment card because that requires a pre-existing attachment message or local store seeding beyond the read-only in-app Browser surface. The behavior is still covered by `markdown-file-attachment.test.tsx`, and visual CSS is covered by source-contract plus Sass compile checks.
 - The tokenized `color-mix()` icon/hover borders target modern browsers, consistent with the current Gemini Web alignment work. Old embedded WebView fallback remains a separate compatibility slice if required.
+
+## Iteration 2026-06-21 markdown-blockquote-tone-alignment
+
+Result: passed.
+
+Target flow:
+
+- Markdown blockquotes should keep the existing Markdown parsing, spacing rhythm, nested `details` behavior, and thinking/details rendering semantics.
+- Quote callouts should use the shared Gemini-style neutral surface and primary accent language instead of old hardcoded Google-blue and gray rgba paint.
+- Desktop, mobile, and narrow layouts should keep the composer visible, avoid framework overlays, and introduce no horizontal overflow.
+- Model config semantics, account/secret/sync, backend/API, production config, deployment config, upload parsing, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: treat blockquotes as quiet reader callouts inside AI-rendered content, not as separate promotional cards.
+- The default blockquote now uses `--surface-soft`, `--surface-elevated`, and `--primary` tokens for a soft container plus a calm left rail.
+- Nested blockquotes inside `details` keep a stripped-down left rail so reasoning/details content does not inherit a full card frame.
+- This slice intentionally avoids changing Markdown AST handling, generated content rendering, message state, or network/model behavior.
+
+Scope:
+
+- `app/styles/markdown.scss`: replaced hardcoded blockquote blue/gray light and dark paints with tokenized `color-mix()` surface/primary declarations; added explicit top/right/bottom border longhands after Browser QA showed `border` and `border-color` shorthands could serialize to empty CSSOM longhands; reset `details` blockquotes to a left-rail-only treatment.
+- `test/gemini-visual-migration.test.ts`: strengthened the Markdown blockquote contract to lock light/dark/default/details visual tokens, explicit border longhands, dark overrides, and a legacy blue/gray paint blacklist across the target blockquote rules.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, Markdown parsing/rendering logic, stores, model config, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, upload parser, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="markdown blockquote callouts"` failed first as expected because the old blockquote rule still used hardcoded blue and gray rgba values.
+- After implementation, the focused Markdown blockquote visual contract passed.
+- Read-only review found no blocking issues and one Minor test-hardening suggestion. The old gray rgba family was added to the target-block blacklist, and the focused test passed again.
+- Sass compile check passed: compiled `markdown.scss` includes explicit border longhands, surface/primary tokens, dark overrides, primary details left rail, and no target-block old blue/gray rgba paint.
+- Browser QA exposed a runtime CSSOM issue where `border: var(--border-in-light)` and then `border-color: color-mix(...)` shorthands serialized into empty border longhands. Fixed by using explicit top/right/bottom color longhands while keeping the primary left rail explicit.
+- Final verification before commit: `yarn lint`, `npx tsc --noEmit --pretty false`, `git diff --check`, `yarn jest test/gemini-visual-migration.test.ts --runInBand`, and `yarn build` passed.
+
+Browser QA:
+
+- in-app Browser page identity: `http://127.0.0.1:3000/?qa=markdown-blockquote-final-1781972380847#/chat`, title `NeatChat`, composer present, no framework overlay, and Browser console warn/error logs `0`.
+- Desktop `1440x1024`: horizontal overflow `0`; runtime CSSOM loaded `.markdown-body blockquote`, `.dark .markdown-body blockquote`, and `details` blockquote rules; top/right/bottom border width/style/color longhands were non-empty; primary left rail, dark surface border, details primary left rail, and surface-elevated shadow tokens were present; old target paints `rgba(66, 133, 244)`, `rgba(138, 180, 248)`, `rgba(60, 64, 67)`, and `rgba(232, 234, 237)` were absent.
+- Mobile `390x844`: same CSSOM checks passed, horizontal overflow `0`, composer present, and console warn/error logs `0`.
+- Narrow `320x740`: same CSSOM checks passed, horizontal overflow `0`, composer present, and console warn/error logs `0`.
+- Browser QA intentionally did not send a message, call a model/API, seed chat history, or mutate message state. The active blockquote selectors are covered by source-contract tests plus runtime CSSOM validation on the running app.
+
+Review:
+
+- Read-only subagent review found no Critical or Important issues. It confirmed the diff scope stayed within `markdown.scss` and `gemini-visual-migration.test.ts`, with no parsing/rendering, details/thinking structure, model/account/API/backend/deploy/production config changes.
+- The reviewer Minor finding was fixed before final verification by adding the old gray paint families to the blockquote target blacklist.
+- Main-thread review also fixed the Browser QA CSSOM issue by replacing shorthand border declarations with explicit longhands in the blockquote target rules.
+- Main-thread review verified the final diff remains limited to `markdown.scss`, `gemini-visual-migration.test.ts`, and this QA record, with no diff in `chat.tsx`, `markdown.tsx`, stores, config, API/backend, route constants, deployment files, dependency files, or model request paths.
+
+Known risks:
+
+- The blockquote surface continues to use modern `color-mix()` CSS, consistent with current Gemini Web alignment and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
+- Browser QA validated loaded CSSOM and shell layout, not an actual assistant response containing a live blockquote, because seeding model/chat content would cross this slice's read-only runtime boundary. Source-contract tests cover the target Markdown stylesheet rules directly.

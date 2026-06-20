@@ -3306,31 +3306,67 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".dark .markdown-body details blockquote,\n.dark .markdown-body details > p > blockquote",
     );
+    const blockquoteToneScope = [
+      blockquoteBlock,
+      darkBlockquoteBlock,
+      detailsBlockquoteBlock,
+      darkDetailsBlockquoteBlock,
+    ].join("\n");
 
     expect(blockquoteBlock).toMatch(/padding:\s*10px 14px;/);
+    expect(blockquoteBlock).toMatch(/border-width:\s*1px;/);
+    expect(blockquoteBlock).toMatch(/border-style:\s*solid;/);
     expect(blockquoteBlock).toMatch(
-      /border-left:\s*3px solid rgba\(66,\s*133,\s*244,\s*0\.48\);/,
+      /border-top-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 72%,\s*transparent\);/,
+    );
+    expect(blockquoteBlock).toMatch(
+      /border-right-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 72%,\s*transparent\);/,
+    );
+    expect(blockquoteBlock).toMatch(
+      /border-bottom-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 72%,\s*transparent\);/,
+    );
+    expect(blockquoteBlock).toMatch(
+      /border-left:\s*3px solid color-mix\(in srgb,\s*var\(--primary\) 52%,\s*transparent\);/,
     );
     expect(blockquoteBlock).toMatch(/border-radius:\s*12px;/);
     expect(blockquoteBlock).toMatch(
-      /background:\s*rgba\(60,\s*64,\s*67,\s*0\.045\);/,
+      /background:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 76%,\s*transparent\);/,
     );
     expect(blockquoteBlock).toMatch(/line-height:\s*1\.65;/);
     expect(blockquoteBlock).toMatch(
-      /box-shadow:\s*inset 0 0 0 1px rgba\(60,\s*64,\s*67,\s*0\.05\);/,
+      /box-shadow:\s*inset 0 0 0 1px color-mix\(in srgb,\s*var\(--surface-elevated\) 48%,\s*transparent\);/,
     );
     expect(darkBlockquoteBlock).toMatch(
-      /background:\s*rgba\(232,\s*234,\s*237,\s*0\.06\);/,
+      /background:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 72%,\s*transparent\);/,
     );
     expect(darkBlockquoteBlock).toMatch(
-      /border-left-color:\s*rgba\(138,\s*180,\s*248,\s*0\.5\);/,
+      /border-top-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 64%,\s*transparent\);/,
+    );
+    expect(darkBlockquoteBlock).toMatch(
+      /border-right-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 64%,\s*transparent\);/,
+    );
+    expect(darkBlockquoteBlock).toMatch(
+      /border-bottom-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 64%,\s*transparent\);/,
+    );
+    expect(darkBlockquoteBlock).toMatch(
+      /border-left-color:\s*color-mix\(in srgb,\s*var\(--primary\) 58%,\s*transparent\);/,
     );
     expect(detailsBlockquoteBlock).toMatch(/background:\s*transparent;/);
+    expect(detailsBlockquoteBlock).toMatch(/border:\s*0;/);
+    expect(detailsBlockquoteBlock).toMatch(
+      /border-left:\s*3px solid color-mix\(in srgb,\s*var\(--primary\) 42%,\s*transparent\);/,
+    );
     expect(detailsBlockquoteBlock).toMatch(/border-radius:\s*0;/);
     expect(detailsBlockquoteBlock).toMatch(/box-shadow:\s*none;/);
     expect(detailsBlockquoteBlock).toMatch(/line-height:\s*inherit;/);
     expect(darkDetailsBlockquoteBlock).toMatch(/background:\s*transparent;/);
+    expect(darkDetailsBlockquoteBlock).toMatch(
+      /border-left-color:\s*color-mix\(in srgb,\s*var\(--primary\) 50%,\s*transparent\);/,
+    );
     expect(darkDetailsBlockquoteBlock).toMatch(/box-shadow:\s*none;/);
+    expect(blockquoteToneScope).not.toMatch(
+      /rgba\((?:66,\s*133,\s*244|138,\s*180,\s*248|60,\s*64,\s*67|232,\s*234,\s*237)/,
+    );
   });
 
   test("keeps thinking details as a Gemini-style reasoning card", () => {
