@@ -2682,24 +2682,31 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".dark .markdown-body del code",
     );
+    const inlineCodeToneScope = [
+      inlineCodeBlock,
+      darkInlineCodeBlock,
+    ].join("\n");
 
     expect(inlineCodeBlock).toMatch(/padding:\s*0\.12em 0\.36em;/);
     expect(inlineCodeBlock).toMatch(/line-height:\s*1\.55;/);
     expect(inlineCodeBlock).toMatch(/white-space:\s*break-spaces;/);
     expect(inlineCodeBlock).toMatch(
-      /background:\s*rgba\(66,\s*133,\s*244,\s*0\.08\);/,
+      /background:\s*color-mix\(in srgb,\s*var\(--primary\) 8%,\s*transparent\);/,
     );
     expect(inlineCodeBlock).toMatch(
-      /border:\s*1px solid rgba\(66,\s*133,\s*244,\s*0\.12\);/,
+      /border:\s*1px solid color-mix\(in srgb,\s*var\(--primary\) 12%,\s*transparent\);/,
     );
     expect(inlineCodeBlock).toMatch(/border-radius:\s*6px;/);
     expect(inlineCodeBlock).toMatch(/box-decoration-break:\s*clone;/);
     expect(inlineCodeBlock).toMatch(/-webkit-box-decoration-break:\s*clone;/);
     expect(darkInlineCodeBlock).toMatch(
-      /background:\s*rgba\(138,\s*180,\s*248,\s*0\.12\);/,
+      /background:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*transparent\);/,
     );
     expect(darkInlineCodeBlock).toMatch(
-      /border-color:\s*rgba\(138,\s*180,\s*248,\s*0\.18\);/,
+      /border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 28%,\s*transparent\);/,
+    );
+    expect(inlineCodeToneScope).not.toMatch(
+      /(?:rgba?|hsla?|hwb|oklch|oklab|lch|lab|color|device-cmyk)\(|#[0-9a-fA-F]{3,8}\b/,
     );
     expect(preCodeBlock).toMatch(/padding:\s*0;/);
     expect(preCodeBlock).toMatch(/background:\s*transparent;/);

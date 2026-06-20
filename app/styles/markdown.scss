@@ -1489,8 +1489,8 @@ summary,
   font-size: 85%;
   line-height: 1.55;
   white-space: break-spaces;
-  background: rgba(66, 133, 244, 0.08);
-  border: 1px solid rgba(66, 133, 244, 0.12);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 12%, transparent);
   border-radius: 6px;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
@@ -1498,8 +1498,8 @@ summary,
 
 .dark .markdown-body code,
 .dark .markdown-body tt {
-  background: rgba(138, 180, 248, 0.12);
-  border-color: rgba(138, 180, 248, 0.18);
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 28%, transparent);
 }
 
 .dark .markdown-body h1 tt,
