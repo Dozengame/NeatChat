@@ -4385,3 +4385,49 @@ Known risks:
 
 - Runtime Browser QA directly exercised `Shift+ArrowDown`, plain `ArrowDown`, `Shift+Escape`, `Shift+Enter`, and Escape. `Alt` / `Ctrl` / `Meta` passthrough is covered by the source-contract test because browser/system handling of those combinations can vary by OS and browser.
 - Browser screenshot and viewport override were unavailable in this session, so this slice uses interaction and DOM evidence from the default in-app Browser viewport.
+
+## Iteration 2026-06-20 attachment-strip-swipe-scope
+
+Result: passed.
+
+Target flow:
+
+- On compact/mobile chat, right-swipe navigation from the main chat surface should remain available.
+- Horizontal touch gestures that start inside the composer attachment strip should stay scoped to the attachment strip and must not trigger chat-level right-swipe navigation to the sidebar.
+- Attachment preview rendering, delete focus handoff, drag/drop limits, paste handling, upload behavior, send behavior, model config semantics, account/secret/sync, backend/API, production config, deployment config, persisted store keys, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: keep the attachment strip as a Gemini-style horizontal media rail where local swipe/scroll gestures feel predictable and do not fight page navigation.
+- This slice changes touch gesture routing only; no visual styling, copy, attachment limits, file parsing, upload/send behavior, model list, request, store, account, sync, backend, or deploy semantics changed.
+
+Scope:
+
+- `app/components/chat.tsx`: added `ignoreChatSwipeRef`, a stable `[data-composer-attachment-strip="true"]` hit target, and an `isAttachmentStripTouch` guard so root chat swipe tracking ignores touches that begin inside the attachment strip.
+- `test/gemini-visual-migration.test.ts`: added a focused source-contract test for the root touch handler bindings, attachment strip data marker on the scroll shell, nested attachment list coverage, touch-start ignore path, touch-move ignore path, touch-end reset path, non-Element touch target normalization, and unchanged compact right-swipe navigation branch.
+- No CSS, attachment preview visuals, drag/drop limits, paste extraction, upload behavior, send behavior, model config semantics, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="attachment strip swipes"` failed first as expected because the attachment strip had no scoped touch guard or stable data marker.
+- After read-only review, `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="attachment strip swipes"` failed as expected because the strengthened source-contract test required root touch handler bindings, attachment shell coverage, and non-Element touch target normalization.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="attachment strip swipes"` passed after normalizing non-Element touch targets and tightening the source-contract coverage.
+
+Browser QA:
+
+- in-app Browser page identity: `http://localhost:3000/#/chat`, title `NeatChat`, meaningful app controls rendered, no framework overlay, initial `attachmentStripCount: 0`, horizontal overflow `0`, and Browser console warn/error logs `0`.
+- A local data URL image was pasted into the composer to create an attachment preview without opening an OS file picker, uploading, sending a message, calling a model/API, or persisting production data.
+- The rendered attachment state exposed `[data-composer-attachment-strip="true"]`, a nested `role="list"` with `aria-label="附件预览"`, `button[aria-label="编辑第 1 张图片附件"]`, and `button[aria-label="删除第 1 张图片附件"]`; strip rect was `left: 423`, `right: 1113`, `width: 690`, `height: 70`; `data-overflow-start="false"`, `data-overflow-end="false"`, input value stayed empty, horizontal overflow stayed `0`, and console warn/error logs stayed `0`.
+- Cleanup clicked the delete attachment button; final `attachmentStripCount: 0`, input value empty, horizontal overflow `0`, and console warn/error logs `0`.
+- Browser screenshot capture still failed with `Timed out running CDP command "Page.captureScreenshot"` on this local app tab, so evidence is DOM/interaction/console state rather than screenshots.
+
+Review:
+
+- Read-only code review found no Critical issues and one Important test gap: the first source-contract test did not lock the root touch handler bindings or prove the data marker lived on the scroll shell that wraps the attachment list.
+- Fixed by adding assertions for `onTouchStart` / `onTouchMove` / `onTouchEnd`, requiring the marker on `attachments-scroll-shell` before the nested `attachments-container`, and normalizing non-Element touch targets before `closest(...)`.
+- Main-thread review verified the final diff remains limited to touch gesture routing, source-contract coverage, and this QA record, without touching model/account/sync/API/upload/store/deploy boundaries.
+
+Known risks:
+
+- Runtime Browser QA verified the real attachment strip DOM marker, local pasted attachment state, cleanup path, layout bounds, and console health. The actual touch-routing branch is covered by the source-contract test because the in-app Browser runtime does not expose a reliable mobile touch-event dispatch path for this local app.
+- Browser screenshot and viewport override were unavailable in this session, so this slice uses default-viewport DOM/interaction evidence plus source contracts.

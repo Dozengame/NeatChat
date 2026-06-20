@@ -3348,17 +3348,50 @@ function useChatInnerView() {
   // 添加触摸滑动相关的状态
   const touchStartXRef = useRef(0);
   const touchEndXRef = useRef(0);
+  const ignoreChatSwipeRef = useRef(false);
+  const isAttachmentStripTouch = (target: EventTarget | null) => {
+    const touchTarget =
+      target instanceof Element
+        ? target
+        : target instanceof Node
+        ? target.parentElement
+        : null;
+
+    return Boolean(
+      touchTarget?.closest('[data-composer-attachment-strip="true"]'),
+    );
+  };
 
   // 处理触摸事件
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (isAttachmentStripTouch(e.target)) {
+      ignoreChatSwipeRef.current = true;
+      touchStartXRef.current = 0;
+      touchEndXRef.current = 0;
+      return;
+    }
+
+    ignoreChatSwipeRef.current = false;
     touchStartXRef.current = e.touches[0].clientX;
+    touchEndXRef.current = e.touches[0].clientX;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    if (ignoreChatSwipeRef.current) {
+      return;
+    }
+
     touchEndXRef.current = e.touches[0].clientX;
   };
 
   const handleTouchEnd = () => {
+    if (ignoreChatSwipeRef.current) {
+      ignoreChatSwipeRef.current = false;
+      touchStartXRef.current = 0;
+      touchEndXRef.current = 0;
+      return;
+    }
+
     if (!isCompactScreen) return;
 
     const swipeDistance = touchEndXRef.current - touchStartXRef.current;
@@ -4879,6 +4912,7 @@ function useChatInnerView() {
                 {(attachImages.length > 0 || attachedFiles.length > 0) && (
                   <div
                     className={styles["attachments-scroll-shell"]}
+                    data-composer-attachment-strip="true"
                     data-overflow-start={
                       attachmentScrollHint.start ? "true" : "false"
                     }

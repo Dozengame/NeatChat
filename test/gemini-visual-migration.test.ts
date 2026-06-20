@@ -1969,6 +1969,48 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps composer attachment strip swipes scoped on mobile", () => {
+    const chat = read("app/components/chat.tsx");
+    const touchStartBlock = readFunctionBlock(
+      chat,
+      "const handleTouchStart = (e: React.TouchEvent) =>",
+    );
+    const touchMoveBlock = readFunctionBlock(
+      chat,
+      "const handleTouchMove = (e: React.TouchEvent) =>",
+    );
+    const touchEndBlock = readFunctionBlock(
+      chat,
+      "const handleTouchEnd = () =>",
+    );
+
+    expect(chat).toMatch(
+      /<div\s+className=\{styles\.chat\}[\s\S]*key=\{session\.id\}[\s\S]*onTouchStart=\{handleTouchStart\}[\s\S]*onTouchMove=\{handleTouchMove\}[\s\S]*onTouchEnd=\{handleTouchEnd\}/,
+    );
+    expect(chat).toContain("const ignoreChatSwipeRef = useRef(false);");
+    expect(chat).toMatch(
+      /const isAttachmentStripTouch = \(target: EventTarget \| null\) => \{[\s\S]*const touchTarget =[\s\S]*target instanceof Element[\s\S]*target[\s\S]*target instanceof Node[\s\S]*target\.parentElement[\s\S]*return Boolean\([\s\S]*touchTarget\?\.closest\('\[data-composer-attachment-strip="true"\]'\)[\s\S]*\);[\s\S]*\};/,
+    );
+    expect(chat).toMatch(
+      /className=\{styles\["attachments-scroll-shell"\]\}[\s\S]*data-composer-attachment-strip="true"[\s\S]*<div[\s\S]*className=\{styles\["attachments-container"\]\}/,
+    );
+    expect(touchStartBlock).toMatch(
+      /if \(isAttachmentStripTouch\(e\.target\)\) \{[\s\S]*ignoreChatSwipeRef\.current = true;[\s\S]*touchStartXRef\.current = 0;[\s\S]*touchEndXRef\.current = 0;[\s\S]*return;[\s\S]*\}/,
+    );
+    expect(touchStartBlock).toMatch(
+      /ignoreChatSwipeRef\.current = false;[\s\S]*touchStartXRef\.current = e\.touches\[0\]\.clientX;[\s\S]*touchEndXRef\.current = e\.touches\[0\]\.clientX;/,
+    );
+    expect(touchMoveBlock).toMatch(
+      /if \(ignoreChatSwipeRef\.current\) \{[\s\S]*return;[\s\S]*\}/,
+    );
+    expect(touchEndBlock).toMatch(
+      /if \(ignoreChatSwipeRef\.current\) \{[\s\S]*ignoreChatSwipeRef\.current = false;[\s\S]*touchStartXRef\.current = 0;[\s\S]*touchEndXRef\.current = 0;[\s\S]*return;[\s\S]*\}/,
+    );
+    expect(touchEndBlock).toMatch(
+      /if \(!isCompactScreen\) return;[\s\S]*const swipeDistance = touchEndXRef\.current - touchStartXRef\.current;[\s\S]*if \(swipeDistance > minSwipeDistance\) \{[\s\S]*navigate\(Path\.Home\);/,
+    );
+  });
+
   test("keeps clear-context divider as a Gemini-style reversible status chip", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
