@@ -151,8 +151,42 @@ export function PreCode(props: { children: any }) {
   const [mermaidCode, setMermaidCode] = useState("");
   const [htmlCode, setHtmlCode] = useState("");
   const [copied, setCopied] = useState(false);
+  const [codeScrollHint, setCodeScrollHint] = useState({
+    start: false,
+    end: false,
+  });
   const copyResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { height } = useWindowSize();
+
+  const getCodeScrollElement = useCallback(
+    () => ref.current?.querySelector("code") as HTMLElement | null,
+    [],
+  );
+
+  const syncCodeScrollHint = useCallback(() => {
+    const codeScroller = getCodeScrollElement() ?? ref.current;
+    if (!codeScroller) {
+      setCodeScrollHint((current) =>
+        current.start || current.end ? { start: false, end: false } : current,
+      );
+      return;
+    }
+
+    const maxScrollLeft = Math.max(
+      0,
+      codeScroller.scrollWidth - codeScroller.clientWidth,
+    );
+    const nextHint = {
+      start: codeScroller.scrollLeft > 1,
+      end: maxScrollLeft - codeScroller.scrollLeft > 1,
+    };
+
+    setCodeScrollHint((current) =>
+      current.start === nextHint.start && current.end === nextHint.end
+        ? current
+        : nextHint,
+    );
+  }, [getCodeScrollElement]);
 
   const renderArtifacts = useDebouncedCallback(() => {
     if (!ref.current) return;
@@ -208,6 +242,40 @@ export function PreCode(props: { children: any }) {
     }
   }, [renderArtifacts]);
 
+  useLayoutEffect(() => {
+    const scrollHintFrame = requestAnimationFrame(syncCodeScrollHint);
+    return () => cancelAnimationFrame(scrollHintFrame);
+  }, [props.children, syncCodeScrollHint]);
+
+  useEffect(() => {
+    const codeScroller = getCodeScrollElement() ?? ref.current;
+    if (!codeScroller) {
+      window.addEventListener("resize", syncCodeScrollHint);
+      return () => window.removeEventListener("resize", syncCodeScrollHint);
+    }
+
+    let codeResizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      codeResizeObserver = new ResizeObserver(() => {
+        syncCodeScrollHint();
+      });
+      codeResizeObserver.observe(codeScroller);
+      if (ref.current && ref.current !== codeScroller) {
+        codeResizeObserver.observe(ref.current);
+      }
+    }
+    codeScroller.addEventListener("scroll", syncCodeScrollHint, {
+      passive: true,
+    });
+    window.addEventListener("resize", syncCodeScrollHint);
+
+    return () => {
+      codeResizeObserver?.disconnect();
+      codeScroller.removeEventListener("scroll", syncCodeScrollHint);
+      window.removeEventListener("resize", syncCodeScrollHint);
+    };
+  }, [getCodeScrollElement, props.children, syncCodeScrollHint]);
+
   useEffect(() => {
     return () => {
       if (copyResetTimerRef.current) {
@@ -232,6 +300,9 @@ export function PreCode(props: { children: any }) {
           "markdown-code-block",
           codeLanguage && "markdown-code-block-labeled",
         )}
+        data-overflow-start={codeScrollHint.start ? "true" : "false"}
+        data-overflow-end={codeScrollHint.end ? "true" : "false"}
+        onScroll={syncCodeScrollHint}
       >
         {codeLanguage && (
           <span className="markdown-code-language" aria-hidden="true">
@@ -275,6 +346,18 @@ export function PreCode(props: { children: any }) {
           {copied ? codeCopyLabel : ""}
         </span>
         {props.children}
+        {codeScrollHint.start && (
+          <span
+            aria-hidden="true"
+            className="markdown-code-scroll-fade markdown-code-scroll-fade-start"
+          />
+        )}
+        {codeScrollHint.end && (
+          <span
+            aria-hidden="true"
+            className="markdown-code-scroll-fade markdown-code-scroll-fade-end"
+          />
+        )}
       </pre>
       {mermaidCode.length > 0 && (
         <Mermaid code={mermaidCode} key={mermaidCode} />

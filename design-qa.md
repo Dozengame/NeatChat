@@ -4222,3 +4222,59 @@ Known risks:
 
 - Runtime Browser QA directly exercised `Shift+ArrowDown`, plain `ArrowDown`, and `Shift+Tab`; `Alt` / `Ctrl` / `Meta` passthrough is covered by the source-contract test because browser/system handling of those combinations can vary by OS and browser.
 - Browser screenshot and mobile viewport override were unavailable in this session, so visual evidence is DOM/interaction/console state rather than screenshots or live mobile dimensions.
+
+## Iteration 2026-06-20 markdown-code-scroll-edge-hints
+
+Result: passed.
+
+Target flow:
+
+- Long AI-rendered Markdown code blocks should advertise hidden horizontal content with a subtle edge hint in the available scroll direction.
+- The hint should update with horizontal scrolling: right only at the start, left only at the end, and no blocking layer over code text, copy action, language label, or code folding.
+- Existing copy payload selection, copied feedback, code language labels, Mermaid/HTML artifact rendering, code folding, table overflow hints, model config semantics, account/secret/sync, backend/API, production config, deployment config, upload behavior, persisted store keys, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: align code blocks with the already completed Gemini-style table and attachment overflow affordances.
+- The code block keeps the existing compact card shape and adds conditional, non-interactive left/right fade overlays using the same quiet 28px edge language as Markdown tables.
+
+Scope:
+
+- `app/components/markdown.tsx`: added code-block scroll hint state, actual `<code>` scroll-container detection, requestAnimationFrame synchronization, ResizeObserver-backed resize synchronization, passive scroll listener, overflow data attributes, and conditional start/end fade elements.
+- `app/styles/markdown.scss`: added code-block edge surface variables, horizontal overscroll containment, thin scrollbar styling, light/dark fade overlays, and language-label layering above the fade.
+- `app/styles/globals.scss`: raised the copy button z-index above the fade overlay.
+- `test/gemini-visual-migration.test.ts`: extended the Markdown code block contract to cover scroll calculation, ResizeObserver fallback, passive scroll listener, overflow data attributes, conditional fade elements, overlay styling, copy button layering, and language-label layering.
+- No model config semantics, account/secret/sync, backend/API, production config, deployment config, upload/send behavior, persisted store keys, model request payload construction, dependency files, or deploy files were changed.
+
+Automated checks:
+
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="markdown code block chrome"` failed first as expected because code-block scroll hint state and CSS did not exist.
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="markdown code block chrome"`
+- `npx jest test/markdown-code-language.test.tsx --runInBand`
+- `npx jest test/markdown-code-fold.test.tsx --runInBand`
+- `npx jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit --pretty false`
+- `git diff --check`
+- `yarn build`
+
+Browser QA:
+
+- in-app Browser could not expose `localStorage` or `indexedDB` to the read-only page sandbox, so persistent local chat-state injection was not used for this slice.
+- A temporary local QA fixture at `public/__codex_qa_code_scroll.html` was served through `http://localhost:3000/`, loaded the actual dev-server Markdown/chat/layout CSS assets, and was deleted before commit. It did not send messages, call a model/API, upload files, open file pickers, persist production data, or modify app storage.
+- Desktop/default Browser viewport reported `1280x720` because Browser viewport override still did not affect layout in this session. The code fixture had `codeScrollWidth: 3919`, `codeClientWidth: 638`, `bodyOverflowX: 0`, `data-overflow-start="false"`, `data-overflow-end="true"`, no left hint, right hint `28px x 152px`, `pointer-events: none`, copy button `z-index: 3`, language label `z-index: 2`, and language label `TypeScript`.
+- A real horizontal wheel scroll over the code region reached `scrollLeft: 3281` / `maxScrollLeft: 3281`, changed the state to `data-overflow-start="true"` and `data-overflow-end="false"`, rendered the left hint at `28px x 152px`, removed the right hint, and kept the hint `pointer-events: none`.
+- Compact container QA used a same-origin `358px` shell because Browser viewport override was unavailable. It had `bodyOverflowX: 0`, `codeScrollWidth: 3919`, `codeClientWidth: 276`, `data-overflow-start="false"`, `data-overflow-end="true"`, no left hint, and right hint `28px x 152px` with `pointer-events: none`.
+- A real horizontal wheel scroll in the compact shell reached `scrollLeft: 3643` / `maxScrollLeft: 3643`, changed the state to `data-overflow-start="true"` and `data-overflow-end="false"`, rendered the left hint at `28px x 152px`, removed the right hint, and kept the hint `pointer-events: none`.
+- Browser console QA on the fixture tab had no warn/error logs.
+
+Review:
+
+- Main-thread code review verified that the final diff is limited to Markdown code-block rendering/styling, source-contract tests, and this QA record.
+- Review specifically checked that the actual scroll target is the rendered `<code>` element, not the outer `<pre>`, so the hint tracks the element that already owns horizontal scrolling.
+- Review also checked that the fallback path still attaches the passive scroll listener when `ResizeObserver` is unavailable, and that copy/language controls render above the decorative fade overlays.
+
+Known risks:
+
+- Browser QA validated the live CSS/DOM contract with a same-origin fixture because the Browser sandbox blocked direct persistent chat-state injection. The React state wiring is covered by source-contract tests plus existing rendered `PreCode` language and fold tests, not by a live stored assistant message in the app.
+- Browser viewport override was unavailable in this session, so compact verification used a narrow container rather than a real mobile viewport.

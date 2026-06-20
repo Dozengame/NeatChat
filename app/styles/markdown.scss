@@ -1538,8 +1538,12 @@ summary,
 .markdown-body .highlight pre,
 .markdown-body pre {
   /* R4: Gemini-style refined code block card */
+  --markdown-code-edge-surface: rgba(248, 249, 250, 0.94);
   padding: 14px 64px 14px 16px;
   overflow: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
   font-size: 85%;
   line-height: 1.6;
   border-radius: 10px;
@@ -1626,7 +1630,7 @@ summary,
   position: absolute;
   top: 12px;
   right: 52px;
-  z-index: 1;
+  z-index: 2;
   max-width: min(160px, calc(100% - 96px));
   overflow: hidden;
   color: rgba(60, 64, 67, 0.56);
@@ -1639,8 +1643,37 @@ summary,
   pointer-events: none;
 }
 
+.markdown-code-scroll-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 28px;
+  min-width: 28px;
+  pointer-events: none;
+}
+
+.markdown-code-scroll-fade-start {
+  left: 0;
+  background: linear-gradient(
+    90deg,
+    var(--markdown-code-edge-surface) 0%,
+    rgba(248, 249, 250, 0) 100%
+  );
+}
+
+.markdown-code-scroll-fade-end {
+  right: 0;
+  background: linear-gradient(
+    270deg,
+    var(--markdown-code-edge-surface) 0%,
+    rgba(248, 249, 250, 0) 100%
+  );
+}
+
 .dark .markdown-body .highlight pre,
 .dark .markdown-body pre {
+  --markdown-code-edge-surface: rgba(30, 30, 46, 0.94);
   background-color: #1e1e2e;
   border-color: rgba(255, 255, 255, 0.08);
 }
