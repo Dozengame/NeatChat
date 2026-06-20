@@ -5228,3 +5228,57 @@ Known risks:
 
 - The link tones use modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
 - Browser QA validated loaded CSSOM and shell layout, not an actual assistant response containing live Markdown links, because seeding model/chat content would cross this slice's read-only runtime boundary. Source-contract tests cover the target Markdown stylesheet rules directly.
+
+## Iteration 2026-06-21 markdown-details-disclosure-hover-tone
+
+Result: passed.
+
+Target flow:
+
+- Generic Markdown `details summary` disclosure hover should use the shared Gemini-style primary token family instead of hardcoded primary blue.
+- Auto theme with system dark, explicit Dark, and explicit Light should receive the correct hover tone through existing Markdown theme mixins.
+- Marker hiding, static disclosure arrow, open arrow rotation, focus reset, focus-visible reset, and active reset must remain unchanged.
+- `details.markdown-thinking`, details blockquotes, Markdown parsing, generated details HTML, and streaming behavior must remain unchanged.
+- Desktop, mobile, and narrow layouts should mount the app, keep the composer visible, avoid framework overlays, and introduce no horizontal overflow.
+- Model config semantics, message streaming, account/secret/sync, backend/API, production config, deployment config, upload parsing, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: treat disclosure hover as a quiet affordance inside AI-rendered content, visually aligned with link, list-marker, heading-rail, blockquote, and thinking-card token work.
+- Light theme defines `--markdown-disclosure-hover-color` from `--primary`.
+- Dark theme defines `--markdown-disclosure-hover-color` as `--primary` mixed with `--black`, matching the readable dark Markdown link strategy.
+- This slice intentionally avoids changing Markdown AST handling, generated details markup, thinking-card specialized styling, streaming state, or network/model behavior.
+
+Scope:
+
+- `app/styles/markdown.scss`: added `--markdown-disclosure-hover-color` to Markdown light/dark mixins and changed generic `details summary:hover` plus `summary:hover::before` to consume that token.
+- `test/gemini-visual-migration.test.ts`: added a Markdown details disclosure hover contract that locks light/dark/Auto token paths, hover consumers, marker hiding, static/open arrow behavior, focus resets, active reset, and absence of old hardcoded target paints.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, Markdown parsing/rendering logic, stores, model config, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, upload parser, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="markdown details disclosure hover"` failed first as expected because the old generic disclosure hover still used hardcoded `rgb(49, 94, 248)` and the new disclosure token was missing.
+- After implementation, the focused Markdown details disclosure hover visual contract passed.
+- Read-only review found no Critical, Important, or Minor issues and confirmed the diff is ready to submit.
+- Final verification before commit: `yarn lint`, `npx tsc --noEmit --pretty false`, `git diff --check`, `yarn jest test/gemini-visual-migration.test.ts --runInBand`, and `yarn build` passed.
+
+Browser QA:
+
+- in-app Browser page identity after restarting the 3000 dev server: `http://127.0.0.1:3000/?qa=markdown-details-disclosure-hover-restarted-1781977077580#/chat`, app mounted, visible composer present, no framework overlay, and Browser console warn/error logs `0`.
+- Desktop `1440x1024`: horizontal overflow `0`; runtime CSSOM loaded root/light `--markdown-disclosure-hover-color: var(--primary)`, dark/Auto dark readable disclosure token, compiled hover and hover `::before` consumers, hidden marker, static arrow, open rotation, focus/focus-visible reset, active reset, and no old target paint.
+- Mobile `390x844`: same CSSOM checks passed, horizontal overflow `0`, visible composer present, and no framework overlay.
+- Narrow `320x740`: same CSSOM checks passed, horizontal overflow `0`, visible composer present, and no framework overlay.
+- The actual Browser environment had `prefers-color-scheme: dark` with `bodyClass=""`, validating the Auto dark path; computed `--markdown-disclosure-hover-color` resolved to a mix of `rgb(49, 94, 248)` and dark `--black` (`rgb(232, 234, 237)`).
+- Browser QA intentionally did not send a message, call a model/API, seed chat history, or mutate message state. The active disclosure selectors and tokens are covered by source-contract tests plus runtime CSSOM validation on the running app.
+
+Review:
+
+- Read-only subagent review found no Critical, Important, or Minor issues.
+- The reviewer confirmed `details.markdown-thinking` uses more specific rules and is not overridden by the generic disclosure hover token change.
+- Main-thread review verified the final diff remains limited to `markdown.scss`, `gemini-visual-migration.test.ts`, and this QA record, with no diff in `chat.tsx`, `markdown.tsx`, stores, config, API/backend, route constants, deployment files, dependency files, or model request paths.
+
+Known risks:
+
+- The dark disclosure hover tone uses modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
+- Browser QA validated loaded CSSOM and shell layout, not an actual assistant response containing live generic details markup, because seeding model/chat content would cross this slice's read-only runtime boundary. Source-contract tests cover the target Markdown stylesheet rules directly.

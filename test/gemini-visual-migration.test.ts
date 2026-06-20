@@ -3339,6 +3339,90 @@ describe("Gemini visual migration shell", () => {
     expect(headingAnchorHoverBlock).toMatch(/text-decoration:\s*none;/);
   });
 
+  test("keeps Gemini-style markdown details disclosure hover", () => {
+    const markdownStyles = read("app/styles/markdown.scss");
+    const markdownBodyBlock = readCssBlock(markdownStyles, ".markdown-body");
+    const detailsBlock = readCssBlock(markdownBodyBlock, "details");
+    const detailsSummaryBlock = readCssBlock(detailsBlock, "summary");
+    const detailsSummaryHoverBlock = readCssBlock(
+      detailsSummaryBlock,
+      "&:hover",
+    );
+    const detailsSummaryHoverBeforeBlock = readCssBlock(
+      detailsSummaryHoverBlock,
+      "&::before",
+    );
+    const detailsSummaryMarkerBlock = readCssBlock(
+      detailsSummaryBlock,
+      "&::-webkit-details-marker",
+    );
+    const detailsSummaryStaticBeforeSource = detailsSummaryBlock.slice(
+      detailsSummaryBlock.indexOf("&::-webkit-details-marker"),
+    );
+    const detailsSummaryBeforeBlock = readCssBlock(
+      detailsSummaryStaticBeforeSource,
+      "&::before",
+    );
+    const detailsOpenBeforeBlock = readCssBlock(
+      detailsBlock,
+      "&[open] > summary::before",
+    );
+    const detailsSummaryFocusBlock = readCssBlock(
+      detailsSummaryBlock,
+      "&:focus",
+    );
+    const detailsSummaryFocusVisibleBlock = readCssBlock(
+      detailsSummaryBlock,
+      "&:focus-visible",
+    );
+    const detailsSummaryActiveBlock = readCssBlock(
+      detailsSummaryBlock,
+      "&:active",
+    );
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const autoDarkRootBlock = readCssBlock(
+      readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
+      ":root",
+    );
+    const detailsDisclosureToneScope = [
+      detailsSummaryHoverBlock,
+      detailsSummaryHoverBeforeBlock,
+      lightMixinBlock.match(
+        /--markdown-disclosure-hover-color:[\s\S]*?;/,
+      )?.[0] ?? "",
+      darkMixinBlock.match(
+        /--markdown-disclosure-hover-color:[\s\S]*?\);/,
+      )?.[0] ?? "",
+    ].join("\n");
+
+    expect(lightMixinBlock).toMatch(
+      /--markdown-disclosure-hover-color:\s*var\(--primary\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-disclosure-hover-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 42%,\s*var\(--black\)\s*\);/,
+    );
+    expect(autoDarkRootBlock).toMatch(/@include dark;/);
+    expect(detailsSummaryHoverBlock).toMatch(
+      /color:\s*var\(--markdown-disclosure-hover-color\);/,
+    );
+    expect(detailsSummaryHoverBeforeBlock).toMatch(
+      /color:\s*var\(--markdown-disclosure-hover-color\);/,
+    );
+    expect(detailsSummaryMarkerBlock).toMatch(/display:\s*none;/);
+    expect(detailsSummaryBeforeBlock).toMatch(/content:\s*"▶";/);
+    expect(detailsSummaryBeforeBlock).toMatch(
+      /transition:\s*transform 0\.2s;/,
+    );
+    expect(detailsOpenBeforeBlock).toMatch(/transform:\s*rotate\(90deg\);/);
+    expect(detailsSummaryFocusBlock).toMatch(/outline:\s*none;/);
+    expect(detailsSummaryFocusVisibleBlock).toMatch(/outline:\s*none;/);
+    expect(detailsSummaryActiveBlock).toMatch(/background:\s*none;/);
+    expect(detailsDisclosureToneScope).not.toMatch(
+      /(?:rgba?|hsla?|hwb|oklch|oklab|lch|lab|color|device-cmyk)\(|#[0-9a-fA-F]{3,8}\b|rgb\(49,\s*94,\s*248\)/,
+    );
+  });
+
   test("keeps Gemini-style markdown blockquote callouts", () => {
     const markdownStyles = read("app/styles/markdown.scss");
     const blockquoteBlock = readCssBlock(

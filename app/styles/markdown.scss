@@ -63,6 +63,7 @@ summary,
     var(--markdown-link-color) 34%,
     transparent
   );
+  --markdown-disclosure-hover-color: var(--primary);
 }
 
 @mixin dark {
@@ -119,6 +120,11 @@ summary,
     var(--markdown-link-color) 40%,
     transparent
   );
+  --markdown-disclosure-hover-color: color-mix(
+    in srgb,
+    var(--primary) 42%,
+    var(--black)
+  );
 }
 
 .markdown-body {
@@ -146,10 +152,10 @@ summary,
       -webkit-tap-highlight-color: transparent;
 
       &:hover {
-        color: rgb(49, 94, 248);
+        color: var(--markdown-disclosure-hover-color);
 
         &::before {
-          color: rgb(49, 94, 248);
+          color: var(--markdown-disclosure-hover-color);
         }
       }
 
