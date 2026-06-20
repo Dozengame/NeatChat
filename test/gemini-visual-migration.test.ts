@@ -486,6 +486,10 @@ describe("Gemini visual migration shell", () => {
       promptHintsStart,
       promptHintsFirstEffect,
     );
+    const handleModelMenuKeyDownBlock = readFunctionBlock(
+      chat,
+      "const handleModelMenuKeyDown = (event: React.KeyboardEvent<HTMLElement>) =>",
+    );
 
     expect(chat).toContain('styles["chat-empty-state"]');
     expect(chat).toContain('styles["chat-empty-title"]');
@@ -650,8 +654,30 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /const trapModelMenuTab = useCallback\(\s*\(event: React\.KeyboardEvent<HTMLElement>\) => \{[\s\S]*const controls = getModelMenuControls\(\);[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);[\s\S]*if \(controls\.length === 0\) \{[\s\S]*modelMenuRef\.current\?\.focus\(\{ preventScroll: true \}\);[\s\S]*return;[\s\S]*\}[\s\S]*const nextIndex = event\.shiftKey[\s\S]*currentIndex <= 0[\s\S]*controls\.length - 1[\s\S]*currentIndex \+ 1[\s\S]*nextControl\.focus\(\{ preventScroll: true \}\);[\s\S]*nextControl\.scrollIntoView\(\{ block: "nearest" \}\);[\s\S]*\},\s*\[getModelMenuControls\],\s*\);/,
     );
-    expect(chat).toMatch(
-      /const handleModelMenuKeyDown = \(event: React\.KeyboardEvent<HTMLElement>\) => \{[\s\S]*if \(!showMobileModelSelector\) return;[\s\S]*if \(event\.key === "Tab"\) \{[\s\S]*trapModelMenuTab\(event\);[\s\S]*return;[\s\S]*\}[\s\S]*if \(!\["ArrowDown", "ArrowUp", "Home", "End"\]\.includes\(event\.key\)\) return;[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);[\s\S]*focusModelMenuControl\(event\.key\);[\s\S]*\};/,
+    expect(handleModelMenuKeyDownBlock).toContain(
+      "if (!showMobileModelSelector) return;",
+    );
+    expect(handleModelMenuKeyDownBlock).toMatch(
+      /if \(event\.key === "Tab"\) \{[\s\S]*trapModelMenuTab\(event\);[\s\S]*return;[\s\S]*\}/,
+    );
+    expect(handleModelMenuKeyDownBlock).toMatch(
+      /if \(event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey \|\| event\.shiftKey\) \{[\s\S]*return;[\s\S]*\}/,
+    );
+    expect(handleModelMenuKeyDownBlock).toMatch(
+      /if \(!\["ArrowDown", "ArrowUp", "Home", "End"\]\.includes\(event\.key\)\) return;[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);[\s\S]*focusModelMenuControl\(event\.key\);/,
+    );
+    const modelMenuTabGuardIndex = handleModelMenuKeyDownBlock.indexOf(
+      'if (event.key === "Tab")',
+    );
+    const modelMenuModifierGuardIndex = handleModelMenuKeyDownBlock.indexOf(
+      "event.metaKey || event.ctrlKey || event.altKey || event.shiftKey",
+    );
+    const modelMenuArrowGuardIndex = handleModelMenuKeyDownBlock.indexOf(
+      'if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;',
+    );
+    expect(modelMenuModifierGuardIndex).toBeGreaterThan(modelMenuTabGuardIndex);
+    expect(modelMenuArrowGuardIndex).toBeGreaterThan(
+      modelMenuModifierGuardIndex,
     );
     expect(chat).toMatch(
       /useEffect\(\(\) => \{[\s\S]*if \(modelMenuFocusFrameRef\.current !== null\) \{[\s\S]*cancelAnimationFrame\(modelMenuFocusFrameRef\.current\);[\s\S]*modelMenuFocusFrameRef\.current = null;[\s\S]*\}[\s\S]*if \(!showMobileModelSelector\) return;[\s\S]*modelMenuFocusFrameRef\.current = requestAnimationFrame\(\(\) => \{[\s\S]*modelMenuFocusFrameRef\.current = requestAnimationFrame\(\(\) => \{[\s\S]*modelMenuFocusFrameRef\.current = null;[\s\S]*focusInitialModelMenuControl\(\);[\s\S]*\}\);[\s\S]*\}\);[\s\S]*return \(\) => \{[\s\S]*if \(modelMenuFocusFrameRef\.current !== null\) \{[\s\S]*cancelAnimationFrame\(modelMenuFocusFrameRef\.current\);[\s\S]*modelMenuFocusFrameRef\.current = null;[\s\S]*\}[\s\S]*\};[\s\S]*\}, \[focusInitialModelMenuControl, showMobileModelSelector\]\);/,

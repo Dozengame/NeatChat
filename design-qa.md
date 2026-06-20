@@ -4166,3 +4166,59 @@ Known risks:
 
 - The behavior-level component test attempted for prompt-list shrink was not kept because importing `chat.tsx` in the current Jest transform path pulls ESM-heavy app dependencies such as `nanoid` and `lodash-es`; changing global Jest transforms would have exceeded this slice.
 - The list-length reset guarantee is covered by source-contract tests plus Browser QA of the real open/navigate/close flow, not by a dedicated Testing Library interaction test.
+
+## Iteration 2026-06-20 model-menu-modified-key-passthrough
+
+Result: passed.
+
+Target flow:
+
+- Opening the header model menu should keep the existing selected-option focus handoff.
+- `Shift+Tab` should still stay inside `#chat-model-menu`.
+- Modified direction keys such as `Shift+ArrowDown`, `Alt+ArrowDown`, `Ctrl+ArrowDown`, and `Meta+ArrowDown` should pass through without model-menu focus movement or `preventDefault`.
+- Plain `ArrowDown`, `ArrowUp`, `Home`, and `End` should keep moving focus inside the model menu.
+- The change must not alter model config semantics, account/secret/sync, backend/API, production config, deployment config, upload behavior, persisted store keys, or model request payload construction.
+
+Design direction:
+
+- Creative Production style intake selected: treat the model menu as a quiet Gemini-style dialog that supports fast keyboard scanning without stealing modified browser/system shortcuts.
+- This slice changes keyboard event routing only; no model list, provider, reasoning, image-generation, prompt, copy, CSS, request, or store semantics changed.
+
+Scope:
+
+- `app/components/chat.tsx`: added a modifier-key early return in `handleModelMenuKeyDown`, after the existing Tab trap and before the unmodified Arrow/Home/End handling.
+- `test/gemini-visual-migration.test.ts`: tightened the model-menu source contract with a focused function-block assertion, locking Tab first, modifier passthrough second, and plain Arrow/Home/End handling after that.
+- No CSS, model config semantics, account/secret/sync, backend/API, production config, deployment config, upload behavior, persisted store keys, model request payload construction, dependency files, or deploy files were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"` first hung when the initial broad negative regex caused excessive matching work; that assertion was rewritten to inspect only the `handleModelMenuKeyDown` function block.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"` then failed as expected because `handleModelMenuKeyDown` had no modifier-key guard.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"`
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit --pretty false`
+- `git diff --check`
+- `yarn build`
+
+Browser QA:
+
+- in-app Browser desktop viewport `1280x720`: page identity `NeatChat`, no framework overlay, horizontal overflow `0`, and one visible model selector with `aria-controls="chat-model-menu"` / `aria-expanded=false`.
+- Opening the selector rendered `#chat-model-menu`, set `aria-expanded=true`, and focused the selected `gpt-5.4` option at visible control index `0`.
+- Pressing `Shift+ArrowDown` on the selected option kept focus on index `0` and kept the menu open, proving the modified arrow key was not intercepted by the model-menu navigation path.
+- Pressing plain `ArrowDown` moved focus to visible control index `1` (`gpt-image-2`) while keeping the selected model as `gpt-5.4`, proving existing arrow-key navigation still works without changing model selection.
+- Pressing `Shift+Tab` from the second model option moved focus back to visible control index `0` inside `#chat-model-menu`, proving the Tab trap still runs before the modifier guard.
+- Console QA on the clean Browser tab had no warn/error logs after reload. A prior Browser tab hit a CDP `Runtime.evaluate` timeout and was discarded before this clean run.
+- Browser screenshot capture failed with `Timed out running CDP command "Page.captureScreenshot"`. Browser viewport override also did not affect layout in this session: after setting `390x844`, a new tab still reported `1280x720`. The mobile/narrow runtime check was therefore not used for this slice; the cross-viewport behavior is guarded by the shared source contract and earlier model-menu Browser QA.
+- Browser QA did not send a message, did not call a model/API, did not select a model, did not upload files, did not open an OS file picker, and did not persist production data.
+
+Review:
+
+- Read-only exploration had recommended this slice after the model-menu focus-containment work because modified direction keys were still intercepted.
+- Read-only code review found no Critical, Important, or Minor issues. It confirmed `Tab` remains handled before the modifier guard, modified Arrow/Home/End keys pass through, and plain Arrow/Home/End navigation remains unchanged.
+- Main-thread review verified that the final diff is limited to model menu keyboard routing, source-contract tests, and this QA record, and does not touch model/account/sync/API/upload/store/deploy boundaries.
+
+Known risks:
+
+- Runtime Browser QA directly exercised `Shift+ArrowDown`, plain `ArrowDown`, and `Shift+Tab`; `Alt` / `Ctrl` / `Meta` passthrough is covered by the source-contract test because browser/system handling of those combinations can vary by OS and browser.
+- Browser screenshot and mobile viewport override were unavailable in this session, so visual evidence is DOM/interaction/console state rather than screenshots or live mobile dimensions.
