@@ -3570,3 +3570,54 @@ Browser QA:
 Known risks:
 
 - Runtime visual QA did not cover the tools-menu shortcut entry because the current local config hides it. If `enableShortcuts` exposes that entry in another environment, recheck the menu-to-modal focus path visually.
+
+## Iteration 2026-06-20 streaming-wait-accessibility
+
+Result: passed.
+
+Target flow:
+
+- While an assistant message is waiting for the first streamed token, the existing Gemini-style skeleton remains the only visible loading surface.
+- The loading state also exposes a stable screen-reader status using the existing `Locale.Chat.Typing` copy, without rendering the legacy three-dot SVG directly in the Markdown body.
+- The status node must not add visual text, extra height, layout shift, or persistent motion.
+- The change must not alter model config semantics, streaming protocol, message content, token counting, first-token delay tracking, account/secret/sync, backend/API, production config, deployment config, persisted store keys, upload/send behavior, or existing shimmer/reveal timing.
+
+Design direction:
+
+- Creative Production style intake selected: keep the current streaming skeleton visually quiet, content-first, and low-interruption; improve assistive output without adding visible copy or new motion.
+- No new colors, visible UI text, assets, dependencies, API paths, or configuration keys.
+
+Scope:
+
+- `app/components/markdown.tsx`: replaced the direct Markdown loading SVG with a `role="status"` / `aria-live="polite"` / `aria-atomic="true"` status node that reuses `Locale.Chat.Typing`.
+- `app/styles/markdown.scss`: added a visually-hidden, layout-neutral `.markdown-loading-status` rule so the status stays in the accessibility tree but does not participate in the shimmer layout.
+- `test/gemini-visual-migration.test.ts`: extended the streaming wait contract to lock the accessible status, removal of the direct `LoadingIcon` loading branch, hidden status styling, unchanged shimmer hooks, streaming reveal, and reduced-motion guards.
+- No model config semantics, streaming protocol, message content, token counting, first-token delay tracking, account/secret/sync, backend/API, production config, deployment config, or persisted app store keys were changed.
+
+Automated checks:
+
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="streaming wait state"` failed first as expected because the Markdown loading branch did not expose `markdown-loading-status`.
+- Read-only review then caught that the first implementation made the status node contribute `min-height: 48px`; a follow-up red check failed on the corrected non-layout contract before the fix.
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="streaming wait state"`
+- `npx jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `git diff --check`
+- `yarn build`
+
+Review:
+
+- Read-only sub-agent review found one Important issue: the initial status wrapper used `display: block` and `min-height: 48px`, which could add layout height inside the existing shimmer skeleton.
+- Fixed by moving the visual hiding and 1px sizing to `.markdown-loading-status` itself, removing `min-height`, and keeping the existing chat shimmer as the only visual loading structure.
+- No Critical issues remained after the fix.
+
+Browser QA:
+
+- in-app Browser desktop viewport `1440x1024` at `http://localhost:3000/?qa=streaming-wait-accessibility-final-desktop#/chat`: verified the chat UI mounted, `#chat-input` existed, runtime CSSOM loaded `.markdown-body .markdown-loading-status` as absolute 1px clipped text with no `min-height`, page horizontal overflow stayed `0`, and console warn/error logs: `0`.
+- in-app Browser mobile viewport `390x844`: repeated the CSSOM, mount, overflow, and console checks with the same result.
+- in-app Browser narrow viewport `320x740`: repeated the CSSOM, mount, overflow, and console checks with the same result.
+- Browser QA did not send a message, did not call a model/API, did not upload files, and did not persist production data. The actual waiting DOM state is covered by source/Jest contracts because creating a real waiting response would require sending a message.
+
+Known risks:
+
+- Browser QA verifies the runtime styles and layout shell, while the active loading DOM contract is covered by Jest/source inspection rather than a live model request.

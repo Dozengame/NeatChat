@@ -20,7 +20,6 @@ import React, {
 import { copyToClipboard, useWindowSize } from "../utils";
 import { getImageActionLabels } from "../utils/image-action-labels";
 import Locale from "../locales";
-import LoadingIcon from "../icons/three-dots.svg";
 import DownloadIcon from "../icons/download.svg";
 import CopyIcon from "../icons/copy.svg";
 import ConfirmIcon from "../icons/confirm.svg";
@@ -1079,7 +1078,14 @@ export function Markdown(
         dir="auto"
       >
         {loading ? (
-          <LoadingIcon />
+          <div
+            className="markdown-loading-status"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {Locale.Chat.Typing}
+          </div>
         ) : (
           <MarkdownFeatureContext.Provider value={markdownFeatures}>
             <MarkdownContent

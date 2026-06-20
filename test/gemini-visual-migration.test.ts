@@ -3236,6 +3236,8 @@ describe("Gemini visual migration shell", () => {
   test("keeps streaming wait state as a polished Gemini-style skeleton", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
+    const markdown = read("app/components/markdown.tsx");
+    const markdownStyles = read("app/styles/markdown.scss");
     const shimmerBlock = readCssBlock(chatStyles, ".chat-message-shimmer");
     const streamingRevealBlock = readCssBlock(
       chatStyles,
@@ -3248,6 +3250,10 @@ describe("Gemini visual migration shell", () => {
     const reducedMotionBlock = chatStyles.slice(
       chatStyles.indexOf("@media (prefers-reduced-motion: reduce)"),
     );
+    const markdownLoadingStatusBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-loading-status",
+    );
 
     expect(chat).toContain("const isStreamingReveal");
     expect(chat).toMatch(
@@ -3256,6 +3262,20 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /isStreamingReveal &&\s*styles\["chat-message-streaming-reveal"\]/,
     );
+    expect(markdown).toContain('className="markdown-loading-status"');
+    expect(markdown).toMatch(
+      /role="status"[\s\S]*aria-live="polite"[\s\S]*aria-atomic="true"/,
+    );
+    expect(markdown).toMatch(/\{Locale\.Chat\.Typing\}/);
+    expect(markdown).not.toMatch(
+      /loading \? \(\s*<LoadingIcon \/>[\s\S]*\) : \(/,
+    );
+    expect(markdownLoadingStatusBlock).toMatch(/position:\s*absolute;/);
+    expect(markdownLoadingStatusBlock).toMatch(/width:\s*1px;/);
+    expect(markdownLoadingStatusBlock).toMatch(/height:\s*1px;/);
+    expect(markdownLoadingStatusBlock).toMatch(/overflow:\s*hidden;/);
+    expect(markdownLoadingStatusBlock).toMatch(/clip:\s*rect\(0 0 0 0\);/);
+    expect(markdownLoadingStatusBlock).not.toMatch(/min-height/);
     expect(shimmerBlock).toMatch(/min-height:\s*72px;/);
     expect(shimmerBlock).toContain("&::after");
     expect(shimmerBlock).toContain(":global(.markdown-body)::before");
