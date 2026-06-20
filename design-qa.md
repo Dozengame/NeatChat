@@ -3756,3 +3756,51 @@ Review:
 Known risks:
 
 - Browser QA used empty-area coordinate click for backdrop close because a direct backdrop locator click in the Browser runtime can click through to the textarea even though a user-style empty-area click closes the menu.
+
+## Iteration 2026-06-20 message-copy-feedback-state
+
+Result: passed.
+
+Target flow:
+
+- Ordinary message copy actions should expose short copied feedback, matching the quality of Markdown code-block copy feedback.
+- The copied state should appear only after `copyToClipboard` reports success; failed copy attempts should keep the action in its normal state and should not announce success.
+- Repeated copy attempts should not allow stale async completions to overwrite the latest copied state.
+- Async focus restoration should keep the clicked action usable without stealing focus after the user has moved elsewhere.
+- The action rail dimensions, message content, clipboard payload, model config semantics, account/secret/sync, backend/API, production config, deployment config, upload behavior, persisted store keys, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: treat the message action rail as a quiet Gemini-style utility surface where feedback is brief, local, and visually restrained.
+- Reuse the existing copy action geometry and label rhythm; show a green success tint and confirmation icon while copied, with a visually hidden polite status for assistive technology.
+
+Scope:
+
+- `app/utils.ts`: made `copyToClipboard` return a success boolean while preserving the existing success/failure toast behavior and fallback cleanup.
+- `app/components/chat.tsx`: added copied-state tracking, request race protection, guarded focus restoration, action label/title/aria updates, confirmation icon swap, and a polite status node.
+- `app/components/chat.module.scss`: added scoped copied-state styling for light and dark mode plus the visually hidden status utility.
+- `app/components/sd/sd.tsx`: updated the existing SD history copy action to discard the new success boolean explicitly, preserving its prior click behavior.
+- `test/gemini-visual-migration.test.ts`: extended the source contract for success-gated copied state, stale-request protection, focus-restore guard, timer cleanup, action accessibility, CSS state styling, and fallback clipboard cleanup.
+- No send/model/upload/backend/store/config paths were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because the ordinary message copy feedback state did not exist.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+
+Browser QA:
+
+- in-app Browser desktop viewport `1440x1024`: clicked the existing message copy action in the local `测试消息` conversation; the action changed from `用户消息 2 操作：复制` to `用户消息 2 操作：已写入剪贴板`, kept focus on the button, exposed `data-copy-state="copied"`, switched text to `已写入剪贴板`, showed the green success background/color, announced `用户消息 2 已写入剪贴板`, kept the action rail dimensions stable, kept horizontal overflow at `0`, and produced no new warn/error logs. After the feedback timeout, the copied state and live status cleared.
+- in-app Browser mobile viewport `390x844`: repeated the same copied-state, focus, status, rail-stability, overflow, console, and timeout reset checks with the same result.
+- in-app Browser narrow viewport `320x740`: repeated the same copied-state, focus, status, rail-stability, overflow, console, and timeout reset checks with the same result.
+- Browser QA did not send a message, did not call a model/API, did not upload files, did not open an OS file picker, and did not persist production data.
+
+Review:
+
+- Read-only sub-agent review found two Important issues: copied state could be set before copy success, and async completion could steal focus after the user moved elsewhere. Both were fixed before final verification.
+- The same review noted the remaining test gap that this path is covered by source-contract tests plus Browser QA rather than a full Testing Library interaction test.
+- Main-thread code review verified that copied feedback is success-gated, stale requests are ignored, fallback textarea cleanup runs in `finally`, focus restoration is guarded by the active element, the SD copy handler preserves its prior behavior while satisfying the updated utility return type, and no model/account/sync/backend/deployment paths were touched.
+
+Known risks:
+
+- No Testing Library interaction test was added for the click path; Browser QA covers the real interaction, and the source contract covers failure, focus, race, and cleanup behavior.

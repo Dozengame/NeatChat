@@ -33,12 +33,13 @@ export function trimTopic(topic: string) {
 export async function copyToClipboard(text: string) {
   try {
     if (window.__TAURI__) {
-      window.__TAURI__.writeText(text);
+      await window.__TAURI__.writeText(text);
     } else {
       await navigator.clipboard.writeText(text);
     }
 
     showToast(Locale.Copy.Success);
+    return true;
   } catch (error) {
     const textArea = document.createElement("textarea");
     textArea.value = text;
@@ -48,10 +49,13 @@ export async function copyToClipboard(text: string) {
     try {
       document.execCommand("copy");
       showToast(Locale.Copy.Success);
+      return true;
     } catch (error) {
       showToast(Locale.Copy.Failed);
+      return false;
+    } finally {
+      document.body.removeChild(textArea);
     }
-    document.body.removeChild(textArea);
   }
 }
 

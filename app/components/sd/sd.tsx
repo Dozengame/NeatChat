@@ -322,14 +322,14 @@ export function Sd() {
                             <ChatAction
                               text={Locale.Sd.Actions.Copy}
                               icon={<CopyIcon />}
-                              onClick={() =>
-                                copyToClipboard(
+                              onClick={async () => {
+                                await copyToClipboard(
                                   getMessageTextContent({
                                     role: "user",
                                     content: item.params.prompt,
                                   }),
-                                )
-                              }
+                                );
+                              }}
                             />
                             <ChatAction
                               text={Locale.Sd.Actions.Retry}

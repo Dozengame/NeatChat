@@ -706,9 +706,11 @@ const ClearContextDivider = React.forwardRef<HTMLButtonElement>(
 export function ChatAction(props: {
   text: string;
   icon: JSX.Element;
-  onClick: () => void | Promise<void>;
+  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void | Promise<void>;
   active?: boolean;
   ariaLabel?: string;
+  title?: string;
+  dataCopyState?: "idle" | "copied";
   ariaHasPopup?: React.AriaAttributes["aria-haspopup"];
   ariaExpanded?: boolean;
   ariaPressed?: boolean;
@@ -739,12 +741,14 @@ export function ChatAction(props: {
         [styles["chat-input-action-active"]]: props.active,
       })}
       aria-label={props.ariaLabel ?? props.text}
+      title={props.title}
+      data-copy-state={props.dataCopyState}
       aria-haspopup={props.ariaHasPopup}
       aria-expanded={props.ariaExpanded}
       aria-pressed={props.ariaPressed}
       role={props.role}
-      onClick={() => {
-        void props.onClick();
+      onClick={(event) => {
+        void props.onClick(event);
         setTimeout(updateWidth, 1);
       }}
       onMouseEnter={updateWidth}
@@ -3094,6 +3098,69 @@ function useChatInnerView() {
     );
   }
 
+  const [copiedMessageActionId, setCopiedMessageActionId] = useState<
+    string | number | null
+  >(null);
+  const messageCopyFeedbackTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const messageCopyRequestIdRef = useRef(0);
+  const restoreMessageCopyFocus = useCallback(
+    (trigger?: HTMLButtonElement | null) => {
+      if (!trigger?.isConnected) return;
+
+      const activeElement = document.activeElement;
+      if (activeElement === trigger || activeElement === document.body) {
+        trigger.focus({ preventScroll: true });
+      }
+    },
+    [],
+  );
+  const copyMessageContent = useCallback(
+    async (
+      message: ChatMessage,
+      messageActionId: string | number,
+      trigger?: HTMLButtonElement | null,
+    ) => {
+      const copyRequestId = messageCopyRequestIdRef.current + 1;
+      messageCopyRequestIdRef.current = copyRequestId;
+
+      if (messageCopyFeedbackTimerRef.current) {
+        clearTimeout(messageCopyFeedbackTimerRef.current);
+        messageCopyFeedbackTimerRef.current = null;
+      }
+      setCopiedMessageActionId(null);
+
+      const didCopy = await copyToClipboard(getMessageTextContent(message));
+      if (messageCopyRequestIdRef.current !== copyRequestId) return;
+
+      restoreMessageCopyFocus(trigger);
+      if (!didCopy) return;
+
+      setCopiedMessageActionId(messageActionId);
+
+      if (messageCopyFeedbackTimerRef.current) {
+        clearTimeout(messageCopyFeedbackTimerRef.current);
+      }
+
+      messageCopyFeedbackTimerRef.current = setTimeout(() => {
+        setCopiedMessageActionId((currentActionId) =>
+          currentActionId === messageActionId ? null : currentActionId,
+        );
+        messageCopyFeedbackTimerRef.current = null;
+      }, 1400);
+    },
+    [restoreMessageCopyFocus],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (messageCopyFeedbackTimerRef.current) {
+        clearTimeout(messageCopyFeedbackTimerRef.current);
+      }
+    };
+  }, []);
+
   // 快捷键 shortcut keys
   const [showShortcutKeyModal, setShowShortcutKeyModal] = useState(false);
   const shortcutKeyModalOpenerRef = useRef<HTMLElement | null>(null);
@@ -4150,6 +4217,17 @@ function useChatInnerView() {
                   i + 1
                 }`;
                 const messageActionLabel = `${messageLabel} 操作`;
+                const messageActionId = message.id ?? i;
+                const isMessageCopied =
+                  copiedMessageActionId === messageActionId;
+                const messageCopyActionLabel = `${messageActionLabel}：${
+                  isMessageCopied
+                    ? Locale.Copy.Success
+                    : Locale.Chat.Actions.Copy
+                }`;
+                const messageCopyStatus = isMessageCopied
+                  ? `${messageLabel} ${Locale.Copy.Success}`
+                  : "";
                 const messageImages = getMessageImages(message);
                 const singleMessageImageLabel = getMessageImageLabel(0, 1);
 
@@ -4386,15 +4464,39 @@ function useChatInnerView() {
                                   onClick={() => onPinMessage(message)}
                                 />
                                 <ChatAction
-                                  text={Locale.Chat.Actions.Copy}
-                                  ariaLabel={`${messageActionLabel}：${Locale.Chat.Actions.Copy}`}
-                                  icon={<CopyIcon />}
-                                  onClick={() =>
-                                    copyToClipboard(
-                                      getMessageTextContent(message),
+                                  text={
+                                    isMessageCopied
+                                      ? Locale.Copy.Success
+                                      : Locale.Chat.Actions.Copy
+                                  }
+                                  ariaLabel={messageCopyActionLabel}
+                                  title={messageCopyActionLabel}
+                                  dataCopyState={
+                                    isMessageCopied ? "copied" : "idle"
+                                  }
+                                  icon={
+                                    isMessageCopied ? (
+                                      <ConfirmIcon />
+                                    ) : (
+                                      <CopyIcon />
+                                    )
+                                  }
+                                  onClick={(event) =>
+                                    copyMessageContent(
+                                      message,
+                                      messageActionId,
+                                      event.currentTarget,
                                     )
                                   }
                                 />
+                                <span
+                                  className={styles["chat-message-copy-status"]}
+                                  role="status"
+                                  aria-live="polite"
+                                  aria-atomic="true"
+                                >
+                                  {messageCopyStatus}
+                                </span>
                                 {ENABLE_TEXT_TO_SPEECH &&
                                   config.ttsConfig.enable && (
                                     <ChatAction

@@ -1852,7 +1852,7 @@
   box-sizing: border-box;
   display: flex;
   margin-top: 8px;
-  
+
   // Required by Jest tests, DO NOT delete or reorder:
   transform: translateY(4px);
   pointer-events: none;
@@ -1921,6 +1921,15 @@
     }
   }
 
+  .chat-input-action[data-copy-state="copied"],
+  .chat-input-action[data-copy-state="copied"]:hover,
+  .chat-input-action[data-copy-state="copied"]:focus-visible {
+    background: rgba(52, 168, 83, 0.12) !important;
+    background-color: rgba(52, 168, 83, 0.12) !important;
+    color: rgba(24, 128, 56, 0.94) !important;
+    transition: box-shadow 0.16s ease !important;
+  }
+
   .icon {
     width: 16px;
     height: 16px;
@@ -1929,6 +1938,30 @@
   .text {
     display: none;
   }
+}
+
+:global(.dark) .chat-message-action-rail {
+  .chat-input-action[data-copy-state="copied"],
+  .chat-input-action[data-copy-state="copied"]:hover,
+  .chat-input-action[data-copy-state="copied"]:focus-visible {
+    background: rgba(129, 201, 149, 0.14) !important;
+    background-color: rgba(129, 201, 149, 0.14) !important;
+    color: rgba(129, 201, 149, 0.96) !important;
+    transition: box-shadow 0.16s ease !important;
+  }
+}
+
+.chat-message-copy-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .chat-message-container {
