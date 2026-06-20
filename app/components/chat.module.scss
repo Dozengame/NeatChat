@@ -91,6 +91,10 @@
   width: 64px;
 }
 
+.attach-full-item {
+  width: 64px;
+}
+
 .attach-image-mask {
   position: absolute;
   inset: 0;
@@ -274,6 +278,52 @@
   }
 }
 
+.attachment-full-indicator {
+  box-sizing: border-box;
+  width: 64px;
+  height: 64px;
+  padding: 8px 6px;
+  border: 1px solid rgba(95, 99, 104, 0.16);
+  border-radius: 12px;
+  background:
+    linear-gradient(145deg, rgba(248, 250, 255, 0.82), rgba(241, 245, 249, 0.72)),
+    rgba(248, 250, 255, 0.86);
+  color: rgba(95, 99, 104, 0.84);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: default;
+  pointer-events: none;
+  font-size: 11px;
+  font-weight: 520;
+  line-height: 1;
+  letter-spacing: 0;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.48);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  svg {
+    width: 18px;
+    height: 18px;
+    opacity: 0.72;
+  }
+
+  span {
+    white-space: nowrap;
+  }
+}
+
+:global(.dark) .attachment-full-indicator {
+  border-color: rgba(232, 234, 237, 0.1);
+  background:
+    linear-gradient(145deg, rgba(48, 49, 52, 0.72), rgba(32, 33, 36, 0.62)),
+    rgba(32, 33, 36, 0.72);
+  color: rgba(232, 234, 237, 0.68);
+  box-shadow: inset 0 0 0 1px rgba(232, 234, 237, 0.06);
+}
+
 :global(.dark) .attachment-add-button {
   background: rgba(32, 33, 36, 0.72);
   border-color: rgba(138, 180, 248, 0.34);
@@ -333,7 +383,7 @@
       pointer-events: none;
     }
 
-    &:hover {
+    &:not(:disabled):hover {
       --delay: 0.5s;
       width: var(--full-width);
       transition-delay: var(--delay);
@@ -343,6 +393,11 @@
         opacity: 1;
         transform: translate(0);
       }
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.58;
     }
 
     &-active {
@@ -367,7 +422,7 @@
     @media screen and (max-width: 600px) {
       width: var(--icon-width);
 
-      &:hover {
+      &:not(:disabled):hover {
         width: var(--icon-width);
       }
 
@@ -3074,8 +3129,8 @@
       pointer-events: auto;
     }
 
-    &:hover,
-    &:focus-visible {
+    &:not(:disabled):hover,
+    &:not(:disabled):focus-visible {
       width: 100%;
       background: var(--hover-color);
     }
@@ -3844,6 +3899,10 @@
     width: 58px;
   }
 
+  .attach-full-item {
+    width: 58px;
+  }
+
   .attach-image {
     flex-basis: 58px;
     width: 58px;
@@ -3857,6 +3916,11 @@
   }
 
   .attachment-add-button {
+    width: 58px;
+    height: 58px;
+  }
+
+  .attachment-full-indicator {
     width: 58px;
     height: 58px;
   }

@@ -1962,6 +1962,114 @@ describe("Gemini visual migration shell", () => {
     expect(mobileAddButtonBlock).toMatch(/height:\s*58px;/);
   });
 
+  test("keeps attachment strip full state visible and inert", () => {
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const chatActionStart = chat.indexOf("export function ChatAction(props: {");
+    const chatActionBlock = chat.slice(
+      chatActionStart,
+      chat.indexOf("function useScrollToBottom", chatActionStart),
+    );
+    const handleUploadAttachmentsBlock = readFunctionBlock(
+      chat,
+      "async function handleUploadAttachments()",
+    );
+    const attachFullItemBlock = readCssBlock(chatStyles, ".attach-full-item");
+    const attachmentFullIndicatorBlock = readCssBlock(
+      chatStyles,
+      ".attachment-full-indicator",
+    );
+    const mobileStyles = chatStyles.slice(
+      chatStyles.lastIndexOf("@media only screen and (max-width: 600px)"),
+    );
+    const mobileFullIndicatorBlock = readCssBlock(
+      mobileStyles,
+      ".attachment-full-indicator",
+    );
+    const fullIndicatorMarkupStart = chat.indexOf('styles["attach-full-item"]');
+    const fullIndicatorMarkupEnd = chat.indexOf(
+      "<IconButton",
+      fullIndicatorMarkupStart,
+    );
+    const fullIndicatorMarkup = chat.slice(
+      fullIndicatorMarkupStart,
+      fullIndicatorMarkupEnd,
+    );
+    const uploadActionMarkupStart = chat.indexOf(
+      "<ChatAction",
+      chat.indexOf('aria-label="多模态工具"'),
+    );
+    const uploadActionMarkupEnd = chat.indexOf(
+      "{!isCompactScreen && config.enablePromptHints",
+      uploadActionMarkupStart,
+    );
+    const uploadActionMarkup = chat.slice(
+      uploadActionMarkupStart,
+      uploadActionMarkupEnd,
+    );
+
+    expect(chat).toMatch(
+      /const attachmentSlotsFull =\s*attachImages\.length >= 3 && attachedFiles\.length >= 5;/,
+    );
+    expect(chat).toMatch(
+      /type ChatActionsProps = \{[\s\S]*attachmentSlotsFull: boolean;[\s\S]*\};/,
+    );
+    expect(chatActionBlock).toContain("disabled?: boolean;");
+    expect(chatActionBlock).toContain("disabled={props.disabled}");
+    expect(chatActionBlock).toMatch(
+      /onClick=\{\(event\) => \{[\s\S]*if \(props\.disabled\) return;[\s\S]*void props\.onClick\(event\);/,
+    );
+    expect(handleUploadAttachmentsBlock).toMatch(
+      /if \(attachmentSlotsFull\) \{[\s\S]*showToast\("附件已满：最多 3 张图片、5 个文件"\);[\s\S]*return;[\s\S]*\}[\s\S]*uploadAttachments\(/,
+    );
+    expect(uploadActionMarkup).toMatch(
+      /onClick=\{\(\) => \{[\s\S]*if \(props\.attachmentSlotsFull\) return;[\s\S]*props\.uploadAttachments\(\);[\s\S]*completeMobileAction\(\);/,
+    );
+    expect(uploadActionMarkup).toContain(
+      "disabled={props.attachmentSlotsFull}",
+    );
+    expect(uploadActionMarkup).toContain("props.attachmentSlotsFull");
+    expect(chat).toMatch(
+      /<ChatActions[\s\S]*attachmentSlotsFull=\{attachmentSlotsFull\}/,
+    );
+    expect(chat).toMatch(
+      /\{\(attachImages\.length > 0 \|\| attachedFiles\.length > 0\) && \([\s\S]*\{canAddMoreAttachments && \([\s\S]*styles\["attachment-add-button"\][\s\S]*\)\}[\s\S]*\{attachmentSlotsFull && \(/,
+    );
+    expect(fullIndicatorMarkupStart).toBeGreaterThan(-1);
+    expect(fullIndicatorMarkup).toContain('styles["attach-full-item"]');
+    expect(fullIndicatorMarkup).toContain(
+      'className={styles["attachment-full-indicator"]}',
+    );
+    expect(fullIndicatorMarkup).toContain('role="status"');
+    expect(fullIndicatorMarkup).toContain('aria-live="polite"');
+    expect(fullIndicatorMarkup).toContain(
+      'aria-label="附件已满：最多 3 张图片、5 个文件"',
+    );
+    expect(fullIndicatorMarkup).toContain(
+      'title="附件已满：最多 3 张图片、5 个文件"',
+    );
+    expect(fullIndicatorMarkup).toContain("<AttachmentIcon />");
+    expect(fullIndicatorMarkup).toContain("<span>已满</span>");
+    expect(fullIndicatorMarkup).not.toContain("onClick");
+    expect(fullIndicatorMarkup).not.toContain("handleUploadAttachments");
+    expect(attachFullItemBlock).toMatch(/width:\s*64px;/);
+    expect(attachmentFullIndicatorBlock).toMatch(/width:\s*64px;/);
+    expect(attachmentFullIndicatorBlock).toMatch(/height:\s*64px;/);
+    expect(attachmentFullIndicatorBlock).toMatch(/border-radius:\s*12px;/);
+    expect(attachmentFullIndicatorBlock).toMatch(/cursor:\s*default;/);
+    expect(attachmentFullIndicatorBlock).toMatch(/font-size:\s*11px;/);
+    expect(attachmentFullIndicatorBlock).toMatch(/font-weight:\s*520;/);
+    expect(attachmentFullIndicatorBlock).toMatch(/border:\s*1px solid/);
+    expect(attachmentFullIndicatorBlock).toMatch(/background:/);
+    expect(attachmentFullIndicatorBlock).toMatch(/backdrop-filter:\s*blur\(12px\);/);
+    expect(attachmentFullIndicatorBlock).toMatch(/pointer-events:\s*none;/);
+    expect(chatStyles).toMatch(
+      /:global\(\.dark\) \.attachment-full-indicator[\s\S]*border-color:/,
+    );
+    expect(mobileFullIndicatorBlock).toMatch(/width:\s*58px;/);
+    expect(mobileFullIndicatorBlock).toMatch(/height:\s*58px;/);
+  });
+
   test("keeps composer attachment strip overflow hints non-blocking", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");

@@ -4537,3 +4537,61 @@ Known risks:
 
 - Runtime Browser QA could not exercise physical mobile touch event timing in this session, and the repo has no Playwright dependency to run a separate mobile emulation without adding tooling. The touch behavior is guarded by source-contract tests plus live DOM/CSS/delete verification.
 - The design intentionally reveals the existing delete button instead of deleting on swipe; a true destructive swipe-to-delete would require a product decision and is outside this slice.
+
+## Iteration 2026-06-20 attachment-strip-full-state
+
+Result: passed.
+
+Target flow:
+
+- When the composer reaches both local attachment limits, 3 images and 5 files, the Attachment Strip should keep an explicit full-state tile in the media rail instead of simply removing the add affordance.
+- The full-state tile must be inert: no upload click handler, no native picker trigger, and no upload parsing path. The tool-menu upload action must also be disabled while both attachment classes are full.
+- If only one class is full, such as 3 images with fewer than 5 files or 5 files with fewer than 3 images, the existing add entry remains available so the other class can still be added.
+- Removing any attachment from full state should remove the full-state tile and restore both the strip add entry and the tool-menu upload entry.
+- Existing paste, drag/drop, attachment parsing, send behavior, model config semantics, account/secret/sync, backend/API, production config, deployment config, persisted store keys, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: keep the Attachment Strip as a Gemini-style compact media rail and represent full capacity with a quiet status tile, not a destructive or blocking modal.
+- The tile uses the same 64px desktop / 58px mobile footprint as the add tile, restrained glass treatment, short `已满` label, and an accessible status label: `附件已满：最多 3 张图片、5 个文件`.
+
+Scope:
+
+- `app/components/chat.tsx`: added `attachmentSlotsFull`, rendered a non-button full-state list item, disabled the tool-menu upload action when both limits are full, and added a defensive guard in `handleUploadAttachments`.
+- `app/components/chat.module.scss`: added full-state tile styling, dark-mode treatment, mobile sizing, and disabled affordance styling for generic chat action buttons.
+- `test/gemini-visual-migration.test.ts`: added source-contract coverage for full-state rendering, inert markup, upload handler guard, tool-menu disabled wiring, and 64px/58px sizing.
+- No model config, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, upload parser, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="attachment strip full state|attachment strip add action"` failed first as expected because the strip had no `attachmentSlotsFull` indicator.
+- After adding the full-state tile, `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="attachment strip full state|attachment strip add action"` passed.
+- Read-only review found an Important gap: the full tile was inert, but the tool-menu `上传附件` action could still open the native picker while both limits were full.
+- The test was strengthened and failed as expected until `ChatAction` supported `disabled`, `ChatActions` received `attachmentSlotsFull`, and `handleUploadAttachments` gained an early full-state guard.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="attachment strip full state"` passed after the review fix.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="attachment strip full state|attachment strip add action|attachment deletion focus|attachment strip overflow hints"` passed.
+- `git diff --check` passed.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed with `26` tests.
+
+Browser QA:
+
+- in-app Browser page identity: `http://localhost:3000/#/chat`, title `NeatChat`, meaningful composer controls rendered, and Browser console warn/error logs `0`.
+- Pasted 3 distinct local PNG data URLs and 5 long text snippets into the composer to create a full local attachment state without opening an OS picker, sending a message, calling a model/API, changing model settings, uploading a personal file, or touching production data.
+- Full state exposed 3 image edit buttons, 5 file edit buttons, 8 delete buttons, one full-state indicator, no `继续添加附件` strip button, full-state rect `64x64`, role `status`, text `已满`, and no click handler on the indicator.
+- Mobile viewport check at `390px` verified the full-state tile resized to `58x58` and still hid the strip add button.
+- Deleting one image changed state to 2 images and 5 files, removed the full-state indicator, restored one `继续添加附件` strip button, and kept console warn/error logs at `0`.
+- After the review fix, Browser QA also verified that tool-menu `上传附件` was disabled with title `附件已满：最多 3 张图片、5 个文件` in full state, then became enabled with no title after deleting one attachment.
+- Browser screenshot was not captured for this slice; evidence is live DOM state, interaction state, responsive geometry, and console health.
+
+Review:
+
+- First read-only review found one Critical/Important-level issue: full-state did not disable the separate tool-menu upload entry. It also noted that the initial test was too static to catch that gap.
+- Fixed by adding a disabled prop to `ChatAction`, passing `attachmentSlotsFull` into `ChatActions`, guarding both menu click and `handleUploadAttachments`, and strengthening the source-contract test.
+- Final read-only re-review found no Critical or Important issues. It left one non-blocking P3 note: the repo's test remains source-contract oriented rather than a rendered component interaction test.
+- Main-thread review verified the final diff remains limited to Attachment Strip full-state UI, chat-action disabled wiring, focused source-contract coverage, and this QA record, without touching upload parsing, send/model/API/account/sync/store/deploy boundaries.
+
+Known risks:
+
+- Runtime Browser QA covered the actual full-state flow and deletion recovery, including the tool-menu upload disabled state. Automated repo coverage remains mostly source-contract based because this codebase does not currently expose a lightweight rendered composer test harness for local attachment state.

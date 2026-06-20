@@ -744,6 +744,7 @@ export function ChatAction(props: {
   icon: JSX.Element;
   onClick: (event: React.MouseEvent<HTMLButtonElement>) => void | Promise<void>;
   active?: boolean;
+  disabled?: boolean;
   ariaLabel?: string;
   title?: string;
   dataCopyState?: "idle" | "copied";
@@ -783,7 +784,9 @@ export function ChatAction(props: {
       aria-expanded={props.ariaExpanded}
       aria-pressed={props.ariaPressed}
       role={props.role}
+      disabled={props.disabled}
       onClick={(event) => {
+        if (props.disabled) return;
         void props.onClick(event);
         setTimeout(updateWidth, 1);
       }}
@@ -848,6 +851,7 @@ type ChatActionsProps = {
   showPromptHints: () => void;
   hitBottom: boolean;
   uploading: boolean;
+  attachmentSlotsFull: boolean;
   openShortcutKeyModal: () => void;
   setUserInput: (input: string) => void;
   setShowChatSidePanel: React.Dispatch<React.SetStateAction<boolean>>;
@@ -1067,11 +1071,18 @@ function useChatActionsView(props: ChatActionsProps) {
           </div>
           <ChatAction
             onClick={() => {
+              if (props.attachmentSlotsFull) return;
               props.uploadAttachments();
               completeMobileAction();
             }}
             text={"上传附件"}
             icon={props.uploading ? <LoadingButtonIcon /> : <AttachmentIcon />}
+            disabled={props.attachmentSlotsFull}
+            title={
+              props.attachmentSlotsFull
+                ? "附件已满：最多 3 张图片、5 个文件"
+                : undefined
+            }
           />
 
           {!isCompactScreen && config.enablePromptHints && (
@@ -1857,6 +1868,8 @@ function useChatInnerView() {
     attachedFiles.length > 0;
   const canAddMoreAttachments =
     attachImages.length < 3 || attachedFiles.length < 5;
+  const attachmentSlotsFull =
+    attachImages.length >= 3 && attachedFiles.length >= 5;
   const shouldExpandChatInput = isInputExpanded || hasActiveInputContent;
   const expandInput = useCallback(() => {
     ignoreInputCollapseUntil.current = Date.now() + 350;
@@ -3192,6 +3205,11 @@ function useChatInnerView() {
 
   // 修改上传附件的处理函数
   async function handleUploadAttachments() {
+    if (attachmentSlotsFull) {
+      showToast("附件已满：最多 3 张图片、5 个文件");
+      return;
+    }
+
     // 从file.ts导入的新函数
     uploadAttachments(
       // 开始上传
@@ -4935,6 +4953,7 @@ function useChatInnerView() {
                 uploadAttachments={handleUploadAttachments}
                 setAttachImages={setAttachImages}
                 setUploading={setUploading}
+                attachmentSlotsFull={attachmentSlotsFull}
                 showPromptModal={() =>
                   openPromptModal(chatInputMenuButtonRef.current)
                 }
@@ -5287,6 +5306,26 @@ function useChatInnerView() {
                           >
                             <AddIcon />
                           </button>
+                        </div>
+                      )}
+                      {attachmentSlotsFull && (
+                        <div
+                          className={clsx(
+                            styles["attach-item"],
+                            styles["attach-full-item"],
+                          )}
+                          role="listitem"
+                        >
+                          <div
+                            className={styles["attachment-full-indicator"]}
+                            role="status"
+                            aria-live="polite"
+                            aria-label="附件已满：最多 3 张图片、5 个文件"
+                            title="附件已满：最多 3 张图片、5 个文件"
+                          >
+                            <AttachmentIcon />
+                            <span>已满</span>
+                          </div>
                         </div>
                       )}
                     </div>
