@@ -4538,6 +4538,12 @@ describe("Gemini visual migration shell", () => {
   test("keeps token metadata as a quiet non-overlapping chip", () => {
     const markdown = read("app/components/markdown.tsx");
     const markdownStyles = read("app/styles/markdown.scss");
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const autoDarkRootBlock = readCssBlock(
+      readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
+      ":root",
+    );
     const containerBlock = readCssBlock(
       markdownStyles,
       ".markdown-body-container",
@@ -4553,6 +4559,43 @@ describe("Gemini visual migration shell", () => {
     const reducedMotionBlock = markdownStyles.slice(
       markdownStyles.indexOf("@media (prefers-reduced-motion: reduce)"),
     );
+    const tokenInfoToneScope = [
+      tokenInfoBlock,
+      darkTokenInfoBlock,
+      lightMixinBlock.match(
+        /--markdown-token-info-border-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      lightMixinBlock.match(
+        /--markdown-token-info-background:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      lightMixinBlock.match(
+        /--markdown-token-info-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      lightMixinBlock.match(
+        /--markdown-token-info-hover-border-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      lightMixinBlock.match(
+        /--markdown-token-info-hover-background:[\s\S]*?var\(--surface-elevated\)\s*\);/,
+      )?.[0] ?? "",
+      lightMixinBlock.match(
+        /--markdown-token-info-hover-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      lightMixinBlock.match(
+        /--markdown-token-info-hover-shadow-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      darkMixinBlock.match(
+        /--markdown-token-info-background:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      darkMixinBlock.match(
+        /--markdown-token-info-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      darkMixinBlock.match(
+        /--markdown-token-info-hover-background:[\s\S]*?var\(--surface-soft\)\s*\);/,
+      )?.[0] ?? "",
+      darkMixinBlock.match(
+        /--markdown-token-info-hover-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+    ].join("\n");
 
     expect(markdown).toContain(
       "const tokenFirstCharDelay = tokenInfo?.firstCharDelay",
@@ -4574,6 +4617,43 @@ describe("Gemini visual migration shell", () => {
       'data-token-info-expanded={showTokenDelay ? "true" : "false"}',
     );
     expect(markdown).toMatch(/showTokenDelay\s*\?\s*tokenDelayText/);
+    expect(lightMixinBlock).toMatch(
+      /--markdown-token-info-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-token-info-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 72%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-token-info-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 90%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-token-info-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 22%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-token-info-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 8%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-token-info-hover-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 92%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-token-info-hover-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 8%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-token-info-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 72%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-token-info-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 74%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-token-info-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 24%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-token-info-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 14%,\s*var\(--surface-soft\)\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-token-info-hover-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 90%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkRootBlock).toMatch(/@include dark;/);
     expect(containerBlock).toMatch(/display:\s*flex;/);
     expect(containerBlock).toMatch(/flex-direction:\s*column;/);
     expect(containerBlock).toMatch(/align-items:\s*flex-start;/);
@@ -4592,22 +4672,58 @@ describe("Gemini visual migration shell", () => {
     expect(tokenInfoBlock).toMatch(/letter-spacing:\s*0;/);
     expect(tokenInfoBlock).toMatch(/font-size:\s*11px;/);
     expect(tokenInfoBlock).toMatch(
-      /border:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.1\);/,
+      /border:\s*1px solid var\(--markdown-token-info-border-color\);/,
     );
     expect(tokenInfoBlock).toMatch(
-      /background:\s*rgba\(248,\s*251,\s*255,\s*0\.72\);/,
+      /background:\s*var\(--markdown-token-info-background\);/,
+    );
+    expect(tokenInfoBlock).toMatch(
+      /color:\s*var\(--markdown-token-info-color\);/,
     );
     expect(tokenInfoBlock).toMatch(
       /box-shadow:\s*0 1px 2px rgba\(60,\s*64,\s*67,\s*0\.08\)/,
     );
+    expect(tokenInfoBlock).toMatch(
+      /&:hover,\s*&:focus-visible,\s*&\[data-token-info-expanded="true"\][\s\S]*border-color:\s*var\(--markdown-token-info-hover-border-color\);/,
+    );
+    expect(tokenInfoBlock).toMatch(
+      /&:hover,\s*&:focus-visible,\s*&\[data-token-info-expanded="true"\][\s\S]*background:\s*var\(--markdown-token-info-hover-background\);/,
+    );
+    expect(tokenInfoBlock).toMatch(
+      /&:hover,\s*&:focus-visible,\s*&\[data-token-info-expanded="true"\][\s\S]*color:\s*var\(--markdown-token-info-hover-color\);/,
+    );
+    expect(tokenInfoBlock).toMatch(
+      /&:hover,\s*&:focus-visible,\s*&\[data-token-info-expanded="true"\][\s\S]*0 10px 24px var\(--markdown-token-info-hover-shadow-color\);/,
+    );
     expect(tokenInfoBlock).toMatch(/&:focus-visible/);
     expect(tokenInfoBlock).toMatch(/outline:\s*none;/);
+    expect(tokenInfoBlock).toMatch(
+      /&:focus-visible[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 10px 24px var\(--markdown-token-info-hover-shadow-color\);/,
+    );
     expect(tokenInfoBlock).toMatch(/&\[data-token-info-expanded="true"\]/);
     expect(darkTokenInfoBlock).toMatch(
-      /background:\s*rgba\(32,\s*33,\s*36,\s*0\.72\);/,
+      /background:\s*var\(--markdown-token-info-background\);/,
     );
     expect(darkTokenInfoBlock).toMatch(
-      /border-color:\s*rgba\(232,\s*234,\s*237,\s*0\.1\);/,
+      /border-color:\s*var\(--markdown-token-info-border-color\);/,
+    );
+    expect(darkTokenInfoBlock).toMatch(
+      /color:\s*var\(--markdown-token-info-color\);/,
+    );
+    expect(darkTokenInfoBlock).toMatch(
+      /&:hover,\s*&:focus-visible,\s*&\[data-token-info-expanded="true"\][\s\S]*border-color:\s*var\(--markdown-token-info-hover-border-color\);/,
+    );
+    expect(darkTokenInfoBlock).toMatch(
+      /&:hover,\s*&:focus-visible,\s*&\[data-token-info-expanded="true"\][\s\S]*background:\s*var\(--markdown-token-info-hover-background\);/,
+    );
+    expect(darkTokenInfoBlock).toMatch(
+      /&:hover,\s*&:focus-visible,\s*&\[data-token-info-expanded="true"\][\s\S]*color:\s*var\(--markdown-token-info-hover-color\);/,
+    );
+    expect(darkTokenInfoBlock).toMatch(
+      /&:focus-visible[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 10px 24px var\(--markdown-token-info-hover-shadow-color\);/,
+    );
+    expect(tokenInfoToneScope).not.toMatch(
+      /rgba\((?:66,\s*133,\s*244|138,\s*180,\s*248)|#(?:4285f4|8ab4f8)\b/,
     );
     expect(mobileBlock).toContain(".markdown-body-container .token-info");
     expect(mobileBlock).toMatch(/align-self:\s*flex-start;/);

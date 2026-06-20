@@ -5391,3 +5391,56 @@ Known risks:
 
 - The code fold control tones use modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
 - Browser QA validated loaded CSSOM and shell layout, not an actual assistant response containing a live long code block, because seeding model/chat content would cross this slice's read-only runtime boundary. Source-contract tests cover the target Markdown stylesheet rules directly.
+
+## Iteration 2026-06-21 markdown-token-info-tone
+
+Result: passed.
+
+Target flow:
+
+- Markdown token metadata chips should keep the existing token count, optional first-character delay reveal, accessible label, `aria-pressed`, `data-token-info-expanded`, static non-overlapping placement, mobile wrapping, and reduced-motion behavior.
+- Token metadata chip base, hover, focus-visible, expanded, and accent shadow tones should use shared Markdown theme tokens instead of legacy hardcoded Gemini blue values.
+- Auto theme with system dark, explicit Dark, and explicit Light should receive the correct token metadata tones through existing Markdown theme mixins.
+- Token counting, first-character delay storage, Markdown rendering, stream state, and message layout semantics must remain unchanged.
+- Desktop, mobile, and narrow layouts should mount the app, avoid framework overlays, and introduce no horizontal overflow.
+- Model config semantics, message streaming, account/secret/sync, backend/API, production config, deployment config, upload parsing, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Continue the AI-rendered content tokenization track: token metadata is a low-attention status chip, so it should feel quieter than links and code fold controls while still sharing the same Gemini-style Markdown primary/surface token family.
+- Light theme defines subtle base border/background/text tones from `--black`, `--black-50`, and `--surface-elevated`, with hover/expanded emphasis from `--markdown-link-color`.
+- Dark theme defines the same chip contract from `--surface-soft`, readable dark text, and the dark Markdown link tone, so explicit Dark and Auto dark remain aligned.
+- This slice intentionally avoids changing token calculation, latency capture, aria/data attributes, Markdown AST handling, streaming state, or network/model behavior.
+
+Scope:
+
+- `app/styles/markdown.scss`: added token metadata chip base, hover, foreground, and shadow CSS variables to Markdown light/dark mixins, then changed the shared and explicit Dark `.token-info` rules to consume those variables.
+- `test/gemini-visual-migration.test.ts`: strengthened the token metadata chip visual contract to lock light/dark/Auto token paths, token-consuming base/hover/focus/expanded selectors, focus ring preservation, mobile wrapping, reduced motion, and absence of legacy target blue paint in the token metadata scope.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, Markdown parsing/rendering logic, token calculation, token latency storage, stores, model config, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, upload parser, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="token metadata"` failed first as expected because the token metadata chip theme variables were missing and the old hover/focus/expanded rules still used hardcoded target blue paint.
+- After implementation, the focused Markdown token metadata visual contract passed.
+- Final verification before commit: `yarn lint`, `npx tsc --noEmit --pretty false`, `git diff --check`, `yarn jest test/gemini-visual-migration.test.ts --runInBand`, and `yarn build` passed.
+
+Browser QA:
+
+- in-app Browser page identity: `http://127.0.0.1:3000/`, app mounted, no framework overlay observed through Browser QA, and Browser console warn/error logs `0` after the QA start timestamp.
+- Desktop `1439x1024`: app mounted, horizontal overflow `0`, runtime CSSOM loaded light/root token metadata variables, dark token metadata variables, Auto dark token metadata variables, base/hover/focus/expanded token consumers, explicit Dark token consumers, focus ring preservation, reduced-motion rule, and no legacy target blue paint in the token metadata scope.
+- Mobile `390x844`: app mounted, horizontal overflow `0`, token metadata CSS loaded, and no new warn/error logs.
+- Narrow `320x740`: app mounted, horizontal overflow `0`, token metadata CSS loaded, and no new warn/error logs.
+- The actual Browser environment had `prefers-color-scheme: dark` with `bodyClass=""`, validating the Auto dark path; computed root variables resolved token metadata background from `rgb(36, 39, 43) 72%` and token metadata text from `rgb(232, 234, 237) 74%`.
+- Browser QA intentionally did not send a message, call a model/API, seed chat history, or mutate message state. The active token metadata selectors and tokens are covered by source-contract tests plus runtime CSSOM validation on the running app.
+
+Review:
+
+- A read-only subagent review was requested, but the subagent failed before producing findings because the account hit the Codex usage limit. Two existing subagent ids exposed in the environment were also unavailable to receive review input.
+- Main-thread code review found no Critical, Important, or Minor issues. The selector scope remains limited to `.markdown-body-container .token-info`; Auto dark and explicit `.dark` use the same token names with theme-specific values; focus-visible keeps `--focus-ring-shadow`; mobile and reduced-motion behavior are preserved; the test locks both source contract and legacy paint removal.
+- Main-thread boundary review verified the current diff remains limited to `markdown.scss`, `gemini-visual-migration.test.ts`, and this QA record, with no diff in `chat.tsx`, `markdown.tsx`, stores, config, API/backend, route constants, deployment files, dependency files, or model request paths.
+
+Known risks:
+
+- The token metadata chip tones use modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
+- Browser QA validated loaded CSSOM and shell layout, not an actual assistant response containing a live token metadata chip, because seeding model/chat content would cross this slice's read-only runtime boundary. Render/source-contract tests cover the target Markdown stylesheet and token metadata behavior directly.

@@ -90,6 +90,41 @@ summary,
     var(--markdown-link-color) 10%,
     transparent
   );
+  --markdown-token-info-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --markdown-token-info-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 72%,
+    transparent
+  );
+  --markdown-token-info-color: color-mix(
+    in srgb,
+    var(--black-50) 90%,
+    transparent
+  );
+  --markdown-token-info-hover-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 22%,
+    transparent
+  );
+  --markdown-token-info-hover-background: color-mix(
+    in srgb,
+    var(--markdown-link-color) 8%,
+    var(--surface-elevated)
+  );
+  --markdown-token-info-hover-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
+  --markdown-token-info-hover-shadow-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 8%,
+    transparent
+  );
 }
 
 @mixin dark {
@@ -179,6 +214,41 @@ summary,
   --markdown-code-fold-hover-shadow-color: color-mix(
     in srgb,
     var(--markdown-link-color) 12%,
+    transparent
+  );
+  --markdown-token-info-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --markdown-token-info-background: color-mix(
+    in srgb,
+    var(--surface-soft) 72%,
+    transparent
+  );
+  --markdown-token-info-color: color-mix(
+    in srgb,
+    var(--black) 74%,
+    transparent
+  );
+  --markdown-token-info-hover-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 24%,
+    transparent
+  );
+  --markdown-token-info-hover-background: color-mix(
+    in srgb,
+    var(--markdown-link-color) 14%,
+    var(--surface-soft)
+  );
+  --markdown-token-info-hover-color: color-mix(
+    in srgb,
+    var(--black) 90%,
+    transparent
+  );
+  --markdown-token-info-hover-shadow-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 8%,
     transparent
   );
 }
@@ -2129,10 +2199,10 @@ summary,
     max-width: 100%;
     min-height: 26px;
     padding: 4px 9px;
-    border: 1px solid rgba(60, 64, 67, 0.1);
+    border: 1px solid var(--markdown-token-info-border-color);
     border-radius: 999px;
-    background: rgba(248, 251, 255, 0.72);
-    color: rgba(95, 99, 104, 0.9);
+    background: var(--markdown-token-info-background);
+    color: var(--markdown-token-info-color);
     box-shadow:
       0 1px 2px rgba(60, 64, 67, 0.08),
       0 8px 18px rgba(60, 64, 67, 0.04);
@@ -2155,14 +2225,14 @@ summary,
     &:hover,
     &:focus-visible,
     &[data-token-info-expanded="true"] {
-      border-color: rgba(66, 133, 244, 0.22);
-      background: rgba(241, 246, 255, 0.92);
-      color: rgba(32, 33, 36, 0.92);
+      border-color: var(--markdown-token-info-hover-border-color);
+      background: var(--markdown-token-info-hover-background);
+      color: var(--markdown-token-info-hover-color);
       opacity: 1;
       transform: translateY(-1px);
       box-shadow:
         0 1px 2px rgba(60, 64, 67, 0.1),
-        0 10px 24px rgba(66, 133, 244, 0.08);
+        0 10px 24px var(--markdown-token-info-hover-shadow-color);
     }
 
     &:focus-visible {
@@ -2170,7 +2240,7 @@ summary,
       box-shadow:
         var(--focus-ring-shadow),
         0 1px 2px rgba(60, 64, 67, 0.1),
-        0 10px 24px rgba(66, 133, 244, 0.08);
+        0 10px 24px var(--markdown-token-info-hover-shadow-color);
     }
 
     &:active {
@@ -2180,9 +2250,9 @@ summary,
 }
 
 .dark .markdown-body-container .token-info {
-  border-color: rgba(232, 234, 237, 0.1);
-  background: rgba(32, 33, 36, 0.72);
-  color: rgba(232, 234, 237, 0.74);
+  border-color: var(--markdown-token-info-border-color);
+  background: var(--markdown-token-info-background);
+  color: var(--markdown-token-info-color);
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.22),
     0 8px 18px rgba(0, 0, 0, 0.16);
@@ -2190,19 +2260,19 @@ summary,
   &:hover,
   &:focus-visible,
   &[data-token-info-expanded="true"] {
-    border-color: rgba(138, 180, 248, 0.24);
-    background: rgba(40, 43, 48, 0.9);
-    color: rgba(248, 250, 255, 0.9);
+    border-color: var(--markdown-token-info-hover-border-color);
+    background: var(--markdown-token-info-hover-background);
+    color: var(--markdown-token-info-hover-color);
     box-shadow:
       0 1px 2px rgba(0, 0, 0, 0.24),
-      0 10px 24px rgba(138, 180, 248, 0.08);
+      0 10px 24px var(--markdown-token-info-hover-shadow-color);
   }
 
   &:focus-visible {
     box-shadow:
       var(--focus-ring-shadow),
       0 1px 2px rgba(0, 0, 0, 0.24),
-      0 10px 24px rgba(138, 180, 248, 0.08);
+      0 10px 24px var(--markdown-token-info-hover-shadow-color);
   }
 }
 
