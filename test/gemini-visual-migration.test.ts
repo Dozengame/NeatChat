@@ -3604,6 +3604,7 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body summary h1,\n.markdown-body summary h2",
     );
+    const h2RailToneScope = [h2Block, darkH2RailBlock].join("\n");
 
     expect(headingBlock).toMatch(/margin-top:\s*22px;/);
     expect(headingBlock).toMatch(/margin-bottom:\s*10px;/);
@@ -3619,10 +3620,13 @@ describe("Gemini visual migration shell", () => {
     expect(h2Block).toMatch(/border-bottom:\s*0;/);
     expect(h2Block).toMatch(/&::before[\s\S]*width:\s*3px;/);
     expect(h2Block).toMatch(
-      /&::before[\s\S]*background:\s*rgba\(66,\s*133,\s*244,\s*0\.42\);/,
+      /&::before[\s\S]*background:\s*color-mix\(in srgb,\s*var\(--primary\) 42%,\s*transparent\);/,
     );
     expect(darkH2RailBlock).toMatch(
-      /background:\s*rgba\(138,\s*180,\s*248,\s*0\.46\);/,
+      /background:\s*color-mix\(in srgb,\s*var\(--primary\) 58%,\s*var\(--black\)\);/,
+    );
+    expect(h2RailToneScope).not.toMatch(
+      /(?:rgba?|hsla?|hwb|oklch|oklab|lch|lab|color|device-cmyk)\(|#[0-9a-fA-F]{3,8}\b/,
     );
     expect(h2AnchorBlock).toMatch(/margin-left:\s*-32px;/);
     expect(h3Block).toMatch(/font-size:\s*1\.12em;/);

@@ -5119,3 +5119,54 @@ Known risks:
 
 - The inline code pill surface uses modern `color-mix()` CSS, consistent with current Gemini Web alignment and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
 - Browser QA validated loaded CSSOM and shell layout, not an actual assistant response containing live inline code, because seeding model/chat content would cross this slice's read-only runtime boundary. Source-contract tests cover the target Markdown stylesheet rules directly.
+
+## Iteration 2026-06-21 markdown-heading-accent-tone-alignment
+
+Result: passed.
+
+Target flow:
+
+- Markdown heading hierarchy should keep the existing H1-H6 spacing, weight, line-height, H2 left-rail layout, H2 anchor offset, summary-heading reset, and heading-code reset behavior.
+- H2 accent rails should use the shared Gemini-style primary tone instead of old hardcoded light/dark blue rgba paint.
+- Desktop, mobile, and narrow layouts should keep the composer visible, avoid framework overlays, and introduce no horizontal overflow.
+- Model config semantics, message streaming, account/secret/sync, backend/API, production config, deployment config, upload parsing, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: treat H2 rails as quiet section anchors inside AI-rendered answers, aligned with list markers, blockquotes, and inline code pills.
+- Light H2 rails now use a low-strength `--primary` mix; dark H2 rails use `--primary` mixed with `--black`, matching the readable dark list-marker strategy.
+- This slice intentionally avoids changing Markdown AST handling, generated heading HTML, anchor behavior, code rendering, streaming state, or network/model behavior.
+
+Scope:
+
+- `app/styles/markdown.scss`: tokenized `.markdown-body h2::before` and `.dark .markdown-body h2::before` rail backgrounds while preserving H2 layout, heading code reset, and summary heading reset.
+- `test/gemini-visual-migration.test.ts`: strengthened the Markdown heading hierarchy contract to lock tokenized light/dark H2 rail colors and reject hardcoded color functions/hex values in the target rail rules.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, Markdown parsing/rendering logic, copy-code logic, stores, model config, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, upload parser, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="markdown heading hierarchy"` failed first as expected because the old H2 rail rule still used hardcoded blue rgba values.
+- After implementation, the focused Markdown heading hierarchy visual contract passed.
+- Sass compile check passed: compiled `markdown.scss` includes tokenized light/dark H2 rail mixes, transparent heading-code resets, and no hardcoded color functions/hex values in the target H2 rail rules.
+- Read-only review found no Critical, Important, or Minor issues.
+- Final verification before commit: `yarn lint`, `npx tsc --noEmit --pretty false`, `git diff --check`, `yarn jest test/gemini-visual-migration.test.ts --runInBand`, and `yarn build` passed.
+
+Browser QA:
+
+- in-app Browser page identity: `http://127.0.0.1:3000/?qa=markdown-heading-rail-tone-final-1781974938085#/chat`, visible composer present, no framework overlay, and Browser console warn/error logs `0`.
+- Desktop `1440x1024`: horizontal overflow `0`; runtime CSSOM loaded primary light H2 rail, readable dark H2 rail, H2 rhythm rules, H2 anchor offset, transparent heading-code reset, dark heading-code reset, summary-heading reset, no hardcoded target color functions/hex values, and no empty rail rules.
+- Mobile `390x844`: same CSSOM checks passed, horizontal overflow `0`, visible composer present, and no framework overlay.
+- Narrow `320x740`: same CSSOM checks passed, horizontal overflow `0`, visible composer present, and no framework overlay.
+- Browser QA intentionally did not send a message, call a model/API, seed chat history, or mutate message state. The active H2 rail selectors are covered by source-contract tests plus runtime CSSOM validation on the running app.
+
+Review:
+
+- Read-only subagent review found no Critical, Important, or Minor issues and confirmed the diff scope stayed within `markdown.scss` and `gemini-visual-migration.test.ts`, with no parsing/rendering, heading, code, streaming, model/account/API/backend/deploy/production config changes.
+- The reviewer confirmed the dark H2 rail matches the existing readable dark list-marker tone strategy.
+- Main-thread review verified the final diff remains limited to `markdown.scss`, `gemini-visual-migration.test.ts`, and this QA record, with no diff in `chat.tsx`, `markdown.tsx`, stores, config, API/backend, route constants, deployment files, dependency files, or model request paths.
+
+Known risks:
+
+- The H2 rail uses modern `color-mix()` CSS, consistent with current Gemini Web alignment and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
+- Browser QA validated loaded CSSOM and shell layout, not an actual assistant response containing live H2 headings, because seeding model/chat content would cross this slice's read-only runtime boundary. Source-contract tests cover the target Markdown stylesheet rules directly.
