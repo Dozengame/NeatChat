@@ -3857,3 +3857,54 @@ Review:
 Known risks:
 
 - This is arrow-key focus movement, not a strict single-tab-stop roving tabindex toolbar. Native Tab order across the individual action buttons is intentionally preserved for this small slice.
+
+## Iteration 2026-06-20 mobile-sidebar-dialog-focus
+
+Result: passed.
+
+Target flow:
+
+- Opening the compact mobile sidebar should expose the drawer as a temporary dialog-like surface for assistive technology.
+- The drawer should only expose `role="dialog"` and `aria-modal="true"` while it is open.
+- Opening the drawer should move focus onto the drawer, and Tab/Shift+Tab should stay inside the drawer's visible focusable controls.
+- Escape should close the mobile drawer without changing any sidebar route/action semantics.
+- Backdrop close and Escape close should both restore focus to the mobile drawer trigger.
+- The change must not alter model config semantics, account/secret/sync, backend/API, production config, deployment config, upload behavior, persisted store keys, or model request payload construction.
+
+Design direction:
+
+- Creative Production style intake selected: keep the existing Gemini-style glass drawer visuals, route-driven drawer open state, and right-edge backdrop close affordance; improve only the semantic and focus containment contract.
+- Keep drawer width, background, shadow, navigation order, account area, icons, and route targets unchanged.
+
+Scope:
+
+- `app/components/sidebar.tsx`: exposed `#mobile-sidebar-drawer` as `role="dialog"` with `aria-modal`, the existing chat-list label, and `tabIndex={-1}` only while the compact drawer is open.
+- `app/components/home.tsx`: introduced `isMobileDrawerOpen` so Escape/listener behavior only applies when the drawer actually renders, reused one `closeMobileSidebar` path for backdrop and Escape close, restored focus to `[data-mobile-sidebar-trigger]`, focused the drawer on open, and trapped Tab/Shift+Tab inside visible drawer controls.
+- `test/gemini-visual-migration.test.ts`: extended the mobile shell contract to lock drawer semantics, actual-open gating, Escape close wiring, focus restoration, and Tab containment.
+- No model config semantics, account/secret/sync, backend/API, production config, deployment config, upload behavior, persisted store keys, model request payload construction, or dependency files were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"` failed first as expected because the drawer lacked dialog semantics.
+- The same test failed once more because the source-contract regex was too sensitive to line breaks and quote style; the assertion was narrowed to the real contract.
+- After review tightened the contract, the same targeted test failed first because the drawer lacked `tabIndex` and Tab containment; the implementation was then updated.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"`
+
+Browser QA:
+
+- in-app Browser desktop viewport `1280x720`: page identity `NeatChat`; no framework overlay; `#mobile-sidebar-drawer` existed with no `role`, no `aria-modal`, no `aria-hidden`, no `tabindex`, desktop drawer bounds `left: 0`, `right: 300`, width `300`, horizontal overflow `0`, and console warn/error logs `0`.
+- in-app Browser viewport override could not be used for mobile verification because the Browser viewport capability continued to report `innerWidth: 1280` after setting `390x844`; mobile validation therefore used local headless Chrome via DevTools Protocol against `localhost:3000`, with a temporary QA-only profile state to pass the local access gate. No real access code, API key, account, sync, model request, upload, or production data was used.
+- Chrome/CDP mobile viewport `390x844`: before open, trigger `aria-expanded=false`, drawer `display=none`, `aria-hidden=true`, no `role`, no `aria-modal`, horizontal overflow `0`. After open, URL `#/`, trigger `aria-expanded=true`, drawer `display=flex`, `role=dialog`, `aria-modal=true`, `aria-label=查看消息列表`, `tabindex=-1`, bounds `left: 0`, `right: 304`, width `304`, horizontal overflow `0`, and focus on the drawer. Tab moved focus to `新的聊天`; Shift+Tab wrapped to `设置`; both remained inside the drawer. Escape closed to `#/chat`, removed `role/aria-modal`, restored `aria-hidden=true`, and returned focus to the trigger. Reopening then clicking the right-edge backdrop produced the same closed state and focus return. Console/CDP log count `0`.
+- Chrome/CDP narrow mobile viewport `320x740`: same open/Tab/Shift+Tab/Escape/backdrop path; open drawer bounds `left: 0`, `right: 266`, width `266`, horizontal overflow `0`, focus remained inside the drawer, and console/CDP log count `0`.
+- Screenshots inspected: `/tmp/neatchat-mobile-drawer-390.png` and `/tmp/neatchat-mobile-drawer-320.png`; both showed the glass drawer, right-side dimmed backdrop, and no clipping/overlap.
+
+Review:
+
+- Read-only explorer recommended this slice as the safest next step because the existing mobile shell already exposed `aria-controls`, route-driven open state, and backdrop close, but lacked the dialog/focus handoff contract.
+- Read-only code review found two Important issues: Escape was initially gated by route rather than actual drawer render state, and `aria-modal` needed focus containment. Both were fixed before final verification.
+- Main-thread code review found no remaining Critical or Important issues. It verified that the new close path is scoped to `isMobileDrawerOpen`, Escape/Tab only register while the drawer is actually open, desktop keeps non-modal sidebar semantics, and the implementation leaves model/config/API/store/upload paths untouched.
+
+Known risks:
+
+- Mobile Browser QA used Chrome/CDP fallback because the in-app Browser viewport override did not apply in this environment.
+- The fallback used a temporary local QA access-state seed in a headless Chrome profile only to reach the already protected frontend shell; it did not verify authenticated model/API behavior and did not use or persist real credentials.

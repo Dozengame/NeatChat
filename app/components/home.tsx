@@ -2,7 +2,13 @@
 
 require("../polyfill");
 
-import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import styles from "./home.module.scss";
 
 import { getCSSVar, useCompactScreen } from "../utils";
@@ -139,6 +145,86 @@ const loadAsyncGoogleFont = () => {
   document.head.appendChild(linkEl);
 };
 
+const MOBILE_SIDEBAR_TRIGGER_SELECTOR = "[data-mobile-sidebar-trigger]";
+const MOBILE_SIDEBAR_DRAWER_SELECTOR = "#mobile-sidebar-drawer";
+const MOBILE_SIDEBAR_FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "textarea:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+].join(",");
+
+function focusMobileSidebarTrigger() {
+  requestAnimationFrame(() => {
+    document
+      .querySelector<HTMLButtonElement>(MOBILE_SIDEBAR_TRIGGER_SELECTOR)
+      ?.focus({ preventScroll: true });
+  });
+}
+
+function focusMobileSidebarDrawer() {
+  requestAnimationFrame(() => {
+    document
+      .querySelector<HTMLElement>(MOBILE_SIDEBAR_DRAWER_SELECTOR)
+      ?.focus({ preventScroll: true });
+  });
+}
+
+function getMobileSidebarFocusableElements(drawer: HTMLElement) {
+  return Array.from(
+    drawer.querySelectorAll<HTMLElement>(MOBILE_SIDEBAR_FOCUSABLE_SELECTOR),
+  ).filter(
+    (element) =>
+      element.offsetParent !== null &&
+      element.getAttribute("aria-hidden") !== "true",
+  );
+}
+
+function trapMobileSidebarTab(event: KeyboardEvent) {
+  const drawer = document.querySelector<HTMLElement>(
+    MOBILE_SIDEBAR_DRAWER_SELECTOR,
+  );
+  if (!drawer) return;
+
+  const focusableElements = getMobileSidebarFocusableElements(drawer);
+  const activeElement = document.activeElement;
+
+  if (focusableElements.length === 0) {
+    event.preventDefault();
+    drawer.focus({ preventScroll: true });
+    return;
+  }
+
+  const firstElement = focusableElements[0];
+  const lastElement = focusableElements[focusableElements.length - 1];
+  const isFocusOutsideDrawer =
+    activeElement instanceof Node && !drawer.contains(activeElement);
+  const isOnDrawerItself = activeElement === drawer;
+
+  if (event.shiftKey) {
+    if (
+      activeElement === firstElement ||
+      isOnDrawerItself ||
+      isFocusOutsideDrawer
+    ) {
+      event.preventDefault();
+      lastElement.focus({ preventScroll: true });
+    }
+    return;
+  }
+
+  if (
+    activeElement === lastElement ||
+    isOnDrawerItself ||
+    isFocusOutsideDrawer
+  ) {
+    event.preventDefault();
+    firstElement.focus({ preventScroll: true });
+  }
+}
+
 export function WindowContent(props: { children: React.ReactNode }) {
   return (
     <div className={styles["window-content"]} id={SlotID.AppBody}>
@@ -164,6 +250,38 @@ function ScreenContent(props: {
     shouldRequireAccessCode,
   } = props;
   const navigate = useNavigate();
+  const isMobileDrawerOpen =
+    isCompactScreen &&
+    isHome &&
+    !shouldRequireAccessCode &&
+    !isAuth &&
+    !isSd &&
+    !isSdNew;
+  const closeMobileSidebar = useCallback(() => {
+    navigate(Path.Chat);
+    focusMobileSidebarTrigger();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!isMobileDrawerOpen) return;
+
+    focusMobileSidebarDrawer();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeMobileSidebar();
+        return;
+      }
+
+      if (event.key === "Tab") {
+        trapMobileSidebarTab(event);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [closeMobileSidebar, isMobileDrawerOpen]);
 
   if (shouldRequireAccessCode) return <AuthPage />;
   if (isAuth) return <AuthPage />;
@@ -176,16 +294,16 @@ function ScreenContent(props: {
           [styles["sidebar-show"]]: isHome,
         })}
         isMobileHidden={isCompactScreen && !isHome}
-        isMobileOpen={isCompactScreen && isHome}
+        isMobileOpen={isMobileDrawerOpen}
       />
-      {isCompactScreen && isHome && (
+      {isMobileDrawerOpen && (
         <button
           type="button"
           className={styles["sidebar-backdrop"]}
           aria-label="关闭侧边栏"
           aria-controls="mobile-sidebar-drawer"
-          aria-expanded={isHome}
-          onClick={() => navigate(Path.Chat)}
+          aria-expanded={isMobileDrawerOpen}
+          onClick={closeMobileSidebar}
         />
       )}
       <WindowContent>

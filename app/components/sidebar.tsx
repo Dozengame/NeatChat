@@ -159,6 +159,10 @@ export function SideBarContainer(props: {
     <div
       id="mobile-sidebar-drawer"
       aria-hidden={isMobileHidden ? true : undefined}
+      role={isMobileOpen ? "dialog" : undefined}
+      aria-modal={isMobileOpen ? true : undefined}
+      aria-label={Locale.Chat.Actions.ChatList}
+      tabIndex={isMobileOpen ? -1 : undefined}
       className={clsx(styles.sidebar, className, {
         [styles["narrow-sidebar"]]: shouldNarrow,
       })}

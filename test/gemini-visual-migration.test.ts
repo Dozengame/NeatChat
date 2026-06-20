@@ -1020,6 +1020,16 @@ describe("Gemini visual migration shell", () => {
     expect(sidebar).toMatch(
       /id="mobile-sidebar-drawer"[\s\S]*aria-hidden=\{isMobileHidden \? true : undefined\}/,
     );
+    expect(sidebar).toMatch(
+      /id="mobile-sidebar-drawer"[\s\S]*role=\{isMobileOpen \? "dialog" : undefined\}/,
+    );
+    expect(sidebar).toMatch(
+      /id="mobile-sidebar-drawer"[\s\S]*aria-modal=\{isMobileOpen \? true : undefined\}/,
+    );
+    expect(sidebar).toMatch(
+      /id="mobile-sidebar-drawer"[\s\S]*aria-label=\{Locale\.Chat\.Actions\.ChatList\}/,
+    );
+    expect(sidebar).toMatch(/tabIndex=\{isMobileOpen \? -1 : undefined\}/);
     expect(sidebar).toMatch(/left:\s*isMobileOpen \? 0 : undefined/);
     expect(sidebar).toMatch(/display:\s*isMobileHidden \? "none" : undefined/);
     expect(sidebar).toMatch(
@@ -1053,13 +1063,38 @@ describe("Gemini visual migration shell", () => {
     expect(chatList).not.toContain("style={{");
     expect(home).toContain('[styles["sidebar-show"]]: isHome');
     expect(home).toContain("isMobileHidden={isCompactScreen && !isHome}");
-    expect(home).toContain("isMobileOpen={isCompactScreen && isHome}");
-    expect(home).toContain("isCompactScreen && isHome");
+    expect(home).toMatch(
+      /const isMobileDrawerOpen =[\s\S]*isCompactScreen &&[\s\S]*isHome &&[\s\S]*!shouldRequireAccessCode &&[\s\S]*!isAuth &&[\s\S]*!isSd &&[\s\S]*!isSdNew;/,
+    );
+    expect(home).toContain("isMobileOpen={isMobileDrawerOpen}");
+    expect(home).toContain("isMobileDrawerOpen &&");
     expect(home).toContain('styles["sidebar-backdrop"]');
     expect(home).toContain('aria-label="关闭侧边栏"');
     expect(home).toContain('aria-controls="mobile-sidebar-drawer"');
-    expect(home).toContain("aria-expanded={isHome}");
+    expect(home).toContain("aria-expanded={isMobileDrawerOpen}");
     expect(home).toContain("navigate(Path.Chat)");
+    expect(home).toMatch(
+      /function focusMobileSidebarTrigger[\s\S]*requestAnimationFrame\([\s\S]*document[\s\S]*\.querySelector<HTMLButtonElement>\(MOBILE_SIDEBAR_TRIGGER_SELECTOR\)[\s\S]*\?\.focus\(\{ preventScroll: true \}\)/,
+    );
+    expect(home).toMatch(
+      /const closeMobileSidebar[\s\S]*navigate\(Path\.Chat\)[\s\S]*focusMobileSidebarTrigger\(\)/,
+    );
+    expect(home).toContain("focusMobileSidebarDrawer();");
+    expect(home).toContain("trapMobileSidebarTab(event)");
+    expect(home).toContain("MOBILE_SIDEBAR_FOCUSABLE_SELECTOR");
+    expect(home).toMatch(
+      /function trapMobileSidebarTab[\s\S]*event\.preventDefault\(\)[\s\S]*firstElement\.focus\(\{ preventScroll: true \}\)/,
+    );
+    expect(home).toMatch(
+      /function trapMobileSidebarTab[\s\S]*lastElement\.focus\(\{ preventScroll: true \}\)/,
+    );
+    expect(home).toMatch(
+      /if \(!isMobileDrawerOpen\) return;[\s\S]*event\.key === "Escape"[\s\S]*closeMobileSidebar\(\)/,
+    );
+    expect(home).toMatch(
+      /event\.key === "Tab"[\s\S]*trapMobileSidebarTab\(event\)/,
+    );
+    expect(home).toContain("onClick={closeMobileSidebar}");
 
     expect(chatStyles).toContain(".chat-empty-state");
     expect(chatStyles).toContain(".chat-empty-title");
