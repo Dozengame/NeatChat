@@ -3666,3 +3666,49 @@ Browser QA:
 Known risks:
 
 - The delayed stabilization is intentionally limited to focus entry only; it does not trap focus or change the behavior of nested tools that open their own UI.
+
+## Iteration 2026-06-20 composer-send-ready-state
+
+Result: passed.
+
+Target flow:
+
+- The composer send button should communicate whether a message can actually be submitted.
+- Empty composer state is disabled and visually quiet.
+- Typing text enables the existing send control without changing its accessible name or layout.
+- Clearing the text returns the control to disabled.
+- Attachments remain part of the same ready-state contract because they already bypass the empty-text guard in `doSubmit`.
+- The change must not alter `doSubmit`, model config semantics, image generation settings, prompt hints, account/secret/sync, backend/API, production config, deployment config, upload behavior, persisted store keys, or model request payload construction.
+
+Design direction:
+
+- Creative Production style intake selected: treat the send control like a Gemini-style input affordance that feels responsive to readiness, with a quiet disabled state and the same strong primary state once content exists.
+- Keep the existing circular send geometry, placement, icon, accessible name, and responsive layout unchanged.
+
+Scope:
+
+- `app/components/chat.tsx`: added `canSubmitComposer` from the same practical guard used by `doSubmit` (`trimmed text || images || files`) and passed it to the existing send `IconButton` as `disabled={!canSubmitComposer}`.
+- `app/components/chat.module.scss`: added a no-shadow, no-transform disabled send state plus dark-mode icon/background tuning.
+- `test/gemini-visual-migration.test.ts`: extended the composer contract to lock the submit-ready guard, disabled prop wiring, and disabled visual state.
+- No `doSubmit`, model config semantics, image generation settings, prompt hints, account/secret/sync, backend/API, production config, deployment config, upload behavior, persisted store keys, or model request payload construction was changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because `canSubmitComposer` and the disabled send state did not exist.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+
+Browser QA:
+
+- in-app Browser desktop viewport `1440x1024`: empty composer had one `发送` button, `disabled=true`, cursor `default`, no shadow, muted icon fill, no input overlap, no right/bottom overflow, and page horizontal overflow `0`; typing `测试发送按钮状态` changed the same button to enabled primary state without overflow; keyboard-clearing the input returned it to disabled; console warn/error logs: `0`.
+- in-app Browser mobile viewport `390x844`: empty compact composer had icon-only `发送` with `disabled=true`, muted fill, no shadow, no input overlap, no right/bottom overflow, page horizontal overflow `0`; typing enabled the same control; clearing disabled it again; console warn/error logs: `0`.
+- in-app Browser narrow viewport `320x740`: repeated the mobile disabled/enabled/disabled cycle with no overlap, no viewport overflow, and console warn/error logs: `0`.
+- Browser QA did not click send, did not send a message, did not call a model/API, did not upload files, did not open an OS file picker, and did not persist production data.
+
+Review:
+
+- Read-only sub-agent review was attempted but could not run because the account usage limit was reached.
+- Main-thread code review found no Critical or Important issues. It verified the ready-state guard matches the existing empty-submit guard, the send `IconButton` uses native disabled semantics, the disabled style overrides the shared button opacity/shadow, and no `doSubmit`, upload, prompt-hint, image-generation, model config, API, or store paths were changed.
+
+Known risks:
+
+- Browser QA covered the text ready-state path. Attachment-only enablement is covered by the source/Jest contract because exercising real upload or file picker paths would leave this slice's interaction boundary.

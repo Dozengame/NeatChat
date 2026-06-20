@@ -2725,6 +2725,28 @@
   padding: 11px;
   border-radius: 50%;
   box-shadow: 0 12px 26px rgba(49, 94, 248, 0.28);
+
+  &:disabled,
+  &:disabled:hover,
+  &:disabled:active {
+    cursor: default;
+    opacity: 1;
+    background: rgba(60, 64, 67, 0.12);
+    box-shadow: none;
+    transform: none;
+
+    svg path {
+      fill: rgba(60, 64, 67, 0.42) !important;
+    }
+  }
+}
+
+:global(.dark) .chat-input-send:disabled {
+  background: rgba(232, 234, 237, 0.12);
+
+  svg path {
+    fill: rgba(232, 234, 237, 0.48) !important;
+  }
 }
 
 .chat-input-row {

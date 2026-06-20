@@ -1806,6 +1806,10 @@ function useChatInnerView() {
     attachedFiles.length > 0 ||
     imageGenerationEnabled ||
     promptHints.length > 0;
+  const canSubmitComposer =
+    userInput.trim().length > 0 ||
+    attachImages.length > 0 ||
+    attachedFiles.length > 0;
   const shouldExpandChatInput = isInputExpanded || hasActiveInputContent;
   const expandInput = useCallback(() => {
     ignoreInputCollapseUntil.current = Date.now() + 350;
@@ -4736,6 +4740,7 @@ function useChatInnerView() {
                   text={isCompactScreen ? undefined : Locale.Chat.Send}
                   className={styles["chat-input-send"]}
                   type="primary"
+                  disabled={!canSubmitComposer}
                   aria={Locale.Chat.Send}
                   onClick={() => doSubmit(userInput)}
                 />

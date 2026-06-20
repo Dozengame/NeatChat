@@ -122,6 +122,14 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-scroll-to-bottom",
     );
+    const sendButtonDisabledBlock = chatStyles.slice(
+      chatStyles.indexOf("&:disabled,"),
+      chatStyles.indexOf(":global(.dark) .chat-input-send:disabled"),
+    );
+    const darkSendButtonDisabledBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-input-send:disabled",
+    );
     const darkScrollToBottomHoverBlock = readCssBlock(
       chatStyles,
       ":global(.dark) .chat-scroll-to-bottom:hover",
@@ -770,7 +778,10 @@ describe("Gemini visual migration shell", () => {
       /className=\{styles\["chat-input"\]\}[\s\S]*aria-label=\{\s*isCompactScreen\s*\?\s*Locale\.Chat\.MobileInput\s*:\s*Locale\.Chat\.Input\(submitKey\)\s*\}/,
     );
     expect(chat).toMatch(
-      /className=\{styles\["chat-input-send"\]\}[\s\S]*aria=\{Locale\.Chat\.Send\}/,
+      /const canSubmitComposer =\s*userInput\.trim\(\)\.length > 0 \|\|\s*attachImages\.length > 0 \|\|\s*attachedFiles\.length > 0;/,
+    );
+    expect(chat).toMatch(
+      /className=\{styles\["chat-input-send"\]\}[\s\S]*disabled=\{!canSubmitComposer\}[\s\S]*aria=\{Locale\.Chat\.Send\}/,
     );
     expect(inputStatusBlock).toContain(".chat-input");
     expect(inputStatusBlock).toContain("width: calc(100% - 96px)");
@@ -1118,6 +1129,22 @@ describe("Gemini visual migration shell", () => {
     expect(mobileScrollToBottomBlock).toMatch(/top:\s*-52px;/);
     expect(mobileScrollToBottomBlock).toMatch(/width:\s*40px;/);
     expect(mobileScrollToBottomBlock).toMatch(/height:\s*40px;/);
+    expect(sendButtonDisabledBlock).toMatch(
+      /&:disabled,[\s\S]*&:disabled:hover,[\s\S]*&:disabled:active[\s\S]*cursor:\s*default;/,
+    );
+    expect(sendButtonDisabledBlock).toMatch(
+      /&:disabled,[\s\S]*box-shadow:\s*none;/,
+    );
+    expect(sendButtonDisabledBlock).toMatch(/&:disabled,[\s\S]*transform:\s*none;/);
+    expect(sendButtonDisabledBlock).toMatch(
+      /&:disabled,[\s\S]*svg path[\s\S]*fill:\s*rgba\(60,\s*64,\s*67,\s*0\.42\) !important;/,
+    );
+    expect(darkSendButtonDisabledBlock).toMatch(
+      /background:\s*rgba\(232,\s*234,\s*237,\s*0\.12\);/,
+    );
+    expect(darkSendButtonDisabledBlock).toMatch(
+      /svg path[\s\S]*fill:\s*rgba\(232,\s*234,\s*237,\s*0\.48\) !important;/,
+    );
     expect(chatStyles.indexOf(".chat-reading-surface > .chat-message-row-user")).toBeGreaterThan(
       chatStyles.indexOf(".chat-message-user"),
     );
