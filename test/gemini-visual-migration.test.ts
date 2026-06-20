@@ -3548,15 +3548,21 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body .task-list-item",
     );
+    const listMarkerToneScope = [markerBlock, darkMarkerBlock].join("\n");
 
     expect(listBlock).toMatch(/padding-left:\s*1\.7em;/);
     expect(listBlock).toMatch(/line-height:\s*1\.65;/);
     expect(listItemBlock).toMatch(/padding-left:\s*0\.16em;/);
     expect(listItemBlock).toMatch(/line-height:\s*inherit;/);
-    expect(markerBlock).toMatch(/color:\s*rgba\(66,\s*133,\s*244,\s*0\.72\);/);
+    expect(markerBlock).toMatch(
+      /color:\s*color-mix\(in srgb,\s*var\(--primary\) 72%,\s*transparent\);/,
+    );
     expect(markerBlock).toMatch(/font-weight:\s*600;/);
     expect(darkMarkerBlock).toMatch(
-      /color:\s*rgba\(138,\s*180,\s*248,\s*0\.78\);/,
+      /color:\s*color-mix\(in srgb,\s*var\(--primary\) 58%,\s*var\(--black\)\);/,
+    );
+    expect(listMarkerToneScope).not.toMatch(
+      /(?:rgba?|hsla?|oklch|oklab|lch|lab|color)\(|#[0-9a-fA-F]{3,8}\b/,
     );
     expect(siblingItemBlock).toMatch(/margin-top:\s*0\.38em;/);
     expect(taskListItemBlock).toMatch(/list-style-type:\s*none;/);
