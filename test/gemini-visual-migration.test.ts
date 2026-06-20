@@ -2810,6 +2810,13 @@ describe("Gemini visual migration shell", () => {
   test("keeps shortcut key modal bounded on compact screens", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
+    const shortcutModalStart = chat.indexOf("export function ShortcutKeyModal");
+    const shortcutModalEnd = chat.indexOf(
+      "function useChatInnerView()",
+      shortcutModalStart,
+    );
+    const shortcutModalBlock = chat.slice(shortcutModalStart, shortcutModalEnd);
+    const chatInnerBlock = readFunctionBlock(chat, "function useChatInnerView() {");
     const shortcutMobileMediaIndex = chatStyles.indexOf(
       "@media screen and (max-width: 600px)",
       chatStyles.indexOf(".shortcut-key span"),
@@ -2862,6 +2869,35 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chat).toMatch(
       /role="listitem"[\s\S]*aria-label=\{\`\$\{shortcut\.title\}: \$\{shortcut\.keys\.join\(" \+ "\)\}\`\}/,
+    );
+    expect(shortcutModalBlock).toMatch(
+      /const closeShortcutKeyModal = \(\) => \{[\s\S]*props\.onClose\(\);[\s\S]*\};/,
+    );
+    expect(shortcutModalBlock).toMatch(/onClose=\{closeShortcutKeyModal\}/);
+    expect(shortcutModalBlock).toMatch(
+      /autoFocus[\s\S]*onClick=\{closeShortcutKeyModal\}/,
+    );
+    expect(chatInnerBlock).toContain(
+      "const shortcutKeyModalOpenerRef = useRef<HTMLElement | null>(null);",
+    );
+    expect(chatInnerBlock).toMatch(
+      /const openShortcutKeyModal = useCallback\(\s*\(\s*opener\?: HTMLElement \| null\s*\) => \{[\s\S]*const activeElement = document\.activeElement;[\s\S]*activeElement instanceof HTMLElement && activeElement !== document\.body[\s\S]*setShowShortcutKeyModal\(true\);[\s\S]*\},\s*\[\],\s*\);/,
+    );
+    expect(chatInnerBlock).toMatch(
+      /const closeShortcutKeyModal = useCallback\(\(\) => \{[\s\S]*setShowShortcutKeyModal\(false\);[\s\S]*requestAnimationFrame\(\(\) => \{[\s\S]*const opener = shortcutKeyModalOpenerRef\.current;[\s\S]*shortcutKeyModalOpenerRef\.current = null;[\s\S]*if \(opener && opener !== document\.body && opener\.isConnected\) \{[\s\S]*opener\.focus\(\);[\s\S]*return;[\s\S]*\}[\s\S]*inputRef\.current\?\.focus\(\);[\s\S]*\}\);[\s\S]*\}, \[\]\);/,
+    );
+    expect(chatInnerBlock).toMatch(
+      /openShortcutKeyModal\(\s*document\.activeElement instanceof HTMLElement[\s\S]*\);/,
+    );
+    expect(chat).toContain("openShortcutKeyModal: () => void;");
+    expect(chat).toMatch(
+      /onClick=\{\(\) => \{[\s\S]*props\.onActionComplete\?\.\(\);[\s\S]*props\.openShortcutKeyModal\(\);[\s\S]*\}\}[\s\S]*text=\{Locale\.Chat\.ShortcutKey\.Title\}/,
+    );
+    expect(chat).toMatch(
+      /openShortcutKeyModal=\{\(\) =>\s*openShortcutKeyModal\(chatInputMenuButtonRef\.current\)\s*\}/,
+    );
+    expect(chat).toContain(
+      "<ShortcutKeyModal onClose={closeShortcutKeyModal} />",
     );
     expect(chat).toContain("showShortcutKeyModal &&");
     expect(shortcutContainerBlock).toMatch(/max-height:\s*min\(70vh, 560px\);/);

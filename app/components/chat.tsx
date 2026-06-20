@@ -808,7 +808,7 @@ type ChatActionsProps = {
   showPromptHints: () => void;
   hitBottom: boolean;
   uploading: boolean;
-  setShowShortcutKeyModal: React.Dispatch<React.SetStateAction<boolean>>;
+  openShortcutKeyModal: () => void;
   setUserInput: (input: string) => void;
   setShowChatSidePanel: React.Dispatch<React.SetStateAction<boolean>>;
   imageGenerationEnabled: boolean;
@@ -1361,7 +1361,10 @@ function useChatActionsView(props: ChatActionsProps) {
 
             {!isCompactScreen && config.enableShortcuts && (
               <ChatAction
-                onClick={() => props.setShowShortcutKeyModal(true)}
+                onClick={() => {
+                  props.onActionComplete?.();
+                  props.openShortcutKeyModal();
+                }}
                 text={Locale.Chat.ShortcutKey.Title}
                 icon={<ShortcutkeyIcon />}
               />
@@ -1566,6 +1569,9 @@ export function DeleteImageButton(props: {
 export function ShortcutKeyModal(props: { onClose: () => void }) {
   const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
   const shortcutKeyModalTitleId = "shortcut-key-modal-title";
+  const closeShortcutKeyModal = () => {
+    props.onClose();
+  };
   const shortcuts = [
     {
       title: Locale.Chat.ShortcutKey.newChat,
@@ -1599,16 +1605,15 @@ export function ShortcutKeyModal(props: { onClose: () => void }) {
             {Locale.Chat.ShortcutKey.Title}
           </span>
         }
-        onClose={props.onClose}
+        onClose={closeShortcutKeyModal}
         actions={[
           <IconButton
             type="primary"
             text={Locale.UI.Confirm}
             icon={<ConfirmIcon />}
             key="ok"
-            onClick={() => {
-              props.onClose();
-            }}
+            autoFocus
+            onClick={closeShortcutKeyModal}
           />,
         ]}
       >
@@ -3087,6 +3092,28 @@ function useChatInnerView() {
 
   // 快捷键 shortcut keys
   const [showShortcutKeyModal, setShowShortcutKeyModal] = useState(false);
+  const shortcutKeyModalOpenerRef = useRef<HTMLElement | null>(null);
+  const openShortcutKeyModal = useCallback((opener?: HTMLElement | null) => {
+    const activeElement = document.activeElement;
+    shortcutKeyModalOpenerRef.current =
+      opener ??
+      (activeElement instanceof HTMLElement && activeElement !== document.body
+        ? activeElement
+        : inputRef.current);
+    setShowShortcutKeyModal(true);
+  }, []);
+  const closeShortcutKeyModal = useCallback(() => {
+    setShowShortcutKeyModal(false);
+    requestAnimationFrame(() => {
+      const opener = shortcutKeyModalOpenerRef.current;
+      shortcutKeyModalOpenerRef.current = null;
+      if (opener && opener !== document.body && opener.isConnected) {
+        opener.focus();
+        return;
+      }
+      inputRef.current?.focus();
+    });
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: any) => {
@@ -3138,7 +3165,11 @@ function useChatInnerView() {
       // 展示快捷键 command + /
       else if ((event.metaKey || event.ctrlKey) && event.key === "/") {
         event.preventDefault();
-        setShowShortcutKeyModal(true);
+        openShortcutKeyModal(
+          document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : inputRef.current,
+        );
       }
     };
 
@@ -3147,7 +3178,7 @@ function useChatInnerView() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [messages, chatStore, navigate]);
+  }, [messages, chatStore, navigate, openShortcutKeyModal]);
 
   const [showChatSidePanel, setShowChatSidePanel] = useState(false);
 
@@ -4405,7 +4436,9 @@ function useChatInnerView() {
                   setUserInput("/");
                   onSearch("");
                 }}
-                setShowShortcutKeyModal={setShowShortcutKeyModal}
+                openShortcutKeyModal={() =>
+                  openShortcutKeyModal(chatInputMenuButtonRef.current)
+                }
                 setUserInput={setUserInput}
                 setShowChatSidePanel={setShowChatSidePanel}
                 imageGenerationEnabled={imageGenerationEnabled}
@@ -4716,7 +4749,7 @@ function useChatInnerView() {
       )}
 
       {showShortcutKeyModal && (
-        <ShortcutKeyModal onClose={() => setShowShortcutKeyModal(false)} />
+        <ShortcutKeyModal onClose={closeShortcutKeyModal} />
       )}
 
       {showPromptModal && <SessionConfigModel onClose={closePromptModal} />}

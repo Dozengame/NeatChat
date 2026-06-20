@@ -3521,3 +3521,52 @@ Browser QA:
 Known risks:
 
 - QA covered the Chinese locale runtime labels and current keyboard shortcut set. If future shortcut names become much longer, the compact row should be rechecked around 320px width.
+
+## Iteration 2026-06-20 shortcut-modal-focus-loop
+
+Result: passed.
+
+Target flow:
+
+- `Control+/` / `Command+/` opens the keyboard shortcut modal and moves focus into the modal confirm action instead of leaving focus on the page behind it.
+- Escape, the modal close button, and Confirm all close through the same path and restore focus to the opener, with `#chat-input` as the fallback when the opener is `document.body` or no longer connected.
+- The desktop tools-menu shortcut entry closes the tools menu before opening the shortcut modal, then restores focus to the tools button when available.
+- The change must not alter model config semantics, shortcut mappings, account/secret/sync, backend/API, production config, deployment config, persisted store keys, or existing send/upload behavior.
+
+Design direction:
+
+- Creative Production style intake selected: keep the existing Gemini-style utility modal visual design and improve interaction polish only.
+- No new colors, copy, assets, dependencies, configuration keys, or backend behavior.
+
+Scope:
+
+- `app/components/chat.tsx`: added an opener-aware shortcut modal open/close path, focused the modal confirm button on open, restored focus after close, and routed the tools-menu entry through the existing action-menu close callback.
+- `test/gemini-visual-migration.test.ts`: extended the shortcut modal contract to cover focus entry, opener fallback, tools-menu close-before-open behavior, and a shared close path for Escape / Close / Confirm.
+- No model config semantics, shortcut mappings, account/secret/sync, backend/API, production config, deployment config, or persisted app store keys were changed.
+
+Automated checks:
+
+- `npx jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="shortcut key modal"` failed first as expected because the shortcut modal did not yet have an opener-aware focus loop.
+- A second targeted red check caught the `document.body` opener fallback case before the final fix.
+- `npx jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit`
+- `git diff --check`
+- `yarn build`
+
+Review:
+
+- Sub-agent review was attempted but could not run because the account usage limit was reached.
+- Main-thread code review found no Critical or Important issues. It verified `IconButton` passes `autoFocus` to the real button, `Modal` Escape / close button / Confirm share the same close path, opener restoration ignores `document.body` and disconnected nodes, and the tools-menu path closes the menu before opening the shortcut modal.
+
+Browser QA:
+
+- in-app Browser desktop viewport `1440x1024`: opened the modal with `Control+/`, verified focus moved to the `确认` button inside the `role="dialog"` modal, the modal kept `aria-modal="true"` / `aria-labelledby="shortcut-key-modal-title"`, 5 shortcut rows rendered, page horizontal overflow stayed `0`, and Escape returned focus to `#chat-input`.
+- in-app Browser mobile viewport `390x844`: repeated the focus-entry and Escape-return checks, verified compact shortcut rows stayed column-based, key rows aligned left, and page horizontal overflow stayed `0`.
+- in-app Browser narrow viewport `320x740`: verified modal focus stayed inside the confirm action, shortcut rows remained within the viewport, and page horizontal overflow stayed `0`.
+- Runtime local config did not expose the desktop tools-menu shortcut entry during Browser QA, so that source path is covered by the code contract and Jest source test rather than visual interaction.
+- Browser QA did not send a message, did not call a model/API, did not upload files, and did not persist production data.
+
+Known risks:
+
+- Runtime visual QA did not cover the tools-menu shortcut entry because the current local config hides it. If `enableShortcuts` exposes that entry in another environment, recheck the menu-to-modal focus path visually.
