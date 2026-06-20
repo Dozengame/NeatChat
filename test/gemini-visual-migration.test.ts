@@ -3248,10 +3248,26 @@ describe("Gemini visual migration shell", () => {
 
   test("keeps Gemini-style markdown links readable and accessible", () => {
     const markdownStyles = read("app/styles/markdown.scss");
-    const linkBlock = readCssBlock(markdownStyles, ".markdown-body a");
+    const topLevelLinkSource = markdownStyles.slice(
+      markdownStyles.indexOf("\n.markdown-body a {"),
+    );
+    const linkBlock = readCssBlock(topLevelLinkSource, ".markdown-body a");
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const explicitLightBlock = readCssBlock(markdownStyles, ".light");
+    const explicitDarkBlock = readCssBlock(markdownStyles, ".dark");
+    const autoDarkMediaBlock = readCssBlock(
+      markdownStyles,
+      "@media (prefers-color-scheme: dark)",
+    );
+    const autoDarkRootBlock = readCssBlock(autoDarkMediaBlock, ":root");
     const darkLinkBlock = readCssBlock(
       markdownStyles,
       ".dark .markdown-body a",
+    );
+    const autoDarkLinkBlock = readCssBlock(
+      autoDarkMediaBlock,
+      "body:not(.light) .markdown-body a",
     );
     const linkHoverBlock = readCssBlock(
       markdownStyles,
@@ -3274,16 +3290,44 @@ describe("Gemini visual migration shell", () => {
       ".markdown-body h1:hover .anchor,\n.markdown-body h2:hover .anchor,\n.markdown-body h3:hover .anchor,\n.markdown-body h4:hover .anchor,\n.markdown-body h5:hover .anchor,\n.markdown-body h6:hover .anchor",
     );
 
-    expect(linkBlock).toMatch(/color:\s*rgba\(26,\s*115,\s*232,\s*1\);/);
+    const lightLinkTokenScope =
+      lightMixinBlock.match(
+        /--markdown-link-color:[\s\S]*?--markdown-link-decoration-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "";
+    const darkLinkTokenScope =
+      darkMixinBlock.match(
+        /--markdown-link-color:[\s\S]*?--markdown-link-decoration-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "";
+    const linkToneScope = [
+      linkBlock,
+      lightLinkTokenScope,
+      darkLinkTokenScope,
+    ].join("\n");
+
+    expect(lightMixinBlock).toMatch(/--markdown-link-color:\s*var\(--primary\);/);
+    expect(lightMixinBlock).toMatch(
+      /--markdown-link-decoration-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 34%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-link-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 42%,\s*var\(--black\)\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-link-decoration-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 40%,\s*transparent\s*\);/,
+    );
+    expect(explicitLightBlock).toMatch(/@include light;/);
+    expect(explicitDarkBlock).toMatch(/@include dark;/);
+    expect(autoDarkRootBlock).toMatch(/@include dark;/);
+    expect(darkLinkBlock).toBe("");
+    expect(autoDarkLinkBlock).toBe("");
+    expect(linkBlock).toMatch(/color:\s*var\(--markdown-link-color\);/);
     expect(linkBlock).toMatch(/text-decoration:\s*underline;/);
     expect(linkBlock).toMatch(
-      /text-decoration-color:\s*rgba\(26,\s*115,\s*232,\s*0\.34\);/,
+      /text-decoration-color:\s*var\(--markdown-link-decoration-color\);/,
     );
     expect(linkBlock).toMatch(/text-underline-offset:\s*3px;/);
     expect(linkBlock).toMatch(/text-decoration-thickness:\s*1px;/);
-    expect(darkLinkBlock).toMatch(/color:\s*rgba\(138,\s*180,\s*248,\s*1\);/);
-    expect(darkLinkBlock).toMatch(
-      /text-decoration-color:\s*rgba\(138,\s*180,\s*248,\s*0\.4\);/,
+    expect(linkToneScope).not.toMatch(
+      /(?:rgba?|hsla?|hwb|oklch|oklab|lch|lab|color|device-cmyk)\(|#[0-9a-fA-F]{3,8}\b/,
     );
     expect(linkHoverBlock).toMatch(/text-decoration-color:\s*currentColor;/);
     expect(linkHoverBlock).toMatch(/text-decoration-thickness:\s*1\.5px;/);

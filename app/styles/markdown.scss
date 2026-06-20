@@ -57,6 +57,12 @@ summary,
   --color-accent-emphasis: #0969da;
   --color-attention-subtle: #fff8c5;
   --color-danger-fg: #cf222e;
+  --markdown-link-color: var(--primary);
+  --markdown-link-decoration-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 34%,
+    transparent
+  );
 }
 
 @mixin dark {
@@ -103,6 +109,16 @@ summary,
   --color-accent-emphasis: #1f6feb;
   --color-attention-subtle: rgba(187, 128, 9, 0.15);
   --color-danger-fg: #f85149;
+  --markdown-link-color: color-mix(
+    in srgb,
+    var(--primary) 42%,
+    var(--black)
+  );
+  --markdown-link-decoration-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 40%,
+    transparent
+  );
 }
 
 .markdown-body {
@@ -287,16 +303,11 @@ summary,
 
 .markdown-body a {
   background-color: transparent;
-  color: rgba(26, 115, 232, 1);
+  color: var(--markdown-link-color);
   text-decoration: underline;
-  text-decoration-color: rgba(26, 115, 232, 0.34);
+  text-decoration-color: var(--markdown-link-decoration-color);
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
-}
-
-.dark .markdown-body a {
-  color: rgba(138, 180, 248, 1);
-  text-decoration-color: rgba(138, 180, 248, 0.4);
 }
 
 .markdown-body abbr[title] {

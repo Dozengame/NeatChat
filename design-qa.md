@@ -5170,3 +5170,61 @@ Known risks:
 
 - The H2 rail uses modern `color-mix()` CSS, consistent with current Gemini Web alignment and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
 - Browser QA validated loaded CSSOM and shell layout, not an actual assistant response containing live H2 headings, because seeding model/chat content would cross this slice's read-only runtime boundary. Source-contract tests cover the target Markdown stylesheet rules directly.
+
+## Iteration 2026-06-21 markdown-link-tone-alignment
+
+Result: passed.
+
+Target flow:
+
+- Markdown links should keep underline, underline offset/thickness, hover emphasis, focus-visible ring, no-href anchor reset, and heading-anchor hover reset behavior.
+- Link tones should use the shared Gemini-style primary token rather than old hardcoded light/dark blue rgba paint.
+- Auto theme with system dark, explicit Dark, and explicit Light should all receive the correct readable link tone without high-specificity selectors overriding link interaction resets.
+- Desktop, mobile, and narrow layouts should keep the composer visible, avoid framework overlays, and introduce no horizontal overflow.
+- Model config semantics, message streaming, account/secret/sync, backend/API, production config, deployment config, upload parsing, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Continue the Markdown tokenization track: links are the primary inline navigation affordance inside AI-rendered answers, so their color should align with the Gemini-style primary tone while keeping underline behavior as the main affordance.
+- Light theme defines `--markdown-link-color` from `--primary` with a subtle decoration token.
+- Dark theme defines `--markdown-link-color` as `--primary` mixed with `--black` so links stay readable on dark message surfaces; Auto dark inherits the same token through the existing dark mixin path.
+- This slice intentionally avoids changing Markdown AST handling, generated link HTML, routing, streaming state, or network/model behavior.
+
+Scope:
+
+- `app/styles/markdown.scss`: added `--markdown-link-color` and `--markdown-link-decoration-color` to Markdown light/dark mixins, then changed `.markdown-body a` to consume those tokens with low specificity.
+- `test/gemini-visual-migration.test.ts`: strengthened the Markdown link contract to lock light/dark/Auto token paths, reject high-specificity dark link overrides, preserve hover/focus/no-href/heading-anchor resets, and reject hardcoded color functions/hex values in the target link token rules.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, Markdown parsing/rendering logic, stores, model config, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, upload parser, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="markdown links readable"` initially passed against the old test, confirming the old contract still allowed hardcoded link rgba values.
+- After updating the test to require tokenized link colors, the focused test failed first as expected because `.markdown-body a` still used `rgba(26, 115, 232, 1)`.
+- After the initial implementation, focused Jest passed, then read-only review found Auto/system dark missed the readable dark link path.
+- An Auto dark assertion was added and failed first as expected because the Auto dark link block was missing.
+- A direct `body:not(.light)` Auto dark selector fixed that gap but read-only review found it would override hover and no-href anchor behavior due to specificity.
+- The final implementation moved link tones into Markdown light/dark custom properties and removed high-specificity dark link overrides; the focused Markdown link visual contract passed.
+- Final read-only review found no Critical, Important, or Minor issues and marked the diff ready to submit.
+- Final verification before commit: `yarn lint`, `npx tsc --noEmit --pretty false`, `git diff --check`, `yarn jest test/gemini-visual-migration.test.ts --runInBand`, and `yarn build` passed.
+
+Browser QA:
+
+- in-app Browser page identity: `http://127.0.0.1:3000/?qa=markdown-link-tone-final-1781975394331#/chat`, visible composer present, no framework overlay, and Browser console warn/error logs `0`.
+- Desktop `1440x1024`: horizontal overflow `0`; runtime CSSOM loaded `.markdown-body a` as a low-specificity token consumer, light/dark/Auto link custom properties, hover/focus/no-href/heading-anchor resets, and no high-specificity dark/Auto link selector.
+- Mobile `390x844`: same CSSOM checks passed, horizontal overflow `0`, visible composer present, and no framework overlay.
+- Narrow `320x740`: same CSSOM checks passed, horizontal overflow `0`, visible composer present, and no framework overlay.
+- The actual Browser environment had `prefers-color-scheme: dark` with `bodyClass=""`, validating the Auto dark path; computed `--markdown-link-color` resolved to a mix of `rgb(49, 94, 248)` and dark `--black` (`rgb(232, 234, 237)`).
+- Browser QA intentionally did not send a message, call a model/API, seed chat history, or mutate message state. The active link selectors and tokens are covered by source-contract tests plus runtime CSSOM validation on the running app.
+
+Review:
+
+- First read-only review found an Important Auto/system dark gap because `.dark .markdown-body a` does not apply when Theme.Auto relies on `prefers-color-scheme`.
+- Second read-only review found an Important specificity issue in the direct `body:not(.light)` selector because it could override link hover and no-href reset behavior.
+- Final read-only review found no issues after switching to custom properties and confirmed the cascade, light/dark/Auto theme paths, and test coverage are acceptable.
+- Main-thread review verified the final diff remains limited to `markdown.scss`, `gemini-visual-migration.test.ts`, and this QA record, with no diff in `chat.tsx`, `markdown.tsx`, stores, config, API/backend, route constants, deployment files, dependency files, or model request paths.
+
+Known risks:
+
+- The link tones use modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
+- Browser QA validated loaded CSSOM and shell layout, not an actual assistant response containing live Markdown links, because seeding model/chat content would cross this slice's read-only runtime boundary. Source-contract tests cover the target Markdown stylesheet rules directly.
