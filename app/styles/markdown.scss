@@ -64,6 +64,12 @@ summary,
     transparent
   );
   --markdown-disclosure-hover-color: var(--primary);
+  --markdown-image-frame-hover-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 24%,
+    transparent
+  );
+  --markdown-image-download-border-color: rgba(255, 255, 255, 0.18);
 }
 
 @mixin dark {
@@ -124,6 +130,16 @@ summary,
     in srgb,
     var(--primary) 42%,
     var(--black)
+  );
+  --markdown-image-frame-hover-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 34%,
+    transparent
+  );
+  --markdown-image-download-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 22%,
+    transparent
   );
 }
 
@@ -391,7 +407,7 @@ summary,
 
   &:hover,
   &:focus-within {
-    border-color: rgba(66, 133, 244, 0.24);
+    border-color: var(--markdown-image-frame-hover-border-color);
     box-shadow: 0 14px 36px rgba(60, 64, 67, 0.16);
     transform: translateY(-1px);
 
@@ -422,7 +438,7 @@ summary,
 
   &:hover,
   &:focus-within {
-    border-color: rgba(138, 180, 248, 0.28);
+    border-color: var(--markdown-image-frame-hover-border-color);
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.34);
   }
 }
@@ -479,7 +495,7 @@ summary,
   width: 36px;
   height: 36px;
   padding: 0;
-  border: 1px solid rgba($color: #fff, $alpha: 0.18);
+  border: 1px solid var(--markdown-image-download-border-color);
   border-radius: 999px;
   background: rgba($color: #1f1f1f, $alpha: 0.52);
   box-shadow: 0 8px 22px rgba($color: #000, $alpha: 0.24);
@@ -523,7 +539,6 @@ summary,
 }
 
 .dark .markdown-body .markdown-image-download {
-  border-color: rgba($color: #8ab4f8, $alpha: 0.18);
   background: rgba($color: #202124, $alpha: 0.62);
 }
 

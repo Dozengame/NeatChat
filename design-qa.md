@@ -5282,3 +5282,58 @@ Known risks:
 
 - The dark disclosure hover tone uses modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
 - Browser QA validated loaded CSSOM and shell layout, not an actual assistant response containing live generic details markup, because seeding model/chat content would cross this slice's read-only runtime boundary. Source-contract tests cover the target Markdown stylesheet rules directly.
+
+## Iteration 2026-06-21 markdown-image-media-card-tone
+
+Result: passed.
+
+Target flow:
+
+- Markdown image media cards should keep the existing frame layout, image preview button, image download button, hover reveal, focus-visible, active press, mobile visible download button, and reduced-motion behavior.
+- Image frame hover border and image download border should use shared Markdown theme tokens instead of legacy hardcoded Gemini blue values.
+- Auto theme with system dark, explicit Dark, and explicit Light should receive the correct image media tones through existing Markdown theme mixins.
+- Markdown image rendering, preview/download semantics, upload parsing, generated image markup, and streaming behavior must remain unchanged.
+- Desktop, mobile, and narrow layouts should mount the app, avoid framework overlays, and introduce no horizontal overflow.
+- Model config semantics, message streaming, account/secret/sync, backend/API, production config, deployment config, upload parsing, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Continue the Markdown tokenization track: image media cards are high-attention AI output surfaces, so hover and download border tones should align with the same Gemini-style primary token system used by links, disclosure hover, list markers, headings, blockquotes, and thinking cards.
+- Light theme defines a subtle image frame hover border from `--markdown-link-color` and keeps the download border as the existing translucent white overlay tone.
+- Dark theme defines both image frame hover and download border from the readable dark Markdown link tone, so explicit Dark and Auto dark stay visually consistent without selector-specific color overrides.
+- This slice intentionally avoids changing Markdown AST handling, image preview/download component logic, streaming state, or network/model behavior.
+
+Scope:
+
+- `app/styles/markdown.scss`: added `--markdown-image-frame-hover-border-color` and `--markdown-image-download-border-color` to Markdown light/dark mixins, then changed image frame hover and image download border rules to consume those tokens.
+- `test/gemini-visual-migration.test.ts`: strengthened the Markdown image media card contract to lock light/dark/Auto token paths, reject legacy target blue paints in the image-media scope, and preserve frame layout, hover reveal, focus-visible, mobile, and reduced-motion behavior.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, Markdown parsing/rendering logic, stores, model config, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, upload parser, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="markdown image media cards"` failed first as expected because the new image media tokens were missing and the old rules still used hardcoded target blue paint.
+- After implementation, the focused Markdown image media card visual contract passed.
+- Read-only review then found an explicit Dark cascade bug: the dark base image frame border could override the generic hover token. The test was tightened to require a dark hover/focus token border, failed first as expected, then passed after adding the explicit dark hover token consumer.
+- Final verification before commit: `yarn lint`, `npx tsc --noEmit --pretty false`, `git diff --check`, `yarn jest test/gemini-visual-migration.test.ts --runInBand`, and `yarn build` passed.
+
+Browser QA:
+
+- in-app Browser page identity: `http://127.0.0.1:3000/`, app mounted, current Browser console error logs `0`.
+- Desktop `1440x1024`: horizontal overflow `0`; runtime CSSOM loaded light/root image frame and download tokens, dark image frame and download tokens, Auto dark image frame and download tokens, token-consuming frame hover and download border selectors, explicit dark hover token border after the dark base border, no legacy target blue paint in the image-media scope, and reduced-motion rules preserved.
+- Mobile `390x844`: app mounted, horizontal overflow `0`, mobile media rule keeps the download button visible/clickable and image frame stable.
+- Narrow `320x740`: app mounted, horizontal overflow `0`, mobile media rule keeps the download button visible/clickable and image frame stable.
+- The actual Browser environment had `prefers-color-scheme: dark`, validating the Auto dark token path through computed root variables.
+- Browser QA intentionally did not send a message, call a model/API, seed chat history, or mutate message state. The active image media selectors and tokens are covered by source-contract tests plus runtime CSSOM validation on the running app.
+
+Review:
+
+- First read-only subagent review found a P1 explicit Dark cascade bug and a matching test gap because the dark base image frame border could override the generic hover token.
+- The bug was fixed by requiring and applying `border-color: var(--markdown-image-frame-hover-border-color)` inside `.dark .markdown-body .markdown-image-frame:hover, :focus-within`.
+- Final read-only subagent review found no blocking or important issues and confirmed the P1 cascade bug is fixed.
+- Main-thread review verified the current diff remains limited to `markdown.scss`, `gemini-visual-migration.test.ts`, and this QA record, with no diff in `chat.tsx`, `markdown.tsx`, stores, config, API/backend, route constants, deployment files, dependency files, or model request paths.
+
+Known risks:
+
+- The dark image media tones use modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
+- Browser QA validated loaded CSSOM and shell layout, not an actual assistant response containing live image Markdown, because seeding model/chat content would cross this slice's read-only runtime boundary. Source-contract tests cover the target Markdown stylesheet rules directly.
