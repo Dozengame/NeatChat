@@ -480,6 +480,12 @@ describe("Gemini visual migration shell", () => {
       chat,
       "const doSubmit = (userInput: string) =>",
     );
+    const promptHintsStart = chat.indexOf("export function PromptHints");
+    const promptHintsFirstEffect = chat.indexOf("useEffect(() =>", promptHintsStart);
+    const promptHintsRenderSetup = chat.slice(
+      promptHintsStart,
+      promptHintsFirstEffect,
+    );
 
     expect(chat).toContain('styles["chat-empty-state"]');
     expect(chat).toContain('styles["chat-empty-title"]');
@@ -700,10 +706,10 @@ describe("Gemini visual migration shell", () => {
       /className=\{styles\["prompt-hints"\]\}[\s\S]*role="listbox"[\s\S]*aria-label="提示词建议"/,
     );
     expect(chat).toMatch(
-      /className=\{styles\["prompt-hints"\]\}[\s\S]*aria-activedescendant=\{`chat-prompt-hint-\$\{selectIndex\}`\}/,
+      /className=\{styles\["prompt-hints"\]\}[\s\S]*aria-activedescendant=\{`chat-prompt-hint-\$\{activeSelectIndex\}`\}/,
     );
     expect(chat).toMatch(
-      /className=\{clsx\(styles\["prompt-hint"\][\s\S]*role="option"[\s\S]*aria-selected=\{i === selectIndex\}/,
+      /className=\{clsx\(styles\["prompt-hint"\][\s\S]*role="option"[\s\S]*aria-selected=\{i === activeSelectIndex\}/,
     );
     expect(chat).toMatch(
       /className=\{styles\["chat-input"\]\}[\s\S]*aria-controls=\{\s*promptHints\.length > 0 \? "chat-prompt-hints" : undefined\s*\}[\s\S]*aria-haspopup="listbox"/,
@@ -741,6 +747,13 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /export function PromptHints\(props: \{[\s\S]*onClose: \(options\?: PromptHintsCloseOptions\) => void;/,
     );
+    expect(promptHintsRenderSetup).not.toContain("setSelectIndex(0);");
+    expect(chat).toMatch(
+      /const activeSelectIndex = noPrompts\s*\?\s*0\s*:\s*Math\.min\(selectIndex, prompts\.length - 1\);/,
+    );
+    expect(chat).toMatch(
+      /useEffect\(\(\) => \{[\s\S]*if \(prompts\.length !== promptCountRef\.current\) \{[\s\S]*promptCountRef\.current = prompts\.length;[\s\S]*setSelectIndex\(0\);[\s\S]*return;[\s\S]*\}[\s\S]*if \(selectIndex !== activeSelectIndex\) \{[\s\S]*setSelectIndex\(activeSelectIndex\);[\s\S]*\}[\s\S]*\}, \[activeSelectIndex, prompts\.length, selectIndex\]\);/,
+    );
     expect(chat).toMatch(
       /if \(e\.key === "Escape"\) \{[\s\S]*e\.stopPropagation\(\);[\s\S]*e\.stopImmediatePropagation\(\);[\s\S]*e\.preventDefault\(\);[\s\S]*onClose\(\{ restoreFocus: true \}\);[\s\S]*\}/,
     );
@@ -754,10 +767,10 @@ describe("Gemini visual migration shell", () => {
       /if \(e\.key === "ArrowUp"\) \{[\s\S]*changeIndex\(-1\);[\s\S]*\} else if \(e\.key === "ArrowDown"\) \{[\s\S]*changeIndex\(1\);[\s\S]*\} else if \(e\.key === "Home"\) \{[\s\S]*selectPromptIndex\(0\);[\s\S]*\} else if \(e\.key === "End"\) \{[\s\S]*selectPromptIndex\(prompts\.length - 1\);/,
     );
     expect(chat).toMatch(
-      /useEffect\(\(\) => \{[\s\S]*selectedRef\.current\?\.scrollIntoView\(\{[\s\S]*block:\s*"nearest",[\s\S]*\}\);[\s\S]*\}, \[selectIndex\]\);/,
+      /useEffect\(\(\) => \{[\s\S]*selectedRef\.current\?\.scrollIntoView\(\{[\s\S]*block:\s*"nearest",[\s\S]*\}\);[\s\S]*\}, \[activeSelectIndex\]\);/,
     );
     expect(chat).toMatch(
-      /else if \(e\.key === "Enter"\) \{[\s\S]*e\.stopPropagation\(\);[\s\S]*e\.preventDefault\(\);[\s\S]*const selectedPrompt = prompts\.at\(selectIndex\);[\s\S]*onPromptSelect\(selectedPrompt\);/,
+      /else if \(e\.key === "Enter"\) \{[\s\S]*e\.stopPropagation\(\);[\s\S]*e\.preventDefault\(\);[\s\S]*const selectedPrompt = prompts\.at\(activeSelectIndex\);[\s\S]*onPromptSelect\(selectedPrompt\);/,
     );
     expect(chat).toMatch(
       /const onInputKeyDown = \(e: React\.KeyboardEvent<HTMLTextAreaElement>\) => \{[\s\S]*if \(promptHints\.length > 0 && e\.key === "Enter"\) \{[\s\S]*e\.preventDefault\(\);[\s\S]*return;[\s\S]*\}[\s\S]*if \(shouldSubmit\(e\) && promptHints\.length === 0\)/,

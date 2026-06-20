@@ -4113,3 +4113,56 @@ Known risks:
 
 - The empty-control fallback is covered by source-contract tests rather than a dedicated runtime fixture because the current local app configuration exposes three visible model menu controls.
 - The interaction test remains source-contract plus Browser QA, not a Testing Library component-level focus simulation.
+
+## Iteration 2026-06-20 prompt-hints-render-phase-reset
+
+Result: passed.
+
+Target flow:
+
+- Opening prompt hints with `/` should still render the Gemini-style listbox with a valid active option.
+- Arrow navigation should use the bounded active option index and keep `aria-activedescendant` / `aria-selected` in sync.
+- When the prompt list length changes, the selected option should reset after render instead of calling `setSelectIndex` during render.
+- Escape should close the list and return focus to the composer.
+- The change must not alter model config semantics, account/secret/sync, backend/API, production config, deployment config, upload behavior, persisted store keys, or model request payload construction.
+
+Design direction:
+
+- Creative Production style intake selected: keep the existing Gemini-style prompt suggestion surface and improve its runtime stability.
+- This slice changes PromptHints state timing only; no visual styling, copy, prompt data, model list, provider, or request semantics changed.
+
+Scope:
+
+- `app/components/chat.tsx`: replaced the render-phase prompt count reset with a bounded `activeSelectIndex` plus effect-driven reset/correction; updated listbox active state, selected row, scroll target, keyboard navigation, and Enter selection to use the bounded index.
+- `test/gemini-visual-migration.test.ts`: extended the PromptHints source contract to forbid `setSelectIndex(0)` before the first effect, require `activeSelectIndex`, and lock the active/selected/scroll/Enter call sites.
+- No model config semantics, account/secret/sync, backend/API, production config, deployment config, upload behavior, persisted store keys, model request payload construction, dependency files, or deploy files were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"` failed first as expected because PromptHints still reset `selectIndex` during render.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"`
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit --pretty false`
+- `git diff --check`
+- `yarn build`
+
+Browser QA:
+
+- in-app Browser desktop viewport `1280x720`: page identity `NeatChat`, no framework overlay, horizontal overflow `0`; typing `/` opened `#chat-prompt-hints` with `407` options, `aria-activedescendant=chat-prompt-hint-0`, selected option `chat-prompt-hint-0`, `aria-controls=chat-prompt-hints`, and focus on the composer.
+- Desktop keyboard QA: `ArrowDown` moved `aria-activedescendant` and `aria-selected` to `chat-prompt-hint-1`; `Escape` closed the list, removed composer `aria-controls`, and kept focus on the composer.
+- Console QA: no `Cannot update a component while rendering a different component`, runtime error, framework overlay, build error, `TypeError`, or `ReferenceError` logs were observed. One old Next.js Fast Refresh reload warning remained in the captured log buffer from the development reload and was not related to this interaction.
+- Current prompt hint filtering behavior only shows the full list for exact `/`; entering `/Linux`, `/充`, `/英`, and similar query text closes the list in the current app data path. The list-length reset is therefore locked by the source-contract test rather than a live filtered-list interaction.
+- Browser screenshot capture failed twice on the app tab with `Timed out running CDP command "Page.captureScreenshot"`. Browser viewport override also did not affect layout in this session: both the existing tab and a new tab still reported `1280x720` after setting `390x844`. No Playwright dependency is installed in the repo, so this slice did not add one just for screenshots or fallback responsive capture.
+- Browser QA did not send a message, did not call a model/API, did not upload files, did not open an OS file picker, and did not persist production data.
+
+Review:
+
+- Read-only exploration recommended a separate next slice for modified-key passthrough in the model menu; this PromptHints slice was completed first because it directly removed an older render-phase state update noted in the UI QA backlog.
+- Read-only code review found no Critical, Important, or Minor issues. It confirmed the diff is limited to PromptHints timing and the source-contract test.
+- Main-thread review verified that no model/account/sync/API/upload/store/deploy boundaries were touched.
+
+Known risks:
+
+- The behavior-level component test attempted for prompt-list shrink was not kept because importing `chat.tsx` in the current Jest transform path pulls ESM-heavy app dependencies such as `nanoid` and `lodash-es`; changing global Jest transforms would have exceeded this slice.
+- The list-length reset guarantee is covered by source-contract tests plus Browser QA of the real open/navigate/close flow, not by a dedicated Testing Library interaction test.

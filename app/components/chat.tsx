@@ -576,17 +576,26 @@ export function PromptHints(props: {
   const [selectIndex, setSelectIndex] = useState(0);
   const promptCountRef = useRef(prompts.length);
   const selectedRef = useRef<HTMLButtonElement>(null);
+  const activeSelectIndex = noPrompts
+    ? 0
+    : Math.min(selectIndex, prompts.length - 1);
 
-  if (prompts.length !== promptCountRef.current) {
-    promptCountRef.current = prompts.length;
-    setSelectIndex(0);
-  }
+  useEffect(() => {
+    if (prompts.length !== promptCountRef.current) {
+      promptCountRef.current = prompts.length;
+      setSelectIndex(0);
+      return;
+    }
+    if (selectIndex !== activeSelectIndex) {
+      setSelectIndex(activeSelectIndex);
+    }
+  }, [activeSelectIndex, prompts.length, selectIndex]);
 
   useEffect(() => {
     selectedRef.current?.scrollIntoView({
       block: "nearest",
     });
-  }, [selectIndex]);
+  }, [activeSelectIndex]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -611,7 +620,7 @@ export function PromptHints(props: {
       const changeIndex = (delta: number) => {
         const nextIndex = Math.max(
           0,
-          Math.min(prompts.length - 1, selectIndex + delta),
+          Math.min(prompts.length - 1, activeSelectIndex + delta),
         );
         selectPromptIndex(nextIndex);
       };
@@ -627,7 +636,7 @@ export function PromptHints(props: {
       } else if (e.key === "Enter") {
         e.stopPropagation();
         e.preventDefault();
-        const selectedPrompt = prompts.at(selectIndex);
+        const selectedPrompt = prompts.at(activeSelectIndex);
         if (selectedPrompt) {
           onPromptSelect(selectedPrompt);
         }
@@ -637,7 +646,7 @@ export function PromptHints(props: {
     window.addEventListener("keydown", onKeyDown);
 
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [noPrompts, onClose, onPromptSelect, prompts, selectIndex]);
+  }, [activeSelectIndex, noPrompts, onClose, onPromptSelect, prompts]);
 
   if (noPrompts) return null;
   return (
@@ -646,18 +655,18 @@ export function PromptHints(props: {
       className={styles["prompt-hints"]}
       role="listbox"
       aria-label="提示词建议"
-      aria-activedescendant={`chat-prompt-hint-${selectIndex}`}
+      aria-activedescendant={`chat-prompt-hint-${activeSelectIndex}`}
     >
       {prompts.map((prompt, i) => (
         <button
           type="button"
           id={`chat-prompt-hint-${i}`}
-          ref={i === selectIndex ? selectedRef : null}
+          ref={i === activeSelectIndex ? selectedRef : null}
           className={clsx(styles["prompt-hint"], {
-            [styles["prompt-hint-selected"]]: i === selectIndex,
+            [styles["prompt-hint-selected"]]: i === activeSelectIndex,
           })}
           role="option"
-          aria-selected={i === selectIndex}
+          aria-selected={i === activeSelectIndex}
           key={prompt.title + i.toString()}
           onClick={() => onPromptSelect(prompt)}
           onMouseEnter={() => setSelectIndex(i)}
