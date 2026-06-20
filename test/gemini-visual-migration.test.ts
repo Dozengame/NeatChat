@@ -2701,6 +2701,65 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps Gemini-style LaTeX display math bounded", () => {
+    const markdown = read("app/components/markdown.tsx");
+    const markdownStyles = read("app/styles/markdown.scss");
+    const katexDisplayBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .katex-display",
+    );
+    const katexDisplayFormulaBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .katex-display > .katex",
+    );
+    const darkKatexDisplayBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body .katex-display",
+    );
+    const mobileBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 600px)",
+    );
+
+    expect(markdown).toContain('import "katex/dist/katex.min.css";');
+    expect(markdown).toContain('import RemarkMath from "remark-math";');
+    expect(markdown).toContain('import RehypeKatex from "rehype-katex";');
+    expect(markdown).toContain("remarkPlugins={[RemarkMath, RemarkGfm, RemarkBreaks]}");
+    expect(markdown).toContain("RehypeKatex");
+    expect(katexDisplayBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(katexDisplayBlock).toMatch(/width:\s*100%;/);
+    expect(katexDisplayBlock).toMatch(/max-width:\s*100%;/);
+    expect(katexDisplayBlock).toMatch(/margin:\s*14px 0 16px;/);
+    expect(katexDisplayBlock).toMatch(/padding:\s*12px 14px;/);
+    expect(katexDisplayBlock).toMatch(/overflow-x:\s*auto;/);
+    expect(katexDisplayBlock).toMatch(/overflow-y:\s*hidden;/);
+    expect(katexDisplayBlock).toMatch(/overscroll-behavior-x:\s*contain;/);
+    expect(katexDisplayBlock).toMatch(/scrollbar-width:\s*thin;/);
+    expect(katexDisplayBlock).toMatch(/-webkit-overflow-scrolling:\s*touch;/);
+    expect(katexDisplayBlock).toMatch(
+      /border:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.1\);/,
+    );
+    expect(katexDisplayBlock).toMatch(/border-radius:\s*14px;/);
+    expect(katexDisplayBlock).toMatch(
+      /background:\s*rgba\(248,\s*249,\s*250,\s*0\.72\);/,
+    );
+    expect(katexDisplayFormulaBlock).toMatch(/display:\s*inline-block;/);
+    expect(katexDisplayFormulaBlock).toMatch(/min-width:\s*max-content;/);
+    expect(katexDisplayFormulaBlock).toMatch(/max-width:\s*none;/);
+    expect(darkKatexDisplayBlock).toMatch(
+      /background:\s*rgba\(255,\s*255,\s*255,\s*0\.045\);/,
+    );
+    expect(darkKatexDisplayBlock).toMatch(
+      /border-color:\s*rgba\(255,\s*255,\s*255,\s*0\.08\);/,
+    );
+    expect(mobileBlock).toMatch(
+      /\.markdown-body \.katex-display\s*\{[\s\S]*padding:\s*10px 12px;[\s\S]*border-radius:\s*12px;/,
+    );
+    expect(markdownStyles).not.toMatch(
+      /\.markdown-body\s+\.katex\s*\{[\s\S]*display:\s*block;/,
+    );
+  });
+
   test("keeps Gemini-style markdown links readable and accessible", () => {
     const markdownStyles = read("app/styles/markdown.scss");
     const linkBlock = readCssBlock(markdownStyles, ".markdown-body a");

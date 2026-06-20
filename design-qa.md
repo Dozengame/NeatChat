@@ -4011,3 +4011,52 @@ Known risks:
 
 - The automated test remains a source-contract test rather than a component-level DOM timing test; Browser QA covers the runtime focus and suppression ordering on the real page.
 - The next recommended R4 slice from read-only exploration is Gemini-style bounded display math for KaTeX/LaTeX overflow.
+
+## Iteration 2026-06-20 latex-display-math-bounds
+
+Result: passed.
+
+Target flow:
+
+- Long LaTeX display math rendered by KaTeX should stay inside the assistant message reading column on desktop, mobile, and narrow mobile widths.
+- Horizontal overflow should be contained inside the formula surface, not the page or chat body.
+- Inline math should remain inline with surrounding text.
+- The change must not alter Markdown parsing semantics, model config semantics, account/secret/sync, backend/API, production config, deployment config, upload behavior, persisted store keys, or model request payload construction.
+
+Design direction:
+
+- Creative Production style intake selected: treat display math as a quiet Gemini-style reading surface, closer to the existing table scroll shell than a new card component.
+- Use restrained background, thin border, compact radius, and touch-friendly horizontal scrolling. Keep inline math visually lightweight and unchanged.
+
+Scope:
+
+- `app/styles/markdown.scss`: added a bounded `.markdown-body .katex-display` surface with `max-width: 100%`, border-box sizing, horizontal scroll, contained overscroll, thin scrollbar, mobile padding/radius, and dark-mode surface tokens.
+- `test/gemini-visual-migration.test.ts`: added a source-contract test that locks the KaTeX import/plugin chain, display math scroll surface, dark state, mobile padding, and inline math non-block behavior.
+- No Markdown plugin order, model config semantics, account/secret/sync, backend/API, production config, deployment config, upload behavior, persisted store keys, model request payload construction, or dependency files were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="LaTeX"` failed first as expected because `.markdown-body .katex-display` had no bounded surface contract.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="LaTeX"`
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+
+Browser QA:
+
+- in-app Browser app load `http://localhost:3000`: page identity `NeatChat`, title `NeatChat`, non-empty rendered app content confirmed by targeted DOM read, and console warn/error logs `0`.
+- A temporary local HTTP fixture at `http://127.0.0.1:3107` loaded the current dev-server CSS from `/_next/static/css/app/layout.css` and `/_next/static/css/app/page.css`; it did not write project files, seed persisted chat state, send a message, call a model/API, upload files, open an OS file picker, or use real account/API data.
+- Browser security policy blocked a `data:` fixture, so validation used the safer local HTTP fixture instead.
+- Desktop Browser viewport `1280x720`: `.katex-display` width `688`, clientWidth `686`, scrollWidth `1558`, formula width `1530`, `overflow-x=auto`, `overflow-y=hidden`, `overscroll-behavior-x=contain`, `scrollbar-width=thin`, page horizontal overflow `0`, inline math `display=inline`, and dark surface border/background applied. Coordinate horizontal scroll moved formula `scrollLeft` from `0` to `700`.
+- Mobile Browser viewport `390x780`: display width `358`, clientWidth `356`, scrollWidth `1554`, formula width `1530`, padding `12px`, radius `12px`, page horizontal overflow `0`, inline math `display=inline`, and console warn/error logs `0`.
+- Narrow Browser viewport `320x720`: display width `288`, clientWidth `286`, scrollWidth `1554`, formula width `1530`, padding `12px`, radius `12px`, page horizontal overflow `0`, inline math `display=inline`, and console warn/error logs `0`.
+- Browser screenshot capture failed twice on the fixture tab with `Timed out running CDP command "Page.captureScreenshot"`; DOM/CSS metrics and the horizontal scroll interaction remained available.
+
+Review:
+
+- Read-only review found no Critical or Important issues and confirmed the diff is limited to `app/styles/markdown.scss`, `test/gemini-visual-migration.test.ts`, and `design-qa.md`.
+- Review noted the LaTeX source-contract intentionally locks concrete spacing/color values, which may make future visual-only tweaks require a matching test update; this is accepted here because the slice is a Gemini-style visual contract.
+- Review confirmed the CSS is scoped to `.markdown-body .katex-display` and `.markdown-body .katex-display > .katex`, so inline `.katex`, Markdown tables, code blocks, images, model config semantics, account/secret/sync, backend/API/upload/store keys/model payload, production/deploy config, and dependency files are untouched.
+
+Known risks:
+
+- Browser screenshot capture was unavailable for this fixture tab, so visual evidence is DOM/CSS/interaction metrics rather than screenshots.
+- Runtime QA used a local fixture with current compiled app CSS because creating a real chat message through the UI could trigger a model/API request and importing persisted state would exceed this slice's safety boundary.

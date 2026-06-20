@@ -667,6 +667,34 @@ summary,
   border-color: rgba(255, 255, 255, 0.08);
 }
 
+.markdown-body .katex-display {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  margin: 14px 0 16px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid rgba(60, 64, 67, 0.1);
+  border-radius: 14px;
+  background: rgba(248, 249, 250, 0.72);
+  text-align: left;
+}
+
+.markdown-body .katex-display > .katex {
+  display: inline-block;
+  min-width: max-content;
+  max-width: none;
+}
+
+.dark .markdown-body .katex-display {
+  background: rgba(255, 255, 255, 0.045);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
 .markdown-table-scroll-fade {
   position: absolute;
   top: 0;
@@ -2047,6 +2075,11 @@ summary,
 }
 
 @media only screen and (max-width: 600px) {
+  .markdown-body .katex-display {
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
   .markdown-body-container .token-info {
     align-self: flex-start;
     white-space: normal;
