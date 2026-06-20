@@ -3908,3 +3908,53 @@ Known risks:
 
 - Mobile Browser QA used Chrome/CDP fallback because the in-app Browser viewport override did not apply in this environment.
 - The fallback used a temporary local QA access-state seed in a headless Chrome profile only to reach the already protected frontend shell; it did not verify authenticated model/API behavior and did not use or persist real credentials.
+
+## Iteration 2026-06-20 prompt-hints-gemini-popover
+
+Result: passed.
+
+Target flow:
+
+- Typing `/` in the composer should open the prompt hints listbox as a quiet Gemini-style elevated surface above the composer.
+- The selected prompt hint should use a filled selected state, not only a thin border.
+- Prompt hint rows should keep a 44px touch target, left-aligned single-line title/content, and no horizontal overflow on desktop or narrow mobile widths.
+- Arrow/Home/Escape keyboard behavior, prompt selection behavior, model config semantics, account/secret/sync, backend/API, upload behavior, persisted store keys, production config, deployment config, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: treat prompt hints as a compact Gemini-style suggestion surface that matches the composer shell, model menu, and tool menu visual language.
+- Use elevated surface, restrained shadow, filled blue selected state, compact row rhythm, and bounded mobile height without changing prompt data or selection semantics.
+
+Scope:
+
+- `app/components/chat.module.scss`: updated `.prompt-hints` and `.prompt-hint` visual chrome with `surface-elevated`, box sizing, padding, thin scrollbar, contained overscroll, 18px popover radius, 44px rows, filled selected/hover/focus state, and a 600px mobile max-height rule.
+- `test/gemini-visual-migration.test.ts`: extended the existing source contract for prompt hints elevated chrome, touch target, filled selected state, and mobile height bound.
+- No model config semantics, account/secret/sync, backend/API, production config, deployment config, upload behavior, persisted store keys, model request payload construction, or dependency files were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"` failed first as expected because the root prompt hints style lacked the new Gemini chrome contract.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"`
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit --pretty false`
+- `git diff --check`
+- `yarn build`
+
+Browser QA:
+
+- in-app Browser desktop viewport `1280x720`: typed `/` in the existing local chat composer; `#chat-prompt-hints` appeared as `role=listbox` with `aria-label=提示词建议`, `407` options, selected item `chat-prompt-hint-0`, selected background `rgba(66, 133, 244, 0.1)`, inset selected shadow, row min-height `44px`, left-aligned text, horizontal overflow `0`, and no warn/error logs.
+- Keyboard QA on desktop: `ArrowDown` moved `aria-activedescendant` and `aria-selected` to `chat-prompt-hint-1`, `Home` returned to `chat-prompt-hint-0`, and `Escape` closed the listbox while focus stayed on `#chat-input`; horizontal overflow stayed `0`, and console logs stayed clean.
+- in-app Browser mobile viewport `390x844`: typed `/` via coordinate input because Playwright `fill` did not dispatch the mobile input path reliably; prompt hints rendered from `left=10` to `right=380`, height `320`, row min-height `44px`, filled selected state, horizontal overflow `0`, and no warn/error logs.
+- in-app Browser narrow viewport `320x740`: prompt hints rendered from `left=10` to `right=310`, width `300`, height `320`, first row actual height `44`, left-aligned text, filled selected state, horizontal overflow `0`, and no warn/error logs.
+- Browser QA did not send a message, did not call a model/API, did not upload files, did not open an OS file picker, and did not persist production data.
+
+Review:
+
+- Read-only explorer recommended this slice as the safest next target because prompt hints already had keyboard accessibility but still used older card/selected visuals.
+- Read-only code review found no Critical or Important issues and confirmed the diff was limited to prompt hints CSS and source-contract tests.
+- Main-thread review verified that no prompt hint behavior logic, model config semantics, account/secret/sync, backend/API, upload behavior, store keys, dependency files, production config, deployment config, or model request payload construction were touched.
+
+Known risks:
+
+- This slice is covered by source-contract tests plus Browser QA rather than a Testing Library interaction test for prompt selection.

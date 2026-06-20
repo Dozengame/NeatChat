@@ -88,6 +88,17 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-input-panel:focus-within .chat-input-menu-button",
     );
+    const promptHintsStyles = chatStyles.slice(
+      chatStyles.indexOf("@mixin single-line"),
+    );
+    const promptHintsBlock = readCssBlock(promptHintsStyles, ".prompt-hints");
+    const promptHintsRootBlock = readRootDeclarations(promptHintsBlock);
+    const promptHintBlock = readCssBlock(promptHintsBlock, ".prompt-hint");
+    const promptHintRootBlock = readRootDeclarations(promptHintBlock);
+    const promptHintsMobileBlock = readCssBlock(
+      chatStyles,
+      "@media (max-width: 600px)",
+    );
     const emptyInputPanelFocusMenuButtonBlock = readCssBlock(
       chatStyles,
       ".chat-input-panel.chat-input-panel-empty:focus-within .chat-input-menu-button",
@@ -684,6 +695,33 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chat).toMatch(
       /className=\{styles\["chat-input"\]\}[\s\S]*aria-controls=\{\s*promptHints\.length > 0 \? "chat-prompt-hints" : undefined\s*\}[\s\S]*aria-haspopup="listbox"/,
+    );
+    expect(promptHintsRootBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(promptHintsRootBlock).toMatch(
+      /background:\s*var\(--surface-elevated\);/,
+    );
+    expect(promptHintsRootBlock).toMatch(/border-radius:\s*18px;/);
+    expect(promptHintsRootBlock).toMatch(/padding:\s*6px;/);
+    expect(promptHintsRootBlock).toMatch(/overscroll-behavior:\s*contain;/);
+    expect(promptHintsRootBlock).toMatch(/scrollbar-width:\s*thin;/);
+    expect(promptHintsRootBlock).toMatch(
+      /box-shadow:\s*var\(--composer-shadow\);/,
+    );
+    expect(promptHintRootBlock).toMatch(/appearance:\s*none;/);
+    expect(promptHintRootBlock).toMatch(/width:\s*100%;/);
+    expect(promptHintRootBlock).toMatch(/min-height:\s*44px;/);
+    expect(promptHintRootBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(promptHintRootBlock).toMatch(/text-align:\s*left;/);
+    expect(promptHintRootBlock).toMatch(/background:\s*transparent;/);
+    expect(promptHintRootBlock).toMatch(/border:\s*1px solid transparent;/);
+    expect(promptHintBlock).toMatch(
+      /&-selected,\s*&:hover,\s*&:focus-visible\s*\{[\s\S]*background:\s*rgba\(66,\s*133,\s*244,\s*0\.1\);[\s\S]*box-shadow:\s*inset 0 0 0 1px rgba\(66,\s*133,\s*244,\s*0\.22\);/,
+    );
+    expect(promptHintsMobileBlock).toMatch(
+      /\.prompt-hints\s*\{[\s\S]*max-height:\s*min\(46vh,\s*320px\);/,
+    );
+    expect(promptHintsMobileBlock).toMatch(
+      /\.prompt-hint\s*\{[\s\S]*min-height:\s*44px;/,
     );
     expect(chat).toMatch(
       /type PromptHintsCloseOptions = \{[\s\S]*restoreFocus\?: boolean;[\s\S]*\};/,
