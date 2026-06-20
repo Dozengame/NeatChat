@@ -3915,6 +3915,10 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-dropzone-live-status",
     );
+    const darkDropzoneActiveBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-dropzone.chat-dropzone-active",
+    );
     const dropzoneHintBlock = readCssBlock(chatStyles, ".chat-dropzone-hint");
     const dropzoneContentBlock = readCssBlock(
       chatStyles,
@@ -4023,6 +4027,12 @@ describe("Gemini visual migration shell", () => {
     );
     expect(dropzoneBlock).toMatch(/isolation:\s*isolate;/);
     expect(dropzoneBlock).toMatch(/pointer-events:\s*none;/);
+    expect(dropzoneBlock).toMatch(
+      /&\.chat-dropzone-active[\s\S]*background-color:\s*color-mix\(in srgb,\s*var\(--surface\) 58%,\s*transparent\);/,
+    );
+    expect(darkDropzoneActiveBlock).toMatch(
+      /background-color:\s*color-mix\(in srgb,\s*var\(--gray\) 66%,\s*transparent\);/,
+    );
     expect(liveStatusBlock).toMatch(/position:\s*absolute;/);
     expect(liveStatusBlock).toMatch(/width:\s*1px;/);
     expect(liveStatusBlock).toMatch(/height:\s*1px;/);
@@ -4039,11 +4049,13 @@ describe("Gemini visual migration shell", () => {
     expect(dropzoneBeforeBlock).toMatch(/position:\s*absolute;/);
     expect(dropzoneBeforeBlock).toMatch(/inset:\s*0;/);
     expect(dropzoneBeforeBlock).toMatch(
-      /radial-gradient\(\s*circle at 28% 24%,\s*rgba\(66,\s*133,\s*244,\s*0\.22\)/,
+      /background:\s*rgba\(255,\s*255,\s*255,\s*0\.18\);/,
     );
     expect(dropzoneBeforeBlock).toMatch(
-      /radial-gradient\(\s*circle at 72% 72%,\s*rgba\(52,\s*168,\s*83,\s*0\.16\)/,
+      /box-shadow:\s*inset 0 0 0 1px rgba\(60,\s*64,\s*67,\s*0\.08\);/,
     );
+    expect(dropzoneBeforeBlock).not.toContain("radial-gradient");
+    expect(dropzoneBeforeBlock).not.toContain("linear-gradient");
     expect(dropzoneBeforeBlock).toMatch(/pointer-events:\s*none;/);
     expect(dropzoneBeforeBlock).toMatch(/opacity:\s*0;/);
     expect(activeDropzoneBeforeBlock).toMatch(/opacity:\s*1;/);
@@ -4054,41 +4066,47 @@ describe("Gemini visual migration shell", () => {
       /backdrop-filter:\s*blur\(22px\) saturate\(180%\);/,
     );
     expect(dropzoneContentBlock).toMatch(
-      /background:\s*linear-gradient\(\s*135deg,\s*rgba\(255,\s*255,\s*255,\s*0\.86\),\s*rgba\(248,\s*251,\s*255,\s*0\.72\)\s*\);/,
+      /background:\s*var\(--surface-elevated\);/,
     );
+    expect(dropzoneContentBlock).not.toContain("linear-gradient");
     expect(dropzoneContentBeforeBlock).toMatch(/content:\s*"";/);
     expect(dropzoneContentBeforeBlock).toMatch(/pointer-events:\s*none;/);
     expect(dropzoneContentBeforeBlock).toMatch(
-      /box-shadow:\s*inset 0 0 0 1px rgba\(66,\s*133,\s*244,\s*0\.28\)/,
+      /box-shadow:\s*inset 0 0 0 1px rgba\(60,\s*64,\s*67,\s*0\.08\),/,
     );
     expect(activeDropzoneContentBeforeBlock).toMatch(/opacity:\s*1;/);
     expect(dropzoneContentBlock).toMatch(
-      /border-color:\s*rgba\(66, 133, 244, 0\.55\);/,
+      /border-color:\s*var\(--primary\);/,
     );
     expect(dropzoneContentBlock).toMatch(/opacity:\s*1;/);
     expect(dropzoneIconBlock).toMatch(/border-radius:\s*16px;/);
+    expect(dropzoneIconBlock).toMatch(/border:\s*var\(--border-in-light\);/);
     expect(dropzoneIconBlock).toMatch(
-      /background:\s*linear-gradient\(\s*135deg,\s*rgba\(66,\s*133,\s*244,\s*0\.16\),\s*rgba\(52,\s*168,\s*83,\s*0\.12\)\s*\);/,
+      /background:\s*var\(--surface-soft\);/,
     );
+    expect(dropzoneIconBlock).not.toContain("linear-gradient");
     expect(dropzoneIconBlock).toMatch(
-      /box-shadow:\s*0 12px 32px rgba\(66,\s*133,\s*244,\s*0\.18\);/,
+      /box-shadow:\s*var\(--composer-shadow\);/,
     );
     expect(dropzoneSummaryBlock).toMatch(/display:\s*inline-flex;/);
     expect(dropzoneSummaryBlock).toMatch(/min-height:\s*28px;/);
     expect(dropzoneSummaryBlock).toMatch(/border-radius:\s*999px;/);
     expect(dropzoneSummaryBlock).toMatch(
-      /background:\s*rgba\(66,\s*133,\s*244,\s*0\.12\);/,
+      /background:\s*rgba\(60,\s*64,\s*67,\s*0\.08\);/,
     );
     expect(dropzoneSummaryBlock).toMatch(/font-weight:\s*500;/);
     expect(dropzoneSummaryBlock).toMatch(
-      /:global\(\.dark\) &[\s\S]*background:\s*rgba\(138,\s*180,\s*248,\s*0\.14\);/,
+      /:global\(\.dark\) &[\s\S]*background:\s*rgba\(232,\s*234,\s*237,\s*0\.08\);/,
     );
     expect(darkDropzoneBeforeBlock).toMatch(
-      /rgba\(138,\s*180,\s*248,\s*0\.2\)/,
+      /background:\s*rgba\(255,\s*255,\s*255,\s*0\.05\);/,
     );
+    expect(darkDropzoneBeforeBlock).not.toContain("radial-gradient");
+    expect(darkDropzoneBeforeBlock).not.toContain("linear-gradient");
     expect(darkDropzoneContentBlock).toMatch(
-      /background:\s*linear-gradient\(\s*135deg,\s*rgba\(38,\s*42,\s*52,\s*0\.78\),\s*rgba\(18,\s*20,\s*26,\s*0\.72\)\s*\);/,
+      /background:\s*var\(--surface-elevated\);/,
     );
+    expect(darkDropzoneContentBlock).not.toContain("linear-gradient");
     expect(dropzoneHintBlock).toMatch(
       /:global\(\.dark\) &[\s\S]*color:\s*rgba\(232,\s*234,\s*237,\s*0\.78\);/,
     );

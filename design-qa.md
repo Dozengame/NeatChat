@@ -4751,3 +4751,55 @@ Known risks:
 
 - Browser QA ran in the current local runtime theme and Browser's read-only evaluate blocked direct DOM theme toggling for a computed light/dark comparison. Light/dark treatment is protected by shared token usage, source-contract tests, and CSS review.
 - Automated coverage remains source-contract oriented for this shell-level visual slice; runtime Browser QA covers the key drawer open/close behavior and responsive geometry.
+
+## Iteration 2026-06-20 drag-drop-overlay-surface-alignment
+
+Result: passed.
+
+Target flow:
+
+- Dragging files or images over Chat should keep the existing scoped `hasDraggedFiles` checks, `dragActive` lifecycle, aria live status, visible copy, attachment limit summary, and drop parsing behavior.
+- The drag overlay, drop card, icon, and summary chip should use the same Gemini-style neutral surface/token system as the composer instead of decorative radial or linear gradients.
+- The active overlay should remain visually legible on desktop and compact viewports without introducing horizontal overflow.
+- Model config semantics, account/secret/sync, backend/API, production config, deployment config, upload parsing, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: treat multimodal drag as an in-product assistive surface, not a promotional graphic. The overlay should feel quiet, glassy, and consistent with existing composer surfaces.
+- This slice intentionally keeps DataTransfer handling, accepted file/image limits, drag text, live-region behavior, and upload parsing untouched.
+
+Scope:
+
+- `app/components/chat.module.scss`: removed colorful radial and linear gradients from the drag overlay pseudo-layer, content card, icon tile, and dark-mode card; replaced them with neutral overlays, shared surface tokens, shared border/shadow tokens, and tokenized active border.
+- `test/gemini-visual-migration.test.ts`: updated the drag-and-drop source contract to reject gradients in the target blocks and require tokenized neutral surfaces, `color-mix` active overlay backgrounds, shared icon surface, neutral summary chip, dark-mode neutral treatment, and existing reduced-motion guards.
+- No TypeScript component logic, file utilities, upload parser, send/model/API/account/sync/store/deploy/config paths, dependency files, or route files were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="file drag-and-drop"` failed first as expected because `.chat-dropzone::before` still used radial gradients.
+- After the SCSS implementation, the focused drag-and-drop test passed.
+- Read-only review found two P3 issues: the active overlay root still used a cool-blue hardcoded rgba and the active border was hardcoded to blue rgba. Both were fixed by moving the overlay to `color-mix(in srgb, var(--surface) 58%, transparent)` / dark `var(--gray)` and the active border to `var(--primary)`, with tests updated to token contracts.
+- Read-only re-review found no blocking issues and no new P1/P2/P3 findings.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `git diff --check` passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed with `28` tests.
+
+Browser QA:
+
+- in-app Browser page identity: `http://127.0.0.1:3000/#/chat`, title `NeatChat`, meaningful composer controls rendered, no framework overlay, and Browser console warn/error logs `0`.
+- Desktop `1440x1024`: dropzone DOM existed with `aria-hidden="true"`, `data-drop-active="false"`, role/status live region present, full-page rect `1440x1024`, horizontal overflow `0`, and target computed styles reported `backgroundImage: none` for dropzone, pseudo-layer, content, icon, and summary.
+- Mobile `390x844`: same hidden dropzone/aria/CSSOM checks passed, full-page rect `390x844`, horizontal overflow `0`, and console warn/error logs `0`.
+- Narrow `320x740`: same hidden dropzone/aria/CSSOM checks passed, full-page rect `320x740`, horizontal overflow `0`, and console warn/error logs `0`.
+- The current in-app Browser API could not synthesize a real file `DataTransfer` drag activation without DOM mutation or raw CDP workarounds, so the active drag-enter/drop flow was not runtime-triggered in Browser QA. Source-contract tests and unchanged TypeScript boundaries cover the active-state selectors and drag/drop code path.
+
+Review:
+
+- Initial read-only review found no blocking issues and identified the two P3 hardcoded active-state values noted above.
+- Final read-only re-review confirmed the fixes, found no new P1/P2/P3 issues, and verified the diff remained limited to `chat.module.scss` and `gemini-visual-migration.test.ts`.
+- Main-thread review verified no diff in `chat.tsx`, `app/utils/file.ts`, stores, config, API/backend, route constants, deployment files, dependency files, or model request paths.
+
+Known risks:
+
+- Browser QA could not trigger a real file drag/drop active state with the available in-app Browser API. This slice has runtime CSSOM/viewport/console coverage for the rendered dropzone structure and source-contract coverage for active selectors, but not a full E2E DataTransfer drag.
+- The test remains source-contract oriented for this visual slice; a future browser harness with real file drag support would reduce residual interaction risk.
