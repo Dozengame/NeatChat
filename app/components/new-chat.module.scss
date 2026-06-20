@@ -7,9 +7,7 @@
   flex-direction: column;
   overflow-x: hidden;
   overflow-y: auto;
-  background:
-    radial-gradient(circle at 50% 48%, rgba(188, 222, 255, 0.34), transparent 38%),
-    var(--surface);
+  background: var(--surface);
   color: var(--black);
 
   .mask-header {
@@ -28,7 +26,9 @@
 
     button {
       min-height: 44px;
-      background: color-mix(in srgb, var(--surface) 82%, transparent);
+      border: var(--border-in-light);
+      background: var(--surface-elevated);
+      box-shadow: 0 6px 18px rgba(60, 64, 67, 0.1);
       backdrop-filter: blur(14px);
     }
   }
@@ -78,7 +78,7 @@
     box-sizing: border-box;
     border: var(--border-in-light);
     border-radius: 30px;
-    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    background: var(--surface-elevated);
     box-shadow: var(--composer-shadow);
     color: var(--black);
     font-family: inherit;
@@ -92,10 +92,12 @@
 
     &:hover,
     &:focus-visible {
-      border-color: rgba(49, 94, 248, 0.58);
+      outline: var(--focus-ring);
+      outline-offset: 2px;
+      border-color: color-mix(in srgb, var(--primary) 58%, transparent);
       box-shadow:
         var(--composer-shadow),
-        0 0 0 4px rgba(49, 94, 248, 0.1);
+        var(--focus-ring-shadow);
       transform: translateY(-1px);
     }
   }
@@ -127,7 +129,7 @@
     }
 
     path {
-      fill: white !important;
+      fill: var(--white) !important;
     }
   }
 
@@ -137,7 +139,9 @@
 
     .more {
       min-height: 44px;
-      background: color-mix(in srgb, var(--surface) 72%, transparent);
+      border: var(--border-in-light);
+      background: var(--surface-elevated);
+      box-shadow: 0 6px 18px rgba(60, 64, 67, 0.08);
     }
   }
 
@@ -156,8 +160,8 @@
       align-items: center;
       padding: 8px 12px;
       border: var(--border-in-light);
-      border-radius: 8px;
-      background: color-mix(in srgb, var(--surface) 58%, transparent);
+      border-radius: 14px;
+      background: var(--surface-elevated);
       color: var(--black);
       font-family: inherit;
       cursor: pointer;
@@ -167,9 +171,10 @@
 
       &:hover,
       &:focus-visible {
-        border-color: rgba(49, 94, 248, 0.42);
-        background: color-mix(in srgb, var(--surface) 86%, transparent);
-        outline: none;
+        border-color: color-mix(in srgb, var(--primary) 42%, transparent);
+        background: var(--hover-color);
+        outline: var(--focus-ring);
+        outline-offset: 2px;
       }
 
       .mask-name {

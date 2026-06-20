@@ -4648,3 +4648,59 @@ Known risks:
 
 - `role="toolbar"` currently keeps native button Tab navigation and does not add roving arrow-key focus. This is acceptable for the current slice because it preserves existing keyboard behavior, but editor-specific arrow-key navigation can be considered in a later accessibility pass.
 - Runtime Browser QA covered light-mode desktop/mobile/narrow geometry. Dark mode is guarded by source-contract tests and CSS review, not by a live dark-theme Browser toggle in this slice.
+
+## Iteration 2026-06-20 secondary-entry-surface-alignment
+
+Result: passed.
+
+Target flow:
+
+- `#/search-chat` and `#/new-chat` should match the main Gemini-style shell by using the shared neutral page surface instead of decorative blue radial gradients.
+- Search input, Search results, New Chat composer, header actions, more action, and mask shortcuts should use shared elevated surface, border, shadow, hover, and focus-ring tokens.
+- Existing Search behavior, recent/results list, clear button, `selectSession(item.id)`, `Path.Chat` navigation, `startChat`, mask selection, `dontShowMaskSplashScreen`, and mobile sidebar trigger behavior must remain unchanged.
+- Model config semantics, account/secret/sync, backend/API, production config, deployment config, upload parsing, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: keep these secondary entry pages quiet and utilitarian, with Gemini-style neutral backgrounds and compact elevated controls rather than standalone decorative landing screens.
+- This slice intentionally does not redesign the layout, information architecture, copy, session creation flow, or mask grid. It only aligns surfaces, focus states, and input chrome with the existing Chat shell tokens.
+
+Scope:
+
+- `app/components/search-chat.module.scss`: removed the root radial gradient, tokenized close/search/result/empty surfaces, added focus-ring treatment, fixed the search input specificity against global `input[type="text"]`, and left-aligns the search field.
+- `app/components/new-chat.module.scss`: removed the root radial gradient, tokenized header/composer/more/mask surfaces, moved focus/hover affordances to shared tokens, and replaced the hardcoded white icon fill with `var(--white)`.
+- `test/gemini-visual-migration.test.ts`: added source-contract coverage for root no-gradient surfaces, shared token usage, no hardcoded blue focus color, search input specificity, left-aligned search input, and unchanged Search/New Chat behavior anchors.
+- No TypeScript component logic, routes, stores, model config, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, upload parser, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="secondary entry pages"` failed first as expected because `search-chat` and `new-chat` still used `radial-gradient`.
+- After initial implementation, the same test passed.
+- The test was then strengthened to reject hardcoded `rgba(49, 94, 248...)` and `fill: white !important`; it failed as expected until those values moved to token-derived expressions.
+- Browser QA exposed a runtime specificity issue: global `input[type="text"]` overrode the Search input radius to `10px`. The test was strengthened to require the scoped `.search-box input.search-input` contract, failed as expected, and passed after the specificity fix.
+- The test was strengthened again to require `text-align: left`; it failed as expected until the Search input explicitly overrode the global centered input style.
+- Final focused run: `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="secondary entry pages"` passed.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+
+Browser QA:
+
+- in-app Browser page identity: `http://localhost:3000/?qa=secondary-surfaces#/search-chat` and `http://localhost:3000/?qa=secondary-surfaces#/new-chat`, title `NeatChat`, meaningful page content rendered, no framework overlay, and console warn/error logs `0`.
+- Desktop `1440x1024`: Search root `backgroundImage: none`, horizontal overflow `0`, Search input radius `28px`, result panel radius `22px`, typing `qa` showed one clear button and clearing restored empty input with overflow still `0`.
+- Desktop `1440x1024`: New Chat root `backgroundImage: none`, horizontal overflow `0`, composer radius `30px`, mask shortcut radius `14px`, console warn/error logs `0`.
+- Mobile `390x844`: Search root `backgroundImage: none`, horizontal overflow `0`, Search input radius `22px`, result panel radius `18px`, console warn/error logs `0`.
+- Mobile `390x844`: New Chat root `backgroundImage: none`, horizontal overflow `0`, composer radius `24px`, mask shortcut radius `14px`, return button still exposed `aria-controls="mobile-sidebar-drawer"` and `aria-expanded="false"`, console warn/error logs `0`.
+- Narrow `320x740`: Search and New Chat both kept `backgroundImage: none`, horizontal overflow `0`, mobile radii, and console warn/error logs `0`.
+- Mobile return trigger regression: on `390x844`, clicking the New Chat return/sidebar trigger changed the URL to `#/`, expanded the trigger to `aria-expanded="true"`, brought the `304x844` sidebar to `x=0`, kept horizontal overflow `0`, and produced no console warn/error logs.
+- Browser screenshot capture timed out in this in-app Browser session, so this slice uses DOM snapshots, CSSOM metrics, interaction state, and console health as runtime evidence.
+
+Review:
+
+- A read-only subagent first confirmed the slice was worth doing and recommended keeping the implementation limited to `search-chat.module.scss`, `new-chat.module.scss`, `test/gemini-visual-migration.test.ts`, and this QA record.
+- A final read-only subagent review was attempted after implementation but could not run because Codex subagent usage quota was exhausted. Main-thread review then checked the staged work directly.
+- Main-thread review found no P0, P1, or P2 issues. It verified the final diff is limited to two SCSS files plus the visual migration test, that `radial-gradient`, `rgba(49, 94, 248...)`, and `fill: white !important` are absent from the target SCSS files, and that there is no diff in `search-chat.tsx`, `new-chat.tsx`, route constants, stores, config, or API/backend files.
+
+Known risks:
+
+- The final review was main-thread only because the review subagent hit a usage-quota limit. The review still used source diff, forbidden-string scans, focused tests, Browser QA, and boundary checks before commit.
+- Dark mode is protected by shared tokens and CSS review in this slice, but Browser QA was performed in light mode only.

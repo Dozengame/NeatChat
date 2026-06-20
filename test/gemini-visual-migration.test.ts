@@ -3568,6 +3568,82 @@ describe("Gemini visual migration shell", () => {
     expect(reducedMotionBlock).toMatch(/transition-duration:\s*0\.01ms !important;/);
   });
 
+  test("keeps secondary entry pages aligned with Gemini surfaces", () => {
+    const searchChat = read("app/components/search-chat.tsx");
+    const searchChatStyles = read("app/components/search-chat.module.scss");
+    const newChat = read("app/components/new-chat.tsx");
+    const newChatStyles = read("app/components/new-chat.module.scss");
+    const searchRootBlock = readRootDeclarations(
+      readCssBlock(searchChatStyles, ".search-page"),
+    );
+    const searchInputBlock = readCssBlock(searchChatStyles, ".search-input");
+    const scopedSearchInputBlock = readCssBlock(
+      searchChatStyles,
+      ".search-box input.search-input",
+    );
+    const resultPanelBlock = readCssBlock(searchChatStyles, ".result-panel");
+    const resultItemBlock = readCssBlock(searchChatStyles, ".result-item");
+    const emptyStateBlock = readCssBlock(searchChatStyles, ".empty-state");
+    const newChatRootBlock = readRootDeclarations(
+      readCssBlock(newChatStyles, ".new-chat"),
+    );
+    const maskHeaderBlock = readCssBlock(newChatStyles, ".mask-header");
+    const composerBlock = readCssBlock(newChatStyles, ".composer");
+    const moreButtonBlock = readCssBlock(newChatStyles, ".more");
+    const maskBlock = readCssBlock(newChatStyles, ".mask");
+
+    expect(searchChat).toContain("selectSession(item.id)");
+    expect(searchChat).toContain("to={Path.Chat}");
+    expect(searchChat).toContain("onChange={(e) => setSearchText(e.currentTarget.value)}");
+    expect(newChat).toContain("chatStore.newSession(mask)");
+    expect(newChat).toContain("navigate(Path.Chat)");
+    expect(newChat).toContain("navigate(Path.Masks)");
+    expect(newChat).toContain("dontShowMaskSplashScreen");
+    expect(searchChatStyles).not.toContain("radial-gradient");
+    expect(newChatStyles).not.toContain("radial-gradient");
+    expect(searchChatStyles).not.toContain("rgba(49, 94, 248");
+    expect(newChatStyles).not.toContain("rgba(49, 94, 248");
+    expect(newChatStyles).not.toContain("fill: white !important");
+    expect(searchRootBlock).toMatch(/background:\s*var\(--surface\);/);
+    expect(newChatRootBlock).toMatch(/background:\s*var\(--surface\);/);
+    expect(searchInputBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
+    expect(searchInputBlock).toMatch(/border:\s*var\(--border-in-light\);/);
+    expect(searchInputBlock).toMatch(/box-shadow:\s*var\(--composer-shadow\);/);
+    expect(searchInputBlock).toMatch(/text-align:\s*left;/);
+    expect(scopedSearchInputBlock).toMatch(/max-width:\s*100%;/);
+    expect(scopedSearchInputBlock).toMatch(/border-radius:\s*28px;/);
+    expect(scopedSearchInputBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
+    expect(scopedSearchInputBlock).toMatch(/box-shadow:\s*var\(--composer-shadow\);/);
+    expect(searchInputBlock).toMatch(
+      /&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/,
+    );
+    expect(searchInputBlock).toMatch(
+      /&:focus-visible[\s\S]*box-shadow:[\s\S]*var\(--focus-ring-shadow\);/,
+    );
+    expect(resultPanelBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
+    expect(resultPanelBlock).toMatch(/border:\s*var\(--border-in-light\);/);
+    expect(resultPanelBlock).toMatch(/border-radius:\s*22px;/);
+    expect(resultPanelBlock).toMatch(/box-shadow:\s*var\(--composer-shadow\);/);
+    expect(resultItemBlock).toMatch(/border-radius:\s*14px;/);
+    expect(resultItemBlock).toMatch(/background:\s*transparent;/);
+    expect(resultItemBlock).toMatch(/&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/);
+    expect(emptyStateBlock).toMatch(/background:\s*var\(--surface\);/);
+    expect(composerBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
+    expect(composerBlock).toMatch(/border:\s*var\(--border-in-light\);/);
+    expect(composerBlock).toMatch(/box-shadow:\s*var\(--composer-shadow\);/);
+    expect(composerBlock).toMatch(
+      /&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/,
+    );
+    expect(maskHeaderBlock).toMatch(
+      /button\s*\{[\s\S]*background:\s*var\(--surface-elevated\);/,
+    );
+    expect(moreButtonBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
+    expect(maskBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
+    expect(maskBlock).toMatch(/border:\s*var\(--border-in-light\);/);
+    expect(maskBlock).toMatch(/border-radius:\s*14px;/);
+    expect(maskBlock).toMatch(/&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/);
+  });
+
   test("keeps chat image preview overlay focus-restoring and bounded", () => {
     const chat = read("app/components/chat.tsx");
     const markdown = read("app/components/markdown.tsx");
