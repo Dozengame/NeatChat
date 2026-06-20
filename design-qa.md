@@ -4060,3 +4060,56 @@ Known risks:
 
 - Browser screenshot capture was unavailable for this fixture tab, so visual evidence is DOM/CSS/interaction metrics rather than screenshots.
 - Runtime QA used a local fixture with current compiled app CSS because creating a real chat message through the UI could trigger a model/API request and importing persisted state would exceed this slice's safety boundary.
+
+## Iteration 2026-06-20 model-menu-focus-containment
+
+Result: passed.
+
+Target flow:
+
+- Opening the header model menu should move focus into `#chat-model-menu`, preferring the currently selected model option.
+- Tab and Shift+Tab should stay inside the model menu dialog and wrap across visible enabled model/reasoning/image controls.
+- Escape and backdrop close should return focus to the model selector trigger.
+- If the menu has no visible enabled controls, focus should fall back to the dialog itself instead of escaping to the page.
+- The change must not alter model config semantics, account/secret/sync, backend/API, production config, deployment config, upload behavior, persisted store keys, or model request payload construction.
+
+Design direction:
+
+- Creative Production style intake selected: keep the existing Gemini-style model surface and tighten its modal focus behavior to match the composer tools menu and mobile sidebar drawer.
+- This slice changes keyboard/focus quality only; no model list, reasoning, image generation, provider, or request semantics changed.
+
+Scope:
+
+- `app/components/chat.tsx`: added a model menu focus frame ref, initial focus handoff to the selected/fallback menu control, Tab/Shift+Tab containment, dialog fallback focus for empty-control states, and `tabIndex={-1}` on `#chat-model-menu`.
+- `test/gemini-visual-migration.test.ts`: extended the source contract for model menu focus entry, Tab containment, empty-control fallback, focus-frame cleanup, and dialog focusability.
+- No model config semantics, account/secret/sync, backend/API, production config, deployment config, upload behavior, persisted store keys, model request payload construction, or dependency files were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"` failed first as expected because model menu focus entry and Tab containment were missing.
+- After read-only review found an empty-control fallback gap, the same targeted test was tightened and failed first because `#chat-model-menu` was not a focus fallback.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"`
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit --pretty false`
+- `yarn build`
+
+Browser QA:
+
+- in-app Browser desktop viewport `1280x720`: opening the model menu focused the selected `gpt-5.4` option, `Tab` moved to the next model option while staying inside `#chat-model-menu`, `Escape` closed the menu and returned focus to the model selector, `#chat-model-menu tabindex=-1`, horizontal overflow `0`, and no new warn/error logs after the clean dev-server reload.
+- Earlier desktop QA on the same diff also verified Shift+Tab moved back to the selected option and backdrop close returned focus to the trigger.
+- in-app Browser mobile viewport `390x844`: opening focused the selected model option, `Tab` stayed inside the menu, `Escape` returned focus to the trigger, `#chat-model-menu tabindex=-1`, horizontal overflow `0`, and no new warn/error logs after reload.
+- in-app Browser narrow viewport `320x740`: opening focused the selected model option, `Tab` stayed inside the menu, `Escape` returned focus to the trigger, `#chat-model-menu tabindex=-1`, horizontal overflow `0`, and no new warn/error logs after reload.
+- Earlier mobile and narrow QA on the same diff also verified backdrop close returned focus to the trigger.
+- Browser QA did not send a message, did not call a model/API, did not upload files, did not open an OS file picker, and did not persist production data.
+
+Review:
+
+- Read-only exploration recommended this slice because `#chat-model-menu` already declared `role="dialog"` / `aria-modal="true"` but lacked focus entry and Tab containment, unlike the composer tools menu and mobile sidebar drawer.
+- Read-only code review found no Critical or Important issues. It reported one Minor empty-control fallback risk; this was fixed by focusing the dialog itself and preventing Tab escape when no visible enabled controls exist.
+- Main-thread review verified that the final diff is limited to model menu focus behavior, source-contract tests, and this QA record, and does not touch model/account/sync/API/upload/store/deploy boundaries.
+
+Known risks:
+
+- The empty-control fallback is covered by source-contract tests rather than a dedicated runtime fixture because the current local app configuration exposes three visible model menu controls.
+- The interaction test remains source-contract plus Browser QA, not a Testing Library component-level focus simulation.

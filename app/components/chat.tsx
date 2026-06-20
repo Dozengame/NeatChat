@@ -2189,6 +2189,7 @@ function useChatInnerView() {
     useState<MobileModelAdvancedSection | null>(null);
   const modelSelectorButtonRef = useRef<HTMLButtonElement>(null);
   const modelMenuRef = useRef<HTMLDivElement>(null);
+  const modelMenuFocusFrameRef = useRef<number | null>(null);
   const closeMobileModelSelector = useCallback(() => {
     setShowMobileModelSelector(false);
     setExpandedMobileModelSection(null);
@@ -2244,14 +2245,82 @@ function useChatInnerView() {
     },
     [getModelMenuControls],
   );
+  const focusInitialModelMenuControl = useCallback(() => {
+    const controls = getModelMenuControls();
+    if (controls.length === 0) {
+      modelMenuRef.current?.focus({ preventScroll: true });
+      return;
+    }
+
+    const selectedControl = controls.find(
+      (control) => control.getAttribute("aria-selected") === "true",
+    );
+    const nextControl = selectedControl ?? controls[0];
+    nextControl.focus({ preventScroll: true });
+    nextControl.scrollIntoView({ block: "nearest" });
+  }, [getModelMenuControls]);
+  const trapModelMenuTab = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>) => {
+      const controls = getModelMenuControls();
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (controls.length === 0) {
+        modelMenuRef.current?.focus({ preventScroll: true });
+        return;
+      }
+
+      const currentIndex = controls.findIndex(
+        (control) => control === document.activeElement,
+      );
+      const nextIndex = event.shiftKey
+        ? currentIndex <= 0
+          ? controls.length - 1
+          : currentIndex - 1
+        : currentIndex < 0 || currentIndex === controls.length - 1
+        ? 0
+        : currentIndex + 1;
+      const nextControl = controls[nextIndex];
+
+      nextControl.focus({ preventScroll: true });
+      nextControl.scrollIntoView({ block: "nearest" });
+    },
+    [getModelMenuControls],
+  );
   const handleModelMenuKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (!showMobileModelSelector) return;
+    if (event.key === "Tab") {
+      trapModelMenuTab(event);
+      return;
+    }
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
 
     event.preventDefault();
     event.stopPropagation();
     focusModelMenuControl(event.key);
   };
+  useEffect(() => {
+    if (modelMenuFocusFrameRef.current !== null) {
+      cancelAnimationFrame(modelMenuFocusFrameRef.current);
+      modelMenuFocusFrameRef.current = null;
+    }
+    if (!showMobileModelSelector) return;
+
+    modelMenuFocusFrameRef.current = requestAnimationFrame(() => {
+      modelMenuFocusFrameRef.current = requestAnimationFrame(() => {
+        modelMenuFocusFrameRef.current = null;
+        focusInitialModelMenuControl();
+      });
+    });
+
+    return () => {
+      if (modelMenuFocusFrameRef.current !== null) {
+        cancelAnimationFrame(modelMenuFocusFrameRef.current);
+        modelMenuFocusFrameRef.current = null;
+      }
+    };
+  }, [focusInitialModelMenuControl, showMobileModelSelector]);
   useEffect(() => {
     if (!showMobileModelSelector) return;
 
@@ -3898,6 +3967,7 @@ function useChatInnerView() {
           },
         )}
         onKeyDown={handleModelMenuKeyDown}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label="模型和思考等级"
