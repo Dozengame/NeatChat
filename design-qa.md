@@ -4803,3 +4803,55 @@ Known risks:
 
 - Browser QA could not trigger a real file drag/drop active state with the available in-app Browser API. This slice has runtime CSSOM/viewport/console coverage for the rendered dropzone structure and source-contract coverage for active selectors, but not a full E2E DataTransfer drag.
 - The test remains source-contract oriented for this visual slice; a future browser harness with real file drag support would reduce residual interaction risk.
+
+## Iteration 2026-06-20 streaming-wait-state-tone-alignment
+
+Result: passed.
+
+Target flow:
+
+- When an assistant response is waiting or revealing its first streamed tokens, the existing `message.streaming`, Markdown loading status, preview, and reveal class behavior should remain unchanged.
+- The skeleton shimmer and first-token handoff should use Gemini-style neutral surfaces with a quiet primary accent, not the old blue/purple/pink multicolor banding.
+- The reveal should stay smooth, reduced-motion should still disable shimmer/reveal motion, and desktop/mobile/narrow layouts should not introduce horizontal overflow.
+- Model config semantics, account/secret/sync, backend/API, production config, deployment config, upload parsing, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: treat streaming wait as a calm system feedback surface inside the message list, not as a decorative loading banner.
+- The skeleton bars now use shared surface tokens plus subtle primary accenting, and the first-token reveal uses the same primary/elevated-surface language as the rest of the Gemini-style shell.
+- This slice intentionally avoids changing message streaming logic, Markdown rendering semantics, typing copy, API calls, or model request flow.
+
+Scope:
+
+- `app/components/chat.module.scss`: tokenized `streamingSurfaceHandoff`, `.chat-message-shimmer`, `.chat-message-streaming-reveal`, and dark-mode variants; replaced old blue/purple/pink shimmer paint with neutral surface + primary token gradients; changed streaming gradients from `background` shorthand to explicit `background-image` after Browser QA found the shorthand compiling to empty CSSOM for shimmer.
+- `test/gemini-visual-migration.test.ts`: strengthened the streaming wait-state source contract to require tokenized light/dark shimmer/reveal paint, explicit `background-image`, reduced-motion guards, and a unified legacy color blacklist across the target streaming blocks.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, Markdown rendering logic, stores, model config, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, upload parser, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="streaming wait state"` failed first as expected because the old shimmer border/gradient still used hardcoded blue/purple/pink values.
+- After implementation, the focused streaming wait-state test passed.
+- The test was then strengthened with a unified legacy streaming paint blacklist; the focused test passed again.
+- Browser QA exposed a runtime CSSOM issue where shimmer `background` shorthand compiled into empty background longhands. Fixed by switching streaming gradients to explicit `background-image` and keeping skeleton neutral `background-color` fallback. The focused test passed again after that fix.
+- Final verification before commit: `yarn lint`, `npx tsc --noEmit --pretty false`, `git diff --check`, `yarn jest test/gemini-visual-migration.test.ts --runInBand`, and `yarn build` passed.
+
+Browser QA:
+
+- in-app Browser page identity: `http://127.0.0.1:3000/?qa=streaming-wait-fresh-1781970829337#/chat`, title `NeatChat`, meaningful chat UI rendered, no framework overlay, and Browser console warn/error logs `0`.
+- Desktop `1440x1024`: horizontal overflow `0`; streaming CSSOM contained `streamingSurfaceHandoff`, `color-mix(in srgb`, `var(--primary)`, and `var(--surface-elevated)`; legacy streaming paints `rgba(66, 133, 244)`, `rgba(138, 180, 248)`, `rgba(155, 81, 224)`, `rgba(233, 30, 99)`, `rgba(196, 140, 255)`, and `rgba(255, 139, 180)` were absent from target rules; shimmer/reveal `background-image` values were non-empty; empty background rule count was `0`.
+- Mobile `390x844`: same CSSOM checks passed, horizontal overflow `0`, and console warn/error logs `0`.
+- Narrow `320x740`: same CSSOM checks passed, horizontal overflow `0`, and console warn/error logs `0`.
+- Browser QA intentionally did not send a message, call a model/API, mutate message state, or exercise a real streaming response. The active streaming selectors are covered by source-contract tests and runtime CSSOM validation, not by a real model streaming E2E run.
+
+Review:
+
+- Read-only subagent review found no blocking issues. It raised two P3 notes: `color-mix()` has no automatic legacy-browser fallback, and the initial test was too precise without a unified target-block legacy color blacklist.
+- The blacklist test gap was fixed by adding a streaming-scope negative regex covering `streamingSurfaceHandoff`, `.chat-message-shimmer`, `.chat-message-streaming-reveal`, and dark variants.
+- The Browser QA CSSOM issue was fixed after review by replacing streaming gradient shorthands with explicit `background-image` declarations where needed.
+- Main-thread review verified the final diff remains limited to `chat.module.scss`, `gemini-visual-migration.test.ts`, and this QA record, with no diff in `chat.tsx`, `markdown.tsx`, stores, config, API/backend, route constants, deployment files, dependency files, or model request paths.
+
+Known risks:
+
+- The remaining `color-mix()` usage targets modern Chromium/WebKit/Firefox behavior, which matches the Gemini Web alignment goal and the current in-app Browser runtime. If the product must support old embedded WebViews, a dedicated fallback slice should replace or precompute these mixed colors.
+- Runtime Browser QA did not trigger an actual first-token streaming transition because doing so would require a real model/API call or DOM/message-state mutation. Source-contract tests and CSSOM validation cover the visual rules, but not live network streaming cadence.

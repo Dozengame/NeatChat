@@ -4210,14 +4210,31 @@ describe("Gemini visual migration shell", () => {
     const markdown = read("app/components/markdown.tsx");
     const markdownStyles = read("app/styles/markdown.scss");
     const shimmerBlock = readCssBlock(chatStyles, ".chat-message-shimmer");
+    const darkShimmerBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-message-shimmer",
+    );
     const streamingRevealBlock = readCssBlock(
       chatStyles,
       ".chat-message-streaming-reveal",
+    );
+    const streamingSurfaceHandoffBlock = readCssBlock(
+      chatStyles,
+      "@keyframes streamingSurfaceHandoff",
     );
     const darkStreamingRevealBlock = readCssBlock(
       chatStyles,
       ":global(.dark) .chat-message-streaming-reveal",
     );
+    const streamingToneScope = [
+      shimmerBlock,
+      darkShimmerBlock,
+      streamingRevealBlock,
+      darkStreamingRevealBlock,
+      streamingSurfaceHandoffBlock,
+    ].join("\n");
+    const legacyStreamingPaint =
+      /rgba\((?:66,\s*133,\s*244|138,\s*180,\s*248|155,\s*81,\s*224|233,\s*30,\s*99|196,\s*140,\s*255|255,\s*139,\s*180)/;
     const reducedMotionBlock = chatStyles.slice(
       chatStyles.indexOf("@media (prefers-reduced-motion: reduce)"),
     );
@@ -4247,6 +4264,7 @@ describe("Gemini visual migration shell", () => {
     expect(markdownLoadingStatusBlock).toMatch(/overflow:\s*hidden;/);
     expect(markdownLoadingStatusBlock).toMatch(/clip:\s*rect\(0 0 0 0\);/);
     expect(markdownLoadingStatusBlock).not.toMatch(/min-height/);
+    expect(streamingToneScope).not.toMatch(legacyStreamingPaint);
     expect(shimmerBlock).toMatch(/min-height:\s*72px;/);
     expect(shimmerBlock).toContain("&::after");
     expect(shimmerBlock).toContain(":global(.markdown-body)::before");
@@ -4254,13 +4272,27 @@ describe("Gemini visual migration shell", () => {
     expect(shimmerBlock).toMatch(/display:\s*none !important;/);
     expect(shimmerBlock).toMatch(/animation:\s*shimmer 1\.6s infinite linear/);
     expect(shimmerBlock).not.toContain("* {");
+    expect(shimmerBlock).toMatch(
+      /border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 18%,\s*transparent\) !important;/,
+    );
+    expect(shimmerBlock).toMatch(/background-color:\s*var\(--surface-soft\);/);
+    expect(shimmerBlock).toMatch(
+      /background-image:\s*linear-gradient\(\s*90deg,[\s\S]*color-mix\(in srgb,\s*var\(--surface-soft\) 76%,\s*transparent\)[\s\S]*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--primary\) 12%\)/,
+    );
+    expect(shimmerBlock).not.toContain("rgba(155, 81, 224");
+    expect(shimmerBlock).not.toContain("rgba(233, 30, 99");
+    expect(darkShimmerBlock).toMatch(
+      /color-mix\(in srgb,\s*var\(--surface-elevated\) 82%,\s*var\(--primary\) 18%\)/,
+    );
+    expect(darkShimmerBlock).not.toContain("rgba(196, 140, 255");
+    expect(darkShimmerBlock).not.toContain("rgba(255, 139, 180");
     expect(chatStyles).toContain("@keyframes streamingShimmerFade");
     expect(chatStyles).toContain("@keyframes streamingSurfaceHandoff");
     expect(chatStyles).toMatch(
       /@keyframes streamingShimmerFade[\s\S]*100%[\s\S]*opacity:\s*0;[\s\S]*transform:\s*translateX\(18%\) scaleX\(1\.02\);/,
     );
     expect(chatStyles).toMatch(
-      /@keyframes streamingSurfaceHandoff[\s\S]*0%[\s\S]*box-shadow:[\s\S]*inset 0 0 0 1px rgba\(66,\s*133,\s*244,\s*0\.1\)[\s\S]*100%[\s\S]*box-shadow:[\s\S]*rgba\(66,\s*133,\s*244,\s*0\)/,
+      /@keyframes streamingSurfaceHandoff[\s\S]*0%[\s\S]*box-shadow:[\s\S]*inset 0 0 0 1px color-mix\(in srgb,\s*var\(--primary\) 12%,\s*transparent\)[\s\S]*100%[\s\S]*box-shadow:[\s\S]*color-mix\(in srgb,\s*var\(--primary\) 0%,\s*transparent\)/,
     );
     expect(streamingRevealBlock).toMatch(
       /transition:\s*border-color 0\.18s ease/,
@@ -4284,18 +4316,14 @@ describe("Gemini visual migration shell", () => {
       /animation:\s*streamingShimmerFade 0\.42s cubic-bezier\(0\.2,\s*0,\s*0,\s*1\) both;/,
     );
     expect(streamingRevealBlock).toMatch(
-      /background:\s*linear-gradient\(\s*90deg,\s*transparent 0%,[\s\S]*rgba\(66,\s*133,\s*244,\s*0\.18\)/,
+      /background-image:\s*linear-gradient\(\s*90deg,\s*transparent 0%,[\s\S]*color-mix\(in srgb,\s*var\(--primary\) 14%,\s*transparent\)[\s\S]*color-mix\(in srgb,\s*var\(--surface-elevated\) 72%,\s*transparent\)/,
     );
     expect(darkStreamingRevealBlock).toContain("&::after");
     expect(darkStreamingRevealBlock).toMatch(
-      /background:\s*linear-gradient\(\s*90deg,\s*transparent 0%,[\s\S]*rgba\(138,\s*180,\s*248,\s*0\.2\)/,
+      /background-image:\s*linear-gradient\(\s*90deg,\s*transparent 0%,[\s\S]*color-mix\(in srgb,\s*var\(--primary\) 18%,\s*transparent\)[\s\S]*color-mix\(in srgb,\s*var\(--surface-elevated\) 64%,\s*transparent\)/,
     );
-    expect(darkStreamingRevealBlock).toMatch(
-      /rgba\(196,\s*140,\s*255,\s*0\.16\)/,
-    );
-    expect(darkStreamingRevealBlock).toMatch(
-      /rgba\(255,\s*139,\s*180,\s*0\.14\)/,
-    );
+    expect(darkStreamingRevealBlock).not.toContain("rgba(196, 140, 255");
+    expect(darkStreamingRevealBlock).not.toContain("rgba(255, 139, 180");
     expect(reducedMotionBlock).toContain(".chat-message-shimmer");
     expect(reducedMotionBlock).toContain(".chat-message-streaming-reveal");
     expect(reducedMotionBlock).toContain("animation: none !important");
