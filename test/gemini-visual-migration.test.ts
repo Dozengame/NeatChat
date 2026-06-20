@@ -2051,6 +2051,115 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps composer attachment left-swipe delete affordance non-destructive", () => {
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const swipeMoveBlock = readFunctionBlock(
+      chat,
+      "const handleAttachmentTouchMove = (",
+    );
+    const swipeActiveItemBlock = readCssBlock(
+      chatStyles,
+      '.attach-item[data-swipe-delete-active="true"]',
+    );
+    const swipeActiveMaskBlock = readCssBlock(
+      chatStyles,
+      '.attach-item[data-swipe-delete-active="true"] .attach-image-mask',
+    );
+    const swipeActiveDeleteBlock = readCssBlock(
+      chatStyles,
+      '.attach-item[data-swipe-delete-active="true"] .delete-image',
+    );
+
+    expect(chat).toContain("const ATTACHMENT_SWIPE_DELETE_THRESHOLD = 36;");
+    expect(chat).toContain(
+      "const attachmentSwipeStartRef = useRef<AttachmentSwipeStart | null>(null);",
+    );
+    expect(chat).toContain(
+      "const [activeAttachmentDeleteKey, setActiveAttachmentDeleteKey] =",
+    );
+    expect(chat).toContain("function getAttachmentSwipeKey(");
+    expect(chat).toContain("type ClearAttachmentDeleteOptions = {");
+    expect(chat).toContain("data-attachment-swipe-key=");
+    expect(chat).toMatch(
+      /const canAttachmentStripScrollWithSwipe = useCallback\([\s\S]*const attachmentContainer = attachmentsContainerRef\.current;[\s\S]*const maxScrollLeft = Math\.max\([\s\S]*attachmentContainer\.scrollWidth - attachmentContainer\.clientWidth[\s\S]*if \(maxScrollLeft <= 1\) return false;[\s\S]*if \(deltaX < 0\) \{[\s\S]*return attachmentContainer\.scrollLeft < maxScrollLeft - 1;[\s\S]*\}[\s\S]*if \(deltaX > 0\) \{[\s\S]*return attachmentContainer\.scrollLeft > 1;[\s\S]*\}/,
+    );
+    expect(chat).toMatch(
+      /const armAttachmentDelete = useCallback\([\s\S]*activeAttachmentDeleteKeyRef\.current = attachmentKey;[\s\S]*setActiveAttachmentDeleteKey\(attachmentKey\);[\s\S]*querySelector<HTMLButtonElement>\(\s*`button\.\$\{styles\["delete-image"\]\}`,\s*\)[\s\S]*deleteButton\?\.focus\(\{ preventScroll: true \}\);/,
+    );
+    expect(chat).toMatch(
+      /const clearActiveAttachmentDelete = useCallback\(\s*\(options: ClearAttachmentDeleteOptions = \{\}\) => \{[\s\S]*const activeKey = activeAttachmentDeleteKeyRef\.current;[\s\S]*activeAttachmentDeleteKeyRef\.current = null;[\s\S]*setActiveAttachmentDeleteKey\(null\);[\s\S]*if \(!options\.restoreFocus \|\| !activeKey\) return;[\s\S]*querySelector<HTMLElement>\(\s*`\[data-attachment-swipe-key="\$\{activeKey\}"\]`,\s*\)[\s\S]*querySelector<HTMLButtonElement>\(\s*`button\.\$\{styles\["attach-image"\]\}, button\.\$\{styles\["attach-file"\]\}`,\s*\)[\s\S]*editButton\.focus\(\{ preventScroll: true \}\);[\s\S]*deleteButton\?\.blur\(\);[\s\S]*\}, \[\]\);/,
+    );
+    expect(chat).toMatch(
+      /useEffect\(\(\) => \{[\s\S]*if \(attachImages\.length > 0 \|\| attachedFiles\.length > 0\) return;[\s\S]*clearActiveAttachmentDelete\(\);[\s\S]*\}, \[attachImages\.length, attachedFiles\.length, clearActiveAttachmentDelete\]\);/,
+    );
+    expect(chat).toMatch(
+      /const handleAttachmentTouchStart = \([\s\S]*attachmentKey: string,[\s\S]*event: React\.TouchEvent<HTMLElement>[\s\S]*attachmentSwipeStartRef\.current = \{[\s\S]*key: attachmentKey,[\s\S]*x: touch\.clientX,[\s\S]*y: touch\.clientY,/,
+    );
+    expect(swipeMoveBlock).toMatch(
+      /const deltaX = touch\.clientX - swipeStart\.x;[\s\S]*const deltaY = touch\.clientY - swipeStart\.y;/,
+    );
+    expect(swipeMoveBlock).toMatch(
+      /if \(Math\.abs\(deltaY\) > Math\.abs\(deltaX\)\) \{[\s\S]*return;[\s\S]*\}/,
+    );
+    expect(swipeMoveBlock).toMatch(
+      /if \(deltaX < -ATTACHMENT_SWIPE_DELETE_THRESHOLD\) \{[\s\S]*armAttachmentDelete\(attachmentKey, event\.currentTarget\);[\s\S]*return;[\s\S]*\}/,
+    );
+    expect(swipeMoveBlock).toMatch(
+      /if \(\s*deltaX > ATTACHMENT_SWIPE_DELETE_THRESHOLD \/\s*2 &&[\s\S]*activeAttachmentDeleteKeyRef\.current === attachmentKey[\s\S]*\) \{[\s\S]*clearActiveAttachmentDelete\(\{ restoreFocus: true \}\);[\s\S]*\}/,
+    );
+    expect(swipeMoveBlock).toMatch(
+      /if \(canAttachmentStripScrollWithSwipe\(deltaX\)\) \{[\s\S]*return;[\s\S]*\}/,
+    );
+    expect(swipeMoveBlock).not.toContain("setAttachImages(");
+    expect(swipeMoveBlock).not.toContain("setAttachedFiles(");
+    expect(swipeMoveBlock).not.toContain("deleteAttachedFile(");
+    expect(chat).toMatch(
+      /const handleAttachmentTouchEnd = useCallback\(\(\) => \{[\s\S]*attachmentSwipeStartRef\.current = null;[\s\S]*\}, \[\]\);/,
+    );
+    expect(chat).toMatch(
+      /data-swipe-delete-active=\{[\s\S]*activeAttachmentDeleteKey ===[\s\S]*getAttachmentSwipeKey\("image", index\)[\s\S]*\? "true"[\s\S]*: undefined[\s\S]*\}/,
+    );
+    expect(chat).toMatch(
+      /data-attachment-swipe-key=\{\s*getAttachmentSwipeKey\(\s*"image",\s*index,\s*\)\s*\}/,
+    );
+    expect(chat).toMatch(
+      /handleAttachmentTouchStart\(\s*getAttachmentSwipeKey\("image", index\),\s*event,\s*\)/,
+    );
+    expect(chat).toMatch(
+      /handleAttachmentTouchMove\(\s*getAttachmentSwipeKey\("image", index\),\s*event,\s*\)/,
+    );
+    expect(chat).toMatch(
+      /onTouchEnd=\{handleAttachmentTouchEnd\}/,
+    );
+    expect(chat).toMatch(
+      /data-swipe-delete-active=\{[\s\S]*activeAttachmentDeleteKey ===[\s\S]*getAttachmentSwipeKey\("file", index\)[\s\S]*\? "true"[\s\S]*: undefined[\s\S]*\}/,
+    );
+    expect(chat).toMatch(
+      /data-attachment-swipe-key=\{\s*getAttachmentSwipeKey\(\s*"file",\s*index,\s*\)\s*\}/,
+    );
+    expect(chat).toMatch(
+      /handleAttachmentTouchStart\(\s*getAttachmentSwipeKey\("file", index\),\s*event,\s*\)/,
+    );
+    expect(chat).toMatch(
+      /handleAttachmentTouchMove\(\s*getAttachmentSwipeKey\("file", index\),\s*event,\s*\)/,
+    );
+    expect(chat).toMatch(
+      /setAttachImages\([\s\S]*attachImages\.filter\(\(_, i\) => i !== index\),[\s\S]*\);[\s\S]*clearActiveAttachmentDelete\(\);[\s\S]*focusComposerAttachmentAfterRemoval\(index\);/,
+    );
+    expect(chat).toMatch(
+      /function deleteAttachedFile\(index: number\) \{[\s\S]*setAttachedFiles\(attachedFiles\.filter\(\(_, i\) => i !== index\)\);[\s\S]*clearActiveAttachmentDelete\(\);[\s\S]*focusComposerAttachmentAfterRemoval\(attachImages\.length \+ index\);[\s\S]*\}/,
+    );
+    expect(swipeActiveItemBlock).toMatch(/z-index:\s*1;/);
+    expect(swipeActiveMaskBlock).toMatch(/opacity:\s*1;/);
+    expect(swipeActiveMaskBlock).toMatch(/background:/);
+    expect(swipeActiveDeleteBlock).toMatch(/transform:\s*scale\(1\.06\);/);
+    expect(swipeActiveDeleteBlock).toMatch(/box-shadow:/);
+    expect(chatStyles).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.attach-item\[data-swipe-delete-active="true"\] \.delete-image[\s\S]*transition-duration:\s*0\.01ms !important;[\s\S]*transform:\s*none !important;/,
+    );
+  });
+
   test("keeps clear-context divider as a Gemini-style reversible status chip", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");

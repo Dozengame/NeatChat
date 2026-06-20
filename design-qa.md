@@ -4482,3 +4482,58 @@ Known risks:
 
 - Runtime Browser QA verified local attachment rendering, the add tile geometry/state, focus handoff after deleting a neighboring attachment, cleanup, layout bounds, and console health. It intentionally did not open the OS file picker or upload a real file.
 - Browser screenshot and viewport override were unavailable in this session, so this slice uses default-viewport DOM/interaction evidence plus source contracts.
+
+## Iteration 2026-06-20 attachment-strip-left-swipe-delete
+
+Result: passed.
+
+Target flow:
+
+- On touch/compact attachment previews, left-swipe should reveal and focus the delete affordance without deleting the attachment.
+- Right-swipe/cancel should clear the destructive affordance and move focus back to the attachment edit control or blur the delete button.
+- Horizontal strip scrolling should keep priority while the rail can still scroll in the swipe direction, so scrolling a crowded attachment strip does not accidentally arm deletion.
+- Clearing all attachments through delete, send, model switch, or cleanup should also clear any active swipe key so a future `image-0` or `file-0` is not shown as armed.
+- Existing attachment deletion, edit, add-entry, paste, upload, send, model config semantics, account/secret/sync, backend/API, production config, deployment config, persisted store keys, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: keep Attachment Strip as a Gemini-style compact media rail with a quiet non-destructive swipe reveal, red-tinted delete focus, dark-mode balance, and reduced-motion fallback.
+- This slice changes only the frontend affordance and touch-routing state around existing delete buttons; no model, upload, file parsing, request, store, account, sync, backend, or deploy semantics changed.
+
+Scope:
+
+- `app/components/chat.tsx`: added attachment swipe keys, active delete state cleanup, horizontal scroll guard, right-swipe focus restoration, empty-attachment active-key reset, and touch handlers on image/file attachment items.
+- `app/components/chat.module.scss`: added active swipe visual treatment for the delete mask/button, dark-mode variant, and reduced-motion guard.
+- `test/gemini-visual-migration.test.ts`: added source-contract coverage for non-destructive left-swipe reveal, no deletion in touch-move, right-swipe restoration, scroll guard, stale-key cleanup, image/file key wiring, and unchanged delete/focus handoff.
+- No model config, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, upload parser, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="attachment left-swipe|attachment strip swipes|attachment deletion focus|attachment strip add action"` passed after the review fixes.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed with `25` tests.
+- `git diff --check` passed.
+- `yarn build` passed.
+
+Browser QA:
+
+- After `yarn build`, the already-running dev server served `/api/config` with a transient `500` from stale dev artifacts; the dev server was restarted, `/api/config` returned `200`, and Browser QA proceeded on a fresh tab.
+- in-app Browser page identity: `http://localhost:3000/#/chat`, title `NeatChat`, meaningful app controls rendered, no framework overlay, and Browser console warn/error logs `0`.
+- Pasted a local PNG data URL into `#chat-input` to create an image attachment without opening an OS file picker, sending a message, calling a model/API, changing model settings, uploading a personal file, or persisting production data.
+- The rendered attachment state exposed `[data-composer-attachment-strip="true"]`, one `[data-attachment-swipe-key="image-0"]`, edit/delete buttons, a `继续添加附件` add button, active swipe attr `null`, input value length `0`, horizontal overflow `0`, strip overflow `0`, and console warn/error logs `0`.
+- CSSOM verified active swipe rules for z-index, mask reveal/background, delete button scale/box-shadow, dark-mode companion rules, and reduced-motion `transition-duration: 0.01ms` with `transform: none`.
+- Cleanup clicked the existing delete attachment button; final attachment strip count `0`, swipe-key item count `0`, add button count `0`, input value length `0`, send disabled `true`, horizontal overflow `0`, and console warn/error logs `0`.
+- Browser CUA drag / scripted touch dispatch did not provide a reliable touch-event path in this sandbox, so the left-swipe and right-swipe touch branches are locked by source-contract tests while Browser QA validates live DOM/CSS/paste/delete/console behavior.
+
+Review:
+
+- First read-only review found no Critical issues and three Important risks: stale active swipe key after attachments are cleared, accidental reveal while horizontally scrolling a crowded strip, and destructive focus lingering after right-swipe cancel.
+- Fixed by clearing active keys when attachment count reaches zero, adding `canAttachmentStripScrollWithSwipe`, and making right-swipe cancel restore focus to the edit control or blur the delete button.
+- Final read-only re-review found no Critical or Important issues. It left two Minor notes: the coverage is source-contract rather than a full real-touch browser test, and one `data-attachment-swipe-key` JSX line is long but behavior-neutral.
+- Main-thread review verified the final diff remains limited to attachment-strip swipe affordance, styling, source-contract coverage, and this QA record, without touching upload parsing, send/model/API/account/sync/store/deploy boundaries.
+
+Known risks:
+
+- Runtime Browser QA could not exercise physical mobile touch event timing in this session, and the repo has no Playwright dependency to run a separate mobile emulation without adding tooling. The touch behavior is guarded by source-contract tests plus live DOM/CSS/delete verification.
+- The design intentionally reveals the existing delete button instead of deleting on swipe; a true destructive swipe-to-delete would require a product decision and is outside this slice.

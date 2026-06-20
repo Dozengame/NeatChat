@@ -228,6 +228,22 @@ function hasDraggedFiles(
   return Array.from(dataTransfer?.types ?? []).includes("Files");
 }
 
+const ATTACHMENT_SWIPE_DELETE_THRESHOLD = 36;
+
+type AttachmentSwipeStart = {
+  key: string;
+  x: number;
+  y: number;
+};
+
+type ClearAttachmentDeleteOptions = {
+  restoreFocus?: boolean;
+};
+
+function getAttachmentSwipeKey(type: "image" | "file", index: number) {
+  return `${type}-${index}`;
+}
+
 function chatActionModalsReducer(
   state: ChatActionModals,
   action: { key: ChatActionModalKey; value: boolean },
@@ -1752,6 +1768,11 @@ function useChatInnerView() {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<FileInfo[]>([]);
   const attachmentsContainerRef = useRef<HTMLDivElement>(null);
+  const attachmentSwipeStartRef = useRef<AttachmentSwipeStart | null>(null);
+  const activeAttachmentDeleteKeyRef = useRef<string | null>(null);
+  const [activeAttachmentDeleteKey, setActiveAttachmentDeleteKey] = useState<
+    string | null
+  >(null);
   const [attachmentScrollHint, setAttachmentScrollHint] = useState({
     start: false,
     end: false,
@@ -3451,6 +3472,131 @@ function useChatInnerView() {
     return () => window.removeEventListener("resize", syncAttachmentScrollHint);
   }, [syncAttachmentScrollHint]);
 
+  const armAttachmentDelete = useCallback(
+    (attachmentKey: string, target: HTMLElement) => {
+      activeAttachmentDeleteKeyRef.current = attachmentKey;
+      setActiveAttachmentDeleteKey(attachmentKey);
+      requestAnimationFrame(() => {
+        const deleteButton = target.querySelector<HTMLButtonElement>(
+          `button.${styles["delete-image"]}`,
+        );
+        deleteButton?.focus({ preventScroll: true });
+      });
+    },
+    [],
+  );
+
+  const clearActiveAttachmentDelete = useCallback(
+    (options: ClearAttachmentDeleteOptions = {}) => {
+      const activeKey = activeAttachmentDeleteKeyRef.current;
+      activeAttachmentDeleteKeyRef.current = null;
+      setActiveAttachmentDeleteKey(null);
+      if (!options.restoreFocus || !activeKey) return;
+
+      requestAnimationFrame(() => {
+        const activeAttachment =
+          attachmentsContainerRef.current?.querySelector<HTMLElement>(
+            `[data-attachment-swipe-key="${activeKey}"]`,
+          );
+        const deleteButton = activeAttachment?.querySelector<HTMLButtonElement>(
+          `button.${styles["delete-image"]}`,
+        );
+        const editButton = activeAttachment?.querySelector<HTMLButtonElement>(
+          `button.${styles["attach-image"]}, button.${styles["attach-file"]}`,
+        );
+
+        if (document.activeElement !== deleteButton) return;
+        if (editButton && !editButton.disabled) {
+          editButton.focus({ preventScroll: true });
+          return;
+        }
+        deleteButton?.blur();
+      });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (attachImages.length > 0 || attachedFiles.length > 0) return;
+    clearActiveAttachmentDelete();
+  }, [attachImages.length, attachedFiles.length, clearActiveAttachmentDelete]);
+
+  const canAttachmentStripScrollWithSwipe = useCallback((deltaX: number) => {
+    const attachmentContainer = attachmentsContainerRef.current;
+    if (!attachmentContainer) return false;
+
+    const maxScrollLeft = Math.max(
+      0,
+      attachmentContainer.scrollWidth - attachmentContainer.clientWidth,
+    );
+    if (maxScrollLeft <= 1) return false;
+    if (deltaX < 0) {
+      return attachmentContainer.scrollLeft < maxScrollLeft - 1;
+    }
+    if (deltaX > 0) {
+      return attachmentContainer.scrollLeft > 1;
+    }
+    return false;
+  }, []);
+
+  const handleAttachmentTouchStart = (
+    attachmentKey: string,
+    event: React.TouchEvent<HTMLElement>,
+  ) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    if (
+      activeAttachmentDeleteKeyRef.current &&
+      activeAttachmentDeleteKeyRef.current !== attachmentKey
+    ) {
+      clearActiveAttachmentDelete();
+    }
+
+    attachmentSwipeStartRef.current = {
+      key: attachmentKey,
+      x: touch.clientX,
+      y: touch.clientY,
+    };
+  };
+
+  const handleAttachmentTouchMove = (
+    attachmentKey: string,
+    event: React.TouchEvent<HTMLElement>,
+  ) => {
+    const swipeStart = attachmentSwipeStartRef.current;
+    const touch = event.touches[0];
+    if (!swipeStart || swipeStart.key !== attachmentKey || !touch) return;
+
+    const deltaX = touch.clientX - swipeStart.x;
+    const deltaY = touch.clientY - swipeStart.y;
+
+    if (Math.abs(deltaY) > Math.abs(deltaX)) {
+      return;
+    }
+
+    if (
+      deltaX > ATTACHMENT_SWIPE_DELETE_THRESHOLD / 2 &&
+      activeAttachmentDeleteKeyRef.current === attachmentKey
+    ) {
+      clearActiveAttachmentDelete({ restoreFocus: true });
+      return;
+    }
+
+    if (canAttachmentStripScrollWithSwipe(deltaX)) {
+      return;
+    }
+
+    if (deltaX < -ATTACHMENT_SWIPE_DELETE_THRESHOLD) {
+      armAttachmentDelete(attachmentKey, event.currentTarget);
+      return;
+    }
+  };
+
+  const handleAttachmentTouchEnd = useCallback(() => {
+    attachmentSwipeStartRef.current = null;
+  }, []);
+
   const focusComposerAttachmentAfterRemoval = useCallback(
     (nextAttachmentIndex: number) => {
       requestAnimationFrame(() => {
@@ -3473,6 +3619,7 @@ function useChatInnerView() {
   // 添加删除单个文件函数
   function deleteAttachedFile(index: number) {
     setAttachedFiles(attachedFiles.filter((_, i) => i !== index));
+    clearActiveAttachmentDelete();
     focusComposerAttachmentAfterRemoval(attachImages.length + index);
   }
 
@@ -4956,6 +5103,30 @@ function useChatInnerView() {
                           )}
                           role="listitem"
                           key={image}
+                          data-attachment-swipe-key={getAttachmentSwipeKey(
+                            "image",
+                            index,
+                          )}
+                          data-swipe-delete-active={
+                            activeAttachmentDeleteKey ===
+                            getAttachmentSwipeKey("image", index)
+                              ? "true"
+                              : undefined
+                          }
+                          onTouchStart={(event) =>
+                            handleAttachmentTouchStart(
+                              getAttachmentSwipeKey("image", index),
+                              event,
+                            )
+                          }
+                          onTouchMove={(event) =>
+                            handleAttachmentTouchMove(
+                              getAttachmentSwipeKey("image", index),
+                              event,
+                            )
+                          }
+                          onTouchEnd={handleAttachmentTouchEnd}
+                          onTouchCancel={handleAttachmentTouchEnd}
                         >
                           <button
                             type="button"
@@ -4977,6 +5148,7 @@ function useChatInnerView() {
                                 setAttachImages(
                                   attachImages.filter((_, i) => i !== index),
                                 );
+                                clearActiveAttachmentDelete();
                                 focusComposerAttachmentAfterRemoval(index);
                               }}
                             />
@@ -4998,6 +5170,30 @@ function useChatInnerView() {
                             )}
                             role="listitem"
                             key={`${file.name}-${file.size}-${file.type}`}
+                            data-attachment-swipe-key={getAttachmentSwipeKey(
+                              "file",
+                              index,
+                            )}
+                            data-swipe-delete-active={
+                              activeAttachmentDeleteKey ===
+                              getAttachmentSwipeKey("file", index)
+                                ? "true"
+                                : undefined
+                            }
+                            onTouchStart={(event) =>
+                              handleAttachmentTouchStart(
+                                getAttachmentSwipeKey("file", index),
+                                event,
+                              )
+                            }
+                            onTouchMove={(event) =>
+                              handleAttachmentTouchMove(
+                                getAttachmentSwipeKey("file", index),
+                                event,
+                              )
+                            }
+                            onTouchEnd={handleAttachmentTouchEnd}
+                            onTouchCancel={handleAttachmentTouchEnd}
                           >
                             <button
                               type="button"
