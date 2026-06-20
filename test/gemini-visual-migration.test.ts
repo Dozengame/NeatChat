@@ -2929,6 +2929,26 @@ describe("Gemini visual migration shell", () => {
       fileAttachmentStyles,
       ":global(.dark) .file-attachment-icon",
     );
+    const darkMetaChipBlock = readCssBlock(
+      fileAttachmentStyles,
+      ":global(.dark) .file-attachment-meta span",
+    );
+    const darkInteractiveHoverBlock = readCssBlock(
+      fileAttachmentStyles,
+      ":global(.dark) .file-attachment-interactive:hover .file-attachment-card,\n:global(.dark) .file-attachment-interactive:focus-visible .file-attachment-card",
+    );
+    const attachmentToneScope = [
+      cardBlock,
+      iconBlock,
+      metaChipBlock,
+      interactiveHoverBlock,
+      darkCardBlock,
+      darkIconBlock,
+      darkMetaChipBlock,
+      darkInteractiveHoverBlock,
+    ].join("\n");
+    const legacyAttachmentPaint =
+      /rgba\((?:66,\s*133,\s*244|138,\s*180,\s*248|52,\s*168,\s*83|129,\s*201,\s*149)/;
     const touchBlock = readCssBlock(
       fileAttachmentStyles,
       "@media (hover: none), (pointer: coarse), (max-width: 600px)",
@@ -2977,21 +2997,20 @@ describe("Gemini visual migration shell", () => {
     expect(cardBlock).toMatch(/gap:\s*10px;/);
     expect(cardBlock).toMatch(/padding:\s*9px 12px 9px 10px;/);
     expect(cardBlock).toMatch(/border-radius:\s*14px;/);
-    expect(cardBlock).toMatch(
-      /border:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.12\);/,
-    );
-    expect(cardBlock).toMatch(/background:\s*linear-gradient\(/);
-    expect(cardBlock).toMatch(
-      /box-shadow:\s*0 8px 24px rgba\(60,\s*64,\s*67,\s*0\.1\);/,
-    );
+    expect(cardBlock).toMatch(/border:\s*var\(--border-in-light\);/);
+    expect(cardBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
+    expect(cardBlock).toMatch(/box-shadow:\s*var\(--card-shadow\);/);
+    expect(cardBlock).not.toContain("linear-gradient");
     expect(cardBlock).not.toMatch(/var\(--gray\)/);
     expect(iconBlock).toMatch(/width:\s*36px;/);
     expect(iconBlock).toMatch(/height:\s*36px;/);
     expect(iconBlock).toMatch(/border-radius:\s*10px;/);
-    expect(iconBlock).toMatch(/color:\s*rgba\(66,\s*133,\s*244,\s*0\.92\);/);
+    expect(iconBlock).toMatch(/color:\s*var\(--primary\);/);
+    expect(iconBlock).toMatch(/background:\s*var\(--surface-soft\);/);
     expect(iconBlock).toMatch(
-      /background:[\s\S]*rgba\(66,\s*133,\s*244,\s*0\.13\)/,
+      /box-shadow:\s*inset 0 0 0 1px color-mix\(in srgb,\s*var\(--primary\) 16%,\s*transparent\);/,
     );
+    expect(iconBlock).not.toContain("linear-gradient");
     expect(infoBlock).toMatch(/min-width:\s*0;/);
     expect(nameBlock).toMatch(/font-weight:\s*520;/);
     expect(nameBlock).toMatch(/letter-spacing:\s*0;/);
@@ -3000,27 +3019,37 @@ describe("Gemini visual migration shell", () => {
     expect(metaBlock).toMatch(/flex-wrap:\s*wrap;/);
     expect(metaBlock).toMatch(/gap:\s*5px;/);
     expect(metaChipBlock).toMatch(/border-radius:\s*999px;/);
+    expect(metaChipBlock).toMatch(/border:\s*var\(--border-in-light\);/);
+    expect(metaChipBlock).toMatch(/background:\s*var\(--surface-soft\);/);
     expect(metaChipBlock).toMatch(
-      /background:\s*rgba\(66,\s*133,\s*244,\s*0\.08\);/,
+      /color:\s*var\(--black-50\);/,
     );
     expect(interactiveHoverBlock).toMatch(/transform:\s*translateY\(-1px\);/);
     expect(interactiveHoverBlock).toMatch(
-      /border-color:\s*rgba\(66,\s*133,\s*244,\s*0\.32\);/,
+      /border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 34%,\s*transparent\);/,
     );
+    expect(interactiveHoverBlock).toMatch(/box-shadow:\s*var\(--composer-shadow\);/);
     expect(interactiveActiveBlock).toMatch(
       /transform:\s*translateY\(0\) scale\(0\.985\);/,
     );
+    expect(interactiveActiveBlock).toMatch(/box-shadow:\s*var\(--card-shadow\);/);
     expect(interactiveFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
     expect(interactiveFocusBlock).toMatch(/outline-offset:\s*3px;/);
-    expect(darkCardBlock).toMatch(
-      /border-color:\s*rgba\(232,\s*234,\s*237,\s*0\.12\);/,
+    expect(darkCardBlock).toMatch(/border:\s*var\(--border-in-light\);/);
+    expect(darkCardBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
+    expect(darkCardBlock).toMatch(/box-shadow:\s*var\(--composer-shadow\);/);
+    expect(darkCardBlock).not.toContain("linear-gradient");
+    expect(darkIconBlock).toMatch(/color:\s*var\(--primary\);/);
+    expect(darkIconBlock).toMatch(/background:\s*var\(--surface-soft\);/);
+    expect(darkIconBlock).not.toContain("linear-gradient");
+    expect(darkMetaChipBlock).toMatch(/background:\s*var\(--surface-soft\);/);
+    expect(darkInteractiveHoverBlock).toMatch(
+      /border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 38%,\s*transparent\);/,
     );
-    expect(darkCardBlock).toMatch(
-      /background:\s*linear-gradient\(135deg,\s*rgba\(36,\s*40,\s*48,\s*0\.9\),\s*rgba\(24,\s*27,\s*34,\s*0\.82\)\);/,
+    expect(darkInteractiveHoverBlock).toMatch(
+      /box-shadow:\s*var\(--composer-shadow\);/,
     );
-    expect(darkIconBlock).toMatch(
-      /color:\s*rgba\(138,\s*180,\s*248,\s*0\.94\);/,
-    );
+    expect(attachmentToneScope).not.toMatch(legacyAttachmentPaint);
     expect(touchRootBlock).toMatch(/width:\s*100%;/);
     expect(touchRootBlock).toMatch(/max-width:\s*100%;/);
     expect(touchCardBlock).toMatch(/width:\s*100%;/);

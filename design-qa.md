@@ -4855,3 +4855,55 @@ Known risks:
 
 - The remaining `color-mix()` usage targets modern Chromium/WebKit/Firefox behavior, which matches the Gemini Web alignment goal and the current in-app Browser runtime. If the product must support old embedded WebViews, a dedicated fallback slice should replace or precompute these mixed colors.
 - Runtime Browser QA did not trigger an actual first-token streaming transition because doing so would require a real model/API call or DOM/message-state mutation. Source-contract tests and CSSOM validation cover the visual rules, but not live network streaming cadence.
+
+## Iteration 2026-06-20 file-attachment-card-tone-alignment
+
+Result: passed.
+
+Target flow:
+
+- Markdown-rendered file attachments should keep the existing detected-file replacement, safe href handling, clickable card semantics, keyboard copy trigger, file name, file size, and file type presentation.
+- The rendered card, icon tile, meta chips, hover/focus/active states, and dark-mode variants should use shared Gemini-style surface, border, shadow, and primary tokens instead of hardcoded blue/green gradients and accent rgba values.
+- Touch/mobile behavior should continue to make the card full-width without hover transform, and reduced-motion should still disable motion.
+- Model config semantics, account/secret/sync, backend/API, production config, deployment config, upload parsing, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: rendered file attachments are part of the AI answer reading surface, so they should feel like compact neutral document chips, not promotional mini-cards.
+- The card now uses `surface-elevated`, `surface-soft`, shared border, and shared shadow tokens, with only a quiet primary-colored icon affordance.
+- This slice intentionally avoids changing file detection, Markdown AST handling, copy behavior, or uploaded-file data flow.
+
+Scope:
+
+- `app/components/file-attachment.module.scss`: replaced hardcoded card/icon/meta gradients and blue/green accent rgba values with `--border-in-light`, `--surface-elevated`, `--surface-soft`, `--card-shadow`, `--composer-shadow`, `--primary`, and `color-mix` tokenized borders; dark-mode card shadow uses `--composer-shadow` to preserve visible depth.
+- `test/gemini-visual-migration.test.ts`: updated the rendered file attachment source contract to require shared tokens, reject old blue/green accent paint across light/dark card/icon/meta/hover target blocks, and cover active shadow plus dark hover/focus.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, Markdown link handling, file detection, stores, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, deploy files, upload parser, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="rendered file attachment cards"` failed first as expected because the card still used a hardcoded border and gradient background.
+- After implementation, the focused rendered-file-attachment visual contract passed.
+- Read-only review found two Important issues and one Minor issue: dark card shadow was too weak with `--card-shadow`, dark hover/focus was missing from the old-paint blacklist, and active state still used a hardcoded neutral shadow. All three were fixed, and the focused test passed again.
+- `yarn jest test/markdown-file-attachment.test.tsx --runInBand` passed with `3` tests, covering rendered file block replacement, clickable attachment card semantics, copy behavior, unsafe link downgrade, and image action labels.
+- Sass compile check passed: compiled `file-attachment.module.scss` includes the required shared tokens and no old blue/green accent rgba values or `linear-gradient`.
+- Final verification before commit: `yarn lint`, `npx tsc --noEmit --pretty false`, `git diff --check`, `yarn jest test/markdown-file-attachment.test.tsx test/gemini-visual-migration.test.ts --runInBand`, and `yarn build` passed.
+
+Browser QA:
+
+- in-app Browser page identity: `http://127.0.0.1:3000/?qa=file-attachment-card-1781971323309#/chat`, title `NeatChat`, meaningful composer controls rendered, no framework overlay, and Browser console warn/error logs `0`.
+- Desktop `1440x1024`: local app horizontal overflow `0`, composer present, no framework overlay, and console warn/error logs `0`.
+- Mobile `390x844`: local app horizontal overflow `0`, composer present, no framework overlay, and console warn/error logs `0`.
+- Narrow `320x740`: local app horizontal overflow `0`, composer present, no framework overlay, and console warn/error logs `0`.
+- Browser CSSOM on the empty local chat did not load the `file-attachment` CSS module because no file attachment message was present. A temporary `data:` fixture generated from the current SCSS was rejected by Browser security policy, so no Browser workaround was used. Target card visual evidence for this slice is from Jest rendered Markdown behavior plus Sass-compiled CSS validation, not a live Browser-rendered attachment card.
+
+Review:
+
+- Read-only subagent review confirmed diff scope stayed within `file-attachment.module.scss` and `gemini-visual-migration.test.ts`, with no TSX, Markdown href handling, file parsing, upload, send, model/account/API/backend/deploy/production config changes.
+- The reviewer Important findings were fixed before final verification: dark card depth now uses `--composer-shadow`, dark hover/focus is covered by the legacy paint blacklist and explicit token assertions, and active state uses `--card-shadow`.
+- Main-thread review verified the final diff remains limited to `file-attachment.module.scss`, `gemini-visual-migration.test.ts`, and this QA record, with no diff in `chat.tsx`, `markdown.tsx`, stores, config, API/backend, route constants, deployment files, dependency files, or model request paths.
+
+Known risks:
+
+- Browser did not render a real in-app file attachment card because that requires a pre-existing attachment message or local store seeding beyond the read-only in-app Browser surface. The behavior is still covered by `markdown-file-attachment.test.tsx`, and visual CSS is covered by source-contract plus Sass compile checks.
+- The tokenized `color-mix()` icon/hover borders target modern browsers, consistent with the current Gemini Web alignment work. Old embedded WebView fallback remains a separate compatibility slice if required.

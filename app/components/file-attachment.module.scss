@@ -22,15 +22,11 @@
   min-width: 0;
   box-sizing: border-box;
   padding: 9px 12px 9px 10px;
-  border: 1px solid rgba(60, 64, 67, 0.12);
+  border: var(--border-in-light);
   border-radius: 14px;
   color: var(--black);
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.96),
-    rgba(248, 251, 255, 0.88)
-  );
-  box-shadow: 0 8px 24px rgba(60, 64, 67, 0.1);
+  background: var(--surface-elevated);
+  box-shadow: var(--card-shadow);
   transition:
     transform 0.18s ease,
     border-color 0.18s ease,
@@ -45,11 +41,9 @@
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  color: rgba(66, 133, 244, 0.92);
-  background:
-    linear-gradient(135deg, rgba(66, 133, 244, 0.13), rgba(52, 168, 83, 0.1)),
-    rgba(255, 255, 255, 0.76);
-  box-shadow: inset 0 0 0 1px rgba(66, 133, 244, 0.14);
+  color: var(--primary);
+  background: var(--surface-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 16%, transparent);
   flex-shrink: 0;
 
   svg {
@@ -92,22 +86,23 @@
   max-width: 100%;
   padding: 3px 7px;
   overflow: hidden;
-  border: 1px solid rgba(66, 133, 244, 0.1);
+  border: var(--border-in-light);
   border-radius: 999px;
-  background: rgba(66, 133, 244, 0.08);
+  color: var(--black-50);
+  background: var(--surface-soft);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .file-attachment-interactive:hover .file-attachment-card,
 .file-attachment-interactive:focus-visible .file-attachment-card {
-  border-color: rgba(66, 133, 244, 0.32);
-  box-shadow: 0 12px 30px rgba(60, 64, 67, 0.14);
+  border-color: color-mix(in srgb, var(--primary) 34%, transparent);
+  box-shadow: var(--composer-shadow);
   transform: translateY(-1px);
 }
 
 .file-attachment-interactive:active .file-attachment-card {
-  box-shadow: 0 7px 18px rgba(60, 64, 67, 0.12);
+  box-shadow: var(--card-shadow);
   transform: translateY(0) scale(0.985);
 }
 
@@ -117,37 +112,35 @@
 }
 
 :global(.dark) .file-attachment-card {
-  border-color: rgba(232, 234, 237, 0.12);
-  color: rgba(232, 234, 237, 0.92);
-  background: linear-gradient(135deg, rgba(36, 40, 48, 0.9), rgba(24, 27, 34, 0.82));
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  border: var(--border-in-light);
+  color: var(--black);
+  background: var(--surface-elevated);
+  box-shadow: var(--composer-shadow);
 }
 
 :global(.dark) .file-attachment-icon {
-  color: rgba(138, 180, 248, 0.94);
-  background:
-    linear-gradient(135deg, rgba(138, 180, 248, 0.16), rgba(129, 201, 149, 0.1)),
-    rgba(32, 33, 36, 0.72);
-  box-shadow: inset 0 0 0 1px rgba(138, 180, 248, 0.16);
+  color: var(--primary);
+  background: var(--surface-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
 :global(.dark) .file-attachment-name {
-  color: rgba(232, 234, 237, 0.92);
+  color: var(--black);
 }
 
 :global(.dark) .file-attachment-meta {
-  color: rgba(232, 234, 237, 0.64);
+  color: var(--black-50);
 }
 
 :global(.dark) .file-attachment-meta span {
-  border-color: rgba(138, 180, 248, 0.16);
-  background: rgba(138, 180, 248, 0.12);
+  border: var(--border-in-light);
+  background: var(--surface-soft);
 }
 
 :global(.dark) .file-attachment-interactive:hover .file-attachment-card,
 :global(.dark) .file-attachment-interactive:focus-visible .file-attachment-card {
-  border-color: rgba(138, 180, 248, 0.32);
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.36);
+  border-color: color-mix(in srgb, var(--primary) 38%, transparent);
+  box-shadow: var(--composer-shadow);
 }
 
 @media (hover: none), (pointer: coarse), (max-width: 600px) {
