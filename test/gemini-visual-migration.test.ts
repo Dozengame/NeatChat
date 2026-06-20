@@ -1912,7 +1912,7 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chat).toContain("ref={attachmentsContainerRef}");
     expect(chat).toMatch(
-      /const focusComposerAttachmentAfterRemoval = useCallback\(\s*\(nextAttachmentIndex: number\) => \{[\s\S]*requestAnimationFrame\(\(\) => \{[\s\S]*attachmentsContainerRef\.current\?\.querySelectorAll<HTMLButtonElement>\(\s*`button\.\$\{styles\["attach-image"\]\}, button\.\$\{styles\["attach-file"\]\}`[\s\S]*const nextControl =[\s\S]*attachmentControls\[[\s\S]*inputRef\.current;[\s\S]*nextControl\?\.focus\(\);[\s\S]*\}\);[\s\S]*\},\s*\[\],?\s*\);/,
+      /const focusComposerAttachmentAfterRemoval = useCallback\(\s*\(nextAttachmentIndex: number\) => \{[\s\S]*requestAnimationFrame\(\(\) => \{[\s\S]*attachmentsContainerRef\.current\?\.querySelectorAll<HTMLButtonElement>\(\s*`button\.\$\{styles\["attach-image"\]\}, button\.\$\{styles\["attach-file"\]\}, button\.\$\{styles\["attachment-add-button"\]\}`[\s\S]*const nextControl =[\s\S]*attachmentControls\[[\s\S]*inputRef\.current;[\s\S]*nextControl\?\.focus\(\);[\s\S]*\}\);[\s\S]*\},\s*\[\],?\s*\);/,
     );
     expect(chat).toMatch(
       /function deleteAttachedFile\(index: number\) \{[\s\S]*setAttachedFiles\(attachedFiles\.filter\(\(_, i\) => i !== index\)\);[\s\S]*focusComposerAttachmentAfterRemoval\(attachImages\.length \+ index\);[\s\S]*\}/,
@@ -1920,6 +1920,46 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /ariaLabel=\{`删除第 \$\{index \+ 1\} 张图片附件`\}[\s\S]*deleteImage=\{\(e\) => \{[\s\S]*setAttachImages\([\s\S]*attachImages\.filter\(\(_, i\) => i !== index\),[\s\S]*\);[\s\S]*focusComposerAttachmentAfterRemoval\(index\);[\s\S]*\}\}/,
     );
+  });
+
+  test("keeps attachment strip add action as a direct native picker entry", () => {
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const attachAddItemBlock = readCssBlock(chatStyles, ".attach-add-item");
+    const attachmentAddButtonBlock = readCssBlock(
+      chatStyles,
+      ".attachment-add-button",
+    );
+    const mobileStyles = chatStyles.slice(
+      chatStyles.lastIndexOf("@media only screen and (max-width: 600px)"),
+    );
+    const mobileAddButtonBlock = readCssBlock(
+      mobileStyles,
+      ".attachment-add-button",
+    );
+
+    expect(chat).toMatch(
+      /const canAddMoreAttachments =\s*attachImages\.length < 3 \|\| attachedFiles\.length < 5;/,
+    );
+    expect(chat).toMatch(
+      /\{\(attachImages\.length > 0 \|\| attachedFiles\.length > 0\) && \([\s\S]*\{canAddMoreAttachments && \([\s\S]*className=\{clsx\([\s\S]*styles\["attach-item"\][\s\S]*styles\["attach-add-item"\][\s\S]*role="listitem"[\s\S]*<button[\s\S]*type="button"[\s\S]*className=\{styles\["attachment-add-button"\]\}[\s\S]*aria-label="继续添加附件"[\s\S]*title="继续添加附件"[\s\S]*disabled=\{uploading\}[\s\S]*onClick=\{handleUploadAttachments\}[\s\S]*<AddIcon \/>/,
+    );
+    expect(attachAddItemBlock).toMatch(/width:\s*64px;/);
+    expect(attachmentAddButtonBlock).toMatch(/width:\s*64px;/);
+    expect(attachmentAddButtonBlock).toMatch(/height:\s*64px;/);
+    expect(attachmentAddButtonBlock).toMatch(/border-radius:\s*12px;/);
+    expect(attachmentAddButtonBlock).toMatch(/border:\s*1px dashed/);
+    expect(attachmentAddButtonBlock).toMatch(/background:\s*rgba\(248,\s*250,\s*255,\s*0\.86\);/);
+    expect(attachmentAddButtonBlock).toMatch(/backdrop-filter:\s*blur\(12px\);/);
+    expect(attachmentAddButtonBlock).toMatch(/transition:/);
+    expect(attachmentAddButtonBlock).toContain("&:not(:disabled):hover");
+    expect(attachmentAddButtonBlock).toContain("&:not(:disabled):focus-visible");
+    expect(attachmentAddButtonBlock).toMatch(/&:disabled[\s\S]*opacity:\s*0\.58;/);
+    expect(chatStyles).toMatch(
+      /:global\(\.dark\) \.attachment-add-button[\s\S]*&:not\(:disabled\):hover,[\s\S]*&:not\(:disabled\):focus-visible/,
+    );
+    expect(mobileAddButtonBlock).toMatch(/width:\s*58px;/);
+    expect(mobileAddButtonBlock).toMatch(/height:\s*58px;/);
   });
 
   test("keeps composer attachment strip overflow hints non-blocking", () => {

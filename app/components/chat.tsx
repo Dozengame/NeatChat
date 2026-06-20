@@ -1834,6 +1834,8 @@ function useChatInnerView() {
     userInput.trim().length > 0 ||
     attachImages.length > 0 ||
     attachedFiles.length > 0;
+  const canAddMoreAttachments =
+    attachImages.length < 3 || attachedFiles.length < 5;
   const shouldExpandChatInput = isInputExpanded || hasActiveInputContent;
   const expandInput = useCallback(() => {
     ignoreInputCollapseUntil.current = Date.now() + 350;
@@ -3454,7 +3456,7 @@ function useChatInnerView() {
       requestAnimationFrame(() => {
         const attachmentControls = Array.from(
           attachmentsContainerRef.current?.querySelectorAll<HTMLButtonElement>(
-            `button.${styles["attach-image"]}, button.${styles["attach-file"]}`,
+            `button.${styles["attach-image"]}, button.${styles["attach-file"]}, button.${styles["attachment-add-button"]}`,
           ) ?? [],
         ).filter((control) => control.isConnected && !control.disabled);
         const nextControl =
@@ -5071,6 +5073,26 @@ function useChatInnerView() {
                           </div>
                         );
                       })}
+                      {canAddMoreAttachments && (
+                        <div
+                          className={clsx(
+                            styles["attach-item"],
+                            styles["attach-add-item"],
+                          )}
+                          role="listitem"
+                        >
+                          <button
+                            type="button"
+                            className={styles["attachment-add-button"]}
+                            aria-label="继续添加附件"
+                            title="继续添加附件"
+                            disabled={uploading}
+                            onClick={handleUploadAttachments}
+                          >
+                            <AddIcon />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

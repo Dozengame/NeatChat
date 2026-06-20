@@ -83,6 +83,10 @@
   max-width: min(220px, 68vw);
 }
 
+.attach-add-item {
+  width: 64px;
+}
+
 .attach-image-mask {
   position: absolute;
   inset: 0;
@@ -181,6 +185,69 @@
   box-shadow: 0 8px 24px rgba($color: #000, $alpha: 0.08);
   overflow: hidden;
   position: relative;
+}
+
+.attachment-add-button {
+  appearance: none;
+  box-sizing: border-box;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 1px dashed rgba(66, 133, 244, 0.38);
+  border-radius: 12px;
+  background: rgba(248, 250, 255, 0.86);
+  color: rgba(26, 115, 232, 0.88);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:not(:disabled):hover,
+  &:not(:disabled):focus-visible {
+    background: rgba(232, 240, 254, 0.96);
+    border-color: rgba(66, 133, 244, 0.62);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.72),
+      0 8px 24px rgba($color: #4285f4, $alpha: 0.14);
+  }
+
+  &:not(:disabled):active {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    cursor: progress;
+    opacity: 0.58;
+  }
+}
+
+:global(.dark) .attachment-add-button {
+  background: rgba(32, 33, 36, 0.72);
+  border-color: rgba(138, 180, 248, 0.34);
+  color: rgba(174, 203, 250, 0.94);
+  box-shadow: inset 0 0 0 1px rgba(232, 234, 237, 0.08);
+
+  &:not(:disabled):hover,
+  &:not(:disabled):focus-visible {
+    background: rgba(48, 49, 52, 0.9);
+    border-color: rgba(138, 180, 248, 0.58);
+    box-shadow:
+      inset 0 0 0 1px rgba(232, 234, 237, 0.12),
+      0 10px 28px rgba($color: #8ab4f8, $alpha: 0.12);
+  }
 }
 
 .chat-input-actions {
@@ -3733,6 +3800,10 @@
     max-width: min(170px, 55vw);
   }
 
+  .attach-add-item {
+    width: 58px;
+  }
+
   .attach-image {
     flex-basis: 58px;
     width: 58px;
@@ -3742,6 +3813,11 @@
   .attach-file {
     min-width: 150px;
     width: min(170px, 55vw);
+    height: 58px;
+  }
+
+  .attachment-add-button {
+    width: 58px;
     height: 58px;
   }
 }

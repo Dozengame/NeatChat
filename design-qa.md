@@ -4431,3 +4431,54 @@ Known risks:
 
 - Runtime Browser QA verified the real attachment strip DOM marker, local pasted attachment state, cleanup path, layout bounds, and console health. The actual touch-routing branch is covered by the source-contract test because the in-app Browser runtime does not expose a reliable mobile touch-event dispatch path for this local app.
 - Browser screenshot and viewport override were unavailable in this session, so this slice uses default-viewport DOM/interaction evidence plus source contracts.
+
+## Iteration 2026-06-20 attachment-strip-add-entry
+
+Result: passed.
+
+Target flow:
+
+- When the composer already has attachments, the Attachment Strip should expose a compact direct add entry at the end of the media rail.
+- The add entry should reuse the existing native file picker upload path through `handleUploadAttachments`, without introducing new parsing, upload, send, model, API, account, sync, store, production, or deployment behavior.
+- The add entry should disappear when all attachment slots are full, stay disabled while upload processing is active, and remain part of the attachment focus order after deleting a neighboring item.
+- Attachment delete/edit behavior, drag/drop limits, paste handling, send readiness, attachment strip swipe scoping, model config semantics, account/secret/sync, backend/API, production config, deployment config, persisted store keys, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: treat Attachment Strip as a Gemini-style horizontal media rail with a quiet icon-only add tile, glassy surface, dashed affordance, mobile-sized 58px target, dark-mode balance, and no extra visible text.
+- This slice adds only a frontend entry point to the already-existing upload flow; no new file parsing path, picker semantics, attachment limit, copy, backend, or model behavior changed.
+
+Scope:
+
+- `app/components/chat.tsx`: added `canAddMoreAttachments`, rendered a `继续添加附件` icon button at the end of the existing attachment list, wired it to `handleUploadAttachments`, and included the add button in the post-delete focus handoff query.
+- `app/components/chat.module.scss`: added the add tile visual treatment, dark mode, focus/hover/pressed/disabled states, and compact `58px` sizing.
+- `test/gemini-visual-migration.test.ts`: added a focused source-contract test for the add entry, existing upload handler reuse, slot-gated rendering, disabled upload state, focus handoff participation, and add tile styling.
+- No upload parser, drag/drop limits, paste extraction, send behavior, prompt behavior, model config semantics, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="attachment strip add action|attachment deletion focus"` failed first as expected because the strip did not yet include a direct add entry or add-button focus target.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="attachment strip add action|attachment deletion focus"` passed after adding the entry and focus contract.
+- After read-only review, `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="attachment strip add action"` failed as expected because the strengthened source-contract test required disabled add buttons to avoid hover/focus visual affordances and required the add tile to stay inside the existing attachment-strip guard.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="attachment strip add action|attachment deletion focus"` passed after scoping hover/focus/active styles to `:not(:disabled)` and tightening the attachment-strip guard assertion.
+
+Browser QA:
+
+- in-app Browser page identity: `http://localhost:3000/#/chat`, title `NeatChat`, meaningful app controls rendered, no framework overlay, initial `attachmentStripCount: 0`, add button count `0`, horizontal overflow `0`, and Browser console warn/error logs `0`.
+- Pasted a local PNG data URL into the composer to create an attachment preview without sending a message, calling a model/API, uploading a personal file, changing model settings, or persisting production data.
+- The rendered attachment state exposed `[data-composer-attachment-strip="true"]`, `role="list"`, `编辑第 1 张图片附件`, `删除第 1 张图片附件`, and `button[aria-label="继续添加附件"]`; add button rect was `64x64` at `left: 495`, `top: 613`; it was enabled, inside the strip, had `title="继续添加附件"`, list item count was `2`, send became enabled because a local attachment existed, horizontal overflow stayed `0`, and console warn/error logs stayed `0`.
+- Added a local long-text attachment through the existing paste-to-file path, then deleted that file attachment. Focus moved to `button[aria-label="继续添加附件"]`, the file attachment was gone, the remaining image plus add entry kept list item count `2`, horizontal overflow stayed `0`, and console warn/error logs stayed `0`.
+- Cleanup deleted the remaining image attachment and cleared the composer input; final attachment strip count `0`, add button count `0`, input value length `0`, send disabled `true`, and horizontal overflow `0`.
+- The add button itself was not clicked in Browser QA because clicking it opens the native OS file picker; source tests and code review cover that it reuses `handleUploadAttachments`.
+- Browser screenshot capture failed with `Timed out running CDP command "Page.captureScreenshot"` on this local app tab, so evidence is DOM/interaction/console state rather than screenshots.
+
+Review:
+
+- Read-only code review found no Critical or Important issues. It found two Minor improvements: disabled add buttons still received hover/focus visual affordance styles, and the source contract did not explicitly prove the add tile stayed inside the existing non-empty attachment-strip guard.
+- Fixed both before commit by scoping add-button hover/focus/active CSS to `:not(:disabled)` and tightening the source-contract test around the outer `(attachImages.length > 0 || attachedFiles.length > 0)` guard.
+- Main-thread review verified the final diff remains limited to the attachment-strip add entry, styling, source-contract coverage, and this QA record, without touching upload parsing, send/model/API/account/sync/store/deploy boundaries.
+
+Known risks:
+
+- Runtime Browser QA verified local attachment rendering, the add tile geometry/state, focus handoff after deleting a neighboring attachment, cleanup, layout bounds, and console health. It intentionally did not open the OS file picker or upload a real file.
+- Browser screenshot and viewport override were unavailable in this session, so this slice uses default-viewport DOM/interaction evidence plus source contracts.
