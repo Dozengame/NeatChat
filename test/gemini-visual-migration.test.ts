@@ -1741,22 +1741,18 @@ describe("Gemini visual migration shell", () => {
     expect(homeStyles).toContain("z-index: 900");
     expect(homeStyles).toContain("z-index: 1000");
     expect(compactContainerSidebarBlock).toMatch(
-      /background:[\s\S]*radial-gradient\(\s*circle at 18% 16%,\s*rgba\(66,\s*133,\s*244,\s*0\.14\)/,
+      /background:\s*var\(--surface-elevated\);/,
     );
-    expect(compactContainerSidebarBlock).toMatch(
-      /background:[\s\S]*linear-gradient\(\s*145deg,\s*rgba\(255,\s*255,\s*255,\s*0\.58\)/,
-    );
-    expect(compactContainerSidebarBlock).toMatch(
-      /background:[\s\S]*rgba\(249,\s*251,\s*253,\s*0\.52\)/,
-    );
-    expect(compactContainerSidebarBlock).toMatch(
-      /background-blend-mode:\s*screen,\s*normal,\s*normal;/,
+    expect(compactContainerSidebarBlock).not.toContain("radial-gradient");
+    expect(compactContainerSidebarBlock).not.toContain("linear-gradient");
+    expect(compactContainerSidebarBlock).not.toContain(
+      "background-blend-mode",
     );
     expect(compactContainerSidebarBlock).toMatch(
       /backdrop-filter:\s*blur\(24px\) saturate\(185%\);/,
     );
     expect(compactContainerSidebarBlock).toMatch(
-      /border-right:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.12\);/,
+      /border-right:\s*var\(--border-in-light\);/,
     );
     expect(compactContainerSidebarBlock).toMatch(
       /box-shadow:\s*0 24px 72px rgba\(32,\s*33,\s*36,\s*0\.28\);/,
@@ -1769,26 +1765,22 @@ describe("Gemini visual migration shell", () => {
       /box-shadow:\s*0 24px 72px rgba\(32,\s*33,\s*36,\s*0\.28\);/,
     );
     expect(compactContainerSidebarBlock).toMatch(
-      /:global\(\.dark\) &[\s\S]*background:[\s\S]*radial-gradient\(\s*circle at 20% 18%,\s*rgba\(138,\s*180,\s*248,\s*0\.14\)/,
+      /:global\(\.dark\) &[\s\S]*background:\s*var\(--surface-elevated\);/,
     );
     expect(compactContainerSidebarBlock).toMatch(
-      /:global\(\.dark\) &[\s\S]*background:[\s\S]*linear-gradient\(\s*145deg,\s*rgba\(40,\s*43,\s*52,\s*0\.52\)/,
-    );
-    expect(compactContainerSidebarBlock).toMatch(
-      /:global\(\.dark\) &[\s\S]*background:[\s\S]*rgba\(19,\s*20,\s*22,\s*0\.56\)/,
+      /:global\(\.dark\) &[\s\S]*border-right:\s*var\(--border-in-light\);/,
     );
     expect(compactSidebarBackdropBlock).toMatch(
       /backdrop-filter:\s*blur\(8px\) saturate\(135%\);/,
     );
     expect(compactSidebarBackdropBlock).toMatch(
-      /background:[\s\S]*linear-gradient\(90deg,\s*rgba\(49,\s*94,\s*248,\s*0\.12\)/,
+      /background:\s*rgba\(32,\s*33,\s*36,\s*0\.28\);/,
     );
+    expect(compactSidebarBackdropBlock).not.toContain("linear-gradient");
     expect(darkCompactSidebarBackdropBlock).toMatch(
-      /background:[\s\S]*linear-gradient\(\s*90deg,\s*rgba\(138,\s*180,\s*248,\s*0\.1\),\s*rgba\(196,\s*140,\s*255,\s*0\.08\)\s*\)/,
+      /background:\s*rgba\(8,\s*10,\s*14,\s*0\.52\);/,
     );
-    expect(darkCompactSidebarBackdropBlock).toMatch(
-      /rgba\(8,\s*10,\s*14,\s*0\.48\)/,
-    );
+    expect(darkCompactSidebarBackdropBlock).not.toContain("linear-gradient");
     expect(darkCompactSidebarBackdropBlock).toMatch(
       /backdrop-filter:\s*blur\(10px\) saturate\(145%\);/,
     );

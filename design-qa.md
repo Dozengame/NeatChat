@@ -4704,3 +4704,50 @@ Known risks:
 
 - The final review was main-thread only because the review subagent hit a usage-quota limit. The review still used source diff, forbidden-string scans, focused tests, Browser QA, and boundary checks before commit.
 - Dark mode is protected by shared tokens and CSS review in this slice, but Browser QA was performed in light mode only.
+
+## Iteration 2026-06-20 mobile-sidebar-drawer-surface-alignment
+
+Result: passed.
+
+Target flow:
+
+- On compact screens, opening the mobile sidebar drawer from `#/chat` should keep the existing drawer route, trigger, focus, aria, width, offset, z-index, and close behavior.
+- The drawer surface should use the shared Gemini-style elevated surface token instead of decorative radial or linear gradients.
+- The backdrop should use a neutral overlay with the existing blur treatment instead of blue/purple decorative gradients.
+- Model config semantics, account/secret/sync, backend/API, production config, deployment config, upload parsing, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: treat the mobile sidebar as the same app shell surface system, not a decorative sheet. The drawer should feel like an elevated app panel over a quiet neutral scrim.
+- This slice intentionally keeps drawer layout, copy, navigation, focus trap, keyboard handling, and route semantics unchanged.
+
+Scope:
+
+- `app/components/home.module.scss`: replaced compact sidebar light/dark gradient stacks with `var(--surface-elevated)`, tokenized the drawer border with `var(--border-in-light)`, and replaced the backdrop gradients with neutral rgba overlays.
+- `test/gemini-visual-migration.test.ts`: updated the compact sidebar/backdrop source contract to require tokenized surfaces, neutral overlays, and absence of `radial-gradient`, `linear-gradient`, and `background-blend-mode` in the target blocks.
+- No TypeScript component logic, routes, stores, model config, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, upload parser, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"` failed first as expected because the drawer and backdrop still used decorative gradients.
+- After implementation, `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"` passed.
+- Review found a P3 issue: the first implementation used `border-right-color: var(--border-in-light)` in the dark nested block even though `--border-in-light` is a full border shorthand. Fixed by using `border-right: var(--border-in-light)` and updating the test to avoid locking in invalid CSS.
+- The focused test passed again after the review fix.
+
+Browser QA:
+
+- in-app Browser page identity: `http://127.0.0.1:3000/#/chat`, title `NeatChat`, meaningful composer and sidebar controls rendered, no framework overlay, and console warn/error logs `0`.
+- Local access control was unlocked using the existing local `.env` access code only for QA; no real account, personal API key, model call, remote publish, production data, or config semantics were changed.
+- Mobile `390x844`: closed state kept trigger `aria-expanded="false"`, sidebar `aria-hidden="true"`, width offscreen, no backdrop, and horizontal overflow `0`. Open state moved to `#/`, exposed `role="dialog"`, `aria-modal="true"`, drawer rect `304x844` at `x=0`, backdrop rect over the page, `backgroundImage: none` on drawer and backdrop, neutral backdrop rgba, app body suppression, and horizontal overflow `0`. Clicking outside the drawer closed back to `#/chat`, removed the backdrop, restored `aria-expanded="false"`, and kept horizontal overflow `0`.
+- Mobile `320x740`: closed state used the narrow `calc(100vw - 54px)` drawer width, open state rendered a `266x740` drawer at `x=0`, kept `backgroundImage: none`, neutral backdrop rgba, no horizontal overflow, and closed correctly by clicking outside the drawer.
+- Browser screenshot capture timed out in this in-app Browser session, so this slice uses DOM state, CSSOM metrics, interaction state, responsive geometry, and console health as runtime evidence.
+
+Review:
+
+- Read-only subagent review found no blocking issues. It found one P3 invalid-CSS test issue around `border-right-color: var(--border-in-light)`, which was fixed before final verification.
+- Main-thread review verified the final diff remains limited to `home.module.scss`, `gemini-visual-migration.test.ts`, and this QA record, with no diff in `home.tsx`, `sidebar.tsx`, stores, config, API/backend, route constants, deployment files, dependency files, or model request paths.
+
+Known risks:
+
+- Browser QA ran in the current local runtime theme and Browser's read-only evaluate blocked direct DOM theme toggling for a computed light/dark comparison. Light/dark treatment is protected by shared token usage, source-contract tests, and CSS review.
+- Automated coverage remains source-contract oriented for this shell-level visual slice; runtime Browser QA covers the key drawer open/close behavior and responsive geometry.
