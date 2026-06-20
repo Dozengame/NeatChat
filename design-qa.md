@@ -4331,3 +4331,57 @@ Known risks:
 
 - Runtime Browser QA directly exercised `Shift+ArrowDown`, plain `ArrowDown`, `Home`, `Shift+Tab`, and Escape. `Alt` / `Ctrl` / `Meta` passthrough is covered by the source-contract test because OS/browser handling of those combinations can vary.
 - Browser screenshot and viewport override were unavailable in this session, so this slice uses interaction and DOM evidence from the default in-app Browser viewport.
+
+## Iteration 2026-06-20 prompt-hints-modified-key-passthrough
+
+Result: passed.
+
+Target flow:
+
+- Typing `/` in the composer should open `#chat-prompt-hints` as the existing prompt listbox.
+- Modified navigation keys such as `Shift+ArrowDown`, `Alt+ArrowDown`, `Ctrl+ArrowDown`, and `Meta+ArrowDown` should pass through without moving the selected prompt hint.
+- Plain `ArrowDown`, `ArrowUp`, `Home`, and `End` should keep moving the prompt-hint active descendant and selected option.
+- Escape close, Enter selection, prompt data, model config semantics, account/secret/sync, backend/API, upload behavior, persisted store keys, production config, deployment config, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: treat prompt hints as a Gemini-style composer suggestion surface that should support keyboard power-user chords without stealing modified browser/system navigation.
+- This slice changes keyboard event routing only; no geometry, styling, copy, prompt content, prompt ordering, model list, provider, request, upload, account, sync, store, or deploy semantics changed.
+
+Scope:
+
+- `app/components/chat.tsx`: added prompt navigation key detection and scoped `shiftKey` passthrough to `ArrowUp`, `ArrowDown`, `Home`, and `End`.
+- `app/components/chat.tsx`: after read-only review, narrowed the `shiftKey` early return to prompt navigation keys only, so `Shift+Escape` still closes prompt hints and `Shift+Enter` still selects the active prompt.
+- `test/gemini-visual-migration.test.ts`: added a focused `PromptHints` keydown source-contract assertion that locks `meta` / `alt` / `ctrl` as the global modifier guard and `shiftKey` as a navigation-key-only passthrough before Arrow/Home/End handling.
+- No CSS, prompt text, prompt ordering, prompt selection payload, model config semantics, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"` failed first as expected because `PromptHints` did not include `e.shiftKey` in its modifier guard.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"`
+- After read-only review, `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"` failed first as expected because the broad `e.shiftKey` guard lacked a scoped `isPromptNavigationKey` check.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"` passed after scoping `shiftKey` to Arrow/Home/End handling.
+
+Browser QA:
+
+- in-app Browser page identity: `http://localhost:3000/#/chat`, title `NeatChat`, meaningful app controls rendered, no framework overlay, initial horizontal overflow `0`, and Browser console warn/error logs `0`.
+- Typing `/` opened `#chat-prompt-hints` with `role="listbox"`, `aria-label="提示词建议"`, `407` options, `aria-activedescendant="chat-prompt-hint-0"`, exactly one selected option `chat-prompt-hint-0`, input `aria-controls="chat-prompt-hints"`, input `aria-haspopup="listbox"`, focus on `#chat-input`, and horizontal overflow `0`.
+- Pressing `Shift+ArrowDown` on `#chat-input` kept `aria-activedescendant` and the selected option at `chat-prompt-hint-0`, kept the list open, kept focus on `#chat-input`, preserved input value `/`, and kept horizontal overflow `0`.
+- Pressing plain `ArrowDown` moved both `aria-activedescendant` and the selected option to `chat-prompt-hint-1`, proving the existing unmodified navigation still works.
+- After scoping the guard, pressing `Shift+Escape` removed the list, cleared input `aria-controls`, preserved `aria-haspopup="listbox"`, kept focus on `#chat-input`, preserved input value `/`, and kept horizontal overflow `0`.
+- After scoping the guard, reopening prompt hints and pressing `Shift+Enter` removed the list, cleared input `aria-controls`, kept focus on `#chat-input`, filled the selected prompt into the input with `valueLength: 1716`, and kept horizontal overflow `0`.
+- Pressing Escape removed the list, cleared input `aria-controls`, preserved `aria-haspopup="listbox"`, kept focus on `#chat-input`, preserved input value `/`, and kept horizontal overflow `0`.
+- Browser screenshot capture still failed with `Timed out running CDP command "Page.captureScreenshot"` on this local app tab, so evidence is DOM/interaction/console state rather than screenshots.
+- Browser QA did not send a message, call a model/API, select a model, upload files, open an OS file picker, change prompt data, or persist production data.
+
+Review:
+
+- Read-only code review found one Important issue: the first `shiftKey` guard was too broad and would block `Shift+Escape` / `Shift+Enter`, while QA claimed Escape and Enter were preserved.
+- Fixed by keeping `metaKey`, `altKey`, and `ctrlKey` as the existing global guard and limiting `shiftKey` passthrough to `ArrowUp`, `ArrowDown`, `Home`, and `End`.
+- Final read-only re-review found no Critical or Important issues; its remaining Minor wording concern in this QA record was fixed before commit.
+- Main-thread review verified the final diff remains limited to prompt-hints keyboard routing, the source-contract test, and this QA record, without touching model/account/sync/API/upload/store/deploy boundaries.
+
+Known risks:
+
+- Runtime Browser QA directly exercised `Shift+ArrowDown`, plain `ArrowDown`, `Shift+Escape`, `Shift+Enter`, and Escape. `Alt` / `Ctrl` / `Meta` passthrough is covered by the source-contract test because browser/system handling of those combinations can vary by OS and browser.
+- Browser screenshot and viewport override were unavailable in this session, so this slice uses interaction and DOM evidence from the default in-app Browser viewport.

@@ -490,6 +490,10 @@ describe("Gemini visual migration shell", () => {
       promptHintsStart,
       promptHintsFirstEffect,
     );
+    const promptHintsKeyDownBlock = readFunctionBlock(
+      chat,
+      "const onKeyDown = (e: KeyboardEvent) =>",
+    );
     const handleModelMenuKeyDownBlock = readFunctionBlock(
       chat,
       "const handleModelMenuKeyDown = (event: React.KeyboardEvent<HTMLElement>) =>",
@@ -786,6 +790,32 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chat).toMatch(
       /if \(e\.key === "Escape"\) \{[\s\S]*e\.stopPropagation\(\);[\s\S]*e\.stopImmediatePropagation\(\);[\s\S]*e\.preventDefault\(\);[\s\S]*onClose\(\{ restoreFocus: true \}\);[\s\S]*\}/,
+    );
+    expect(promptHintsKeyDownBlock).toMatch(
+      /const isPromptNavigationKey = \[[\s\S]*"ArrowUp",[\s\S]*"ArrowDown",[\s\S]*"Home",[\s\S]*"End",?[\s\S]*\]\.includes\(e\.key\);/,
+    );
+    expect(promptHintsKeyDownBlock).toMatch(
+      /if \(noPrompts \|\| e\.metaKey \|\| e\.altKey \|\| e\.ctrlKey\) \{[\s\S]*return;[\s\S]*\}/,
+    );
+    expect(promptHintsKeyDownBlock).not.toContain(
+      "e.metaKey || e.altKey || e.ctrlKey || e.shiftKey",
+    );
+    expect(promptHintsKeyDownBlock).toMatch(
+      /if \(e\.shiftKey && isPromptNavigationKey\) \{[\s\S]*return;[\s\S]*\}/,
+    );
+    expect(
+      promptHintsKeyDownBlock.indexOf(
+        "if (e.shiftKey && isPromptNavigationKey)",
+      ),
+    ).toBeGreaterThan(
+      promptHintsKeyDownBlock.indexOf('if (e.key === "Escape")'),
+    );
+    expect(
+      promptHintsKeyDownBlock.indexOf(
+        "if (e.shiftKey && isPromptNavigationKey)",
+      ),
+    ).toBeLessThan(
+      promptHintsKeyDownBlock.indexOf('if (e.key === "ArrowUp")'),
     );
     expect(chat).toMatch(
       /if \(e\.key === "ArrowUp"\) \{[\s\S]*changeIndex\(-1\);[\s\S]*\} else if \(e\.key === "ArrowDown"\) \{[\s\S]*changeIndex\(1\);/,

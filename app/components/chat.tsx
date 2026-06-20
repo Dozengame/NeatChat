@@ -599,6 +599,13 @@ export function PromptHints(props: {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      const isPromptNavigationKey = [
+        "ArrowUp",
+        "ArrowDown",
+        "Home",
+        "End",
+      ].includes(e.key);
+
       if (noPrompts || e.metaKey || e.altKey || e.ctrlKey) {
         return;
       }
@@ -607,6 +614,10 @@ export function PromptHints(props: {
         e.stopImmediatePropagation();
         e.preventDefault();
         onClose({ restoreFocus: true });
+        return;
+      }
+
+      if (e.shiftKey && isPromptNavigationKey) {
         return;
       }
 
