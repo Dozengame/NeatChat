@@ -70,6 +70,26 @@ summary,
     transparent
   );
   --markdown-image-download-border-color: rgba(255, 255, 255, 0.18);
+  --markdown-code-fold-hover-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 24%,
+    transparent
+  );
+  --markdown-code-fold-hover-background: color-mix(
+    in srgb,
+    var(--markdown-link-color) 8%,
+    var(--surface-elevated)
+  );
+  --markdown-code-fold-hover-color: color-mix(
+    in srgb,
+    var(--black) 94%,
+    transparent
+  );
+  --markdown-code-fold-hover-shadow-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 10%,
+    transparent
+  );
 }
 
 @mixin dark {
@@ -139,6 +159,26 @@ summary,
   --markdown-image-download-border-color: color-mix(
     in srgb,
     var(--markdown-link-color) 22%,
+    transparent
+  );
+  --markdown-code-fold-hover-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 28%,
+    transparent
+  );
+  --markdown-code-fold-hover-background: color-mix(
+    in srgb,
+    var(--markdown-link-color) 14%,
+    var(--surface-soft)
+  );
+  --markdown-code-fold-hover-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
+  --markdown-code-fold-hover-shadow-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 12%,
     transparent
   );
 }
@@ -1662,13 +1702,13 @@ summary,
 
     &:hover,
     &:focus-visible {
-      border-color: rgba(66, 133, 244, 0.24);
-      background: rgba(241, 246, 255, 0.96);
-      color: rgba(32, 33, 36, 0.94);
+      border-color: var(--markdown-code-fold-hover-border-color);
+      background: var(--markdown-code-fold-hover-background);
+      color: var(--markdown-code-fold-hover-color);
       transform: translateY(-1px);
       box-shadow:
         0 1px 2px rgba(60, 64, 67, 0.12),
-        0 10px 24px rgba(66, 133, 244, 0.1);
+        0 10px 24px var(--markdown-code-fold-hover-shadow-color);
     }
 
     &:focus-visible {
@@ -1676,7 +1716,7 @@ summary,
       box-shadow:
         var(--focus-ring-shadow),
         0 1px 2px rgba(60, 64, 67, 0.12),
-        0 10px 24px rgba(66, 133, 244, 0.1);
+        0 10px 24px var(--markdown-code-fold-hover-shadow-color);
     }
 
     &:active {
@@ -1754,19 +1794,19 @@ summary,
 
     &:hover,
     &:focus-visible {
-      border-color: rgba(138, 180, 248, 0.24);
-      background: rgba(40, 43, 48, 0.96);
-      color: rgba(248, 250, 255, 0.92);
+      border-color: var(--markdown-code-fold-hover-border-color);
+      background: var(--markdown-code-fold-hover-background);
+      color: var(--markdown-code-fold-hover-color);
       box-shadow:
         0 1px 2px rgba(0, 0, 0, 0.24),
-        0 10px 24px rgba(138, 180, 248, 0.1);
+        0 10px 24px var(--markdown-code-fold-hover-shadow-color);
     }
 
     &:focus-visible {
       box-shadow:
         var(--focus-ring-shadow),
         0 1px 2px rgba(0, 0, 0, 0.24),
-        0 10px 24px rgba(138, 180, 248, 0.1);
+        0 10px 24px var(--markdown-code-fold-hover-shadow-color);
     }
   }
 }

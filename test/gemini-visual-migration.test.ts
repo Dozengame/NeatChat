@@ -2432,6 +2432,12 @@ describe("Gemini visual migration shell", () => {
     const markdown = read("app/components/markdown.tsx");
     const markdownStyles = read("app/styles/markdown.scss");
     const globalStyles = read("app/styles/globals.scss");
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const autoDarkRootBlock = readCssBlock(
+      readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
+      ":root",
+    );
     const refinedCodeStyles = markdownStyles.slice(
       Math.max(
         0,
@@ -2511,6 +2517,34 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".dark .markdown-body pre .show-hide-button",
     );
+    const codeFoldToneScope = [
+      showHideActionBlock,
+      darkShowHideButtonBlock,
+      lightMixinBlock.match(
+        /--markdown-code-fold-hover-border-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      lightMixinBlock.match(
+        /--markdown-code-fold-hover-background:[\s\S]*?var\(--surface-elevated\)\s*\);/,
+      )?.[0] ?? "",
+      lightMixinBlock.match(
+        /--markdown-code-fold-hover-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      lightMixinBlock.match(
+        /--markdown-code-fold-hover-shadow-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      darkMixinBlock.match(
+        /--markdown-code-fold-hover-border-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      darkMixinBlock.match(
+        /--markdown-code-fold-hover-background:[\s\S]*?var\(--surface-soft\)\s*\);/,
+      )?.[0] ?? "",
+      darkMixinBlock.match(
+        /--markdown-code-fold-hover-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      darkMixinBlock.match(
+        /--markdown-code-fold-hover-shadow-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+    ].join("\n");
     const reducedMotionBlock = markdownStyles.slice(
       markdownStyles.lastIndexOf("@media (prefers-reduced-motion: reduce)"),
     );
@@ -2551,6 +2585,31 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toContain("aria-controls={codeBlockId}");
     expect(markdown).toContain("aria-expanded={!collapsed}");
     expect(markdown).toContain("aria-label={Locale.NewChat.CodeBlockExpand}");
+    expect(lightMixinBlock).toMatch(
+      /--markdown-code-fold-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 24%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-code-fold-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 8%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-code-fold-hover-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 94%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-code-fold-hover-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 10%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-code-fold-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 28%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-code-fold-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 14%,\s*var\(--surface-soft\)\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-code-fold-hover-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 92%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-code-fold-hover-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 12%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkRootBlock).toMatch(/@include dark;/);
     expect(markdown).toMatch(
       /className=\{clsx\([\s\S]*"markdown-code-block"[\s\S]*\)\}[\s\S]*data-overflow-start=\{codeScrollHint\.start \? "true" : "false"\}[\s\S]*data-overflow-end=\{codeScrollHint\.end \? "true" : "false"\}[\s\S]*onScroll=\{syncCodeScrollHint\}/,
     );
@@ -2642,8 +2701,38 @@ describe("Gemini visual migration shell", () => {
     expect(showHideActionBlock).toMatch(/letter-spacing:\s*0;/);
     expect(showHideActionBlock).toMatch(/margin:\s*0;/);
     expect(showHideActionBlock).toMatch(/min-height:\s*32px;/);
+    expect(showHideActionBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*border-color:\s*var\(--markdown-code-fold-hover-border-color\);/,
+    );
+    expect(showHideActionBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*background:\s*var\(--markdown-code-fold-hover-background\);/,
+    );
+    expect(showHideActionBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*color:\s*var\(--markdown-code-fold-hover-color\);/,
+    );
+    expect(showHideActionBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*0 10px 24px var\(--markdown-code-fold-hover-shadow-color\);/,
+    );
+    expect(showHideActionBlock).toMatch(
+      /&:focus-visible[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 10px 24px var\(--markdown-code-fold-hover-shadow-color\);/,
+    );
     expect(darkShowHideButtonBlock).toMatch(
       /background:\s*linear-gradient\(\s*180deg,\s*rgba\(30,\s*30,\s*46,\s*0\),\s*rgba\(30,\s*30,\s*46,\s*0\.96\)\s*58%\s*\);/,
+    );
+    expect(darkShowHideButtonBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*border-color:\s*var\(--markdown-code-fold-hover-border-color\);/,
+    );
+    expect(darkShowHideButtonBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*background:\s*var\(--markdown-code-fold-hover-background\);/,
+    );
+    expect(darkShowHideButtonBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*color:\s*var\(--markdown-code-fold-hover-color\);/,
+    );
+    expect(darkShowHideButtonBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*0 10px 24px var\(--markdown-code-fold-hover-shadow-color\);/,
+    );
+    expect(codeFoldToneScope).not.toMatch(
+      /rgba\((?:66,\s*133,\s*244|138,\s*180,\s*248)|#(?:4285f4|8ab4f8)\b/,
     );
     expect(reducedMotionBlock).toContain(
       ".markdown-body pre .show-hide-button button",

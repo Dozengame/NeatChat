@@ -5337,3 +5337,57 @@ Known risks:
 
 - The dark image media tones use modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
 - Browser QA validated loaded CSSOM and shell layout, not an actual assistant response containing live image Markdown, because seeding model/chat content would cross this slice's read-only runtime boundary. Source-contract tests cover the target Markdown stylesheet rules directly.
+
+## Iteration 2026-06-21 markdown-code-fold-control-tone
+
+Result: passed.
+
+Target flow:
+
+- Long AI-rendered Markdown code blocks should keep the existing sticky bottom gradient expand affordance, button size, accessible expand contract, focus-visible ring, active press, and reduced-motion behavior.
+- The code fold expand button hover/focus border, background, foreground, and accent shadow should use shared Markdown theme tokens instead of legacy hardcoded Gemini blue values.
+- Auto theme with system dark, explicit Dark, and explicit Light should receive the correct code fold control tones through existing Markdown theme mixins.
+- Code block rendering, copy button behavior, language label, scroll fade hints, code folding semantics, and Markdown parsing must remain unchanged.
+- Desktop, mobile, and narrow layouts should mount the app, avoid framework overlays, and introduce no horizontal overflow.
+- Model config semantics, message streaming, account/secret/sync, backend/API, production config, deployment config, upload parsing, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Continue the AI-rendered content tokenization track: code blocks are one of the densest Gemini-style output surfaces, so the fold control should feel like part of the same Markdown primary/surface token family instead of a separate old-blue chip.
+- Light theme defines code fold hover border, background, foreground, and accent shadow from `--markdown-link-color`, `--surface-elevated`, `--black`, and transparent mixes.
+- Dark theme defines the same token family from the readable dark Markdown link tone, `--surface-soft`, and dark `--black`, so explicit Dark and Auto dark remain aligned.
+- This slice intentionally avoids changing code block structure, copy feedback, code language labels, scroll fade logic, folding behavior, streaming state, or network/model behavior.
+
+Scope:
+
+- `app/styles/markdown.scss`: added `--markdown-code-fold-hover-border-color`, `--markdown-code-fold-hover-background`, `--markdown-code-fold-hover-color`, and `--markdown-code-fold-hover-shadow-color` to Markdown light/dark mixins, then changed the code fold expand button hover/focus rules to consume those tokens.
+- `test/gemini-visual-migration.test.ts`: strengthened the Markdown code block chrome contract to lock light/dark/Auto token paths, hover/focus token consumers including foreground color, absence of legacy target blue paint in the code fold scope, and preservation of sticky shell, button dimensions, focus ring, and reduced-motion behavior.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, Markdown parsing/rendering logic, code copy logic, code folding semantics, stores, model config, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, upload parser, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="markdown code block chrome"` failed first as expected because the new code fold control tokens were missing and the old rules still used hardcoded target blue paint.
+- After implementation, the focused Markdown code block chrome visual contract passed.
+- Read-only review then found an Auto dark foreground cascade bug: Auto dark could receive a dark hover background token while the base hover rule kept a light-theme dark foreground color. The test was tightened to require `--markdown-code-fold-hover-color`, failed first as expected, then passed after tokenizing foreground color for light/dark/Auto.
+- Final verification before commit: `yarn lint`, `npx tsc --noEmit --pretty false`, `git diff --check`, `yarn jest test/gemini-visual-migration.test.ts --runInBand`, and `yarn build` passed.
+
+Browser QA:
+
+- in-app Browser page identity: `http://127.0.0.1:3000/`, app mounted, current Browser console error logs `0`.
+- Desktop `1440x1024`: horizontal overflow `0`; runtime CSSOM loaded light/root code fold hover tokens, dark code fold hover tokens, Auto dark code fold hover tokens, token-consuming hover/focus selectors including foreground color, preserved sticky shell, preserved base button geometry, preserved reduced-motion rule, and no legacy target blue paint in the code fold scope. Computed Auto dark root variables paired the dark background token with a light foreground token.
+- Mobile `390x844`: app mounted, horizontal overflow `0`, tokenized code fold controls including foreground color loaded, reduced-motion rule preserved, and no legacy target blue paint in the code fold scope.
+- Narrow `320x740`: app mounted, horizontal overflow `0`, tokenized code fold controls including foreground color loaded, reduced-motion rule preserved, and no legacy target blue paint in the code fold scope.
+- Browser QA intentionally did not send a message, call a model/API, seed chat history, or mutate message state. The active code fold selectors and tokens are covered by source-contract tests plus runtime CSSOM validation on the running app.
+
+Review:
+
+- First read-only subagent review found an Auto dark foreground cascade bug and recommended tokenizing code fold hover/focus foreground.
+- The bug was fixed by adding and consuming `--markdown-code-fold-hover-color` in the shared hover/focus rule and explicit Dark override.
+- Final read-only subagent review found no blocking or important issues and confirmed the Auto dark foreground/cascade bug is fixed.
+- Main-thread review verified the current diff remains limited to `markdown.scss`, `gemini-visual-migration.test.ts`, and this QA record, with no diff in `chat.tsx`, `markdown.tsx`, stores, config, API/backend, route constants, deployment files, dependency files, or model request paths.
+
+Known risks:
+
+- The code fold control tones use modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
+- Browser QA validated loaded CSSOM and shell layout, not an actual assistant response containing a live long code block, because seeding model/chat content would cross this slice's read-only runtime boundary. Source-contract tests cover the target Markdown stylesheet rules directly.
