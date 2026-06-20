@@ -4961,3 +4961,56 @@ Known risks:
 
 - The blockquote surface continues to use modern `color-mix()` CSS, consistent with current Gemini Web alignment and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
 - Browser QA validated loaded CSSOM and shell layout, not an actual assistant response containing a live blockquote, because seeding model/chat content would cross this slice's read-only runtime boundary. Source-contract tests cover the target Markdown stylesheet rules directly.
+
+## Iteration 2026-06-21 markdown-thinking-card-tone-alignment
+
+Result: passed.
+
+Target flow:
+
+- Markdown-generated thinking/reasoning sections should keep the existing `details`, `summary`, loader, open state, reduced-motion behavior, and raw Markdown rendering semantics.
+- The reasoning card, summary pill, caret, loader dots, keyframe pulse, and dark-mode variants should use shared Gemini-style surface, elevated-surface, primary, and text tokens instead of old hardcoded blue/green/gray rgba paint.
+- Desktop, mobile, and narrow layouts should keep the composer visible, avoid framework overlays, and introduce no horizontal overflow.
+- Model config semantics, reasoning payloads, message streaming, token counting, account/secret/sync, backend/API, production config, deployment config, upload parsing, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: treat thinking output as a quiet reasoning surface inside the answer, visually related to the streaming wait and blockquote callout surfaces.
+- The card now uses `--surface-elevated`, `--surface-soft`, `--primary`, and `--black` tokens with explicit border longhands, keeping the existing glass blur and compact summary pill.
+- The loader's third dot now stays within the primary/surface token family rather than introducing a separate green accent, reducing palette noise in reasoning states.
+- This slice intentionally avoids changing Markdown AST handling, generated thinking HTML, streaming state, reasoning settings, or network/model behavior.
+
+Scope:
+
+- `app/styles/markdown.scss`: tokenized `.markdown-thinking` shell, summary pill, caret, loader dots, `thinking-dot-pulse` keyframe, and dark-mode overrides; replaced shorthand border/color declarations with explicit longhands where needed for runtime CSSOM stability.
+- `test/gemini-visual-migration.test.ts`: strengthened the thinking details contract to lock tokenized light/dark/default/loader/keyframe visuals and reject hardcoded `rgb`/`rgba`/`hsl`/`hsla`/hex color values inside the target thinking rules.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, Markdown parsing/rendering logic, thinking HTML generation, streaming logic, stores, model config, reasoning option semantics, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, upload parser, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="thinking details"` failed first as expected because the existing thinking card still used hardcoded rgba border/background/shadow colors.
+- After implementation, the focused thinking details visual contract passed.
+- Sass compile check passed: compiled `markdown.scss` includes tokenized surface/primary/dark loader declarations and no hardcoded `rgb`/`rgba`/`hsl`/`hsla`/hex color values in the target thinking rules.
+- Read-only review found no Critical or Important issues. It raised one Minor test-hardening note; the target blacklist was expanded from only `rgba(` to `rgb`/`rgba`/`hsl`/`hsla`/hex colors, and the focused test plus Sass check passed again.
+- Final verification before commit: `yarn lint`, `npx tsc --noEmit --pretty false`, `git diff --check`, `yarn jest test/gemini-visual-migration.test.ts --runInBand`, and `yarn build` passed.
+
+Browser QA:
+
+- in-app Browser page identity: `http://127.0.0.1:3000/?qa=markdown-thinking-tone-1781972886275#/chat`, title `NeatChat`, composer present, no framework overlay, and Browser console warn/error logs `0`.
+- Desktop `1440x1024`: horizontal overflow `0`; runtime CSSOM loaded `.markdown-body details.markdown-thinking`, summary, loader, dark shell, dark summary, dark loader, and `thinking-dot-pulse`; target rules had surface/elevated/primary/text tokens, no hardcoded color functions/hex values, no empty border longhands, tokenized keyframe dots, and tokenized dark loader dots.
+- Mobile `390x844`: same CSSOM checks passed, horizontal overflow `0`, composer present, and console warn/error logs `0`.
+- Narrow `320x740`: same CSSOM checks passed, horizontal overflow `0`, composer present, and console warn/error logs `0`.
+- Runtime CSSOM also confirmed the reduced-motion stop selector for `.thinking-loader` and `summary.markdown-thinking-summary::before`; Chrome serializes `animation: none` as a full animation shorthand, so the source test remains the clearer reduced-motion assertion.
+- Browser QA intentionally did not send a message, call a model/API, seed chat history, or mutate message state. The active thinking selectors are covered by source-contract tests plus runtime CSSOM validation on the running app.
+
+Review:
+
+- Read-only subagent review found no Critical or Important issues. It confirmed the diff scope stayed within `markdown.scss` and `gemini-visual-migration.test.ts`, with no parsing/rendering, thinking/details semantics, streaming, model/account/API/backend/deploy/production config changes.
+- The reviewer Minor finding was fixed before final verification by broadening the thinking target color blacklist.
+- Main-thread review verified the final diff remains limited to `markdown.scss`, `gemini-visual-migration.test.ts`, and this QA record, with no diff in `chat.tsx`, `markdown.tsx`, stores, config, API/backend, route constants, deployment files, dependency files, or model request paths.
+
+Known risks:
+
+- The thinking card surface uses modern `color-mix()` CSS, consistent with current Gemini Web alignment and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
+- Browser QA validated loaded CSSOM and shell layout, not an actual assistant response containing a live `<think>` section, because seeding model/chat content would cross this slice's read-only runtime boundary. Source-contract tests cover the target Markdown stylesheet rules directly.

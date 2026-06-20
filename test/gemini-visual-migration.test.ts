@@ -3384,6 +3384,10 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body details.markdown-thinking .thinking-loader",
     );
+    const thinkingPulseBlock = readCssBlock(
+      markdownStyles,
+      "@keyframes thinking-dot-pulse",
+    );
     const darkThinkingBlock = readCssBlock(
       markdownStyles,
       ".dark .markdown-body details.markdown-thinking",
@@ -3392,6 +3396,19 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".dark .markdown-body details.markdown-thinking > summary.markdown-thinking-summary",
     );
+    const darkThinkingLoaderBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body details.markdown-thinking .thinking-loader",
+    );
+    const thinkingToneScope = [
+      thinkingBlock,
+      thinkingSummaryBlock,
+      thinkingLoaderBlock,
+      thinkingPulseBlock,
+      darkThinkingBlock,
+      darkThinkingSummaryBlock,
+      darkThinkingLoaderBlock,
+    ].join("\n");
     const reducedMotionBlock = markdownStyles.slice(
       markdownStyles.indexOf("@media (prefers-reduced-motion: reduce)"),
     );
@@ -3403,11 +3420,28 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toContain("return <summary {...props} />");
     expect(thinkingBlock).toMatch(/padding:\s*10px 12px;/);
     expect(thinkingBlock).toMatch(/border-radius:\s*16px;/);
+    expect(thinkingBlock).toMatch(/border-width:\s*1px;/);
+    expect(thinkingBlock).toMatch(/border-style:\s*solid;/);
     expect(thinkingBlock).toMatch(
-      /border:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.08\);/,
+      /border-top-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 64%,\s*transparent\);/,
     );
     expect(thinkingBlock).toMatch(
-      /background:\s*rgba\(248,\s*251,\s*255,\s*0\.58\);/,
+      /border-right-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 64%,\s*transparent\);/,
+    );
+    expect(thinkingBlock).toMatch(
+      /border-bottom-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 64%,\s*transparent\);/,
+    );
+    expect(thinkingBlock).toMatch(
+      /border-left-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 64%,\s*transparent\);/,
+    );
+    expect(thinkingBlock).toMatch(
+      /background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 76%,\s*transparent\);/,
+    );
+    expect(thinkingBlock).toMatch(
+      /box-shadow:\s*0 1px 2px color-mix\(in srgb,\s*var\(--surface-soft\) 42%,\s*transparent\),\s*0 12px 30px color-mix\(in srgb,\s*var\(--primary\) 8%,\s*transparent\);/,
+    );
+    expect(thinkingBlock).toMatch(
+      /color:\s*color-mix\(in srgb,\s*var\(--black\) 88%,\s*transparent\);/,
     );
     expect(thinkingBlock).toMatch(
       /backdrop-filter:\s*blur\(14px\) saturate\(160%\);/,
@@ -3419,27 +3453,71 @@ describe("Gemini visual migration shell", () => {
     expect(thinkingSummaryBlock).toMatch(/min-height:\s*30px;/);
     expect(thinkingSummaryBlock).toMatch(/padding:\s*5px 10px;/);
     expect(thinkingSummaryBlock).toMatch(/border-radius:\s*999px;/);
+    expect(thinkingSummaryBlock).toMatch(/border-width:\s*1px;/);
+    expect(thinkingSummaryBlock).toMatch(/border-style:\s*solid;/);
+    expect(thinkingSummaryBlock).toMatch(
+      /border-top-color:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*transparent\);/,
+    );
+    expect(thinkingSummaryBlock).toMatch(
+      /background:\s*color-mix\(in srgb,\s*var\(--primary\) 10%,\s*transparent\);/,
+    );
+    expect(thinkingSummaryBlock).toMatch(
+      /color:\s*color-mix\(in srgb,\s*var\(--black\) 86%,\s*transparent\);/,
+    );
+    expect(thinkingSummaryBlock).toMatch(
+      /box-shadow:\s*inset 0 0 0 1px color-mix\(in srgb,\s*var\(--surface-elevated\) 42%,\s*transparent\);/,
+    );
     expect(thinkingSummaryBlock).toMatch(/letter-spacing:\s*0;/);
     expect(thinkingSummaryBlock).toMatch(/list-style:\s*none;/);
     expect(thinkingSummaryBlock).toMatch(
       /&::-webkit-details-marker[\s\S]*display:\s*none;/,
     );
     expect(thinkingSummaryBlock).toMatch(/&::before[\s\S]*content:\s*"⌄";/);
+    expect(thinkingSummaryBlock).toMatch(
+      /&::before[\s\S]*color:\s*color-mix\(in srgb,\s*var\(--primary\) 82%,\s*transparent\);/,
+    );
     expect(thinkingLoaderBlock).toMatch(/width:\s*6px;/);
     expect(thinkingLoaderBlock).toMatch(/height:\s*6px;/);
     expect(thinkingLoaderBlock).toMatch(/border:\s*0;/);
     expect(thinkingLoaderBlock).toMatch(
-      /box-shadow:\s*10px 0 0 rgba\(66,\s*133,\s*244,\s*0\.45\),\s*20px 0 0 rgba\(52,\s*168,\s*83,\s*0\.38\);/,
+      /background:\s*color-mix\(in srgb,\s*var\(--primary\) 72%,\s*transparent\);/,
+    );
+    expect(thinkingLoaderBlock).toMatch(
+      /box-shadow:\s*10px 0 0 color-mix\(in srgb,\s*var\(--primary\) 45%,\s*transparent\),\s*20px 0 0 color-mix\(in srgb,\s*var\(--primary\) 32%,\s*var\(--surface-soft\)\);/,
     );
     expect(thinkingLoaderBlock).toMatch(
       /animation:\s*thinking-dot-pulse 1\.2s ease-in-out infinite;/,
     );
     expect(markdownStyles).toContain("@keyframes thinking-dot-pulse");
+    expect(thinkingPulseBlock).toMatch(
+      /box-shadow:\s*10px 0 0 color-mix\(in srgb,\s*var\(--primary\) 76%,\s*transparent\),\s*20px 0 0 color-mix\(in srgb,\s*var\(--primary\) 44%,\s*var\(--surface-soft\)\);/,
+    );
     expect(darkThinkingBlock).toMatch(
-      /background:\s*rgba\(32,\s*33,\s*36,\s*0\.56\);/,
+      /background:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 66%,\s*transparent\);/,
+    );
+    expect(darkThinkingBlock).toMatch(
+      /border-top-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 56%,\s*transparent\);/,
+    );
+    expect(darkThinkingBlock).toMatch(
+      /color:\s*color-mix\(in srgb,\s*var\(--black\) 86%,\s*transparent\);/,
     );
     expect(darkThinkingSummaryBlock).toMatch(
-      /background:\s*rgba\(138,\s*180,\s*248,\s*0\.12\);/,
+      /background:\s*color-mix\(in srgb,\s*var\(--primary\) 14%,\s*transparent\);/,
+    );
+    expect(darkThinkingSummaryBlock).toMatch(
+      /border-top-color:\s*color-mix\(in srgb,\s*var\(--primary\) 20%,\s*transparent\);/,
+    );
+    expect(darkThinkingSummaryBlock).toMatch(
+      /color:\s*color-mix\(in srgb,\s*var\(--black\) 90%,\s*transparent\);/,
+    );
+    expect(darkThinkingLoaderBlock).toMatch(
+      /background:\s*color-mix\(in srgb,\s*var\(--primary\) 78%,\s*transparent\);/,
+    );
+    expect(darkThinkingLoaderBlock).toMatch(
+      /box-shadow:\s*10px 0 0 color-mix\(in srgb,\s*var\(--primary\) 50%,\s*transparent\),\s*20px 0 0 color-mix\(in srgb,\s*var\(--primary\) 36%,\s*var\(--surface-soft\)\);/,
+    );
+    expect(thinkingToneScope).not.toMatch(
+      /(?:rgba?|hsla?)\(|#[0-9a-fA-F]{3,8}\b/,
     );
     expect(reducedMotionBlock).toContain(
       ".markdown-body details.markdown-thinking .thinking-loader",
