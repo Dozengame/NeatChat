@@ -3621,3 +3621,48 @@ Browser QA:
 Known risks:
 
 - Browser QA verifies the runtime styles and layout shell, while the active loading DOM contract is covered by Jest/source inspection rather than a live model request.
+
+## Iteration 2026-06-20 composer-tools-menu-focus-entry
+
+Result: passed.
+
+Target flow:
+
+- Opening the composer `+` tools menu moves keyboard focus into the first available menu action instead of leaving it on the trigger.
+- ArrowDown, Home, and End keep using the existing roving-focus behavior once the menu is open.
+- Escape and backdrop close still return focus to the `+` trigger.
+- Rapid close-and-reopen during the menu transition keeps the same focus-entry contract.
+- The change must not alter model config semantics, account/secret/sync, backend/API, production config, deployment config, upload/file picker behavior, image generation settings, shortcut mappings, persisted store keys, or send/model request behavior.
+
+Design direction:
+
+- Creative Production style intake selected: treat the tools menu as a compact Gemini-style command surface, where opening the dialog immediately places the user inside the available actions.
+- Keep the current visual treatment, labels, menu contents, animation, and responsive geometry unchanged; improve only focus choreography and assistive interaction predictability.
+
+Scope:
+
+- `app/components/chat.tsx`: added an open-state focus effect for `chat-input-action-menu` that focuses the first enabled visible `chat-input-action`, and added a delayed stabilization pass for rapid close/reopen transitions without overriding focus once the user is already inside a menu action.
+- `test/gemini-visual-migration.test.ts`: extended the composer tools contract to require focus entry, active-action preservation, delayed stabilization, frame/timer cleanup, and the existing Escape/backdrop focus-return behavior.
+- No model config semantics, account/secret/sync, backend/API, production config, deployment config, upload/file picker behavior, image generation settings, shortcut mappings, persisted store keys, or send/model request behavior were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because opening the tools menu did not yet focus the first menu action.
+- Browser QA then exposed a rapid close/reopen edge case where the trigger could keep focus; the test contract was expanded and failed first as expected.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+
+Review:
+
+- Main-thread code review found no Critical or Important issues.
+- The focus effect is scoped to `showChatActionMenu`, cancels both the RAF and stabilization timer on close/unmount, skips refocusing when the active element is already a menu action, and leaves downstream actions such as upload, prompt hints, shortcut modal, and image generation with their existing handlers.
+
+Browser QA:
+
+- in-app Browser desktop viewport `1440x1024`: initial menu trigger was closed; opening focused `上传附件`, ArrowDown moved to `快捷指令`, Home returned to `上传附件`, End moved to `图片生成`, Escape returned focus to `打开对话工具`, rapid reopen again focused `上传附件`, right-top backdrop close returned focus to `打开对话工具`, menu rect stayed within viewport, page horizontal overflow stayed `0`, and console warn/error logs: `0`.
+- in-app Browser mobile viewport `390x844`: opening focused `上传附件`, ArrowDown/End moved to `图片生成`, Home returned to `上传附件`, Escape and backdrop both returned focus to `打开对话工具`, menu rect stayed within viewport, page horizontal overflow stayed `0`, and console warn/error logs: `0`.
+- in-app Browser narrow viewport `320x740`: repeated the mobile focus, Escape/backdrop, menu bounds, overflow, and console checks with the same result.
+- Browser QA did not send a message, did not call a model/API, did not upload files, did not open an OS file picker, and did not persist production data.
+
+Known risks:
+
+- The delayed stabilization is intentionally limited to focus entry only; it does not trap focus or change the behavior of nested tools that open their own UI.

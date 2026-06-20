@@ -3353,6 +3353,31 @@ function useChatInnerView() {
     },
     [getChatActionMenuControls],
   );
+  useEffect(() => {
+    if (!showChatActionMenu) return;
+
+    const focusFirstChatActionMenuControl = () => {
+      const activeElement = document.activeElement;
+      if (
+        activeElement instanceof HTMLButtonElement &&
+        activeElement.classList.contains(styles["chat-input-action"]) &&
+        chatInputActionMenuRef.current?.contains(activeElement)
+      ) {
+        return;
+      }
+
+      focusChatActionMenuControl("Home");
+    };
+    const focusFrame = requestAnimationFrame(focusFirstChatActionMenuControl);
+    const settleFocusTimer = window.setTimeout(
+      focusFirstChatActionMenuControl,
+      180,
+    );
+    return () => {
+      cancelAnimationFrame(focusFrame);
+      window.clearTimeout(settleFocusTimer);
+    };
+  }, [focusChatActionMenuControl, showChatActionMenu]);
   const handleChatActionMenuKeyDown = (
     event: React.KeyboardEvent<HTMLElement>,
   ) => {

@@ -737,6 +737,9 @@ describe("Gemini visual migration shell", () => {
       /const focusChatActionMenuControl = useCallback\(\s*\(key: string\) => \{[\s\S]*case "ArrowDown":[\s\S]*case "ArrowUp":[\s\S]*case "Home":[\s\S]*case "End":[\s\S]*nextControl\.focus\(\);[\s\S]*nextControl\.scrollIntoView\(\{ block: "nearest" \}\);[\s\S]*\},\s*\[getChatActionMenuControls\],\s*\);/,
     );
     expect(chat).toMatch(
+      /useEffect\(\(\) => \{[\s\S]*if \(!showChatActionMenu\) return;[\s\S]*const focusFirstChatActionMenuControl = \(\) => \{[\s\S]*activeElement\.classList\.contains\(styles\["chat-input-action"\]\)[\s\S]*chatInputActionMenuRef\.current\?\.contains\(activeElement\)[\s\S]*return;[\s\S]*focusChatActionMenuControl\("Home"\);[\s\S]*\};[\s\S]*const focusFrame = requestAnimationFrame\(focusFirstChatActionMenuControl\);[\s\S]*const settleFocusTimer = window\.setTimeout\(\s*focusFirstChatActionMenuControl,[\s\S]*180,?[\s\S]*\);[\s\S]*cancelAnimationFrame\(focusFrame\);[\s\S]*window\.clearTimeout\(settleFocusTimer\);[\s\S]*\}, \[focusChatActionMenuControl, showChatActionMenu\]\);/,
+    );
+    expect(chat).toMatch(
       /const handleChatActionMenuKeyDown = \(\s*event: React\.KeyboardEvent<HTMLElement>,?\s*\) => \{[\s\S]*if \(!showChatActionMenu\) return;[\s\S]*if \(!\["ArrowDown", "ArrowUp", "Home", "End"\]\.includes\(event\.key\)\) return;[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);[\s\S]*focusChatActionMenuControl\(event\.key\);[\s\S]*\};/,
     );
     expect(chat).toMatch(
