@@ -4595,3 +4595,56 @@ Review:
 Known risks:
 
 - Runtime Browser QA covered the actual full-state flow and deletion recovery, including the tool-menu upload disabled state. Automated repo coverage remains mostly source-contract based because this codebase does not currently expose a lightweight rendered composer test harness for local attachment state.
+
+## Iteration 2026-06-20 image-editor-toolbar-polish
+
+Result: passed.
+
+Target flow:
+
+- Opening the editor from a pasted image attachment should keep the same drawing, save, undo, redo, and canvas behavior while presenting the editor tools as a Gemini-style grouped toolbar.
+- Drawing tools, color choices, and brush sizes should expose clear toolbar/group semantics and retain the existing selected states through `aria-pressed`.
+- The old hardcoded gray toolbar and canvas frame should move to shared Gemini surface, border, and focus tokens, with matching desktop, mobile, dark-mode, and reduced-motion treatments.
+- Brush-size preview dots should be CSS controlled instead of inline black styling, so selected/focus/dark states inherit from the unified button color system.
+- Model config semantics, account/secret/sync, backend/API, production config, deployment config, upload parsing, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: keep Image Editor as a compact modal tool surface, not a new workflow. The toolbar uses elevated glass, tokenized borders, tight icon controls, accessible groups, and mobile wrapping consistent with the Gemini-style composer rail.
+- This slice intentionally avoids changing editor commands or image data flow; it only refines the visual system and control semantics around existing tools.
+
+Scope:
+
+- `app/components/image-editor.tsx`: added a named toolbar, named groups for drawing tools, colors, and brush sizes, kept `aria-pressed` state, and moved brush-size dot styling to a CSS class with a per-size custom property.
+- `app/components/image-editor.module.scss`: replaced legacy gray hardcoded toolbar/canvas surfaces with tokenized elevated surfaces, focus tokens, dark-mode variants, mobile sizing/wrapping, and reduced-motion guards.
+- `test/image-editor-context.test.tsx`: added rendered coverage for toolbar/group semantics and default selected states.
+- `test/gemini-visual-migration.test.ts`: added source-contract coverage for Gemini surface tokens, old-gray removal, dark/mobile/reduced-motion guards, focus states, and CSS-controlled brush dots.
+- No model config, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, upload parser, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/image-editor-context.test.tsx --runInBand --testNamePattern="grouped editor controls"` failed first as expected because the editor did not expose a named toolbar or grouped controls.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="image editor controls"` failed first as expected because the static Gemini surface/toolbar contract did not exist.
+- After implementation, `yarn jest test/image-editor-context.test.tsx test/gemini-visual-migration.test.ts --runInBand --testNamePattern="grouped editor controls|image editor controls"` passed.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+
+Browser QA:
+
+- in-app Browser page identity: `http://localhost:3000/#/chat`, title `NeatChat`, meaningful composer controls rendered, and Browser console warn/error logs `0`.
+- Pasted a local 1x1 PNG clipboard item into the composer to create one image attachment without opening an OS file picker, sending a message, calling a model/API, changing model settings, uploading a personal file, or touching production data.
+- Opened `编辑第 1 张图片附件`; desktop runtime verified one `role="toolbar"` named `图片编辑工具`, groups `绘图工具` / `颜色` / `笔刷大小`, selected states for `画笔工具`, `选择颜色 #FF0000`, and `选择笔刷大小 5`, visible canvas, 38px drawing/size buttons, tokenized elevated toolbar styling, horizontal overflow `0`, and console errors `0`.
+- Mobile viewport `390x844` verified the toolbar switches to column layout, uses 36px drawing/size controls and 28px color controls, keeps the canvas visible, keeps page horizontal overflow `0`, and emits no console errors.
+- Narrow viewport `320x740` verified toolbar bounds stay inside the viewport, children do not overflow the toolbar, canvas remains visible, page horizontal overflow stays `0`, and console errors stay `0`.
+- Browser QA intentionally used an in-memory PNG and did not exercise save/download or send/model flows because those are outside this visual-control slice.
+
+Review:
+
+- Read-only review found no P0, P1, or P2 issues.
+- Review confirmed the diff is limited to Image Editor presentation and tests, preserves drawing/save/undo/redo/canvas initialization and event logic, and does not touch model config, account/secret/sync, production/deploy, backend/API, upload parsing, send path, or model request payload construction.
+- Main-thread review verified the final diff remains limited to toolbar semantics, visual tokens, focused source/render tests, and this QA record.
+
+Known risks:
+
+- `role="toolbar"` currently keeps native button Tab navigation and does not add roving arrow-key focus. This is acceptable for the current slice because it preserves existing keyboard behavior, but editor-specific arrow-key navigation can be considered in a later accessibility pass.
+- Runtime Browser QA covered light-mode desktop/mobile/narrow geometry. Dark mode is guarded by source-contract tests and CSS review, not by a live dark-theme Browser toggle in this slice.

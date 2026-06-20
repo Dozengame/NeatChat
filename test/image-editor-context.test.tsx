@@ -107,4 +107,36 @@ describe("ImageEditor context", () => {
 
     expect(screen.getByText("编辑图片")).toBeInTheDocument();
   });
+
+  test("exposes Gemini-style grouped editor controls", () => {
+    render(
+      <ImageEditor
+        imageUrl="data:image/png;base64,test"
+        title="编辑第 1 张图片附件"
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("toolbar", { name: "图片编辑工具" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: "绘图工具" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "颜色" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: "笔刷大小" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "画笔工具" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(
+      screen.getByRole("button", { name: "选择颜色 #FF0000" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByRole("button", { name: "选择笔刷大小 5" }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
 });

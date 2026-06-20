@@ -447,8 +447,16 @@ function useImageEditorView(props: {
         ]}
       >
         <div className={styles["image-editor-container"]}>
-          <div className={styles["tools-container"]}>
-            <div className={styles["tools-selector"]}>
+          <div
+            className={styles["tools-container"]}
+            role="toolbar"
+            aria-label="图片编辑工具"
+          >
+            <div
+              className={styles["tools-selector"]}
+              role="group"
+              aria-label="绘图工具"
+            >
               <button
                 className={`${styles["tool-option"]} ${
                   selectedTool === DrawingTool.Brush ? styles["selected"] : ""
@@ -556,7 +564,11 @@ function useImageEditorView(props: {
               </button>
             </div>
 
-            <div className={styles["color-picker"]}>
+            <div
+              className={styles["color-picker"]}
+              role="group"
+              aria-label="颜色"
+            >
               {DRAWING_COLORS.map((c) => (
                 <button
                   key={c}
@@ -572,7 +584,11 @@ function useImageEditorView(props: {
               ))}
             </div>
 
-            <div className={styles["brush-size-picker"]}>
+            <div
+              className={styles["brush-size-picker"]}
+              role="group"
+              aria-label="笔刷大小"
+            >
               {BRUSH_SIZES.map((s) => (
                 <button
                   key={s}
@@ -583,15 +599,13 @@ function useImageEditorView(props: {
                   aria-label={`选择笔刷大小 ${s}`}
                   aria-pressed={brushSize === s}
                   onClick={() => setBrushSize(s)}
+                  style={
+                    {
+                      "--size-dot": `${s}px`,
+                    } as React.CSSProperties
+                  }
                 >
-                  <div
-                    style={{
-                      width: s,
-                      height: s,
-                      borderRadius: "50%",
-                      backgroundColor: "black",
-                    }}
-                  />
+                  <div className={styles["size-dot"]} />
                 </button>
               ))}
             </div>

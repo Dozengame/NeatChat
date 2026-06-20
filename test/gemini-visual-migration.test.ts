@@ -3487,6 +3487,87 @@ describe("Gemini visual migration shell", () => {
     expect(summaryHeadingBlock).toMatch(/&::before[\s\S]*display:\s*none;/);
   });
 
+  test("keeps image editor controls aligned with Gemini surfaces", () => {
+    const imageEditor = read("app/components/image-editor.tsx");
+    const imageEditorStyles = read("app/components/image-editor.module.scss");
+    const toolsContainerBlock = readCssBlock(
+      imageEditorStyles,
+      ".tools-container",
+    );
+    const toolAndSizeOptionBlock = readCssBlock(
+      imageEditorStyles,
+      ".tool-option,\n.size-option",
+    );
+    const colorOptionBlock = readCssBlock(imageEditorStyles, ".color-option");
+    const canvasContainerBlock = readCssBlock(
+      imageEditorStyles,
+      ".canvas-container",
+    );
+    const mobileBlock = readCssBlock(
+      imageEditorStyles,
+      "@media screen and (max-width: 600px)",
+    );
+    const reducedMotionBlock = readCssBlock(
+      imageEditorStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+
+    expect(imageEditor).toContain('role="toolbar"');
+    expect(imageEditor).toContain('aria-label="图片编辑工具"');
+    expect(imageEditor).toContain('role="group"');
+    expect(imageEditor).toContain('aria-label="绘图工具"');
+    expect(imageEditor).toContain('aria-label="颜色"');
+    expect(imageEditor).toContain('aria-label="笔刷大小"');
+    expect(imageEditor).toContain('aria-pressed={selectedTool === DrawingTool.Brush}');
+    expect(imageEditor).toContain('aria-pressed={color === c}');
+    expect(imageEditor).toContain('aria-pressed={brushSize === s}');
+    expect(imageEditor).toContain('className={styles["size-dot"]}');
+    expect(imageEditorStyles).not.toMatch(/#f3f3f3|#e1e1e1|#f0f0f0|#ccc/);
+    expect(toolsContainerBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
+    expect(toolsContainerBlock).toMatch(/border:\s*var\(--border-in-light\);/);
+    expect(toolsContainerBlock).toMatch(/border-radius:\s*18px;/);
+    expect(toolsContainerBlock).toMatch(/box-shadow:\s*0 12px 32px/);
+    expect(toolsContainerBlock).toMatch(/backdrop-filter:\s*blur\(18px\);/);
+    expect(toolAndSizeOptionBlock).toMatch(/width:\s*38px;/);
+    expect(toolAndSizeOptionBlock).toMatch(/height:\s*38px;/);
+    expect(toolAndSizeOptionBlock).toMatch(/border:\s*1px solid transparent;/);
+    expect(toolAndSizeOptionBlock).toMatch(
+      /&\.selected,[\s\S]*&\[aria-pressed="true"\]/,
+    );
+    expect(toolAndSizeOptionBlock).toMatch(
+      /background:\s*rgba\(66,\s*133,\s*244,\s*0\.12\);/,
+    );
+    expect(toolAndSizeOptionBlock).toMatch(/color:\s*var\(--primary\);/);
+    expect(toolAndSizeOptionBlock).toMatch(
+      /&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/,
+    );
+    expect(toolAndSizeOptionBlock).toMatch(
+      /&:focus-visible[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\);/,
+    );
+    expect(colorOptionBlock).toMatch(/width:\s*30px;/);
+    expect(colorOptionBlock).toMatch(/height:\s*30px;/);
+    expect(colorOptionBlock).toMatch(/border:\s*2px solid rgba\(255,\s*255,\s*255,\s*0\.92\);/);
+    expect(colorOptionBlock).toMatch(/&\.selected,[\s\S]*&\[aria-pressed="true"\]/);
+    expect(imageEditorStyles).toContain(".size-dot");
+    expect(canvasContainerBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
+    expect(canvasContainerBlock).toMatch(/border:\s*var\(--border-in-light\);/);
+    expect(canvasContainerBlock).toMatch(/border-radius:\s*18px;/);
+    expect(canvasContainerBlock).toMatch(/min-width:\s*0;/);
+    expect(imageEditorStyles).toMatch(
+      /:global\(\.dark\) \.tools-container[\s\S]*border-color:/,
+    );
+    expect(imageEditorStyles).toMatch(
+      /:global\(\.dark\) \.canvas-container[\s\S]*background:/,
+    );
+    expect(mobileBlock).toContain(".tools-container");
+    expect(mobileBlock).toMatch(/flex-direction:\s*column;/);
+    expect(mobileBlock).toMatch(/padding:\s*10px;/);
+    expect(reducedMotionBlock).toContain(".tool-option");
+    expect(reducedMotionBlock).toContain(".color-option");
+    expect(reducedMotionBlock).toContain(".size-option");
+    expect(reducedMotionBlock).toMatch(/transition-duration:\s*0\.01ms !important;/);
+  });
+
   test("keeps chat image preview overlay focus-restoring and bounded", () => {
     const chat = read("app/components/chat.tsx");
     const markdown = read("app/components/markdown.tsx");
