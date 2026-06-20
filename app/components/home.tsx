@@ -7,6 +7,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   useSyncExternalStore,
 } from "react";
 import styles from "./home.module.scss";
@@ -165,11 +166,16 @@ function focusMobileSidebarTrigger() {
 }
 
 function focusMobileSidebarDrawer() {
-  requestAnimationFrame(() => {
-    document
-      .querySelector<HTMLElement>(MOBILE_SIDEBAR_DRAWER_SELECTOR)
-      ?.focus({ preventScroll: true });
-  });
+  const drawer = document.querySelector<HTMLElement>(
+    MOBILE_SIDEBAR_DRAWER_SELECTOR,
+  );
+  if (!drawer) return false;
+
+  drawer.focus({ preventScroll: true });
+  return (
+    document.activeElement instanceof Node &&
+    drawer.contains(document.activeElement)
+  );
 }
 
 function getMobileSidebarFocusableElements(drawer: HTMLElement) {
@@ -225,9 +231,19 @@ function trapMobileSidebarTab(event: KeyboardEvent) {
   }
 }
 
-export function WindowContent(props: { children: React.ReactNode }) {
+export function WindowContent(props: {
+  children: React.ReactNode;
+  isMobileDrawerOpen?: boolean;
+}) {
   return (
-    <div className={styles["window-content"]} id={SlotID.AppBody}>
+    <div
+      className={styles["window-content"]}
+      id={SlotID.AppBody}
+      aria-hidden={props.isMobileDrawerOpen ? true : undefined}
+      data-mobile-sidebar-suppressed={
+        props.isMobileDrawerOpen ? "true" : undefined
+      }
+    >
       {props?.children}
     </div>
   );
@@ -250,6 +266,8 @@ function ScreenContent(props: {
     shouldRequireAccessCode,
   } = props;
   const navigate = useNavigate();
+  const [isMobileAppBodySuppressed, setIsMobileAppBodySuppressed] =
+    useState(false);
   const isMobileDrawerOpen =
     isCompactScreen &&
     isHome &&
@@ -263,9 +281,14 @@ function ScreenContent(props: {
   }, [navigate]);
 
   useEffect(() => {
-    if (!isMobileDrawerOpen) return;
+    if (!isMobileDrawerOpen) {
+      setIsMobileAppBodySuppressed(false);
+      return;
+    }
 
-    focusMobileSidebarDrawer();
+    setIsMobileAppBodySuppressed(false);
+    const didFocusMobileSidebarDrawer = focusMobileSidebarDrawer();
+    setIsMobileAppBodySuppressed(didFocusMobileSidebarDrawer);
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -306,7 +329,9 @@ function ScreenContent(props: {
           onClick={closeMobileSidebar}
         />
       )}
-      <WindowContent>
+      <WindowContent
+        isMobileDrawerOpen={isMobileDrawerOpen && isMobileAppBodySuppressed}
+      >
         <Routes>
           <Route path={Path.Home} element={<Chat />} />
           <Route path={Path.NewChat} element={<NewChat />} />

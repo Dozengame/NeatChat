@@ -3958,3 +3958,56 @@ Review:
 Known risks:
 
 - This slice is covered by source-contract tests plus Browser QA rather than a Testing Library interaction test for prompt selection.
+
+## Iteration 2026-06-20 mobile-sidebar-app-body-suppression
+
+Result: passed.
+
+Target flow:
+
+- Opening the compact mobile sidebar should keep the drawer as the only exposed modal surface for assistive technology.
+- `#app-body` should receive `aria-hidden=true` and `data-mobile-sidebar-suppressed=true` only after focus has moved into `#mobile-sidebar-drawer`.
+- Closing the drawer, desktop layout, auth/SD/artifact routes, and non-open mobile states should not keep `#app-body` suppressed.
+- The change must not alter route targets, sidebar actions, model config semantics, account/secret/sync, backend/API, production config, deployment config, upload behavior, persisted store keys, or model request payload construction.
+
+Design direction:
+
+- Creative Production style intake selected: keep the existing Gemini-style mobile drawer visuals and route-driven behavior; tighten only the modal semantics behind the glass drawer.
+- The main chat surface should become background content while the mobile drawer is open, without visual churn or interaction changes.
+
+Scope:
+
+- `app/components/home.tsx`: added mobile app-body suppression state, made drawer focus return a success boolean based on `document.activeElement`, applied `aria-hidden` / `data-mobile-sidebar-suppressed` to `#app-body` only when the drawer is both open and successfully focused, and kept close/focus-return paths unchanged.
+- `test/gemini-visual-migration.test.ts`: extended the mobile shell contract to lock app-body suppression, focus-before-suppress ordering, actual focus success verification, non-open clearing, and the final `isMobileDrawerOpen && isMobileAppBodySuppressed` gate.
+- No model config semantics, account/secret/sync, backend/API, production config, deployment config, upload behavior, persisted store keys, model request payload construction, or dependency files were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"` failed first as expected because `WindowContent` did not support app-body suppression.
+- Review then found a focus-order issue; the same targeted test was tightened and failed first because suppression was not gated by focus success.
+- Review then found a close/desktop stale-state issue; the same targeted test was tightened and failed first because `WindowContent` was not gated by both drawer-open and suppression state.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"`
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit --pretty false`
+- `git diff --check`
+- `yarn build`
+
+Browser QA:
+
+- in-app Browser desktop viewport `1280x720`: `#app-body` had no `aria-hidden` and no `data-mobile-sidebar-suppressed`; drawer had no `role`/`aria-modal`; horizontal overflow was `0`; console warn/error logs were `0`.
+- in-app Browser mobile viewport `390x844`: opening the drawer set trigger `aria-expanded=true`, drawer `role=dialog`, `aria-modal=true`, drawer bounds `left=0/right=304/width=304`, `#app-body aria-hidden=true`, `data-mobile-sidebar-suppressed=true`, focus on `#mobile-sidebar-drawer`, `activeInsideHiddenAppBody=false`, horizontal overflow `0`, and no warn/error logs. Immediate post-click inspection also showed focus inside drawer before app-body suppression was observed.
+- Closing at `390x844` with Escape removed `#app-body` suppression, restored drawer `aria-hidden=true`, removed `role/aria-modal`, set trigger `aria-expanded=false`, kept `activeInsideHiddenAppBody=false`, and kept horizontal overflow `0`.
+- in-app Browser narrow viewport `320x740`: opening then pressing Tab kept focus inside the drawer on `新的聊天`, drawer bounds `left=0/right=266/width=266`, `#app-body` remained suppressed, `activeInsideHiddenAppBody=false`, horizontal overflow `0`, and no warn/error logs. Closing with Escape removed suppression and modal attributes.
+- Browser QA did not send a message, did not call a model/API, did not upload files, did not open an OS file picker, and did not persist production data.
+
+Review:
+
+- Read-only review first found two Important issues: app-body could be hidden before focus entered the drawer, and the source contract was too syntax-heavy to catch that. Both were fixed by adding focus-success-gated suppression and tightening tests.
+- Read-only review then found two more Important issues: close/desktop first render could retain suppression, and focus success returned true when the drawer merely existed. Both were fixed by gating `WindowContent` with `isMobileDrawerOpen && isMobileAppBodySuppressed` and returning true only when `document.activeElement` is inside the drawer.
+- Final read-only review found no Critical or Important issues and confirmed no model/account/sync/API/upload/store/deploy boundaries were touched.
+
+Known risks:
+
+- The automated test remains a source-contract test rather than a component-level DOM timing test; Browser QA covers the runtime focus and suppression ordering on the real page.
+- The next recommended R4 slice from read-only exploration is Gemini-style bounded display math for KaTeX/LaTeX overflow.

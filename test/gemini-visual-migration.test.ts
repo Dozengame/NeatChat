@@ -1127,10 +1127,29 @@ describe("Gemini visual migration shell", () => {
       /function trapMobileSidebarTab[\s\S]*lastElement\.focus\(\{ preventScroll: true \}\)/,
     );
     expect(home).toMatch(
-      /if \(!isMobileDrawerOpen\) return;[\s\S]*event\.key === "Escape"[\s\S]*closeMobileSidebar\(\)/,
+      /if \(!isMobileDrawerOpen\) \{[\s\S]*setIsMobileAppBodySuppressed\(false\);[\s\S]*return;[\s\S]*\}[\s\S]*const handleKeyDown = \(event: KeyboardEvent\) => \{[\s\S]*event\.key === "Escape"[\s\S]*closeMobileSidebar\(\)/,
     );
     expect(home).toMatch(
       /event\.key === "Tab"[\s\S]*trapMobileSidebarTab\(event\)/,
+    );
+    expect(home).toContain("useState");
+    expect(home).toContain(
+      "const [isMobileAppBodySuppressed, setIsMobileAppBodySuppressed] =",
+    );
+    expect(home).toMatch(
+      /id=\{SlotID\.AppBody\}[\s\S]*aria-hidden=\{props\.isMobileDrawerOpen \? true : undefined\}/,
+    );
+    expect(home).toMatch(
+      /id=\{SlotID\.AppBody\}[\s\S]*data-mobile-sidebar-suppressed=\{[\s\S]*props\.isMobileDrawerOpen \? "true" : undefined[\s\S]*\}/,
+    );
+    expect(home).toMatch(
+      /function focusMobileSidebarDrawer\(\)[\s\S]*const drawer = document[\s\S]*querySelector<HTMLElement>\([\s\S]*MOBILE_SIDEBAR_DRAWER_SELECTOR[\s\S]*\);[\s\S]*if \(!drawer\) return false;[\s\S]*drawer\.focus\(\{ preventScroll: true \}\);[\s\S]*return \([\s\S]*document\.activeElement instanceof Node &&[\s\S]*drawer\.contains\(document\.activeElement\)[\s\S]*\);/,
+    );
+    expect(home).toMatch(
+      /if \(!isMobileDrawerOpen\) \{[\s\S]*setIsMobileAppBodySuppressed\(false\);[\s\S]*return;[\s\S]*\}[\s\S]*setIsMobileAppBodySuppressed\(false\);[\s\S]*const didFocusMobileSidebarDrawer = focusMobileSidebarDrawer\(\);[\s\S]*setIsMobileAppBodySuppressed\(didFocusMobileSidebarDrawer\);/,
+    );
+    expect(home).toMatch(
+      /<WindowContent[\s\S]*isMobileDrawerOpen=\{isMobileDrawerOpen && isMobileAppBodySuppressed\}[\s\S]*>/,
     );
     expect(home).toContain("onClick={closeMobileSidebar}");
 
