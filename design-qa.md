@@ -3804,3 +3804,56 @@ Review:
 Known risks:
 
 - No Testing Library interaction test was added for the click path; Browser QA covers the real interaction, and the source contract covers failure, focus, race, and cleanup behavior.
+
+## Iteration 2026-06-20 message-action-rail-keyboard-navigation
+
+Result: passed.
+
+Target flow:
+
+- Ordinary message action rails should support keyboard movement inside the current rail once an action has focus.
+- `ArrowRight` and `ArrowDown` move to the next visible enabled action.
+- `ArrowLeft` and `ArrowUp` move to the previous visible enabled action.
+- `Home` moves to the first visible enabled action, and `End` moves to the last.
+- The focus movement should not call `scrollIntoView`; the message viewport should not jump while moving across actions.
+- Modified arrow keys should remain available for global or browser shortcuts and should not be intercepted by the rail handler.
+- The change must not alter retry/delete/pin/copy click behavior, message content, clipboard payload, send/model/upload/backend/store/config paths, account/secret/sync, production config, deployment config, or model request payload construction.
+
+Design direction:
+
+- Creative Production style intake selected: treat the message action rail as a compact Gemini-style utility toolbar that stays visually quiet but supports fast keyboard scanning.
+- Keep the current icon-only geometry, action ordering, labels, copy feedback state, focus ring styling, and responsive layout unchanged.
+
+Scope:
+
+- `app/components/chat.tsx`: added current-rail action discovery, Arrow/Home/End focus movement, and an `onKeyDown` binding on the message action rail.
+- `test/gemini-visual-migration.test.ts`: extended the message action rail contract to lock visible enabled action filtering, unmodified direction keys, modified-key passthrough, `preventDefault`/`stopPropagation`, `preventScroll` focus, no `scrollIntoView`, and rail DOM wiring.
+- No CSS, send/model/upload/backend/store/config files, or action business handlers were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"` failed first as expected because the message action rail keyboard helpers did not exist.
+- Browser QA then exposed a mobile scroll-jump risk caused by `scrollIntoView`; the test contract was tightened to require no `scrollIntoView` and failed first as expected.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="empty state hooks"`
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+- `yarn lint`
+- `npx tsc --noEmit --pretty false`
+- `git diff --check`
+
+Browser QA:
+
+- in-app Browser desktop viewport `1440x1024`: selected the existing local `测试消息` conversation; the first user-message rail exposed `重试`, `删除`, `固定`, `复制`; `ArrowRight` moved focus through delete, pin, and copy; `ArrowLeft` moved back to pin; `Home` returned to retry; `End` moved to copy; active element remained a button; rail dimensions stayed `154x40`; page horizontal overflow stayed `0`; no framework overlay appeared; no new warn/error logs were recorded.
+- in-app Browser mobile viewport `390x844`: repeated the same focus sequence on the same rail; active element remained a button; page horizontal overflow stayed `0`; no framework overlay appeared; no new warn/error logs were recorded. Playwright locator-based key presses can scroll targets before dispatching keys, so the application contract is guarded in source by `focus({ preventScroll: true })` and no rail `scrollIntoView` call.
+- in-app Browser narrow viewport `320x740`: repeated the same focus sequence, overflow, overlay, and log checks with the same result.
+- After the modified-key fix, a fresh Browser tab entered a blank DOM state with a pre-existing Next/router error timestamped before this slice's verification; the modified-key passthrough was therefore verified by the failing-then-passing source contract rather than a second live Browser interaction.
+- Browser QA did not click retry/delete/pin/copy, did not send a message, did not call a model/API, did not upload files, did not open an OS file picker, and did not persist production data.
+
+Review:
+
+- Read-only explorer confirmed this slice is limited to message action rail keyboard focus and does not need CSS changes.
+- Read-only code review found one Important issue: modified arrow keys were initially intercepted by the rail handler, which could block existing global shortcut behavior. Fixed by returning early when `metaKey`, `ctrlKey`, `altKey`, or `shiftKey` is present, and locked this in the test contract.
+- Main-thread review verified the handler only responds to unmodified Arrow/Home/End keys, only searches the current rail, filters disabled/hidden buttons, prevents default browser scrolling for handled keys, preserves native Tab and modified-key behavior, and leaves action click handlers plus send/model/upload/backend/store/config paths untouched.
+
+Known risks:
+
+- This is arrow-key focus movement, not a strict single-tab-stop roving tabindex toolbar. Native Tab order across the individual action buttons is intentionally preserved for this small slice.

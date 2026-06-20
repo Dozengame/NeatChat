@@ -318,6 +318,10 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-message-copy-status",
     );
+    const messageActionRailFocusBlock = readFunctionBlock(
+      chat,
+      "const focusMessageActionRailControl = useCallback",
+    );
     const inputStatusRowBlock = readCssBlock(
       chatStyles.slice(chatStyles.indexOf("\n.chat-input-status-row {")),
       ".chat-input-status-row",
@@ -827,6 +831,25 @@ describe("Gemini visual migration shell", () => {
       /className=\{styles\["chat-message-actions"\]\}[\s\S]*role="group"[\s\S]*aria-label=\{messageActionLabel\}/,
     );
     expect(chat).toContain('styles["chat-message-action-rail"]');
+    expect(chat).toContain("const getMessageActionRailControls = useCallback");
+    expect(chat).toMatch(
+      /const getMessageActionRailControls = useCallback\(\s*\(rail: HTMLElement \| null\) => \{[\s\S]*rail\?\.querySelectorAll<HTMLButtonElement>\(\s*`button\.\$\{styles\["chat-input-action"\]\}`,?\s*\)[\s\S]*\.filter\(\s*\(control\) => !control\.disabled && control\.offsetParent !== null[\s\S]*\);[\s\S]*\}, \[\]\);/,
+    );
+    expect(chat).toContain("const focusMessageActionRailControl = useCallback");
+    expect(chat).toMatch(
+      /const focusMessageActionRailControl = useCallback\(\s*\(rail: HTMLElement \| null, key: string\) => \{[\s\S]*const controls = getMessageActionRailControls\(rail\);[\s\S]*case "ArrowRight":[\s\S]*case "ArrowDown":[\s\S]*case "ArrowLeft":[\s\S]*case "ArrowUp":[\s\S]*case "Home":[\s\S]*case "End":[\s\S]*nextControl\.focus\(\{ preventScroll: true \}\);[\s\S]*\},\s*\[getMessageActionRailControls\],\s*\);/,
+    );
+    expect(messageActionRailFocusBlock).not.toContain("scrollIntoView");
+    expect(chat).toContain("const handleMessageActionRailKeyDown = useCallback");
+    expect(chat).toMatch(
+      /const handleMessageActionRailKeyDown = useCallback\(\s*\(event: React\.KeyboardEvent<HTMLDivElement>\) => \{[\s\S]*if \(event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey \|\| event\.shiftKey\) \{[\s\S]*return;[\s\S]*\}/,
+    );
+    expect(chat).toMatch(
+      /const handleMessageActionRailKeyDown = useCallback\(\s*\(event: React\.KeyboardEvent<HTMLDivElement>\) => \{[\s\S]*event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey \|\| event\.shiftKey[\s\S]*return;[\s\S]*"ArrowRight"[\s\S]*"ArrowDown"[\s\S]*"ArrowLeft"[\s\S]*"ArrowUp"[\s\S]*"Home"[\s\S]*"End"[\s\S]*\.includes\(\s*event\.key,?\s*\)[\s\S]*return;[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);[\s\S]*focusMessageActionRailControl\(event\.currentTarget, event\.key\);[\s\S]*\},\s*\[focusMessageActionRailControl\],\s*\);/,
+    );
+    expect(chat).toMatch(
+      /className=\{styles\["chat-message-action-rail"\]\}[\s\S]*onKeyDown=\{handleMessageActionRailKeyDown\}/,
+    );
     expect(chat).toContain("copiedMessageActionId");
     expect(chat).toContain("messageCopyFeedbackTimerRef");
     expect(chat).toContain("messageCopyRequestIdRef");

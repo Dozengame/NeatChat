@@ -3371,6 +3371,83 @@ function useChatInnerView() {
   // 在_Chat组件中添加状态，记录当前编辑图片所属的消息ID
   const editingImageMessageIdRef = useRef<string | null>(null);
 
+  const getMessageActionRailControls = useCallback(
+    (rail: HTMLElement | null) => {
+      return Array.from(
+        rail?.querySelectorAll<HTMLButtonElement>(
+          `button.${styles["chat-input-action"]}`,
+        ) ?? [],
+      ).filter((control) => !control.disabled && control.offsetParent !== null);
+    },
+    [],
+  );
+  const focusMessageActionRailControl = useCallback(
+    (rail: HTMLElement | null, key: string) => {
+      const controls = getMessageActionRailControls(rail);
+      if (controls.length === 0) return;
+
+      const currentIndex = controls.findIndex(
+        (control) => control === document.activeElement,
+      );
+      let nextIndex = currentIndex;
+
+      switch (key) {
+        case "ArrowRight":
+        case "ArrowDown":
+          nextIndex =
+            currentIndex < 0
+              ? 0
+              : Math.min(currentIndex + 1, controls.length - 1);
+          break;
+        case "ArrowLeft":
+        case "ArrowUp":
+          nextIndex =
+            currentIndex < 0
+              ? controls.length - 1
+              : Math.max(currentIndex - 1, 0);
+          break;
+        case "Home":
+          nextIndex = 0;
+          break;
+        case "End":
+          nextIndex = controls.length - 1;
+          break;
+        default:
+          return;
+      }
+
+      const nextControl = controls[nextIndex];
+      if (!nextControl) return;
+
+      nextControl.focus({ preventScroll: true });
+    },
+    [getMessageActionRailControls],
+  );
+  const handleMessageActionRailKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) {
+        return;
+      }
+
+      if (
+        ![
+          "ArrowRight",
+          "ArrowDown",
+          "ArrowLeft",
+          "ArrowUp",
+          "Home",
+          "End",
+        ].includes(event.key)
+      )
+        return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      focusMessageActionRailControl(event.currentTarget, event.key);
+    },
+    [focusMessageActionRailControl],
+  );
+
   const getChatActionMenuControls = useCallback(() => {
     return Array.from(
       chatInputActionMenuRef.current?.querySelectorAll<HTMLButtonElement>(
@@ -4443,7 +4520,10 @@ function useChatInnerView() {
                             role="group"
                             aria-label={messageActionLabel}
                           >
-                            <div className={styles["chat-message-action-rail"]}>
+                            <div
+                              className={styles["chat-message-action-rail"]}
+                              onKeyDown={handleMessageActionRailKeyDown}
+                            >
                               <>
                                 <ChatAction
                                   text={Locale.Chat.Actions.Retry}
