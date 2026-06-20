@@ -3357,6 +3357,30 @@ function useChatInnerView() {
     },
     [getChatActionMenuControls],
   );
+  const trapChatActionMenuTab = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>) => {
+      const controls = getChatActionMenuControls();
+      if (controls.length === 0) return;
+
+      const currentIndex = controls.findIndex(
+        (control) => control === document.activeElement,
+      );
+      const nextIndex = event.shiftKey
+        ? currentIndex <= 0
+          ? controls.length - 1
+          : currentIndex - 1
+        : currentIndex < 0 || currentIndex >= controls.length - 1
+        ? 0
+        : currentIndex + 1;
+      const nextControl = controls[nextIndex];
+
+      event.preventDefault();
+      event.stopPropagation();
+      nextControl?.focus();
+      nextControl?.scrollIntoView({ block: "nearest" });
+    },
+    [getChatActionMenuControls],
+  );
   useEffect(() => {
     if (!showChatActionMenu) return;
 
@@ -3387,6 +3411,10 @@ function useChatInnerView() {
   ) => {
     if (!showChatActionMenu) return;
     if ((event.target as HTMLElement | null)?.closest('[role="listbox"]')) {
+      return;
+    }
+    if (event.key === "Tab") {
+      trapChatActionMenuTab(event);
       return;
     }
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;

@@ -3712,3 +3712,47 @@ Review:
 Known risks:
 
 - Browser QA covered the text ready-state path. Attachment-only enablement is covered by the source/Jest contract because exercising real upload or file picker paths would leave this slice's interaction boundary.
+
+## Iteration 2026-06-20 composer-tools-menu-tab-containment
+
+Result: passed.
+
+Target flow:
+
+- When the composer tools menu is open, Tab should move through the visible enabled tool actions instead of escaping to the textarea, send button, sidebar, or browser chrome.
+- Shift+Tab should wrap from the first visible action to the last visible action.
+- The existing ArrowDown, ArrowUp, Home, End, Escape, and backdrop close behavior must remain intact.
+- Nested `[role="listbox"]` surfaces must keep their own keyboard behavior and should not be trapped by the tools menu handler.
+- The change must not alter tool ordering, upload behavior, prompt hints, shortcut modal behavior, image generation settings, model config semantics, account/secret/sync, backend/API, production config, deployment config, persisted store keys, or model request payload construction.
+
+Design direction:
+
+- Creative Production style intake selected: treat the tools menu as a compact Gemini-style command surface that behaves like a contained modal once opened.
+- Keep the existing menu geometry, action labels, action ordering, icons, backdrop, and close affordances unchanged; improve only keyboard containment.
+
+Scope:
+
+- `app/components/chat.tsx`: added `trapChatActionMenuTab` to cycle focus through visible enabled `chat-input-action` buttons and wired it into `handleChatActionMenuKeyDown` after the nested listbox guard.
+- `test/gemini-visual-migration.test.ts`: extended the composer tools contract to require Tab/Shift+Tab wrapping, `preventDefault`/`stopPropagation`, visible-action filtering, and listbox exclusion.
+- No tool ordering, upload behavior, prompt hints, shortcut modal behavior, image generation settings, model config semantics, account/secret/sync, backend/API, production config, deployment config, persisted store keys, or model request payload construction was changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` failed first as expected because `trapChatActionMenuTab` did not exist.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand`
+
+Browser QA:
+
+- in-app Browser desktop viewport `1440x1024`: opening focused `上传附件`; Tab sequence was `快捷指令` -> `图片生成` -> `上传附件`; Shift+Tab wrapped to `图片生成`; Escape returned focus to `打开对话工具`; empty-area backdrop click returned focus to `打开对话工具`; menu stayed within viewport; page horizontal overflow stayed `0`; console warn/error logs: `0`.
+- in-app Browser mobile viewport `390x844`: opening focused `上传附件`; Tab sequence was `图片生成` -> `上传附件`; Shift+Tab wrapped to `图片生成`; Escape/backdrop returned focus to `打开对话工具`; menu stayed within viewport; page horizontal overflow stayed `0`; console warn/error logs: `0`.
+- in-app Browser narrow viewport `320x740`: repeated the mobile Tab/Shift+Tab, Escape/backdrop, menu bounds, overflow, and console checks with the same result.
+- Browser QA did not send a message, did not call a model/API, did not upload files, did not open an OS file picker, and did not persist production data.
+
+Review:
+
+- Read-only sub-agent review found no Critical/Important issues and no blocking Minor issues. It verified the visible/enabled action filtering, Tab/Shift+Tab wrap logic, listbox guard ordering, and unchanged Escape/backdrop close paths.
+- Main-thread code review found no Critical or Important issues. It verified the new trap is scoped to the existing tools menu keyboard handler, does not change tool ordering or action handlers, and leaves upload, prompt hints, shortcut modal, image generation, model config, API, and store paths untouched.
+
+Known risks:
+
+- Browser QA used empty-area coordinate click for backdrop close because a direct backdrop locator click in the Browser runtime can click through to the textarea even though a user-style empty-area click closes the menu.

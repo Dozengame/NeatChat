@@ -745,10 +745,13 @@ describe("Gemini visual migration shell", () => {
       /const focusChatActionMenuControl = useCallback\(\s*\(key: string\) => \{[\s\S]*case "ArrowDown":[\s\S]*case "ArrowUp":[\s\S]*case "Home":[\s\S]*case "End":[\s\S]*nextControl\.focus\(\);[\s\S]*nextControl\.scrollIntoView\(\{ block: "nearest" \}\);[\s\S]*\},\s*\[getChatActionMenuControls\],\s*\);/,
     );
     expect(chat).toMatch(
+      /const trapChatActionMenuTab = useCallback\(\s*\(event: React\.KeyboardEvent<HTMLElement>\) => \{[\s\S]*const controls = getChatActionMenuControls\(\);[\s\S]*if \(controls\.length === 0\) return;[\s\S]*const currentIndex = controls\.findIndex\([\s\S]*document\.activeElement[\s\S]*const nextIndex = event\.shiftKey[\s\S]*currentIndex <= 0[\s\S]*controls\.length - 1[\s\S]*currentIndex >= controls\.length - 1[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);[\s\S]*nextControl\?\.focus\(\);[\s\S]*nextControl\?\.scrollIntoView\(\{ block: "nearest" \}\);[\s\S]*\},\s*\[getChatActionMenuControls\],\s*\);/,
+    );
+    expect(chat).toMatch(
       /useEffect\(\(\) => \{[\s\S]*if \(!showChatActionMenu\) return;[\s\S]*const focusFirstChatActionMenuControl = \(\) => \{[\s\S]*activeElement\.classList\.contains\(styles\["chat-input-action"\]\)[\s\S]*chatInputActionMenuRef\.current\?\.contains\(activeElement\)[\s\S]*return;[\s\S]*focusChatActionMenuControl\("Home"\);[\s\S]*\};[\s\S]*const focusFrame = requestAnimationFrame\(focusFirstChatActionMenuControl\);[\s\S]*const settleFocusTimer = window\.setTimeout\(\s*focusFirstChatActionMenuControl,[\s\S]*180,?[\s\S]*\);[\s\S]*cancelAnimationFrame\(focusFrame\);[\s\S]*window\.clearTimeout\(settleFocusTimer\);[\s\S]*\}, \[focusChatActionMenuControl, showChatActionMenu\]\);/,
     );
     expect(chat).toMatch(
-      /const handleChatActionMenuKeyDown = \(\s*event: React\.KeyboardEvent<HTMLElement>,?\s*\) => \{[\s\S]*if \(!showChatActionMenu\) return;[\s\S]*if \(!\["ArrowDown", "ArrowUp", "Home", "End"\]\.includes\(event\.key\)\) return;[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);[\s\S]*focusChatActionMenuControl\(event\.key\);[\s\S]*\};/,
+      /const handleChatActionMenuKeyDown = \(\s*event: React\.KeyboardEvent<HTMLElement>,?\s*\) => \{[\s\S]*if \(!showChatActionMenu\) return;[\s\S]*if \(\(event\.target as HTMLElement \| null\)\?\.closest\('\[role="listbox"\]'\)\) \{[\s\S]*return;[\s\S]*\}[\s\S]*if \(event\.key === "Tab"\) \{[\s\S]*trapChatActionMenuTab\(event\);[\s\S]*return;[\s\S]*\}[\s\S]*if \(!\["ArrowDown", "ArrowUp", "Home", "End"\]\.includes\(event\.key\)\) return;[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);[\s\S]*focusChatActionMenuControl\(event\.key\);[\s\S]*\};/,
     );
     expect(chat).toMatch(
       /if \(\(event\.target as HTMLElement \| null\)\?\.closest\('\[role="listbox"\]'\)\) \{[\s\S]*return;[\s\S]*\}/,
