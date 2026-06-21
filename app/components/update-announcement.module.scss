@@ -12,6 +12,10 @@
   --update-announcement-section-color: var(--primary);
   --update-announcement-bullet-color: var(--primary);
   --update-announcement-note-color: color-mix(in srgb, var(--black) 72%, transparent);
+  --update-announcement-divider-color: color-mix(in srgb, var(--update-announcement-panel-border-ink) 10%, transparent);
+  --update-announcement-panel-hairline-shadow-color: color-mix(in srgb, var(--update-announcement-shadow-ink) 8%, transparent);
+  --update-announcement-panel-radius: 8px;
+  --update-announcement-mobile-panel-radius: 8px 8px 0 0;
 
   position: fixed;
   inset: 0;
@@ -34,16 +38,16 @@
   color: var(--black);
   background: var(--update-announcement-panel-background);
   border: 1px solid var(--update-announcement-panel-border-color);
-  border-radius: 14px;
+  border-radius: var(--update-announcement-panel-radius);
   box-shadow:
     0 22px 70px var(--update-announcement-panel-shadow-color),
-    var(--card-shadow);
+    0 1px 2px var(--update-announcement-panel-hairline-shadow-color);
   animation: slide-in ease 0.24s;
 }
 
 .header {
   padding: 22px 24px 16px;
-  border-bottom: var(--border-in-light);
+  border-bottom: 1px solid var(--update-announcement-divider-color);
 }
 
 .title {
@@ -105,7 +109,7 @@
 .note {
   margin-top: 16px;
   padding-top: 14px;
-  border-top: var(--border-in-light);
+  border-top: 1px solid var(--update-announcement-divider-color);
   color: var(--update-announcement-note-color);
   opacity: 1;
   font-size: 13px;
@@ -117,7 +121,7 @@
   display: flex;
   justify-content: flex-end;
   padding: 16px 24px 22px;
-  border-top: var(--border-in-light);
+  border-top: 1px solid var(--update-announcement-divider-color);
 }
 
 .confirm {
@@ -129,6 +133,8 @@
   --update-announcement-mask-background: color-mix(in srgb, var(--update-announcement-shadow-ink) 50%, transparent);
   --update-announcement-panel-border-color: color-mix(in srgb, var(--update-announcement-panel-border-ink) 10%, transparent);
   --update-announcement-panel-shadow-color: color-mix(in srgb, var(--update-announcement-shadow-ink) 36%, transparent);
+  --update-announcement-divider-color: color-mix(in srgb, var(--update-announcement-panel-border-ink) 12%, transparent);
+  --update-announcement-panel-hairline-shadow-color: color-mix(in srgb, var(--update-announcement-shadow-ink) 22%, transparent);
   --update-announcement-section-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
   --update-announcement-section-border-color: color-mix(in srgb, var(--primary) 28%, transparent);
   --update-announcement-section-color: color-mix(in srgb, var(--primary) 42%, var(--black));
@@ -142,6 +148,8 @@
     --update-announcement-mask-background: color-mix(in srgb, var(--update-announcement-shadow-ink) 50%, transparent);
     --update-announcement-panel-border-color: color-mix(in srgb, var(--update-announcement-panel-border-ink) 10%, transparent);
     --update-announcement-panel-shadow-color: color-mix(in srgb, var(--update-announcement-shadow-ink) 36%, transparent);
+    --update-announcement-divider-color: color-mix(in srgb, var(--update-announcement-panel-border-ink) 12%, transparent);
+    --update-announcement-panel-hairline-shadow-color: color-mix(in srgb, var(--update-announcement-shadow-ink) 22%, transparent);
     --update-announcement-section-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
     --update-announcement-section-border-color: color-mix(in srgb, var(--primary) 28%, transparent);
     --update-announcement-section-color: color-mix(in srgb, var(--primary) 42%, var(--black));
@@ -167,7 +175,7 @@
     border-right: 0;
     border-bottom: 0;
     border-left: 0;
-    border-radius: 14px 14px 0 0;
+    border-radius: var(--update-announcement-mobile-panel-radius);
   }
 
   .header {

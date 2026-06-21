@@ -6632,6 +6632,7 @@ describe("Gemini visual migration shell", () => {
     const maskBlock = readCssBlock(updateAnnouncementStyles, ".mask");
     const maskRootBlock = readRootDeclarations(maskBlock);
     const panelBlock = readCssBlock(updateAnnouncementStyles, ".panel");
+    const headerBlock = readCssBlock(updateAnnouncementStyles, ".header");
     const sectionTitleBlock = readCssBlock(
       updateAnnouncementStyles,
       ".section-title",
@@ -6641,6 +6642,7 @@ describe("Gemini visual migration shell", () => {
       "&::before",
     );
     const noteBlock = readCssBlock(updateAnnouncementStyles, ".note");
+    const footerBlock = readCssBlock(updateAnnouncementStyles, ".footer");
     const darkMaskBlock = readCssBlock(
       updateAnnouncementStyles,
       ":global(.dark) .mask",
@@ -6671,12 +6673,19 @@ describe("Gemini visual migration shell", () => {
       'return localStorage.getItem(key) === "1";',
     );
     expect(updateAnnouncement).toContain('localStorage.setItem(key, "1");');
+    expect(updateAnnouncement).toMatch(
+      /dismissedKey !== seenKey\s*&&\s*!hasSeenAnnouncement\(seenKey\)/,
+    );
+    expect(updateAnnouncement).toMatch(
+      /const onConfirm = \(\) => \{[\s\S]*markAnnouncementSeen\(seenKey\);[\s\S]*setDismissedKey\(seenKey\);[\s\S]*\};/,
+    );
     expect(updateAnnouncement).toContain('role="presentation"');
     expect(updateAnnouncement).toContain("<dialog");
     expect(updateAnnouncement).toContain(
       'aria-labelledby="update-announcement-title"',
     );
     expect(updateAnnouncement).toContain('text="我知道了"');
+    expect(updateAnnouncement).toContain("onClick={onConfirm}");
     expect(updateAnnouncementStyles).not.toContain("rgba(49, 94, 248");
     expect(updateAnnouncementStyles).not.toContain("rgba(0, 0, 0, 0.36)");
     expect(maskRootBlock).toMatch(
@@ -6713,6 +6722,16 @@ describe("Gemini visual migration shell", () => {
       /--update-announcement-note-color:\s*color-mix\(in srgb,\s*var\(--black\) 72%,\s*transparent\);/,
     );
     expect(maskRootBlock).toMatch(
+      /--update-announcement-divider-color:\s*color-mix\(in srgb,\s*var\(--update-announcement-panel-border-ink\) 10%,\s*transparent\);/,
+    );
+    expect(maskRootBlock).toMatch(
+      /--update-announcement-panel-hairline-shadow-color:\s*color-mix\(in srgb,\s*var\(--update-announcement-shadow-ink\) 8%,\s*transparent\);/,
+    );
+    expect(maskRootBlock).toMatch(/--update-announcement-panel-radius:\s*8px;/);
+    expect(maskRootBlock).toMatch(
+      /--update-announcement-mobile-panel-radius:\s*8px 8px 0 0;/,
+    );
+    expect(maskRootBlock).toMatch(
       /background:\s*var\(--update-announcement-mask-background\);/,
     );
     expect(panelBlock).toMatch(
@@ -6722,7 +6741,16 @@ describe("Gemini visual migration shell", () => {
       /border:\s*1px solid var\(--update-announcement-panel-border-color\);/,
     );
     expect(panelBlock).toMatch(
+      /border-radius:\s*var\(--update-announcement-panel-radius\);/,
+    );
+    expect(panelBlock).toMatch(
       /0 22px 70px var\(--update-announcement-panel-shadow-color\),/,
+    );
+    expect(panelBlock).toMatch(
+      /0 1px 2px var\(--update-announcement-panel-hairline-shadow-color\);/,
+    );
+    expect(headerBlock).toMatch(
+      /border-bottom:\s*1px solid var\(--update-announcement-divider-color\);/,
     );
     expect(sectionTitleBlock).toMatch(
       /color:\s*var\(--update-announcement-section-color\);/,
@@ -6739,7 +6767,13 @@ describe("Gemini visual migration shell", () => {
     expect(noteBlock).toMatch(
       /color:\s*var\(--update-announcement-note-color\);/,
     );
+    expect(noteBlock).toMatch(
+      /border-top:\s*1px solid var\(--update-announcement-divider-color\);/,
+    );
     expect(noteBlock).toMatch(/opacity:\s*1;/);
+    expect(footerBlock).toMatch(
+      /border-top:\s*1px solid var\(--update-announcement-divider-color\);/,
+    );
     expect(darkMaskBlock).toMatch(
       /--update-announcement-panel-border-ink:\s*rgb\(255,\s*255,\s*255\);/,
     );
@@ -6751,6 +6785,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(darkMaskBlock).toMatch(
       /--update-announcement-panel-shadow-color:\s*color-mix\(in srgb,\s*var\(--update-announcement-shadow-ink\) 36%,\s*transparent\);/,
+    );
+    expect(darkMaskBlock).toMatch(
+      /--update-announcement-divider-color:\s*color-mix\(in srgb,\s*var\(--update-announcement-panel-border-ink\) 12%,\s*transparent\);/,
     );
     expect(darkMaskBlock).toMatch(
       /--update-announcement-section-background:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*var\(--surface\)\);/,
@@ -6767,17 +6804,31 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkMaskBlock).toMatch(
       /--update-announcement-section-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 28%,\s*transparent\);/,
     );
+    expect(autoDarkMaskBlock).toMatch(
+      /--update-announcement-divider-color:\s*color-mix\(in srgb,\s*var\(--update-announcement-panel-border-ink\) 12%,\s*transparent\);/,
+    );
     expect(updateAnnouncementStyles).not.toContain(
       "--update-announcement-mask-background: color-mix(in srgb, var(--black) 50%, transparent);",
     );
     expect(updateAnnouncementStyles).not.toContain(
       "--update-announcement-panel-border-color: color-mix(in srgb, var(--white) 10%, transparent);",
     );
+    expect(updateAnnouncementStyles).not.toContain(
+      "border-bottom: var(--border-in-light)",
+    );
+    expect(updateAnnouncementStyles).not.toContain(
+      "border-top: var(--border-in-light)",
+    );
+    expect(updateAnnouncementStyles).not.toContain("border-radius: 14px");
+    expect(updateAnnouncementStyles).not.toContain("var(--card-shadow)");
     expect(mobileMaskBlock).toMatch(/height:\s*100dvh;/);
     expect(mobileMaskBlock).toMatch(/padding:\s*0;/);
     expect(mobilePanelBlock).toMatch(/width:\s*100vw;/);
     expect(mobilePanelBlock).toMatch(
       /max-height:\s*calc\(78dvh - env\(safe-area-inset-bottom\)\);/,
+    );
+    expect(mobilePanelBlock).toMatch(
+      /border-radius:\s*var\(--update-announcement-mobile-panel-radius\);/,
     );
     expect(mobileConfirmBlock).toMatch(/width:\s*100%;/);
   });

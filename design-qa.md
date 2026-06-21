@@ -7029,3 +7029,58 @@ Known risks:
 - Live Browser computed-style verification for the actual MCP Market form controls is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
 - MCP Market form interactions and server actions were not clicked because the target page was not reachable without credentials and those actions can mutate persisted MCP config or local server state.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-22 update-announcement-release-surface-tone
+
+Result: automated checks passed; live target QA blocked by access-code gate.
+
+Target flow:
+
+- Update Announcement should read as a Gemini-style release surface: quiet overlay, compact 8px modal/bottom sheet geometry, tokenized dividers, restrained elevation, and Dark/Auto dark-safe tone.
+- Seen-key generation, localStorage read/write, dismiss state, announcement rendering, confirm button behavior, model config, account/secret/sync/backend/deploy behavior, dependencies, and production config must remain unchanged.
+- The slice should refine only the release modal visual surface without changing TSX behavior or persisted update-announcement semantics.
+
+Design direction:
+
+- Creative Production style intake selected a release-surface direction: low-noise modal panel, compact 8px shell, tokenized separator lines, subtle hairline elevation, explicit Dark/Auto dark safety, and no decorative gradient treatment.
+- No generated raster design was used because this is a small UI-system repair inside the existing Gemini migration language. The design spec is the local token contract in `update-announcement.module.scss` plus this QA record.
+
+Scope:
+
+- `app/components/update-announcement.module.scss`: added local divider, hairline-shadow, desktop radius, and mobile radius tokens; replaced the old 14px modal/bottom-sheet radii, `border-in-light` header/note/footer separators, and `var(--card-shadow)` secondary elevation with tokenized 8px release-surface styling.
+- `test/gemini-visual-migration.test.ts`: strengthened the existing Update Announcement contract to lock divider/radius/hairline tokens, panel/header/note/footer/mobile consumers, Dark/Auto dark divider safety, old `border-in-light`/14px/`card-shadow` removal, and existing localStorage/dismiss/accessibility/button entry points.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No Update Announcement TSX behavior, update data loading, localStorage key semantics, confirm click logic, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, package files, or lockfiles were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="update announcement modal"` failed first as expected because `.mask` lacked the new divider/radius/elevation tokens and the modal still used old release-surface paint.
+- After implementing the release-surface tokens and consumers, the focused contract passed.
+- `git diff --check` passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `yarn build` passed with the existing Next warning that Edge runtime disables static generation for that page.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser opened `http://localhost:3001/`.
+- Desktop default viewport `1280x720` and mobile viewport `390x844` both reached the local access-code gate with title `NeatChat`, gate copy `需要密码`, `管理员开启了密码验证，请在下方填入访问码`, and action `确认`.
+- Both viewport checks had no console warn/error logs, no framework overlay, and horizontal overflow `0`. The actual Update Announcement modal was not rendered because the local gate blocked access.
+- In-app Browser screenshot capture failed with `Page.captureScreenshot` timeout for the tab.
+- No real access code was entered and no auth/config bypass was attempted. The update announcement confirm button, localStorage mutation, model/API request, account/key/sync/import/export/reset/clear, or persisted config action was not performed.
+
+Review:
+
+- Read-only sub-agent review found two P2 test/QA-record coverage gaps: the first version did not explicitly lock `dismissedKey !== seenKey`, `markAnnouncementSeen(seenKey)`, `setDismissedKey(seenKey)`, and `onClick={onConfirm}`, while this QA record claimed those behavior entry points were locked.
+- The P2 findings were fixed before commit by adding focused assertions for the dismiss visibility condition, confirm handler body, and confirm button click binding. This QA record now reflects the fixed coverage.
+- The review found no越界修改: the diff is limited to `app/components/update-announcement.module.scss`, `test/gemini-visual-migration.test.ts`, and this QA record, with no TSX behavior, update data loading, localStorage key semantics, backend/API, model config, account/secret/sync, production/deploy config, package/lockfile, or dependency changes.
+- Follow-up read-only review found no new P0/P1/P2 or blocking issues after the P2 test coverage fix.
+- The final review state confirms Browser QA is correctly described as blocked by the access-code gate and should not be described as live computed-style verification for the actual Update Announcement modal.
+
+Known risks:
+
+- Live Browser computed-style verification for the actual Update Announcement modal is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
+- The confirm/dismiss path was not clicked because the target modal was not reachable without credentials and clicking it would mutate localStorage. The source-level contract still locks the seen-key prefix, localStorage read/write, dismiss state, dialog accessibility, and confirm button entry point.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
