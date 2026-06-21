@@ -1,6 +1,20 @@
 @import "../styles/animation.scss";
 
 .mcp-market-page {
+  --mcp-market-status-running-ink: rgb(22, 163, 74);
+  --mcp-market-status-starting-ink: rgb(34, 197, 94);
+  --mcp-market-status-stopped-ink: rgb(107, 114, 128);
+  --mcp-market-status-error-ink: rgb(239, 68, 68);
+  --mcp-market-status-initializing-ink: rgb(245, 158, 11);
+  --mcp-market-status-ink: var(--mcp-market-status-running-ink);
+  --mcp-market-add-path-button-background: var(--primary);
+  --mcp-market-add-path-button-color: rgb(255, 255, 255);
+  --mcp-market-add-path-button-hover-background: color-mix(
+    in srgb,
+    var(--primary) 86%,
+    var(--black)
+  );
+
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -106,26 +120,44 @@
       }
 
       .operation-status {
+        --mcp-market-status-ink: var(--mcp-market-status-running-ink);
+        --mcp-market-status-background: color-mix(
+          in srgb,
+          var(--mcp-market-status-ink) 12%,
+          var(--surface-elevated)
+        );
+        --mcp-market-status-border-color: color-mix(
+          in srgb,
+          var(--mcp-market-status-ink) 34%,
+          transparent
+        );
+        --mcp-market-status-color: color-mix(
+          in srgb,
+          var(--mcp-market-status-ink) 78%,
+          var(--black)
+        );
+
         display: inline-flex;
         align-items: center;
         margin-left: 10px;
         padding: 2px 8px;
-        border-radius: 4px;
+        border: 1px solid var(--mcp-market-status-border-color);
+        border-radius: 999px;
         font-size: 12px;
-        background-color: #16a34a;
-        color: #fff;
+        background-color: var(--mcp-market-status-background);
+        color: var(--mcp-market-status-color);
         animation: pulse 1.5s infinite;
 
         &[data-status="stopping"] {
-          background-color: #9ca3af;
+          --mcp-market-status-ink: var(--mcp-market-status-stopped-ink);
         }
 
         &[data-status="starting"] {
-          background-color: #4ade80;
+          --mcp-market-status-ink: var(--mcp-market-status-starting-ink);
         }
 
         &[data-status="error"] {
-          background-color: #f87171;
+          --mcp-market-status-ink: var(--mcp-market-status-error-ink);
         }
       }
 
@@ -150,25 +182,43 @@
           margin-bottom: 8px;
 
           .server-status {
+            --mcp-market-status-ink: var(--mcp-market-status-running-ink);
+            --mcp-market-status-background: color-mix(
+              in srgb,
+              var(--mcp-market-status-ink) 12%,
+              var(--surface-elevated)
+            );
+            --mcp-market-status-border-color: color-mix(
+              in srgb,
+              var(--mcp-market-status-ink) 34%,
+              transparent
+            );
+            --mcp-market-status-color: color-mix(
+              in srgb,
+              var(--mcp-market-status-ink) 78%,
+              var(--black)
+            );
+
             display: inline-flex;
             align-items: center;
             margin-left: 10px;
             padding: 2px 8px;
-            border-radius: 4px;
+            border: 1px solid var(--mcp-market-status-border-color);
+            border-radius: 999px;
             font-size: 12px;
-            background-color: #22c55e;
-            color: #fff;
+            background-color: var(--mcp-market-status-background);
+            color: var(--mcp-market-status-color);
 
             &.error {
-              background-color: #ef4444;
+              --mcp-market-status-ink: var(--mcp-market-status-error-ink);
             }
 
             &.stopped {
-              background-color: #6b7280;
+              --mcp-market-status-ink: var(--mcp-market-status-stopped-ink);
             }
 
             &.initializing {
-              background-color: #f59e0b;
+              --mcp-market-status-ink: var(--mcp-market-status-initializing-ink);
               animation: pulse 1.5s infinite;
             }
 
@@ -281,8 +331,8 @@
 
     :global(.icon-button.add-path-button) {
       width: 100%;
-      background-color: var(--primary);
-      color: white;
+      background-color: var(--mcp-market-add-path-button-background);
+      color: var(--mcp-market-add-path-button-color);
       padding: 8px 12px;
       border-radius: 6px;
       transition: all 0.3s ease;
@@ -294,7 +344,7 @@
       height: 36px;
 
       &:hover {
-        background-color: var(--primary-dark);
+        background-color: var(--mcp-market-add-path-button-hover-background);
       }
 
       svg {
@@ -499,8 +549,8 @@
 
       :global(.icon-button.add-path-button) {
         width: 100%;
-        background-color: var(--primary);
-        color: white;
+        background-color: var(--mcp-market-add-path-button-background);
+        color: var(--mcp-market-add-path-button-color);
         padding: 8px 12px;
         border-radius: 6px;
         transition: all 0.3s ease;
@@ -512,7 +562,7 @@
         height: 36px;
 
         &:hover {
-          background-color: var(--primary-dark);
+          background-color: var(--mcp-market-add-path-button-hover-background);
         }
 
         svg {
@@ -632,6 +682,72 @@
         }
       }
     }
+  }
+}
+
+:global(.dark) .mcp-market-page {
+  --mcp-market-add-path-button-hover-background: color-mix(
+    in srgb,
+    var(--primary) 78%,
+    var(--black)
+  );
+}
+
+:global(.dark) .mcp-market-page .mcp-market-page-body .mcp-market-item
+  .operation-status,
+:global(.dark) .mcp-market-page .mcp-market-page-body .mcp-market-item
+  .mcp-market-header
+  .mcp-market-name
+  .server-status {
+  --mcp-market-status-background: color-mix(
+    in srgb,
+    var(--mcp-market-status-ink) 18%,
+    transparent
+  );
+  --mcp-market-status-border-color: color-mix(
+    in srgb,
+    var(--mcp-market-status-ink) 38%,
+    transparent
+  );
+  --mcp-market-status-color: color-mix(
+    in srgb,
+    var(--mcp-market-status-ink) 58%,
+    var(--black)
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .mcp-market-page {
+    --mcp-market-add-path-button-hover-background: color-mix(
+      in srgb,
+      var(--primary) 78%,
+      var(--black)
+    );
+  }
+
+  :global(body:not(.light)) .mcp-market-page .mcp-market-page-body
+    .mcp-market-item
+    .operation-status,
+  :global(body:not(.light)) .mcp-market-page .mcp-market-page-body
+    .mcp-market-item
+    .mcp-market-header
+    .mcp-market-name
+    .server-status {
+    --mcp-market-status-background: color-mix(
+      in srgb,
+      var(--mcp-market-status-ink) 18%,
+      transparent
+    );
+    --mcp-market-status-border-color: color-mix(
+      in srgb,
+      var(--mcp-market-status-ink) 38%,
+      transparent
+    );
+    --mcp-market-status-color: color-mix(
+      in srgb,
+      var(--mcp-market-status-ink) 58%,
+      var(--black)
+    );
   }
 }
 

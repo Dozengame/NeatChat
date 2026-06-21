@@ -6224,3 +6224,52 @@ Known risks:
 - Browser QA used DOM/CSSOM/computed-style evidence rather than screenshot pixels.
 - Settings danger controls were inspected but not clicked to avoid destructive reset/clear paths.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-21 mcp-market-status-tone
+
+Result: passed.
+
+Target flow:
+
+- MCP market server and operation status badges should use the same Gemini-style utility status language as the rest of the UI: soft semantic ink, subtle borders, quiet fills, and readable text across Light, explicit Dark, and Auto dark.
+- MCP config modal add-path primary actions should use local tokens instead of hardcoded `white` text and an undefined `--primary-dark` hover token.
+- MCP controller behavior, MCP add/start/stop/restart/configure/tools actions, config form value updates, model config semantics, account/secret/sync, backend/API, production config, deployment config, dependencies, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected quiet status badges: softer semantic backgrounds, readable text, pill radius, local tokens, Dark/Auto dark safety, and no MCP mutation.
+- The slice keeps the existing page structure, server sorting, operation status strings, action handlers, config form handlers, and modal behavior. Only MCP market SCSS paint sources move to local status/action tokens.
+
+Scope:
+
+- `app/components/mcp-market.module.scss`: added local `--mcp-market-*` status/action tokens, replaced old hardcoded green/red/yellow/gray status fills, replaced config add-path `white`/`--primary-dark`, and added explicit Dark plus Auto dark badge overrides with high-specificity selectors that beat the nested base badge rules.
+- `test/gemini-visual-migration.test.ts`: added a focused MCP market contract locking React behavior entry points, Light/Dark/Auto dark status token declarations, status-specific ink mappings, add-path token consumers, high-specificity dark selectors, and old hardcoded status paint removal.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TSX behavior, MCP controller/helper behavior, store logic, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, deploy files, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="MCP market status controls"` failed first as expected because MCP market status badges lacked local status tokens and still used old hardcoded status colors.
+- After implementation, the same focused contract passed.
+- Browser computed-style QA found a real CSS variable cascade issue: a status badge could override `--mcp-market-status-ink` while inherited derived background/border/color tokens still resolved from the root running ink. The fix moved derived status tokens onto the badge elements and added a root default ink.
+- Read-only review then found a blocking Dark/Auto dark specificity issue: low-specificity dark status selectors could not beat the nested base badge token declarations. The test was tightened to require the full high-specificity selector, failed first as expected, then passed after fixing the selectors.
+- `git diff --check` passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser was used for this slice. No real access code, key, account, model/API request, upload, image-generation action, persisted production config, backend config, dependency, send action, model request, MCP start/stop/add/restart/configure action, or model/config selection mutation was used.
+- Initial desktop `1280x720` direct route `#/mcp-market`: MCP market rendered 16 server items, one visible `Stopped` status badge, add buttons, and no horizontal overflow or console error logs. This pass surfaced the inherited-token bug described above.
+- After the CSS fixes, reloading the local app triggered the app's access-code gate. The Browser pass stopped at the password screen; no access code was entered and no auth/config bypass was attempted. Post-fix runtime computed-style evidence is therefore limited by local auth state, while source-level Jest and read-only review cover the corrected cascade contract.
+
+Review:
+
+- First read-only sub-agent review found one blocking issue: explicit Dark and Auto dark status overrides were lower specificity than the nested base `.operation-status` / `.server-status` rules, so they would not override the badge-derived tokens.
+- Main-thread fix replaced those selectors with full-path status selectors covering `.mcp-market-page-body`, `.mcp-market-item`, and for server status `.mcp-market-header .mcp-market-name`, then strengthened the test to fail on the low-specificity form.
+- Second read-only sub-agent review found no blocking or non-blocking issues. It confirmed the high-specificity Dark/Auto dark selectors beat the base rules, status ink mappings are complete, old hardcoded status colors are removed from the target scope, and behavior entry points remain unchanged.
+
+Known risks:
+
+- Post-fix live Browser computed-style verification for MCP market was blocked by the local access-code gate after reload. The slice does not enter credentials or change auth/config to bypass that gate.
+- Browser QA did not click Add, Start, Stop, Restart, Configure, Save, or Tools because those are MCP/config side-effect paths.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.

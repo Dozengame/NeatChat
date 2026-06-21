@@ -2283,6 +2283,219 @@ describe("Gemini visual migration shell", () => {
     expect(sharedButtonPaintScope).not.toContain("fill: white !important");
   });
 
+  test("keeps MCP market status controls aligned with Gemini utility tones", () => {
+    const mcpMarket = read("app/components/mcp-market.tsx");
+    const serverList = read("app/components/mcp-market/server-list.tsx");
+    const configForm = read("app/components/mcp-market/config-form.tsx");
+    const mcpMarketStyles = read("app/components/mcp-market.module.scss");
+    const mcpMarketPageBlock = readCssBlock(
+      mcpMarketStyles,
+      ".mcp-market-page",
+    );
+    const mcpMarketRootBlock = readRootDeclarations(mcpMarketPageBlock);
+    const darkMcpMarketBlock = readCssBlock(
+      mcpMarketStyles,
+      ":global(.dark) .mcp-market-page",
+    );
+    const darkMcpMarketStatusBlock = readCssBlock(
+      mcpMarketStyles,
+      ":global(.dark) .mcp-market-page .mcp-market-page-body .mcp-market-item\n  .operation-status,\n:global(.dark) .mcp-market-page .mcp-market-page-body .mcp-market-item\n  .mcp-market-header\n  .mcp-market-name\n  .server-status",
+    );
+    const autoDarkMcpMarketSelector =
+      ":global(body:not(.light)) .mcp-market-page";
+    const autoDarkMcpMarketStatusSelector =
+      ":global(body:not(.light)) .mcp-market-page .mcp-market-page-body\n    .mcp-market-item\n    .operation-status,\n  :global(body:not(.light)) .mcp-market-page .mcp-market-page-body\n    .mcp-market-item\n    .mcp-market-header\n    .mcp-market-name\n    .server-status";
+    const autoDarkMcpMarketSelectorIndex = mcpMarketStyles.indexOf(
+      autoDarkMcpMarketSelector,
+    );
+    const autoDarkMcpMarketMediaIndex = mcpMarketStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkMcpMarketSelectorIndex,
+    );
+    const autoDarkMcpMarketBlock = readCssBlock(
+      mcpMarketStyles.slice(autoDarkMcpMarketMediaIndex),
+      autoDarkMcpMarketSelector,
+    );
+    const autoDarkMcpMarketStatusBlock = readCssBlock(
+      mcpMarketStyles.slice(autoDarkMcpMarketMediaIndex),
+      autoDarkMcpMarketStatusSelector,
+    );
+    const operationStatusBlock = readCssBlock(
+      mcpMarketStyles,
+      ".operation-status",
+    );
+    const operationStoppingBlock = readCssBlock(
+      operationStatusBlock,
+      '&[data-status="stopping"]',
+    );
+    const operationStartingBlock = readCssBlock(
+      operationStatusBlock,
+      '&[data-status="starting"]',
+    );
+    const operationErrorBlock = readCssBlock(
+      operationStatusBlock,
+      '&[data-status="error"]',
+    );
+    const serverStatusBlock = readCssBlock(mcpMarketStyles, ".server-status");
+    const serverErrorBlock = readCssBlock(serverStatusBlock, "&.error");
+    const serverStoppedBlock = readCssBlock(serverStatusBlock, "&.stopped");
+    const serverInitializingBlock = readCssBlock(
+      serverStatusBlock,
+      "&.initializing",
+    );
+    const addPathButtonBlocks = Array.from(
+      mcpMarketStyles.matchAll(
+        /:global\(\.icon-button\.add-path-button\)\s*\{[\s\S]*?\n\s{6}\}/g,
+      ),
+      (match) => match[0],
+    );
+    const mcpMarketStatusPaintScope = [
+      mcpMarketRootBlock,
+      darkMcpMarketBlock,
+      darkMcpMarketStatusBlock,
+      autoDarkMcpMarketBlock,
+      autoDarkMcpMarketStatusBlock,
+      operationStatusBlock,
+      operationStoppingBlock,
+      operationStartingBlock,
+      operationErrorBlock,
+      serverStatusBlock,
+      serverErrorBlock,
+      serverStoppedBlock,
+      serverInitializingBlock,
+      ...addPathButtonBlocks,
+    ].join("\n");
+
+    expect(mcpMarket).toContain("useMcpMarketController");
+    expect(mcpMarket).toContain("onClick={restartAllServers}");
+    expect(mcpMarket).toContain("onClick={saveServerConfig}");
+    expect(serverList).toContain("getOperationStatusType(loadingState)");
+    expect(serverList).toContain("onAddServer(server)");
+    expect(serverList).toContain("onConfigureServer(server.id)");
+    expect(serverList).toContain("onPauseServer(server.id)");
+    expect(serverList).toContain("onRestartServer(server.id)");
+    expect(serverList).toContain("onViewTools(server.id)");
+    expect(configForm).toContain("onUserConfigChange");
+    expect(configForm).toContain("removeRowId(key, row.index)");
+
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-status-running-ink:\s*rgb\(22,\s*163,\s*74\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-status-starting-ink:\s*rgb\(34,\s*197,\s*94\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-status-stopped-ink:\s*rgb\(107,\s*114,\s*128\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-status-error-ink:\s*rgb\(239,\s*68,\s*68\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-status-initializing-ink:\s*rgb\(245,\s*158,\s*11\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-status-ink:\s*var\(--mcp-market-status-running-ink\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-add-path-button-color:\s*rgb\(255,\s*255,\s*255\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-add-path-button-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 86%,\s*var\(--black\)\s*\);/,
+    );
+    expect(darkMcpMarketStatusBlock).toMatch(
+      /--mcp-market-status-background:\s*color-mix\(\s*in srgb,\s*var\(--mcp-market-status-ink\) 18%,\s*transparent\s*\);/,
+    );
+    expect(darkMcpMarketStatusBlock).toMatch(
+      /--mcp-market-status-color:\s*color-mix\(\s*in srgb,\s*var\(--mcp-market-status-ink\) 58%,\s*var\(--black\)\s*\);/,
+    );
+    expect(autoDarkMcpMarketSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkMcpMarketMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkMcpMarketStatusBlock).toMatch(
+      /--mcp-market-status-background:\s*color-mix\(\s*in srgb,\s*var\(--mcp-market-status-ink\) 18%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkMcpMarketStatusBlock).toMatch(
+      /--mcp-market-status-color:\s*color-mix\(\s*in srgb,\s*var\(--mcp-market-status-ink\) 58%,\s*var\(--black\)\s*\);/,
+    );
+
+    expect(operationStatusBlock).toMatch(
+      /--mcp-market-status-ink:\s*var\(--mcp-market-status-running-ink\);/,
+    );
+    expect(operationStatusBlock).toMatch(
+      /--mcp-market-status-background:\s*color-mix\(\s*in srgb,\s*var\(--mcp-market-status-ink\) 12%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(operationStatusBlock).toMatch(
+      /--mcp-market-status-border-color:\s*color-mix\(\s*in srgb,\s*var\(--mcp-market-status-ink\) 34%,\s*transparent\s*\);/,
+    );
+    expect(operationStatusBlock).toMatch(
+      /--mcp-market-status-color:\s*color-mix\(\s*in srgb,\s*var\(--mcp-market-status-ink\) 78%,\s*var\(--black\)\s*\);/,
+    );
+    expect(operationStatusBlock).toMatch(
+      /background-color:\s*var\(--mcp-market-status-background\);/,
+    );
+    expect(operationStatusBlock).toMatch(
+      /border:\s*1px solid var\(--mcp-market-status-border-color\);/,
+    );
+    expect(operationStatusBlock).toMatch(
+      /color:\s*var\(--mcp-market-status-color\);/,
+    );
+    expect(operationStatusBlock).toMatch(/border-radius:\s*999px;/);
+    expect(operationStoppingBlock).toMatch(
+      /--mcp-market-status-ink:\s*var\(--mcp-market-status-stopped-ink\);/,
+    );
+    expect(operationStartingBlock).toMatch(
+      /--mcp-market-status-ink:\s*var\(--mcp-market-status-starting-ink\);/,
+    );
+    expect(operationErrorBlock).toMatch(
+      /--mcp-market-status-ink:\s*var\(--mcp-market-status-error-ink\);/,
+    );
+    expect(serverStatusBlock).toMatch(
+      /--mcp-market-status-ink:\s*var\(--mcp-market-status-running-ink\);/,
+    );
+    expect(serverStatusBlock).toMatch(
+      /--mcp-market-status-background:\s*color-mix\(\s*in srgb,\s*var\(--mcp-market-status-ink\) 12%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(serverStatusBlock).toMatch(
+      /--mcp-market-status-border-color:\s*color-mix\(\s*in srgb,\s*var\(--mcp-market-status-ink\) 34%,\s*transparent\s*\);/,
+    );
+    expect(serverStatusBlock).toMatch(
+      /--mcp-market-status-color:\s*color-mix\(\s*in srgb,\s*var\(--mcp-market-status-ink\) 78%,\s*var\(--black\)\s*\);/,
+    );
+    expect(serverStatusBlock).toMatch(
+      /background-color:\s*var\(--mcp-market-status-background\);/,
+    );
+    expect(serverStatusBlock).toMatch(
+      /border:\s*1px solid var\(--mcp-market-status-border-color\);/,
+    );
+    expect(serverStatusBlock).toMatch(
+      /color:\s*var\(--mcp-market-status-color\);/,
+    );
+    expect(serverErrorBlock).toMatch(
+      /--mcp-market-status-ink:\s*var\(--mcp-market-status-error-ink\);/,
+    );
+    expect(serverStoppedBlock).toMatch(
+      /--mcp-market-status-ink:\s*var\(--mcp-market-status-stopped-ink\);/,
+    );
+    expect(serverInitializingBlock).toMatch(
+      /--mcp-market-status-ink:\s*var\(--mcp-market-status-initializing-ink\);/,
+    );
+    expect(addPathButtonBlocks).toHaveLength(2);
+    addPathButtonBlocks.forEach((block) => {
+      expect(block).toMatch(
+        /background-color:\s*var\(--mcp-market-add-path-button-background\);/,
+      );
+      expect(block).toMatch(/color:\s*var\(--mcp-market-add-path-button-color\);/);
+      expect(block).toMatch(
+        /background-color:\s*var\(--mcp-market-add-path-button-hover-background\);/,
+      );
+    });
+    expect(mcpMarketStatusPaintScope).not.toMatch(
+      /#(?:16a34a|22c55e|9ca3af|4ade80|f87171|ef4444|6b7280|f59e0b)\b/i,
+    );
+    expect(mcpMarketStatusPaintScope).not.toContain("color: #fff");
+    expect(mcpMarketStatusPaintScope).not.toContain("color: white");
+    expect(mcpMarketStatusPaintScope).not.toContain("var(--primary-dark)");
+  });
+
   test("keeps composer attachment deletion focus handoff predictable", () => {
     const chat = read("app/components/chat.tsx");
 
