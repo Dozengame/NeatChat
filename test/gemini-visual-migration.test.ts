@@ -6666,6 +6666,151 @@ describe("Gemini visual migration shell", () => {
     expect(masksPaintScope).not.toContain("box-shadow: var(--card-shadow)");
   });
 
+  test("keeps Plugin edit modal content surfaces aligned with Gemini utility fields", () => {
+    const pluginPage = read("app/components/plugin.tsx");
+    const pluginStyles = read("app/components/plugin.module.scss");
+    const normalizedPluginPage = pluginPage.replace(/\s+/g, " ");
+    const normalizedPluginStyles = pluginStyles.replace(/\s+/g, " ");
+    const sharedSurfaceBlock = readCssBlock(
+      normalizedPluginStyles,
+      ".plugin-content, .plugin-schema",
+    );
+    const pluginContentBlock = readCssBlock(pluginStyles, ".plugin-content");
+    const contentCodeBlock = readCssBlock(pluginContentBlock, "pre code");
+    const codeFocusBlock = readCssBlock(contentCodeBlock, "&:focus-visible");
+    const schemaStylesSource = pluginStyles.slice(
+      pluginStyles.lastIndexOf("\n.plugin-schema {"),
+    );
+    const pluginSchemaBlock = readCssBlock(schemaStylesSource, ".plugin-schema");
+    const schemaInputBlock = readCssBlock(pluginSchemaBlock, "input");
+    const schemaInputFocusBlock = readCssBlock(schemaInputBlock, "&:focus-visible");
+    const mobileSchemaBlock = readCssBlock(
+      pluginSchemaBlock,
+      "@media screen and (max-width: 600px)",
+    );
+    const mobileInputBlock = readCssBlock(mobileSchemaBlock, "input");
+    const darkPluginContentBlock = readCssBlock(
+      normalizedPluginStyles,
+      ":global(.dark) .plugin-content, :global(.dark) .plugin-schema",
+    );
+    const autoDarkPluginSelector =
+      ":global(body:not(.light)) .plugin-content, :global(body:not(.light)) .plugin-schema";
+    const autoDarkPluginIndex = normalizedPluginStyles.indexOf(
+      autoDarkPluginSelector,
+    );
+    const autoDarkPluginMediaIndex = normalizedPluginStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkPluginIndex,
+    );
+    const autoDarkPluginBlock = readCssBlock(
+      normalizedPluginStyles.slice(autoDarkPluginMediaIndex),
+      autoDarkPluginSelector,
+    );
+    const pluginModalPaintScope = [
+      sharedSurfaceBlock,
+      pluginContentBlock,
+      contentCodeBlock,
+      pluginSchemaBlock,
+      schemaInputBlock,
+      mobileSchemaBlock,
+      darkPluginContentBlock,
+      autoDarkPluginBlock,
+    ].join("\n");
+
+    expect(pluginPage).toContain('pluginStyles["plugin-content"]');
+    expect(pluginPage).toContain('pluginStyles["plugin-schema"]');
+    expect(normalizedPluginPage).toMatch(
+      /className=\{clsx\("markdown-body", pluginStyles\["plugin-content"\]\)\}/,
+    );
+    expect(pluginPage).toContain("contentEditable={true}");
+    expect(pluginPage).toContain("suppressContentEditableWarning");
+    expect(pluginPage).toContain("onBlur={onChangePlugin}");
+    expect(pluginPage).toContain("pluginStore.updatePlugin(editingPlugin.id");
+    expect(pluginPage).toContain("plugin.authType = e.target.value;");
+    expect(pluginPage).toContain("plugin.authLocation = e.target.value;");
+    expect(pluginPage).toContain("plugin.authHeader = e.target.value;");
+    expect(pluginPage).toContain("plugin.authToken = e.currentTarget.value;");
+    expect(pluginPage).toContain("loadUrlRef.current = e.currentTarget.value;");
+    expect(pluginPage).toContain("onClick={() => loadFromUrl(loadUrlRef.current)}");
+    expect(pluginPage).toContain("FunctionToolService.add(plugin, true)");
+
+    expect(sharedSurfaceBlock).toMatch(/--plugin-modal-control-radius:\s*8px;/);
+    expect(sharedSurfaceBlock).toMatch(
+      /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*transparent\s*\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--plugin-modal-code-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 78%,\s*transparent\s*\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--plugin-modal-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--plugin-modal-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 8%,\s*transparent\s*\);/,
+    );
+    expect(pluginContentBlock).toMatch(/color:\s*var\(--black\);/);
+    expect(contentCodeBlock).toMatch(/display:\s*block;/);
+    expect(contentCodeBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(contentCodeBlock).toMatch(/width:\s*100%;/);
+    expect(contentCodeBlock).toMatch(/min-width:\s*0;/);
+    expect(contentCodeBlock).toMatch(/max-height:\s*min\(42vh,\s*360px\);/);
+    expect(contentCodeBlock).toMatch(/padding:\s*12px;/);
+    expect(contentCodeBlock).toMatch(
+      /border:\s*1px solid var\(--plugin-modal-border-color\);/,
+    );
+    expect(contentCodeBlock).toMatch(
+      /border-radius:\s*var\(--plugin-modal-control-radius\);/,
+    );
+    expect(contentCodeBlock).toMatch(
+      /background:\s*var\(--plugin-modal-code-background\);/,
+    );
+    expect(contentCodeBlock).toMatch(
+      /box-shadow:\s*inset 0 1px 2px var\(--plugin-modal-shadow-color\);/,
+    );
+    expect(codeFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(pluginSchemaBlock).toMatch(/gap:\s*10px;/);
+    expect(pluginSchemaBlock).toMatch(/align-items:\s*center;/);
+    expect(schemaInputBlock).toMatch(/margin-right:\s*0;/);
+    expect(schemaInputBlock).toMatch(/min-height:\s*36px;/);
+    expect(schemaInputBlock).toMatch(
+      /border:\s*1px solid var\(--plugin-modal-border-color\);/,
+    );
+    expect(schemaInputBlock).toMatch(
+      /border-radius:\s*var\(--plugin-modal-control-radius\);/,
+    );
+    expect(schemaInputBlock).toMatch(
+      /background:\s*var\(--plugin-modal-field-background\);/,
+    );
+    expect(schemaInputFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(schemaInputFocusBlock).toMatch(
+      /border-color:\s*var\(--plugin-modal-focus-border-color\);/,
+    );
+    expect(mobileSchemaBlock).toMatch(/gap:\s*8px;/);
+    expect(mobileSchemaBlock).toMatch(/align-items:\s*stretch;/);
+    expect(mobileInputBlock).toMatch(/width:\s*100%;/);
+    expect(mobileInputBlock).toMatch(/min-width:\s*0 !important;/);
+    expect(darkPluginContentBlock).toMatch(
+      /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkPluginContentBlock).toMatch(
+      /--plugin-modal-code-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 84%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkPluginIndex).toBeGreaterThan(-1);
+    expect(autoDarkPluginMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkPluginBlock).toMatch(
+      /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkPluginBlock).toMatch(
+      /--plugin-modal-code-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 84%,\s*var\(--white\)\s*\);/,
+    );
+    expect(pluginModalPaintScope).not.toContain("margin-right: 20px");
+    expect(pluginModalPaintScope).not.toContain("min-width: 280px");
+    expect(pluginModalPaintScope).not.toContain("max-height: 240px");
+    expect(pluginModalPaintScope).not.toContain("border-radius: 10px");
+    expect(pluginModalPaintScope).not.toContain("border: var(--border-in-light)");
+    expect(pluginModalPaintScope).not.toContain("background-color: var(--white)");
+    expect(pluginModalPaintScope).not.toContain("box-shadow: var(--card-shadow)");
+  });
+
   test("keeps artifacts preview shell aligned with Gemini output surfaces", () => {
     const artifacts = read("app/components/artifacts.tsx");
     const artifactsPreview = read("app/components/artifacts-preview.tsx");
