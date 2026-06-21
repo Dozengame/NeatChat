@@ -300,22 +300,86 @@
 }
 
 .image-previewer {
+  --export-preview-radius: 8px;
+  --export-preview-background: color-mix(
+    in srgb,
+    var(--surface-soft) 88%,
+    transparent
+  );
+  --export-preview-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 8%,
+    transparent
+  );
+  --export-preview-info-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 90%,
+    var(--gray)
+  );
+  --export-preview-info-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --export-preview-info-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 7%,
+    transparent
+  );
+  --export-preview-item-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 96%,
+    var(--white)
+  );
+  --export-preview-item-border-color: color-mix(
+    in srgb,
+    var(--primary) 16%,
+    transparent
+  );
+  --export-preview-item-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 8%,
+    transparent
+  );
+  --export-preview-message-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --export-preview-message-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 94%,
+    transparent
+  );
+  --export-preview-message-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --export-preview-image-border-color: color-mix(
+    in srgb,
+    var(--black-50) 18%,
+    transparent
+  );
+
   .preview-body {
-    border-radius: 10px;
+    border-radius: var(--export-preview-radius);
     padding: 20px;
-    box-shadow: var(--card-shadow) inset;
-    background-color: var(--gray);
+    box-shadow: inset 0 1px 2px var(--export-preview-shadow-color);
+    background: var(--export-preview-background);
 
     .chat-info {
-      background-color: var(--second);
+      background: var(--export-preview-info-background);
       padding: 20px;
-      border-radius: 10px;
+      border: 1px solid var(--export-preview-info-border-color);
+      border-radius: var(--export-preview-radius);
       margin-bottom: 20px;
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
       position: relative;
       overflow: hidden;
+      box-shadow: 0 12px 30px var(--export-preview-info-shadow-color);
 
       @media screen and (max-width: 600px) {
         flex-direction: column;
@@ -361,9 +425,10 @@
         font-size: 12px;
         color: var(--primary);
         padding: 2px 15px;
-        border-radius: 10px;
-        background-color: var(--white);
-        box-shadow: var(--card-shadow);
+        border: 1px solid var(--export-preview-item-border-color);
+        border-radius: 6px;
+        background: var(--export-preview-item-background);
+        box-shadow: 0 8px 18px var(--export-preview-item-shadow-color);
 
         &:not(:last-child) {
           margin-bottom: 5px;
@@ -380,11 +445,11 @@
       }
 
       .body {
-        border-radius: 10px;
+        border-radius: var(--export-preview-radius);
         padding: 8px 10px;
         max-width: calc(100% - 104px);
-        box-shadow: var(--card-shadow);
-        border: var(--border-in-light);
+        box-shadow: 0 10px 28px var(--export-preview-message-shadow-color);
+        border: 1px solid var(--export-preview-message-border-color);
 
         code,
         pre {
@@ -440,14 +505,14 @@
         .message-image,
         .message-image-multi {
           box-sizing: border-box;
-          border-radius: 10px;
-          border: rgba($color: #888, $alpha: 0.2) 1px solid;
+          border-radius: var(--export-preview-radius);
+          border: 1px solid var(--export-preview-image-border-color);
         }
       }
 
       &-assistant {
         .body {
-          background-color: var(--second);
+          background: var(--export-preview-message-background);
         }
       }
 
@@ -455,7 +520,7 @@
         flex-direction: row-reverse;
 
         .body {
-          background-color: var(--second);
+          background: var(--export-preview-message-background);
           margin-right: 10px;
         }
       }
@@ -463,4 +528,132 @@
   }
 
   .default-theme {}
+}
+
+:global(.dark) .image-previewer {
+  --export-preview-background: color-mix(
+    in srgb,
+    var(--surface-soft) 84%,
+    var(--white)
+  );
+  --export-preview-shadow-color: color-mix(
+    in srgb,
+    var(--black) 9%,
+    transparent
+  );
+  --export-preview-info-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    var(--white)
+  );
+  --export-preview-info-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --export-preview-info-shadow-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --export-preview-item-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 88%,
+    var(--white)
+  );
+  --export-preview-item-border-color: color-mix(
+    in srgb,
+    var(--primary) 22%,
+    transparent
+  );
+  --export-preview-item-shadow-color: color-mix(
+    in srgb,
+    var(--black) 9%,
+    transparent
+  );
+  --export-preview-message-border-color: color-mix(
+    in srgb,
+    var(--black) 11%,
+    transparent
+  );
+  --export-preview-message-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 88%,
+    var(--white)
+  );
+  --export-preview-message-shadow-color: color-mix(
+    in srgb,
+    var(--black) 11%,
+    transparent
+  );
+  --export-preview-image-border-color: color-mix(
+    in srgb,
+    var(--black) 14%,
+    transparent
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .image-previewer {
+    --export-preview-background: color-mix(
+      in srgb,
+      var(--surface-soft) 84%,
+      var(--white)
+    );
+    --export-preview-shadow-color: color-mix(
+      in srgb,
+      var(--black) 9%,
+      transparent
+    );
+    --export-preview-info-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 86%,
+      var(--white)
+    );
+    --export-preview-info-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --export-preview-info-shadow-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --export-preview-item-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 88%,
+      var(--white)
+    );
+    --export-preview-item-border-color: color-mix(
+      in srgb,
+      var(--primary) 22%,
+      transparent
+    );
+    --export-preview-item-shadow-color: color-mix(
+      in srgb,
+      var(--black) 9%,
+      transparent
+    );
+    --export-preview-message-border-color: color-mix(
+      in srgb,
+      var(--black) 11%,
+      transparent
+    );
+    --export-preview-message-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 88%,
+      var(--white)
+    );
+    --export-preview-message-shadow-color: color-mix(
+      in srgb,
+      var(--black) 11%,
+      transparent
+    );
+    --export-preview-image-border-color: color-mix(
+      in srgb,
+      var(--black) 14%,
+      transparent
+    );
+  }
 }

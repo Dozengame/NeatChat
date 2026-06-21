@@ -7067,6 +7067,179 @@ describe("Gemini visual migration shell", () => {
     expect(stepperPaintScope).not.toContain("var(--card-shadow)");
   });
 
+  test("keeps export image preview surfaces aligned with Gemini output panels", () => {
+    const exporter = read("app/components/exporter.tsx");
+    const exporterStyles = read("app/components/exporter.module.scss");
+    const imagePreviewerBlock = exporter.slice(
+      exporter.indexOf("function ImagePreviewer"),
+      exporter.indexOf("function MarkdownPreviewer"),
+    );
+    const previewerBlock = readCssBlock(exporterStyles, ".image-previewer");
+    const previewerRootBlock = readRootDeclarations(previewerBlock);
+    const previewBodyBlock = readCssBlock(previewerBlock, ".preview-body");
+    const chatInfoBlock = readCssBlock(previewBodyBlock, ".chat-info");
+    const chatInfoItemBlock = readCssBlock(chatInfoBlock, ".chat-info-item");
+    const messageBlock = readCssBlock(previewBodyBlock, ".message");
+    const messageBodyBlock = readCssBlock(messageBlock, ".body");
+    const normalizedMessageBodyBlock = messageBodyBlock.replace(/\s+/g, " ");
+    const messageImageBlock = readCssBlock(
+      normalizedMessageBodyBlock,
+      ".message-image, .message-image-multi",
+    );
+    const assistantBlock = readCssBlock(messageBlock, "&-assistant");
+    const assistantBodyBlock = readCssBlock(assistantBlock, ".body");
+    const userBlock = readCssBlock(messageBlock, "&-user");
+    const userBodyBlock = readCssBlock(userBlock, ".body");
+    const darkPreviewerBlock = readCssBlock(
+      exporterStyles,
+      ":global(.dark) .image-previewer",
+    );
+    const autoDarkPreviewerSelector =
+      ":global(body:not(.light)) .image-previewer";
+    const autoDarkPreviewerIndex = exporterStyles.indexOf(
+      autoDarkPreviewerSelector,
+    );
+    const autoDarkPreviewerMediaIndex = exporterStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkPreviewerIndex,
+    );
+    const autoDarkPreviewerBlock = readCssBlock(
+      exporterStyles.slice(autoDarkPreviewerMediaIndex),
+      autoDarkPreviewerSelector,
+    );
+    const exportPreviewPaintScope = [
+      previewerRootBlock,
+      previewBodyBlock,
+      chatInfoBlock,
+      chatInfoItemBlock,
+      messageBodyBlock,
+      messageImageBlock,
+      assistantBodyBlock,
+      userBodyBlock,
+      darkPreviewerBlock,
+      autoDarkPreviewerBlock,
+    ].join("\n");
+
+    expect(exporter).toContain('className={styles["image-previewer"]}');
+    expect(imagePreviewerBlock).toContain(
+      "const previewRef = useRef<HTMLDivElement>(null);",
+    );
+    expect(imagePreviewerBlock).toMatch(
+      /const copy = \(\) => \{[\s\S]*const dom = previewRef\.current;[\s\S]*if \(!dom\) return;[\s\S]*toBlob\(dom\)\.then/,
+    );
+    expect(imagePreviewerBlock).toMatch(
+      /const download = async \(\) => \{[\s\S]*const dom = previewRef\.current;[\s\S]*if \(!dom\) return;[\s\S]*const blob = await toPng\(dom\);/,
+    );
+    expect(imagePreviewerBlock).toMatch(
+      /<div\s+[^>]*className=\{clsx\(styles\["preview-body"\], styles\["default-theme"\]\)\}[^>]*ref=\{previewRef\}[^>]*>/,
+    );
+    expect(imagePreviewerBlock).toContain('className={styles["chat-info"]}');
+    expect(imagePreviewerBlock).toContain('className={styles["chat-info-item"]}');
+    expect(imagePreviewerBlock).toContain(
+      'className={clsx(styles["message"], styles["message-" + m.role])}',
+    );
+    expect(imagePreviewerBlock).toContain('className={styles["body"]}');
+    expect(imagePreviewerBlock).toContain("copy={copy}");
+    expect(imagePreviewerBlock).toContain("download={download}");
+
+    expect(previewerRootBlock).toMatch(/--export-preview-radius:\s*8px;/);
+    expect(previewerRootBlock).toMatch(
+      /--export-preview-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 88%,\s*transparent\s*\);/,
+    );
+    expect(previewerRootBlock).toMatch(
+      /--export-preview-info-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\s*\);/,
+    );
+    expect(previewerRootBlock).toMatch(
+      /--export-preview-item-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 96%,\s*var\(--white\)\s*\);/,
+    );
+    expect(previewerRootBlock).toMatch(
+      /--export-preview-message-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
+    );
+    expect(previewerRootBlock).toMatch(
+      /--export-preview-message-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 94%,\s*transparent\s*\);/,
+    );
+    expect(previewBodyBlock).toMatch(/border-radius:\s*var\(--export-preview-radius\);/);
+    expect(previewBodyBlock).toMatch(/background:\s*var\(--export-preview-background\);/);
+    expect(previewBodyBlock).toMatch(
+      /box-shadow:\s*inset 0 1px 2px var\(--export-preview-shadow-color\);/,
+    );
+    expect(chatInfoBlock).toMatch(
+      /background:\s*var\(--export-preview-info-background\);/,
+    );
+    expect(chatInfoBlock).toMatch(/border-radius:\s*var\(--export-preview-radius\);/);
+    expect(chatInfoBlock).toMatch(
+      /border:\s*1px solid var\(--export-preview-info-border-color\);/,
+    );
+    expect(chatInfoBlock).toMatch(
+      /box-shadow:\s*0 12px 30px var\(--export-preview-info-shadow-color\);/,
+    );
+    expect(chatInfoItemBlock).toMatch(
+      /background:\s*var\(--export-preview-item-background\);/,
+    );
+    expect(chatInfoItemBlock).toMatch(
+      /border:\s*1px solid var\(--export-preview-item-border-color\);/,
+    );
+    expect(chatInfoItemBlock).toMatch(/border-radius:\s*6px;/);
+    expect(chatInfoItemBlock).toMatch(
+      /box-shadow:\s*0 8px 18px var\(--export-preview-item-shadow-color\);/,
+    );
+    expect(messageBodyBlock).toMatch(/border-radius:\s*var\(--export-preview-radius\);/);
+    expect(messageBodyBlock).toMatch(
+      /border:\s*1px solid var\(--export-preview-message-border-color\);/,
+    );
+    expect(messageBodyBlock).toMatch(
+      /box-shadow:\s*0 10px 28px var\(--export-preview-message-shadow-color\);/,
+    );
+    expect(messageImageBlock).toMatch(/border-radius:\s*var\(--export-preview-radius\);/);
+    expect(messageImageBlock).toMatch(
+      /border:\s*1px solid var\(--export-preview-image-border-color\);/,
+    );
+    expect(assistantBodyBlock).toMatch(
+      /background:\s*var\(--export-preview-message-background\);/,
+    );
+    expect(userBodyBlock).toMatch(
+      /background:\s*var\(--export-preview-message-background\);/,
+    );
+    expect(darkPreviewerBlock).toMatch(
+      /--export-preview-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 84%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkPreviewerBlock).toMatch(
+      /--export-preview-info-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkPreviewerBlock).toMatch(
+      /--export-preview-item-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkPreviewerBlock).toMatch(
+      /--export-preview-message-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkPreviewerBlock).toMatch(
+      /--export-preview-image-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 14%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkPreviewerIndex).toBeGreaterThan(-1);
+    expect(autoDarkPreviewerMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkPreviewerBlock).toMatch(
+      /--export-preview-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 84%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkPreviewerBlock).toMatch(
+      /--export-preview-info-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkPreviewerBlock).toMatch(
+      /--export-preview-item-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkPreviewerBlock).toMatch(
+      /--export-preview-message-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkPreviewerBlock).toMatch(
+      /--export-preview-image-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 14%,\s*transparent\s*\);/,
+    );
+    expect(exportPreviewPaintScope).not.toContain("background-color: var(--gray)");
+    expect(exportPreviewPaintScope).not.toContain("background-color: var(--second)");
+    expect(exportPreviewPaintScope).not.toContain("background-color: var(--white)");
+    expect(exportPreviewPaintScope).not.toContain("border: var(--border-in-light)");
+    expect(exportPreviewPaintScope).not.toContain("border-radius: 10px");
+    expect(exportPreviewPaintScope).not.toContain("var(--card-shadow)");
+  });
+
   test("keeps update announcement modal aligned with Gemini release surfaces", () => {
     const updateAnnouncement = read("app/components/update-announcement.tsx");
     const updateAnnouncementStyles = read(
