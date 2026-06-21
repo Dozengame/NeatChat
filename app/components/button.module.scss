@@ -1,4 +1,41 @@
 .icon-button {
+  --icon-button-color: var(--black);
+  --icon-button-hover-background: var(--hover-color);
+  --icon-button-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 24%,
+    transparent
+  );
+  --icon-button-primary-background: var(--primary);
+  --icon-button-primary-color: rgb(255, 255, 255);
+  --icon-button-danger-ink: rgb(217, 48, 37);
+  --icon-button-danger-color: color-mix(
+    in srgb,
+    var(--icon-button-danger-ink) 82%,
+    var(--black)
+  );
+  --icon-button-danger-icon-color: var(--icon-button-danger-ink);
+  --icon-button-danger-background: color-mix(
+    in srgb,
+    var(--icon-button-danger-ink) 8%,
+    transparent
+  );
+  --icon-button-danger-border-color: color-mix(
+    in srgb,
+    var(--icon-button-danger-ink) 36%,
+    transparent
+  );
+  --icon-button-danger-hover-background: color-mix(
+    in srgb,
+    var(--icon-button-danger-ink) 12%,
+    transparent
+  );
+  --icon-button-danger-hover-border-color: color-mix(
+    in srgb,
+    var(--icon-button-danger-ink) 54%,
+    transparent
+  );
+
   appearance: none;
   box-sizing: border-box;
   background-color: transparent;
@@ -17,7 +54,7 @@
   user-select: none;
   outline: none;
   border: none;
-  color: var(--black);
+  color: var(--icon-button-color);
   font-family: inherit;
   line-height: 1;
 
@@ -27,40 +64,108 @@
   }
 
   &.primary {
-    background-color: var(--primary);
-    color: white;
+    background-color: var(--icon-button-primary-background);
+    color: var(--icon-button-primary-color);
 
     path {
-      fill: white !important;
+      fill: var(--icon-button-primary-color) !important;
     }
   }
 
   &.danger {
-    color: rgba($color: red, $alpha: 0.8);
-    border-color: rgba($color: red, $alpha: 0.5);
-    background-color: rgba($color: red, $alpha: 0.05);
+    color: var(--icon-button-danger-color);
+    border-color: var(--icon-button-danger-border-color);
+    background-color: var(--icon-button-danger-background);
 
     &:hover {
-      border-color: red;
-      background-color: rgba($color: red, $alpha: 0.1);
+      border-color: var(--icon-button-danger-hover-border-color);
+      background-color: var(--icon-button-danger-hover-background);
     }
 
     path {
-      fill: red !important;
+      fill: var(--icon-button-danger-icon-color) !important;
     }
   }
 
   &:hover {
-    background-color: var(--hover-color);
-    border-color: rgba(49, 94, 248, 0.24);
+    background-color: var(--icon-button-hover-background);
+    border-color: var(--icon-button-hover-border-color);
   }
 
   &:focus-visible {
     outline: var(--focus-ring);
     outline-offset: 2px;
-    background-color: var(--hover-color);
-    border-color: rgba(49, 94, 248, 0.24);
+    background-color: var(--icon-button-hover-background);
+    border-color: var(--icon-button-hover-border-color);
     box-shadow: var(--focus-ring-shadow);
+  }
+}
+
+:global(.dark) .icon-button {
+  --icon-button-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 30%,
+    transparent
+  );
+  --icon-button-danger-color: color-mix(
+    in srgb,
+    var(--icon-button-danger-ink) 58%,
+    var(--black)
+  );
+  --icon-button-danger-background: color-mix(
+    in srgb,
+    var(--icon-button-danger-ink) 14%,
+    transparent
+  );
+  --icon-button-danger-border-color: color-mix(
+    in srgb,
+    var(--icon-button-danger-ink) 44%,
+    transparent
+  );
+  --icon-button-danger-hover-background: color-mix(
+    in srgb,
+    var(--icon-button-danger-ink) 18%,
+    transparent
+  );
+  --icon-button-danger-hover-border-color: color-mix(
+    in srgb,
+    var(--icon-button-danger-ink) 60%,
+    transparent
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .icon-button {
+    --icon-button-hover-border-color: color-mix(
+      in srgb,
+      var(--primary) 30%,
+      transparent
+    );
+    --icon-button-danger-color: color-mix(
+      in srgb,
+      var(--icon-button-danger-ink) 58%,
+      var(--black)
+    );
+    --icon-button-danger-background: color-mix(
+      in srgb,
+      var(--icon-button-danger-ink) 14%,
+      transparent
+    );
+    --icon-button-danger-border-color: color-mix(
+      in srgb,
+      var(--icon-button-danger-ink) 44%,
+      transparent
+    );
+    --icon-button-danger-hover-background: color-mix(
+      in srgb,
+      var(--icon-button-danger-ink) 18%,
+      transparent
+    );
+    --icon-button-danger-hover-border-color: color-mix(
+      in srgb,
+      var(--icon-button-danger-ink) 60%,
+      transparent
+    );
   }
 }
 

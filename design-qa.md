@@ -6175,3 +6175,52 @@ Known risks:
 
 - Browser QA validates selector bottom-sheet rules through compiled CSSOM because the current model selector entry does not expose the shared `Selector` component in this runtime state. Source-level Jest covers the shared `Selector` source structure and style contract, not a full rendered selection/close/search behavior test.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-21 shared-icon-button-surface-tone
+
+Result: passed.
+
+Target flow:
+
+- Shared `IconButton` primary, danger, hover, and focus-visible states should read as one Gemini-style utility-control language across Light, explicit Dark, Auto dark, desktop, and mobile.
+- Primary action, destructive action, quiet hover, border hover, and focus affordances should consume local theme tokens instead of isolated hardcoded red, white, or blue rgba paint.
+- Button DOM structure, click/disabled/ARIA behavior, mobile sidebar trigger, model config semantics, account/secret/sync, backend/API, production config, deployment config, dependencies, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected a quiet shared utility-control direction: tokenized default foreground, primary solid action, soft destructive state, hover border tied to `--primary`, explicit Dark/Auto dark safety, and no behavior/config/backend change.
+- The slice keeps the existing `IconButton` component API, class composition, accessible labels, click handlers, disabled handling, layout dimensions, and mobile padding. Only shared state paint sources move to local SCSS tokens.
+
+Scope:
+
+- `app/components/button.module.scss`: added local `--icon-button-*` tokens, replaced old hardcoded red/white/blue hover paint, added explicit Dark plus Auto dark token overrides, and kept `focus-visible` on the existing app focus ring.
+- `test/gemini-visual-migration.test.ts`: added a focused visual migration contract locking `IconButton` source behavior hooks, Light/Dark/Auto dark token declarations, token consumers, focus ring preservation, old paint removal, and Auto dark parity for hover/danger tokens.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component behavior, stores, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, deploy files, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="shared IconButton states"` failed first as expected because shared `IconButton` still used old hardcoded color paint and lacked root state tokens.
+- After implementation, the same focused visual migration contract passed.
+- After read-only review noted Auto dark parity was weaker than explicit Dark coverage, the test contract was strengthened for Auto dark hover/danger tokens and the same focused test passed again.
+- `git diff --check` passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser was used for this slice. No real access code, key, account, model/API request, upload, image-generation action, persisted production config, backend config, dependency, send action, model request, or model/config selection mutation was used.
+- Desktop default runtime `1280x720`: chat shell loaded at `/`, 6 shared `IconButton` instances were present, send primary button stayed disabled, all visible sampled controls resolved the new token values, and console error logs were `0`.
+- Settings route `#/settings`: 9 shared `IconButton` instances were present; the two danger buttons `立即重置` and `立即清除` were visible, used the new danger background/border/color tokens, kept normal dimensions, and were not clicked.
+- Mobile `390x844`: Settings and chat views had no horizontal overflow; mobile chat showed a visible 40px shared settings button with the new token values; console error logs were `0`. The temporary viewport override was reset after QA.
+
+Review:
+
+- Read-only sub-agent review found no blocking issues. It confirmed the diff is limited to `app/components/button.module.scss`, `test/gemini-visual-migration.test.ts`, and this QA record; no TSX behavior, store, model config, account/secret/sync, backend/API, production/deployment config, dependency, send-path, or internal-plan changes were found.
+- The reviewer confirmed `danger:hover` remains more specific than general hover, `:global(.dark) .icon-button` and Auto dark media selectors match the repository's theme pattern, and the migration preserves existing `IconButton` semantics.
+- The only non-blocking review note was weaker Auto dark parity coverage in the new test. This was addressed by adding Auto dark assertions for hover border, danger color, danger border, danger hover background, and danger hover border.
+
+Known risks:
+
+- Browser QA used DOM/CSSOM/computed-style evidence rather than screenshot pixels.
+- Settings danger controls were inspected but not clicked to avoid destructive reset/clear paths.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.

@@ -2122,6 +2122,167 @@ describe("Gemini visual migration shell", () => {
     expect(gitignore).toContain(".DS_Store");
   });
 
+  test("keeps shared IconButton states aligned with Gemini utility controls", () => {
+    const button = read("app/components/button.tsx");
+    const buttonStyles = read("app/components/button.module.scss");
+    const iconButtonBlock = readCssBlock(buttonStyles, ".icon-button");
+    const iconButtonRootBlock = readRootDeclarations(iconButtonBlock);
+    const primaryBlock = readCssBlock(iconButtonBlock, "&.primary");
+    const dangerBlock = readCssBlock(iconButtonBlock, "&.danger");
+    const dangerHoverBlock = readCssBlock(dangerBlock, "&:hover");
+    const rootHoverIndex = iconButtonBlock.indexOf("\n  &:hover");
+    const hoverBlock = readCssBlock(
+      iconButtonBlock.slice(rootHoverIndex),
+      "&:hover",
+    );
+    const focusBlock = readCssBlock(iconButtonBlock, "&:focus-visible");
+    const darkIconButtonBlock = readCssBlock(
+      buttonStyles,
+      ":global(.dark) .icon-button",
+    );
+    const autoDarkIconButtonSelector =
+      ":global(body:not(.light)) .icon-button";
+    const autoDarkIconButtonSelectorIndex = buttonStyles.indexOf(
+      autoDarkIconButtonSelector,
+    );
+    const autoDarkIconButtonMediaIndex = buttonStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkIconButtonSelectorIndex,
+    );
+    const autoDarkIconButtonBlock = readCssBlock(
+      buttonStyles.slice(autoDarkIconButtonMediaIndex),
+      autoDarkIconButtonSelector,
+    );
+    const sharedButtonPaintScope = [
+      iconButtonRootBlock,
+      primaryBlock,
+      dangerBlock,
+      dangerHoverBlock,
+      hoverBlock,
+      focusBlock,
+      darkIconButtonBlock,
+      autoDarkIconButtonBlock,
+    ].join("\n");
+
+    expect(button).toContain('export type ButtonType = "primary" | "danger" | null;');
+    expect(button).toContain("onClick={props.onClick}");
+    expect(button).toContain("disabled={props.disabled}");
+    expect(button).toContain("aria-label={props.aria}");
+    expect(button).toContain("data-mobile-sidebar-trigger=");
+    expect(rootHoverIndex).toBeGreaterThan(-1);
+
+    expect(iconButtonRootBlock).toMatch(
+      /--icon-button-color:\s*var\(--black\);/,
+    );
+    expect(iconButtonRootBlock).toMatch(
+      /--icon-button-hover-background:\s*var\(--hover-color\);/,
+    );
+    expect(iconButtonRootBlock).toMatch(
+      /--icon-button-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 24%,\s*transparent\s*\);/,
+    );
+    expect(iconButtonRootBlock).toMatch(
+      /--icon-button-primary-background:\s*var\(--primary\);/,
+    );
+    expect(iconButtonRootBlock).toMatch(
+      /--icon-button-primary-color:\s*rgb\(255,\s*255,\s*255\);/,
+    );
+    expect(iconButtonRootBlock).toMatch(
+      /--icon-button-danger-ink:\s*rgb\(217,\s*48,\s*37\);/,
+    );
+    expect(iconButtonRootBlock).toMatch(
+      /--icon-button-danger-color:\s*color-mix\(\s*in srgb,\s*var\(--icon-button-danger-ink\) 82%,\s*var\(--black\)\s*\);/,
+    );
+    expect(iconButtonRootBlock).toMatch(
+      /--icon-button-danger-background:\s*color-mix\(\s*in srgb,\s*var\(--icon-button-danger-ink\) 8%,\s*transparent\s*\);/,
+    );
+    expect(iconButtonRootBlock).toMatch(
+      /--icon-button-danger-border-color:\s*color-mix\(\s*in srgb,\s*var\(--icon-button-danger-ink\) 36%,\s*transparent\s*\);/,
+    );
+    expect(darkIconButtonBlock).toMatch(
+      /--icon-button-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 30%,\s*transparent\s*\);/,
+    );
+    expect(darkIconButtonBlock).toMatch(
+      /--icon-button-danger-background:\s*color-mix\(\s*in srgb,\s*var\(--icon-button-danger-ink\) 14%,\s*transparent\s*\);/,
+    );
+    expect(darkIconButtonBlock).toMatch(
+      /--icon-button-danger-color:\s*color-mix\(\s*in srgb,\s*var\(--icon-button-danger-ink\) 58%,\s*var\(--black\)\s*\);/,
+    );
+    expect(darkIconButtonBlock).toMatch(
+      /--icon-button-danger-border-color:\s*color-mix\(\s*in srgb,\s*var\(--icon-button-danger-ink\) 44%,\s*transparent\s*\);/,
+    );
+    expect(darkIconButtonBlock).toMatch(
+      /--icon-button-danger-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--icon-button-danger-ink\) 18%,\s*transparent\s*\);/,
+    );
+    expect(darkIconButtonBlock).toMatch(
+      /--icon-button-danger-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--icon-button-danger-ink\) 60%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkIconButtonSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkIconButtonMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkIconButtonBlock).toMatch(
+      /--icon-button-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 30%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkIconButtonBlock).toMatch(
+      /--icon-button-danger-color:\s*color-mix\(\s*in srgb,\s*var\(--icon-button-danger-ink\) 58%,\s*var\(--black\)\s*\);/,
+    );
+    expect(autoDarkIconButtonBlock).toMatch(
+      /--icon-button-danger-background:\s*color-mix\(\s*in srgb,\s*var\(--icon-button-danger-ink\) 14%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkIconButtonBlock).toMatch(
+      /--icon-button-danger-border-color:\s*color-mix\(\s*in srgb,\s*var\(--icon-button-danger-ink\) 44%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkIconButtonBlock).toMatch(
+      /--icon-button-danger-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--icon-button-danger-ink\) 18%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkIconButtonBlock).toMatch(
+      /--icon-button-danger-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--icon-button-danger-ink\) 60%,\s*transparent\s*\);/,
+    );
+
+    expect(iconButtonRootBlock).toMatch(/color:\s*var\(--icon-button-color\);/);
+    expect(primaryBlock).toMatch(
+      /background-color:\s*var\(--icon-button-primary-background\);/,
+    );
+    expect(primaryBlock).toMatch(/color:\s*var\(--icon-button-primary-color\);/);
+    expect(primaryBlock).toMatch(
+      /fill:\s*var\(--icon-button-primary-color\) !important;/,
+    );
+    expect(dangerBlock).toMatch(/color:\s*var\(--icon-button-danger-color\);/);
+    expect(dangerBlock).toMatch(
+      /border-color:\s*var\(--icon-button-danger-border-color\);/,
+    );
+    expect(dangerBlock).toMatch(
+      /background-color:\s*var\(--icon-button-danger-background\);/,
+    );
+    expect(dangerBlock).toMatch(
+      /fill:\s*var\(--icon-button-danger-icon-color\) !important;/,
+    );
+    expect(dangerHoverBlock).toMatch(
+      /border-color:\s*var\(--icon-button-danger-hover-border-color\);/,
+    );
+    expect(dangerHoverBlock).toMatch(
+      /background-color:\s*var\(--icon-button-danger-hover-background\);/,
+    );
+    expect(hoverBlock).toMatch(
+      /background-color:\s*var\(--icon-button-hover-background\);/,
+    );
+    expect(hoverBlock).toMatch(
+      /border-color:\s*var\(--icon-button-hover-border-color\);/,
+    );
+    expect(focusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(focusBlock).toMatch(
+      /background-color:\s*var\(--icon-button-hover-background\);/,
+    );
+    expect(focusBlock).toMatch(
+      /border-color:\s*var\(--icon-button-hover-border-color\);/,
+    );
+    expect(focusBlock).toMatch(/box-shadow:\s*var\(--focus-ring-shadow\);/);
+    expect(sharedButtonPaintScope).not.toMatch(/rgba\(\$color:\s*red/);
+    expect(sharedButtonPaintScope).not.toContain("border-color: red");
+    expect(sharedButtonPaintScope).not.toContain("fill: red !important");
+    expect(sharedButtonPaintScope).not.toContain("rgba(49, 94, 248, 0.24)");
+    expect(sharedButtonPaintScope).not.toContain("color: white");
+    expect(sharedButtonPaintScope).not.toContain("fill: white !important");
+  });
+
   test("keeps composer attachment deletion focus handoff predictable", () => {
     const chat = read("app/components/chat.tsx");
 
