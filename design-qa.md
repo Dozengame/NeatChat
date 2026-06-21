@@ -6378,3 +6378,56 @@ Known risks:
 - Live Browser computed-style verification for MCP market list/card controls is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
 - Browser QA did not click Add, Start, Stop, Restart, Configure, Save, or Tools because those are MCP/config side-effect paths.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-21 settings-prompt-surface-tone
+
+Result: passed.
+
+Target flow:
+
+- Settings prompt management modal search, prompt list, row dividers, hover state, title/content text, and focus affordance should read as one Gemini-style quiet utility surface across Light, explicit Dark, and Auto dark.
+- Prompt search/list surfaces should consume local `--settings-prompt-*` tokens instead of raw `var(--gray)`, generic `var(--border-in-light)`, or the old 10px list radius.
+- Settings page structure, prompt search/filter logic, add/edit/remove/copy callbacks, model config semantics, account/secret/sync/backend/deploy behavior, dependencies, send path, and production config must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected a quiet utility-modal direction: 8px prompt list radius, elevated neutral search well, subtle tokenized dividers, soft primary hover/focus, muted content text, Dark/Auto dark safety, and no prompt-store or Settings behavior change.
+- No generated raster design was used because this is a small UI-system repair inside the existing Gemini migration language. The design spec is the local token contract in `settings.module.scss` plus this QA record.
+
+Scope:
+
+- `app/components/settings.module.scss`: added local `--settings-prompt-*` tokens scoped to `.user-prompt-modal`, replaced prompt search/list legacy paint with tokenized surface, border, hover, divider, focus, title, and muted-content styles, and added explicit Dark plus Auto dark token overrides.
+- `test/gemini-visual-migration.test.ts`: added a focused Settings prompt-management contract locking prompt modal behavior entry points, Light/Dark/Auto dark token declarations, search/list/item token consumers, old target paint removal, and the narrowed modal-only scope.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TSX behavior, store logic, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, deploy files, send path, model request payload construction, or Settings page-level layout/background contract was changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="Settings prompt management"` failed first as expected because `.settings` / `.user-prompt-modal` had no local prompt surface tokens and the prompt search/list still used legacy paint.
+- After implementation and test-scope correction, the same focused contract passed.
+- After read-only review found the first patch overreached by tokenizing `.settings` page background, the scope was narrowed to `.user-prompt-modal`; the focused contract passed again.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `yarn build` passed with the existing Next warning that Edge runtime disables static generation for that page.
+- `git diff --check` passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser was used for this slice. No real access code, key, account, model/API request, upload, image-generation action, persisted production config, backend config, dependency, send action, model request, prompt add/edit/remove/copy action, Settings change, sync/import/export/reset/clear action, or model/config selection mutation was used.
+- The first Browser run hit the local access-code gate on `http://localhost:3001/#/settings`, so the prompt modal itself could not be opened without credentials.
+- Running `yarn build` while the dev server was alive caused a temporary dev-server `.next` runtime error/blank-shell state; the dev server was stopped and restarted before final Browser status collection.
+- Fresh post-restart Browser check at `http://localhost:3001/#/settings` showed the access-code gate text `需要密码`, `管理员开启了密码验证，请在下方填入访问码`, `确认`; framework overlay was absent, console warn/error logs were `0`, and horizontal overflow was `0`.
+
+Review:
+
+- Read-only sub-agent review first found one Important issue: the initial diff also added `.settings` page-level background/token contracts, which exceeded the intended prompt-modal-only scope.
+- Main-thread fix removed all `.settings` root prompt/background token contracts and updated the Jest contract to cover only `.user-prompt-modal` and its children.
+- Follow-up checks confirmed the revised diff stays limited to the prompt-management modal style surface and visual test contract, with no TSX/runtime behavior changes.
+
+Known risks:
+
+- Live Browser computed-style verification for the prompt modal is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
+- Prompt add/edit/remove/copy controls were not clicked because they mutate prompt data or clipboard state.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.

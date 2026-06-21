@@ -3,6 +3,64 @@
   overflow: auto;
 }
 
+:global(.dark) .user-prompt-modal {
+  --settings-prompt-search-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    var(--white)
+  );
+  --settings-prompt-border-color: color-mix(
+    in srgb,
+    var(--black) 11%,
+    transparent
+  );
+  --settings-prompt-divider-color: color-mix(
+    in srgb,
+    var(--black) 9%,
+    transparent
+  );
+  --settings-prompt-muted-color: color-mix(
+    in srgb,
+    var(--black) 56%,
+    transparent
+  );
+  --settings-prompt-hover-background: color-mix(
+    in srgb,
+    var(--primary) 12%,
+    var(--surface-elevated)
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .user-prompt-modal {
+    --settings-prompt-search-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 86%,
+      var(--white)
+    );
+    --settings-prompt-border-color: color-mix(
+      in srgb,
+      var(--black) 11%,
+      transparent
+    );
+    --settings-prompt-divider-color: color-mix(
+      in srgb,
+      var(--black) 9%,
+      transparent
+    );
+    --settings-prompt-muted-color: color-mix(
+      in srgb,
+      var(--black) 56%,
+      transparent
+    );
+    --settings-prompt-hover-background: color-mix(
+      in srgb,
+      var(--primary) 12%,
+      var(--surface-elevated)
+    );
+  }
+}
+
 .avatar {
   cursor: pointer;
   position: relative;
@@ -24,37 +82,98 @@
 }
 
 .user-prompt-modal {
+  --settings-prompt-list-background: var(--surface-elevated);
+  --settings-prompt-item-background: var(--surface-elevated);
+  --settings-prompt-search-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 88%,
+    var(--gray)
+  );
+  --settings-prompt-border-color: color-mix(
+    in srgb,
+    var(--black-50) 14%,
+    transparent
+  );
+  --settings-prompt-divider-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --settings-prompt-muted-color: color-mix(
+    in srgb,
+    var(--black-50) 74%,
+    transparent
+  );
+  --settings-prompt-hover-background: color-mix(
+    in srgb,
+    var(--primary) 7%,
+    var(--surface-elevated)
+  );
+  --settings-prompt-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 58%,
+    transparent
+  );
+  --settings-prompt-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 16%,
+    transparent
+  );
   min-height: 40vh;
 
   .user-prompt-search {
     width: 100%;
     max-width: 100%;
     margin-bottom: 10px;
-    background-color: var(--gray);
+    background-color: var(--settings-prompt-search-background);
+    border: 1px solid var(--settings-prompt-border-color);
+    border-radius: 8px;
+    box-shadow: 0 1px 2px
+      color-mix(in srgb, var(--black-50) 4%, transparent);
+    color: var(--black);
+    transition:
+      background-color 0.16s ease,
+      border-color 0.16s ease,
+      box-shadow 0.16s ease;
+
+    &:focus {
+      border-color: var(--settings-prompt-focus-border-color);
+      box-shadow: 0 0 0 3px var(--settings-prompt-focus-shadow-color);
+    }
   }
 
   .user-prompt-list {
-    border: var(--border-in-light);
-    border-radius: 10px;
+    background-color: var(--settings-prompt-list-background);
+    border: 1px solid var(--settings-prompt-border-color);
+    border-radius: 8px;
+    overflow: hidden;
 
     .user-prompt-item {
       display: flex;
       justify-content: space-between;
+      background-color: var(--settings-prompt-item-background);
       padding: 10px;
+      transition: background-color 0.16s ease;
+
+      &:hover {
+        background-color: var(--settings-prompt-hover-background);
+      }
 
       &:not(:last-child) {
-        border-bottom: var(--border-in-light);
+        border-bottom: 1px solid var(--settings-prompt-divider-color);
       }
 
       .user-prompt-header {
         max-width: calc(100% - 100px);
 
         .user-prompt-title {
+          color: var(--black);
           font-size: 14px;
           line-height: 2;
           font-weight: bold;
         }
         .user-prompt-content {
+          color: var(--settings-prompt-muted-color);
           font-size: 12px;
         }
       }

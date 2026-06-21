@@ -6988,4 +6988,153 @@ describe("Gemini visual migration shell", () => {
       /\.prompt-toast-inner[\s\S]*animation:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
     );
   });
+
+  test("keeps Settings prompt management aligned with Gemini utility surfaces", () => {
+    const settings = read("app/components/settings.tsx");
+    const userPromptModal = read("app/components/settings-user-prompt-modal.tsx");
+    const settingsStyles = read("app/components/settings.module.scss");
+    const userPromptModalSelectorIndex = settingsStyles.indexOf(
+      "\n.user-prompt-modal {",
+    );
+    const userPromptModalBlock = readCssBlock(
+      settingsStyles.slice(userPromptModalSelectorIndex),
+      ".user-prompt-modal",
+    );
+    const userPromptModalRootBlock = readRootDeclarations(
+      userPromptModalBlock,
+    );
+    const darkSettingsPromptBlock = readCssBlock(
+      settingsStyles,
+      ":global(.dark) .user-prompt-modal",
+    );
+    const autoDarkSettingsPromptSelector =
+      ":global(body:not(.light)) .user-prompt-modal";
+    const autoDarkSettingsPromptSelectorIndex = settingsStyles.indexOf(
+      autoDarkSettingsPromptSelector,
+    );
+    const autoDarkSettingsPromptMediaIndex = settingsStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkSettingsPromptSelectorIndex,
+    );
+    const autoDarkSettingsPromptBlock = readCssBlock(
+      settingsStyles.slice(autoDarkSettingsPromptMediaIndex),
+      autoDarkSettingsPromptSelector,
+    );
+    const promptSearchBlock = readCssBlock(
+      userPromptModalBlock,
+      ".user-prompt-search",
+    );
+    const promptSearchFocusBlock = readCssBlock(promptSearchBlock, "&:focus");
+    const promptListBlock = readCssBlock(
+      userPromptModalBlock,
+      ".user-prompt-list",
+    );
+    const promptItemBlock = readCssBlock(promptListBlock, ".user-prompt-item");
+    const promptItemHoverBlock = readCssBlock(promptItemBlock, "&:hover");
+    const promptItemDividerBlock = readCssBlock(
+      promptItemBlock,
+      "&:not(:last-child)",
+    );
+    const promptTitleBlock = readCssBlock(
+      promptItemBlock,
+      ".user-prompt-title",
+    );
+    const promptContentBlock = readCssBlock(
+      promptItemBlock,
+      ".user-prompt-content",
+    );
+    const settingsPromptPaintScope = [
+      userPromptModalRootBlock,
+      darkSettingsPromptBlock,
+      autoDarkSettingsPromptBlock,
+      promptSearchBlock,
+      promptSearchFocusBlock,
+      promptListBlock,
+      promptItemBlock,
+      promptItemHoverBlock,
+      promptItemDividerBlock,
+      promptTitleBlock,
+      promptContentBlock,
+    ].join("\n");
+
+    expect(settings).toContain("setShowPromptModal(true)");
+    expect(settings).toContain("<UserPromptModal");
+    expect(userPromptModal).toContain("SearchService.search(searchInput)");
+    expect(userPromptModal).toContain("promptStore.remove(v.id!)");
+    expect(userPromptModal).toContain("setEditingPromptId(v.id)");
+    expect(userPromptModal).toContain("copyToClipboard(v.content)");
+
+    expect(userPromptModalRootBlock).toMatch(
+      /--settings-prompt-search-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--gray\)\s*\);/,
+    );
+    expect(userPromptModalRootBlock).toMatch(
+      /--settings-prompt-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 14%,\s*transparent\s*\);/,
+    );
+    expect(userPromptModalRootBlock).toMatch(
+      /--settings-prompt-divider-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 10%,\s*transparent\s*\);/,
+    );
+    expect(userPromptModalRootBlock).toMatch(
+      /--settings-prompt-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 74%,\s*transparent\s*\);/,
+    );
+    expect(userPromptModalRootBlock).toMatch(
+      /--settings-prompt-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 7%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(userPromptModalRootBlock).toMatch(
+      /--settings-prompt-focus-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 16%,\s*transparent\s*\);/,
+    );
+    expect(darkSettingsPromptBlock).toMatch(
+      /--settings-prompt-search-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkSettingsPromptBlock).toMatch(
+      /--settings-prompt-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 56%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkSettingsPromptSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkSettingsPromptMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkSettingsPromptBlock).toMatch(
+      /--settings-prompt-search-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkSettingsPromptBlock).toMatch(
+      /--settings-prompt-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 12%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+
+    expect(promptSearchBlock).toMatch(
+      /background-color:\s*var\(--settings-prompt-search-background\);/,
+    );
+    expect(promptSearchBlock).toMatch(
+      /border:\s*1px solid var\(--settings-prompt-border-color\);/,
+    );
+    expect(promptSearchBlock).toMatch(/border-radius:\s*8px;/);
+    expect(promptSearchFocusBlock).toMatch(
+      /border-color:\s*var\(--settings-prompt-focus-border-color\);/,
+    );
+    expect(promptSearchFocusBlock).toMatch(
+      /box-shadow:\s*0 0 0 3px var\(--settings-prompt-focus-shadow-color\);/,
+    );
+    expect(promptListBlock).toMatch(
+      /background-color:\s*var\(--settings-prompt-list-background\);/,
+    );
+    expect(promptListBlock).toMatch(
+      /border:\s*1px solid var\(--settings-prompt-border-color\);/,
+    );
+    expect(promptListBlock).toMatch(/border-radius:\s*8px;/);
+    expect(promptItemBlock).toMatch(
+      /background-color:\s*var\(--settings-prompt-item-background\);/,
+    );
+    expect(promptItemHoverBlock).toMatch(
+      /background-color:\s*var\(--settings-prompt-hover-background\);/,
+    );
+    expect(promptItemDividerBlock).toMatch(
+      /border-bottom:\s*1px solid var\(--settings-prompt-divider-color\);/,
+    );
+    expect(promptTitleBlock).toMatch(/color:\s*var\(--black\);/);
+    expect(promptContentBlock).toMatch(
+      /color:\s*var\(--settings-prompt-muted-color\);/,
+    );
+    expect(settingsPromptPaintScope).not.toContain(
+      "background-color: var(--gray)",
+    );
+    expect(settingsPromptPaintScope).not.toContain("border: var(--border-in-light)");
+    expect(settingsPromptPaintScope).not.toContain("border-bottom: var(--border-in-light)");
+    expect(settingsPromptPaintScope).not.toContain("border-radius: 10px");
+  });
 });
