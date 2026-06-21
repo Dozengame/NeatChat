@@ -11,6 +11,9 @@
   );
   --file-attachment-card-shadow: 0 12px 32px
     color-mix(in srgb, var(--black-50) 8%, transparent);
+  --file-attachment-interactive-radius: 8px;
+  --file-attachment-card-radius: 8px;
+  --file-attachment-icon-radius: 8px;
   --file-attachment-icon-background: color-mix(
     in srgb,
     var(--primary) 8%,
@@ -51,7 +54,7 @@
 .file-attachment-interactive {
   cursor: pointer;
   outline: none;
-  border-radius: 16px;
+  border-radius: var(--file-attachment-interactive-radius);
 }
 
 .file-attachment-card {
@@ -64,7 +67,7 @@
   box-sizing: border-box;
   padding: 9px 12px 9px 10px;
   border: 1px solid var(--file-attachment-card-border-color);
-  border-radius: 14px;
+  border-radius: var(--file-attachment-card-radius);
   color: var(--black);
   background: var(--file-attachment-card-background);
   box-shadow: var(--file-attachment-card-shadow);
@@ -81,7 +84,7 @@
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--file-attachment-icon-radius);
   color: var(--primary);
   background: var(--file-attachment-icon-background);
   box-shadow: inset 0 0 0 1px var(--file-attachment-icon-ring-color);

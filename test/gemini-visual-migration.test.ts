@@ -4793,6 +4793,11 @@ describe("Gemini visual migration shell", () => {
       /--file-attachment-card-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--gray\)\s*\);/,
     );
     expect(rootDeclarations).toMatch(
+      /--file-attachment-interactive-radius:\s*8px;/,
+    );
+    expect(rootDeclarations).toMatch(/--file-attachment-card-radius:\s*8px;/);
+    expect(rootDeclarations).toMatch(/--file-attachment-icon-radius:\s*8px;/);
+    expect(rootDeclarations).toMatch(
       /--file-attachment-card-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
     );
     expect(rootDeclarations).toMatch(
@@ -4805,12 +4810,18 @@ describe("Gemini visual migration shell", () => {
       /--file-attachment-hover-shadow:\s*0 14px 36px\s*color-mix\(in srgb,\s*var\(--primary\) 12%,\s*transparent\);/,
     );
     expect(interactiveBlock).toMatch(/cursor:\s*pointer;/);
+    expect(interactiveBlock).toMatch(
+      /border-radius:\s*var\(--file-attachment-interactive-radius\);/,
+    );
     expect(cardBlock).toMatch(
       /grid-template-columns:\s*36px minmax\(0, 1fr\);/,
     );
     expect(cardBlock).toMatch(/gap:\s*10px;/);
     expect(cardBlock).toMatch(/padding:\s*9px 12px 9px 10px;/);
-    expect(cardBlock).toMatch(/border-radius:\s*14px;/);
+    expect(cardBlock).toMatch(
+      /border-radius:\s*var\(--file-attachment-card-radius\);/,
+    );
+    expect(cardBlock).not.toContain("border-radius: 14px");
     expect(cardBlock).toMatch(
       /border:\s*1px solid var\(--file-attachment-card-border-color\);/,
     );
@@ -4824,7 +4835,10 @@ describe("Gemini visual migration shell", () => {
     expect(cardBlock).not.toMatch(/var\(--gray\)/);
     expect(iconBlock).toMatch(/width:\s*36px;/);
     expect(iconBlock).toMatch(/height:\s*36px;/);
-    expect(iconBlock).toMatch(/border-radius:\s*10px;/);
+    expect(iconBlock).toMatch(
+      /border-radius:\s*var\(--file-attachment-icon-radius\);/,
+    );
+    expect(iconBlock).not.toContain("border-radius: 10px");
     expect(iconBlock).toMatch(/color:\s*var\(--primary\);/);
     expect(iconBlock).toMatch(
       /background:\s*var\(--file-attachment-icon-background\);/,
