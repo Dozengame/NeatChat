@@ -1,30 +1,90 @@
 .message-selector {
+  --message-selector-panel-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 90%,
+    var(--gray)
+  );
+  --message-selector-panel-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --message-selector-panel-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 8%,
+    transparent
+  );
+  --message-selector-control-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 92%,
+    transparent
+  );
+  --message-selector-control-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --message-selector-selected-background: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    transparent
+  );
+  --message-selector-selected-ring-color: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
+  --message-selector-hover-background: color-mix(
+    in srgb,
+    var(--primary) 6%,
+    transparent
+  );
+
   .message-filter {
     display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .filter-item {
+      min-height: 36px;
+      border: 1px solid var(--message-selector-control-border-color);
+      border-radius: 8px;
+      background: var(--message-selector-control-background);
+      color: var(--black);
+
+      &:focus-visible {
+        outline: var(--focus-ring);
+        outline-offset: 2px;
+      }
+    }
 
     .search-bar {
       max-width: unset;
       flex-grow: 1;
-      margin-right: 10px;
+      margin-right: 0;
+      color: var(--black);
     }
 
     .actions {
       display: flex;
+      gap: 10px;
 
       button:not(:last-child) {
-        margin-right: 10px;
+        margin-right: 0;
       }
     }
 
     @media screen and (max-width: 600px) {
       flex-direction: column;
+      gap: 12px;
 
       .search-bar {
         margin-right: 0;
       }
 
       .actions {
-        margin-top: 20px;
+        margin-top: 0;
+        width: 100%;
 
         button {
           flex-grow: 1;
@@ -35,22 +95,30 @@
 
   .messages {
     margin-top: 20px;
-    border-radius: 10px;
-    border: var(--border-in-light);
+    border: 1px solid var(--message-selector-panel-border-color);
+    border-radius: 8px;
     overflow: hidden;
+    background: var(--message-selector-panel-background);
+    box-shadow: 0 12px 30px var(--message-selector-panel-shadow-color);
 
     .message {
       display: flex;
       align-items: center;
       padding: 8px 10px;
       cursor: pointer;
+      transition: background-color 0.16s ease;
+
+      &:hover {
+        background-color: var(--message-selector-hover-background);
+      }
 
       &-selected {
-        background-color: var(--second);
+        background-color: var(--message-selector-selected-background);
+        box-shadow: inset 0 0 0 1px var(--message-selector-selected-ring-color);
       }
 
       &:not(:last-child) {
-        border-bottom: var(--border-in-light);
+        border-bottom: 1px solid var(--message-selector-panel-border-color);
       }
 
       .avatar {
@@ -76,7 +144,101 @@
         display: flex;
         justify-content: flex-end;
         flex: 1;
+        min-width: 44px;
+
+        input[type="checkbox"]:not([aria-hidden="true"]):focus-visible {
+          outline: var(--focus-ring);
+          outline-offset: 2px;
+        }
       }
     }
+  }
+}
+
+:global(.dark) .message-selector {
+  --message-selector-panel-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    var(--white)
+  );
+  --message-selector-panel-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --message-selector-panel-shadow-color: color-mix(
+    in srgb,
+    var(--black) 8%,
+    transparent
+  );
+  --message-selector-control-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 88%,
+    var(--white)
+  );
+  --message-selector-control-border-color: color-mix(
+    in srgb,
+    var(--black) 9%,
+    transparent
+  );
+  --message-selector-selected-background: color-mix(
+    in srgb,
+    var(--primary) 14%,
+    transparent
+  );
+  --message-selector-selected-ring-color: color-mix(
+    in srgb,
+    var(--primary) 22%,
+    transparent
+  );
+  --message-selector-hover-background: color-mix(
+    in srgb,
+    var(--primary) 9%,
+    transparent
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .message-selector {
+    --message-selector-panel-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 86%,
+      var(--white)
+    );
+    --message-selector-panel-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --message-selector-panel-shadow-color: color-mix(
+      in srgb,
+      var(--black) 8%,
+      transparent
+    );
+    --message-selector-control-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 88%,
+      var(--white)
+    );
+    --message-selector-control-border-color: color-mix(
+      in srgb,
+      var(--black) 9%,
+      transparent
+    );
+    --message-selector-selected-background: color-mix(
+      in srgb,
+      var(--primary) 14%,
+      transparent
+    );
+    --message-selector-selected-ring-color: color-mix(
+      in srgb,
+      var(--primary) 22%,
+      transparent
+    );
+    --message-selector-hover-background: color-mix(
+      in srgb,
+      var(--primary) 9%,
+      transparent
+    );
   }
 }

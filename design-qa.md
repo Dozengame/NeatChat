@@ -6650,3 +6650,58 @@ Known risks:
 - Browser screenshot capture timed out in the in-app Browser; the fallback screenshots only verify the gate page, not the artifact shell itself.
 - Artifact reload/share/download/copy controls were not clicked because they can trigger fetch, upload, clipboard, download, or local UI state side effects.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-21 export-message-selector-surface-tone
+
+Result: automated checks passed; live target QA blocked by access-code gate.
+
+Target flow:
+
+- Export message selection should read as a Gemini-style quiet utility selector: compact filter controls, an 8px elevated message list, restrained selected state, and stable checkbox affordance.
+- Search, Select All, Latest, Clear, shift-range selection, per-message checkbox toggling, exported message IDs, copy/download/export behavior, send behavior, model config, account/secret/sync/backend/deploy behavior, dependencies, and production config must remain unchanged.
+- The slice should refine the export selection surface without changing what gets selected or exported.
+
+Design direction:
+
+- Creative Production style intake selected a quiet export utility direction: tokenized neutral list shell, compact elevated controls, soft primary selected ring, subtle hover state, explicit Dark/Auto dark safety, and no decorative gradients.
+- No generated raster design was used because this is a small UI-system repair inside the existing Gemini migration language. The design spec is the local token contract in `message-selector.module.scss` plus this QA record.
+
+Scope:
+
+- `app/components/message-selector.module.scss`: replaced legacy `var(--border-in-light)`, 10px radius, and `var(--second)` selected paint with local `--message-selector-*` tokens for the filter controls, list shell, hover, selected state, interactive checkbox focus, explicit Dark, and Auto dark styles.
+- `app/components/message-selector.tsx`: kept the existing visible decorative checkbox but removed it from the accessibility tree and keyboard focus order with `aria-hidden="true"` and `tabIndex={-1}`; the labeled interactive checkbox remains the only accessible selector control.
+- `test/gemini-visual-migration.test.ts`: added a focused export message selector contract locking existing selection/search entry points, Latest selection behavior, decorative-versus-interactive checkbox accessibility, Light/Dark/Auto dark tokens, token consumers, mobile spacing, focus-visible treatment, and old target paint removal.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No export selection semantics, search/range selection logic, clipboard/download/export behavior, send path, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, or package files were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="export message selector"` failed first as expected because `.message-selector` still lacked local selector tokens and used legacy border/radius/selected paint.
+- After implementation, the same focused contract passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `yarn build` passed with the existing Next warning that Edge runtime disables static generation for that page.
+- `git diff --check` passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser opened `http://localhost:3001/` and reached the local access-code gate with title `NeatChat`, gate copy `需要密码`, `管理员开启了密码验证，请在下方填入访问码`, and action `确认`.
+- In-app Browser DOM/console checks showed no console warn/error logs and no framework overlay. The export message selector was not rendered because the local gate blocked access.
+- In-app Browser screenshot capture failed with `Page.captureScreenshot` timeout for the tab.
+- No real access code was entered and no auth/config bypass was attempted. No export, copy, download, search, selection, send, model/API request, account/key/sync/import/export/reset/clear, or persisted config action was performed.
+
+Review:
+
+- Read-only sub-agent review found one P2 issue: the first decorative checkbox was being locked by the new test even though it lacked an accessible-name/focus boundary. The fix added `aria-hidden="true"` and `tabIndex={-1}` to the decorative checkbox, limited focus-visible styling to the labeled interactive checkbox, and updated the test to lock that contract.
+- The same review found one P3 documentation precision issue: `Result: passed` overstated Browser QA because the target selector was blocked by the access-code gate. The result line now distinguishes automated pass from live target QA blockage.
+- Follow-up read-only review confirmed the checkbox accessibility/test fix and caught that the result-line edit had initially landed on an older iteration section. The older result line was restored, and this iteration result line now carries the access-code gate qualification.
+- The reviewer confirmed no package/lockfile/backend/API/model config/account/secret/sync/production/deploy config changes or dependency additions were present.
+
+Known risks:
+
+- Live Browser computed-style verification for the actual export message selector is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
+- Browser screenshot capture timed out in the in-app Browser; no fallback screenshot was used because the reachable page is only the gate, not the target selector.
+- Export selection/search/copy/download controls were not clicked because the selector was not reachable without credentials and those actions can mutate clipboard, downloaded files, or export state.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.

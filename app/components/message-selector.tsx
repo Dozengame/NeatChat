@@ -204,7 +204,13 @@ export function MessageSelector(props: {
               </div>
 
               <div className={styles["checkbox"]}>
-                <input type="checkbox" checked={isSelected} readOnly></input>
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  readOnly
+                  aria-hidden="true"
+                  tabIndex={-1}
+                />
                 <input
                   type="checkbox"
                   aria-label={getMessageTextContent(m)}

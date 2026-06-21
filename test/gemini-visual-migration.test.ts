@@ -5740,6 +5740,167 @@ describe("Gemini visual migration shell", () => {
     expect(artifactsPaintScope).not.toContain("background-color: var(--gray)");
   });
 
+  test("keeps export message selector aligned with Gemini utility surfaces", () => {
+    const messageSelector = read("app/components/message-selector.tsx");
+    const messageSelectorStyles = read(
+      "app/components/message-selector.module.scss",
+    );
+    const rootBlock = readCssBlock(messageSelectorStyles, ".message-selector");
+    const rootDeclarations = readRootDeclarations(rootBlock);
+    const filterBlock = readCssBlock(rootBlock, ".message-filter");
+    const filterItemBlock = readCssBlock(rootBlock, ".filter-item");
+    const searchBarBlock = readCssBlock(rootBlock, ".search-bar");
+    const actionsBlock = readCssBlock(rootBlock, ".actions");
+    const actionButtonSpacingBlock = readCssBlock(
+      actionsBlock,
+      "button:not(:last-child)",
+    );
+    const messagesBlock = readCssBlock(rootBlock, ".messages");
+    const messageBlock = readCssBlock(messagesBlock, ".message");
+    const selectedBlock = readCssBlock(messageBlock, "&-selected");
+    const messageDividerBlock = readCssBlock(messageBlock, "&:not(:last-child)");
+    const checkboxBlock = readCssBlock(messageBlock, ".checkbox");
+    const checkboxFocusBlock = readCssBlock(
+      checkboxBlock,
+      'input[type="checkbox"]:not([aria-hidden="true"]):focus-visible',
+    );
+    const mobileBlock = readCssBlock(
+      filterBlock,
+      "@media screen and (max-width: 600px)",
+    );
+    const darkRootBlock = readCssBlock(
+      messageSelectorStyles,
+      ":global(.dark) .message-selector",
+    );
+    const autoDarkMessageSelector = ":global(body:not(.light)) .message-selector";
+    const autoDarkMessageSelectorIndex = messageSelectorStyles.indexOf(
+      autoDarkMessageSelector,
+    );
+    const autoDarkMessageSelectorMediaIndex =
+      messageSelectorStyles.lastIndexOf(
+        "@media (prefers-color-scheme: dark)",
+        autoDarkMessageSelectorIndex,
+      );
+    const autoDarkRootBlock = readCssBlock(
+      messageSelectorStyles.slice(autoDarkMessageSelectorMediaIndex),
+      autoDarkMessageSelector,
+    );
+    const messageSelectorPaintScope = [
+      rootDeclarations,
+      filterItemBlock,
+      searchBarBlock,
+      messagesBlock,
+      messageBlock,
+      selectedBlock,
+      messageDividerBlock,
+      darkRootBlock,
+      autoDarkRootBlock,
+    ].join("\n");
+
+    expect(messageSelector).toContain("function useShiftRange()");
+    expect(messageSelector).toContain('e.key !== "Shift"');
+    expect(messageSelector).toContain("getRangeForClick(i)");
+    expect(messageSelector).toContain("props.updateSelection((selection)");
+    expect(messageSelector).toContain("messages.forEach((m) => selection.add(m.id!))");
+    expect(messageSelector).toContain("selection.clear()");
+    expect(messageSelector).toMatch(
+      /messages\s*\.slice\(messageCount - LATEST_COUNT\)/,
+    );
+    expect(messageSelector).toContain("setSearchInput(e.currentTarget.value)");
+    expect(messageSelector).toContain("doSearch(e.currentTarget.value)");
+    expect(messageSelector).toContain('aria-label={Locale.Select.Search}');
+    expect(messageSelector).toContain('text={Locale.Select.All}');
+    expect(messageSelector).toContain('text={Locale.Select.Latest}');
+    expect(messageSelector).toContain('text={Locale.Select.Clear}');
+    expect(messageSelector).toMatch(
+      /<input[\s\S]*type="checkbox"[\s\S]*checked=\{isSelected\}[\s\S]*readOnly[\s\S]*aria-hidden="true"[\s\S]*tabIndex=\{-1\}[\s\S]*\/>/,
+    );
+    expect(messageSelector).toMatch(
+      /<input[\s\S]*type="checkbox"[\s\S]*aria-label=\{getMessageTextContent\(m\)\}[\s\S]*checked=\{isSelected\}[\s\S]*onChange=\{\(\) =>/,
+    );
+    expect(messageSelector).toContain("selection.has(id)");
+    expect(messageSelector).toContain("selection.delete(id)");
+    expect(messageSelector).toContain("selection.add(id)");
+
+    expect(rootDeclarations).toMatch(
+      /--message-selector-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\s*\);/,
+    );
+    expect(rootDeclarations).toMatch(
+      /--message-selector-panel-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
+    );
+    expect(rootDeclarations).toMatch(
+      /--message-selector-selected-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 10%,\s*transparent\s*\);/,
+    );
+    expect(rootDeclarations).toMatch(
+      /--message-selector-selected-ring-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 18%,\s*transparent\s*\);/,
+    );
+    expect(rootDeclarations).toMatch(
+      /--message-selector-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 6%,\s*transparent\s*\);/,
+    );
+    expect(filterBlock).toMatch(/gap:\s*10px;/);
+    expect(filterBlock).toMatch(/align-items:\s*center;/);
+    expect(filterItemBlock).toMatch(/min-height:\s*36px;/);
+    expect(filterItemBlock).toMatch(/border-radius:\s*8px;/);
+    expect(filterItemBlock).toMatch(
+      /border:\s*1px solid var\(--message-selector-control-border-color\);/,
+    );
+    expect(filterItemBlock).toMatch(
+      /background:\s*var\(--message-selector-control-background\);/,
+    );
+    expect(filterItemBlock).toMatch(
+      /&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/,
+    );
+    expect(searchBarBlock).toMatch(/margin-right:\s*0;/);
+    expect(searchBarBlock).toMatch(/color:\s*var\(--black\);/);
+    expect(actionsBlock).toMatch(/gap:\s*10px;/);
+    expect(actionButtonSpacingBlock).toMatch(/margin-right:\s*0;/);
+    expect(messagesBlock).toMatch(/border-radius:\s*8px;/);
+    expect(messagesBlock).toMatch(
+      /border:\s*1px solid var\(--message-selector-panel-border-color\);/,
+    );
+    expect(messagesBlock).toMatch(
+      /background:\s*var\(--message-selector-panel-background\);/,
+    );
+    expect(messagesBlock).toMatch(
+      /box-shadow:\s*0 12px 30px var\(--message-selector-panel-shadow-color\);/,
+    );
+    expect(messageBlock).toMatch(/transition:\s*background-color 0\.16s ease;/);
+    expect(messageBlock).toMatch(
+      /&:hover[\s\S]*background-color:\s*var\(--message-selector-hover-background\);/,
+    );
+    expect(selectedBlock).toMatch(
+      /background-color:\s*var\(--message-selector-selected-background\);/,
+    );
+    expect(selectedBlock).toMatch(
+      /box-shadow:\s*inset 0 0 0 1px var\(--message-selector-selected-ring-color\);/,
+    );
+    expect(messageDividerBlock).toMatch(
+      /border-bottom:\s*1px solid var\(--message-selector-panel-border-color\);/,
+    );
+    expect(checkboxBlock).toMatch(/min-width:\s*44px;/);
+    expect(checkboxFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(mobileBlock).toMatch(/gap:\s*12px;/);
+    expect(mobileBlock).toMatch(/margin-top:\s*0;/);
+    expect(darkRootBlock).toMatch(
+      /--message-selector-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkRootBlock).toMatch(
+      /--message-selector-selected-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 14%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkMessageSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkMessageSelectorMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkRootBlock).toMatch(
+      /--message-selector-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkRootBlock).toMatch(
+      /--message-selector-selected-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 14%,\s*transparent\s*\);/,
+    );
+    expect(messageSelectorPaintScope).not.toContain("border: var(--border-in-light)");
+    expect(messageSelectorPaintScope).not.toContain("border-bottom: var(--border-in-light)");
+    expect(messageSelectorPaintScope).not.toContain("border-radius: 10px");
+    expect(messageSelectorPaintScope).not.toContain("background-color: var(--second)");
+  });
+
   test("keeps update announcement modal aligned with Gemini release surfaces", () => {
     const updateAnnouncement = read("app/components/update-announcement.tsx");
     const updateAnnouncementStyles = read(
