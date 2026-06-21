@@ -6536,3 +6536,59 @@ Known risks:
 - Live Browser computed-style verification for `InputRange` is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
 - Range controls were not clicked or dragged because Settings/model configuration changes can mutate configuration values.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-21 rendered-file-attachment-card-tone
+
+Result: passed.
+
+Target flow:
+
+- Rendered markdown file attachment cards should read as Gemini-style quiet document chips across Light, explicit Dark, and Auto dark.
+- Attachment card surface, file icon well, metadata chips, hover/focus, active press, touch layout, and reduced-motion behavior should stay visually coherent with the modern drag/drop and multimodal attachment language.
+- Markdown file detection, attachment href generation, displayed file name/type/size, keyboard/click copy callback, upload behavior, send behavior, account/secret/sync/backend/deploy behavior, dependencies, and production config must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected a quiet document-chip direction: tokenized elevated neutral card, light border, soft file icon well, compact metadata pills, subtle hover lift, Dark/Auto dark safety, no gradients, and no file-content behavior change.
+- No generated raster design was used because this is a small shared UI-system repair inside the existing Gemini migration language. The design spec is the local token contract in `file-attachment.module.scss` plus this QA record.
+
+Scope:
+
+- `app/components/file-attachment.module.scss`: added local `--file-attachment-*` tokens, replaced legacy card/chip borders and raw surface paint with tokenized card, icon, metadata chip, hover, active, explicit Dark, and Auto dark styles.
+- `test/gemini-visual-migration.test.ts`: strengthened the existing rendered file attachment contract to lock Light/Dark/Auto dark tokens, token consumers, hover/active state paint, legacy border removal, and unchanged markdown/component behavior entry points.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TSX behavior, markdown parsing, file href generation, copy callback, upload path, send path, model config, account/secret/sync, backend/API, production config, deployment config, or dependency files were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="rendered file attachment"` failed first as expected because `.file-attachment` lacked local attachment tokens and still used legacy `var(--border-in-light)` paint.
+- After implementation and test formatting-scope correction, the same focused contract passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `yarn build` passed with the existing Next warning that Edge runtime disables static generation for that page.
+- `git diff --check` passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser was connected and used first. `waitForLoadState({ state: "networkidle" })` is not supported by this Browser runtime, so the check used `domcontentloaded` plus a bounded wait.
+- In-app Browser screenshot capture failed with `Page.captureScreenshot` timeout for the tab. Browser DOM/console checks still completed and showed the app reached the local access-code gate with no framework overlay, no console warn/error logs, meaningful gate DOM, and horizontal overflow `0`.
+- Because Browser screenshot capture failed, local installed Chrome was used only as screenshot fallback. Desktop `1440x1024` and mobile `390x844` screenshots were captured to `/tmp/neatchat-file-attachment-gate-desktop.png` and `/tmp/neatchat-file-attachment-gate-mobile.png`.
+- Both Chrome fallback checks reached the access-code gate text `需要密码`, `管理员开启了密码验证，请在下方填入访问码`, `确认`; had no console warn/error logs, no page errors, no framework overlay, and horizontal overflow `0`.
+- No real access code was entered and no auth/config bypass was attempted. No file upload, attachment copy, send, model/API request, account/key/sync/import/export/reset/clear, or persisted config action was performed.
+
+Review:
+
+- Read-only sub-agent review found no Critical, Important, or Minor issues. It confirmed the diff is limited to `app/components/file-attachment.module.scss`, `test/gemini-visual-migration.test.ts`, and this QA record, with no TSX, upload, send-path, model-config, account/secret/sync, backend/API, dependency, or deploy semantic changes.
+- The reviewer confirmed the visual contract still locks markdown href generation, `URLSearchParams`, and `FileAttachment` structure entry points, and now covers Light/Dark/Auto dark tokens, token consumers, hover/active paint, touch layout, reduced-motion behavior, and old `border-in-light` removal.
+- The reviewer noted the test is source-level and format-sensitive, consistent with the existing Gemini visual migration test style; no runtime copy callback proof was added because this is a CSS-only slice and TSX behavior was not changed.
+- The reviewer confirmed this QA record truthfully reports the access-code gate, Browser screenshot timeout, Chrome gate screenshot fallback, and the absence of actual `FileAttachment` live computed-style verification.
+- The reviewer found no internal plan paths, real access codes, `.env` contents, or sensitive information in this QA record.
+
+Known risks:
+
+- Live Browser computed-style verification for actual `FileAttachment` cards is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
+- Browser screenshot capture timed out in the in-app Browser; the fallback screenshots only verify the gate page, not the attachment card itself.
+- Attachment click/copy and file upload/send interactions were not exercised because they can mutate clipboard, local state, or message/send state.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.

@@ -1,4 +1,45 @@
 .file-attachment {
+  --file-attachment-card-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 92%,
+    var(--gray)
+  );
+  --file-attachment-card-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --file-attachment-card-shadow: 0 12px 32px
+    color-mix(in srgb, var(--black-50) 8%, transparent);
+  --file-attachment-icon-background: color-mix(
+    in srgb,
+    var(--primary) 8%,
+    var(--surface-soft)
+  );
+  --file-attachment-icon-ring-color: color-mix(
+    in srgb,
+    var(--primary) 16%,
+    transparent
+  );
+  --file-attachment-chip-background: color-mix(
+    in srgb,
+    var(--surface-soft) 76%,
+    transparent
+  );
+  --file-attachment-chip-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --file-attachment-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 34%,
+    transparent
+  );
+  --file-attachment-hover-shadow: 0 14px 36px
+    color-mix(in srgb, var(--primary) 12%, transparent);
+  --file-attachment-active-shadow: var(--card-shadow);
+
   display: inline-flex;
   min-width: 0;
   max-width: min(100%, 440px);
@@ -22,11 +63,11 @@
   min-width: 0;
   box-sizing: border-box;
   padding: 9px 12px 9px 10px;
-  border: var(--border-in-light);
+  border: 1px solid var(--file-attachment-card-border-color);
   border-radius: 14px;
   color: var(--black);
-  background: var(--surface-elevated);
-  box-shadow: var(--card-shadow);
+  background: var(--file-attachment-card-background);
+  box-shadow: var(--file-attachment-card-shadow);
   transition:
     transform 0.18s ease,
     border-color 0.18s ease,
@@ -42,8 +83,8 @@
   height: 36px;
   border-radius: 10px;
   color: var(--primary);
-  background: var(--surface-soft);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 16%, transparent);
+  background: var(--file-attachment-icon-background);
+  box-shadow: inset 0 0 0 1px var(--file-attachment-icon-ring-color);
   flex-shrink: 0;
 
   svg {
@@ -86,23 +127,23 @@
   max-width: 100%;
   padding: 3px 7px;
   overflow: hidden;
-  border: var(--border-in-light);
+  border: 1px solid var(--file-attachment-chip-border-color);
   border-radius: 999px;
   color: var(--black-50);
-  background: var(--surface-soft);
+  background: var(--file-attachment-chip-background);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .file-attachment-interactive:hover .file-attachment-card,
 .file-attachment-interactive:focus-visible .file-attachment-card {
-  border-color: color-mix(in srgb, var(--primary) 34%, transparent);
-  box-shadow: var(--composer-shadow);
+  border-color: var(--file-attachment-hover-border-color);
+  box-shadow: var(--file-attachment-hover-shadow);
   transform: translateY(-1px);
 }
 
 .file-attachment-interactive:active .file-attachment-card {
-  box-shadow: var(--card-shadow);
+  box-shadow: var(--file-attachment-active-shadow);
   transform: translateY(0) scale(0.985);
 }
 
@@ -111,17 +152,59 @@
   outline-offset: 3px;
 }
 
+:global(.dark) .file-attachment {
+  --file-attachment-card-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 88%,
+    var(--white)
+  );
+  --file-attachment-card-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --file-attachment-card-shadow: 0 14px 34px
+    color-mix(in srgb, var(--black) 8%, transparent);
+  --file-attachment-icon-background: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    var(--surface-soft)
+  );
+  --file-attachment-icon-ring-color: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
+  --file-attachment-chip-background: color-mix(
+    in srgb,
+    var(--surface-soft) 72%,
+    transparent
+  );
+  --file-attachment-chip-border-color: color-mix(
+    in srgb,
+    var(--black) 8%,
+    transparent
+  );
+  --file-attachment-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 38%,
+    transparent
+  );
+  --file-attachment-hover-shadow: 0 14px 36px
+    color-mix(in srgb, var(--primary) 14%, transparent);
+  --file-attachment-active-shadow: var(--composer-shadow);
+}
+
 :global(.dark) .file-attachment-card {
-  border: var(--border-in-light);
   color: var(--black);
-  background: var(--surface-elevated);
-  box-shadow: var(--composer-shadow);
+  background: var(--file-attachment-card-background);
+  box-shadow: var(--file-attachment-card-shadow);
 }
 
 :global(.dark) .file-attachment-icon {
   color: var(--primary);
-  background: var(--surface-soft);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 18%, transparent);
+  background: var(--file-attachment-icon-background);
+  box-shadow: inset 0 0 0 1px var(--file-attachment-icon-ring-color);
 }
 
 :global(.dark) .file-attachment-name {
@@ -133,14 +216,59 @@
 }
 
 :global(.dark) .file-attachment-meta span {
-  border: var(--border-in-light);
-  background: var(--surface-soft);
+  border-color: var(--file-attachment-chip-border-color);
+  background: var(--file-attachment-chip-background);
 }
 
 :global(.dark) .file-attachment-interactive:hover .file-attachment-card,
 :global(.dark) .file-attachment-interactive:focus-visible .file-attachment-card {
-  border-color: color-mix(in srgb, var(--primary) 38%, transparent);
-  box-shadow: var(--composer-shadow);
+  border-color: var(--file-attachment-hover-border-color);
+  box-shadow: var(--file-attachment-hover-shadow);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .file-attachment {
+    --file-attachment-card-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 88%,
+      var(--white)
+    );
+    --file-attachment-card-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --file-attachment-card-shadow: 0 14px 34px
+      color-mix(in srgb, var(--black) 8%, transparent);
+    --file-attachment-icon-background: color-mix(
+      in srgb,
+      var(--primary) 10%,
+      var(--surface-soft)
+    );
+    --file-attachment-icon-ring-color: color-mix(
+      in srgb,
+      var(--primary) 18%,
+      transparent
+    );
+    --file-attachment-chip-background: color-mix(
+      in srgb,
+      var(--surface-soft) 72%,
+      transparent
+    );
+    --file-attachment-chip-border-color: color-mix(
+      in srgb,
+      var(--black) 8%,
+      transparent
+    );
+    --file-attachment-hover-border-color: color-mix(
+      in srgb,
+      var(--primary) 38%,
+      transparent
+    );
+    --file-attachment-hover-shadow: 0 14px 36px
+      color-mix(in srgb, var(--primary) 14%, transparent);
+    --file-attachment-active-shadow: var(--composer-shadow);
+  }
 }
 
 @media (hover: none), (pointer: coarse), (max-width: 600px) {
