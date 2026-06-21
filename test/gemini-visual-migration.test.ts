@@ -5444,6 +5444,8 @@ describe("Gemini visual migration shell", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
     const promptToastBlock = readCssBlock(chatStyles, ".prompt-toast");
+    const promptToastRootDeclarations =
+      readRootDeclarations(promptToastBlock);
     const promptToastInnerBlock = readCssBlock(
       chatStyles,
       ".prompt-toast-inner",
@@ -5452,9 +5454,22 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".prompt-toast-content",
     );
-    const darkPromptToastInnerBlock = readCssBlock(
+    const darkPromptToastBlock = readCssBlock(
       chatStyles,
-      ":global(.dark) .prompt-toast-inner",
+      ":global(.dark) .prompt-toast",
+    );
+    const autoDarkPromptToastSelector =
+      ":global(body:not(.light)) .prompt-toast";
+    const autoDarkPromptToastSelectorIndex = chatStyles.indexOf(
+      autoDarkPromptToastSelector,
+    );
+    const autoDarkPromptToastMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkPromptToastSelectorIndex,
+    );
+    const autoDarkPromptToastBlock = readCssBlock(
+      chatStyles.slice(autoDarkPromptToastMediaIndex),
+      autoDarkPromptToastSelector,
     );
     const reducedMotionBlock = readCssBlock(
       chatStyles,
@@ -5464,6 +5479,14 @@ describe("Gemini visual migration shell", () => {
       chat.indexOf("function PromptToast"),
       chat.indexOf("function useSubmitHandler"),
     );
+    const promptToastPaintScope = [
+      promptToastRootDeclarations,
+      promptToastInnerBlock,
+      darkPromptToastBlock,
+      autoDarkPromptToastBlock,
+    ].join("\n");
+    const legacyPromptToastPaint =
+      /rgba\((?:248,\s*251,\s*255,\s*(?:0\.86|0\.96)|232,\s*240,\s*254,\s*0\.94|26,\s*115,\s*232,\s*(?:0\.1|0\.12|0\.24)|32,\s*33,\s*36,\s*0\.84|40,\s*43,\s*48,\s*0\.94|60,\s*64,\s*67,\s*(?:0\.08|0\.1|0\.12|0\.86)|138,\s*180,\s*248,\s*(?:0\.08|0\.18|0\.28)|232,\s*234,\s*237,\s*(?:0\.1|0\.92)|0,\s*0,\s*0,\s*(?:0\.2|0\.24|0\.26))/;
 
     expect(chat).toContain('id="session-config-modal"');
     expect(chat).toMatch(
@@ -5507,6 +5530,18 @@ describe("Gemini visual migration shell", () => {
     expect(promptToastBlock).toMatch(/top:\s*calc\(100% \+ 8px\);/);
     expect(promptToastBlock).toMatch(/bottom:\s*auto;/);
     expect(promptToastBlock).toMatch(/padding:\s*0 16px;/);
+    expect(promptToastRootDeclarations).toMatch(
+      /--prompt-toast-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\);/,
+    );
+    expect(promptToastRootDeclarations).toMatch(
+      /--prompt-toast-color:\s*color-mix\(in srgb,\s*var\(--black\) 86%,\s*transparent\);/,
+    );
+    expect(promptToastRootDeclarations).toMatch(
+      /--prompt-toast-border-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 16%,\s*transparent\);/,
+    );
+    expect(promptToastRootDeclarations).toMatch(
+      /--prompt-toast-expanded-background:\s*color-mix\(in srgb,\s*var\(--primary\) 11%,\s*var\(--surface-elevated\)\);/,
+    );
 
     expect(promptToastInnerBlock).toMatch(/appearance:\s*none;/);
     expect(promptToastInnerBlock).toMatch(/pointer-events:\s*auto;/);
@@ -5515,20 +5550,38 @@ describe("Gemini visual migration shell", () => {
     expect(promptToastInnerBlock).toMatch(/padding:\s*7px 12px;/);
     expect(promptToastInnerBlock).toMatch(/border-radius:\s*999px;/);
     expect(promptToastInnerBlock).toMatch(
-      /background:\s*rgba\(248,\s*251,\s*255,\s*0\.86\);/,
+      /background:\s*var\(--prompt-toast-background\);/,
+    );
+    expect(promptToastInnerBlock).toMatch(
+      /color:\s*var\(--prompt-toast-color\);/,
+    );
+    expect(promptToastInnerBlock).toMatch(
+      /border:\s*1px solid var\(--prompt-toast-border-color\);/,
     );
     expect(promptToastInnerBlock).toMatch(/backdrop-filter:\s*blur\(18px\);/);
     expect(promptToastInnerBlock).toMatch(
-      /box-shadow:[\s\S]*0 10px 26px rgba\(60,\s*64,\s*67,\s*0\.1\)/,
+      /box-shadow:[\s\S]*0 10px 26px var\(--prompt-toast-shadow-color\)/,
     );
     expect(promptToastInnerBlock).toMatch(
       /transition:[\s\S]*transform 0\.16s ease,[\s\S]*background-color 0\.16s ease,[\s\S]*box-shadow 0\.16s ease/,
+    );
+    expect(promptToastInnerBlock).toMatch(
+      /&:hover[\s\S]*background:\s*var\(--prompt-toast-hover-background\);/,
+    );
+    expect(promptToastInnerBlock).toMatch(
+      /&:hover[\s\S]*0 14px 30px var\(--prompt-toast-hover-shadow-color\)/,
     );
     expect(promptToastInnerBlock).toContain("&:focus-visible");
     expect(promptToastInnerBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
     expect(promptToastInnerBlock).toContain('&[aria-expanded="true"]');
     expect(promptToastInnerBlock).toMatch(
-      /&\[aria-expanded="true"\][\s\S]*background:\s*rgba\(232,\s*240,\s*254,\s*0\.94\);/,
+      /&\[aria-expanded="true"\][\s\S]*background:\s*var\(--prompt-toast-expanded-background\);/,
+    );
+    expect(promptToastInnerBlock).toMatch(
+      /&\[aria-expanded="true"\][\s\S]*border-color:\s*var\(--prompt-toast-expanded-border-color\);/,
+    );
+    expect(promptToastInnerBlock).toMatch(
+      /&\[aria-expanded="true"\][\s\S]*0 12px 28px var\(--prompt-toast-expanded-shadow-color\)/,
     );
     expect(promptToastInnerBlock).not.toMatch(
       /border:\s*var\(--border-in-light\);/,
@@ -5541,12 +5594,21 @@ describe("Gemini visual migration shell", () => {
     expect(promptToastContentBlock).toMatch(/text-overflow:\s*ellipsis;/);
     expect(promptToastContentBlock).toMatch(/white-space:\s*nowrap;/);
 
-    expect(darkPromptToastInnerBlock).toMatch(
-      /background:\s*rgba\(32,\s*33,\s*36,\s*0\.84\);/,
+    expect(darkPromptToastBlock).toMatch(
+      /--prompt-toast-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 84%,\s*transparent\);/,
     );
-    expect(darkPromptToastInnerBlock).toMatch(
-      /color:\s*rgba\(232,\s*234,\s*237,\s*0\.92\);/,
+    expect(darkPromptToastBlock).toMatch(
+      /--prompt-toast-color:\s*color-mix\(in srgb,\s*var\(--black\) 92%,\s*transparent\);/,
     );
+    expect(darkPromptToastBlock).toMatch(
+      /--prompt-toast-expanded-background:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*var\(--surface\)\);/,
+    );
+    expect(autoDarkPromptToastSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkPromptToastMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkPromptToastBlock).toMatch(
+      /--prompt-toast-expanded-background:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*var\(--surface\)\);/,
+    );
+    expect(promptToastPaintScope).not.toMatch(legacyPromptToastPaint);
     expect(reducedMotionBlock).toContain(".prompt-toast-inner");
     expect(reducedMotionBlock).toMatch(
       /\.prompt-toast-inner[\s\S]*animation:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,

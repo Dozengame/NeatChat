@@ -5936,3 +5936,50 @@ Known risks:
 
 - Browser QA validates active visual state by applying the compiled active class in the QA DOM only. It intentionally does not click the image-generation action, enable MCP clients, upload files, mutate app stores, send messages, or call any model/API.
 - This slice uses the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallbacks remain a separate product decision.
+
+## Iteration 2026-06-21 prompt-toast-token-surface
+
+Result: passed.
+
+Target flow:
+
+- Context Prompt Toast should read as the same Gemini-style contextual chip across Light, explicit Dark, and Auto dark.
+- The toast background, border, text, hover, shadow, and expanded state should no longer carry isolated hardcoded light/dark paint.
+- Prompt modal trigger behavior, focus return, ARIA wiring, session context semantics, model config semantics, account/secret/sync, backend/API, production config, deployment config, dependencies, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected a quiet contextual chip direction: theme-tokenized glass surface, soft expanded primary surface, stable pill geometry, no modal behavior change, no model/account/sync changes, no new dependencies, and reduced-motion safe.
+- The slice keeps the existing Prompt Toast geometry, blur, focus ring, ellipsis, and reduced-motion contract. Only the visual paint source moves into local tokens inherited by the existing button.
+
+Scope:
+
+- `app/components/chat.module.scss`: added local `--prompt-toast-*` tokens on `.prompt-toast`, moved the inner chip background, text, border, hover, shadow, and expanded state to those tokens, and replaced the old dark inner hardcoded paint with explicit Dark and Auto dark root token overrides.
+- `test/gemini-visual-migration.test.ts`: strengthened the existing Prompt Toast contract to lock Light/Dark/Auto dark token declarations, token consumers for base/hover/expanded state, and absence of the old hardcoded toast paint in the scoped toast style surface.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, stores, modal behavior, session context semantics, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, deploy files, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="context prompt toast"` failed first as expected because the Prompt Toast root token declarations did not exist yet.
+- After implementation, the same focused visual migration contract passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser was used for this slice. No real access code, key, account, model/API request, upload, image-generation action, persisted production config, store mutation, or QA-only DOM mutation was used.
+- Current empty-chat state does not naturally render Prompt Toast because the real condition requires context plus non-bottom scroll. Runtime QA therefore validated the compiled Prompt Toast CSSOM and surrounding chat shell layout without changing app state.
+- Desktop `1439x1024` Light: chat region, input panel, textarea, tool button, and send button were visible and inside the viewport; horizontal overflow was `0`; Prompt Toast CSSOM contained the Light token, base consumer, expanded consumer, explicit Dark override, and Auto dark override; old toast paint matches were `0`; console error logs were `0`.
+- Mobile `390x844` Light: chat/input controls stayed inside viewport, horizontal overflow was `0`, Prompt Toast token CSSOM checks passed, old toast paint matches were `0`, and console error logs were `0`.
+- Narrow `320x740` Light: chat/input controls stayed inside viewport, horizontal overflow was `0`, Prompt Toast token CSSOM checks passed, old toast paint matches were `0`, and console error logs were `0`.
+
+Review:
+
+- Read-only sub-agent review found no blocking issues. It confirmed the diff is limited to `app/components/chat.module.scss` and `test/gemini-visual-migration.test.ts` before this QA record; no TSX, model config, account/secret/sync, production/deployment config, or backend logic was changed.
+- The reviewer confirmed Prompt Toast Light, explicit Dark, and Auto dark token scopes are present; hover, focus-visible, `aria-expanded="true"`, and reduced-motion structure were not broken; and the Jest contract covers root tokens, inner token consumers, dark/auto-dark selectors, old hardcoded rgba removal, focus, and reduced-motion.
+- The reviewer noted the residual risk that static Jest string checks cannot prove runtime computed style or visual layout. Main-thread Browser QA covered that risk through CSSOM and layout checks on desktop, mobile, and narrow viewports.
+
+Known risks:
+
+- Browser QA validates Prompt Toast through compiled CSSOM because the current empty-chat runtime state does not show the real toast without mutating app/session state. The source-level Jest contract covers structure, ARIA, reduced-motion, and scoped token usage.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
