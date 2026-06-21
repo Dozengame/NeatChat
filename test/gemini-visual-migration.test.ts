@@ -2534,6 +2534,10 @@ describe("Gemini visual migration shell", () => {
       arrayInputTextBlock,
       "&::placeholder",
     );
+    const arrayInputAddPathButtonBlock = readCssBlock(
+      arrayInputBlock,
+      ":global(.icon-button.add-path-button)",
+    );
     const configSectionBlock = readCssBlock(
       mcpMarketStyles,
       ".config-section",
@@ -2578,6 +2582,10 @@ describe("Gemini visual migration shell", () => {
       configIconButtonBlock,
       "&:hover",
     );
+    const configAddPathButtonBlock = readCssBlock(
+      configArrayInputBlock,
+      ":global(.icon-button.add-path-button)",
+    );
     const pathListBlock = readCssBlock(mcpMarketStyles, ".path-list");
     const pathItemBlock = readCssBlock(pathListBlock, ".path-item");
     const pathInputBlock = readCssBlock(pathItemBlock, "input");
@@ -2603,6 +2611,8 @@ describe("Gemini visual migration shell", () => {
       toolItemBlock,
       ".tool-description",
     );
+    const globalMcpMarketBlock = readCssBlock(mcpMarketStyles, ":global");
+    const globalListItemBlock = readCssBlock(globalMcpMarketBlock, ".list-item");
     const listSubTitleBlock = readCssBlock(
       mcpMarketStyles,
       ".list-sub-title",
@@ -2616,6 +2626,7 @@ describe("Gemini visual migration shell", () => {
       arrayInputHoverBlock,
       arrayInputFocusBlock,
       arrayInputPlaceholderBlock,
+      arrayInputAddPathButtonBlock,
       configDescriptionBlock,
       configArrayInputBlock,
       configArrayInputTextBlock,
@@ -2624,6 +2635,7 @@ describe("Gemini visual migration shell", () => {
       configArrayInputPlaceholderBlock,
       configIconButtonBlock,
       configIconButtonHoverBlock,
+      configAddPathButtonBlock,
       pathInputBlock,
       pathInputHoverBlock,
       pathInputFocusBlock,
@@ -2637,6 +2649,7 @@ describe("Gemini visual migration shell", () => {
       inputItemHoverBlock,
       inputItemFocusBlock,
       inputItemPlaceholderBlock,
+      globalListItemBlock,
       toolDescriptionBlock,
       listSubTitleBlock,
     ].join("\n");
@@ -2707,6 +2720,7 @@ describe("Gemini visual migration shell", () => {
       expect(block).toMatch(
         /background-color:\s*var\(--mcp-market-form-surface\);/,
       );
+      expect(block).toMatch(/border-radius:\s*8px;/);
     });
 
     [arrayInputTextBlock, configArrayInputTextBlock].forEach((block) => {
@@ -2716,6 +2730,7 @@ describe("Gemini visual migration shell", () => {
       expect(block).toMatch(
         /border:\s*1px solid var\(--mcp-market-form-border-color\);/,
       );
+      expect(block).toMatch(/border-radius:\s*8px;/);
     });
 
     [arrayInputHoverBlock, configArrayInputHoverBlock].forEach((block) => {
@@ -2748,6 +2763,10 @@ describe("Gemini visual migration shell", () => {
     });
 
     [pathInputBlock, inputItemTextBlock].forEach((block) => {
+      expect(block).toMatch(
+        /border:\s*1px solid var\(--mcp-market-form-border-color\);/,
+      );
+      expect(block).toMatch(/border-radius:\s*8px;/);
       expect(block).toMatch(
         /background-color:\s*var\(--mcp-market-form-surface\);/,
       );
@@ -2784,6 +2803,7 @@ describe("Gemini visual migration shell", () => {
     expect(configIconButtonBlock).toMatch(
       /border:\s*1px solid var\(--mcp-market-form-border-color\);/,
     );
+    expect(configIconButtonBlock).toMatch(/border-radius:\s*8px;/);
     expect(configIconButtonHoverBlock).toMatch(
       /background-color:\s*var\(--mcp-market-form-hover-surface\);/,
     );
@@ -2797,9 +2817,28 @@ describe("Gemini visual migration shell", () => {
         );
       },
     );
+    [arrayInputAddPathButtonBlock, configAddPathButtonBlock].forEach((block) => {
+      expect(block).toMatch(/border-radius:\s*8px;/);
+      expect(block).toMatch(
+        /background-color:\s*var\(--mcp-market-add-path-button-background\);/,
+      );
+      expect(block).toMatch(/color:\s*var\(--mcp-market-add-path-button-color\);/);
+    });
+    [browseButtonBlock, deleteButtonBlock, addButtonBlock].forEach((block) => {
+      expect(block).toMatch(
+        /border:\s*1px solid var\(--mcp-market-form-border-color\);/,
+      );
+      expect(block).toMatch(/border-radius:\s*8px;/);
+    });
+    expect(globalListItemBlock).toMatch(/border-radius:\s*8px;/);
     expect(mcpMarketFormPaintScope).not.toMatch(
       /var\(--(?:gray-(?:50|100|200|300|500)|primary-10|danger)\)/,
     );
+    expect(mcpMarketFormPaintScope).not.toContain(
+      "border: var(--border-in-light)",
+    );
+    expect(mcpMarketFormPaintScope).not.toContain("border-radius: 10px");
+    expect(mcpMarketFormPaintScope).not.toContain("border-radius: 6px");
   });
 
   test("keeps MCP market list surfaces aligned with Gemini utility cards", () => {

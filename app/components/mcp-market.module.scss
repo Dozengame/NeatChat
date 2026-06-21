@@ -411,7 +411,7 @@
     width: 100%;
     padding: 16px;
     border: 1px solid var(--mcp-market-form-border-color);
-    border-radius: 10px;
+    border-radius: 8px;
     background-color: var(--mcp-market-form-surface);
 
     .array-input-item {
@@ -425,7 +425,7 @@
         width: 100%;
         padding: 8px 12px;
         background-color: var(--mcp-market-form-soft-surface);
-        border-radius: 6px;
+        border-radius: 8px;
         transition: all 0.3s ease;
         font-size: 13px;
         border: 1px solid var(--mcp-market-form-border-color);
@@ -453,7 +453,7 @@
       background-color: var(--mcp-market-add-path-button-background);
       color: var(--mcp-market-add-path-button-color);
       padding: 8px 12px;
-      border-radius: 6px;
+      border-radius: 8px;
       transition: all 0.3s ease;
       margin-top: 8px;
       display: flex;
@@ -491,8 +491,8 @@
         width: 100%;
         max-width: 100%;
         padding: 10px;
-        border: var(--border-in-light);
-        border-radius: 10px;
+        border: 1px solid var(--mcp-market-form-border-color);
+        border-radius: 8px;
         box-sizing: border-box;
         font-size: 14px;
         background-color: var(--mcp-market-form-surface);
@@ -511,8 +511,8 @@
 
       .browse-button {
         padding: 8px;
-        border: var(--border-in-light);
-        border-radius: 10px;
+        border: 1px solid var(--mcp-market-form-border-color);
+        border-radius: 8px;
         background-color: transparent;
         color: var(--black-50);
 
@@ -530,8 +530,8 @@
 
       .delete-button {
         padding: 8px;
-        border: var(--border-in-light);
-        border-radius: 10px;
+        border: 1px solid var(--mcp-market-form-border-color);
+        border-radius: 8px;
         background-color: transparent;
         color: var(--black-50);
 
@@ -559,8 +559,8 @@
       gap: 5px;
       padding: 8px 12px;
       background-color: transparent;
-      border: var(--border-in-light);
-      border-radius: 10px;
+      border: 1px solid var(--mcp-market-form-border-color);
+      border-radius: 8px;
       color: var(--black);
       font-size: 12px;
       margin-top: 5px;
@@ -605,7 +605,7 @@
       width: 100%;
       padding: 16px;
       border: 1px solid var(--mcp-market-form-border-color);
-      border-radius: 10px;
+      border-radius: 8px;
       background-color: var(--mcp-market-form-surface);
 
       .array-input-item {
@@ -619,7 +619,7 @@
           width: 100%;
           padding: 8px 12px;
           background-color: var(--mcp-market-form-soft-surface);
-          border-radius: 6px;
+          border-radius: 8px;
           transition: all 0.3s ease;
           font-size: 13px;
           border: 1px solid var(--mcp-market-form-border-color);
@@ -645,7 +645,7 @@
           width: 32px;
           height: 32px;
           padding: 0;
-          border-radius: 6px;
+          border-radius: 8px;
           background-color: transparent;
           border: 1px solid var(--mcp-market-form-border-color);
           flex-shrink: 0;
@@ -671,7 +671,7 @@
         background-color: var(--mcp-market-add-path-button-background);
         color: var(--mcp-market-add-path-button-color);
         padding: 8px 12px;
-        border-radius: 6px;
+        border-radius: 8px;
         transition: all 0.3s ease;
         margin-top: 8px;
         display: flex;
@@ -700,8 +700,8 @@
     input {
       width: 100%;
       padding: 10px;
-      border: var(--border-in-light);
-      border-radius: 10px;
+      border: 1px solid var(--mcp-market-form-border-color);
+      border-radius: 8px;
       box-sizing: border-box;
       font-size: 14px;
       background-color: var(--mcp-market-form-surface);
@@ -779,7 +779,7 @@
     .list-item {
       border: none;
       background-color: transparent;
-      border-radius: 10px;
+      border-radius: 8px;
       padding: 10px;
       margin-bottom: 10px;
       display: flex;

@@ -6977,3 +6977,55 @@ Known risks:
 - Live Browser computed-style verification for the actual New Chat start surface is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
 - Start chat, mask selection, no-show confirmation, More Masks navigation, and mobile drawer trigger were not clicked because the target page was not reachable without credentials and those actions can mutate local state, persisted config, or route state.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-22 mcp-market-form-control-tone
+
+Result: automated checks passed; live target QA blocked by access-code gate.
+
+Target flow:
+
+- MCP Market configuration form controls should read as Gemini-style utility controls: tokenized borders, consistent 8px inputs/buttons/list rows, restrained hover/focus treatment, and existing Light/Dark/Auto dark-safe form colors.
+- Search, config array rows, path inputs, add/delete controls, text inputs, modal list rows, save/cancel/close behavior, server install/start/pause/restart/config semantics, account/secret/sync/backend/deploy behavior, dependencies, and production config must remain unchanged.
+- The slice should refine only the MCP Market form-control visual surface without changing controller logic, TSX behavior, persisted MCP config semantics, or server actions.
+
+Design direction:
+
+- Creative Production style intake selected a utility-form direction: compact field rows, 8px controls, existing market tokens, subtle primary hover/focus wash, and no new decorative treatment.
+- No generated raster design was used because this is a small UI-system repair inside the existing Gemini migration language. The design spec is the local token contract in `mcp-market.module.scss` plus this QA record.
+
+Scope:
+
+- `app/components/mcp-market.module.scss`: replaced remaining form-control `border-in-light`, 10px input/path/list-row radii, and 6px add/icon button radii inside MCP Market form controls with tokenized `--mcp-market-form-*` borders and 8px geometry.
+- `test/gemini-visual-migration.test.ts`: strengthened the existing MCP Market form-controls contract to lock token borders, 8px form/input/action/list-row radii, add-path button token color/background, and old `border-in-light`/10px/6px paint removal in the form-control scope.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No MCP Market TSX behavior, controller logic, server actions, config schema handling, persisted MCP config semantics, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, package files, or lockfiles were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="MCP market form controls"` failed first as expected because `.array-input` and nested inputs/buttons still used 10px/6px radii.
+- After implementing the form-control token/radius changes, the focused contract passed.
+- The test was then strengthened to include MCP Market modal `.list-item`; it failed as expected while the list item still used 10px radius.
+- After the modal list-row radius was corrected to 8px, the focused contract passed again.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser opened `http://localhost:3001/#/mcp-market`.
+- Desktop default viewport `1280x720` and mobile viewport `390x844` both reached the local access-code gate with title `NeatChat` and gate copy `需要密码`, `管理员开启了密码验证，请在下方填入访问码`, and action `确认`.
+- Both viewport checks had no console warn/error logs, no framework overlay, and horizontal overflow `0`. The actual MCP Market form controls were not rendered because the local gate blocked access.
+- In-app Browser screenshot capture failed with `Page.captureScreenshot` timeout for the tab.
+- No real access code was entered and no auth/config bypass was attempted. Search, install/add, configure, save, cancel, close, start/pause/restart, path add/delete, text input edit, model/API request, account/key/sync/import/export/reset/clear, or persisted config action was not performed.
+
+Review:
+
+- Read-only sub-agent review found no P0/P1/P2 or blocking issues. It confirmed the diff is limited to `app/components/mcp-market.module.scss`, `test/gemini-visual-migration.test.ts`, and this QA record, with no TSX behavior, controller logic, MCP config semantics, backend/API, model config, account/secret/sync, production/deploy config, package/lockfile, or dependency changes.
+- The review noted one P3 residual verification risk: live computed-style validation for the target MCP Market form controls is blocked by the access-code gate. This is already recorded as a QA boundary, not a code regression.
+- The final review state confirms the focused test locks `onClick={saveServerConfig}`, guarded modal close, `onUserConfigChange`, row id creation/removal, `IconButton`, input change call sites, `array-input`, `path-list`, `input-item`, modal `list-item`, 8px control geometry, token borders, and old form-control paint removal while avoiding runtime mutation.
+- Browser QA is correctly described as blocked by the access-code gate and should not be described as live computed-style verification for the actual MCP Market form controls.
+
+Known risks:
+
+- Live Browser computed-style verification for the actual MCP Market form controls is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
+- MCP Market form interactions and server actions were not clicked because the target page was not reachable without credentials and those actions can mutate persisted MCP config or local server state.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
