@@ -4684,6 +4684,164 @@ describe("Gemini visual migration shell", () => {
     expect(maskBlock).toMatch(/&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/);
   });
 
+  test("keeps update announcement modal aligned with Gemini release surfaces", () => {
+    const updateAnnouncement = read("app/components/update-announcement.tsx");
+    const updateAnnouncementStyles = read(
+      "app/components/update-announcement.module.scss",
+    );
+    const maskBlock = readCssBlock(updateAnnouncementStyles, ".mask");
+    const maskRootBlock = readRootDeclarations(maskBlock);
+    const panelBlock = readCssBlock(updateAnnouncementStyles, ".panel");
+    const sectionTitleBlock = readCssBlock(
+      updateAnnouncementStyles,
+      ".section-title",
+    );
+    const itemBeforeBlock = readCssBlock(
+      updateAnnouncementStyles,
+      "&::before",
+    );
+    const noteBlock = readCssBlock(updateAnnouncementStyles, ".note");
+    const darkMaskBlock = readCssBlock(
+      updateAnnouncementStyles,
+      ":global(.dark) .mask",
+    );
+    const autoDarkMaskSelector = ":global(body:not(.light)) .mask";
+    const autoDarkMaskSelectorIndex =
+      updateAnnouncementStyles.indexOf(autoDarkMaskSelector);
+    const autoDarkMaskMediaIndex = updateAnnouncementStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkMaskSelectorIndex,
+    );
+    const autoDarkMaskBlock = readCssBlock(
+      updateAnnouncementStyles.slice(autoDarkMaskMediaIndex),
+      autoDarkMaskSelector,
+    );
+    const mobileBlock = readCssBlock(
+      updateAnnouncementStyles,
+      "@media screen and (max-width: 600px)",
+    );
+    const mobileMaskBlock = readCssBlock(mobileBlock, ".mask");
+    const mobilePanelBlock = readCssBlock(mobileBlock, ".panel");
+    const mobileConfirmBlock = readCssBlock(mobileBlock, ".confirm");
+
+    expect(updateAnnouncement).toContain(
+      'const SEEN_KEY_PREFIX = "neatchat:update-announcement:seen";',
+    );
+    expect(updateAnnouncement).toContain(
+      'return localStorage.getItem(key) === "1";',
+    );
+    expect(updateAnnouncement).toContain('localStorage.setItem(key, "1");');
+    expect(updateAnnouncement).toContain('role="presentation"');
+    expect(updateAnnouncement).toContain("<dialog");
+    expect(updateAnnouncement).toContain(
+      'aria-labelledby="update-announcement-title"',
+    );
+    expect(updateAnnouncement).toContain('text="我知道了"');
+    expect(updateAnnouncementStyles).not.toContain("rgba(49, 94, 248");
+    expect(updateAnnouncementStyles).not.toContain("rgba(0, 0, 0, 0.36)");
+    expect(maskRootBlock).toMatch(
+      /--update-announcement-shadow-ink:\s*rgb\(0,\s*0,\s*0\);/,
+    );
+    expect(maskRootBlock).toMatch(
+      /--update-announcement-panel-border-ink:\s*rgb\(60,\s*64,\s*67\);/,
+    );
+    expect(maskRootBlock).toMatch(
+      /--update-announcement-mask-background:\s*color-mix\(in srgb,\s*var\(--update-announcement-shadow-ink\) 36%,\s*transparent\);/,
+    );
+    expect(maskRootBlock).toMatch(
+      /--update-announcement-panel-background:\s*var\(--surface-elevated\);/,
+    );
+    expect(maskRootBlock).toMatch(
+      /--update-announcement-panel-border-color:\s*color-mix\(in srgb,\s*var\(--update-announcement-panel-border-ink\) 12%,\s*transparent\);/,
+    );
+    expect(maskRootBlock).toMatch(
+      /--update-announcement-panel-shadow-color:\s*color-mix\(in srgb,\s*var\(--update-announcement-shadow-ink\) 18%,\s*transparent\);/,
+    );
+    expect(maskRootBlock).toMatch(
+      /--update-announcement-section-background:\s*color-mix\(in srgb,\s*var\(--primary\) 8%,\s*transparent\);/,
+    );
+    expect(maskRootBlock).toMatch(
+      /--update-announcement-section-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 18%,\s*transparent\);/,
+    );
+    expect(maskRootBlock).toMatch(
+      /--update-announcement-section-color:\s*var\(--primary\);/,
+    );
+    expect(maskRootBlock).toMatch(
+      /--update-announcement-bullet-color:\s*var\(--primary\);/,
+    );
+    expect(maskRootBlock).toMatch(
+      /--update-announcement-note-color:\s*color-mix\(in srgb,\s*var\(--black\) 72%,\s*transparent\);/,
+    );
+    expect(maskRootBlock).toMatch(
+      /background:\s*var\(--update-announcement-mask-background\);/,
+    );
+    expect(panelBlock).toMatch(
+      /background:\s*var\(--update-announcement-panel-background\);/,
+    );
+    expect(panelBlock).toMatch(
+      /border:\s*1px solid var\(--update-announcement-panel-border-color\);/,
+    );
+    expect(panelBlock).toMatch(
+      /0 22px 70px var\(--update-announcement-panel-shadow-color\),/,
+    );
+    expect(sectionTitleBlock).toMatch(
+      /color:\s*var\(--update-announcement-section-color\);/,
+    );
+    expect(sectionTitleBlock).toMatch(
+      /background:\s*var\(--update-announcement-section-background\);/,
+    );
+    expect(sectionTitleBlock).toMatch(
+      /border:\s*1px solid var\(--update-announcement-section-border-color\);/,
+    );
+    expect(itemBeforeBlock).toMatch(
+      /background:\s*var\(--update-announcement-bullet-color\);/,
+    );
+    expect(noteBlock).toMatch(
+      /color:\s*var\(--update-announcement-note-color\);/,
+    );
+    expect(noteBlock).toMatch(/opacity:\s*1;/);
+    expect(darkMaskBlock).toMatch(
+      /--update-announcement-panel-border-ink:\s*rgb\(255,\s*255,\s*255\);/,
+    );
+    expect(darkMaskBlock).toMatch(
+      /--update-announcement-mask-background:\s*color-mix\(in srgb,\s*var\(--update-announcement-shadow-ink\) 50%,\s*transparent\);/,
+    );
+    expect(darkMaskBlock).toMatch(
+      /--update-announcement-panel-border-color:\s*color-mix\(in srgb,\s*var\(--update-announcement-panel-border-ink\) 10%,\s*transparent\);/,
+    );
+    expect(darkMaskBlock).toMatch(
+      /--update-announcement-panel-shadow-color:\s*color-mix\(in srgb,\s*var\(--update-announcement-shadow-ink\) 36%,\s*transparent\);/,
+    );
+    expect(darkMaskBlock).toMatch(
+      /--update-announcement-section-background:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*var\(--surface\)\);/,
+    );
+    expect(darkMaskBlock).toMatch(
+      /--update-announcement-section-color:\s*color-mix\(in srgb,\s*var\(--primary\) 42%,\s*var\(--black\)\);/,
+    );
+    expect(autoDarkMaskBlock).toMatch(
+      /--update-announcement-panel-border-ink:\s*rgb\(255,\s*255,\s*255\);/,
+    );
+    expect(autoDarkMaskBlock).toMatch(
+      /--update-announcement-mask-background:\s*color-mix\(in srgb,\s*var\(--update-announcement-shadow-ink\) 50%,\s*transparent\);/,
+    );
+    expect(autoDarkMaskBlock).toMatch(
+      /--update-announcement-section-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 28%,\s*transparent\);/,
+    );
+    expect(updateAnnouncementStyles).not.toContain(
+      "--update-announcement-mask-background: color-mix(in srgb, var(--black) 50%, transparent);",
+    );
+    expect(updateAnnouncementStyles).not.toContain(
+      "--update-announcement-panel-border-color: color-mix(in srgb, var(--white) 10%, transparent);",
+    );
+    expect(mobileMaskBlock).toMatch(/height:\s*100dvh;/);
+    expect(mobileMaskBlock).toMatch(/padding:\s*0;/);
+    expect(mobilePanelBlock).toMatch(/width:\s*100vw;/);
+    expect(mobilePanelBlock).toMatch(
+      /max-height:\s*calc\(78dvh - env\(safe-area-inset-bottom\)\);/,
+    );
+    expect(mobileConfirmBlock).toMatch(/width:\s*100%;/);
+  });
+
   test("keeps chat image preview overlay focus-restoring and bounded", () => {
     const chat = read("app/components/chat.tsx");
     const markdown = read("app/components/markdown.tsx");

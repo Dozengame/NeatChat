@@ -6079,3 +6079,50 @@ Known risks:
 - The in-app Browser screenshot API timed out on this dev page, so this slice records DOM, ARIA, layout, and CSSOM evidence rather than screenshot pixels.
 - Dynamic hover/selected computedStyle from the in-app Browser was inconsistent after keyboard navigation, so the implementation was tightened to class plus ARIA selected selectors and covered by source-level Jest plus compiled CSSOM checks.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-21 update-announcement-surface-tone
+
+Result: passed.
+
+Target flow:
+
+- Update announcement modal should read as a Gemini-style release-note surface across Light, explicit Dark, Auto dark, desktop, mobile, and narrow mobile.
+- Section pills, modal scrim, panel border/shadow, bullets, and note text should consume local theme tokens instead of isolated hardcoded rgba paint.
+- Seen-key composition, localStorage read/write, dismiss behavior, dialog/ARIA structure, model config semantics, account/secret/sync, backend/API, production config, deployment config, dependencies, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected a quiet release-note modal: tokenized section pills, soft modal scrim, elevated surface panel, mobile bottom-sheet safe area, reduced-motion safe, and no storage/config behavior change.
+- The slice keeps the existing dialog copy, confirm action, component structure, desktop dimensions, mobile bottom-sheet layout, and safe-area contract. Only local color/shadow sources move to theme-aware tokens.
+
+Scope:
+
+- `app/components/update-announcement.module.scss`: added local `--update-announcement-*` tokens on `.mask`, moved scrim/panel/section/bullet/note paint to token consumers, replaced old local hardcoded blue/black rgba values, added explicit Dark plus Auto dark token overrides, and after review corrected scrim/shadow/border ink tokens so Dark does not inherit the theme-reversed `--black` / `--white` semantics.
+- `test/gemini-visual-migration.test.ts`: added a focused update-announcement visual migration contract locking storage/dismiss source behavior, dialog/ARIA structure, Light/Dark/Auto dark token declarations, token consumers, old hardcoded paint removal, mobile bottom-sheet safe-area sizing, and the corrected physical scrim/shadow/border ink contract for Dark mode.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, stores, update announcement public config semantics, localStorage key format/value semantics, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, deploy files, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="update announcement modal"` failed first as expected because the modal still used old hardcoded local rgba paint and lacked update-announcement root token declarations.
+- After read-only review found the Dark scrim/shadow/border tokens were incorrectly locked to theme-reversed `--black` / `--white`, the same focused test failed again against the bad contract, then passed after introducing local physical ink tokens.
+- After implementation, the same focused visual migration contract passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser was used for this slice. No real access code, key, account, model/API request, upload, image-generation action, persisted production config, store mutation, session mutation, or QA-only DOM mutation was used.
+- Current local runtime does not naturally render an update announcement modal without public server config. Browser QA therefore validated the compiled update-announcement CSSOM and surrounding chat shell layout without changing app config or localStorage.
+- Desktop `1439x1024` Light: chat shell, model button, textarea, and send button stayed inside viewport; horizontal overflow was `0`; scoped update-announcement CSSOM contained Light root tokens, panel/section/bullet/note consumers, explicit Dark override, Auto dark override, mobile safe-area rule, corrected physical shadow/border ink tokens, no bad Dark `var(--black)` / `var(--white)` scrim/border lock, and no old local update-announcement rgba paint; console error logs were `0`.
+- Mobile `390x844` Light: new chat button, textarea, and send button stayed inside viewport; horizontal overflow was `0`; scoped update-announcement CSSOM contained mobile mask height, panel width, safe-area max-height, confirm full-width rule, corrected physical shadow/border ink tokens, no bad Dark token lock, and no old local update-announcement rgba paint; console error logs were `0`.
+- Narrow `320x740` Light: new chat button, textarea, and send button stayed inside viewport; horizontal overflow was `0`; scoped update-announcement CSSOM contained Light, explicit Dark, Auto dark, mobile safe-area, corrected physical shadow/border ink tokens, bad Dark token removal, and old-paint removal checks; console error logs were `0`.
+
+Review:
+
+- Initial read-only sub-agent review found two blocking issues: the Dark scrim/shadow tokens incorrectly used theme-reversed `--black`, and the Dark border token incorrectly used theme-reversed `--white`.
+- Main-thread fix replaced those with local physical `--update-announcement-shadow-ink` and `--update-announcement-panel-border-ink` tokens, updated the test contract, and reran focused Jest plus Browser QA.
+
+Known risks:
+
+- Browser QA validates the update announcement modal through compiled CSSOM because the real modal requires public server config to render; the source-level Jest contract covers component structure, storage behavior, token usage, old paint removal, and mobile sizing.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.

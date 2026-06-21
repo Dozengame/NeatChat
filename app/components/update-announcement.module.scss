@@ -1,6 +1,18 @@
 @import "../styles/animation.scss";
 
 .mask {
+  --update-announcement-shadow-ink: rgb(0, 0, 0);
+  --update-announcement-panel-border-ink: rgb(60, 64, 67);
+  --update-announcement-mask-background: color-mix(in srgb, var(--update-announcement-shadow-ink) 36%, transparent);
+  --update-announcement-panel-background: var(--surface-elevated);
+  --update-announcement-panel-border-color: color-mix(in srgb, var(--update-announcement-panel-border-ink) 12%, transparent);
+  --update-announcement-panel-shadow-color: color-mix(in srgb, var(--update-announcement-shadow-ink) 18%, transparent);
+  --update-announcement-section-background: color-mix(in srgb, var(--primary) 8%, transparent);
+  --update-announcement-section-border-color: color-mix(in srgb, var(--primary) 18%, transparent);
+  --update-announcement-section-color: var(--primary);
+  --update-announcement-bullet-color: var(--primary);
+  --update-announcement-note-color: color-mix(in srgb, var(--black) 72%, transparent);
+
   position: fixed;
   inset: 0;
   z-index: 9999;
@@ -9,7 +21,7 @@
   justify-content: center;
   padding: 24px;
   box-sizing: border-box;
-  background: rgba(0, 0, 0, 0.36);
+  background: var(--update-announcement-mask-background);
   backdrop-filter: blur(8px);
 }
 
@@ -20,11 +32,11 @@
   flex-direction: column;
   overflow: hidden;
   color: var(--black);
-  background: var(--white);
-  border: var(--border-in-light);
+  background: var(--update-announcement-panel-background);
+  border: 1px solid var(--update-announcement-panel-border-color);
   border-radius: 14px;
   box-shadow:
-    0 22px 70px rgba(0, 0, 0, 0.2),
+    0 22px 70px var(--update-announcement-panel-shadow-color),
     var(--card-shadow);
   animation: slide-in ease 0.24s;
 }
@@ -56,9 +68,9 @@
   min-height: 24px;
   margin-bottom: 8px;
   padding: 0 9px;
-  color: var(--primary);
-  background: rgba(49, 94, 248, 0.08);
-  border: 1px solid rgba(49, 94, 248, 0.18);
+  color: var(--update-announcement-section-color);
+  background: var(--update-announcement-section-background);
+  border: 1px solid var(--update-announcement-section-border-color);
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
@@ -86,7 +98,7 @@
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background: var(--primary);
+    background: var(--update-announcement-bullet-color);
   }
 }
 
@@ -94,8 +106,8 @@
   margin-top: 16px;
   padding-top: 14px;
   border-top: var(--border-in-light);
-  color: var(--black);
-  opacity: 0.72;
+  color: var(--update-announcement-note-color);
+  opacity: 1;
   font-size: 13px;
   line-height: 1.6;
   user-select: text;
@@ -110,6 +122,32 @@
 
 .confirm {
   min-width: 112px;
+}
+
+:global(.dark) .mask {
+  --update-announcement-panel-border-ink: rgb(255, 255, 255);
+  --update-announcement-mask-background: color-mix(in srgb, var(--update-announcement-shadow-ink) 50%, transparent);
+  --update-announcement-panel-border-color: color-mix(in srgb, var(--update-announcement-panel-border-ink) 10%, transparent);
+  --update-announcement-panel-shadow-color: color-mix(in srgb, var(--update-announcement-shadow-ink) 36%, transparent);
+  --update-announcement-section-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
+  --update-announcement-section-border-color: color-mix(in srgb, var(--primary) 28%, transparent);
+  --update-announcement-section-color: color-mix(in srgb, var(--primary) 42%, var(--black));
+  --update-announcement-bullet-color: color-mix(in srgb, var(--primary) 42%, var(--black));
+  --update-announcement-note-color: color-mix(in srgb, var(--black) 74%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .mask {
+    --update-announcement-panel-border-ink: rgb(255, 255, 255);
+    --update-announcement-mask-background: color-mix(in srgb, var(--update-announcement-shadow-ink) 50%, transparent);
+    --update-announcement-panel-border-color: color-mix(in srgb, var(--update-announcement-panel-border-ink) 10%, transparent);
+    --update-announcement-panel-shadow-color: color-mix(in srgb, var(--update-announcement-shadow-ink) 36%, transparent);
+    --update-announcement-section-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
+    --update-announcement-section-border-color: color-mix(in srgb, var(--primary) 28%, transparent);
+    --update-announcement-section-color: color-mix(in srgb, var(--primary) 42%, var(--black));
+    --update-announcement-bullet-color: color-mix(in srgb, var(--primary) 42%, var(--black));
+    --update-announcement-note-color: color-mix(in srgb, var(--black) 74%, transparent);
+  }
 }
 
 @media screen and (max-width: 600px) {
