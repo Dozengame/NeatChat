@@ -7084,3 +7084,56 @@ Known risks:
 - Live Browser computed-style verification for the actual Update Announcement modal is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
 - The confirm/dismiss path was not clicked because the target modal was not reachable without credentials and clicking it would mutate localStorage. The source-level contract still locks the seen-key prefix, localStorage read/write, dismiss state, dialog accessibility, and confirm button entry point.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-22 shared-icon-button-utility-tone
+
+Result: automated checks passed; live Auth gate IconButton QA passed within no-credential boundary.
+
+Target flow:
+
+- Shared `IconButton` should read as a Gemini-style utility control across desktop, mobile, and dark modes: compact 8px geometry, tokenized bordered state, restrained hover/focus treatment, and consistent danger/primary tone.
+- `IconButton` props, class composition, click forwarding, disabled state, title, autofocus, inline style, ARIA attributes, mobile-sidebar trigger data attribute, icon/text rendering, primary/danger behavior, model config, account/secret/sync/backend/deploy behavior, dependencies, and production config must remain unchanged.
+- The slice should refine only shared button visual primitives without changing TSX behavior or any caller semantics.
+
+Design direction:
+
+- Creative Production style intake selected a shared utility-control direction: compact 8px button shell, neutral tokenized bordered state, subtle primary hover/focus border, explicit Dark/Auto dark safety, and no decorative gradient or motion changes.
+- No generated raster design was used because this is a small UI-system repair inside the existing Gemini migration language. The design spec is the local token contract in `button.module.scss` plus this QA record.
+
+Scope:
+
+- `app/components/button.module.scss`: added local border/radius tokens for Light/Dark/Auto dark; replaced the old 12px base radius and `border-in-light` bordered state with tokenized 8px utility-control styling.
+- `test/gemini-visual-migration.test.ts`: strengthened the existing shared `IconButton` contract to lock behavior entry points, Light/Dark/Auto dark border tokens, 8px radius consumption, tokenized bordered state, and old 12px/`border-in-light` removal.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No `IconButton` TSX behavior, button props, caller behavior, routing, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, package files, or lockfiles were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="shared IconButton"` failed first as expected because `.icon-button` lacked border/radius tokens and still used old 12px geometry.
+- After implementing the shared utility-control tokens and consumers, the focused contract passed.
+- `git diff --check` passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser opened `http://localhost:3001/` and reached the Auth gate with title `NeatChat`, gate copy `需要密码`, `管理员开启了密码验证，请在下方填入访问码`, password placeholder `在此处填写访问码`, password visibility button `显示密码`, and action `确认`.
+- Desktop default viewport `1280x720` showed the Auth gate, no framework overlay, no console warn/error logs, horizontal overflow `0`, and computed `显示密码` `IconButton` radius `8px`.
+- The password visibility `IconButton` was clicked once without entering a code; it changed the input type from `password` to `text`, proving the visible shared control still updates local UI state without submitting credentials.
+- Mobile viewport `390x844` showed the same Auth gate, no framework overlay, no console warn/error logs, horizontal overflow `0`, and computed `显示密码` `IconButton` radius `8px`. The visibility `IconButton` again changed the input type from `password` to `text`.
+- In-app Browser screenshot capture failed with `Page.captureScreenshot` timeout for the desktop tab.
+- No real access code was entered and no auth/config bypass was attempted. Confirm/submit, model/API request, account/key/sync/import/export/reset/clear, or persisted config action was not performed.
+
+Review:
+
+- Read-only sub-agent review found one P2 test/QA-record coverage gap: the first version did not explicitly lock `className` composition, `title`, `tabIndex`, `autoFocus`, `style`, `aria-controls`, `aria-expanded`, `bordered`/`shadow` classes, and icon/text rendering while this QA record claimed existing behavior entry points were locked.
+- The P2 finding was fixed before commit by adding focused source-level assertions for those `IconButton` behavior entry points. This QA record now reflects the fixed coverage.
+- The review found no越界修改: the diff is limited to `app/components/button.module.scss`, `test/gemini-visual-migration.test.ts`, and this QA record, with no `button.tsx` behavior, caller behavior, backend/API, model config, account/secret/sync, production/deploy config, package/lockfile, or dependency changes.
+- The reviewer confirmed the SCSS direction matches the slice: 8px radius token, tokenized `.border`, Light/Dark/Auto dark border tokens, and no primary/danger/focus-visible token regression identified.
+- Follow-up read-only review found no new P0/P1/P2 or blocking issues after the P2 test coverage fix, and confirmed this QA record no longer claims pending review or overstates Browser QA coverage.
+
+Known risks:
+
+- `IconButton` is a shared primitive, so visual changes fan out to Auth, Chat, settings, export, MCP, and modal controls. The slice intentionally changes only geometry/bordered paint, not TSX behavior.
+- Live Browser computed-style verification may be limited by the local access-code gate. The slice will not enter credentials or change auth/config to bypass that gate.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.

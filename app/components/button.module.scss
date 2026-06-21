@@ -1,6 +1,12 @@
 .icon-button {
   --icon-button-color: var(--black);
   --icon-button-hover-background: var(--hover-color);
+  --icon-button-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --icon-button-radius: 8px;
   --icon-button-hover-border-color: color-mix(
     in srgb,
     var(--primary) 24%,
@@ -39,7 +45,7 @@
   appearance: none;
   box-sizing: border-box;
   background-color: transparent;
-  border-radius: 12px;
+  border-radius: var(--icon-button-radius);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -102,6 +108,11 @@
 }
 
 :global(.dark) .icon-button {
+  --icon-button-border-color: color-mix(
+    in srgb,
+    var(--white) 12%,
+    transparent
+  );
   --icon-button-hover-border-color: color-mix(
     in srgb,
     var(--primary) 30%,
@@ -136,6 +147,11 @@
 
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .icon-button {
+    --icon-button-border-color: color-mix(
+      in srgb,
+      var(--white) 12%,
+      transparent
+    );
     --icon-button-hover-border-color: color-mix(
       in srgb,
       var(--primary) 30%,
@@ -174,7 +190,7 @@
 }
 
 .border {
-  border: var(--border-in-light);
+  border: 1px solid var(--icon-button-border-color);
 }
 
 .icon-button-icon {

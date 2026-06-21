@@ -2136,6 +2136,7 @@ describe("Gemini visual migration shell", () => {
       "&:hover",
     );
     const focusBlock = readCssBlock(iconButtonBlock, "&:focus-visible");
+    const borderBlock = readCssBlock(buttonStyles, ".border");
     const darkIconButtonBlock = readCssBlock(
       buttonStyles,
       ":global(.dark) .icon-button",
@@ -2160,15 +2161,31 @@ describe("Gemini visual migration shell", () => {
       dangerHoverBlock,
       hoverBlock,
       focusBlock,
+      borderBlock,
       darkIconButtonBlock,
       autoDarkIconButtonBlock,
     ].join("\n");
 
     expect(button).toContain('export type ButtonType = "primary" | "danger" | null;');
+    expect(button).toMatch(
+      /className=\{clsx\([\s\S]*"clickable"[\s\S]*styles\["icon-button"\][\s\S]*\[styles\.border\]: props\.bordered,[\s\S]*\[styles\.shadow\]: props\.shadow,[\s\S]*styles\[props\.type \?\? ""\][\s\S]*props\.className[\s\S]*\)\}/,
+    );
     expect(button).toContain("onClick={props.onClick}");
+    expect(button).toContain("title={props.title}");
     expect(button).toContain("disabled={props.disabled}");
+    expect(button).toContain("tabIndex={props.tabIndex}");
+    expect(button).toContain("autoFocus={props.autoFocus}");
+    expect(button).toContain("style={props.style}");
     expect(button).toContain("aria-label={props.aria}");
+    expect(button).toContain("aria-controls={props.ariaControls}");
+    expect(button).toContain("aria-expanded={props.ariaExpanded}");
     expect(button).toContain("data-mobile-sidebar-trigger=");
+    expect(button).toMatch(
+      /props\.icon && \([\s\S]*className=\{clsx\(styles\["icon-button-icon"\][\s\S]*"no-dark": props\.type === "primary"[\s\S]*\)\}[\s\S]*\{props\.icon\}[\s\S]*\)/,
+    );
+    expect(button).toMatch(
+      /props\.text && \([\s\S]*aria-label=\{props\.text \|\| props\.title\}[\s\S]*className=\{styles\["icon-button-text"\]\}[\s\S]*\{props\.text\}[\s\S]*\)/,
+    );
     expect(rootHoverIndex).toBeGreaterThan(-1);
 
     expect(iconButtonRootBlock).toMatch(
@@ -2198,6 +2215,10 @@ describe("Gemini visual migration shell", () => {
     expect(iconButtonRootBlock).toMatch(
       /--icon-button-danger-border-color:\s*color-mix\(\s*in srgb,\s*var\(--icon-button-danger-ink\) 36%,\s*transparent\s*\);/,
     );
+    expect(iconButtonRootBlock).toMatch(
+      /--icon-button-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
+    );
+    expect(iconButtonRootBlock).toMatch(/--icon-button-radius:\s*8px;/);
     expect(darkIconButtonBlock).toMatch(
       /--icon-button-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 30%,\s*transparent\s*\);/,
     );
@@ -2215,6 +2236,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(darkIconButtonBlock).toMatch(
       /--icon-button-danger-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--icon-button-danger-ink\) 60%,\s*transparent\s*\);/,
+    );
+    expect(darkIconButtonBlock).toMatch(
+      /--icon-button-border-color:\s*color-mix\(\s*in srgb,\s*var\(--white\) 12%,\s*transparent\s*\);/,
     );
     expect(autoDarkIconButtonSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkIconButtonMediaIndex).toBeGreaterThan(-1);
@@ -2236,8 +2260,14 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkIconButtonBlock).toMatch(
       /--icon-button-danger-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--icon-button-danger-ink\) 60%,\s*transparent\s*\);/,
     );
+    expect(autoDarkIconButtonBlock).toMatch(
+      /--icon-button-border-color:\s*color-mix\(\s*in srgb,\s*var\(--white\) 12%,\s*transparent\s*\);/,
+    );
 
     expect(iconButtonRootBlock).toMatch(/color:\s*var\(--icon-button-color\);/);
+    expect(iconButtonRootBlock).toMatch(
+      /border-radius:\s*var\(--icon-button-radius\);/,
+    );
     expect(primaryBlock).toMatch(
       /background-color:\s*var\(--icon-button-primary-background\);/,
     );
@@ -2275,12 +2305,17 @@ describe("Gemini visual migration shell", () => {
       /border-color:\s*var\(--icon-button-hover-border-color\);/,
     );
     expect(focusBlock).toMatch(/box-shadow:\s*var\(--focus-ring-shadow\);/);
+    expect(borderBlock).toMatch(
+      /border:\s*1px solid var\(--icon-button-border-color\);/,
+    );
     expect(sharedButtonPaintScope).not.toMatch(/rgba\(\$color:\s*red/);
     expect(sharedButtonPaintScope).not.toContain("border-color: red");
     expect(sharedButtonPaintScope).not.toContain("fill: red !important");
     expect(sharedButtonPaintScope).not.toContain("rgba(49, 94, 248, 0.24)");
     expect(sharedButtonPaintScope).not.toContain("color: white");
     expect(sharedButtonPaintScope).not.toContain("fill: white !important");
+    expect(sharedButtonPaintScope).not.toContain("border-radius: 12px");
+    expect(sharedButtonPaintScope).not.toContain("border: var(--border-in-light)");
   });
 
   test("keeps MCP market status controls aligned with Gemini utility tones", () => {
