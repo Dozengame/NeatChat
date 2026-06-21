@@ -1922,6 +1922,23 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".attachment-add-button",
     );
+    const darkAttachmentAddButtonBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .attachment-add-button",
+    );
+    const autoDarkAttachmentAddButtonSelector =
+      ":global(body:not(.light)) .attachment-add-button";
+    const autoDarkAttachmentAddButtonSelectorIndex = chatStyles.indexOf(
+      autoDarkAttachmentAddButtonSelector,
+    );
+    const autoDarkAttachmentAddButtonMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkAttachmentAddButtonSelectorIndex,
+    );
+    const autoDarkAttachmentAddButtonBlock = readCssBlock(
+      chatStyles.slice(autoDarkAttachmentAddButtonMediaIndex),
+      autoDarkAttachmentAddButtonSelector,
+    );
     const mobileStyles = chatStyles.slice(
       chatStyles.lastIndexOf("@media only screen and (max-width: 600px)"),
     );
@@ -1929,6 +1946,13 @@ describe("Gemini visual migration shell", () => {
       mobileStyles,
       ".attachment-add-button",
     );
+    const attachmentAddButtonToneScope = [
+      attachmentAddButtonBlock,
+      darkAttachmentAddButtonBlock,
+      autoDarkAttachmentAddButtonBlock,
+    ].join("\n");
+    const legacyAttachmentAddButtonPaint =
+      /rgba\((?:25,\s*103,\s*210|26,\s*115,\s*232|66,\s*133,\s*244|138,\s*180,\s*248|174,\s*203,\s*250|232,\s*240,\s*254|248,\s*250,\s*255|32,\s*33,\s*36|48,\s*49,\s*52)/;
 
     expect(chat).toMatch(
       /const canAddMoreAttachments =\s*attachImages\.length < 3 \|\| attachedFiles\.length < 5;/,
@@ -1940,15 +1964,54 @@ describe("Gemini visual migration shell", () => {
     expect(attachmentAddButtonBlock).toMatch(/width:\s*64px;/);
     expect(attachmentAddButtonBlock).toMatch(/height:\s*64px;/);
     expect(attachmentAddButtonBlock).toMatch(/border-radius:\s*12px;/);
-    expect(attachmentAddButtonBlock).toMatch(/border:\s*1px dashed/);
-    expect(attachmentAddButtonBlock).toMatch(/background:\s*rgba\(248,\s*250,\s*255,\s*0\.86\);/);
+    expect(attachmentAddButtonBlock).toMatch(
+      /--attachment-add-button-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 38%,\s*transparent\);/,
+    );
+    expect(attachmentAddButtonBlock).toMatch(
+      /--attachment-add-button-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 86%,\s*transparent\);/,
+    );
+    expect(attachmentAddButtonBlock).toMatch(
+      /--attachment-add-button-hover-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 62%,\s*transparent\);/,
+    );
+    expect(attachmentAddButtonBlock).toMatch(
+      /border:\s*1px dashed var\(--attachment-add-button-border-color\);/,
+    );
+    expect(attachmentAddButtonBlock).toMatch(
+      /background:\s*var\(--attachment-add-button-background\);/,
+    );
+    expect(attachmentAddButtonBlock).toMatch(
+      /color:\s*var\(--attachment-add-button-color\);/,
+    );
+    expect(attachmentAddButtonBlock).toMatch(
+      /box-shadow:\s*inset 0 0 0 1px var\(--attachment-add-button-inner-ring-color\);/,
+    );
     expect(attachmentAddButtonBlock).toMatch(/backdrop-filter:\s*blur\(12px\);/);
     expect(attachmentAddButtonBlock).toMatch(/transition:/);
     expect(attachmentAddButtonBlock).toContain("&:not(:disabled):hover");
     expect(attachmentAddButtonBlock).toContain("&:not(:disabled):focus-visible");
+    expect(attachmentAddButtonBlock).toMatch(
+      /&:not\(:disabled\):hover,[\s\S]*&:not\(:disabled\):focus-visible[\s\S]*background:\s*var\(--attachment-add-button-hover-background\);[\s\S]*border-color:\s*var\(--attachment-add-button-hover-border-color\);/,
+    );
+    expect(attachmentAddButtonBlock).toMatch(
+      /0 8px 24px var\(--attachment-add-button-hover-shadow-color\);/,
+    );
     expect(attachmentAddButtonBlock).toMatch(/&:disabled[\s\S]*opacity:\s*0\.58;/);
-    expect(chatStyles).toMatch(
-      /:global\(\.dark\) \.attachment-add-button[\s\S]*&:not\(:disabled\):hover,[\s\S]*&:not\(:disabled\):focus-visible/,
+    expect(darkAttachmentAddButtonBlock).toMatch(
+      /--attachment-add-button-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 72%,\s*transparent\);/,
+    );
+    expect(darkAttachmentAddButtonBlock).toMatch(
+      /--attachment-add-button-hover-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 58%,\s*transparent\);/,
+    );
+    expect(darkAttachmentAddButtonBlock).toMatch(
+      /&:not\(:disabled\):hover,[\s\S]*&:not\(:disabled\):focus-visible[\s\S]*background:\s*var\(--attachment-add-button-hover-background\);/,
+    );
+    expect(autoDarkAttachmentAddButtonSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkAttachmentAddButtonMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkAttachmentAddButtonBlock).toMatch(
+      /--attachment-add-button-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 72%,\s*transparent\);/,
+    );
+    expect(attachmentAddButtonToneScope).not.toMatch(
+      legacyAttachmentAddButtonPaint,
     );
     expect(mobileAddButtonBlock).toMatch(/width:\s*58px;/);
     expect(mobileAddButtonBlock).toMatch(/height:\s*58px;/);

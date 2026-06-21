@@ -5546,3 +5546,55 @@ Known risks:
 
 - The dropzone tones use modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
 - Browser QA validated hidden-state layout and loaded CSSOM rather than an actual OS file drag/drop active state, because simulating a real external file drag through the in-app Browser would not match the user's OS-level drag source. Source-contract tests cover the drag handler and active-state styling contracts directly.
+
+## Iteration 2026-06-21 attachment-add-button-tone
+
+Result: passed.
+
+Target flow:
+
+- The composer attachment strip "continue adding attachments" button should keep the existing native file picker entry, `canAddMoreAttachments` guard, `disabled={uploading}` behavior, hover/focus-visible affordance, disabled opacity/cursor, and mobile sizing.
+- The add button border, surface, icon color, inner ring, hover/focus surface, hover/focus border, and hover/focus shadow should use local Gemini-style variables instead of hardcoded old blue/light paint.
+- Light, explicit Dark, and Auto dark should share the same variable contract while preserving explicit Light overrides.
+- Upload parsing, file/image limits, existing attachment state, drag/drop behavior, model config, model requests, account/secret/sync, backend/API, production config, and deployment config must remain unchanged.
+
+Design direction:
+
+- Continue the multimodal polish track: the small add-more control is the recurring entry point after an attachment exists, so it should look like part of the same primary/surface token system as the dropzone and attachment strip instead of an isolated old-blue tile.
+- Light theme defines dashed border, elevated surface, readable primary icon, inner ring, and hover accent from `--primary`, `--surface-elevated`, `--surface`, and `--black`.
+- Explicit Dark and Auto dark override the same local variables with dark surface/text tokens; Auto dark uses `body:not(.light)` under `prefers-color-scheme: dark` so explicit Light is not overridden.
+- This slice intentionally avoids changing React upload handlers, file input behavior, attachment limits, drag/drop logic, network/model behavior, or persisted state.
+
+Scope:
+
+- `app/components/chat.module.scss`: added local attachment add-button tone variables; changed base, hover/focus-visible, explicit Dark, and Auto dark rules to consume them; preserved dimensions, disabled behavior, transitions, and mobile sizing.
+- `test/gemini-visual-migration.test.ts`: strengthened the attachment add-button visual contract to lock Light/Dark/Auto dark token paths, token-consuming base/hover/focus selectors, mobile dimensions, disabled behavior, native picker wiring, and absence of legacy target paint in the add-button tone scope.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, file helper logic, upload parser, stores, model config, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, send path, model request payload construction, or drag/drop behavior were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="attachment strip add action"` failed first as expected because the new attachment add-button tone variables were missing and the old button rules still used hardcoded legacy blue/light paint.
+- After implementation, the focused attachment add-button visual contract passed.
+- Final verification before commit: `yarn lint`, `npx tsc --noEmit --pretty false`, `git diff --check`, `yarn jest test/gemini-visual-migration.test.ts --runInBand`, and `yarn build` passed.
+
+Browser QA:
+
+- in-app Browser initially loaded `http://127.0.0.1:3001/#/chat` into the Auth page because that origin had no local access session, so target Chat CSS was not present there. No auth state or access code was created or modified.
+- in-app Browser page identity for successful QA: `http://localhost:3000/#/chat`, app mounted with an existing local session, `textareaCount=1`, and Browser console warn/error logs `0` after the QA start timestamp.
+- Desktop `1439x1024`: chat mounted, horizontal overflow `0`, runtime CSSOM loaded attachment add-button base/background/border/color variables, hover/focus background and shadow consumers, explicit Dark selector, Auto dark selector, mobile-size rule, and no legacy old-blue/light paint in the add-button tone scope.
+- Mobile `390x844`: same CSSOM, selector, token-consumer, and horizontal overflow checks passed.
+- Narrow `320x740`: same CSSOM, selector, token-consumer, and horizontal overflow checks passed.
+- Browser runtime reported `bodyClass="light"` and `prefers-color-scheme: light`; Auto dark and explicit Dark paths were validated through source-contract tests and runtime CSSOM selector presence without mutating the user's theme.
+- Browser QA intentionally did not open the native file picker, upload a file, send a message, call a model/API, seed chat history, mutate local storage, or change persisted theme/access state. Upload behavior and limits are covered by source-contract assertions in the visual migration test.
+
+Review:
+
+- Read-only subagent review found no blocking or important issues.
+- The reviewer confirmed Light, explicit Dark, and Auto dark cascade paths do not conflict; hover/focus-visible/disabled behavior remains intact; mobile `58px` sizing remains intact; and upload behavior is still anchored to `canAddMoreAttachments`, `disabled={uploading}`, `onClick={handleUploadAttachments}`, and the native picker entry.
+- Main-thread boundary review verified the current diff remains limited to `chat.module.scss`, `gemini-visual-migration.test.ts`, and this QA record, with no diff in `chat.tsx`, `file.ts`, stores, config, API/backend, route constants, deployment files, dependency files, upload parser, send path, model request paths, or account/sync logic.
+
+Known risks:
+
+- The attachment add-button tones use modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
+- Browser QA validated the loaded CSSOM and shell layout rather than an actual rendered add-button instance, because the button only appears after existing attachments are present and this slice intentionally avoided mutating chat/upload state or opening the native file picker. Source-contract tests cover the rendered entry point, upload guard, and visual state rules directly.
