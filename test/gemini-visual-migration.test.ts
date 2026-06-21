@@ -194,6 +194,10 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ":global(.dark) .chat-input-action-menu .chat-multimodal-section",
     );
+    const darkActionMenuBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-input-action-menu",
+    );
     const autoDarkActionMenuMultimodalSelector =
       ":global(body:not(.light)) .chat-input-action-menu .chat-multimodal-section";
     const autoDarkActionMenuMultimodalSelectorIndex = chatStyles.indexOf(
@@ -207,8 +211,23 @@ describe("Gemini visual migration shell", () => {
       chatStyles.slice(autoDarkActionMenuMultimodalMediaIndex),
       autoDarkActionMenuMultimodalSelector,
     );
+    const autoDarkActionMenuSelector =
+      ":global(body:not(.light)) .chat-input-action-menu";
+    const autoDarkActionMenuSelectorIndex = chatStyles.indexOf(
+      autoDarkActionMenuSelector,
+    );
+    const autoDarkActionMenuMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkActionMenuSelectorIndex,
+    );
+    const autoDarkActionMenuBlock = readCssBlock(
+      chatStyles.slice(autoDarkActionMenuMediaIndex),
+      autoDarkActionMenuSelector,
+    );
     const legacyMultimodalSectionPaint =
       /rgba\((?:60,\s*64,\s*67,\s*0\.08|49,\s*94,\s*248,\s*0\.04)/;
+    const legacyActionActivePaint =
+      /rgba\(25,\s*103,\s*210,\s*0\.1\)/;
     const mobileActionMenuBlock = readCssBlock(
       mobileStyles,
       ".chat-input-action-menu",
@@ -1730,6 +1749,12 @@ describe("Gemini visual migration shell", () => {
     expect(actionMenuRootDeclarations).toMatch(
       /--chat-multimodal-section-primary-background:\s*color-mix\(in srgb,\s*var\(--primary\) 7%,\s*transparent\);/,
     );
+    expect(actionMenuRootDeclarations).toMatch(
+      /--chat-input-action-active-background:\s*color-mix\(in srgb,\s*var\(--primary\) 10%,\s*transparent\);/,
+    );
+    expect(actionMenuRootDeclarations).toMatch(
+      /--chat-input-action-active-color:\s*var\(--primary\);/,
+    );
     expect(darkActionMenuMultimodalSectionBlock).toMatch(
       /--chat-multimodal-section-title-color:\s*color-mix\(in srgb,\s*var\(--black\) 94%,\s*transparent\);/,
     );
@@ -1742,6 +1767,12 @@ describe("Gemini visual migration shell", () => {
     expect(darkActionMenuMultimodalSectionBlock).toMatch(
       /--chat-multimodal-section-primary-background:\s*color-mix\(in srgb,\s*var\(--primary\) 14%,\s*var\(--surface\)\);/,
     );
+    expect(darkActionMenuBlock).toMatch(
+      /--chat-input-action-active-background:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*var\(--surface\)\);/,
+    );
+    expect(darkActionMenuBlock).toMatch(
+      /--chat-input-action-active-color:\s*color-mix\(in srgb,\s*var\(--primary\) 78%,\s*var\(--black\)\);/,
+    );
     expect(autoDarkActionMenuMultimodalSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkActionMenuMultimodalMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkActionMenuMultimodalBlock).toMatch(
@@ -1749,6 +1780,14 @@ describe("Gemini visual migration shell", () => {
     );
     expect(autoDarkActionMenuMultimodalBlock).toMatch(
       /--chat-multimodal-section-primary-background:\s*color-mix\(in srgb,\s*var\(--primary\) 14%,\s*var\(--surface\)\);/,
+    );
+    expect(autoDarkActionMenuSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkActionMenuMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkActionMenuBlock).toMatch(
+      /--chat-input-action-active-background:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*var\(--surface\)\);/,
+    );
+    expect(autoDarkActionMenuBlock).toMatch(
+      /--chat-input-action-active-color:\s*color-mix\(in srgb,\s*var\(--primary\) 78%,\s*var\(--black\)\);/,
     );
     expect(multimodalTitleBlock).toMatch(
       /color:\s*var\(--chat-multimodal-section-title-color\);/,
@@ -1784,9 +1823,16 @@ describe("Gemini visual migration shell", () => {
       /transform:\s*translateY\(0\) scale\(1\);/,
     );
     expect(actionMenuActiveActionBlock).toMatch(
-      /background:\s*rgba\(25,\s*103,\s*210,\s*0\.1\);/,
+      /background:\s*var\(--chat-input-action-active-background\);/,
     );
-    expect(actionMenuActiveActionBlock).toMatch(/color:\s*var\(--primary\);/);
+    expect(actionMenuActiveActionBlock).toMatch(
+      /color:\s*var\(--chat-input-action-active-color\);/,
+    );
+    expect(
+      [actionMenuActiveActionBlock, darkActionMenuBlock, autoDarkActionMenuBlock].join(
+        "\n",
+      ),
+    ).not.toMatch(legacyActionActivePaint);
     expect(mobileActionMenuBlock).toMatch(
       /bottom:\s*calc\(64px \+ env\(safe-area-inset-bottom\)\);/,
     );

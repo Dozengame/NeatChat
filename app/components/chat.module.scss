@@ -3098,6 +3098,8 @@
   --chat-multimodal-section-subtitle-color: color-mix(in srgb, var(--black-50) 92%, transparent);
   --chat-multimodal-section-divider-color: color-mix(in srgb, var(--black-50) 14%, transparent);
   --chat-multimodal-section-primary-background: color-mix(in srgb, var(--primary) 7%, transparent);
+  --chat-input-action-active-background: color-mix(in srgb, var(--primary) 10%, transparent);
+  --chat-input-action-active-color: var(--primary);
 
   position: absolute;
   left: 0;
@@ -3213,6 +3215,11 @@
   --chat-multimodal-section-primary-background: color-mix(in srgb, var(--primary) 14%, var(--surface));
 }
 
+:global(.dark) .chat-input-action-menu {
+  --chat-input-action-active-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
+  --chat-input-action-active-color: color-mix(in srgb, var(--primary) 78%, var(--black));
+}
+
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .chat-input-action-menu .chat-multimodal-section {
     --chat-multimodal-section-title-color: color-mix(in srgb, var(--black) 94%, transparent);
@@ -3220,11 +3227,16 @@
     --chat-multimodal-section-divider-color: color-mix(in srgb, var(--black) 9%, transparent);
     --chat-multimodal-section-primary-background: color-mix(in srgb, var(--primary) 14%, var(--surface));
   }
+
+  :global(body:not(.light)) .chat-input-action-menu {
+    --chat-input-action-active-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
+    --chat-input-action-active-color: color-mix(in srgb, var(--primary) 78%, var(--black));
+  }
 }
 
 .chat-input-action-menu .chat-input-action-active {
-  background: rgba(25, 103, 210, 0.1);
-  color: var(--primary);
+  background: var(--chat-input-action-active-background);
+  color: var(--chat-input-action-active-color);
 }
 
 .chat-input-action-menu .chat-input-action:focus-visible {

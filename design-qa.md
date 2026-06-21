@@ -5885,3 +5885,54 @@ Known risks:
 
 - This slice uses existing modern `color-mix()` CSS already adopted by the Gemini visual migration work. If old WebView or legacy Safari color fallback becomes a product requirement, plan a dedicated fallback slice rather than expanding this narrow menu-tone change.
 - Browser QA opens and closes the tool menu only. It intentionally does not trigger upload, image generation, session actions, model changes, or real model/API calls.
+
+## Iteration 2026-06-21 tool-menu-active-tone
+
+Result: passed.
+
+Target flow:
+
+- Composer tool menu active actions should share the same local Gemini-style token discipline as the surrounding multimodal menu surface.
+- The active action background and foreground should no longer carry the old hardcoded `rgba(25, 103, 210, 0.1)` paint.
+- Tool menu structure, upload action, image-generation action, model/menu behavior, ARIA labels, keyboard behavior, model config semantics, account/secret/sync, backend/API, production config, deployment config, dependencies, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected a quiet utility feedback direction: theme-tokenized active state, soft primary surface, stable menu density, no behavior change, and no model/upload semantic change.
+- The slice keeps the existing active item geometry and interaction model, and only moves active paint into local menu tokens for Light, explicit Dark, and Auto dark.
+
+Scope:
+
+- `app/components/chat.module.scss`: added `--chat-input-action-active-background` and `--chat-input-action-active-color` to `.chat-input-action-menu`, plus explicit Dark and Auto dark overrides on the menu root; changed `.chat-input-action-active` to consume those tokens.
+- `test/gemini-visual-migration.test.ts`: strengthened the existing tool-menu contract to lock Light/Dark/Auto active token values, active token consumers, and absence of old hardcoded active paint in the active tone scope.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, stores, upload handlers, image-generation handlers, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, deploy files, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="Gemini-style empty state hooks"` failed first as expected because `--chat-input-action-active-background` was missing from `.chat-input-action-menu`.
+- After implementation, the same focused visual migration contract passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001/#/chat`.
+- The in-app Browser path was attempted first, but local navigation timed out with the current Browser session. QA then used local Google Chrome headless as a fallback with the same localhost target.
+- The local access-code screen was handled by intercepting only `/api/access-code` in the QA browser context and returning `{ ok: true }` for a dummy access code. No real access code, key, account, model/API request, upload, image-generation action, or persisted production config was used.
+- Runtime active-state verification added the compiled active CSS class to the image-generation button in the QA DOM only, without clicking the image-generation action or changing app state.
+- Desktop `1439x1024` Light: tool menu opened with `aria-expanded="true"`, `display: block`, `opacity: 1`, active class resolved, active background/color came from `--chat-input-action-active-*`, menu stayed in viewport, horizontal overflow was `0`, old active paint was absent from active-scoped CSSOM, and console warn/error logs were `0`.
+- Mobile `390x844` Light: menu stayed in viewport at `left: 10`, `right: 330`, active token consumers resolved, horizontal overflow was `0`, old active paint was absent, and console warn/error logs were `0`.
+- Narrow `320x740` Light: menu stayed in viewport at `left: 10`, `right: 282`, active token consumers resolved, horizontal overflow was `0`, old active paint was absent, and console warn/error logs were `0`.
+- Explicit Dark desktop QA resolved active background to `color-mix(in srgb, rgb(49, 94, 248) 16%, rgb(19, 20, 22))` and active color to `color-mix(in srgb, rgb(49, 94, 248) 78%, rgb(232, 234, 237))`, with no overflow or console warn/error logs.
+- Auto dark plus `prefers-reduced-motion: reduce` desktop QA resolved the same dark active token values with no theme class, kept the menu visible, and produced no overflow or console warn/error logs.
+
+Review:
+
+- Read-only sub-agent review found no blocking issues. It confirmed the token scope is correct; Light tokens live on `.chat-input-action-menu`; explicit Dark and Auto dark override the menu root; active rows inherit correctly; closed state, mobile layout, disabled state, and the `@starting-style` open stabilizer are not affected.
+- The reviewer noted hover/focus background remains controlled by the existing higher-specificity hover/focus rules, so this slice preserves previous hover/focus behavior while tokenizing the active base state.
+- The reviewer also confirmed the tracked diff before this QA record only contained `app/components/chat.module.scss` and `test/gemini-visual-migration.test.ts`, with no backend, config, dependency, deployment, secret, or internal-plan file changes.
+- Main-thread Browser QA covered the reviewer's residual risk that source regex tests cannot prove runtime computed style.
+
+Known risks:
+
+- Browser QA validates active visual state by applying the compiled active class in the QA DOM only. It intentionally does not click the image-generation action, enable MCP clients, upload files, mutate app stores, send messages, or call any model/API.
+- This slice uses the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallbacks remain a separate product decision.
