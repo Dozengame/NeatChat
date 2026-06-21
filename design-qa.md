@@ -6705,3 +6705,58 @@ Known risks:
 - Browser screenshot capture timed out in the in-app Browser; no fallback screenshot was used because the reachable page is only the gate, not the target selector.
 - Export selection/search/copy/download controls were not clicked because the selector was not reachable without credentials and those actions can mutate clipboard, downloaded files, or export state.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-21 export-stepper-surface-tone
+
+Result: automated checks passed; live target QA blocked by access-code gate.
+
+Target flow:
+
+- Export message workflow stepper should read as a Gemini-style quiet utility step rail: compact elevated shell, restrained progress pill, readable finished/current step states, and an 8px frame consistent with the adjacent export selector.
+- Step order, Select/Preview labels, `onStepChange`, progress width formula, export format selection, include-context checkbox, selected messages, preview rendering, copy/download/share behavior, image export `toPng`/`toBlob`, model config, account/secret/sync/backend/deploy behavior, dependencies, and production config must remain unchanged.
+- The slice should improve the export workflow shell without changing any exported content or export side effect.
+
+Design direction:
+
+- Creative Production style intake selected a quiet export workflow rail direction: tokenized neutral elevated track, soft progress fill, primary-tinted current index, subdued completed step color, explicit Dark/Auto dark safety, and no decorative gradients.
+- No generated raster design was used because this is a small UI-system repair inside the existing Gemini migration language. The design spec is the local token contract in `exporter.module.scss` plus this QA record.
+
+Scope:
+
+- `app/components/exporter.module.scss`: added local `--export-stepper-*` tokens scoped to `.steps`; replaced the stepper's legacy gray background, card shadow, `border-in-light`, 10px radius, white progress fill, and gray index badges with tokenized Light/Dark/Auto dark styles.
+- `test/gemini-visual-migration.test.ts`: added a focused export stepper contract locking step definitions, step button behavior entry points, progress width calculation, Light/Dark/Auto dark token declarations, token consumers, current/finished/hover/index states, and old target paint removal.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TSX behavior, exported message content, export preview DOM, copy/download/share actions, `toPng`/`toBlob`, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, or package files were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="export workflow stepper"` first failed on an overly narrow source-string assertion; after tightening that assertion, it failed as expected because `.steps` still used legacy gray/background/card-shadow paint and lacked local stepper tokens.
+- After implementation, the same focused contract passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `yarn build` passed with the existing Next warning that Edge runtime disables static generation for that page.
+- `git diff --check` passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- The first in-app Browser navigation timed out while Next completed its first compile; after compile, a fresh tab reached `http://localhost:3001/`.
+- Desktop default viewport reached the local access-code gate with title `NeatChat`, gate copy `需要密码`, `管理员开启了密码验证，请在下方填入访问码`, and action `确认`.
+- Mobile viewport `390x844` reached the same access-code gate.
+- Both checks had no console warn/error logs, no framework overlay, and horizontal overflow `0`. The export stepper was not rendered because the local gate blocked access.
+- In-app Browser screenshot capture failed with `Page.captureScreenshot` timeout for the tab.
+- No real access code was entered and no auth/config bypass was attempted. No export, copy, download, share, search, selection, send, model/API request, account/key/sync/import/export/reset/clear, or persisted config action was performed.
+
+Review:
+
+- Read-only sub-agent review found no blocking issues. It confirmed the diff is limited to `app/components/exporter.module.scss`, `test/gemini-visual-migration.test.ts`, and this QA record, with no TSX behavior, package/lockfile, backend/API, model config, account/secret/sync, production/deploy config, or dependency changes.
+- The reviewer confirmed `exporter.tsx` preview DOM, copy/download/share, and `toPng`/`toBlob` paths remain unchanged; old paint cleanup is scoped to `.steps` and does not touch the image preview output surface.
+- The reviewer noted the source-level visual contract is string-oriented but consistent with the existing Gemini migration test style, and that live modal/preview/clipboard/download/share runtime behavior remains unproven because the local access-code gate blocks the target UI.
+
+Known risks:
+
+- Live Browser computed-style verification for the actual export stepper is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
+- Browser screenshot capture timed out in the in-app Browser; no fallback screenshot was used because the reachable page is only the gate, not the target stepper.
+- Export stepper clicks, format changes, include-context changes, copy/download/share, and preview rendering were not exercised because the export modal was not reachable without credentials and those actions can mutate UI state, clipboard, downloaded files, or share state.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.

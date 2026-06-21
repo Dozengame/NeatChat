@@ -10,12 +10,75 @@
 }
 
 .steps {
-  background-color: var(--gray);
-  border-radius: 10px;
+  --export-stepper-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 90%,
+    var(--gray)
+  );
+  --export-stepper-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --export-stepper-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 7%,
+    transparent
+  );
+  --export-stepper-progress-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 96%,
+    var(--white)
+  );
+  --export-stepper-progress-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 8%,
+    transparent
+  );
+  --export-stepper-step-color: color-mix(
+    in srgb,
+    var(--black) 64%,
+    transparent
+  );
+  --export-stepper-step-finished-color: color-mix(
+    in srgb,
+    var(--black) 78%,
+    transparent
+  );
+  --export-stepper-step-hover-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
+  --export-stepper-current-color: var(--primary);
+  --export-stepper-index-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    transparent
+  );
+  --export-stepper-index-border-color: color-mix(
+    in srgb,
+    var(--black-50) 14%,
+    transparent
+  );
+  --export-stepper-current-index-background: color-mix(
+    in srgb,
+    var(--primary) 11%,
+    transparent
+  );
+  --export-stepper-current-index-border-color: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
+
+  background: var(--export-stepper-background);
+  border: 1px solid var(--export-stepper-border-color);
+  border-radius: 8px;
   overflow: hidden;
   padding: 5px;
   position: relative;
-  box-shadow: var(--card-shadow) inset;
+  box-shadow: inset 0 1px 2px var(--export-stepper-shadow-color);
 
   .steps-progress {
     $padding: 5px;
@@ -27,15 +90,15 @@
 
     &-inner {
       box-sizing: border-box;
-      box-shadow: var(--card-shadow);
-      border: var(--border-in-light);
+      box-shadow: 0 8px 24px var(--export-stepper-progress-shadow-color);
+      border: 1px solid var(--export-stepper-border-color);
       content: "";
       display: inline-block;
       width: 0%;
       height: 100%;
-      background-color: var(--white);
-      transition: all ease 0.3s;
-      border-radius: 8px;
+      background: var(--export-stepper-progress-background);
+      transition: width 0.22s ease;
+      border-radius: 6px;
     }
   }
 
@@ -47,31 +110,27 @@
       flex-grow: 1;
       padding: 5px 10px;
       font-size: 14px;
-      color: var(--black);
-      opacity: 0.5;
-      transition: all ease 0.3s;
+      color: var(--export-stepper-step-color);
+      opacity: 1;
+      transition:
+        color 0.18s ease,
+        background-color 0.18s ease;
 
       display: flex;
       align-items: center;
       justify-content: center;
 
-      $radius: 8px;
-
       &-finished {
-        opacity: 0.9;
+        color: var(--export-stepper-step-finished-color);
       }
 
       &:hover {
-        opacity: 0.8;
-      }
-
-      &-current {
-        color: var(--primary);
+        color: var(--export-stepper-step-hover-color);
       }
 
       .step-index {
-        background-color: var(--gray);
-        border: var(--border-in-light);
+        background: var(--export-stepper-index-background);
+        border: 1px solid var(--export-stepper-index-border-color);
         border-radius: 6px;
         display: inline-block;
         padding: 0px 5px;
@@ -82,8 +141,147 @@
 
       .step-name {
         font-size: 12px;
+        line-height: 1.4;
+      }
+
+      &-current {
+        color: var(--export-stepper-current-color);
+
+        .step-index {
+          background: var(--export-stepper-current-index-background);
+          border-color: var(--export-stepper-current-index-border-color);
+          color: var(--export-stepper-current-color);
+        }
       }
     }
+  }
+}
+
+:global(.dark) .steps {
+  --export-stepper-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    var(--white)
+  );
+  --export-stepper-border-color: color-mix(
+    in srgb,
+    var(--black) 9%,
+    transparent
+  );
+  --export-stepper-shadow-color: color-mix(
+    in srgb,
+    var(--black) 9%,
+    transparent
+  );
+  --export-stepper-progress-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 90%,
+    var(--white)
+  );
+  --export-stepper-progress-shadow-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --export-stepper-step-color: color-mix(
+    in srgb,
+    var(--black-50) 88%,
+    transparent
+  );
+  --export-stepper-step-finished-color: color-mix(
+    in srgb,
+    var(--black) 86%,
+    transparent
+  );
+  --export-stepper-step-hover-color: color-mix(
+    in srgb,
+    var(--black) 96%,
+    transparent
+  );
+  --export-stepper-index-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 82%,
+    var(--white)
+  );
+  --export-stepper-index-border-color: color-mix(
+    in srgb,
+    var(--black) 9%,
+    transparent
+  );
+  --export-stepper-current-index-background: color-mix(
+    in srgb,
+    var(--primary) 16%,
+    transparent
+  );
+  --export-stepper-current-index-border-color: color-mix(
+    in srgb,
+    var(--primary) 22%,
+    transparent
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .steps {
+    --export-stepper-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 86%,
+      var(--white)
+    );
+    --export-stepper-border-color: color-mix(
+      in srgb,
+      var(--black) 9%,
+      transparent
+    );
+    --export-stepper-shadow-color: color-mix(
+      in srgb,
+      var(--black) 9%,
+      transparent
+    );
+    --export-stepper-progress-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 90%,
+      var(--white)
+    );
+    --export-stepper-progress-shadow-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --export-stepper-step-color: color-mix(
+      in srgb,
+      var(--black-50) 88%,
+      transparent
+    );
+    --export-stepper-step-finished-color: color-mix(
+      in srgb,
+      var(--black) 86%,
+      transparent
+    );
+    --export-stepper-step-hover-color: color-mix(
+      in srgb,
+      var(--black) 96%,
+      transparent
+    );
+    --export-stepper-index-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 82%,
+      var(--white)
+    );
+    --export-stepper-index-border-color: color-mix(
+      in srgb,
+      var(--black) 9%,
+      transparent
+    );
+    --export-stepper-current-index-background: color-mix(
+      in srgb,
+      var(--primary) 16%,
+      transparent
+    );
+    --export-stepper-current-index-border-color: color-mix(
+      in srgb,
+      var(--primary) 22%,
+      transparent
+    );
   }
 }
 

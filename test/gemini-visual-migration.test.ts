@@ -5901,6 +5901,132 @@ describe("Gemini visual migration shell", () => {
     expect(messageSelectorPaintScope).not.toContain("background-color: var(--second)");
   });
 
+  test("keeps export workflow stepper aligned with Gemini utility surfaces", () => {
+    const exporter = read("app/components/exporter.tsx");
+    const exporterStyles = read("app/components/exporter.module.scss");
+    const stepsBlock = readCssBlock(exporterStyles, ".steps");
+    const stepsRootBlock = readRootDeclarations(stepsBlock);
+    const progressBlock = readCssBlock(stepsBlock, ".steps-progress");
+    const progressInnerBlock = readCssBlock(progressBlock, "&-inner");
+    const stepsInnerBlock = readCssBlock(stepsBlock, ".steps-inner");
+    const stepBlock = readCssBlock(stepsInnerBlock, ".step");
+    const finishedBlock = readCssBlock(stepBlock, "&-finished");
+    const hoverBlock = readCssBlock(stepBlock, "&:hover");
+    const currentBlock = readCssBlock(stepBlock, "&-current");
+    const stepIndexBlock = readCssBlock(stepBlock, ".step-index");
+    const stepNameBlock = readCssBlock(stepBlock, ".step-name");
+    const darkStepsBlock = readCssBlock(exporterStyles, ":global(.dark) .steps");
+    const autoDarkStepsSelector = ":global(body:not(.light)) .steps";
+    const autoDarkStepsIndex = exporterStyles.indexOf(autoDarkStepsSelector);
+    const autoDarkStepsMediaIndex = exporterStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkStepsIndex,
+    );
+    const autoDarkStepsBlock = readCssBlock(
+      exporterStyles.slice(autoDarkStepsMediaIndex),
+      autoDarkStepsSelector,
+    );
+    const stepperPaintScope = [
+      stepsRootBlock,
+      progressInnerBlock,
+      stepBlock,
+      finishedBlock,
+      hoverBlock,
+      currentBlock,
+      stepIndexBlock,
+      darkStepsBlock,
+      autoDarkStepsBlock,
+    ].join("\n");
+
+    expect(exporter).toContain("const EXPORT_STEPS = [");
+    expect(exporter).toContain("name: Locale.Export.Steps.Select");
+    expect(exporter).toContain('value: "select"');
+    expect(exporter).toContain("name: Locale.Export.Steps.Preview");
+    expect(exporter).toContain('value: "preview"');
+    expect(exporter).toContain('className={styles["steps"]}');
+    expect(exporter).toContain('className={styles["steps-progress-inner"]}');
+    expect(exporter).toContain("width: `${((props.index + 1) / stepCount) * 100}%`");
+    expect(exporter).toContain('type="button"');
+    expect(exporter).toContain("props.onStepChange?.(i)");
+    expect(exporter).toMatch(
+      /\[styles\["step-finished"\]\]:\s*i <= props\.index/,
+    );
+    expect(exporter).toMatch(
+      /\[styles\["step-current"\]\]:\s*i === props\.index/,
+    );
+
+    expect(stepsRootBlock).toMatch(
+      /--export-stepper-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\s*\);/,
+    );
+    expect(stepsRootBlock).toMatch(
+      /--export-stepper-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
+    );
+    expect(stepsRootBlock).toMatch(
+      /--export-stepper-progress-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 96%,\s*var\(--white\)\s*\);/,
+    );
+    expect(stepsRootBlock).toMatch(
+      /--export-stepper-current-index-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 11%,\s*transparent\s*\);/,
+    );
+    expect(stepsRootBlock).toMatch(/background:\s*var\(--export-stepper-background\);/);
+    expect(stepsRootBlock).toMatch(
+      /border:\s*1px solid var\(--export-stepper-border-color\);/,
+    );
+    expect(stepsRootBlock).toMatch(/border-radius:\s*8px;/);
+    expect(progressInnerBlock).toMatch(
+      /border:\s*1px solid var\(--export-stepper-border-color\);/,
+    );
+    expect(progressInnerBlock).toMatch(
+      /background:\s*var\(--export-stepper-progress-background\);/,
+    );
+    expect(progressInnerBlock).toMatch(
+      /box-shadow:\s*0 8px 24px var\(--export-stepper-progress-shadow-color\);/,
+    );
+    expect(progressInnerBlock).toMatch(/transition:\s*width 0\.22s ease;/);
+    expect(stepBlock).toMatch(/color:\s*var\(--export-stepper-step-color\);/);
+    expect(stepBlock).toMatch(/opacity:\s*1;/);
+    expect(stepBlock).toMatch(
+      /transition:\s*color 0\.18s ease,\s*background-color 0\.18s ease;/,
+    );
+    expect(finishedBlock).toMatch(
+      /color:\s*var\(--export-stepper-step-finished-color\);/,
+    );
+    expect(hoverBlock).toMatch(
+      /color:\s*var\(--export-stepper-step-hover-color\);/,
+    );
+    expect(currentBlock).toMatch(
+      /color:\s*var\(--export-stepper-current-color\);/,
+    );
+    expect(currentBlock).toMatch(
+      /\.step-index[\s\S]*background:\s*var\(--export-stepper-current-index-background\);/,
+    );
+    expect(stepIndexBlock).toMatch(
+      /background:\s*var\(--export-stepper-index-background\);/,
+    );
+    expect(stepIndexBlock).toMatch(
+      /border:\s*1px solid var\(--export-stepper-index-border-color\);/,
+    );
+    expect(stepNameBlock).toMatch(/line-height:\s*1\.4;/);
+    expect(darkStepsBlock).toMatch(
+      /--export-stepper-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkStepsBlock).toMatch(
+      /--export-stepper-current-index-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 16%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkStepsIndex).toBeGreaterThan(-1);
+    expect(autoDarkStepsMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkStepsBlock).toMatch(
+      /--export-stepper-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkStepsBlock).toMatch(
+      /--export-stepper-current-index-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 16%,\s*transparent\s*\);/,
+    );
+    expect(stepperPaintScope).not.toContain("background-color: var(--gray)");
+    expect(stepperPaintScope).not.toContain("background-color: var(--white)");
+    expect(stepperPaintScope).not.toContain("border: var(--border-in-light)");
+    expect(stepperPaintScope).not.toContain("border-radius: 10px");
+    expect(stepperPaintScope).not.toContain("var(--card-shadow)");
+  });
+
   test("keeps update announcement modal aligned with Gemini release surfaces", () => {
     const updateAnnouncement = read("app/components/update-announcement.tsx");
     const updateAnnouncementStyles = read(
