@@ -5598,3 +5598,58 @@ Known risks:
 
 - The attachment add-button tones use modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
 - Browser QA validated the loaded CSSOM and shell layout rather than an actual rendered add-button instance, because the button only appears after existing attachments are present and this slice intentionally avoided mutating chat/upload state or opening the native file picker. Source-contract tests cover the rendered entry point, upload guard, and visual state rules directly.
+
+## Iteration 2026-06-21 attachment-full-indicator-tone
+
+Result: passed.
+
+Target flow:
+
+- The composer attachment strip "full" state should remain visible, inert, and status-only when the existing image/file limits are reached.
+- The "已满" indicator border, surface gradient, text/icon color, and inner ring should use local Gemini-style variables instead of hardcoded old light/dark rgba paint.
+- Light, explicit Dark, and Auto dark should share the same variable contract while preserving explicit Light overrides.
+- Upload parsing, file/image limits, attachment state, drag/drop behavior, model config, model requests, account/secret/sync, backend/API, production config, deployment config, dependencies, and persisted state must remain unchanged.
+
+Design direction:
+
+- Continue the multimodal polish track after the add-button slice: the full indicator is the adjacent terminal state in the same attachment strip, so it should read as a quiet disabled/status surface rather than a separate legacy tile.
+- Light theme defines a soft elevated surface, muted label/icon, subtle border, and inner ring from `--surface-elevated`, `--surface-soft`, `--surface`, `--black`, and `--black-50`.
+- Explicit Dark and Auto dark override the same local variables with dark surface/text tokens; Auto dark uses `body:not(.light)` under `prefers-color-scheme: dark` so explicit Light is not overridden.
+- This slice intentionally avoids changing React upload handlers, file input behavior, attachment limits, drag/drop logic, network/model behavior, or persisted state.
+
+Scope:
+
+- `app/components/chat.module.scss`: added local attachment full-indicator tone variables; changed base, explicit Dark, and Auto dark rules to consume them; preserved dimensions, `cursor: default`, `pointer-events: none`, status layout, blur, icon sizing, and mobile sizing.
+- `test/gemini-visual-migration.test.ts`: strengthened the attachment full-state visual contract to lock Light/Dark/Auto dark token paths, token-consuming selectors, media containment for Auto dark, mobile dimensions, inert/status semantics, upload guard, and absence of legacy target paint in the full-indicator tone scope.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, file helper logic, upload parser, stores, model config, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, send path, model request payload construction, or drag/drop behavior were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="attachment strip full state"` failed first as expected because the new attachment full-indicator tone variables were missing and the old indicator rules still used hardcoded legacy light/dark rgba paint.
+- After implementation, the focused attachment full-state visual contract passed.
+- Read-only review found one P3 test precision gap: Auto dark was proven after a dark media query but not strictly inside the media block. The test was tightened to read the `@media (prefers-color-scheme: dark)` block first, then assert the Auto dark selector inside that block.
+- After the test tightening, the focused attachment full-state visual contract passed again.
+- Final verification before commit: `yarn lint`, `npx tsc --noEmit --pretty false`, `git diff --check`, `yarn jest test/gemini-visual-migration.test.ts --runInBand`, and `yarn build` passed.
+
+Browser QA:
+
+- in-app Browser first checked the existing `http://localhost:3000/#/chat` service, but that running Next server stayed on the `home_loading-content` fallback and never exposed target Chat CSS, so it was not used as successful visual evidence.
+- A temporary current-repo dev server was started at `http://localhost:3001/#/chat` for QA and stopped before final verification.
+- Desktop `1439x1024`: chat mounted with `textareaCount=1`, horizontal overflow `0`, Browser console warn/error logs `0` after the QA start timestamp, and runtime CSSOM loaded full-indicator base variables, border/background/color/inner-ring consumers, explicit Dark selector, Auto dark selector, mobile-size rule, and no legacy target paint in the full-indicator tone scope.
+- Mobile `390x844`: same CSSOM, selector, token-consumer, no-legacy-paint, console, and horizontal overflow checks passed.
+- Narrow `320x740`: same CSSOM, selector, token-consumer, no-legacy-paint, console, and horizontal overflow checks passed.
+- Browser runtime reported `bodyClass=""` and `prefers-color-scheme: light`; Auto dark and explicit Dark paths were validated through source-contract tests and runtime CSSOM selector presence without mutating the user's theme.
+- Browser QA intentionally did not open the native file picker, upload a file, create fake attachments, send a message, call a model/API, seed chat history, mutate local storage, or change persisted theme/access state. Full-state rendering, upload guard, and inert semantics are covered by source-contract assertions in the visual migration test.
+
+Review:
+
+- Initial read-only subagent review found no blocking issues and one P3 test precision issue around Auto dark media containment.
+- The P3 was fixed by reading the `@media (prefers-color-scheme: dark)` block directly before checking the Auto dark selector.
+- Follow-up read-only subagent review confirmed the P3 is resolved and found no new issues.
+- Main-thread boundary review verified the current diff remains limited to `chat.module.scss`, `gemini-visual-migration.test.ts`, and this QA record, with no diff in `chat.tsx`, `file.ts`, stores, config, API/backend, route constants, deployment files, dependency files, upload parser, send path, model request paths, or account/sync logic.
+
+Known risks:
+
+- The attachment full-indicator tones use modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
+- Browser QA validated loaded CSSOM and shell layout rather than an actual rendered full-indicator instance, because the indicator only appears when attachment limits are reached and this slice intentionally avoided mutating chat/upload state. Source-contract tests cover the rendered full-state branch, upload guard, and inert status rules directly.

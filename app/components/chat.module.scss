@@ -288,16 +288,23 @@
 }
 
 .attachment-full-indicator {
+  --attachment-full-indicator-border-color: color-mix(in srgb, var(--black-50) 16%, transparent);
+  --attachment-full-indicator-background-start: color-mix(in srgb, var(--surface-elevated) 82%, transparent);
+  --attachment-full-indicator-background-end: color-mix(in srgb, var(--surface-soft) 72%, transparent);
+  --attachment-full-indicator-background-base: color-mix(in srgb, var(--surface-elevated) 86%, transparent);
+  --attachment-full-indicator-color: color-mix(in srgb, var(--black-50) 84%, transparent);
+  --attachment-full-indicator-inner-ring-color: color-mix(in srgb, var(--surface) 48%, transparent);
+
   box-sizing: border-box;
   width: 64px;
   height: 64px;
   padding: 8px 6px;
-  border: 1px solid rgba(95, 99, 104, 0.16);
+  border: 1px solid var(--attachment-full-indicator-border-color);
   border-radius: 12px;
   background:
-    linear-gradient(145deg, rgba(248, 250, 255, 0.82), rgba(241, 245, 249, 0.72)),
-    rgba(248, 250, 255, 0.86);
-  color: rgba(95, 99, 104, 0.84);
+    linear-gradient(145deg, var(--attachment-full-indicator-background-start), var(--attachment-full-indicator-background-end)),
+    var(--attachment-full-indicator-background-base);
+  color: var(--attachment-full-indicator-color);
   display: inline-flex;
   flex-direction: column;
   align-items: center;
@@ -309,7 +316,7 @@
   font-weight: 520;
   line-height: 1;
   letter-spacing: 0;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.48);
+  box-shadow: inset 0 0 0 1px var(--attachment-full-indicator-inner-ring-color);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 
@@ -325,15 +332,38 @@
 }
 
 :global(.dark) .attachment-full-indicator {
-  border-color: rgba(232, 234, 237, 0.1);
+  --attachment-full-indicator-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --attachment-full-indicator-background-start: color-mix(in srgb, var(--surface-soft) 72%, transparent);
+  --attachment-full-indicator-background-end: color-mix(in srgb, var(--surface) 62%, transparent);
+  --attachment-full-indicator-background-base: color-mix(in srgb, var(--surface) 72%, transparent);
+  --attachment-full-indicator-color: color-mix(in srgb, var(--black) 68%, transparent);
+  --attachment-full-indicator-inner-ring-color: color-mix(in srgb, var(--black) 6%, transparent);
+
+  border-color: var(--attachment-full-indicator-border-color);
   background:
-    linear-gradient(145deg, rgba(48, 49, 52, 0.72), rgba(32, 33, 36, 0.62)),
-    rgba(32, 33, 36, 0.72);
-  color: rgba(232, 234, 237, 0.68);
-  box-shadow: inset 0 0 0 1px rgba(232, 234, 237, 0.06);
+    linear-gradient(145deg, var(--attachment-full-indicator-background-start), var(--attachment-full-indicator-background-end)),
+    var(--attachment-full-indicator-background-base);
+  color: var(--attachment-full-indicator-color);
+  box-shadow: inset 0 0 0 1px var(--attachment-full-indicator-inner-ring-color);
 }
 
 @media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .attachment-full-indicator {
+    --attachment-full-indicator-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+    --attachment-full-indicator-background-start: color-mix(in srgb, var(--surface-soft) 72%, transparent);
+    --attachment-full-indicator-background-end: color-mix(in srgb, var(--surface) 62%, transparent);
+    --attachment-full-indicator-background-base: color-mix(in srgb, var(--surface) 72%, transparent);
+    --attachment-full-indicator-color: color-mix(in srgb, var(--black) 68%, transparent);
+    --attachment-full-indicator-inner-ring-color: color-mix(in srgb, var(--black) 6%, transparent);
+
+    border-color: var(--attachment-full-indicator-border-color);
+    background:
+      linear-gradient(145deg, var(--attachment-full-indicator-background-start), var(--attachment-full-indicator-background-end)),
+      var(--attachment-full-indicator-background-base);
+    color: var(--attachment-full-indicator-color);
+    box-shadow: inset 0 0 0 1px var(--attachment-full-indicator-inner-ring-color);
+  }
+
   :global(body:not(.light)) .attachment-add-button {
     --attachment-add-button-border-color: color-mix(in srgb, var(--primary) 34%, transparent);
     --attachment-add-button-background: color-mix(in srgb, var(--surface-elevated) 72%, transparent);

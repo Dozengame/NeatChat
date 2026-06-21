@@ -2034,6 +2034,34 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".attachment-full-indicator",
     );
+    const darkAttachmentFullIndicatorBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .attachment-full-indicator",
+    );
+    const autoDarkAttachmentFullIndicatorSelector =
+      ":global(body:not(.light)) .attachment-full-indicator";
+    const autoDarkAttachmentFullIndicatorSelectorIndex = chatStyles.indexOf(
+      autoDarkAttachmentFullIndicatorSelector,
+    );
+    const autoDarkAttachmentFullIndicatorMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkAttachmentFullIndicatorSelectorIndex,
+    );
+    const autoDarkAttachmentFullIndicatorMediaBlock = readCssBlock(
+      chatStyles,
+      "@media (prefers-color-scheme: dark)",
+    );
+    const autoDarkAttachmentFullIndicatorBlock = readCssBlock(
+      autoDarkAttachmentFullIndicatorMediaBlock,
+      autoDarkAttachmentFullIndicatorSelector,
+    );
+    const attachmentFullIndicatorToneScope = [
+      attachmentFullIndicatorBlock,
+      darkAttachmentFullIndicatorBlock,
+      autoDarkAttachmentFullIndicatorBlock,
+    ].join("\n");
+    const legacyAttachmentFullIndicatorPaint =
+      /rgba\((?:95,\s*99,\s*104|232,\s*234,\s*237|248,\s*250,\s*255|241,\s*245,\s*249|48,\s*49,\s*52|32,\s*33,\s*36|255,\s*255,\s*255)/;
     const mobileStyles = chatStyles.slice(
       chatStyles.lastIndexOf("@media only screen and (max-width: 600px)"),
     );
@@ -2114,12 +2142,111 @@ describe("Gemini visual migration shell", () => {
     expect(attachmentFullIndicatorBlock).toMatch(/cursor:\s*default;/);
     expect(attachmentFullIndicatorBlock).toMatch(/font-size:\s*11px;/);
     expect(attachmentFullIndicatorBlock).toMatch(/font-weight:\s*520;/);
-    expect(attachmentFullIndicatorBlock).toMatch(/border:\s*1px solid/);
-    expect(attachmentFullIndicatorBlock).toMatch(/background:/);
+    expect(attachmentFullIndicatorBlock).toContain(
+      "--attachment-full-indicator-border-color: color-mix(in srgb, var(--black-50) 16%, transparent);",
+    );
+    expect(attachmentFullIndicatorBlock).toContain(
+      "--attachment-full-indicator-background-start: color-mix(in srgb, var(--surface-elevated) 82%, transparent);",
+    );
+    expect(attachmentFullIndicatorBlock).toContain(
+      "--attachment-full-indicator-background-end: color-mix(in srgb, var(--surface-soft) 72%, transparent);",
+    );
+    expect(attachmentFullIndicatorBlock).toContain(
+      "--attachment-full-indicator-background-base: color-mix(in srgb, var(--surface-elevated) 86%, transparent);",
+    );
+    expect(attachmentFullIndicatorBlock).toContain(
+      "--attachment-full-indicator-color: color-mix(in srgb, var(--black-50) 84%, transparent);",
+    );
+    expect(attachmentFullIndicatorBlock).toContain(
+      "--attachment-full-indicator-inner-ring-color: color-mix(in srgb, var(--surface) 48%, transparent);",
+    );
+    expect(attachmentFullIndicatorBlock).toMatch(
+      /border:\s*1px solid var\(--attachment-full-indicator-border-color\);/,
+    );
+    expect(attachmentFullIndicatorBlock).toContain(
+      "linear-gradient(145deg, var(--attachment-full-indicator-background-start), var(--attachment-full-indicator-background-end))",
+    );
+    expect(attachmentFullIndicatorBlock).toContain(
+      "var(--attachment-full-indicator-background-base)",
+    );
+    expect(attachmentFullIndicatorBlock).toMatch(
+      /color:\s*var\(--attachment-full-indicator-color\);/,
+    );
+    expect(attachmentFullIndicatorBlock).toMatch(
+      /box-shadow:\s*inset 0 0 0 1px var\(--attachment-full-indicator-inner-ring-color\);/,
+    );
     expect(attachmentFullIndicatorBlock).toMatch(/backdrop-filter:\s*blur\(12px\);/);
     expect(attachmentFullIndicatorBlock).toMatch(/pointer-events:\s*none;/);
-    expect(chatStyles).toMatch(
-      /:global\(\.dark\) \.attachment-full-indicator[\s\S]*border-color:/,
+    expect(darkAttachmentFullIndicatorBlock).toContain(
+      "--attachment-full-indicator-border-color: color-mix(in srgb, var(--black) 10%, transparent);",
+    );
+    expect(darkAttachmentFullIndicatorBlock).toContain(
+      "--attachment-full-indicator-background-start: color-mix(in srgb, var(--surface-soft) 72%, transparent);",
+    );
+    expect(darkAttachmentFullIndicatorBlock).toContain(
+      "--attachment-full-indicator-background-end: color-mix(in srgb, var(--surface) 62%, transparent);",
+    );
+    expect(darkAttachmentFullIndicatorBlock).toContain(
+      "--attachment-full-indicator-background-base: color-mix(in srgb, var(--surface) 72%, transparent);",
+    );
+    expect(darkAttachmentFullIndicatorBlock).toContain(
+      "--attachment-full-indicator-color: color-mix(in srgb, var(--black) 68%, transparent);",
+    );
+    expect(darkAttachmentFullIndicatorBlock).toContain(
+      "--attachment-full-indicator-inner-ring-color: color-mix(in srgb, var(--black) 6%, transparent);",
+    );
+    expect(darkAttachmentFullIndicatorBlock).toMatch(
+      /border-color:\s*var\(--attachment-full-indicator-border-color\);/,
+    );
+    expect(darkAttachmentFullIndicatorBlock).toContain(
+      "linear-gradient(145deg, var(--attachment-full-indicator-background-start), var(--attachment-full-indicator-background-end))",
+    );
+    expect(darkAttachmentFullIndicatorBlock).toContain(
+      "var(--attachment-full-indicator-background-base)",
+    );
+    expect(darkAttachmentFullIndicatorBlock).toMatch(
+      /color:\s*var\(--attachment-full-indicator-color\);/,
+    );
+    expect(darkAttachmentFullIndicatorBlock).toMatch(
+      /box-shadow:\s*inset 0 0 0 1px var\(--attachment-full-indicator-inner-ring-color\);/,
+    );
+    expect(autoDarkAttachmentFullIndicatorSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkAttachmentFullIndicatorMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkAttachmentFullIndicatorBlock).toContain(
+      "--attachment-full-indicator-border-color: color-mix(in srgb, var(--black) 10%, transparent);",
+    );
+    expect(autoDarkAttachmentFullIndicatorBlock).toContain(
+      "--attachment-full-indicator-background-start: color-mix(in srgb, var(--surface-soft) 72%, transparent);",
+    );
+    expect(autoDarkAttachmentFullIndicatorBlock).toContain(
+      "--attachment-full-indicator-background-end: color-mix(in srgb, var(--surface) 62%, transparent);",
+    );
+    expect(autoDarkAttachmentFullIndicatorBlock).toContain(
+      "--attachment-full-indicator-background-base: color-mix(in srgb, var(--surface) 72%, transparent);",
+    );
+    expect(autoDarkAttachmentFullIndicatorBlock).toContain(
+      "--attachment-full-indicator-color: color-mix(in srgb, var(--black) 68%, transparent);",
+    );
+    expect(autoDarkAttachmentFullIndicatorBlock).toContain(
+      "--attachment-full-indicator-inner-ring-color: color-mix(in srgb, var(--black) 6%, transparent);",
+    );
+    expect(autoDarkAttachmentFullIndicatorBlock).toMatch(
+      /border-color:\s*var\(--attachment-full-indicator-border-color\);/,
+    );
+    expect(autoDarkAttachmentFullIndicatorBlock).toContain(
+      "linear-gradient(145deg, var(--attachment-full-indicator-background-start), var(--attachment-full-indicator-background-end))",
+    );
+    expect(autoDarkAttachmentFullIndicatorBlock).toContain(
+      "var(--attachment-full-indicator-background-base)",
+    );
+    expect(autoDarkAttachmentFullIndicatorBlock).toMatch(
+      /color:\s*var\(--attachment-full-indicator-color\);/,
+    );
+    expect(autoDarkAttachmentFullIndicatorBlock).toMatch(
+      /box-shadow:\s*inset 0 0 0 1px var\(--attachment-full-indicator-inner-ring-color\);/,
+    );
+    expect(attachmentFullIndicatorToneScope).not.toMatch(
+      legacyAttachmentFullIndicatorPaint,
     );
     expect(mobileFullIndicatorBlock).toMatch(/width:\s*58px;/);
     expect(mobileFullIndicatorBlock).toMatch(/height:\s*58px;/);
