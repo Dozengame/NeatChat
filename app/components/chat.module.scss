@@ -3148,6 +3148,11 @@
   --chat-multimodal-section-primary-background: color-mix(in srgb, var(--primary) 7%, transparent);
   --chat-input-action-active-background: color-mix(in srgb, var(--primary) 10%, transparent);
   --chat-input-action-active-color: var(--primary);
+  --chat-input-action-menu-radius: 8px;
+  --chat-input-action-menu-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --chat-input-action-menu-background: color-mix(in srgb, var(--surface-elevated) 94%, transparent);
+  --chat-input-action-menu-shadow-color: color-mix(in srgb, var(--black-50) 18%, transparent);
+  --chat-input-action-menu-accent-shadow-color: color-mix(in srgb, var(--primary) 6%, transparent);
 
   position: absolute;
   left: 0;
@@ -3157,10 +3162,12 @@
   overflow: auto;
   box-sizing: border-box;
   padding: 10px;
-  border: var(--border-in-light);
-  border-radius: 20px;
-  background: var(--surface-elevated);
-  box-shadow: var(--shadow);
+  border: 1px solid var(--chat-input-action-menu-border-color);
+  border-radius: var(--chat-input-action-menu-radius);
+  background: var(--chat-input-action-menu-background);
+  box-shadow:
+    0 18px 48px var(--chat-input-action-menu-shadow-color),
+    0 0 0 1px var(--chat-input-action-menu-accent-shadow-color);
   z-index: 30;
 
   // Transitions & Hidden States
@@ -3266,6 +3273,10 @@
 :global(.dark) .chat-input-action-menu {
   --chat-input-action-active-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
   --chat-input-action-active-color: color-mix(in srgb, var(--primary) 78%, var(--black));
+  --chat-input-action-menu-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+  --chat-input-action-menu-background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
+  --chat-input-action-menu-shadow-color: color-mix(in srgb, var(--gray) 42%, transparent);
+  --chat-input-action-menu-accent-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -3279,6 +3290,10 @@
   :global(body:not(.light)) .chat-input-action-menu {
     --chat-input-action-active-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
     --chat-input-action-active-color: color-mix(in srgb, var(--primary) 78%, var(--black));
+    --chat-input-action-menu-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+    --chat-input-action-menu-background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
+    --chat-input-action-menu-shadow-color: color-mix(in srgb, var(--gray) 42%, transparent);
+    --chat-input-action-menu-accent-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
   }
 }
 
@@ -3433,7 +3448,7 @@
     width: min(320px, calc(100vw - 48px));
     max-height: min(360px, 48vh);
     padding: 12px;
-    border-radius: 22px;
+    border-radius: var(--chat-input-action-menu-radius);
 
     .chat-input-actions {
       gap: 4px;
