@@ -62,6 +62,47 @@
     var(--primary) 8%,
     var(--surface-elevated)
   );
+  --mcp-market-card-surface: var(--surface-elevated);
+  --mcp-market-card-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --mcp-market-card-hover-surface: color-mix(
+    in srgb,
+    var(--primary) 4%,
+    var(--surface-elevated)
+  );
+  --mcp-market-card-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
+  --mcp-market-muted-color: color-mix(
+    in srgb,
+    var(--black-50) 82%,
+    transparent
+  );
+  --mcp-market-tag-background: color-mix(
+    in srgb,
+    var(--primary) 7%,
+    var(--surface-elevated)
+  );
+  --mcp-market-tag-border-color: color-mix(
+    in srgb,
+    var(--primary) 14%,
+    transparent
+  );
+  --mcp-market-tag-color: color-mix(
+    in srgb,
+    var(--primary) 68%,
+    var(--black)
+  );
+  --mcp-market-loading-shine-color: color-mix(
+    in srgb,
+    var(--surface-elevated) 66%,
+    transparent
+  );
 
   height: 100%;
   display: flex;
@@ -86,17 +127,16 @@
       align-items: center;
       min-height: 200px;
       width: 100%;
-      background-color: var(--white);
-      border: var(--border-in-light);
-      border-radius: 10px;
+      background-color: var(--mcp-market-card-surface);
+      border: 1px solid var(--mcp-market-card-border-color);
+      border-radius: 8px;
       animation: slide-in ease 0.3s;
     }
 
     .loading-text,
     .empty-text {
       font-size: 14px;
-      color: var(--black);
-      opacity: 0.5;
+      color: var(--mcp-market-muted-color);
       text-align: center;
     }
 
@@ -112,20 +152,45 @@
         flex-grow: 1;
         max-width: 100%;
         min-width: 0;
+        padding: 0 16px;
+        border: 1px solid var(--mcp-market-form-border-color);
+        border-radius: 999px;
+        background-color: var(--mcp-market-form-surface);
+        color: var(--black);
+        text-align: left;
+        transition:
+          border-color 0.18s ease,
+          box-shadow 0.18s ease,
+          background-color 0.18s ease;
+
+        &:hover {
+          border-color: var(--mcp-market-form-hover-border-color);
+        }
+
+        &:focus {
+          border-color: var(--primary);
+          outline: none;
+          box-shadow: var(--mcp-market-form-focus-shadow);
+        }
+
+        &::placeholder {
+          color: var(--mcp-market-form-placeholder-color);
+        }
       }
     }
 
     .server-list {
       display: flex;
       flex-direction: column;
-      gap: 1px;
+      gap: 8px;
     }
 
     .mcp-market-item {
       padding: 20px;
-      border: var(--border-in-light);
+      border: 1px solid var(--mcp-market-card-border-color);
+      border-radius: 8px;
       animation: slide-in ease 0.3s;
-      background-color: var(--white);
+      background-color: var(--mcp-market-card-surface);
       transition: all 0.3s ease;
 
       &.disabled {
@@ -134,17 +199,22 @@
       }
 
       &:not(:last-child) {
-        border-bottom: 0;
+        border-bottom: 1px solid var(--mcp-market-card-border-color);
       }
 
       &:first-child {
-        border-top-left-radius: 10px;
-        border-top-right-radius: 10px;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
       }
 
       &:last-child {
-        border-bottom-left-radius: 10px;
-        border-bottom-right-radius: 10px;
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+      }
+
+      &:hover {
+        border-color: var(--mcp-market-card-hover-border-color);
+        background-color: var(--mcp-market-card-hover-surface);
       }
 
       &.loading {
@@ -159,7 +229,7 @@
           background: linear-gradient(
             90deg,
             transparent,
-            rgba(255, 255, 255, 0.2),
+            var(--mcp-market-loading-shine-color),
             transparent
           );
           background-size: 200% 100%;
@@ -305,16 +375,17 @@
         }
 
         .tag {
-          background: var(--gray);
-          color: var(--black);
+          background: var(--mcp-market-tag-background);
+          border: 1px solid var(--mcp-market-tag-border-color);
+          color: var(--mcp-market-tag-color);
           padding: 2px 6px;
-          border-radius: 4px;
+          border-radius: 999px;
           font-size: 10px;
           opacity: 0.8;
         }
 
         .mcp-market-info {
-          color: var(--black);
+          color: var(--mcp-market-muted-color);
           font-size: 12px;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -700,7 +771,9 @@
     .list {
       padding: 10px;
       margin-bottom: 10px;
-      background-color: var(--white);
+      background-color: var(--mcp-market-card-surface);
+      border: 1px solid var(--mcp-market-card-border-color);
+      border-radius: 8px;
     }
 
     .list-item {
@@ -786,6 +859,46 @@
     var(--primary) 14%,
     var(--surface-elevated)
   );
+  --mcp-market-card-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --mcp-market-card-hover-surface: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    var(--surface-elevated)
+  );
+  --mcp-market-card-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 28%,
+    transparent
+  );
+  --mcp-market-muted-color: color-mix(
+    in srgb,
+    var(--black) 64%,
+    transparent
+  );
+  --mcp-market-tag-background: color-mix(
+    in srgb,
+    var(--primary) 14%,
+    var(--surface-elevated)
+  );
+  --mcp-market-tag-border-color: color-mix(
+    in srgb,
+    var(--primary) 28%,
+    transparent
+  );
+  --mcp-market-tag-color: color-mix(
+    in srgb,
+    var(--primary) 42%,
+    var(--black)
+  );
+  --mcp-market-loading-shine-color: color-mix(
+    in srgb,
+    var(--black) 16%,
+    transparent
+  );
 }
 
 :global(.dark) .mcp-market-page .mcp-market-page-body .mcp-market-item
@@ -864,6 +977,46 @@
       in srgb,
       var(--primary) 14%,
       var(--surface-elevated)
+    );
+    --mcp-market-card-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --mcp-market-card-hover-surface: color-mix(
+      in srgb,
+      var(--primary) 10%,
+      var(--surface-elevated)
+    );
+    --mcp-market-card-hover-border-color: color-mix(
+      in srgb,
+      var(--primary) 28%,
+      transparent
+    );
+    --mcp-market-muted-color: color-mix(
+      in srgb,
+      var(--black) 64%,
+      transparent
+    );
+    --mcp-market-tag-background: color-mix(
+      in srgb,
+      var(--primary) 14%,
+      var(--surface-elevated)
+    );
+    --mcp-market-tag-border-color: color-mix(
+      in srgb,
+      var(--primary) 28%,
+      transparent
+    );
+    --mcp-market-tag-color: color-mix(
+      in srgb,
+      var(--primary) 42%,
+      var(--black)
+    );
+    --mcp-market-loading-shine-color: color-mix(
+      in srgb,
+      var(--black) 16%,
+      transparent
     );
   }
 

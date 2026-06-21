@@ -6326,3 +6326,55 @@ Known risks:
 - Live Browser computed-style verification for MCP market form controls is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
 - Browser QA did not click Add, Start, Stop, Restart, Configure, Save, or Tools because those are MCP/config side-effect paths.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-21 mcp-market-list-surface-tone
+
+Result: passed.
+
+Target flow:
+
+- MCP market outer search, list, server cards, tags, empty/loading containers, loading shimmer, and modal list surfaces should read as one Gemini-style utility-card language across Light, explicit Dark, and Auto dark.
+- Card/list surfaces, subtle borders, muted descriptions, tag chips, search focus, and loading shine should consume local MCP market tokens instead of old white card backgrounds, gray tag fills, generic `border-in-light` list/card borders, or hardcoded white shimmer paint.
+- MCP controller behavior, search filtering/sorting, add/configure/pause/restart/tools actions, config form updates, model config semantics, account/secret/sync, backend/API, production config, deployment config, dependencies, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected a quiet utility-card direction: elevated list cards, 8px card radius, pill search, subdued tag chips, muted descriptions, Dark/Auto dark safety, and no MCP mutation.
+- No generated raster design was used for this slice because it is a small UI-system repair inside the existing design language. The design spec is the local token contract in `mcp-market.module.scss` plus this QA record.
+
+Scope:
+
+- `app/components/mcp-market.module.scss`: added local `--mcp-market-card-*`, `--mcp-market-tag-*`, `--mcp-market-muted-color`, and `--mcp-market-loading-shine-color` tokens; applied them to empty/loading containers, search bar, server list gap, server cards, tags, descriptions, loading shimmer, and modal list surfaces; added explicit Dark plus Auto dark token overrides.
+- `test/gemini-visual-migration.test.ts`: added a focused MCP market list-surface contract locking behavior entry points, Light/Dark/Auto dark token declarations, search/card/tag/list token consumers, loading shimmer token use, and removal of old target paint in the scoped list/card surface.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TSX behavior, MCP controller/helper behavior, store logic, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, deploy files, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="MCP market list surfaces"` failed first as expected because the MCP market list/card tokens did not exist and the list/card surfaces still used old paint.
+- After implementation, the same focused contract passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="MCP market"` passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `yarn build` passed with the existing Next warning that Edge runtime disables static generation for that page.
+- `git diff --check` passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser was used for this slice. No real access code, key, account, model/API request, upload, image-generation action, persisted production config, backend config, dependency, send action, model request, MCP start/stop/add/restart/configure/save/tools action, or model/config selection mutation was used.
+- `http://localhost:3001` reached the app shell. Direct Browser navigation to `#/mcp-market` stopped at the local access-code gate: `需要密码`, `管理员开启了密码验证，请在下方填入访问码`, `确认`.
+- No access code was entered and no auth/config bypass was attempted. Runtime computed-style evidence for the MCP market list/card surface is therefore blocked by local auth state; source-level Jest, lint, typecheck, build, diff check, and read-only review cover the corrected style contract.
+
+Review:
+
+- Read-only sub-agent review found no blocking issues. It confirmed the pre-QA diff was limited to `app/components/mcp-market.module.scss` and `test/gemini-visual-migration.test.ts`; this QA record is intentionally added afterward because each small iteration requires a review/QA comment.
+- The reviewer confirmed no TSX runtime behavior changed, existing search/list callbacks remain in `mcp-market.tsx` and `server-list.tsx`, Dark/Auto dark selectors are aligned with the repository pattern, and target old paint is removed from the list/search/card/tag/empty/loading scope.
+- The reviewer noted the new test is a source-level visual guard and intentionally sensitive to token percentages and SCSS formatting, consistent with the existing Gemini visual migration test style. It is not a substitute for behavioral tests if search/filter logic changes later.
+
+Known risks:
+
+- Live Browser computed-style verification for MCP market list/card controls is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
+- Browser QA did not click Add, Start, Stop, Restart, Configure, Save, or Tools because those are MCP/config side-effect paths.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.

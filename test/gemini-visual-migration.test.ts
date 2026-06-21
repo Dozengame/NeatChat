@@ -2802,6 +2802,195 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps MCP market list surfaces aligned with Gemini utility cards", () => {
+    const mcpMarket = read("app/components/mcp-market.tsx");
+    const serverList = read("app/components/mcp-market/server-list.tsx");
+    const mcpMarketStyles = read("app/components/mcp-market.module.scss");
+    const mcpMarketPageBlock = readCssBlock(
+      mcpMarketStyles,
+      ".mcp-market-page",
+    );
+    const mcpMarketRootBlock = readRootDeclarations(mcpMarketPageBlock);
+    const darkMcpMarketBlock = readCssBlock(
+      mcpMarketStyles,
+      ":global(.dark) .mcp-market-page",
+    );
+    const autoDarkMcpMarketSelector =
+      ":global(body:not(.light)) .mcp-market-page";
+    const autoDarkMcpMarketSelectorIndex = mcpMarketStyles.indexOf(
+      autoDarkMcpMarketSelector,
+    );
+    const autoDarkMcpMarketMediaIndex = mcpMarketStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkMcpMarketSelectorIndex,
+    );
+    const autoDarkMcpMarketBlock = readCssBlock(
+      mcpMarketStyles.slice(autoDarkMcpMarketMediaIndex),
+      autoDarkMcpMarketSelector,
+    );
+    const loadingEmptyBlock = readCssBlock(
+      mcpMarketStyles,
+      ".loading-container,\n    .empty-container",
+    );
+    const loadingTextBlock = readCssBlock(
+      mcpMarketStyles,
+      ".loading-text,\n    .empty-text",
+    );
+    const marketFilterBlock = readCssBlock(
+      mcpMarketStyles,
+      ".mcp-market-filter",
+    );
+    const searchBarBlock = readCssBlock(marketFilterBlock, ".search-bar");
+    const searchBarHoverBlock = readCssBlock(searchBarBlock, "&:hover");
+    const searchBarFocusBlock = readCssBlock(searchBarBlock, "&:focus");
+    const searchBarPlaceholderBlock = readCssBlock(
+      searchBarBlock,
+      "&::placeholder",
+    );
+    const serverListBlock = readCssBlock(mcpMarketStyles, ".server-list");
+    const marketItemBlock = readCssBlock(mcpMarketStyles, ".mcp-market-item");
+    const marketItemHoverBlock = readCssBlock(marketItemBlock, "&:hover");
+    const marketItemNotLastBlock = readCssBlock(
+      marketItemBlock,
+      "&:not(:last-child)",
+    );
+    const marketItemLoadingBlock = readCssBlock(marketItemBlock, "&.loading");
+    const marketItemLoadingAfterBlock = readCssBlock(
+      marketItemLoadingBlock,
+      "&::after",
+    );
+    const tagBlock = readCssBlock(mcpMarketStyles, ".tag");
+    const marketInfoBlock = readCssBlock(mcpMarketStyles, ".mcp-market-info");
+    const listBlock = readCssBlock(mcpMarketStyles, ".list");
+    const marketListPaintScope = [
+      mcpMarketRootBlock,
+      darkMcpMarketBlock,
+      autoDarkMcpMarketBlock,
+      loadingEmptyBlock,
+      loadingTextBlock,
+      marketFilterBlock,
+      searchBarBlock,
+      searchBarHoverBlock,
+      searchBarFocusBlock,
+      searchBarPlaceholderBlock,
+      serverListBlock,
+      marketItemBlock,
+      marketItemHoverBlock,
+      marketItemNotLastBlock,
+      marketItemLoadingAfterBlock,
+      tagBlock,
+      marketInfoBlock,
+      listBlock,
+    ].join("\n");
+
+    expect(mcpMarket).toContain("onInput={(event) => setSearchText");
+    expect(mcpMarket).toContain("<ServerList");
+    expect(serverList).toContain("function getVisibleServers");
+    expect(serverList).toContain("server.tags.some");
+    expect(serverList).toContain("onAddServer(server)");
+    expect(serverList).toContain("onConfigureServer(server.id)");
+    expect(serverList).toContain("onPauseServer(server.id)");
+    expect(serverList).toContain("onRestartServer(server.id)");
+    expect(serverList).toContain("onViewTools(server.id)");
+    expect(serverList).toContain('className={styles["empty-container"]}');
+    expect(serverList).toContain('className={styles["tag"]}');
+    expect(serverList).toContain('className={clsx(styles["mcp-market-info"], "one-line")}');
+
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-card-surface:\s*var\(--surface-elevated\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-card-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-card-hover-surface:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 4%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-card-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 18%,\s*transparent\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 82%,\s*transparent\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-tag-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 7%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-tag-border-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 14%,\s*transparent\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-tag-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 68%,\s*var\(--black\)\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-loading-shine-color:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 66%,\s*transparent\s*\);/,
+    );
+    expect(darkMcpMarketBlock).toMatch(
+      /--mcp-market-card-hover-surface:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 10%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(darkMcpMarketBlock).toMatch(
+      /--mcp-market-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 64%,\s*transparent\s*\);/,
+    );
+    expect(darkMcpMarketBlock).toMatch(
+      /--mcp-market-loading-shine-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 16%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkMcpMarketSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkMcpMarketMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkMcpMarketBlock).toMatch(
+      /--mcp-market-card-hover-surface:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 10%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(autoDarkMcpMarketBlock).toMatch(
+      /--mcp-market-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 64%,\s*transparent\s*\);/,
+    );
+
+    [loadingEmptyBlock, marketItemBlock, listBlock].forEach((block) => {
+      expect(block).toMatch(
+        /background-color:\s*var\(--mcp-market-card-surface\);/,
+      );
+      expect(block).toMatch(
+        /border:\s*1px solid var\(--mcp-market-card-border-color\);/,
+      );
+      expect(block).toMatch(/border-radius:\s*8px;/);
+    });
+    expect(loadingTextBlock).toMatch(/color:\s*var\(--mcp-market-muted-color\);/);
+    expect(searchBarBlock).toMatch(
+      /background-color:\s*var\(--mcp-market-form-surface\);/,
+    );
+    expect(searchBarBlock).toMatch(
+      /border:\s*1px solid var\(--mcp-market-form-border-color\);/,
+    );
+    expect(searchBarBlock).toMatch(/text-align:\s*left;/);
+    expect(searchBarHoverBlock).toMatch(
+      /border-color:\s*var\(--mcp-market-form-hover-border-color\);/,
+    );
+    expect(searchBarFocusBlock).toMatch(/border-color:\s*var\(--primary\);/);
+    expect(searchBarFocusBlock).toMatch(
+      /box-shadow:\s*var\(--mcp-market-form-focus-shadow\);/,
+    );
+    expect(searchBarPlaceholderBlock).toMatch(
+      /color:\s*var\(--mcp-market-form-placeholder-color\);/,
+    );
+    expect(serverListBlock).toMatch(/gap:\s*8px;/);
+    expect(marketItemHoverBlock).toMatch(
+      /background-color:\s*var\(--mcp-market-card-hover-surface\);/,
+    );
+    expect(marketItemHoverBlock).toMatch(
+      /border-color:\s*var\(--mcp-market-card-hover-border-color\);/,
+    );
+    expect(marketItemNotLastBlock).toMatch(
+      /border-bottom:\s*1px solid var\(--mcp-market-card-border-color\);/,
+    );
+    expect(marketItemLoadingAfterBlock).toContain(
+      "var(--mcp-market-loading-shine-color)",
+    );
+    expect(tagBlock).toMatch(/background:\s*var\(--mcp-market-tag-background\);/);
+    expect(tagBlock).toMatch(/border:\s*1px solid var\(--mcp-market-tag-border-color\);/);
+    expect(tagBlock).toMatch(/color:\s*var\(--mcp-market-tag-color\);/);
+    expect(tagBlock).toMatch(/border-radius:\s*999px;/);
+    expect(marketInfoBlock).toMatch(/color:\s*var\(--mcp-market-muted-color\);/);
+    expect(marketListPaintScope).not.toMatch(
+      /background(?:-color)?:\s*var\(--white\)|background:\s*var\(--gray\)|border:\s*var\(--border-in-light\)|rgba\(255,\s*255,\s*255,\s*0\.2\)/,
+    );
+  });
+
   test("keeps composer attachment deletion focus handoff predictable", () => {
     const chat = read("app/components/chat.tsx");
 
