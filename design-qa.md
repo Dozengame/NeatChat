@@ -6760,3 +6760,58 @@ Known risks:
 - Browser screenshot capture timed out in the in-app Browser; no fallback screenshot was used because the reachable page is only the gate, not the target stepper.
 - Export stepper clicks, format changes, include-context changes, copy/download/share, and preview rendering were not exercised because the export modal was not reachable without credentials and those actions can mutate UI state, clipboard, downloaded files, or share state.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-21 masks-plugins-list-surface-tone
+
+Result: automated checks passed; live target QA blocked by access-code gate.
+
+Target flow:
+
+- Masks and Plugins directory rows should read as Gemini-style quiet utility cards: compact search/filter/create controls, an 8px stacked list surface, restrained hover state, and clear mobile card separation.
+- Mask language filtering, mask creation, new chat from mask, mask delete confirm, plugin creation, plugin edit entry, plugin delete confirm, model config, account/secret/sync/backend/deploy behavior, dependencies, and production config must remain unchanged.
+- The slice should refine the shared list surface without changing any stored mask/plugin data or action semantics.
+
+Design direction:
+
+- Creative Production style intake selected a quiet shared directory direction: tokenized neutral row surfaces, compact elevated search/select controls, subtle primary hover wash, explicit Dark/Auto dark safety, and no decorative gradients.
+- No generated raster design was used because this is a small UI-system repair inside the existing Gemini migration language. The design spec is the local token contract in `mask.module.scss` plus this QA record.
+
+Scope:
+
+- `app/components/mask.module.scss`: added local `--mask-list-*` and `--mask-filter-*` tokens for Light/Dark/Auto dark; replaced legacy white rows, `border-in-light`, 10px radius, card shadow, and margin-based toolbar spacing with tokenized 8px controls and list cards.
+- `test/gemini-visual-migration.test.ts`: added a focused Masks/Plugins contract locking shared class usage, existing mask/plugin behavior entry points, Light/Dark/Auto dark token declarations, token consumers, mobile card treatment, focus-visible search treatment, and old target paint removal.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TSX behavior, mask/plugin store semantics, language filtering, create/edit/delete/chat actions, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, or package files were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="Masks and Plugins list surfaces"` failed first as expected because `.mask-page` still lacked local list/filter tokens and used legacy list paint.
+- The same focused contract then exposed one test parsing issue for nested `&:hover`; the assertion was corrected to read the hover block directly.
+- After implementation, the focused contract passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `yarn build` passed with the existing Next warning that Edge runtime disables static generation for that page.
+- `git diff --check` passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser opened `http://localhost:3001/#/masks` and `http://localhost:3001/#/plugins`.
+- Desktop default viewport and mobile viewport `390x844` both reached the local access-code gate with title `NeatChat`, gate copy `需要密码`, `管理员开启了密码验证，请在下方填入访问码`, and action `确认`.
+- Both routes had no console warn/error logs, no framework overlay, and horizontal overflow `0` at the tested desktop and mobile viewports. The actual Masks/Plugins list surfaces were not rendered because the local gate blocked access.
+- No real access code was entered and no auth/config bypass was attempted. No mask/plugin create, edit, delete, chat, filter, model/API request, account/key/sync/import/export/reset/clear, or persisted config action was performed.
+
+Review:
+
+- Read-only sub-agent review found one non-blocking P3: the initial test did not lock Mask creation-to-edit and View/Edit entry points while the QA record described behavior entry points as locked. The test now asserts `setEditingMaskId(createdMask.id)`, both View/Edit labels, and both existing-mask `setEditingMaskId(m.id)` call sites.
+- The same review confirmed the diff is limited to `app/components/mask.module.scss`, `test/gemini-visual-migration.test.ts`, and this QA record, with no TSX behavior, package/lockfile, backend/API, model config, account/secret/sync, production/deploy config, or dependency changes.
+- The reviewer confirmed `mask.tsx` and `plugin.tsx` continue to share the same class contract and behavior entry points; the new test locks those call sites while avoiding mutation-oriented runtime actions.
+- The reviewer noted the Browser QA is correctly limited by the access-code gate and should not be described as live computed-style verification for the target list rows.
+
+Known risks:
+
+- Live Browser computed-style verification for the actual Masks/Plugins list rows is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
+- Plugin list rows share the same `mask.module.scss` surface; this is intentional for visual consistency, but any future plugin-only layout requirements should split the styling contract explicitly.
+- Mask/plugin create/edit/delete/chat/filter controls were not clicked because the target pages were not reachable without credentials and those actions can mutate local state or start a chat.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.

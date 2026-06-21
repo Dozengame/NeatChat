@@ -5626,6 +5626,173 @@ describe("Gemini visual migration shell", () => {
     expect(maskBlock).toMatch(/&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/);
   });
 
+  test("keeps Masks and Plugins list surfaces aligned with Gemini utility cards", () => {
+    const maskPage = read("app/components/mask.tsx");
+    const pluginPage = read("app/components/plugin.tsx");
+    const maskStyles = read("app/components/mask.module.scss");
+    const maskPageBlock = readCssBlock(maskStyles, ".mask-page");
+    const maskPageRootBlock = readRootDeclarations(maskPageBlock);
+    const maskPageBodyBlock = readCssBlock(maskPageBlock, ".mask-page-body");
+    const filterBlock = readCssBlock(maskPageBodyBlock, ".mask-filter");
+    const searchBarBlock = readCssBlock(filterBlock, ".search-bar");
+    const searchFocusBlock = readCssBlock(searchBarBlock, "&:focus-visible");
+    const langBlock = readCssBlock(filterBlock, ".mask-filter-lang");
+    const createBlock = readCssBlock(filterBlock, ".mask-create");
+    const maskItemBlock = readCssBlock(maskPageBodyBlock, ".mask-item");
+    const itemRootBlock = readRootDeclarations(maskItemBlock);
+    const itemHoverBlock = readCssBlock(maskItemBlock, "&:hover");
+    const notLastBlock = readCssBlock(maskItemBlock, "&:not(:last-child)");
+    const firstBlock = readCssBlock(maskItemBlock, "&:first-child");
+    const lastBlock = readCssBlock(maskItemBlock, "&:last-child");
+    const headerBlock = readCssBlock(maskItemBlock, ".mask-header");
+    const titleBlock = readCssBlock(headerBlock, ".mask-title");
+    const infoBlock = readCssBlock(titleBlock, ".mask-info");
+    const actionsBlock = readCssBlock(maskItemBlock, ".mask-actions");
+    const actionBlock = readCssBlock(actionsBlock, ".mask-action");
+    const mobileItemBlock = readCssBlock(
+      maskItemBlock,
+      "@media screen and (max-width: 600px)",
+    );
+    const darkMaskPageBlock = readCssBlock(
+      maskStyles,
+      ":global(.dark) .mask-page",
+    );
+    const autoDarkMaskSelector = ":global(body:not(.light)) .mask-page";
+    const autoDarkMaskIndex = maskStyles.indexOf(autoDarkMaskSelector);
+    const autoDarkMaskMediaIndex = maskStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkMaskIndex,
+    );
+    const autoDarkMaskBlock = readCssBlock(
+      maskStyles.slice(autoDarkMaskMediaIndex),
+      autoDarkMaskSelector,
+    );
+    const masksPaintScope = [
+      maskPageRootBlock,
+      filterBlock,
+      searchBarBlock,
+      langBlock,
+      createBlock,
+      itemRootBlock,
+      itemHoverBlock,
+      notLastBlock,
+      firstBlock,
+      lastBlock,
+      infoBlock,
+      actionsBlock,
+      actionBlock,
+      mobileItemBlock,
+      darkMaskPageBlock,
+      autoDarkMaskBlock,
+    ].join("\n");
+
+    expect(maskPage).toContain('styles["mask-page"]');
+    expect(maskPage).toContain('styles["mask-filter"]');
+    expect(maskPage).toContain('styles["mask-filter-lang"]');
+    expect(maskPage).toContain('styles["mask-create"]');
+    expect(maskPage).toContain('styles["mask-item"]');
+    expect(maskPage).toContain('styles["mask-actions"]');
+    expect(maskPage).toContain("maskStore.setLanguage(undefined)");
+    expect(maskPage).toContain("maskStore.setLanguage(value as Lang)");
+    expect(maskPage).toContain("maskStore.create()");
+    expect(maskPage).toContain("setEditingMaskId(createdMask.id)");
+    expect(maskPage).toContain("chatStore.newSession(m)");
+    expect(maskPage).toContain("navigate(Path.Chat)");
+    expect(maskPage).toContain("text={Locale.Mask.Item.View}");
+    expect(maskPage).toContain("text={Locale.Mask.Item.Edit}");
+    expect(maskPage.match(/setEditingMaskId\(m\.id\)/g)?.length).toBeGreaterThanOrEqual(
+      2,
+    );
+    expect(maskPage).toContain("showConfirm(Locale.Mask.Item.DeleteConfirm)");
+    expect(maskPage).toContain("maskStore.delete(m.id)");
+
+    expect(pluginPage).toContain('styles["mask-page"]');
+    expect(pluginPage).toContain('styles["mask-filter"]');
+    expect(pluginPage).toContain('styles["mask-create"]');
+    expect(pluginPage).toContain('styles["mask-item"]');
+    expect(pluginPage).toContain('styles["mask-actions"]');
+    expect(pluginPage).toContain("pluginStore.create()");
+    expect(pluginPage).toContain("setEditingPluginId(createdPlugin.id)");
+    expect(pluginPage).toContain("setEditingPluginId(m.id)");
+    expect(pluginPage).toContain("showConfirm(Locale.Plugin.Item.DeleteConfirm)");
+    expect(pluginPage).toContain("pluginStore.delete(m.id)");
+
+    expect(maskPageRootBlock).toMatch(
+      /--mask-list-item-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 94%,\s*var\(--white\)\s*\);/,
+    );
+    expect(maskPageRootBlock).toMatch(
+      /--mask-list-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
+    );
+    expect(maskPageRootBlock).toMatch(
+      /--mask-list-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 5%,\s*transparent\s*\);/,
+    );
+    expect(maskPageRootBlock).toMatch(
+      /--mask-filter-control-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*transparent\s*\);/,
+    );
+    expect(filterBlock).toMatch(/gap:\s*10px;/);
+    expect(searchBarBlock).toMatch(
+      /border:\s*1px solid var\(--mask-filter-border-color\);/,
+    );
+    expect(searchBarBlock).toMatch(/border-radius:\s*8px;/);
+    expect(searchBarBlock).toMatch(
+      /background:\s*var\(--mask-filter-control-background\);/,
+    );
+    expect(searchFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(searchFocusBlock).toMatch(
+      /border-color:\s*var\(--mask-filter-focus-border-color\);/,
+    );
+    expect(langBlock).toMatch(/margin-left:\s*0;/);
+    expect(createBlock).toMatch(/margin-left:\s*0;/);
+    expect(itemRootBlock).toMatch(
+      /border:\s*1px solid var\(--mask-list-border-color\);/,
+    );
+    expect(itemRootBlock).toMatch(
+      /background:\s*var\(--mask-list-item-background\);/,
+    );
+    expect(itemRootBlock).toMatch(
+      /transition:\s*background-color 0\.18s ease,\s*border-color 0\.18s ease,\s*box-shadow 0\.18s ease;/,
+    );
+    expect(itemHoverBlock).toMatch(
+      /background-color:\s*var\(--mask-list-hover-background\);/,
+    );
+    expect(firstBlock).toMatch(/border-top-left-radius:\s*8px;/);
+    expect(firstBlock).toMatch(/border-top-right-radius:\s*8px;/);
+    expect(lastBlock).toMatch(/border-bottom-left-radius:\s*8px;/);
+    expect(lastBlock).toMatch(/border-bottom-right-radius:\s*8px;/);
+    expect(infoBlock).toMatch(/color:\s*var\(--mask-list-muted-color\);/);
+    expect(actionsBlock).toMatch(/gap:\s*6px;/);
+    expect(actionsBlock).toMatch(
+      /transition:\s*color 0\.18s ease,\s*opacity 0\.18s ease;/,
+    );
+    expect(actionBlock).toMatch(/color:\s*var\(--mask-list-action-color\);/);
+    expect(mobileItemBlock).toMatch(/border-radius:\s*8px;/);
+    expect(mobileItemBlock).toMatch(
+      /box-shadow:\s*0 12px 30px var\(--mask-list-shadow-color\);/,
+    );
+    expect(mobileItemBlock).toMatch(
+      /border-bottom:\s*1px solid var\(--mask-list-border-color\);/,
+    );
+    expect(darkMaskPageBlock).toMatch(
+      /--mask-list-item-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkMaskPageBlock).toMatch(
+      /--mask-list-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 9%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkMaskIndex).toBeGreaterThan(-1);
+    expect(autoDarkMaskMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkMaskBlock).toMatch(
+      /--mask-list-item-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkMaskBlock).toMatch(
+      /--mask-list-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 9%,\s*transparent\s*\);/,
+    );
+    expect(masksPaintScope).not.toContain("border: var(--border-in-light)");
+    expect(masksPaintScope).not.toContain("border-bottom: var(--border-in-light)");
+    expect(masksPaintScope).not.toContain("background-color: var(--white)");
+    expect(masksPaintScope).not.toContain("border-radius: 10px");
+    expect(masksPaintScope).not.toContain("box-shadow: var(--card-shadow)");
+  });
+
   test("keeps artifacts preview shell aligned with Gemini output surfaces", () => {
     const artifacts = read("app/components/artifacts.tsx");
     const artifactsPreview = read("app/components/artifacts-preview.tsx");
