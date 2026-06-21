@@ -5653,3 +5653,54 @@ Known risks:
 
 - The attachment full-indicator tones use modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
 - Browser QA validated loaded CSSOM and shell layout rather than an actual rendered full-indicator instance, because the indicator only appears when attachment limits are reached and this slice intentionally avoided mutating chat/upload state. Source-contract tests cover the rendered full-state branch, upload guard, and inert status rules directly.
+
+## Iteration 2026-06-21 markdown-code-copy-success-tone
+
+Result: passed.
+
+Target flow:
+
+- Markdown code blocks should keep the existing language label, copy button position, hover/focus/touch visibility, copied icon swap, `aria-live` feedback, code fold controls, and horizontal scroll hints.
+- The copy button `data-copy-state="copied"` success border, background, text/icon color, and shadow should use theme variables instead of hardcoded green rgba paint.
+- Light, explicit Dark, and Auto dark should share the same `--markdown-code-copy-success-*` contract while preserving explicit theme overrides.
+- Copy behavior, clipboard calls, code block parsing, language extraction, artifacts rendering, model config, model requests, account/secret/sync, backend/API, production config, deployment config, dependencies, and persisted state must remain unchanged.
+
+Design direction:
+
+- Continue the AI rendering polish track: code blocks already use Gemini-style language labels, scroll fades, and copy controls; the remaining copied-success state should inherit the same theme token discipline instead of carrying old hardcoded green paint.
+- Light theme defines copied success border/background/color/shadow variables from Google-style success green plus existing text/shadow tokens.
+- Explicit Dark and Auto dark override the same variables with dark success green; Auto dark uses the existing global `@media (prefers-color-scheme: dark)` + `:root { @include dark; }` path.
+- This slice intentionally avoids changing `markdown.tsx`, copy timers, button semantics, keyboard shortcuts, code fold behavior, message rendering, network/model behavior, or persisted state.
+
+Scope:
+
+- `app/styles/globals.scss`: added `--markdown-code-copy-success-*` variables in Light and Dark mixins; changed default and explicit Dark copied-state selectors to consume the variables for border, background, color, and shadow; preserved button size, position, hidden/visible states, hover/focus/touch behavior, transitions, and icon fill.
+- `test/gemini-visual-migration.test.ts`: strengthened the Markdown code block chrome contract to lock Light/Dark/Auto dark success variables, copied-state variable consumers, existing aria/status behavior, button sizing, hover/focus/touch behavior, language label, code fold controls, and absence of legacy copied green rgba in the copied tone scope.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No `markdown.tsx`, TypeScript component logic, copy/clipboard helper, artifacts rendering, stores, model config, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="markdown code block chrome"` failed first as expected because the new `--markdown-code-copy-success-*` variables were missing and the copied-state rules still used hardcoded green rgba paint.
+- After implementation, the focused Markdown code block chrome contract passed.
+- Final verification before commit: `yarn lint`, `npx tsc --noEmit --pretty false`, `git diff --check`, `yarn jest test/gemini-visual-migration.test.ts --runInBand`, and `yarn build` passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was started at `http://localhost:3001/#/chat` for QA and stopped before final verification.
+- Desktop `1439x1024`: chat mounted with `textareaCount=1`, horizontal overflow `0`, Browser console warn/error logs `0` after the QA start timestamp, and runtime CSSOM loaded Light/Dark copied-success variables, copied-state selector, border/background/color/shadow variable consumers, explicit Dark selector, touch visibility selector, and no legacy copied green rgba in the copied tone scope.
+- Mobile `390x844`: same CSSOM, selector, token-consumer, no-legacy-paint, console, and horizontal overflow checks passed.
+- Narrow `320x740`: same CSSOM, selector, token-consumer, no-legacy-paint, console, and horizontal overflow checks passed.
+- Browser runtime reported `bodyClass=""` and `prefers-color-scheme: light`; Auto dark and explicit Dark paths were validated through source-contract tests and runtime CSSOM selector presence without mutating the user's theme.
+- Browser QA intentionally did not send a message, seed a code-block response, click the copy button, read or write clipboard, call a model/API, seed chat history, mutate local storage, or change persisted theme/access state. Copied-state rendering, aria feedback, and copy semantics are covered by source-contract assertions in the visual migration test.
+
+Review:
+
+- Read-only subagent review found no blocking issues.
+- The reviewer confirmed Light, explicit Dark, and Auto dark variable chains are complete; default and explicit Dark copied selectors consume the variables; old hardcoded green rgba does not remain in the copied tone blocks; and existing copy logic, aria/status, button sizing, hover/focus/touch visibility, language label, and code fold source contracts remain covered.
+- Main-thread boundary review verified the current diff remains limited to `globals.scss`, `gemini-visual-migration.test.ts`, and this QA record, with no diff in `markdown.tsx`, `chat.tsx`, stores, config, API/backend, route constants, deployment files, dependency files, copy helpers, send path, model request paths, or account/sync logic.
+
+Known risks:
+
+- The copied-state variables use modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
+- Browser QA validated loaded CSSOM and shell layout rather than an actual rendered copied-state code block, because creating a code-block response would require seeding chat state or sending content and this slice intentionally avoided mutating message history or clipboard. Source-contract tests cover the rendered copied-state branch, aria feedback, and copy button state rules directly.

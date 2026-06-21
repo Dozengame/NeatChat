@@ -2622,6 +2622,12 @@ describe("Gemini visual migration shell", () => {
     const markdown = read("app/components/markdown.tsx");
     const markdownStyles = read("app/styles/markdown.scss");
     const globalStyles = read("app/styles/globals.scss");
+    const globalLightMixinBlock = readCssBlock(globalStyles, "@mixin light");
+    const globalDarkMixinBlock = readCssBlock(globalStyles, "@mixin dark");
+    const globalAutoDarkRootBlock = readCssBlock(
+      readCssBlock(globalStyles, "@media (prefers-color-scheme: dark)"),
+      ":root",
+    );
     const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
     const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
     const autoDarkRootBlock = readCssBlock(
@@ -2663,6 +2669,12 @@ describe("Gemini visual migration shell", () => {
       darkCopyButtonBlock,
       '&[data-copy-state="copied"]',
     );
+    const copyButtonCopiedToneScope = [
+      copyButtonCopiedBlock,
+      darkCopyButtonCopiedBlock,
+    ].join("\n");
+    const legacyCopyButtonCopiedPaint =
+      /rgba\((?:52,\s*168,\s*83|24,\s*128,\s*56|129,\s*201,\s*149)/;
     const touchCopyButtonBlock = readCssBlock(
       readCssBlock(
         globalStyles,
@@ -2800,6 +2812,37 @@ describe("Gemini visual migration shell", () => {
       /--markdown-code-fold-hover-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 12%,\s*transparent\s*\);/,
     );
     expect(autoDarkRootBlock).toMatch(/@include dark;/);
+    expect(globalLightMixinBlock).toMatch(
+      /--markdown-code-copy-success-border-color:\s*color-mix\(\s*in srgb,\s*rgb\(52,\s*168,\s*83\) 24%,\s*transparent\s*\);/,
+    );
+    expect(globalLightMixinBlock).toMatch(
+      /--markdown-code-copy-success-background:\s*color-mix\(\s*in srgb,\s*rgb\(52,\s*168,\s*83\) 12%,\s*transparent\s*\);/,
+    );
+    expect(globalLightMixinBlock).toMatch(
+      /--markdown-code-copy-success-color:\s*color-mix\(\s*in srgb,\s*rgb\(24,\s*128,\s*56\) 94%,\s*transparent\s*\);/,
+    );
+    expect(globalLightMixinBlock).toMatch(
+      /--markdown-code-copy-success-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 10%,\s*transparent\s*\);/,
+    );
+    expect(globalLightMixinBlock).toMatch(
+      /--markdown-code-copy-success-accent-shadow-color:\s*color-mix\(\s*in srgb,\s*rgb\(52,\s*168,\s*83\) 12%,\s*transparent\s*\);/,
+    );
+    expect(globalDarkMixinBlock).toMatch(
+      /--markdown-code-copy-success-border-color:\s*color-mix\(\s*in srgb,\s*rgb\(129,\s*201,\s*149\) 24%,\s*transparent\s*\);/,
+    );
+    expect(globalDarkMixinBlock).toMatch(
+      /--markdown-code-copy-success-background:\s*color-mix\(\s*in srgb,\s*rgb\(129,\s*201,\s*149\) 14%,\s*transparent\s*\);/,
+    );
+    expect(globalDarkMixinBlock).toMatch(
+      /--markdown-code-copy-success-color:\s*color-mix\(\s*in srgb,\s*rgb\(129,\s*201,\s*149\) 96%,\s*transparent\s*\);/,
+    );
+    expect(globalDarkMixinBlock).toMatch(
+      /--markdown-code-copy-success-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--surface\) 24%,\s*transparent\s*\);/,
+    );
+    expect(globalDarkMixinBlock).toMatch(
+      /--markdown-code-copy-success-accent-shadow-color:\s*color-mix\(\s*in srgb,\s*rgb\(129,\s*201,\s*149\) 12%,\s*transparent\s*\);/,
+    );
+    expect(globalAutoDarkRootBlock).toMatch(/@include dark;/);
     expect(markdown).toMatch(
       /className=\{clsx\([\s\S]*"markdown-code-block"[\s\S]*\)\}[\s\S]*data-overflow-start=\{codeScrollHint\.start \? "true" : "false"\}[\s\S]*data-overflow-end=\{codeScrollHint\.end \? "true" : "false"\}[\s\S]*onScroll=\{syncCodeScrollHint\}/,
     );
@@ -2858,18 +2901,33 @@ describe("Gemini visual migration shell", () => {
     expect(copyButtonCopiedBlock).toMatch(/opacity:\s*1;/);
     expect(copyButtonCopiedBlock).toMatch(/transform:\s*translateY\(0\);/);
     expect(copyButtonCopiedBlock).toMatch(
-      /background-color:\s*rgba\(52,\s*168,\s*83,\s*0\.12\);/,
+      /border-color:\s*var\(--markdown-code-copy-success-border-color\);/,
     );
     expect(copyButtonCopiedBlock).toMatch(
-      /color:\s*rgba\(24,\s*128,\s*56,\s*0\.94\);/,
+      /background-color:\s*var\(--markdown-code-copy-success-background\);/,
+    );
+    expect(copyButtonCopiedBlock).toMatch(
+      /color:\s*var\(--markdown-code-copy-success-color\);/,
+    );
+    expect(copyButtonCopiedBlock).toMatch(
+      /0 1px 2px var\(--markdown-code-copy-success-shadow-color\),[\s\S]*0 8px 18px var\(--markdown-code-copy-success-accent-shadow-color\);/,
     );
     expect(copyButtonCopiedBlock).toContain("svg path");
     expect(copyButtonCopiedBlock).toMatch(/fill:\s*currentColor !important;/);
     expect(darkCopyButtonCopiedBlock).toMatch(
-      /background-color:\s*rgba\(129,\s*201,\s*149,\s*0\.14\);/,
+      /border-color:\s*var\(--markdown-code-copy-success-border-color\);/,
     );
     expect(darkCopyButtonCopiedBlock).toMatch(
-      /color:\s*rgba\(129,\s*201,\s*149,\s*0\.96\);/,
+      /background-color:\s*var\(--markdown-code-copy-success-background\);/,
+    );
+    expect(darkCopyButtonCopiedBlock).toMatch(
+      /color:\s*var\(--markdown-code-copy-success-color\);/,
+    );
+    expect(darkCopyButtonCopiedBlock).toMatch(
+      /0 1px 2px var\(--markdown-code-copy-success-shadow-color\),[\s\S]*0 8px 18px var\(--markdown-code-copy-success-accent-shadow-color\);/,
+    );
+    expect(copyButtonCopiedToneScope).not.toMatch(
+      legacyCopyButtonCopiedPaint,
     );
     expect(desktopHoverBlock).toMatch(/pointer-events:\s*all;/);
     expect(desktopHoverBlock).toMatch(/opacity:\s*0\.72;/);

@@ -54,6 +54,11 @@
   --bar-color: rgba(0, 0, 0, 0.1);
   --theme-color: var(--gray);
   --scrollbar-thumb-color: rgba(60, 64, 67, 0.22);
+  --markdown-code-copy-success-border-color: color-mix(in srgb, rgb(52, 168, 83) 24%, transparent);
+  --markdown-code-copy-success-background: color-mix(in srgb, rgb(52, 168, 83) 12%, transparent);
+  --markdown-code-copy-success-color: color-mix(in srgb, rgb(24, 128, 56) 94%, transparent);
+  --markdown-code-copy-success-shadow-color: color-mix(in srgb, var(--black-50) 10%, transparent);
+  --markdown-code-copy-success-accent-shadow-color: color-mix(in srgb, rgb(52, 168, 83) 12%, transparent);
 
   /* shadow */
   --shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
@@ -88,6 +93,11 @@
 
   --theme-color: var(--gray);
   --scrollbar-thumb-color: rgba(255, 255, 255, 0.18);
+  --markdown-code-copy-success-border-color: color-mix(in srgb, rgb(129, 201, 149) 24%, transparent);
+  --markdown-code-copy-success-background: color-mix(in srgb, rgb(129, 201, 149) 14%, transparent);
+  --markdown-code-copy-success-color: color-mix(in srgb, rgb(129, 201, 149) 96%, transparent);
+  --markdown-code-copy-success-shadow-color: color-mix(in srgb, var(--surface) 24%, transparent);
+  --markdown-code-copy-success-accent-shadow-color: color-mix(in srgb, rgb(129, 201, 149) 12%, transparent);
   --composer-shadow: 0 2px 14px rgba(0, 0, 0, 0.28);
   --focus-ring: 2px solid rgba(138, 180, 248, 0.72);
   --focus-ring-shadow: 0 0 0 4px rgba(138, 180, 248, 0.18);
@@ -390,12 +400,12 @@ pre {
       pointer-events: all;
       opacity: 1;
       transform: translateY(0);
-      border-color: rgba(52, 168, 83, 0.24);
-      background-color: rgba(52, 168, 83, 0.12);
-      color: rgba(24, 128, 56, 0.94);
+      border-color: var(--markdown-code-copy-success-border-color);
+      background-color: var(--markdown-code-copy-success-background);
+      color: var(--markdown-code-copy-success-color);
       box-shadow:
-        0 1px 2px rgba(60, 64, 67, 0.1),
-        0 8px 18px rgba(52, 168, 83, 0.12);
+        0 1px 2px var(--markdown-code-copy-success-shadow-color),
+        0 8px 18px var(--markdown-code-copy-success-accent-shadow-color);
 
       svg path {
         fill: currentColor !important;
@@ -435,12 +445,12 @@ pre {
   }
 
   &[data-copy-state="copied"] {
-    border-color: rgba(129, 201, 149, 0.24);
-    background-color: rgba(129, 201, 149, 0.14);
-    color: rgba(129, 201, 149, 0.96);
+    border-color: var(--markdown-code-copy-success-border-color);
+    background-color: var(--markdown-code-copy-success-background);
+    color: var(--markdown-code-copy-success-color);
     box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.24),
-      0 8px 18px rgba(129, 201, 149, 0.12);
+      0 1px 2px var(--markdown-code-copy-success-shadow-color),
+      0 8px 18px var(--markdown-code-copy-success-accent-shadow-color);
   }
 }
 
