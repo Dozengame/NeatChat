@@ -1741,7 +1741,7 @@ describe("Gemini visual migration shell", () => {
     expect(homeStyles).toContain("z-index: 900");
     expect(homeStyles).toContain("z-index: 1000");
     expect(compactContainerSidebarBlock).toMatch(
-      /background:\s*var\(--surface-elevated\);/,
+      /background:\s*rgba\(249,\s*251,\s*253,\s*0\.78\);/,
     );
     expect(compactContainerSidebarBlock).not.toContain("radial-gradient");
     expect(compactContainerSidebarBlock).not.toContain("linear-gradient");
@@ -1755,20 +1755,23 @@ describe("Gemini visual migration shell", () => {
       /border-right:\s*var\(--border-in-light\);/,
     );
     expect(compactContainerSidebarBlock).toMatch(
-      /box-shadow:\s*0 24px 72px rgba\(32,\s*33,\s*36,\s*0\.28\);/,
+      /box-shadow:\s*0 28px 80px rgba\(32,\s*33,\s*36,\s*0\.24\),[\s\S]*inset -1px 0 0 rgba\(255,\s*255,\s*255,\s*0\.58\);/,
     );
     expect(homeStyles).not.toContain("0 20px 64px rgba(32, 33, 36, 0.22)");
     expect(homeMobileCompactSidebarBlock).not.toMatch(/background(?:-color)?:/);
     expect(homeMobileCompactSidebarBlock).not.toMatch(/backdrop-filter:/);
     expect(homeMobileCompactSidebarBlock).not.toMatch(/border-right:/);
     expect(homeMobileCompactSidebarBlock).toMatch(
-      /box-shadow:\s*0 24px 72px rgba\(32,\s*33,\s*36,\s*0\.28\);/,
+      /box-shadow:\s*0 28px 80px rgba\(32,\s*33,\s*36,\s*0\.24\),[\s\S]*inset -1px 0 0 rgba\(255,\s*255,\s*255,\s*0\.58\);/,
     );
     expect(compactContainerSidebarBlock).toMatch(
-      /:global\(\.dark\) &[\s\S]*background:\s*var\(--surface-elevated\);/,
+      /:global\(\.dark\) &[\s\S]*background:\s*rgba\(22,\s*24,\s*29,\s*0\.72\);/,
     );
     expect(compactContainerSidebarBlock).toMatch(
-      /:global\(\.dark\) &[\s\S]*border-right:\s*var\(--border-in-light\);/,
+      /:global\(\.dark\) &[\s\S]*border-right:\s*1px solid rgba\(232,\s*234,\s*237,\s*0\.12\);/,
+    );
+    expect(compactContainerSidebarBlock).toMatch(
+      /:global\(\.dark\) &[\s\S]*box-shadow:\s*0 28px 80px rgba\(0,\s*0,\s*0,\s*0\.52\),[\s\S]*inset -1px 0 0 rgba\(255,\s*255,\s*255,\s*0\.08\);/,
     );
     expect(compactSidebarBackdropBlock).toMatch(
       /backdrop-filter:\s*blur\(8px\) saturate\(135%\);/,

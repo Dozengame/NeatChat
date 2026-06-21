@@ -5704,3 +5704,53 @@ Known risks:
 
 - The copied-state variables use modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
 - Browser QA validated loaded CSSOM and shell layout rather than an actual rendered copied-state code block, because creating a code-block response would require seeding chat state or sending content and this slice intentionally avoided mutating message history or clipboard. Source-contract tests cover the rendered copied-state branch, aria feedback, and copy button state rules directly.
+
+## Iteration 2026-06-21 mobile-sidebar-glass-tone
+
+Result: passed.
+
+Target flow:
+
+- The compact/mobile sidebar drawer should read as a translucent Gemini-style glass layer instead of a solid elevated panel.
+- Opening the mobile chat-list drawer should preserve drawer width, focus handoff, dialog semantics, backdrop, no-horizontal-overflow behavior, and the existing route/focus interactions.
+- Light and explicit Dark style paths should share the same drawer contract: translucent surface, retained blur/saturation, edge definition, and tuned elevation.
+- Model config, model requests, account/secret/sync, backend/API, production config, deployment config, dependencies, persisted settings, and sidebar navigation behavior must remain unchanged.
+
+Design direction:
+
+- Continue handoff R5 by softening the mobile drawer surface rather than adding decorative blobs, new imagery, or broad layout changes.
+- Light theme uses `rgba(249, 251, 253, 0.78)` over the existing `blur(24px) saturate(185%)`, with a softer outer shadow and a subtle white inset edge to make the drawer feel layered over chat content.
+- Dark theme uses `rgba(22, 24, 29, 0.72)`, a low-opacity light border, and a darker elevation with a restrained inset highlight.
+- The mobile `max-width: 767px` override keeps dimensions and transitions intact and only mirrors the new elevation, avoiding duplicate background/backdrop/border definitions.
+
+Scope:
+
+- `app/components/home.module.scss`: changed only compact/mobile sidebar drawer light/dark background, dark border, and drawer shadow/inset edge; preserved width, offset, z-index, blur, transition, `@starting-style`, backdrop, focus handling, and route behavior.
+- `test/gemini-visual-migration.test.ts`: updated the existing Gemini visual migration contract to require the new translucent light/dark drawer surface, tuned shadow, dark border, and mobile override behavior while continuing to forbid gradient/background-blend additions in the drawer.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, routes, stores, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, deploy files, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="Gemini-style empty state"` failed first as expected because `.compact-container .sidebar` still used `background: var(--surface-elevated);` and the old shadow contract.
+- After implementation, the focused Gemini visual migration shell contract passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was started at `http://localhost:3001/#/chat` for QA.
+- Desktop `1439x1024`: chat mounted, sidebar baseline remained present, horizontal overflow was `0`, and drawer background/backdrop-filter stayed on the desktop sidebar path.
+- Mobile `390x844`: the unique `data-mobile-sidebar-trigger` opened the drawer; computed drawer state was `display: flex`, `left: 0px`, `role="dialog"`, `aria-modal="true"`, focus moved to `#mobile-sidebar-drawer`, app body suppression was active, horizontal overflow was `0`, console warn/error logs were `0`, and computed style matched `rgba(249, 251, 253, 0.78)`, `blur(24px) saturate(1.85)`, the tuned border, and the new outer-plus-inset shadow.
+- Narrow `320x740`: the drawer opened at `266px` wide, matching `calc(100vw - 54px)`, retained the same glass background/backdrop/shadow contract, and horizontal overflow was `0`.
+- Explicit Dark and Auto dark paths were validated by source-contract tests rather than mutating the user's persisted theme.
+- Browser screenshot capture failed twice with a local `Page.captureScreenshot` timeout. This slice used DOM, computed style, focus, ARIA, overflow, console, and source-contract evidence instead of screenshot evidence.
+
+Review:
+
+- Read-only subagent review found no blocking issues.
+- The reviewer confirmed the current diff only touched `app/components/home.module.scss` and `test/gemini-visual-migration.test.ts`, the test changes matched the SCSS changes, `git diff --check` was clean, and the slice did not touch model config, account/secret/sync, production/deployment config, backend logic, or dependencies.
+- Main-thread boundary review verified the current diff remains limited to `home.module.scss`, `gemini-visual-migration.test.ts`, and this QA record, with no diff in TypeScript component logic, stores, config, API/backend, route constants, deployment files, dependency files, send path, model request paths, or account/sync logic.
+
+Known risks:
+
+- Screenshot evidence is missing for this slice because the Browser screenshot API timed out on the local dev page; runtime DOM/CSS evidence and source-contract tests still cover the targeted behavior.
+- The visual balance of dark-mode opacity was verified through source contracts, not by changing persisted theme settings in Browser. If a later slice intentionally covers theme switching, add a dedicated dark-mode visual QA pass.
