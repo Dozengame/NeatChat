@@ -5444,3 +5444,52 @@ Known risks:
 
 - The token metadata chip tones use modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
 - Browser QA validated loaded CSSOM and shell layout, not an actual assistant response containing a live token metadata chip, because seeding model/chat content would cross this slice's read-only runtime boundary. Render/source-contract tests cover the target Markdown stylesheet and token metadata behavior directly.
+
+## Iteration 2026-06-21 image-editor-control-tone
+
+Result: passed.
+
+Target flow:
+
+- Image editor drawing tools, brush-size controls, and color swatches should keep the existing toolbar roles, group labels, `aria-pressed` selected states, tool dimensions, focus rings, mobile wrapping, and reduced-motion behavior.
+- Selected tool/size and selected color swatch tones should use local Gemini-style variables instead of legacy hardcoded blue values.
+- Light and Dark theme selected states should remain readable while sharing the same variable contract, so the control family feels aligned with the rest of the UI tokenization work.
+- Canvas drawing, eraser behavior, brush size switching, undo/redo, save/cancel, edited image output, upload parsing, model calls, and message state must remain unchanged.
+- Model config semantics, message streaming, account/secret/sync, backend/API, production config, deployment config, upload parsing, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Continue the multimodal polish track: the image editor is a high-touch editing surface, so selected controls should feel like part of the same primary/surface token system instead of isolated old-blue patches.
+- Light theme defines selected button background, border, foreground, inset shadow, swatch ring, and swatch shadow from `--primary`.
+- Dark theme overrides the same local variables under `:global(.dark) .image-editor-container`, mixing `--primary` with readable dark theme text/surface tokens where needed.
+- This slice intentionally avoids changing React component logic, canvas drawing behavior, image processing, save flow, network/model behavior, or persisted state.
+
+Scope:
+
+- `app/components/image-editor.module.scss`: added local selected-state variables on `.image-editor-container`, added Dark overrides on `:global(.dark) .image-editor-container`, and changed selected tool/size buttons plus selected color swatches to consume those variables.
+- `test/gemini-visual-migration.test.ts`: strengthened the image editor visual contract to lock Light/Dark selected variables, selected control consumers, selected swatch consumers, and absence of legacy target blue paint in the image editor stylesheet.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, image editor canvas behavior, upload parser, stores, model config, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="image editor controls"` failed first as expected because the new image editor selected-state variables were missing and selected controls still used hardcoded legacy blue paint.
+- After implementation, the focused image editor visual contract passed.
+- Final verification before commit: `yarn lint`, `npx tsc --noEmit --pretty false`, `git diff --check`, `yarn jest test/gemini-visual-migration.test.ts --runInBand`, and `yarn build` passed.
+
+Runtime QA:
+
+- in-app Browser plugin could not start in this sandboxed turn. The Node browser bridge failed before documentation/bootstrap with `sandbox-state-meta: missing field sandboxPolicy`; therefore no Browser CSSOM or screenshot claim is made for this slice.
+- Local dev server reachability was still checked as a fallback: with approved localhost access, `curl -I http://localhost:3000/` returned `HTTP/1.1 200 OK`.
+- Runtime visual confidence for this slice comes from the source-contract test over the ImageEditor stylesheet plus localhost reachability, not from a fresh Browser-rendered image editor interaction.
+
+Review:
+
+- Read-only subagent review found no Critical, Important, or Minor issues and gave a submit-ready verdict.
+- The reviewer confirmed the local variable scope and Dark inheritance path are correct, and that the diff does not cross model config, account/secret, sync, production/deployment, or backend boundaries.
+- Main-thread review verified the current diff remains limited to `image-editor.module.scss`, `gemini-visual-migration.test.ts`, and this QA record, with no diff in `image-editor.tsx`, `chat.tsx`, stores, config, API/backend, route constants, deployment files, dependency files, or model request paths.
+
+Known risks:
+
+- Browser MCP was unavailable in this turn, so this slice lacks a fresh interactive Browser CSSOM/screenshot pass. If the browser bridge recovers, a follow-up QA-only check should validate selected image editor controls in Light/Dark at desktop and mobile sizes.
+- The selected-state tones use modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
