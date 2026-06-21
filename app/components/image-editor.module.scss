@@ -1,4 +1,31 @@
 .image-editor-container {
+  --image-editor-panel-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --image-editor-panel-shadow-color: color-mix(
+    in srgb,
+    rgb(0, 0, 0) 10%,
+    transparent
+  );
+  --image-editor-panel-inset-color: color-mix(
+    in srgb,
+    var(--surface-elevated) 60%,
+    transparent
+  );
+  --image-editor-panel-radius: 8px;
+  --image-editor-control-radius: 8px;
+  --image-editor-control-hover-background: color-mix(
+    in srgb,
+    var(--black) 6%,
+    transparent
+  );
+  --image-editor-control-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
   --image-editor-option-selected-background: color-mix(
     in srgb,
     var(--primary) 12%,
@@ -19,6 +46,16 @@
   --image-editor-swatch-selected-shadow-color: color-mix(
     in srgb,
     var(--primary) 22%,
+    transparent
+  );
+  --image-editor-swatch-border-color: color-mix(
+    in srgb,
+    var(--surface-elevated) 92%,
+    transparent
+  );
+  --image-editor-swatch-rest-ring-color: color-mix(
+    in srgb,
+    var(--black-50) 22%,
     transparent
   );
 
@@ -42,10 +79,10 @@
   width: 100%;
   min-width: 0;
   padding: 12px;
-  border: var(--border-in-light);
-  border-radius: 18px;
+  border: 1px solid var(--image-editor-panel-border-color);
+  border-radius: var(--image-editor-panel-radius);
   background: var(--surface-elevated);
-  box-shadow: 0 12px 32px rgba(60, 64, 67, 0.1);
+  box-shadow: 0 12px 32px var(--image-editor-panel-shadow-color);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
 }
@@ -70,9 +107,9 @@
   align-items: center;
   justify-content: center;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: var(--image-editor-control-radius);
   background: transparent;
-  color: rgba(60, 64, 67, 0.92);
+  color: var(--image-editor-control-color);
   cursor: pointer;
   font-family: inherit;
   font-size: 17px;
@@ -86,7 +123,7 @@
     box-shadow 0.16s ease;
 
   &:hover {
-    background: rgba(60, 64, 67, 0.06);
+    background: var(--image-editor-control-hover-background);
   }
 
   &.selected,
@@ -110,9 +147,9 @@
   box-sizing: border-box;
   width: 30px;
   height: 30px;
-  border: 2px solid rgba(255, 255, 255, 0.92);
+  border: 2px solid var(--image-editor-swatch-border-color);
   border-radius: 999px;
-  box-shadow: 0 0 0 1px rgba(95, 99, 104, 0.22);
+  box-shadow: 0 0 0 1px var(--image-editor-swatch-rest-ring-color);
   cursor: pointer;
   outline: none;
   transition:
@@ -156,10 +193,10 @@
   min-width: 0;
   overflow: auto;
   max-height: 60vh;
-  border: var(--border-in-light);
-  border-radius: 18px;
+  border: 1px solid var(--image-editor-panel-border-color);
+  border-radius: var(--image-editor-panel-radius);
   background: var(--surface-elevated);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.48);
+  box-shadow: inset 0 0 0 1px var(--image-editor-panel-inset-color);
 }
 
 .editor-canvas {
@@ -170,15 +207,32 @@
   cursor: crosshair;
 }
 
-:global(.dark) .tools-container {
-  border-color: rgba(232, 234, 237, 0.1);
-  background:
-    linear-gradient(145deg, rgba(48, 49, 52, 0.72), rgba(32, 33, 36, 0.62)),
-    rgba(32, 33, 36, 0.72);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
-}
-
 :global(.dark) .image-editor-container {
+  --image-editor-panel-border-color: color-mix(
+    in srgb,
+    var(--black) 12%,
+    transparent
+  );
+  --image-editor-panel-shadow-color: color-mix(
+    in srgb,
+    rgb(0, 0, 0) 28%,
+    transparent
+  );
+  --image-editor-panel-inset-color: color-mix(
+    in srgb,
+    var(--black) 6%,
+    transparent
+  );
+  --image-editor-control-hover-background: color-mix(
+    in srgb,
+    var(--black) 8%,
+    transparent
+  );
+  --image-editor-control-color: color-mix(
+    in srgb,
+    var(--black) 88%,
+    transparent
+  );
   --image-editor-option-selected-background: color-mix(
     in srgb,
     var(--primary) 14%,
@@ -209,42 +263,86 @@
     var(--surface) 42%,
     transparent
   );
+  --image-editor-swatch-border-color: color-mix(
+    in srgb,
+    var(--surface) 92%,
+    transparent
+  );
+  --image-editor-swatch-rest-ring-color: color-mix(
+    in srgb,
+    var(--black) 20%,
+    transparent
+  );
 }
 
-:global(.dark) .tool-option,
-:global(.dark) .size-option {
-  color: rgba(232, 234, 237, 0.88);
-
-  &:hover {
-    background: rgba(232, 234, 237, 0.08);
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .image-editor-container {
+    --image-editor-panel-border-color: color-mix(
+      in srgb,
+      var(--black) 12%,
+      transparent
+    );
+    --image-editor-panel-shadow-color: color-mix(
+      in srgb,
+      rgb(0, 0, 0) 28%,
+      transparent
+    );
+    --image-editor-panel-inset-color: color-mix(
+      in srgb,
+      var(--black) 6%,
+      transparent
+    );
+    --image-editor-control-hover-background: color-mix(
+      in srgb,
+      var(--black) 8%,
+      transparent
+    );
+    --image-editor-control-color: color-mix(
+      in srgb,
+      var(--black) 88%,
+      transparent
+    );
+    --image-editor-option-selected-background: color-mix(
+      in srgb,
+      var(--primary) 14%,
+      transparent
+    );
+    --image-editor-option-selected-border-color: color-mix(
+      in srgb,
+      var(--primary) 28%,
+      transparent
+    );
+    --image-editor-option-selected-color: color-mix(
+      in srgb,
+      var(--primary) 46%,
+      var(--black)
+    );
+    --image-editor-option-selected-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 10%,
+      transparent
+    );
+    --image-editor-swatch-selected-ring-color: color-mix(
+      in srgb,
+      var(--primary) 46%,
+      var(--black)
+    );
+    --image-editor-swatch-selected-shadow-color: color-mix(
+      in srgb,
+      var(--surface) 42%,
+      transparent
+    );
+    --image-editor-swatch-border-color: color-mix(
+      in srgb,
+      var(--surface) 92%,
+      transparent
+    );
+    --image-editor-swatch-rest-ring-color: color-mix(
+      in srgb,
+      var(--black) 20%,
+      transparent
+    );
   }
-
-  &.selected,
-  &[aria-pressed="true"] {
-    background: var(--image-editor-option-selected-background);
-    border-color: var(--image-editor-option-selected-border-color);
-    color: var(--image-editor-option-selected-color);
-    box-shadow: inset 0 0 0 1px
-      var(--image-editor-option-selected-shadow-color);
-  }
-}
-
-:global(.dark) .color-option {
-  border-color: rgba(32, 33, 36, 0.92);
-  box-shadow: 0 0 0 1px rgba(232, 234, 237, 0.2);
-
-  &.selected,
-  &[aria-pressed="true"] {
-    box-shadow:
-      0 0 0 2px var(--image-editor-swatch-selected-ring-color),
-      0 6px 14px var(--image-editor-swatch-selected-shadow-color);
-  }
-}
-
-:global(.dark) .canvas-container {
-  border-color: rgba(232, 234, 237, 0.1);
-  background: rgba(32, 33, 36, 0.72);
-  box-shadow: inset 0 0 0 1px rgba(232, 234, 237, 0.06);
 }
 
 @media screen and (max-width: 600px) {
@@ -257,7 +355,7 @@
     align-items: stretch;
     padding: 10px;
     gap: 10px;
-    border-radius: 16px;
+    border-radius: var(--image-editor-panel-radius);
   }
 
   .tools-selector,
@@ -279,7 +377,7 @@
 
   .canvas-container {
     max-height: 52vh;
-    border-radius: 16px;
+    border-radius: var(--image-editor-panel-radius);
   }
 }
 

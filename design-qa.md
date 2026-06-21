@@ -7137,3 +7137,57 @@ Known risks:
 - `IconButton` is a shared primitive, so visual changes fan out to Auth, Chat, settings, export, MCP, and modal controls. The slice intentionally changes only geometry/bordered paint, not TSX behavior.
 - Live Browser computed-style verification may be limited by the local access-code gate. The slice will not enter credentials or change auth/config to bypass that gate.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-22 image-editor-control-surface-tone
+
+Result: automated checks passed; live target QA blocked by access-code gate.
+
+Target flow:
+
+- Image editor toolbar, drawing controls, color swatches, brush size controls, and canvas shell should read as one Gemini-style utility surface: quiet tokenized panels, compact 8px controls, restrained hover/focus treatment, and explicit Dark/Auto dark safety.
+- Canvas drawing behavior, undo/redo, save/cancel, tool selection, color/brush selection, Modal behavior, model config, account/secret/sync/backend/deploy behavior, dependencies, and production config must remain unchanged.
+- The slice should refine only `image-editor` visual styling and source-level visual contract coverage.
+
+Design direction:
+
+- Creative Production style intake selected a quiet utility-editor direction: tokenized elevated toolbar/canvas panels, 8px panel/control geometry, neutral hover wash, subtle swatch rings, explicit Dark/Auto dark tokens, and no decorative gradient treatment.
+- No generated raster design was used because this is a small UI-system repair inside the existing Gemini migration language. The design spec is the local token contract in `image-editor.module.scss` plus this QA record.
+
+Scope:
+
+- `app/components/image-editor.module.scss`: added local panel, control, hover, swatch, inset, and Dark/Auto dark tokens; replaced old `border-in-light`, hardcoded rgba panel paint, and 18px/16px/12px geometry with tokenized 8px utility-editor styling.
+- `test/gemini-visual-migration.test.ts`: strengthened the existing image-editor contract to lock the new local tokens, token consumers, Dark/Auto dark safety, swatch treatment, reduced-motion coverage, and removal of old panel/control paint in the target scope.
+- `design-qa.md`: records this QA slice and review outcome.
+- No ImageEditor TSX behavior, drawing logic, Modal actions, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, package files, or lockfiles were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="image editor controls"` failed first as expected because `.image-editor-container` lacked local panel/control tokens and the toolbar/canvas still used old surface paint.
+- After implementing the image-editor surface tokens and consumers, the focused contract passed.
+- `git diff --check` passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `yarn build` passed with the existing Next warning that Edge runtime disables static generation for that page.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser opened `http://localhost:3001/`.
+- Desktop default viewport `1280x720` reached the local access-code gate with title `NeatChat`, gate copy `需要密码`, `管理员开启了密码验证，请在下方填入访问码`, password placeholder `在此处填写访问码`, and action `确认`.
+- Desktop measured horizontal overflow `0`, no framework overlay, no console warn/error logs, and visible Auth gate buttons retained the current 8px utility radius.
+- Mobile viewport `390x844` reached the same local access-code gate, measured horizontal overflow `0`, no framework overlay, no console warn/error logs, and visible Auth gate buttons retained the current 8px utility radius.
+- The actual Image Editor and its CSS chunk were not rendered because the local gate blocked access before authenticated app surfaces loaded.
+- No real access code was entered and no auth/config bypass was attempted. Confirm/submit, drawing, undo/redo, save/cancel, color/brush/tool selection, model/API request, account/key/sync/import/export/reset/clear, or persisted config action was not performed.
+
+Review:
+
+- Initial read-only review found two token-bypass issues before finalizing: Auto dark tool/size buttons could keep hardcoded low-contrast text, and explicit Dark color swatches could bypass the new swatch rest-state tokens.
+- Both findings were fixed before commit by adding `--image-editor-control-color`, consuming it in `.tool-option` / `.size-option`, deleting dark-only tool/color override blocks, and strengthening the source-level test to reject those dark-only bypass selectors.
+- Follow-up read-only review found no remaining P0/P1/P2 and confirmed the Browser QA boundary is not overstated.
+
+Known risks:
+
+- Live Browser computed-style verification for the actual Image Editor may be blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
+- Image editing actions such as save/cancel, undo/redo, drawing, color selection, and brush selection may mutate local UI state or generated image data; runtime QA should avoid destructive or persisted actions unless the target can be reached safely.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
