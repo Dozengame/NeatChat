@@ -5956,6 +5956,106 @@ describe("Gemini visual migration shell", () => {
     expect(sdPanelFieldToneScope).not.toContain("border-radius: 10px");
   });
 
+  test("keeps SD output thumbnails aligned with Gemini multimodal surfaces", () => {
+    const sd = read("app/components/sd/sd.tsx");
+    const sdStyles = read("app/components/sd/sd.module.scss");
+    const listBlock = readCssBlock(sdStyles, ".sd-img-list");
+    const listRootDeclarations = readRootDeclarations(listBlock);
+    const itemBlock = readCssBlock(listBlock, ".sd-img-item");
+    const placeholderBlock = readCssBlock(itemBlock, ".pre-img");
+    const thumbnailBlock = readCssBlock(itemBlock, ".img");
+    const thumbnailButtonBlock = readCssBlock(itemBlock, "button.img");
+    const thumbnailButtonFocusBlock = readCssBlock(
+      thumbnailButtonBlock,
+      "&:focus-visible",
+    );
+    const darkListBlock = readCssBlock(
+      sdStyles,
+      ":global(.dark) .sd-img-list",
+    );
+    const autoDarkSelector = ":global(body:not(.light)) .sd-img-list";
+    const autoDarkSelectorIndex = sdStyles.indexOf(autoDarkSelector);
+    const autoDarkMediaIndex = sdStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkSelectorIndex,
+    );
+    const autoDarkListBlock = readCssBlock(
+      sdStyles.slice(autoDarkMediaIndex),
+      autoDarkSelector,
+    );
+    const sdOutputToneScope = [
+      listRootDeclarations,
+      placeholderBlock,
+      thumbnailBlock,
+      thumbnailButtonBlock,
+      thumbnailButtonFocusBlock,
+      darkListBlock,
+      autoDarkListBlock,
+    ].join("\n");
+
+    expect(sd).toContain('className={styles["sd-img-list"]}');
+    expect(sd).toContain('className={styles["sd-img-item"]}');
+    expect(sd).toContain('className={styles["pre-img"]}');
+    expect(sd).toContain('className={styles["img"]}');
+    expect(sd).toContain("showImageModal(");
+    expect(sd).toContain("copyToClipboard(");
+    expect(sd).toContain("getMessageTextContent({");
+    expect(sd).toContain("removeImage(item.img_data)");
+    expect(listRootDeclarations).toMatch(/--sd-output-thumb-radius:\s*8px;/);
+    expect(listRootDeclarations).toMatch(
+      /--sd-output-thumb-background:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 82%,\s*transparent\);/,
+    );
+    expect(listRootDeclarations).toMatch(
+      /--sd-output-thumb-border-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 12%,\s*transparent\);/,
+    );
+    expect(placeholderBlock).toMatch(/width:\s*130px;/);
+    expect(placeholderBlock).toMatch(/height:\s*130px;/);
+    expect(placeholderBlock).toMatch(
+      /border-radius:\s*var\(--sd-output-thumb-radius\);/,
+    );
+    expect(placeholderBlock).toMatch(
+      /background:\s*var\(--sd-output-thumb-background\);/,
+    );
+    expect(placeholderBlock).toMatch(
+      /box-shadow:\s*inset 0 0 0 1px var\(--sd-output-thumb-border-color\);/,
+    );
+    expect(thumbnailBlock).toMatch(/width:\s*130px;/);
+    expect(thumbnailBlock).toMatch(/height:\s*130px;/);
+    expect(thumbnailBlock).toMatch(
+      /border-radius:\s*var\(--sd-output-thumb-radius\);/,
+    );
+    expect(thumbnailBlock).toMatch(
+      /transition:[\s\S]*opacity 0\.18s ease,[\s\S]*transform 0\.18s ease,[\s\S]*box-shadow 0\.18s ease;/,
+    );
+    expect(thumbnailButtonBlock).toMatch(/box-shadow:\s*0 10px 28px/);
+    expect(thumbnailButtonBlock).toMatch(/&:hover[\s\S]*opacity:\s*0\.86;/);
+    expect(thumbnailButtonBlock).toMatch(
+      /&:hover[\s\S]*transform:\s*translateY\(-1px\);/,
+    );
+    expect(thumbnailButtonFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(thumbnailButtonFocusBlock).toMatch(/outline-offset:\s*2px;/);
+    expect(thumbnailButtonFocusBlock).toMatch(
+      /box-shadow:\s*var\(--focus-ring-shadow\),[\s\S]*0 10px 28px var\(--sd-output-thumb-shadow-color\);/,
+    );
+    expect(darkListBlock).toMatch(
+      /--sd-output-thumb-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 78%,\s*transparent\);/,
+    );
+    expect(darkListBlock).toMatch(
+      /--sd-output-thumb-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
+    );
+    expect(autoDarkSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkListBlock).toMatch(
+      /--sd-output-thumb-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 78%,\s*transparent\);/,
+    );
+    expect(autoDarkListBlock).toMatch(
+      /--sd-output-thumb-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
+    );
+    expect(sdOutputToneScope).not.toContain("background-color: var(--second)");
+    expect(sdOutputToneScope).not.toContain("border-radius: 10px");
+    expect(sdOutputToneScope).not.toContain("transition: all .3s");
+  });
+
   test("keeps New Chat aligned with Gemini start surfaces", () => {
     const newChat = read("app/components/new-chat.tsx");
     const newChatStyles = read("app/components/new-chat.module.scss");
