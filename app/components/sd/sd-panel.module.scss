@@ -1,4 +1,11 @@
 .ctrl-param-item {
+  --sd-panel-field-radius: 8px;
+  --sd-panel-field-border-color: color-mix(in srgb, var(--black-50) 12%, transparent);
+  --sd-panel-field-background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
+  --sd-panel-field-color: var(--black);
+  --sd-panel-field-focus-border-color: color-mix(in srgb, var(--primary) 42%, transparent);
+  --sd-panel-field-focus-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent);
+
   display: flex;
   justify-content: space-between;
   min-height: 40px;
@@ -24,15 +31,49 @@
   }
   textarea {
     appearance: none;
-    border-radius: 10px;
-    border: var(--border-in-light);
+    border-radius: var(--sd-panel-field-radius);
+    border: 1px solid var(--sd-panel-field-border-color);
     min-height: 36px;
     box-sizing: border-box;
-    background: var(--white);
-    color: var(--black);
+    background: var(--sd-panel-field-background);
+    color: var(--sd-panel-field-color);
     padding: 0 10px;
     max-width: 50%;
     font-family: inherit;
+    transition:
+      border-color 0.18s ease,
+      box-shadow 0.18s ease,
+      background 0.18s ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--sd-panel-field-focus-border-color);
+      box-shadow: var(--sd-panel-field-focus-shadow);
+    }
+
+    &:focus-visible {
+      outline: none;
+      border-color: var(--sd-panel-field-focus-border-color);
+      box-shadow: var(--sd-panel-field-focus-shadow);
+    }
+  }
+}
+
+:global(.dark) .ctrl-param-item {
+  --sd-panel-field-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --sd-panel-field-background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
+  --sd-panel-field-color: var(--black);
+  --sd-panel-field-focus-border-color: color-mix(in srgb, var(--primary) 38%, transparent);
+  --sd-panel-field-focus-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .ctrl-param-item {
+    --sd-panel-field-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+    --sd-panel-field-background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
+    --sd-panel-field-color: var(--black);
+    --sd-panel-field-focus-border-color: color-mix(in srgb, var(--primary) 38%, transparent);
+    --sd-panel-field-focus-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent);
   }
 }
 

@@ -5862,6 +5862,100 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps SD panel textareas aligned with Gemini utility fields", () => {
+    const controlParam = read("app/components/sd/control-param.tsx");
+    const controlParamItem = read("app/components/sd/control-param-item.tsx");
+    const sdPanelStyles = read("app/components/sd/sd-panel.module.scss");
+    const rootBlock = readCssBlock(sdPanelStyles, ".ctrl-param-item");
+    const rootDeclarations = readRootDeclarations(rootBlock);
+    const textareaBlock = readCssBlock(rootBlock, "textarea");
+    const textareaFocusBlock = readCssBlock(textareaBlock, "&:focus-visible");
+    const darkRootBlock = readCssBlock(
+      sdPanelStyles,
+      ":global(.dark) .ctrl-param-item",
+    );
+    const autoDarkSelector = ":global(body:not(.light)) .ctrl-param-item";
+    const autoDarkSelectorIndex = sdPanelStyles.indexOf(autoDarkSelector);
+    const autoDarkMediaIndex = sdPanelStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkSelectorIndex,
+    );
+    const autoDarkRootBlock = readCssBlock(
+      sdPanelStyles.slice(autoDarkMediaIndex),
+      autoDarkSelector,
+    );
+    const sdPanelFieldToneScope = [
+      rootDeclarations,
+      textareaBlock,
+      textareaFocusBlock,
+      darkRootBlock,
+      autoDarkRootBlock,
+    ].join("\n");
+
+    expect(controlParam).toContain('case "textarea":');
+    expect(controlParam).toContain("<textarea");
+    expect(controlParam).toContain("aria-label={item.name}");
+    expect(controlParam).toContain("rows={item.rows || 3}");
+    expect(controlParam).toContain("placeholder={item.placeholder}");
+    expect(controlParam).toContain(
+      "props.onChange(item.value, e.currentTarget.value);",
+    );
+    expect(controlParam).toContain("value={props.data[item.value]}");
+    expect(controlParamItem).toContain('styles["ctrl-param-item"]');
+    expect(rootDeclarations).toMatch(/--sd-panel-field-radius:\s*8px;/);
+    expect(rootDeclarations).toMatch(
+      /--sd-panel-field-border-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 12%,\s*transparent\);/,
+    );
+    expect(rootDeclarations).toMatch(
+      /--sd-panel-field-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 92%,\s*transparent\);/,
+    );
+    expect(rootDeclarations).toMatch(
+      /--sd-panel-field-focus-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 42%,\s*transparent\);/,
+    );
+    expect(rootDeclarations).toMatch(
+      /--sd-panel-field-focus-shadow:\s*0 0 0 3px color-mix\(in srgb,\s*var\(--primary\) 10%,\s*transparent\);/,
+    );
+    expect(textareaBlock).toMatch(/appearance:\s*none;/);
+    expect(textareaBlock).toMatch(
+      /border-radius:\s*var\(--sd-panel-field-radius\);/,
+    );
+    expect(textareaBlock).toMatch(
+      /border:\s*1px solid var\(--sd-panel-field-border-color\);/,
+    );
+    expect(textareaBlock).toMatch(
+      /background:\s*var\(--sd-panel-field-background\);/,
+    );
+    expect(textareaBlock).toMatch(/color:\s*var\(--sd-panel-field-color\);/);
+    expect(textareaBlock).toMatch(/font-family:\s*inherit;/);
+    expect(textareaBlock).toMatch(
+      /transition:[\s\S]*border-color 0\.18s ease,[\s\S]*box-shadow 0\.18s ease,[\s\S]*background 0\.18s ease;/,
+    );
+    expect(textareaFocusBlock).toMatch(/outline:\s*none;/);
+    expect(textareaFocusBlock).toMatch(
+      /border-color:\s*var\(--sd-panel-field-focus-border-color\);/,
+    );
+    expect(textareaFocusBlock).toMatch(
+      /box-shadow:\s*var\(--sd-panel-field-focus-shadow\);/,
+    );
+    expect(darkRootBlock).toMatch(
+      /--sd-panel-field-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
+    );
+    expect(darkRootBlock).toMatch(
+      /--sd-panel-field-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\);/,
+    );
+    expect(autoDarkSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkRootBlock).toMatch(
+      /--sd-panel-field-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
+    );
+    expect(autoDarkRootBlock).toMatch(
+      /--sd-panel-field-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\);/,
+    );
+    expect(sdPanelFieldToneScope).not.toContain("border: var(--border-in-light)");
+    expect(sdPanelFieldToneScope).not.toContain("background: var(--white)");
+    expect(sdPanelFieldToneScope).not.toContain("border-radius: 10px");
+  });
+
   test("keeps New Chat aligned with Gemini start surfaces", () => {
     const newChat = read("app/components/new-chat.tsx");
     const newChatStyles = read("app/components/new-chat.module.scss");
