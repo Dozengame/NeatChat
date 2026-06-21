@@ -2634,6 +2634,8 @@ describe("Gemini visual migration shell", () => {
       chatStyles.indexOf("@media (prefers-reduced-motion: reduce)"),
     );
     const clearContextBlock = readCssBlock(chatStyles, ".clear-context");
+    const clearContextRootDeclarations =
+      readRootDeclarations(clearContextBlock);
     const clearContextStatusBlock = readCssBlock(
       chatStyles,
       ".clear-context-status",
@@ -2654,6 +2656,19 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ":global(.dark) .clear-context",
     );
+    const autoDarkClearContextSelector =
+      ":global(body:not(.light)) .clear-context";
+    const autoDarkClearContextSelectorIndex = chatStyles.indexOf(
+      autoDarkClearContextSelector,
+    );
+    const autoDarkClearContextMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkClearContextSelectorIndex,
+    );
+    const autoDarkClearContextBlock = readCssBlock(
+      chatStyles.slice(autoDarkClearContextMediaIndex),
+      autoDarkClearContextSelector,
+    );
     const mobileClearContextBlock = readCssBlock(
       mobileStyles,
       ".clear-context",
@@ -2662,6 +2677,16 @@ describe("Gemini visual migration shell", () => {
       narrowMobileStyles,
       ".clear-context",
     );
+    const clearContextToneScope = [
+      clearContextRootDeclarations,
+      clearContextBlock,
+      clearContextMarkBlock,
+      clearContextRevertBlock,
+      darkClearContextBlock,
+      autoDarkClearContextBlock,
+    ].join("\n");
+    const legacyClearContextPaint =
+      /#8ab4f8|rgba\((?:248,\s*251,\s*255,\s*0\.78|241,\s*246,\s*255,\s*0\.94|248,\s*250,\s*255,\s*0\.9|60,\s*64,\s*67,\s*(?:0\.05|0\.08|0\.1|0\.78)|66,\s*133,\s*244,\s*(?:0\.08|0\.1|0\.24|0\.72)|25,\s*103,\s*210,\s*0\.08|32,\s*33,\s*36,\s*(?:0\.72|0\.88)|40,\s*43,\s*48,\s*0\.92|232,\s*234,\s*237,\s*(?:0\.1|0\.72)|138,\s*180,\s*248,\s*(?:0\.08|0\.12|0\.24)|0,\s*0,\s*0,\s*(?:0\.16|0\.22|0\.24))\)/;
 
     expect(chat).toContain("React.forwardRef<HTMLButtonElement>");
     expect(chat).toContain("function ClearContextDivider(_, ref)");
@@ -2742,15 +2767,42 @@ describe("Gemini visual migration shell", () => {
     expect(clearContextBlock).toMatch(/gap:\s*10px;/);
     expect(clearContextBlock).toMatch(/border-radius:\s*999px;/);
     expect(clearContextBlock).toMatch(/scroll-margin-bottom:\s*96px;/);
-    expect(clearContextBlock).toMatch(
-      /border:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.1\);/,
+    expect(clearContextRootDeclarations).toMatch(
+      /--clear-context-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 78%,\s*transparent\);/,
+    );
+    expect(clearContextRootDeclarations).toMatch(
+      /--clear-context-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 78%,\s*transparent\);/,
+    );
+    expect(clearContextRootDeclarations).toMatch(
+      /--clear-context-border-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 16%,\s*transparent\);/,
+    );
+    expect(clearContextRootDeclarations).toMatch(
+      /--clear-context-hover-background:\s*color-mix\(in srgb,\s*var\(--primary\) 8%,\s*var\(--surface-elevated\)\);/,
     );
     expect(clearContextBlock).toMatch(
-      /background:\s*rgba\(248,\s*251,\s*255,\s*0\.78\);/,
+      /border:\s*1px solid var\(--clear-context-border-color\);/,
+    );
+    expect(clearContextBlock).toMatch(
+      /background:\s*var\(--clear-context-background\);/,
+    );
+    expect(clearContextBlock).toMatch(
+      /color:\s*var\(--clear-context-color\);/,
+    );
+    expect(clearContextBlock).toMatch(
+      /box-shadow:[\s\S]*0 10px 24px var\(--clear-context-soft-shadow-color\)/,
+    );
+    expect(clearContextBlock).toMatch(
+      /&:hover,\s*&:focus-visible\s*\{[\s\S]*border-color:\s*var\(--clear-context-hover-border-color\);[\s\S]*background:\s*var\(--clear-context-hover-background\);[\s\S]*color:\s*var\(--clear-context-hover-color\);/,
+    );
+    expect(clearContextBlock).toMatch(
+      /&:hover,\s*&:focus-visible\s*\{[\s\S]*0 12px 28px var\(--clear-context-hover-shadow-color\)/,
     );
     expect(clearContextBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(clearContextBlock).toMatch(/&:focus-visible/);
     expect(clearContextBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(clearContextBlock).toMatch(
+      /&:focus-visible\s*\{[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 12px 28px var\(--clear-context-hover-shadow-color\)/,
+    );
     expect(clearContextBlock).not.toMatch(/border-top:/);
     expect(clearContextBlock).not.toMatch(/border-bottom:/);
     expect(clearContextBlock).not.toMatch(
@@ -2761,18 +2813,38 @@ describe("Gemini visual migration shell", () => {
     expect(clearContextMarkBlock).toMatch(/width:\s*6px;/);
     expect(clearContextMarkBlock).toMatch(/height:\s*6px;/);
     expect(clearContextMarkBlock).toMatch(/border-radius:\s*999px;/);
+    expect(clearContextMarkBlock).toMatch(
+      /background:\s*var\(--clear-context-mark-background\);/,
+    );
+    expect(clearContextMarkBlock).toMatch(
+      /box-shadow:\s*0 0 0 4px var\(--clear-context-mark-ring-color\);/,
+    );
     expect(clearContextTipsBlock).toMatch(/font-weight:\s*500;/);
     expect(clearContextTipsBlock).toMatch(/overflow-wrap:\s*anywhere;/);
-    expect(clearContextRevertBlock).toMatch(/color:\s*var\(--primary\);/);
+    expect(clearContextRevertBlock).toMatch(
+      /color:\s*var\(--clear-context-revert-color\);/,
+    );
+    expect(clearContextRevertBlock).toMatch(
+      /background:\s*var\(--clear-context-revert-background\);/,
+    );
     expect(clearContextRevertBlock).toMatch(/font-weight:\s*600;/);
     expect(clearContextRevertBlock).not.toMatch(/position:\s*absolute;/);
     expect(clearContextRevertBlock).not.toMatch(/opacity:\s*0;/);
     expect(darkClearContextBlock).toMatch(
-      /background:\s*rgba\(32,\s*33,\s*36,\s*0\.72\);/,
+      /--clear-context-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 72%,\s*transparent\);/,
     );
     expect(darkClearContextBlock).toMatch(
-      /border-color:\s*rgba\(232,\s*234,\s*237,\s*0\.1\);/,
+      /--clear-context-hover-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--surface\)\);/,
     );
+    expect(darkClearContextBlock).toMatch(
+      /--clear-context-revert-color:\s*color-mix\(in srgb,\s*var\(--primary\) 42%,\s*var\(--black\)\);/,
+    );
+    expect(autoDarkClearContextSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkClearContextMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkClearContextBlock).toMatch(
+      /--clear-context-hover-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--surface\)\);/,
+    );
+    expect(clearContextToneScope).not.toMatch(legacyClearContextPaint);
     expect(mobileClearContextBlock).toMatch(
       /width:\s*min\(100%,\s*calc\(100% - 24px\)\);/,
     );

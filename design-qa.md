@@ -5983,3 +5983,51 @@ Known risks:
 
 - Browser QA validates Prompt Toast through compiled CSSOM because the current empty-chat runtime state does not show the real toast without mutating app/session state. The source-level Jest contract covers structure, ARIA, reduced-motion, and scoped token usage.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-21 clear-context-token-surface
+
+Result: passed.
+
+Target flow:
+
+- Clear-context divider should read as the same Gemini-style reversible status chip across Light, explicit Dark, and Auto dark.
+- The chip background, border, text, hover/focus, marker, marker ring, revert affordance, and shadows should no longer carry isolated hardcoded light/dark/primary paint.
+- Clear/revert behavior, `clearContextIndex`, scroll reveal, focus ring, ARIA/title text, model config semantics, account/secret/sync, backend/API, production config, deployment config, dependencies, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected a quiet reversible status chip direction: theme-tokenized glass surface, soft primary marker, subtle elevation, stable pill geometry, no clear-context behavior change, no model/account/sync/backend/deploy changes, no new dependencies, and reduced-motion safe.
+- The slice keeps the existing compact pill geometry, revert affordance placement, focus ring, scroll margin, mobile/narrow-mobile sizing, and reduced-motion contract. Only the visual paint source moves into local tokens inherited by the existing chip children.
+
+Scope:
+
+- `app/components/chat.module.scss`: added local `--clear-context-*` tokens on `.clear-context`, moved base/hover/focus/mark/revert paint to token consumers, and replaced the old explicit Dark hardcoded paint with explicit Dark and Auto dark root token overrides.
+- `test/gemini-visual-migration.test.ts`: strengthened the existing clear-context contract to lock Light/Dark/Auto dark token declarations, base/hover/focus/mark/revert token consumers, focus ring preservation, mobile sizing, reduced-motion, and absence of old hardcoded clear-context paint in the scoped style surface.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, stores, clear/revert behavior, scroll reveal behavior, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, deploy files, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="clear-context divider"` failed first as expected because the clear-context root token declarations did not exist yet.
+- After implementation, the same focused visual migration contract passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser was used for this slice. No real access code, key, account, model/API request, upload, image-generation action, persisted production config, store mutation, session mutation, or QA-only DOM mutation was used.
+- Current empty-chat state does not naturally render clear-context divider because the real condition requires a clear-context session state. Runtime QA therefore validated the compiled clear-context CSSOM and surrounding chat shell layout without changing app state.
+- Desktop `1439x1024` Light: chat region, input panel, textarea, tool button, and send button were visible and inside the viewport; horizontal overflow was `0`; clear-context CSSOM contained the Light token, base consumer, hover consumer, focus ring, marker consumer, revert consumer, explicit Dark override, and Auto dark override; old clear-context paint matches were `0`; console error logs were `0`.
+- Mobile `390x844` Light: chat/input controls stayed inside viewport, horizontal overflow was `0`, clear-context token CSSOM checks passed, old clear-context paint matches were `0`, and console error logs were `0`.
+- Narrow `320x740` Light: chat/input controls stayed inside viewport, horizontal overflow was `0`, clear-context token CSSOM checks passed, old clear-context paint matches were `0`, and console error logs were `0`.
+
+Review:
+
+- Read-only sub-agent review found no blocking issues. It confirmed the diff is limited to `app/components/chat.module.scss`, `test/gemini-visual-migration.test.ts`, and this QA record; no TSX behavior, store, model config, account/secret/sync, backend/API, production/deployment config, or dependency changes were found.
+- The reviewer confirmed Light base tokens, explicit Dark, Auto dark, base/hover/focus-visible/marker/revert token consumers, focus ring, mobile/narrow sizing, and reduced-motion are preserved, with no clear/revert behavior, scroll reveal, or ARIA changes.
+- The reviewer noted the residual risks that Auto dark source checks are string-slice based, the legacy paint blacklist targets exact old values, and Browser QA validates compiled CSSOM rather than a rendered clear-context divider. Main-thread QA accepted those as non-blocking because this slice intentionally avoids session/store mutation.
+
+Known risks:
+
+- Browser QA validates clear-context through compiled CSSOM because the current empty-chat runtime state does not show the real divider without mutating app/session state. The source-level Jest contract covers structure, ARIA, clear/revert source behavior, scroll reveal hooks, focus, mobile sizing, reduced-motion, and scoped token usage.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+- Read-only exploration identified PromptHints selected/hover/focus tokenization as a strong next low-risk candidate; it was not included in this slice to keep file scope and review surface narrow.
