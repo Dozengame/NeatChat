@@ -6031,3 +6031,51 @@ Known risks:
 - Browser QA validates clear-context through compiled CSSOM because the current empty-chat runtime state does not show the real divider without mutating app/session state. The source-level Jest contract covers structure, ARIA, clear/revert source behavior, scroll reveal hooks, focus, mobile sizing, reduced-motion, and scoped token usage.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
 - Read-only exploration identified PromptHints selected/hover/focus tokenization as a strong next low-risk candidate; it was not included in this slice to keep file scope and review surface narrow.
+
+## Iteration 2026-06-21 prompt-hints-selected-tone
+
+Result: passed.
+
+Target flow:
+
+- PromptHints selected, hover, and focus-visible rows should read as the same Gemini-style suggestion state across Light, explicit Dark, and Auto dark.
+- The selected row paint should use local primary/surface tokens instead of isolated hardcoded Google-blue rgba values.
+- Prompt search, prompt selection, keyboard navigation, prompt-store semantics, model config semantics, account/secret/sync, backend/API, production config, deployment config, dependencies, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected a quiet suggestion row direction: theme-tokenized primary wash, stable listbox density, class plus ARIA selected-state coverage, no keyboard behavior change, no model/account/sync/backend/deploy changes, no new dependencies, and reduced-motion safe.
+- The slice keeps the existing listbox geometry, scroll behavior, item density, single-line truncation, role/ARIA wiring, and mobile max-height contract. Only the selected/hover/focus paint source moves into inherited local tokens.
+
+Scope:
+
+- `app/components/chat.module.scss`: added local `--prompt-hint-selected-*` tokens on `.prompt-hints`, moved selected/hover/focus-visible paint to token consumers, tightened selected styling to `&.prompt-hint-selected` plus `&[aria-selected="true"]`, and added explicit Dark plus Auto dark token overrides.
+- `test/gemini-visual-migration.test.ts`: strengthened the PromptHints contract to lock Light/Dark/Auto dark token declarations, class plus ARIA selected consumers, mobile max-height preservation, and absence of the old hardcoded selected paint in the scoped PromptHints style surface.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, stores, prompt search/selection behavior, keyboard navigation behavior, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, deploy files, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="Gemini-style empty state hooks"` failed first as expected because the PromptHints root token declarations and stronger selected-state selector did not exist yet.
+- After implementation, the same focused visual migration contract passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser was used for this slice. The local `启用快捷指令功能` setting was temporarily enabled only to expose the real PromptHints UI and restored to `false` after QA. No real access code, key, account, model/API request, upload, image-generation action, persisted production config, backend config, dependency, send action, or model request was used.
+- Desktop `1439x1024` Light: typing `/` exposed the real `#chat-prompt-hints` listbox, textarea `aria-controls` pointed to the listbox, `aria-activedescendant` updated after `ArrowDown`, 407 options rendered, selected row carried both base and selected classes, listbox stayed in viewport, and horizontal/vertical overflow was `false`.
+- Mobile `390x844` Light: typing `/` exposed the listbox with `role="listbox"`, selected row had `aria-selected="true"`, CSSOM contained the stronger class plus ARIA selected selector, max-height resolved to `320px`, and horizontal/vertical overflow was `false`.
+- Narrow `320x740` Light: listbox width resolved to `300px` at `x: 10`, max-height resolved to `320px`, selected class/ARIA state and token variables were present, and horizontal/vertical overflow was `false`.
+- Explicit Dark and Auto dark CSSOM checks both contained the PromptHints selected token override with `var(--primary) 16%` mixed into `var(--surface)`.
+
+Review:
+
+- Two read-only sub-agent reviews found no blocking issues. They confirmed the diff is limited to `app/components/chat.module.scss`, `test/gemini-visual-migration.test.ts`, and this QA record; no TSX behavior, store, model config, account/secret/sync, backend/API, production/deployment config, dependency, send-path, or internal-plan changes were found.
+- The reviewers confirmed `&.prompt-hint-selected` compiles to the expected scoped base-plus-selected CSS Modules selector, `&[aria-selected="true"]` safely covers the same option element, and neither branch breaks hover/focus-visible styling.
+- The reviewers also confirmed Light, explicit Dark, Auto dark, old hardcoded selected paint removal, and mobile max-height are covered by the visual migration contract. One residual source-test gap around Auto dark border/ring was addressed by strengthening the Jest assertions before final verification.
+
+Known risks:
+
+- The in-app Browser screenshot API timed out on this dev page, so this slice records DOM, ARIA, layout, and CSSOM evidence rather than screenshot pixels.
+- Dynamic hover/selected computedStyle from the in-app Browser was inconsistent after keyboard navigation, so the implementation was tightened to class plus ARIA selected selectors and covered by source-level Jest plus compiled CSSOM checks.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.

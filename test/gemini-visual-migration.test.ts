@@ -101,6 +101,23 @@ describe("Gemini visual migration shell", () => {
     const promptHintsRootBlock = readRootDeclarations(promptHintsBlock);
     const promptHintBlock = readCssBlock(promptHintsBlock, ".prompt-hint");
     const promptHintRootBlock = readRootDeclarations(promptHintBlock);
+    const darkPromptHintsBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .prompt-hints",
+    );
+    const autoDarkPromptHintsSelector =
+      ":global(body:not(.light)) .prompt-hints";
+    const autoDarkPromptHintsSelectorIndex = chatStyles.indexOf(
+      autoDarkPromptHintsSelector,
+    );
+    const autoDarkPromptHintsMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkPromptHintsSelectorIndex,
+    );
+    const autoDarkPromptHintsBlock = readCssBlock(
+      chatStyles.slice(autoDarkPromptHintsMediaIndex),
+      autoDarkPromptHintsSelector,
+    );
     const promptHintsMobileBlock = readCssBlock(
       chatStyles,
       "@media (max-width: 600px)",
@@ -228,6 +245,14 @@ describe("Gemini visual migration shell", () => {
       /rgba\((?:60,\s*64,\s*67,\s*0\.08|49,\s*94,\s*248,\s*0\.04)/;
     const legacyActionActivePaint =
       /rgba\(25,\s*103,\s*210,\s*0\.1\)/;
+    const promptHintsToneScope = [
+      promptHintsRootBlock,
+      promptHintBlock,
+      darkPromptHintsBlock,
+      autoDarkPromptHintsBlock,
+    ].join("\n");
+    const legacyPromptHintSelectedPaint =
+      /rgba\(66,\s*133,\s*244,\s*(?:0\.1|0\.18|0\.22)\)/;
     const mobileActionMenuBlock = readCssBlock(
       mobileStyles,
       ".chat-input-action-menu",
@@ -816,6 +841,15 @@ describe("Gemini visual migration shell", () => {
     expect(promptHintsRootBlock).toMatch(
       /background:\s*var\(--surface-elevated\);/,
     );
+    expect(promptHintsRootBlock).toMatch(
+      /--prompt-hint-selected-background:\s*color-mix\(in srgb,\s*var\(--primary\) 10%,\s*transparent\);/,
+    );
+    expect(promptHintsRootBlock).toMatch(
+      /--prompt-hint-selected-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 18%,\s*transparent\);/,
+    );
+    expect(promptHintsRootBlock).toMatch(
+      /--prompt-hint-selected-ring-color:\s*color-mix\(in srgb,\s*var\(--primary\) 22%,\s*transparent\);/,
+    );
     expect(promptHintsRootBlock).toMatch(/border-radius:\s*18px;/);
     expect(promptHintsRootBlock).toMatch(/padding:\s*6px;/);
     expect(promptHintsRootBlock).toMatch(/overscroll-behavior:\s*contain;/);
@@ -831,8 +865,29 @@ describe("Gemini visual migration shell", () => {
     expect(promptHintRootBlock).toMatch(/background:\s*transparent;/);
     expect(promptHintRootBlock).toMatch(/border:\s*1px solid transparent;/);
     expect(promptHintBlock).toMatch(
-      /&-selected,\s*&:hover,\s*&:focus-visible\s*\{[\s\S]*background:\s*rgba\(66,\s*133,\s*244,\s*0\.1\);[\s\S]*box-shadow:\s*inset 0 0 0 1px rgba\(66,\s*133,\s*244,\s*0\.22\);/,
+      /&\.prompt-hint-selected,\s*&\[aria-selected="true"\],\s*&:hover,\s*&:focus-visible\s*\{[\s\S]*background:\s*var\(--prompt-hint-selected-background\);[\s\S]*border-color:\s*var\(--prompt-hint-selected-border-color\);[\s\S]*box-shadow:\s*inset 0 0 0 1px var\(--prompt-hint-selected-ring-color\);/,
     );
+    expect(darkPromptHintsBlock).toMatch(
+      /--prompt-hint-selected-background:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*var\(--surface\)\);/,
+    );
+    expect(darkPromptHintsBlock).toMatch(
+      /--prompt-hint-selected-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 28%,\s*transparent\);/,
+    );
+    expect(darkPromptHintsBlock).toMatch(
+      /--prompt-hint-selected-ring-color:\s*color-mix\(in srgb,\s*var\(--primary\) 24%,\s*transparent\);/,
+    );
+    expect(autoDarkPromptHintsSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkPromptHintsMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkPromptHintsBlock).toMatch(
+      /--prompt-hint-selected-background:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*var\(--surface\)\);/,
+    );
+    expect(autoDarkPromptHintsBlock).toMatch(
+      /--prompt-hint-selected-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 28%,\s*transparent\);/,
+    );
+    expect(autoDarkPromptHintsBlock).toMatch(
+      /--prompt-hint-selected-ring-color:\s*color-mix\(in srgb,\s*var\(--primary\) 24%,\s*transparent\);/,
+    );
+    expect(promptHintsToneScope).not.toMatch(legacyPromptHintSelectedPaint);
     expect(promptHintsMobileBlock).toMatch(
       /\.prompt-hints\s*\{[\s\S]*max-height:\s*min\(46vh,\s*320px\);/,
     );
