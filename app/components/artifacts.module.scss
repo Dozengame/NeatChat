@@ -1,31 +1,138 @@
 .artifacts {
+  --artifacts-background: color-mix(
+    in srgb,
+    var(--surface) 92%,
+    var(--gray)
+  );
+  --artifacts-header-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 88%,
+    transparent
+  );
+  --artifacts-header-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --artifacts-iframe-background: var(--surface-elevated);
+  --artifacts-iframe-border-color: color-mix(
+    in srgb,
+    var(--black-50) 14%,
+    transparent
+  );
+  --artifacts-iframe-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+
   display: flex;
   width: 100%;
   height: 100%;
   flex-direction: column;
+  background: var(--artifacts-background);
+  color: var(--black);
+
   &-header {
     display: flex;
     align-items: center;
-    height: 36px;
-    padding: 20px;
-    background: var(--second);
+    gap: 14px;
+    min-height: 64px;
+    box-sizing: border-box;
+    padding: 12px 20px;
+    background: var(--artifacts-header-background);
+    border-bottom: 1px solid var(--artifacts-header-border-color);
+    backdrop-filter: blur(12px);
   }
+
   &-title {
     flex: 1;
     text-align: center;
-    font-weight: bold;
-    font-size: 24px;
+    color: var(--black);
+    font-weight: 600;
+    font-size: 20px;
+    letter-spacing: 0;
   }
+
   &-content {
     flex-grow: 1;
-    padding: 0 20px 20px 20px;
-    background-color: var(--second);
+    padding: 16px 20px 20px;
+    background: var(--artifacts-background);
   }
 }
 
 .artifacts-iframe {
   width: 100%;
-  border: var(--border-in-light);
-  border-radius: 6px;
-  background-color: var(--gray);
+  border: 1px solid var(--artifacts-iframe-border-color);
+  border-radius: 8px;
+  background-color: var(--artifacts-iframe-background);
+  box-shadow: 0 14px 40px var(--artifacts-iframe-shadow-color);
+}
+
+:global(.dark) .artifacts {
+  --artifacts-background: color-mix(
+    in srgb,
+    var(--gray) 82%,
+    var(--black)
+  );
+  --artifacts-header-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 84%,
+    transparent
+  );
+  --artifacts-header-border-color: color-mix(
+    in srgb,
+    var(--black) 9%,
+    transparent
+  );
+  --artifacts-iframe-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 90%,
+    var(--black)
+  );
+  --artifacts-iframe-border-color: color-mix(
+    in srgb,
+    var(--black) 12%,
+    transparent
+  );
+  --artifacts-iframe-shadow-color: color-mix(
+    in srgb,
+    var(--black) 12%,
+    transparent
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .artifacts {
+    --artifacts-background: color-mix(
+      in srgb,
+      var(--gray) 82%,
+      var(--black)
+    );
+    --artifacts-header-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 84%,
+      transparent
+    );
+    --artifacts-header-border-color: color-mix(
+      in srgb,
+      var(--black) 9%,
+      transparent
+    );
+    --artifacts-iframe-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 90%,
+      var(--black)
+    );
+    --artifacts-iframe-border-color: color-mix(
+      in srgb,
+      var(--black) 12%,
+      transparent
+    );
+    --artifacts-iframe-shadow-color: color-mix(
+      in srgb,
+      var(--black) 12%,
+      transparent
+    );
+  }
 }

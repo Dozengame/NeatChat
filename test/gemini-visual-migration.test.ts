@@ -5626,6 +5626,120 @@ describe("Gemini visual migration shell", () => {
     expect(maskBlock).toMatch(/&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/);
   });
 
+  test("keeps artifacts preview shell aligned with Gemini output surfaces", () => {
+    const artifacts = read("app/components/artifacts.tsx");
+    const artifactsPreview = read("app/components/artifacts-preview.tsx");
+    const artifactsShareButton = read(
+      "app/components/artifacts-share-button.tsx",
+    );
+    const artifactsStyles = read("app/components/artifacts.module.scss");
+    const rootBlock = readCssBlock(artifactsStyles, ".artifacts");
+    const rootDeclarations = readRootDeclarations(rootBlock);
+    const headerBlock = readCssBlock(rootBlock, "&-header");
+    const titleBlock = readCssBlock(rootBlock, "&-title");
+    const contentBlock = readCssBlock(rootBlock, "&-content");
+    const iframeBlock = readCssBlock(artifactsStyles, ".artifacts-iframe");
+    const darkRootBlock = readCssBlock(
+      artifactsStyles,
+      ":global(.dark) .artifacts",
+    );
+    const autoDarkArtifactsSelector = ":global(body:not(.light)) .artifacts";
+    const autoDarkArtifactsSelectorIndex = artifactsStyles.indexOf(
+      autoDarkArtifactsSelector,
+    );
+    const autoDarkArtifactsMediaIndex = artifactsStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkArtifactsSelectorIndex,
+    );
+    const autoDarkRootBlock = readCssBlock(
+      artifactsStyles.slice(autoDarkArtifactsMediaIndex),
+      autoDarkArtifactsSelector,
+    );
+    const artifactsPaintScope = [
+      rootDeclarations,
+      headerBlock,
+      titleBlock,
+      contentBlock,
+      iframeBlock,
+      darkRootBlock,
+      autoDarkRootBlock,
+    ].join("\n");
+
+    expect(artifacts).toContain("async function loadArtifactContent(id: string)");
+    expect(artifacts).toContain("fetch(`${ApiPath.Artifacts}?id=${id}`)");
+    expect(artifacts).toContain("showToast(Locale.Export.Artifacts.Error)");
+    expect(artifacts).toContain("previewRef.current?.reload()");
+    expect(artifacts).toContain("<ArtifactsShareButton");
+    expect(artifacts).toContain("getCode={() => code}");
+    expect(artifactsPreview).toContain("new ResizeObserver");
+    expect(artifactsPreview).toContain("parent.postMessage");
+    expect(artifactsPreview).toContain('sandbox="allow-forms allow-modals allow-scripts"');
+    expect(artifactsPreview).toContain("srcDoc={srcDoc}");
+    expect(artifactsPreview).toContain("onLoad={handleOnLoad}");
+    expect(artifactsShareButton).toContain("fetch(ApiPath.Artifacts");
+    expect(artifactsShareButton).toContain("method: \"POST\"");
+    expect(artifactsShareButton).toContain("upload(getCode())");
+    expect(artifactsShareButton).toContain("downloadAs(getCode()");
+    expect(artifactsShareButton).toContain("copyToClipboard(shareUrl)");
+
+    expect(rootDeclarations).toMatch(
+      /--artifacts-background:\s*color-mix\(\s*in srgb,\s*var\(--surface\) 92%,\s*var\(--gray\)\s*\);/,
+    );
+    expect(rootDeclarations).toMatch(
+      /--artifacts-header-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\s*\);/,
+    );
+    expect(rootDeclarations).toMatch(
+      /--artifacts-iframe-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 14%,\s*transparent\s*\);/,
+    );
+    expect(rootDeclarations).toMatch(
+      /--artifacts-iframe-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 10%,\s*transparent\s*\);/,
+    );
+    expect(rootDeclarations).toMatch(/background:\s*var\(--artifacts-background\);/);
+    expect(rootDeclarations).toMatch(/color:\s*var\(--black\);/);
+    expect(headerBlock).toMatch(
+      /background:\s*var\(--artifacts-header-background\);/,
+    );
+    expect(headerBlock).toMatch(
+      /border-bottom:\s*1px solid var\(--artifacts-header-border-color\);/,
+    );
+    expect(headerBlock).toMatch(/min-height:\s*64px;/);
+    expect(headerBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(headerBlock).toMatch(/gap:\s*14px;/);
+    expect(headerBlock).toMatch(/backdrop-filter:\s*blur\(12px\);/);
+    expect(titleBlock).toMatch(/font-size:\s*20px;/);
+    expect(titleBlock).toMatch(/font-weight:\s*600;/);
+    expect(titleBlock).toMatch(/letter-spacing:\s*0;/);
+    expect(contentBlock).toMatch(/padding:\s*16px 20px 20px;/);
+    expect(contentBlock).toMatch(/background:\s*var\(--artifacts-background\);/);
+    expect(iframeBlock).toMatch(
+      /border:\s*1px solid var\(--artifacts-iframe-border-color\);/,
+    );
+    expect(iframeBlock).toMatch(/border-radius:\s*8px;/);
+    expect(iframeBlock).toMatch(
+      /background-color:\s*var\(--artifacts-iframe-background\);/,
+    );
+    expect(iframeBlock).toMatch(
+      /box-shadow:\s*0 14px 40px var\(--artifacts-iframe-shadow-color\);/,
+    );
+    expect(darkRootBlock).toMatch(
+      /--artifacts-background:\s*color-mix\(\s*in srgb,\s*var\(--gray\) 82%,\s*var\(--black\)\s*\);/,
+    );
+    expect(darkRootBlock).toMatch(
+      /--artifacts-iframe-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 12%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkArtifactsSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkArtifactsMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkRootBlock).toMatch(
+      /--artifacts-background:\s*color-mix\(\s*in srgb,\s*var\(--gray\) 82%,\s*var\(--black\)\s*\);/,
+    );
+    expect(autoDarkRootBlock).toMatch(
+      /--artifacts-iframe-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 12%,\s*transparent\s*\);/,
+    );
+    expect(artifactsPaintScope).not.toContain("var(--second)");
+    expect(artifactsPaintScope).not.toContain("border: var(--border-in-light)");
+    expect(artifactsPaintScope).not.toContain("background-color: var(--gray)");
+  });
+
   test("keeps update announcement modal aligned with Gemini release surfaces", () => {
     const updateAnnouncement = read("app/components/update-announcement.tsx");
     const updateAnnouncementStyles = read(

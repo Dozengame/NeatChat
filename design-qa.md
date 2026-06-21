@@ -6592,3 +6592,61 @@ Known risks:
 - Browser screenshot capture timed out in the in-app Browser; the fallback screenshots only verify the gate page, not the attachment card itself.
 - Attachment click/copy and file upload/send interactions were not exercised because they can mutate clipboard, local state, or message/send state.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-21 artifacts-preview-shell-tone
+
+Result: passed.
+
+Target flow:
+
+- Artifact preview pages should read as Gemini-style AI output workspaces: quiet neutral canvas, compact translucent header, restrained title, and an 8px framed iframe preview surface.
+- Artifact content loading, error toast, reload button, share button, iframe `srcDoc`, iframe sandbox, resize messaging, download/copy/share behavior, account/secret/sync/backend/deploy behavior, dependencies, and production config must remain unchanged.
+- The slice should improve the output presentation shell without touching artifact API semantics or generated artifact content.
+
+Design direction:
+
+- Creative Production style intake selected a quiet AI-output workspace direction: neutral page base, soft elevated header rail, subtle divider, restrained 20px title, tokenized iframe border/shadow, Dark/Auto dark safety, and no decorative gradients.
+- No generated raster design was used because this is a small UI-system repair inside the existing Gemini migration language. The design spec is the local token contract in `artifacts.module.scss` plus this QA record.
+
+Scope:
+
+- `app/components/artifacts.module.scss`: added local `--artifacts-*` tokens, replaced legacy `var(--second)` shell paint and legacy iframe border/background with tokenized page, header, title, content, iframe, explicit Dark, and Auto dark styles.
+- `test/gemini-visual-migration.test.ts`: added a focused artifact preview shell contract locking artifact fetch/reload/share/iframe behavior entry points, Light/Dark/Auto dark token declarations, token consumers, iframe frame styling, and old target paint removal.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TSX behavior, artifact fetch/API path, share upload/download/copy behavior, iframe sandbox/srcDoc logic, resize messaging, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, or generated artifact content was changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="artifacts preview shell"` failed first as expected because `.artifacts` lacked local shell tokens and still used legacy `var(--second)` / iframe legacy paint.
+- After implementation, the same focused contract passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `yarn build` passed with the existing Next warning that Edge runtime disables static generation for that page.
+- `git diff --check` passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser was connected and used first against `http://localhost:3001/#/artifacts/codex-ui-shell-qa`.
+- In-app Browser DOM/console checks showed the route reached the local access-code gate with no framework overlay, no console warn/error logs, meaningful gate DOM, and horizontal overflow `0`; the artifact shell and iframe were not rendered because the gate blocked access.
+- In-app Browser screenshot capture again failed with `Page.captureScreenshot` timeout for the tab.
+- Because Browser screenshot capture failed, local installed Chrome was used only as screenshot fallback. Desktop `1440x1024` and mobile `390x844` screenshots were captured to `/tmp/neatchat-artifacts-gate-desktop.png` and `/tmp/neatchat-artifacts-gate-mobile.png`.
+- Both Chrome fallback checks reached the access-code gate text `需要密码`, `管理员开启了密码验证，请在下方填入访问码`, `确认`; had no console warn/error logs, no page errors, no framework overlay, and horizontal overflow `0`.
+- No real access code was entered and no auth/config bypass was attempted. No artifact share upload, download, copy, reload click, model/API request, account/key/sync/import/export/reset/clear, or persisted config action was performed.
+
+Review:
+
+- First read-only sub-agent review found one Minor issue: `.artifacts-header` used `min-height: 64px` plus padding without `box-sizing: border-box`, so the real content-box height could exceed the intended compact header.
+- The issue was fixed by adding `box-sizing: border-box` to `.artifacts-header` and adding a focused visual-contract assertion for that box model guard. `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="artifacts preview shell"` passed afterward.
+- Follow-up read-only review found no Critical, Important, or Minor issues. It confirmed the diff remains limited to `app/components/artifacts.module.scss`, `test/gemini-visual-migration.test.ts`, and this QA record, with no TSX behavior, artifact API path, share upload/download/copy semantics, iframe sandbox/srcDoc/resize messaging, model-config, account/secret/sync, backend/API, dependency, or deploy semantic changes.
+- The reviewer confirmed the test is a reasonable source-level TDD contract for this CSS-only slice, while not claiming live computed-style or E2E artifact-shell verification.
+- The reviewer confirmed this QA record truthfully reports the access-code gate, Browser screenshot timeout, Chrome gate screenshot fallback, and the absence of actual artifact shell / iframe live computed-style verification.
+- The reviewer found no internal plan paths, real access codes, `.env` contents, keys/tokens, or sensitive information in this QA record.
+
+Known risks:
+
+- Live Browser computed-style verification for the actual artifact shell and iframe is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
+- Browser screenshot capture timed out in the in-app Browser; the fallback screenshots only verify the gate page, not the artifact shell itself.
+- Artifact reload/share/download/copy controls were not clicked because they can trigger fetch, upload, clipboard, download, or local UI state side effects.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
