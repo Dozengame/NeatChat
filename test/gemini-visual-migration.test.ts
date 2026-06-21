@@ -7381,6 +7381,23 @@ describe("Gemini visual migration shell", () => {
     const shortcutKeysBlock = readCssBlock(chatStyles, ".shortcut-key-keys");
     const shortcutKeyBlock = readCssBlock(chatStyles, ".shortcut-key");
     const shortcutKeyTextBlock = readCssBlock(chatStyles, ".shortcut-key span");
+    const darkShortcutContainerBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .shortcut-key-container",
+    );
+    const autoDarkShortcutContainerSelector =
+      ":global(body:not(.light)) .shortcut-key-container";
+    const autoDarkShortcutContainerIndex = chatStyles.indexOf(
+      autoDarkShortcutContainerSelector,
+    );
+    const autoDarkShortcutMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkShortcutContainerIndex,
+    );
+    const autoDarkShortcutContainerBlock = readCssBlock(
+      chatStyles.slice(autoDarkShortcutMediaIndex),
+      autoDarkShortcutContainerSelector,
+    );
     const mobileShortcutContainerBlock = readCssBlock(
       mobileStyles,
       ".shortcut-key-container",
@@ -7454,16 +7471,108 @@ describe("Gemini visual migration shell", () => {
     expect(shortcutGridBlock).toMatch(/min-width:\s*0;/);
     expect(shortcutItemBlock).toMatch(/min-width:\s*0;/);
     expect(shortcutItemBlock).toMatch(/gap:\s*12px;/);
-    expect(shortcutItemBlock).toMatch(/border-radius:\s*14px;/);
+    expect(shortcutContainerBlock).toMatch(
+      /--shortcut-key-item-radius:\s*8px;/,
+    );
+    expect(shortcutContainerBlock).toMatch(
+      /--shortcut-key-keycap-radius:\s*8px;/,
+    );
+    expect(shortcutContainerBlock).toMatch(
+      /--shortcut-key-item-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
+    );
+    expect(shortcutContainerBlock).toMatch(
+      /--shortcut-key-item-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 92%,\s*transparent\);/,
+    );
+    expect(shortcutContainerBlock).toMatch(
+      /--shortcut-key-item-color:\s*color-mix\(in srgb,\s*var\(--black\) 90%,\s*transparent\);/,
+    );
+    expect(shortcutContainerBlock).toMatch(
+      /--shortcut-key-keycap-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
+    );
+    expect(shortcutContainerBlock).toMatch(
+      /--shortcut-key-keycap-background:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 72%,\s*transparent\);/,
+    );
+    expect(shortcutContainerBlock).toMatch(
+      /--shortcut-key-keycap-color:\s*color-mix\(in srgb,\s*var\(--black\) 88%,\s*transparent\);/,
+    );
+    expect(darkShortcutContainerBlock).toMatch(
+      /--shortcut-key-item-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 8%,\s*transparent\);/,
+    );
+    expect(darkShortcutContainerBlock).toMatch(
+      /--shortcut-key-item-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\);/,
+    );
+    expect(darkShortcutContainerBlock).toMatch(
+      /--shortcut-key-item-color:\s*color-mix\(in srgb,\s*var\(--black\) 94%,\s*transparent\);/,
+    );
+    expect(darkShortcutContainerBlock).toMatch(
+      /--shortcut-key-keycap-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
+    );
+    expect(darkShortcutContainerBlock).toMatch(
+      /--shortcut-key-keycap-background:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 82%,\s*transparent\);/,
+    );
+    expect(darkShortcutContainerBlock).toMatch(
+      /--shortcut-key-keycap-color:\s*color-mix\(in srgb,\s*var\(--black\) 92%,\s*transparent\);/,
+    );
+    expect(autoDarkShortcutContainerIndex).toBeGreaterThan(-1);
+    expect(autoDarkShortcutMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkShortcutContainerBlock).toMatch(
+      /--shortcut-key-item-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 8%,\s*transparent\);/,
+    );
+    expect(autoDarkShortcutContainerBlock).toMatch(
+      /--shortcut-key-item-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\);/,
+    );
+    expect(autoDarkShortcutContainerBlock).toMatch(
+      /--shortcut-key-item-color:\s*color-mix\(in srgb,\s*var\(--black\) 94%,\s*transparent\);/,
+    );
+    expect(autoDarkShortcutContainerBlock).toMatch(
+      /--shortcut-key-keycap-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
+    );
+    expect(autoDarkShortcutContainerBlock).toMatch(
+      /--shortcut-key-keycap-background:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 82%,\s*transparent\);/,
+    );
+    expect(autoDarkShortcutContainerBlock).toMatch(
+      /--shortcut-key-keycap-color:\s*color-mix\(in srgb,\s*var\(--black\) 92%,\s*transparent\);/,
+    );
+    expect(shortcutItemBlock).toMatch(
+      /border-radius:\s*var\(--shortcut-key-item-radius\);/,
+    );
+    expect(shortcutItemBlock).toMatch(
+      /border:\s*1px solid var\(--shortcut-key-item-border-color\);/,
+    );
+    expect(shortcutItemBlock).toMatch(
+      /background-color:\s*var\(--shortcut-key-item-background\);/,
+    );
     expect(shortcutTitleBlock).toMatch(/flex:\s*1 1 auto;/);
     expect(shortcutTitleBlock).toMatch(/min-width:\s*0;/);
     expect(shortcutTitleBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(shortcutTitleBlock).toMatch(
+      /color:\s*var\(--shortcut-key-item-color\);/,
+    );
+    expect(shortcutTitleBlock).not.toContain("color: var(--black)");
     expect(shortcutKeysBlock).toMatch(/flex-wrap:\s*wrap;/);
     expect(shortcutKeysBlock).toMatch(/justify-content:\s*flex-end;/);
     expect(shortcutKeysBlock).toMatch(/flex:\s*0 1 auto;/);
     expect(shortcutKeysBlock).toMatch(/min-width:\s*0;/);
     expect(shortcutKeyBlock).toMatch(/min-height:\s*30px;/);
+    expect(shortcutKeyBlock).toMatch(
+      /border:\s*1px solid var\(--shortcut-key-keycap-border-color\);/,
+    );
+    expect(shortcutKeyBlock).toMatch(
+      /border-radius:\s*var\(--shortcut-key-keycap-radius\);/,
+    );
+    expect(shortcutKeyBlock).toMatch(
+      /background-color:\s*var\(--shortcut-key-keycap-background\);/,
+    );
+    expect(shortcutKeyBlock).toMatch(
+      /color:\s*var\(--shortcut-key-keycap-color\);/,
+    );
     expect(shortcutKeyTextBlock).toMatch(/white-space:\s*nowrap;/);
+    expect(shortcutKeyTextBlock).toMatch(/color:\s*inherit;/);
+    expect(
+      [shortcutContainerBlock, shortcutItemBlock, shortcutKeyBlock].join("\n"),
+    ).not.toMatch(
+      /border:\s*var\(--border-in-light\)|background-color:\s*var\(--white\)|background-color:\s*var\(--gray\)|border-radius:\s*14px;/,
+    );
     expect(mobileShortcutContainerBlock).toMatch(
       /max-height:\s*min\(62vh, 520px\);/,
     );

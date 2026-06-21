@@ -3754,12 +3754,41 @@
 }
 
 .shortcut-key-container {
+  --shortcut-key-item-radius: 8px;
+  --shortcut-key-keycap-radius: 8px;
+  --shortcut-key-item-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --shortcut-key-item-background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
+  --shortcut-key-item-color: color-mix(in srgb, var(--black) 90%, transparent);
+  --shortcut-key-keycap-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --shortcut-key-keycap-background: color-mix(in srgb, var(--surface-soft) 72%, transparent);
+  --shortcut-key-keycap-color: color-mix(in srgb, var(--black) 88%, transparent);
+
   padding: 6px;
   max-height: min(70vh, 560px);
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
+}
+
+:global(.dark) .shortcut-key-container {
+  --shortcut-key-item-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+  --shortcut-key-item-background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
+  --shortcut-key-item-color: color-mix(in srgb, var(--black) 94%, transparent);
+  --shortcut-key-keycap-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --shortcut-key-keycap-background: color-mix(in srgb, var(--surface-soft) 82%, transparent);
+  --shortcut-key-keycap-color: color-mix(in srgb, var(--black) 92%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .shortcut-key-container {
+    --shortcut-key-item-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+    --shortcut-key-item-background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
+    --shortcut-key-item-color: color-mix(in srgb, var(--black) 94%, transparent);
+    --shortcut-key-keycap-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+    --shortcut-key-keycap-background: color-mix(in srgb, var(--surface-soft) 82%, transparent);
+    --shortcut-key-keycap-color: color-mix(in srgb, var(--black) 92%, transparent);
+  }
 }
 
 .shortcut-key-grid {
@@ -3777,9 +3806,9 @@
   min-width: 0;
   overflow: hidden;
   padding: 10px;
-  border-radius: 14px;
-  border: 1px solid rgba(60, 64, 67, 0.1);
-  background-color: var(--white);
+  border-radius: var(--shortcut-key-item-radius);
+  border: 1px solid var(--shortcut-key-item-border-color);
+  background-color: var(--shortcut-key-item-background);
 }
 
 .shortcut-key-title {
@@ -3787,7 +3816,7 @@
   min-width: 0;
   font-size: 14px;
   line-height: 1.4;
-  color: var(--black);
+  color: var(--shortcut-key-item-color);
   overflow-wrap: anywhere;
 }
 
@@ -3805,17 +3834,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: var(--border-in-light);
-  border-radius: 8px;
+  border: 1px solid var(--shortcut-key-keycap-border-color);
+  border-radius: var(--shortcut-key-keycap-radius);
   padding: 4px;
-  background-color: var(--gray);
+  background-color: var(--shortcut-key-keycap-background);
+  color: var(--shortcut-key-keycap-color);
   min-width: 32px;
   min-height: 30px;
 }
 
 .shortcut-key span {
   font-size: 12px;
-  color: var(--black);
+  color: inherit;
   white-space: nowrap;
 }
 
