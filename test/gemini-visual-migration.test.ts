@@ -2496,6 +2496,312 @@ describe("Gemini visual migration shell", () => {
     expect(mcpMarketStatusPaintScope).not.toContain("var(--primary-dark)");
   });
 
+  test("keeps MCP market form controls aligned with Gemini utility surfaces", () => {
+    const mcpMarket = read("app/components/mcp-market.tsx");
+    const configForm = read("app/components/mcp-market/config-form.tsx");
+    const mcpMarketStyles = read("app/components/mcp-market.module.scss");
+    const mcpMarketPageBlock = readCssBlock(
+      mcpMarketStyles,
+      ".mcp-market-page",
+    );
+    const mcpMarketRootBlock = readRootDeclarations(mcpMarketPageBlock);
+    const darkMcpMarketBlock = readCssBlock(
+      mcpMarketStyles,
+      ":global(.dark) .mcp-market-page",
+    );
+    const autoDarkMcpMarketSelector =
+      ":global(body:not(.light)) .mcp-market-page";
+    const autoDarkMcpMarketSelectorIndex = mcpMarketStyles.indexOf(
+      autoDarkMcpMarketSelector,
+    );
+    const autoDarkMcpMarketMediaIndex = mcpMarketStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkMcpMarketSelectorIndex,
+    );
+    const autoDarkMcpMarketBlock = readCssBlock(
+      mcpMarketStyles.slice(autoDarkMcpMarketMediaIndex),
+      autoDarkMcpMarketSelector,
+    );
+    const arrayInputBlock = readCssBlock(mcpMarketStyles, ".array-input");
+    const arrayInputItemBlock = readCssBlock(
+      arrayInputBlock,
+      ".array-input-item",
+    );
+    const arrayInputTextBlock = readCssBlock(arrayInputItemBlock, "input");
+    const arrayInputHoverBlock = readCssBlock(arrayInputTextBlock, "&:hover");
+    const arrayInputFocusBlock = readCssBlock(arrayInputTextBlock, "&:focus");
+    const arrayInputPlaceholderBlock = readCssBlock(
+      arrayInputTextBlock,
+      "&::placeholder",
+    );
+    const configSectionBlock = readCssBlock(
+      mcpMarketStyles,
+      ".config-section",
+    );
+    const configHeaderBlock = readCssBlock(
+      configSectionBlock,
+      ".config-header",
+    );
+    const configDescriptionBlock = readCssBlock(
+      configHeaderBlock,
+      ".config-description",
+    );
+    const configArrayInputBlock = readCssBlock(
+      configSectionBlock,
+      ".array-input",
+    );
+    const configArrayInputItemBlock = readCssBlock(
+      configArrayInputBlock,
+      ".array-input-item",
+    );
+    const configArrayInputTextBlock = readCssBlock(
+      configArrayInputItemBlock,
+      "input",
+    );
+    const configArrayInputHoverBlock = readCssBlock(
+      configArrayInputTextBlock,
+      "&:hover",
+    );
+    const configArrayInputFocusBlock = readCssBlock(
+      configArrayInputTextBlock,
+      "&:focus",
+    );
+    const configArrayInputPlaceholderBlock = readCssBlock(
+      configArrayInputTextBlock,
+      "&::placeholder",
+    );
+    const configIconButtonBlock = readCssBlock(
+      configArrayInputItemBlock,
+      ":global(.icon-button)",
+    );
+    const configIconButtonHoverBlock = readCssBlock(
+      configIconButtonBlock,
+      "&:hover",
+    );
+    const pathListBlock = readCssBlock(mcpMarketStyles, ".path-list");
+    const pathItemBlock = readCssBlock(pathListBlock, ".path-item");
+    const pathInputBlock = readCssBlock(pathItemBlock, "input");
+    const pathInputHoverBlock = readCssBlock(pathInputBlock, "&:hover");
+    const pathInputFocusBlock = readCssBlock(pathInputBlock, "&:focus");
+    const browseButtonBlock = readCssBlock(pathItemBlock, ".browse-button");
+    const browseButtonHoverBlock = readCssBlock(browseButtonBlock, "&:hover");
+    const deleteButtonBlock = readCssBlock(pathItemBlock, ".delete-button");
+    const deleteButtonHoverBlock = readCssBlock(deleteButtonBlock, "&:hover");
+    const addButtonBlock = readCssBlock(pathListBlock, ".add-button");
+    const addButtonHoverBlock = readCssBlock(addButtonBlock, "&:hover");
+    const inputItemBlock = readCssBlock(mcpMarketStyles, ".input-item");
+    const inputItemTextBlock = readCssBlock(inputItemBlock, "input");
+    const inputItemHoverBlock = readCssBlock(inputItemTextBlock, "&:hover");
+    const inputItemFocusBlock = readCssBlock(inputItemTextBlock, "&:focus");
+    const inputItemPlaceholderBlock = readCssBlock(
+      inputItemTextBlock,
+      "&::placeholder",
+    );
+    const toolsListBlock = readCssBlock(mcpMarketStyles, ".tools-list");
+    const toolItemBlock = readCssBlock(toolsListBlock, ".tool-item");
+    const toolDescriptionBlock = readCssBlock(
+      toolItemBlock,
+      ".tool-description",
+    );
+    const listSubTitleBlock = readCssBlock(
+      mcpMarketStyles,
+      ".list-sub-title",
+    );
+    const mcpMarketFormPaintScope = [
+      mcpMarketRootBlock,
+      darkMcpMarketBlock,
+      autoDarkMcpMarketBlock,
+      arrayInputBlock,
+      arrayInputTextBlock,
+      arrayInputHoverBlock,
+      arrayInputFocusBlock,
+      arrayInputPlaceholderBlock,
+      configDescriptionBlock,
+      configArrayInputBlock,
+      configArrayInputTextBlock,
+      configArrayInputHoverBlock,
+      configArrayInputFocusBlock,
+      configArrayInputPlaceholderBlock,
+      configIconButtonBlock,
+      configIconButtonHoverBlock,
+      pathInputBlock,
+      pathInputHoverBlock,
+      pathInputFocusBlock,
+      browseButtonBlock,
+      browseButtonHoverBlock,
+      deleteButtonBlock,
+      deleteButtonHoverBlock,
+      addButtonBlock,
+      addButtonHoverBlock,
+      inputItemTextBlock,
+      inputItemHoverBlock,
+      inputItemFocusBlock,
+      inputItemPlaceholderBlock,
+      toolDescriptionBlock,
+      listSubTitleBlock,
+    ].join("\n");
+
+    expect(mcpMarket).toContain("onClick={saveServerConfig}");
+    expect(mcpMarket).toContain("onClose={() => !state.isLoading && closeConfig()}");
+    expect(configForm).toContain("onUserConfigChange");
+    expect(configForm).toContain("removeRowId(key, row.index)");
+    expect(configForm).toContain("function createRowId()");
+    expect(configForm).toContain("IconButton");
+    expect(configForm).toContain("onChange={(event) => {");
+
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-form-surface:\s*var\(--surface-elevated\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-form-soft-surface:\s*color-mix\(\s*in srgb,\s*var\(--black\) 4%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-form-hover-surface:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 6%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-form-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 14%,\s*transparent\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-form-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 22%,\s*transparent\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-form-placeholder-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 58%,\s*transparent\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-form-description-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 88%,\s*transparent\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-form-danger-color:\s*color-mix\(\s*in srgb,\s*rgb\(217,\s*48,\s*37\) 82%,\s*var\(--black\)\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-form-danger-hover-border-color:\s*color-mix\(\s*in srgb,\s*rgb\(217,\s*48,\s*37\) 36%,\s*transparent\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-form-focus-shadow:\s*0 0 0 2px\s*color-mix\(\s*in srgb,\s*var\(--primary\) 12%,\s*transparent\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-form-add-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 8%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(darkMcpMarketBlock).toMatch(
+      /--mcp-market-form-hover-surface:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 12%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(darkMcpMarketBlock).toMatch(
+      /--mcp-market-form-description-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 62%,\s*transparent\s*\);/,
+    );
+    expect(darkMcpMarketBlock).toMatch(
+      /--mcp-market-form-danger-color:\s*color-mix\(\s*in srgb,\s*rgb\(248,\s*113,\s*113\) 72%,\s*var\(--black\)\s*\);/,
+    );
+    expect(autoDarkMcpMarketSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkMcpMarketMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkMcpMarketBlock).toMatch(
+      /--mcp-market-form-hover-surface:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 12%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(autoDarkMcpMarketBlock).toMatch(
+      /--mcp-market-form-description-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 62%,\s*transparent\s*\);/,
+    );
+
+    [arrayInputBlock, configArrayInputBlock].forEach((block) => {
+      expect(block).toMatch(
+        /border:\s*1px solid var\(--mcp-market-form-border-color\);/,
+      );
+      expect(block).toMatch(
+        /background-color:\s*var\(--mcp-market-form-surface\);/,
+      );
+    });
+
+    [arrayInputTextBlock, configArrayInputTextBlock].forEach((block) => {
+      expect(block).toMatch(
+        /background-color:\s*var\(--mcp-market-form-soft-surface\);/,
+      );
+      expect(block).toMatch(
+        /border:\s*1px solid var\(--mcp-market-form-border-color\);/,
+      );
+    });
+
+    [arrayInputHoverBlock, configArrayInputHoverBlock].forEach((block) => {
+      expect(block).toMatch(
+        /background-color:\s*var\(--mcp-market-form-hover-surface\);/,
+      );
+      expect(block).toMatch(
+        /border-color:\s*var\(--mcp-market-form-hover-border-color\);/,
+      );
+    });
+
+    [arrayInputFocusBlock, configArrayInputFocusBlock].forEach((block) => {
+      expect(block).toMatch(
+        /background-color:\s*var\(--mcp-market-form-surface\);/,
+      );
+      expect(block).toMatch(/border-color:\s*var\(--primary\);/);
+      expect(block).toMatch(
+        /box-shadow:\s*var\(--mcp-market-form-focus-shadow\);/,
+      );
+    });
+
+    [
+      arrayInputPlaceholderBlock,
+      configArrayInputPlaceholderBlock,
+      inputItemPlaceholderBlock,
+    ].forEach((block) => {
+      expect(block).toMatch(
+        /color:\s*var\(--mcp-market-form-placeholder-color\)/,
+      );
+    });
+
+    [pathInputBlock, inputItemTextBlock].forEach((block) => {
+      expect(block).toMatch(
+        /background-color:\s*var\(--mcp-market-form-surface\);/,
+      );
+      expect(block).toMatch(/color:\s*var\(--black\);/);
+    });
+
+    [pathInputHoverBlock, inputItemHoverBlock].forEach((block) => {
+      expect(block).toMatch(
+        /border-color:\s*var\(--mcp-market-form-hover-border-color\);/,
+      );
+    });
+
+    [pathInputFocusBlock, inputItemFocusBlock].forEach((block) => {
+      expect(block).toMatch(/border-color:\s*var\(--primary\);/);
+      expect(block).toMatch(
+        /box-shadow:\s*var\(--mcp-market-form-focus-shadow\);/,
+      );
+    });
+
+    [browseButtonHoverBlock, addButtonHoverBlock].forEach((block) => {
+      expect(block).toMatch(
+        /border-color:\s*var\(--mcp-market-form-hover-border-color\);/,
+      );
+      expect(block).toMatch(
+        /background-color:\s*var\(--mcp-market-form-add-hover-background\);/,
+      );
+    });
+    expect(deleteButtonHoverBlock).toMatch(
+      /border-color:\s*var\(--mcp-market-form-danger-hover-border-color\);/,
+    );
+    expect(deleteButtonHoverBlock).toMatch(
+      /color:\s*var\(--mcp-market-form-danger-color\);/,
+    );
+    expect(configIconButtonBlock).toMatch(
+      /border:\s*1px solid var\(--mcp-market-form-border-color\);/,
+    );
+    expect(configIconButtonHoverBlock).toMatch(
+      /background-color:\s*var\(--mcp-market-form-hover-surface\);/,
+    );
+    expect(configIconButtonHoverBlock).toMatch(
+      /border-color:\s*var\(--mcp-market-form-hover-border-color\);/,
+    );
+    [configDescriptionBlock, toolDescriptionBlock, listSubTitleBlock].forEach(
+      (block) => {
+        expect(block).toMatch(
+          /color:\s*var\(--mcp-market-form-description-color\);/,
+        );
+      },
+    );
+    expect(mcpMarketFormPaintScope).not.toMatch(
+      /var\(--(?:gray-(?:50|100|200|300|500)|primary-10|danger)\)/,
+    );
+  });
+
   test("keeps composer attachment deletion focus handoff predictable", () => {
     const chat = read("app/components/chat.tsx");
 

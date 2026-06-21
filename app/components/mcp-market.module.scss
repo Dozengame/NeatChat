@@ -14,6 +14,54 @@
     var(--primary) 86%,
     var(--black)
   );
+  --mcp-market-form-surface: var(--surface-elevated);
+  --mcp-market-form-soft-surface: color-mix(
+    in srgb,
+    var(--black) 4%,
+    var(--surface-elevated)
+  );
+  --mcp-market-form-hover-surface: color-mix(
+    in srgb,
+    var(--primary) 6%,
+    var(--surface-elevated)
+  );
+  --mcp-market-form-border-color: color-mix(
+    in srgb,
+    var(--black-50) 14%,
+    transparent
+  );
+  --mcp-market-form-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 22%,
+    transparent
+  );
+  --mcp-market-form-placeholder-color: color-mix(
+    in srgb,
+    var(--black-50) 58%,
+    transparent
+  );
+  --mcp-market-form-description-color: color-mix(
+    in srgb,
+    var(--black-50) 88%,
+    transparent
+  );
+  --mcp-market-form-danger-color: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 82%,
+    var(--black)
+  );
+  --mcp-market-form-danger-hover-border-color: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 36%,
+    transparent
+  );
+  --mcp-market-form-focus-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--primary) 12%, transparent);
+  --mcp-market-form-add-hover-background: color-mix(
+    in srgb,
+    var(--primary) 8%,
+    var(--surface-elevated)
+  );
 
   height: 100%;
   display: flex;
@@ -291,9 +339,9 @@
     gap: 12px;
     width: 100%;
     padding: 16px;
-    border: 1px solid var(--gray-200);
+    border: 1px solid var(--mcp-market-form-border-color);
     border-radius: 10px;
-    background-color: var(--white);
+    background-color: var(--mcp-market-form-surface);
 
     .array-input-item {
       display: flex;
@@ -305,26 +353,26 @@
       input {
         width: 100%;
         padding: 8px 12px;
-        background-color: var(--gray-50);
+        background-color: var(--mcp-market-form-soft-surface);
         border-radius: 6px;
         transition: all 0.3s ease;
         font-size: 13px;
-        border: 1px solid var(--gray-200);
+        border: 1px solid var(--mcp-market-form-border-color);
 
         &:hover {
-          background-color: var(--gray-100);
-          border-color: var(--gray-300);
+          background-color: var(--mcp-market-form-hover-surface);
+          border-color: var(--mcp-market-form-hover-border-color);
         }
 
         &:focus {
-          background-color: var(--white);
+          background-color: var(--mcp-market-form-surface);
           border-color: var(--primary);
           outline: none;
-          box-shadow: 0 0 0 2px var(--primary-10);
+          box-shadow: var(--mcp-market-form-focus-shadow);
         }
 
         &::placeholder {
-          color: var(--gray-300);
+          color: var(--mcp-market-form-placeholder-color);
         }
       }
     }
@@ -376,17 +424,17 @@
         border-radius: 10px;
         box-sizing: border-box;
         font-size: 14px;
-        background-color: var(--white);
+        background-color: var(--mcp-market-form-surface);
         color: var(--black);
 
         &:hover {
-          border-color: var(--gray-300);
+          border-color: var(--mcp-market-form-hover-border-color);
         }
 
         &:focus {
           border-color: var(--primary);
           outline: none;
-          box-shadow: 0 0 0 2px var(--primary-10);
+          box-shadow: var(--mcp-market-form-focus-shadow);
         }
       }
 
@@ -398,9 +446,9 @@
         color: var(--black-50);
 
         &:hover {
-          border-color: var(--primary);
+          border-color: var(--mcp-market-form-hover-border-color);
           color: var(--primary);
-          background-color: transparent;
+          background-color: var(--mcp-market-form-add-hover-background);
         }
 
         svg {
@@ -417,8 +465,8 @@
         color: var(--black-50);
 
         &:hover {
-          border-color: var(--danger);
-          color: var(--danger);
+          border-color: var(--mcp-market-form-danger-hover-border-color);
+          color: var(--mcp-market-form-danger-color);
           background-color: transparent;
         }
 
@@ -447,9 +495,9 @@
       margin-top: 5px;
 
       &:hover {
-        border-color: var(--primary);
+        border-color: var(--mcp-market-form-hover-border-color);
         color: var(--primary);
-        background-color: transparent;
+        background-color: var(--mcp-market-form-add-hover-background);
       }
 
       svg {
@@ -474,7 +522,7 @@
 
       .config-description {
         font-size: 12px;
-        color: var(--gray-500);
+        color: var(--mcp-market-form-description-color);
         margin-top: 4px;
       }
     }
@@ -485,9 +533,9 @@
       gap: 12px;
       width: 100%;
       padding: 16px;
-      border: 1px solid var(--gray-200);
+      border: 1px solid var(--mcp-market-form-border-color);
       border-radius: 10px;
-      background-color: var(--white);
+      background-color: var(--mcp-market-form-surface);
 
       .array-input-item {
         display: flex;
@@ -499,26 +547,26 @@
         input {
           width: 100%;
           padding: 8px 12px;
-          background-color: var(--gray-50);
+          background-color: var(--mcp-market-form-soft-surface);
           border-radius: 6px;
           transition: all 0.3s ease;
           font-size: 13px;
-          border: 1px solid var(--gray-200);
+          border: 1px solid var(--mcp-market-form-border-color);
 
           &:hover {
-            background-color: var(--gray-100);
-            border-color: var(--gray-300);
+            background-color: var(--mcp-market-form-hover-surface);
+            border-color: var(--mcp-market-form-hover-border-color);
           }
 
           &:focus {
-            background-color: var(--white);
+            background-color: var(--mcp-market-form-surface);
             border-color: var(--primary);
             outline: none;
-            box-shadow: 0 0 0 2px var(--primary-10);
+            box-shadow: var(--mcp-market-form-focus-shadow);
           }
 
           &::placeholder {
-            color: var(--gray-300);
+            color: var(--mcp-market-form-placeholder-color);
           }
         }
 
@@ -528,15 +576,15 @@
           padding: 0;
           border-radius: 6px;
           background-color: transparent;
-          border: 1px solid var(--gray-200);
+          border: 1px solid var(--mcp-market-form-border-color);
           flex-shrink: 0;
           display: flex;
           align-items: center;
           justify-content: center;
 
           &:hover {
-            background-color: var(--gray-100);
-            border-color: var(--gray-300);
+            background-color: var(--mcp-market-form-hover-surface);
+            border-color: var(--mcp-market-form-hover-border-color);
           }
 
           svg {
@@ -585,21 +633,21 @@
       border-radius: 10px;
       box-sizing: border-box;
       font-size: 14px;
-      background-color: var(--white);
+      background-color: var(--mcp-market-form-surface);
       color: var(--black);
 
       &:hover {
-        border-color: var(--gray-300);
+        border-color: var(--mcp-market-form-hover-border-color);
       }
 
       &:focus {
         border-color: var(--primary);
         outline: none;
-        box-shadow: 0 0 0 2px var(--primary-10);
+        box-shadow: var(--mcp-market-form-focus-shadow);
       }
 
       &::placeholder {
-        color: var(--gray-300) !important;
+        color: var(--mcp-market-form-placeholder-color) !important;
         opacity: 1;
       }
     }
@@ -633,7 +681,7 @@
 
       .tool-description {
         font-size: 13px;
-        color: var(--gray-500);
+        color: var(--mcp-market-form-description-color);
         line-height: 1.6;
         padding-left: 15px;
         box-sizing: border-box;
@@ -677,7 +725,7 @@
 
         .list-sub-title {
           font-size: 12px;
-          color: var(--gray-500);
+          color: var(--mcp-market-form-description-color);
           margin-top: 4px;
         }
       }
@@ -690,6 +738,53 @@
     in srgb,
     var(--primary) 78%,
     var(--black)
+  );
+  --mcp-market-form-soft-surface: color-mix(
+    in srgb,
+    var(--black) 6%,
+    var(--surface-elevated)
+  );
+  --mcp-market-form-hover-surface: color-mix(
+    in srgb,
+    var(--primary) 12%,
+    var(--surface-elevated)
+  );
+  --mcp-market-form-border-color: color-mix(
+    in srgb,
+    var(--black) 12%,
+    transparent
+  );
+  --mcp-market-form-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 34%,
+    transparent
+  );
+  --mcp-market-form-placeholder-color: color-mix(
+    in srgb,
+    var(--black) 44%,
+    transparent
+  );
+  --mcp-market-form-description-color: color-mix(
+    in srgb,
+    var(--black) 62%,
+    transparent
+  );
+  --mcp-market-form-danger-color: color-mix(
+    in srgb,
+    rgb(248, 113, 113) 72%,
+    var(--black)
+  );
+  --mcp-market-form-danger-hover-border-color: color-mix(
+    in srgb,
+    rgb(248, 113, 113) 48%,
+    transparent
+  );
+  --mcp-market-form-focus-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--primary) 22%, transparent);
+  --mcp-market-form-add-hover-background: color-mix(
+    in srgb,
+    var(--primary) 14%,
+    var(--surface-elevated)
   );
 }
 
@@ -722,6 +817,53 @@
       in srgb,
       var(--primary) 78%,
       var(--black)
+    );
+    --mcp-market-form-soft-surface: color-mix(
+      in srgb,
+      var(--black) 6%,
+      var(--surface-elevated)
+    );
+    --mcp-market-form-hover-surface: color-mix(
+      in srgb,
+      var(--primary) 12%,
+      var(--surface-elevated)
+    );
+    --mcp-market-form-border-color: color-mix(
+      in srgb,
+      var(--black) 12%,
+      transparent
+    );
+    --mcp-market-form-hover-border-color: color-mix(
+      in srgb,
+      var(--primary) 34%,
+      transparent
+    );
+    --mcp-market-form-placeholder-color: color-mix(
+      in srgb,
+      var(--black) 44%,
+      transparent
+    );
+    --mcp-market-form-description-color: color-mix(
+      in srgb,
+      var(--black) 62%,
+      transparent
+    );
+    --mcp-market-form-danger-color: color-mix(
+      in srgb,
+      rgb(248, 113, 113) 72%,
+      var(--black)
+    );
+    --mcp-market-form-danger-hover-border-color: color-mix(
+      in srgb,
+      rgb(248, 113, 113) 48%,
+      transparent
+    );
+    --mcp-market-form-focus-shadow: 0 0 0 2px
+      color-mix(in srgb, var(--primary) 22%, transparent);
+    --mcp-market-form-add-hover-background: color-mix(
+      in srgb,
+      var(--primary) 14%,
+      var(--surface-elevated)
     );
   }
 

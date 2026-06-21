@@ -6273,3 +6273,56 @@ Known risks:
 - Post-fix live Browser computed-style verification for MCP market was blocked by the local access-code gate after reload. The slice does not enter credentials or change auth/config to bypass that gate.
 - Browser QA did not click Add, Start, Stop, Restart, Configure, Save, or Tools because those are MCP/config side-effect paths.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-21 mcp-market-form-surface-tone
+
+Result: passed.
+
+Target flow:
+
+- MCP market config forms, array/path inputs, add/browse/delete controls, tool descriptions, and list subtitles should use the same Gemini-style elevated form surface language as the rest of the app.
+- Form surfaces, soft input fills, hover borders, focus rings, placeholders, descriptions, and destructive hover states should consume local MCP market form tokens instead of undefined `--gray-*`, `--primary-10`, or `--danger` tokens.
+- MCP controller behavior, MCP add/start/stop/restart/configure/tools actions, config form value updates, model config semantics, account/secret/sync, backend/API, production config, deployment config, dependencies, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected a quiet utility-form direction: elevated panel surface, subtle soft input wells, primary hover/focus affordance, restrained destructive hover, explicit Dark/Auto dark safety, and no MCP mutation.
+- No generated raster design was used for this slice because it is a small UI-system repair inside the existing design language. The design spec is the local token contract in `mcp-market.module.scss` plus this QA record.
+
+Scope:
+
+- `app/components/mcp-market.module.scss`: added local `--mcp-market-form-*` tokens, replaced form/control references to undefined gray/focus/danger tokens, aligned description text with a local description color, and added explicit Dark plus Auto dark token overrides.
+- `test/gemini-visual-migration.test.ts`: added a focused MCP market form contract locking behavior entry points, Light/Dark/Auto dark token declarations, form/input/control token consumers, placeholder/description/danger hover coverage, and old undefined token removal from the scoped form surface.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TSX behavior, MCP controller/helper behavior, store logic, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, deploy files, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="MCP market form controls"` failed first as expected because the MCP market form tokens did not exist and the form controls still referenced old tokens.
+- After implementation, the same focused contract passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="MCP market"` passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `yarn build` passed with the existing Next warning that Edge runtime disables static generation for that page.
+- `git diff --check` passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser was used for this slice. No real access code, key, account, model/API request, upload, image-generation action, persisted production config, backend config, dependency, send action, model request, MCP start/stop/add/restart/configure/save/tools action, or model/config selection mutation was used.
+- The existing `http://localhost:3000` listener returned a stale Next Server Error from `.next/server/webpack-runtime.js`, so it was not used as valid QA evidence.
+- `http://localhost:3001` responded successfully after initial compilation. Direct Browser navigation to `#/mcp-market` then stopped at the local access-code gate: `需要密码`, `管理员开启了密码验证，请在下方填入访问码`, `确认`.
+- No access code was entered and no auth/config bypass was attempted. Runtime computed-style evidence for the MCP market form surface is therefore blocked by local auth state; source-level Jest, lint, typecheck, build, diff check, and read-only review cover the corrected style contract.
+
+Review:
+
+- Read-only sub-agent review found one scope note: `design-qa.md` is an additional changed file beyond the SCSS and test files. This is intentionally included because each small iteration requires a QA/review record.
+- The same review found no blocking code issues. It confirmed no TSX behavior, store, model config, account/secret/sync, backend/API, production/deployment config, dependency, send-path, or internal-plan changes were found.
+- The reviewer confirmed no target undefined form tokens remain in the scoped MCP market form surface and the Dark/Auto dark form token overrides use the repository's theme variable semantics.
+
+Known risks:
+
+- Live Browser computed-style verification for MCP market form controls is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
+- Browser QA did not click Add, Start, Stop, Restart, Configure, Save, or Tools because those are MCP/config side-effect paths.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
