@@ -6949,16 +6949,16 @@ describe("Gemini visual migration shell", () => {
     const uiLibComponents = read("app/components/ui-lib-components.tsx");
     const uiLibStyles = read("app/components/ui-lib.module.scss");
     const sharedSurfaceSelector =
-      ".card,\n.popover-mask,\n.list,\n.modal-container,\n.toast-content,\n.input,\n.select-with-icon,\n.modal-input,\n.selector";
+      ".card,\n.popover-mask,\n.list,\n.modal-container,\n.toast-content,\n.input,\n.select-with-icon,\n.modal-input,\n.list-item,\n.selector";
     const sharedSurfaceBlock = readRootDeclarations(
       readCssBlock(uiLibStyles, sharedSurfaceSelector),
     );
     const darkSharedSurfaceBlock = readCssBlock(
       uiLibStyles,
-      ":global(.dark) .card,\n:global(.dark) .popover-mask,\n:global(.dark) .list,\n:global(.dark) .modal-container,\n:global(.dark) .toast-content,\n:global(.dark) .input,\n:global(.dark) .select-with-icon,\n:global(.dark) .modal-input,\n:global(.dark) .selector",
+      ":global(.dark) .card,\n:global(.dark) .popover-mask,\n:global(.dark) .list,\n:global(.dark) .modal-container,\n:global(.dark) .toast-content,\n:global(.dark) .input,\n:global(.dark) .select-with-icon,\n:global(.dark) .modal-input,\n:global(.dark) .list-item,\n:global(.dark) .selector",
     );
     const autoDarkSharedSurfaceSelector =
-      ":global(body:not(.light)) .card,\n  :global(body:not(.light)) .popover-mask,\n  :global(body:not(.light)) .list,\n  :global(body:not(.light)) .modal-container,\n  :global(body:not(.light)) .toast-content,\n  :global(body:not(.light)) .input,\n  :global(body:not(.light)) .select-with-icon,\n  :global(body:not(.light)) .modal-input,\n  :global(body:not(.light)) .selector";
+      ":global(body:not(.light)) .card,\n  :global(body:not(.light)) .popover-mask,\n  :global(body:not(.light)) .list,\n  :global(body:not(.light)) .modal-container,\n  :global(body:not(.light)) .toast-content,\n  :global(body:not(.light)) .input,\n  :global(body:not(.light)) .select-with-icon,\n  :global(body:not(.light)) .modal-input,\n  :global(body:not(.light)) .list-item,\n  :global(body:not(.light)) .selector";
     const autoDarkSharedSurfaceSelectorIndex = uiLibStyles.indexOf(
       autoDarkSharedSurfaceSelector,
     );
@@ -6971,11 +6971,13 @@ describe("Gemini visual migration shell", () => {
       autoDarkSharedSurfaceSelector,
     );
     const cardBlock = readCssBlock(uiLibStyles, ".card");
+    const listItemBlock = readCssBlock(uiLibStyles, ".list-item");
     const listBlock = readCssBlock(uiLibStyles, ".list");
     const popoverMaskBlock = readCssBlock(uiLibStyles, ".popover-mask");
     const modalContainerBlock = readRootDeclarations(
       readCssBlock(uiLibStyles, ".modal-container"),
     );
+    const modalHeaderBlock = readCssBlock(uiLibStyles, ".modal-header");
     const modalFooterBlock = readCssBlock(uiLibStyles, ".modal-footer");
     const toastContentBlock = readCssBlock(uiLibStyles, ".toast-content");
     const inputBlock = readCssBlock(uiLibStyles, ".input");
@@ -6995,6 +6997,8 @@ describe("Gemini visual migration shell", () => {
       selectorStyles,
       "&-content",
     );
+    const selectorSearchBlock = readCssBlock(selectorContentBlock, ".selector-search");
+    const selectorListItemBlock = readCssBlock(selectorContentBlock, ".list-item");
     const selectorSelectedBlock = readCssBlock(
       uiLibStyles,
       ".selector-item-selected",
@@ -7020,6 +7024,7 @@ describe("Gemini visual migration shell", () => {
       listBlock,
       popoverMaskBlock,
       modalContainerBlock,
+      modalHeaderBlock,
       modalFooterBlock,
       toastContentBlock,
       inputBlock,
@@ -7027,10 +7032,14 @@ describe("Gemini visual migration shell", () => {
       modalInputBlock,
       selectorBlock,
       selectorContentBlock,
+      selectorSearchBlock,
+      selectorListItemBlock,
       selectorSelectedBlock,
+      mobileSelectorContentBlock,
     ].join("\n");
 
     expect(uiLibComponents).toContain("export function Modal");
+    expect(sharedSurfaceSelector).toContain(".list-item");
     expect(uiLibComponents).toContain("window.addEventListener(\"keydown\", onKeyDown)");
     expect(uiLibComponents).toContain('aria-label={isMax ? "Restore modal" : "Maximize modal"}');
     expect(uiLibComponents).toContain('aria-label="Close modal"');
@@ -7050,6 +7059,17 @@ describe("Gemini visual migration shell", () => {
     );
     expect(sharedSurfaceBlock).toMatch(
       /--ui-lib-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(/--ui-lib-panel-radius:\s*8px;/);
+    expect(sharedSurfaceBlock).toMatch(/--ui-lib-control-radius:\s*8px;/);
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-mobile-sheet-radius:\s*8px 8px 0 0;/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-divider-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-list-hover-background:\s*color-mix\(in srgb,\s*var\(--black\) 6%,\s*transparent\);/,
     );
     expect(sharedSurfaceBlock).toMatch(
       /--ui-lib-overlay-background:\s*color-mix\(in srgb,\s*var\(--ui-lib-shadow-ink\) 46%,\s*transparent\);/,
@@ -7075,6 +7095,12 @@ describe("Gemini visual migration shell", () => {
     expect(darkSharedSurfaceBlock).toMatch(
       /--ui-lib-toast-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
     );
+    expect(darkSharedSurfaceBlock).toMatch(
+      /--ui-lib-divider-color:\s*color-mix\(in srgb,\s*var\(--black\) 12%,\s*transparent\);/,
+    );
+    expect(darkSharedSurfaceBlock).toMatch(
+      /--ui-lib-list-hover-background:\s*color-mix\(in srgb,\s*var\(--black\) 8%,\s*transparent\);/,
+    );
     expect(autoDarkSharedSurfaceSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkSharedSurfaceMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkSharedSurfaceBlock).toMatch(
@@ -7083,11 +7109,19 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkSharedSurfaceBlock).toMatch(
       /--ui-lib-selected-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 24%,\s*transparent\);/,
     );
+    expect(autoDarkSharedSurfaceBlock).toMatch(
+      /--ui-lib-divider-color:\s*color-mix\(in srgb,\s*var\(--black\) 12%,\s*transparent\);/,
+    );
 
     expect(cardBlock).toMatch(/background-color:\s*var\(--ui-lib-surface\);/);
     expect(cardBlock).toMatch(/border:\s*1px solid var\(--ui-lib-border-color\);/);
+    expect(cardBlock).toMatch(/border-radius:\s*var\(--ui-lib-panel-radius\);/);
+    expect(listItemBlock).toMatch(
+      /border-bottom:\s*1px solid var\(--ui-lib-divider-color\);/,
+    );
     expect(listBlock).toMatch(/background:\s*var\(--ui-lib-surface\);/);
     expect(listBlock).toMatch(/border:\s*1px solid var\(--ui-lib-border-color\);/);
+    expect(listBlock).toMatch(/border-radius:\s*var\(--ui-lib-panel-radius\);/);
     expect(listBlock).toMatch(/box-shadow:[\s\S]*var\(--ui-lib-panel-shadow-color\);/);
     expect(popoverMaskBlock).toMatch(
       /background-color:\s*var\(--ui-lib-popover-mask-background\);/,
@@ -7099,7 +7133,16 @@ describe("Gemini visual migration shell", () => {
       /border:\s*1px solid var\(--ui-lib-border-color\);/,
     );
     expect(modalContainerBlock).toMatch(
+      /border-radius:\s*var\(--ui-lib-panel-radius\);/,
+    );
+    expect(modalContainerBlock).toMatch(
       /box-shadow:[\s\S]*var\(--ui-lib-panel-shadow-color\);/,
+    );
+    expect(modalHeaderBlock).toMatch(
+      /border-bottom:\s*1px solid var\(--ui-lib-divider-color\);/,
+    );
+    expect(modalFooterBlock).toMatch(
+      /border-top:\s*1px solid var\(--ui-lib-divider-color\);/,
     );
     expect(modalFooterBlock).toMatch(
       /box-shadow:\s*0 -10px 24px var\(--ui-lib-footer-shadow-color\);/,
@@ -7116,9 +7159,14 @@ describe("Gemini visual migration shell", () => {
     expect(toastContentBlock).toMatch(/backdrop-filter:\s*blur\(18px\);/);
     expect(inputBlock).toMatch(/background-color:\s*var\(--ui-lib-surface\);/);
     expect(inputBlock).toMatch(/border:\s*1px solid var\(--ui-lib-border-color\);/);
+    expect(inputBlock).toMatch(/border-radius:\s*var\(--ui-lib-control-radius\);/);
     expect(selectBlock).toMatch(/background-color:\s*var\(--ui-lib-surface\);/);
     expect(selectBlock).toMatch(/border:\s*1px solid var\(--ui-lib-border-color\);/);
+    expect(selectBlock).toMatch(/border-radius:\s*var\(--ui-lib-control-radius\);/);
     expect(modalInputBlock).toMatch(/background-color:\s*var\(--ui-lib-surface\);/);
+    expect(modalInputBlock).toMatch(
+      /border-radius:\s*var\(--ui-lib-control-radius\);/,
+    );
     expect(modalInputBlock).toMatch(
       /box-shadow:\s*0 -2px 5px var\(--ui-lib-input-shadow-color\);/,
     );
@@ -7139,7 +7187,19 @@ describe("Gemini visual migration shell", () => {
       /border:\s*1px solid var\(--ui-lib-border-color\);/,
     );
     expect(selectorContentBlock).toMatch(
+      /border-radius:\s*var\(--ui-lib-panel-radius\);/,
+    );
+    expect(selectorContentBlock).toMatch(
       /box-shadow:[\s\S]*var\(--ui-lib-panel-shadow-color\);/,
+    );
+    expect(selectorSearchBlock).toMatch(
+      /border-bottom:\s*1px solid var\(--ui-lib-divider-color\);/,
+    );
+    expect(selectorListItemBlock).toMatch(
+      /&:hover[\s\S]*background-color:\s*var\(--ui-lib-list-hover-background\);/,
+    );
+    expect(selectorListItemBlock).toMatch(
+      /&:active[\s\S]*background-color:\s*var\(--ui-lib-list-hover-background\);/,
     );
     expect(selectorSelectedBlock).toMatch(
       /background-color:\s*var\(--ui-lib-selected-background\);/,
@@ -7156,11 +7216,16 @@ describe("Gemini visual migration shell", () => {
       /max-height:\s*min\(76dvh,\s*600px\);/,
     );
     expect(mobileSelectorContentBlock).toMatch(
-      /border-radius:\s*16px 16px 0 0;/,
+      /border-radius:\s*var\(--ui-lib-mobile-sheet-radius\);/,
     );
     expect(sharedUiLibPaintScope).not.toContain("background-color: var(--white)");
     expect(sharedUiLibPaintScope).not.toContain("background: var(--white)");
     expect(sharedUiLibPaintScope).not.toContain("box-shadow: var(--shadow)");
+    expect(sharedUiLibPaintScope).not.toContain("border-bottom: var(--border-in-light)");
+    expect(sharedUiLibPaintScope).not.toContain("border-top: var(--border-in-light)");
+    expect(sharedUiLibPaintScope).not.toContain("border-radius: 10px");
+    expect(sharedUiLibPaintScope).not.toContain("border-radius: 12px");
+    expect(sharedUiLibPaintScope).not.toContain("border-radius: 16px 16px 0 0");
     expect(sharedUiLibPaintScope).not.toContain("rgba(0, 0, 0, 0.5)");
     expect(sharedUiLibPaintScope).not.toContain("rgba(0, 0, 0, 0.3)");
   });

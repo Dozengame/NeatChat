@@ -8,10 +8,15 @@
 .input,
 .select-with-icon,
 .modal-input,
+.list-item,
 .selector {
   --ui-lib-shadow-ink: rgb(0, 0, 0);
   --ui-lib-surface: var(--surface-elevated);
   --ui-lib-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --ui-lib-divider-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --ui-lib-panel-radius: 8px;
+  --ui-lib-control-radius: 8px;
+  --ui-lib-mobile-sheet-radius: 8px 8px 0 0;
   --ui-lib-overlay-background: color-mix(in srgb, var(--ui-lib-shadow-ink) 46%, transparent);
   --ui-lib-popover-mask-background: color-mix(in srgb, var(--ui-lib-shadow-ink) 30%, transparent);
   --ui-lib-panel-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 16%, transparent);
@@ -23,6 +28,7 @@
   --ui-lib-selected-background: var(--primary);
   --ui-lib-selected-shadow-color: color-mix(in srgb, var(--primary) 18%, transparent);
   --ui-lib-focus-border-color: var(--primary);
+  --ui-lib-list-hover-background: color-mix(in srgb, var(--black) 6%, transparent);
 }
 
 :global(.dark) .card,
@@ -33,16 +39,19 @@
 :global(.dark) .input,
 :global(.dark) .select-with-icon,
 :global(.dark) .modal-input,
+:global(.dark) .list-item,
 :global(.dark) .selector {
   --ui-lib-overlay-background: color-mix(in srgb, var(--ui-lib-shadow-ink) 54%, transparent);
   --ui-lib-popover-mask-background: color-mix(in srgb, var(--ui-lib-shadow-ink) 42%, transparent);
   --ui-lib-panel-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 30%, transparent);
+  --ui-lib-divider-color: color-mix(in srgb, var(--black) 12%, transparent);
   --ui-lib-footer-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 18%, transparent);
   --ui-lib-input-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 16%, transparent);
   --ui-lib-toast-background: color-mix(in srgb, var(--surface-elevated) 86%, transparent);
   --ui-lib-toast-border-color: color-mix(in srgb, var(--black) 10%, transparent);
   --ui-lib-toast-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 24%, transparent);
   --ui-lib-selected-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
+  --ui-lib-list-hover-background: color-mix(in srgb, var(--black) 8%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -54,23 +63,26 @@
   :global(body:not(.light)) .input,
   :global(body:not(.light)) .select-with-icon,
   :global(body:not(.light)) .modal-input,
+  :global(body:not(.light)) .list-item,
   :global(body:not(.light)) .selector {
     --ui-lib-overlay-background: color-mix(in srgb, var(--ui-lib-shadow-ink) 54%, transparent);
     --ui-lib-popover-mask-background: color-mix(in srgb, var(--ui-lib-shadow-ink) 42%, transparent);
     --ui-lib-panel-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 30%, transparent);
+    --ui-lib-divider-color: color-mix(in srgb, var(--black) 12%, transparent);
     --ui-lib-footer-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 18%, transparent);
     --ui-lib-input-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 16%, transparent);
     --ui-lib-toast-background: color-mix(in srgb, var(--surface-elevated) 86%, transparent);
     --ui-lib-toast-border-color: color-mix(in srgb, var(--black) 10%, transparent);
     --ui-lib-toast-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 24%, transparent);
     --ui-lib-selected-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
+    --ui-lib-list-hover-background: color-mix(in srgb, var(--black) 8%, transparent);
   }
 }
 
 .card {
   background-color: var(--ui-lib-surface);
   border: 1px solid var(--ui-lib-border-color);
-  border-radius: 10px;
+  border-radius: var(--ui-lib-panel-radius);
   box-shadow: 0 10px 28px var(--ui-lib-panel-shadow-color);
   padding: 10px;
 }
@@ -107,7 +119,7 @@
   justify-content: space-between;
   align-items: center;
   min-height: 40px;
-  border-bottom: var(--border-in-light);
+  border-bottom: 1px solid var(--ui-lib-divider-color);
   padding: 10px 12px;
   animation: slide-in ease 0.6s;
 
@@ -146,7 +158,7 @@
 
 .list {
   border: 1px solid var(--ui-lib-border-color);
-  border-radius: 10px;
+  border-radius: var(--ui-lib-panel-radius);
   box-shadow: 0 12px 28px var(--ui-lib-panel-shadow-color);
   margin-bottom: 20px;
   animation: slide-in ease 0.3s;
@@ -161,7 +173,7 @@
   box-shadow: 0 22px 70px var(--ui-lib-panel-shadow-color);
   background-color: var(--ui-lib-surface);
   border: 1px solid var(--ui-lib-border-color);
-  border-radius: 12px;
+  border-radius: var(--ui-lib-panel-radius);
   width: 80vw;
   max-width: 900px;
   min-width: 300px;
@@ -187,7 +199,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: var(--border-in-light);
+    border-bottom: 1px solid var(--ui-lib-divider-color);
 
     .modal-title {
       font-weight: bolder;
@@ -221,7 +233,7 @@
     padding: var(--modal-padding);
     display: flex;
     justify-content: flex-end;
-    border-top: var(--border-in-light);
+    border-top: 1px solid var(--ui-lib-divider-color);
     box-shadow: 0 -10px 24px var(--ui-lib-footer-shadow-color);
 
     .modal-actions {
@@ -254,7 +266,7 @@
     &-content {
       width: min(100vw, 420px);
       max-height: min(76dvh, 600px);
-      border-radius: 16px 16px 0 0;
+      border-radius: var(--ui-lib-mobile-sheet-radius);
     }
   }
 }
@@ -326,7 +338,7 @@
 .input {
   appearance: none;
   box-sizing: border-box;
-  border-radius: 10px;
+  border-radius: var(--ui-lib-control-radius);
   padding: 10px;
   font-family: inherit;
   line-height: 1.35;
@@ -352,7 +364,7 @@
     box-sizing: border-box;
     height: 100%;
     padding: 8px 25px 8px 6px;
-    border-radius: 10px;
+    border-radius: var(--ui-lib-control-radius);
     appearance: none;
     cursor: pointer;
     font-family: inherit;
@@ -376,7 +388,7 @@
 .modal-input {
   height: 100%;
   width: 100%;
-  border-radius: 10px;
+  border-radius: var(--ui-lib-control-radius);
   border: 1px solid var(--ui-lib-border-color);
   box-shadow: 0 -2px 5px var(--ui-lib-input-shadow-color);
   background-color: var(--ui-lib-surface);
@@ -409,7 +421,7 @@
   &-content {
     background-color: var(--ui-lib-surface);
     border: 1px solid var(--ui-lib-border-color);
-    border-radius: 10px;
+    border-radius: var(--ui-lib-panel-radius);
     box-shadow: 0 22px 70px var(--ui-lib-panel-shadow-color);
     min-width: 300px;
     min-height: auto;
@@ -418,17 +430,12 @@
     flex-direction: column;
     overflow: hidden;
 
-    .search-wrapper {
-      height: 60px;
-      border-bottom: var(--border-in-light);
-    }
-
     .selector-search {
       box-sizing: border-box;
       height: 60px !important;
       min-height: 60px;
       padding: 0;
-      border-bottom: var(--border-in-light);
+      border-bottom: 1px solid var(--ui-lib-divider-color);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -463,11 +470,11 @@
         cursor: pointer;
 
         &:hover {
-          background-color: var(--hover-color);
+          background-color: var(--ui-lib-list-hover-background);
         }
 
         &:active {
-          background-color: var(--hover-color);
+          background-color: var(--ui-lib-list-hover-background);
         }
       }
     }
