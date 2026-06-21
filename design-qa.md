@@ -5754,3 +5754,35 @@ Known risks:
 
 - Screenshot evidence is missing for this slice because the Browser screenshot API timed out on the local dev page; runtime DOM/CSS evidence and source-contract tests still cover the targeted behavior.
 - The visual balance of dark-mode opacity was verified through source contracts, not by changing persisted theme settings in Browser. If a later slice intentionally covers theme switching, add a dedicated dark-mode visual QA pass.
+
+## Iteration 2026-06-21 handoff-coverage-audit-through-5f04abb5
+
+Result: audit complete; one pause-boundary item remains.
+
+Audit scope:
+
+- Reviewed the user-referenced handoff file at `/Users/issaczeng/.gemini/antigravity/brain/ecc9b33a-8613-46cc-b6de-de17c9c31158/handoff.md` against the current `dev` HEAD `5f04abb5` and the commit range after base commit `8b7da1a7e30221c0a1a6ff55a50cadd295624267`.
+- Two read-only explorer subagents cross-checked the range: one for R1/R2/R3 and one for R4/R5/R6.
+- This is a QA/audit iteration only. It does not change runtime UI, model config semantics, streaming protocol, account/secret/sync, backend/API, production config, deployment config, dependencies, or persisted store keys.
+
+Coverage table:
+
+| Handoff area | Current conclusion | Evidence | Remaining risk |
+| --- | --- | --- | --- |
+| R1 rainbow shimmer loading and first-token handoff | Completed. The original waiting shimmer exists, and the handoff no longer hard-switches without a reveal layer. | Base `8b7da1a7`, then `19c44289`, `3b3a6901`, `80d7c88e`, `f0627d1b`, `9aefcdcf`, and `fe43edda`; `app/components/chat.tsx` keeps `isWaiting` and `isStreamingReveal`; `app/components/chat.module.scss` keeps `streamingTextReveal`, `streamingShimmerFade`, `streamingSurfaceHandoff`, dark variants, and reduced-motion stop; `test/gemini-visual-migration.test.ts` locks the streaming wait state contract. | Low. Runtime Browser QA does not call a real model/API; the transient first-token state is covered by source/Jest and CSSOM validation. |
+| R2 drag/drop and glass dropzone | Completed for the current app architecture. Window-level drag handling, file-only activation, drag counter, chat-viewport glass overlay, live status, limits, and attachment insertion behavior are covered. | `bb30c490`, `b6094f12`, `8518cff9`, `8e103d37`, `16b45183`, `1997fa5d`, `463e74f9`, and `519e794b`; current `chat.tsx` keeps drag counter and `appendAttachments`; current `chat.module.scss` keeps the dropzone overlay surface scoped to the chat root; `test/gemini-visual-migration.test.ts` locks the drag/drop visual and behavior contracts. | Low to medium. The listener is window-level, but the visual overlay is scoped to the chat area rather than the entire browser viewport/sidebar; this matches the current shell but should not be described as full-browser-screen coverage. |
+| R3 `@starting-style` motion | Partially completed. Modern CSS entry/exit motion is implemented for menus, popovers, and mobile drawer; old-Safari equivalent fallback is intentionally not implemented. | `afdc9a0a`, plus later keyboard/focus/menu hardening commits such as `a8947361`, `47928847`, `f82c5e87`, `cbc09e8e`, and `5f04abb5`; current `chat.module.scss` and `home.module.scss` keep `@starting-style` plus `transition-behavior: allow-discrete`; `test/gemini-visual-migration.test.ts` locks the current CSS shape. | Medium and paused by scope. Matching the same animation on iOS 16.x/macOS 13-era Safari would require a JS fallback or animation library / broader interaction rewrite, which is a product-direction and dependency/boundary decision. |
+| R4 Markdown code/table typography and code chrome | Completed. Handoff's language-label and copy-button overlap risks are covered. | `5e91acff`, `1d9db257`, `b70624f3`, `2d9e4e72`, `989fe4be`, `0d60e2b4`, `62630cca`, `4c59c6dc`, `57a2bb05`; `app/components/markdown.tsx` extracts and renders `.markdown-code-language`; `app/styles/markdown.scss` reserves `padding: 14px 64px 14px 16px` plus labeled top padding; tests lock labels, copy button sizing/position, scroll fades, fold controls, and copied-state feedback. | Low. Extremely narrow widths and custom font scaling may still need future visual tuning, but the handoff defects are closed. |
+| R5 glass sidebar and mobile drawer translucency | Completed. Desktop glass, cross-browser scrollbar rules, mobile drawer glass, dark backdrop, focus containment, and app-body suppression are covered through current HEAD. | `9302e519`, `28b7b3e6`, `423a77aa`, `53dba00b`, `b3ddbf3d`, `cc84e6c7`, `5f04abb5`; current `home.module.scss` keeps desktop and mobile translucent glass surfaces; tests lock drawer width, backdrop, z-index, no overflow, and dark/light mobile surface contracts. | Low. Browsers without `backdrop-filter` degrade to weaker translucency; this is a CSS capability fallback, not an unimplemented handoff item. |
+| R6 source hygiene and local artifact control | Covered for current known source-control risks, but this audit does not fully prove every original automation/screenshot/commit-management requirement. Internal plans, local QA captures, scratch tests, env files, MCP config, and test results are ignored and not tracked. | `8641a9b8`; `.gitignore` covers `docs/superpowers/plans/`, `capture*.js`, `test-screenshot.js`, `screenshot.spec.js`, `/test-results/`, `PROJECT.md`, `progress.md`, and scratch tests; `.git/info/exclude` keeps `.agents/` and `.codex/` local-only; `git check-ignore` confirms current internal plan and QA artifacts are excluded. | Medium. Source hygiene is covered, but a separate release/process audit would be needed to prove all original R6 validation, screenshot, and per-module commit-management expectations across the whole historical run. |
+
+Review:
+
+- R1/R2/R3 explorer result: R1 and R2 are covered; R3 old-Safari fallback remains a product-decision pause boundary.
+- R4/R5/R6 explorer result: R4 and R5 are covered by current source and tests; R6 source hygiene is covered by current ignore rules, while original automation/screenshot/commit-process proof remains outside this narrowed audit.
+- Main-thread review confirmed `git log --reverse 8b7da1a7e30221c0a1a6ff55a50cadd295624267..HEAD` contains the expected staged evolution from initial R2-R6 work through later UI polish and the latest `5f04abb5` mobile drawer refinement.
+
+Next iteration guidance:
+
+- Do not implement R3 legacy Safari parity unless product direction accepts JS animation fallback, a new dependency, or a broader menu/drawer animation rewrite.
+- Continue non-blocked Gemini UI/UX polish through narrow, test-first slices: streaming/readability details, multimodal tray affordances, Markdown rendering tone consistency, or cross-viewport layout polish.
