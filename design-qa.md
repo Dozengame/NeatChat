@@ -6873,3 +6873,57 @@ Known risks:
 - The confirm/submit path was not clicked because it would transmit an access-code validation request. The source-level contract still locks `validateAccessCode`, success navigation, invalid/rate-limited toast, and validating disabled-state entry points.
 - In-app Browser screenshot capture timed out, so the live evidence is DOM/computed-style/console/interaction metrics rather than a captured screenshot.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-22 search-chat-command-surface-tone
+
+Result: automated checks passed; live target QA blocked by access-code gate.
+
+Target flow:
+
+- Search Chat should read as a Gemini-style command-search surface: quiet page wash, compact 8px search field, low-noise result panel, restrained hover/focus treatment, and Dark/Auto dark-safe tone.
+- Search text binding, clear action, recent/search result switching, empty-state copy, chat selection, navigation to `Path.Chat`, model config, account/secret/sync/backend/deploy behavior, dependencies, and production config must remain unchanged.
+- The slice should refine the visual surface without changing SearchChat TSX behavior or stored chat/session data semantics.
+
+Design direction:
+
+- Creative Production style intake selected a command-search direction: tokenized neutral panel, compact utility controls, subtle primary hover wash, clear result hierarchy, explicit Dark/Auto dark safety, and no decorative gradient treatment.
+- No generated raster design was used because this is a small UI-system repair inside the existing Gemini migration language. The design spec is the local token contract in `search-chat.module.scss` plus this QA record.
+
+Scope:
+
+- `app/components/search-chat.module.scss`: added local `--search-*` tokens for Light/Dark/Auto dark; replaced legacy `border-in-light`, `composer-shadow`, and 28/22/14px rounded search/result surfaces with tokenized 8px command-surface styling.
+- `test/gemini-visual-migration.test.ts`: moved SearchChat visual assertions out of the broad secondary-entry test and added a focused Search Chat contract locking behavior entry points, token declarations, token consumers, mobile sizing, focus/hover treatment, and old target paint removal.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No SearchChat TSX behavior, chat store/session semantics, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, package files, or lockfiles were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="Search Chat aligned"` failed first as expected because `.search-page` still lacked local command-surface tokens.
+- The same focused contract then exposed one remaining old-radius use on `.clear-search`; it was corrected to 8px.
+- After implementation, the focused contract passed.
+- `git diff --check` passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `yarn build` passed with the existing Next warning that Edge runtime disables static generation for that page.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser opened `http://localhost:3001/#/search-chat`.
+- Desktop default viewport `1280x720` and mobile viewport `390x844` both reached the local access-code gate with title `NeatChat` and gate copy `需要密码`, `管理员开启了密码验证，请在下方填入访问码`, and action `确认`.
+- Both viewport checks had no console warn/error logs, no framework overlay, and horizontal overflow `0`. The actual SearchChat command surface was not rendered because the local gate blocked access.
+- No real access code was entered and no auth/config bypass was attempted. Search input, clear action, result selection, chat navigation, model/API request, account/key/sync/import/export/reset/clear, or persisted config action was not performed.
+
+Review:
+
+- Read-only sub-agent review was unavailable due the current session usage limit. A local read-only review was performed against the current diff before commit.
+- The review found no blocking issues. It confirmed the diff is limited to `app/components/search-chat.module.scss`, `test/gemini-visual-migration.test.ts`, and this QA record, with no TSX behavior, backend/API, model config, account/secret/sync, production/deploy config, package/lockfile, or dependency changes.
+- The review confirmed the new test still locks `selectSession(item.id)`, navigation to `Path.Chat`, search input binding, clear action, recent/search empty-state branches, and old visual paint removal.
+- The review confirmed Browser QA is correctly described as blocked by the access-code gate and should not be described as live computed-style verification for the actual SearchChat surface.
+
+Known risks:
+
+- Live Browser computed-style verification for the actual SearchChat command surface is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
+- Search input, clear action, and chat result selection were not clicked because the target page was not reachable without credentials and those actions can mutate UI state or navigate.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.

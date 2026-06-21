@@ -5552,20 +5552,8 @@ describe("Gemini visual migration shell", () => {
 
   test("keeps secondary entry pages aligned with Gemini surfaces", () => {
     const searchChat = read("app/components/search-chat.tsx");
-    const searchChatStyles = read("app/components/search-chat.module.scss");
     const newChat = read("app/components/new-chat.tsx");
     const newChatStyles = read("app/components/new-chat.module.scss");
-    const searchRootBlock = readRootDeclarations(
-      readCssBlock(searchChatStyles, ".search-page"),
-    );
-    const searchInputBlock = readCssBlock(searchChatStyles, ".search-input");
-    const scopedSearchInputBlock = readCssBlock(
-      searchChatStyles,
-      ".search-box input.search-input",
-    );
-    const resultPanelBlock = readCssBlock(searchChatStyles, ".result-panel");
-    const resultItemBlock = readCssBlock(searchChatStyles, ".result-item");
-    const emptyStateBlock = readCssBlock(searchChatStyles, ".empty-state");
     const newChatRootBlock = readRootDeclarations(
       readCssBlock(newChatStyles, ".new-chat"),
     );
@@ -5577,39 +5565,15 @@ describe("Gemini visual migration shell", () => {
     expect(searchChat).toContain("selectSession(item.id)");
     expect(searchChat).toContain("to={Path.Chat}");
     expect(searchChat).toContain("onChange={(e) => setSearchText(e.currentTarget.value)}");
+    expect(searchChat).toContain('onClick={() => setSearchText("")}');
     expect(newChat).toContain("chatStore.newSession(mask)");
     expect(newChat).toContain("navigate(Path.Chat)");
     expect(newChat).toContain("navigate(Path.Masks)");
     expect(newChat).toContain("dontShowMaskSplashScreen");
-    expect(searchChatStyles).not.toContain("radial-gradient");
     expect(newChatStyles).not.toContain("radial-gradient");
-    expect(searchChatStyles).not.toContain("rgba(49, 94, 248");
     expect(newChatStyles).not.toContain("rgba(49, 94, 248");
     expect(newChatStyles).not.toContain("fill: white !important");
-    expect(searchRootBlock).toMatch(/background:\s*var\(--surface\);/);
     expect(newChatRootBlock).toMatch(/background:\s*var\(--surface\);/);
-    expect(searchInputBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
-    expect(searchInputBlock).toMatch(/border:\s*var\(--border-in-light\);/);
-    expect(searchInputBlock).toMatch(/box-shadow:\s*var\(--composer-shadow\);/);
-    expect(searchInputBlock).toMatch(/text-align:\s*left;/);
-    expect(scopedSearchInputBlock).toMatch(/max-width:\s*100%;/);
-    expect(scopedSearchInputBlock).toMatch(/border-radius:\s*28px;/);
-    expect(scopedSearchInputBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
-    expect(scopedSearchInputBlock).toMatch(/box-shadow:\s*var\(--composer-shadow\);/);
-    expect(searchInputBlock).toMatch(
-      /&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/,
-    );
-    expect(searchInputBlock).toMatch(
-      /&:focus-visible[\s\S]*box-shadow:[\s\S]*var\(--focus-ring-shadow\);/,
-    );
-    expect(resultPanelBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
-    expect(resultPanelBlock).toMatch(/border:\s*var\(--border-in-light\);/);
-    expect(resultPanelBlock).toMatch(/border-radius:\s*22px;/);
-    expect(resultPanelBlock).toMatch(/box-shadow:\s*var\(--composer-shadow\);/);
-    expect(resultItemBlock).toMatch(/border-radius:\s*14px;/);
-    expect(resultItemBlock).toMatch(/background:\s*transparent;/);
-    expect(resultItemBlock).toMatch(/&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/);
-    expect(emptyStateBlock).toMatch(/background:\s*var\(--surface\);/);
     expect(composerBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
     expect(composerBlock).toMatch(/border:\s*var\(--border-in-light\);/);
     expect(composerBlock).toMatch(/box-shadow:\s*var\(--composer-shadow\);/);
@@ -5624,6 +5588,148 @@ describe("Gemini visual migration shell", () => {
     expect(maskBlock).toMatch(/border:\s*var\(--border-in-light\);/);
     expect(maskBlock).toMatch(/border-radius:\s*14px;/);
     expect(maskBlock).toMatch(/&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/);
+  });
+
+  test("keeps Search Chat aligned with Gemini command surfaces", () => {
+    const searchChat = read("app/components/search-chat.tsx");
+    const searchChatStyles = read("app/components/search-chat.module.scss");
+    const searchRootBlock = readRootDeclarations(
+      readCssBlock(searchChatStyles, ".search-page"),
+    );
+    const closeBlock = readCssBlock(searchChatStyles, ".search-close");
+    const closeButtonBlock = readCssBlock(closeBlock, "button");
+    const titleBlock = readCssBlock(searchChatStyles, ".search-title");
+    const subtitleBlock = readCssBlock(searchChatStyles, ".search-subtitle");
+    const searchInputBlock = readCssBlock(searchChatStyles, ".search-input");
+    const searchInputFocusBlock = readCssBlock(searchInputBlock, "&:focus-visible");
+    const scopedSearchInputBlock = readCssBlock(
+      searchChatStyles,
+      ".search-box input.search-input",
+    );
+    const clearSearchBlock = readCssBlock(searchChatStyles, ".clear-search");
+    const clearSearchFocusBlock = readCssBlock(clearSearchBlock, "&:focus-visible");
+    const resultPanelBlock = readCssBlock(searchChatStyles, ".result-panel");
+    const headingBlock = readCssBlock(searchChatStyles, ".result-heading");
+    const resultItemBlock = readCssBlock(searchChatStyles, ".result-item");
+    const resultItemFocusBlock = readCssBlock(resultItemBlock, "&:focus-visible");
+    const snippetBlock = readCssBlock(searchChatStyles, ".result-snippet");
+    const actionBlock = readCssBlock(searchChatStyles, ".result-action");
+    const emptyStateBlock = readCssBlock(searchChatStyles, ".empty-state");
+    const darkSearchBlock = readCssBlock(
+      searchChatStyles,
+      ":global(.dark) .search-page",
+    );
+    const autoDarkSearchSelector = ":global(body:not(.light)) .search-page";
+    const autoDarkSearchIndex = searchChatStyles.indexOf(autoDarkSearchSelector);
+    const autoDarkSearchMediaIndex = searchChatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkSearchIndex,
+    );
+    const autoDarkSearchBlock = readCssBlock(
+      searchChatStyles.slice(autoDarkSearchMediaIndex),
+      autoDarkSearchSelector,
+    );
+    const mobileBlock = readCssBlock(
+      searchChatStyles,
+      "@media screen and (max-width: 520px)",
+    );
+    const mobileSearchInputBlock = readCssBlock(mobileBlock, ".search-input");
+    const mobileResultPanelBlock = readCssBlock(mobileBlock, ".result-panel");
+    const searchPaintScope = [
+      searchRootBlock,
+      closeButtonBlock,
+      titleBlock,
+      subtitleBlock,
+      searchInputBlock,
+      searchInputFocusBlock,
+      scopedSearchInputBlock,
+      clearSearchBlock,
+      clearSearchFocusBlock,
+      resultPanelBlock,
+      headingBlock,
+      resultItemBlock,
+      resultItemFocusBlock,
+      snippetBlock,
+      actionBlock,
+      emptyStateBlock,
+      darkSearchBlock,
+      autoDarkSearchBlock,
+      mobileSearchInputBlock,
+      mobileResultPanelBlock,
+    ].join("\n");
+
+    expect(searchChat).toContain("selectSession(item.id)");
+    expect(searchChat).toContain("to={Path.Chat}");
+    expect(searchChat).toContain("setSearchText(e.currentTarget.value)");
+    expect(searchChat).toContain('onClick={() => setSearchText("")}');
+    expect(searchChat).toContain("const hasSearchText = searchText.trim().length > 0");
+    expect(searchChat).toContain("Locale.SearchChat.Page.NoResult");
+    expect(searchChat).toContain("Locale.SearchChat.Page.NoData");
+
+    expect(searchRootBlock).toMatch(
+      /--search-page-background:\s*var\(--surface\);/,
+    );
+    expect(searchRootBlock).toMatch(
+      /--search-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 94%,\s*var\(--white\)\s*\);/,
+    );
+    expect(searchRootBlock).toMatch(
+      /--search-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*transparent\s*\);/,
+    );
+    expect(searchRootBlock).toMatch(
+      /--search-item-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 5%,\s*transparent\s*\);/,
+    );
+    expect(searchRootBlock).toMatch(/background:\s*var\(--search-page-background\);/);
+    expect(closeButtonBlock).toMatch(/border:\s*1px solid var\(--search-panel-border-color\);/);
+    expect(closeButtonBlock).toMatch(/border-radius:\s*8px;/);
+    expect(closeButtonBlock).toMatch(/background:\s*var\(--search-panel-background\);/);
+    expect(titleBlock).toMatch(/letter-spacing:\s*0;/);
+    expect(subtitleBlock).toMatch(/color:\s*var\(--search-muted-color\);/);
+    expect(searchInputBlock).toMatch(/height:\s*56px;/);
+    expect(searchInputBlock).toMatch(/border:\s*1px solid var\(--search-field-border-color\);/);
+    expect(searchInputBlock).toMatch(/border-radius:\s*8px;/);
+    expect(searchInputBlock).toMatch(/background:\s*var\(--search-field-background\);/);
+    expect(searchInputBlock).toMatch(/box-shadow:\s*0 14px 34px var\(--search-panel-shadow-color\);/);
+    expect(searchInputFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(searchInputFocusBlock).toMatch(
+      /border-color:\s*var\(--search-field-focus-border-color\);/,
+    );
+    expect(scopedSearchInputBlock).toMatch(/border-radius:\s*8px;/);
+    expect(scopedSearchInputBlock).toMatch(
+      /background:\s*var\(--search-field-background\);/,
+    );
+    expect(clearSearchBlock).toMatch(/color:\s*var\(--search-muted-color\);/);
+    expect(clearSearchFocusBlock).toMatch(
+      /background:\s*var\(--search-item-hover-background\);/,
+    );
+    expect(resultPanelBlock).toMatch(/border:\s*1px solid var\(--search-panel-border-color\);/);
+    expect(resultPanelBlock).toMatch(/border-radius:\s*8px;/);
+    expect(resultPanelBlock).toMatch(/background:\s*var\(--search-panel-background\);/);
+    expect(resultPanelBlock).toMatch(/box-shadow:\s*0 14px 34px var\(--search-panel-shadow-color\);/);
+    expect(headingBlock).toMatch(/color:\s*var\(--search-muted-color\);/);
+    expect(resultItemBlock).toMatch(/border-radius:\s*8px;/);
+    expect(resultItemFocusBlock).toMatch(
+      /background:\s*var\(--search-item-hover-background\);/,
+    );
+    expect(snippetBlock).toMatch(/color:\s*var\(--search-muted-color\);/);
+    expect(actionBlock).toMatch(/color:\s*var\(--search-action-color\);/);
+    expect(emptyStateBlock).toMatch(/border-radius:\s*8px;/);
+    expect(emptyStateBlock).toMatch(/background:\s*var\(--search-empty-background\);/);
+    expect(darkSearchBlock).toMatch(
+      /--search-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkSearchIndex).toBeGreaterThan(-1);
+    expect(autoDarkSearchMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkSearchBlock).toMatch(
+      /--search-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+    );
+    expect(mobileSearchInputBlock).toMatch(/height:\s*52px;/);
+    expect(mobileSearchInputBlock).toMatch(/border-radius:\s*8px;/);
+    expect(mobileResultPanelBlock).toMatch(/border-radius:\s*8px;/);
+    expect(searchPaintScope).not.toContain("border: var(--border-in-light)");
+    expect(searchPaintScope).not.toContain("box-shadow: var(--composer-shadow)");
+    expect(searchPaintScope).not.toContain("border-radius: 28px");
+    expect(searchPaintScope).not.toContain("border-radius: 22px");
+    expect(searchPaintScope).not.toContain("border-radius: 14px");
   });
 
   test("keeps auth gate aligned with Gemini secure entry surfaces", () => {
