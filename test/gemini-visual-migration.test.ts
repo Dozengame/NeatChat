@@ -7137,4 +7137,162 @@ describe("Gemini visual migration shell", () => {
     expect(settingsPromptPaintScope).not.toContain("border-bottom: var(--border-in-light)");
     expect(settingsPromptPaintScope).not.toContain("border-radius: 10px");
   });
+
+  test("keeps Settings prompt editor aligned with Gemini utility fields", () => {
+    const editPromptModal = read(
+      "app/components/settings-edit-prompt-modal.tsx",
+    );
+    const settingsStyles = read("app/components/settings.module.scss");
+    const editPromptModalSelectorIndex = settingsStyles.indexOf(
+      "\n.edit-prompt-modal {",
+    );
+    const editPromptModalBlock = readCssBlock(
+      settingsStyles.slice(editPromptModalSelectorIndex),
+      ".edit-prompt-modal",
+    );
+    const editPromptModalRootBlock =
+      readRootDeclarations(editPromptModalBlock);
+    const darkEditPromptModalBlock = readCssBlock(
+      settingsStyles,
+      ":global(.dark) .edit-prompt-modal",
+    );
+    const autoDarkEditPromptModalSelector =
+      ":global(body:not(.light)) .edit-prompt-modal";
+    const autoDarkEditPromptModalSelectorIndex = settingsStyles.indexOf(
+      autoDarkEditPromptModalSelector,
+    );
+    const autoDarkEditPromptModalMediaIndex = settingsStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkEditPromptModalSelectorIndex,
+    );
+    const autoDarkEditPromptModalBlock = readCssBlock(
+      settingsStyles.slice(autoDarkEditPromptModalMediaIndex),
+      autoDarkEditPromptModalSelector,
+    );
+    const editPromptTitleBlock = readCssBlock(
+      editPromptModalBlock,
+      ".edit-prompt-title",
+    );
+    const editPromptContentBlock = readCssBlock(
+      editPromptModalBlock,
+      ".edit-prompt-content",
+    );
+    const editPromptTitleFocusBlock = readCssBlock(
+      editPromptTitleBlock,
+      "&:focus",
+    );
+    const editPromptContentFocusBlock = readCssBlock(
+      editPromptContentBlock,
+      "&:focus",
+    );
+    const editPromptTitleReadOnlyBlock = readCssBlock(
+      editPromptTitleBlock,
+      "&:read-only",
+    );
+    const editPromptContentReadOnlyBlock = readCssBlock(
+      editPromptContentBlock,
+      "&:read-only",
+    );
+    const editPromptPaintScope = [
+      editPromptModalRootBlock,
+      darkEditPromptModalBlock,
+      autoDarkEditPromptModalBlock,
+      editPromptTitleBlock,
+      editPromptContentBlock,
+      editPromptTitleFocusBlock,
+      editPromptContentFocusBlock,
+      editPromptTitleReadOnlyBlock,
+      editPromptContentReadOnlyBlock,
+    ].join("\n");
+
+    expect(editPromptModal).toContain("usePromptStore()");
+    expect(editPromptModal).toContain("promptStore.get(props.id)");
+    expect(editPromptModal).toContain("readOnly={!prompt.isUser}");
+    expect(editPromptModal).toContain("promptStore.updatePrompt");
+    expect(editPromptModal).toMatch(
+      /promptStore\.updatePrompt\([\s\S]*\(prompt\) => \(prompt\.title = e\.currentTarget\.value\)/,
+    );
+    expect(editPromptModal).toMatch(
+      /promptStore\.updatePrompt\([\s\S]*\(prompt\) => \(prompt\.content = e\.currentTarget\.value\)/,
+    );
+
+    expect(editPromptModalRootBlock).toMatch(
+      /--settings-edit-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\s*\);/,
+    );
+    expect(editPromptModalRootBlock).toMatch(
+      /--settings-edit-field-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 14%,\s*transparent\s*\);/,
+    );
+    expect(editPromptModalRootBlock).toMatch(
+      /--settings-edit-field-muted-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 78%,\s*var\(--gray\)\s*\);/,
+    );
+    expect(editPromptModalRootBlock).toMatch(
+      /--settings-edit-field-focus-border-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 58%,\s*transparent\s*\);/,
+    );
+    expect(editPromptModalRootBlock).toMatch(
+      /--settings-edit-field-focus-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 16%,\s*transparent\s*\);/,
+    );
+    expect(darkEditPromptModalBlock).toMatch(
+      /--settings-edit-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkEditPromptModalBlock).toMatch(
+      /--settings-edit-field-muted-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 82%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkEditPromptModalBlock).toMatch(
+      /--settings-edit-field-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 11%,\s*transparent\s*\);/,
+    );
+    expect(darkEditPromptModalBlock).toMatch(
+      /--settings-edit-field-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 58%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkEditPromptModalSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkEditPromptModalMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkEditPromptModalBlock).toMatch(
+      /--settings-edit-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkEditPromptModalBlock).toMatch(
+      /--settings-edit-field-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 11%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkEditPromptModalBlock).toMatch(
+      /--settings-edit-field-muted-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 82%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkEditPromptModalBlock).toMatch(
+      /--settings-edit-field-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 58%,\s*transparent\s*\);/,
+    );
+
+    [editPromptTitleBlock, editPromptContentBlock].forEach((block) => {
+      expect(block).toMatch(
+        /background-color:\s*var\(--settings-edit-field-background\);/,
+      );
+      expect(block).toMatch(
+        /border:\s*1px solid var\(--settings-edit-field-border-color\);/,
+      );
+      expect(block).toMatch(/border-radius:\s*8px;/);
+      expect(block).toMatch(/color:\s*var\(--black\);/);
+      expect(block).toMatch(
+        /transition:[\s\S]*background-color 0\.16s ease,[\s\S]*border-color 0\.16s ease,[\s\S]*box-shadow 0\.16s ease/,
+      );
+    });
+    [editPromptTitleFocusBlock, editPromptContentFocusBlock].forEach((block) => {
+      expect(block).toMatch(
+        /border-color:\s*var\(--settings-edit-field-focus-border-color\);/,
+      );
+      expect(block).toMatch(
+        /box-shadow:\s*0 0 0 3px var\(--settings-edit-field-focus-shadow-color\);/,
+      );
+    });
+    [editPromptTitleReadOnlyBlock, editPromptContentReadOnlyBlock].forEach(
+      (block) => {
+        expect(block).toMatch(
+          /background-color:\s*var\(--settings-edit-field-muted-background\);/,
+        );
+        expect(block).toMatch(
+          /color:\s*var\(--settings-edit-field-muted-color\);/,
+        );
+      },
+    );
+    expect(editPromptPaintScope).not.toContain("border: var(--border-in-light)");
+    expect(editPromptPaintScope).not.toContain(
+      "background-color: var(--gray)",
+    );
+    expect(editPromptPaintScope).not.toContain("border-radius: 10px");
+  });
 });

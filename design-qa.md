@@ -6431,3 +6431,55 @@ Known risks:
 - Live Browser computed-style verification for the prompt modal is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
 - Prompt add/edit/remove/copy controls were not clicked because they mutate prompt data or clipboard state.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-21 settings-prompt-editor-field-tone
+
+Result: passed.
+
+Target flow:
+
+- Settings prompt edit modal title and content fields should read as Gemini-style quiet utility fields across Light, explicit Dark, and Auto dark.
+- Editable and read-only prompt fields should share a stable 8px field geometry, tokenized surface/border/text colors, soft focus ring, and muted read-only state without changing prompt editing semantics.
+- Prompt lookup, `readOnly={!prompt.isUser}`, title/content `updatePrompt` callbacks, modal close behavior, model config semantics, account/secret/sync/backend/deploy behavior, dependencies, send path, and production config must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected a quiet utility-field direction: elevated neutral field well, 8px radius, subtle border, soft primary focus ring, muted read-only surface, Dark/Auto dark safety, and no prompt-store behavior change.
+- No generated raster design was used because this is a small UI-system repair inside the existing Gemini migration language. The design spec is the local token contract in `settings.module.scss` plus this QA record.
+
+Scope:
+
+- `app/components/settings.module.scss`: added local `--settings-edit-field-*` tokens scoped to `.edit-prompt-modal`, tokenized title/content field backgrounds, borders, focus rings, and read-only muted states, and added explicit Dark plus Auto dark token overrides.
+- `test/gemini-visual-migration.test.ts`: added a focused Settings prompt-editor contract locking `usePromptStore`, `promptStore.get`, `readOnly`, title/content `updatePrompt` behavior entry points, Light/Dark/Auto dark field tokens, token consumers, focus/read-only states, and old target paint removal.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TSX behavior, prompt-store logic, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, deploy files, send path, model request payload construction, or Settings page-level layout/background contract was changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="Settings prompt editor"` failed first as expected because `.edit-prompt-modal` lacked local field tokens and title/content field surface styling.
+- After implementation, the same focused contract passed.
+- Read-only review found one non-blocking precision gap: the first test version did not assert focus-border token definition or full Dark/Auto dark border/muted parity. The test was strengthened and the focused contract passed again.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `yarn build` passed with the existing Next warning that Edge runtime disables static generation for that page.
+- `git diff --check` passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser was used for this slice. No real access code, key, account, model/API request, upload, image-generation action, persisted production config, backend config, dependency, send action, model request, prompt edit/title/content mutation, prompt add/remove/copy action, Settings change, sync/import/export/reset/clear action, or model/config selection mutation was used.
+- `http://localhost:3001/#/settings` reached the app after initial compilation and then stopped at the local access-code gate: `需要密码`, `管理员开启了密码验证，请在下方填入访问码`, `确认`.
+- No access code was entered and no auth/config bypass was attempted. The gate page had no framework overlay, console warn/error logs were `0`, and horizontal overflow was `0`.
+
+Review:
+
+- First read-only sub-agent review found no Critical or Important issues. It confirmed the diff was limited to `app/components/settings.module.scss` and `test/gemini-visual-migration.test.ts`, with no TSX behavior, prompt store, model config, account/secret/sync, backend/deploy, dependency, or send-path changes.
+- The same review raised one Minor test precision note; the test was tightened for focus-border definition and Dark/Auto dark border/muted parity.
+- Second read-only sub-agent review found no Critical, Important, or Minor issues and confirmed the diff remains limited to EditPromptModal field visual styling and visual contract coverage.
+
+Known risks:
+
+- Live Browser computed-style verification for the prompt edit modal is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
+- Prompt edit controls were not clicked or typed into because they mutate prompt data.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
