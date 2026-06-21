@@ -2096,6 +2096,9 @@
 }
 
 .chat-message-action-rail {
+  --message-action-copy-success-background: var(--copy-success-background);
+  --message-action-copy-success-color: var(--copy-success-color);
+
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
@@ -2147,9 +2150,8 @@
   .chat-input-action[data-copy-state="copied"],
   .chat-input-action[data-copy-state="copied"]:hover,
   .chat-input-action[data-copy-state="copied"]:focus-visible {
-    background: rgba(52, 168, 83, 0.12) !important;
-    background-color: rgba(52, 168, 83, 0.12) !important;
-    color: rgba(24, 128, 56, 0.94) !important;
+    background-color: var(--message-action-copy-success-background) !important;
+    color: var(--message-action-copy-success-color) !important;
     transition: box-shadow 0.16s ease !important;
   }
 
@@ -2160,17 +2162,6 @@
 
   .text {
     display: none;
-  }
-}
-
-:global(.dark) .chat-message-action-rail {
-  .chat-input-action[data-copy-state="copied"],
-  .chat-input-action[data-copy-state="copied"]:hover,
-  .chat-input-action[data-copy-state="copied"]:focus-visible {
-    background: rgba(129, 201, 149, 0.14) !important;
-    background-color: rgba(129, 201, 149, 0.14) !important;
-    color: rgba(129, 201, 149, 0.96) !important;
-    transition: box-shadow 0.16s ease !important;
   }
 }
 

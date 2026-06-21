@@ -5786,3 +5786,52 @@ Next iteration guidance:
 
 - Do not implement R3 legacy Safari parity unless product direction accepts JS animation fallback, a new dependency, or a broader menu/drawer animation rewrite.
 - Continue non-blocked Gemini UI/UX polish through narrow, test-first slices: streaming/readability details, multimodal tray affordances, Markdown rendering tone consistency, or cross-viewport layout polish.
+
+## Iteration 2026-06-21 message-copy-success-token-unification
+
+Result: passed.
+
+Target flow:
+
+- Ordinary message copy copied-state feedback should share the same success-tone discipline as Markdown code copy feedback.
+- Light, explicit Dark, and Auto dark paths should resolve copied feedback through theme tokens instead of component-local hardcoded green rgba paint.
+- The existing message action geometry, hover/focus-visible behavior, copied label/status behavior, clipboard payload, copy success gating, stale-request protection, model config semantics, account/secret/sync, backend/API, production config, deployment config, dependencies, persisted store keys, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected: quiet Gemini-style utility surface, local copied feedback, stable action geometry, shared copy-success green, theme-aware values, no hardcoded component paint, no copy behavior change, no layout shift, and no backend/config changes.
+- Promote the copied success palette from Markdown-specific variables to shared `--copy-success-*` theme tokens, then keep the existing `--markdown-code-copy-success-*` variables as aliases for Markdown code chrome compatibility.
+- Let message action copied-state styling consume local `--message-action-copy-success-*` aliases so future message-action polish can stay scoped without reintroducing raw paint.
+
+Scope:
+
+- `app/styles/globals.scss`: added shared Light/Dark `--copy-success-*` border/background/color/shadow tokens and pointed existing `--markdown-code-copy-success-*` variables at those shared tokens.
+- `app/components/chat.module.scss`: changed message action copied-state styling to consume `--message-action-copy-success-background` and `--message-action-copy-success-color`; removed the duplicated explicit Dark hardcoded copied-state rule; after review, kept only `background-color` instead of a `background` shorthand to avoid unstable runtime CSSOM expansion.
+- `test/gemini-visual-migration.test.ts`: strengthened the visual migration contract to lock shared Light/Dark copy-success tokens, Markdown aliasing, message action local aliases, copied/hover/focus-visible token consumers, absence of old hardcoded copied green rgba in the message copied tone scope, and absence of the copied-state `background` shorthand.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, copy helper, message rendering structure, clipboard payload selection, copied timers, action labels/status text, stores, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, deploy files, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="Gemini-style empty state hooks|markdown code block chrome"` failed first as expected because shared `--copy-success-*` tokens and message action token consumers did not exist yet.
+- After implementation, the same focused visual migration contract passed.
+- After the read-only review P3 fix removed the copied-state `background` shorthand, the same focused visual migration contract passed again.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001/#/chat` for QA.
+- Desktop `1439x1024`: runtime CSSOM loaded shared copy-success globals, Markdown aliases, message action aliases, and message copied-state variable consumers; old hardcoded message copied green paint was absent; copied-state `background` shorthand was absent; chat mounted with `textareaCount=1`, panel `left: 490`, `right: 1250`, textarea `left: 563`, `right: 1137`, horizontal overflow `0`, and Browser console warn/error logs `0`.
+- Mobile `390x844`: the same CSSOM/token/no-legacy/no-shorthand checks passed; panel `left: 10`, `right: 380`, textarea `left: 67`, `right: 313`, horizontal overflow `0`, and console warn/error logs `0`.
+- Narrow `320x740`: the same CSSOM/token/no-legacy/no-shorthand checks passed; panel `left: 10`, `right: 310`, textarea `left: 67`, `right: 243`, horizontal overflow `0`, and console warn/error logs `0`.
+- Browser QA intentionally did not send a message, seed chat history, click copy, read/write clipboard, call a model/API, upload files, mutate local storage, or change persisted theme/access state. Runtime QA validated loaded CSSOM and shell layout; source-contract tests cover the copied-state selectors and token chain directly.
+
+Review:
+
+- Read-only sub-agent review found no Critical, Important, or blocking issues. It confirmed the diff was limited to `app/styles/globals.scss`, `app/components/chat.module.scss`, and `test/gemini-visual-migration.test.ts` before this QA record; light, explicit Dark, and Auto dark token chains were correct; deleting the explicit Dark message rail rule still inherits the correct theme token values; button size, hover/focus-visible structure, focus ring, and copy behavior were unchanged; and no model/config/account/backend/deploy/dependency files were touched.
+- A second read-only review found one P3 CSS quality issue: the copied-state `background` shorthand was functionally safe but produced noisy runtime CSSOM expansion with `var()`. This was fixed by keeping only `background-color` and adding a test assertion that forbids the copied-state shorthand.
+- Main-thread boundary review verified the final diff remains limited to `app/styles/globals.scss`, `app/components/chat.module.scss`, `test/gemini-visual-migration.test.ts`, and this QA record, with no diff in TypeScript component logic, stores, config, API/backend, route constants, deployment files, dependency files, copy helpers, send path, model request paths, or account/sync logic.
+
+Known risks:
+
+- This slice uses existing modern `color-mix()` CSS already adopted by the Gemini visual migration work. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
+- Browser QA did not mutate chat state to render a real copied message button; the runtime CSSOM and focused source-contract tests cover the target copied-state selectors, and prior message-copy feedback QA covers the actual interaction path.

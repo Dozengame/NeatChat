@@ -72,6 +72,8 @@ describe("Gemini visual migration shell", () => {
     const promptInput = read("app/components/ui-lib-prompt-input.tsx");
     const utils = read("app/utils.ts");
     const globalStyles = read("app/styles/globals.scss");
+    const globalLightMixinBlock = readCssBlock(globalStyles, "@mixin light");
+    const globalDarkMixinBlock = readCssBlock(globalStyles, "@mixin dark");
     const constants = read("app/constant.ts");
     const cnLocale = read("app/locales/cn.ts");
     const enLocale = read("app/locales/en.ts");
@@ -329,6 +331,12 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-message-action-rail",
     );
+    const messageCopySuccessToneScope = [
+      messageActionRailBlock,
+      readCssBlock(chatStyles, ":global(.dark) .chat-message-action-rail"),
+    ].join("\n");
+    const legacyMessageCopySuccessPaint =
+      /rgba\((?:52,\s*168,\s*83|24,\s*128,\s*56|129,\s*201,\s*149)/;
     const messageCopyStatusBlock = readCssBlock(
       chatStyles,
       ".chat-message-copy-status",
@@ -1324,11 +1332,32 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain(".chat-message-row-user");
     expect(chatStyles).toContain(".chat-message-row-assistant");
     expect(chatStyles).toContain(".chat-message-action-rail");
-    expect(chatStyles).toMatch(
-      /\.chat-input-action\[data-copy-state="copied"\],[\s\S]*\.chat-input-action\[data-copy-state="copied"\]:hover,[\s\S]*\.chat-input-action\[data-copy-state="copied"\]:focus-visible[\s\S]*background:\s*rgba\(52,\s*168,\s*83,\s*0\.12\)\s*!important;[\s\S]*background-color:\s*rgba\(52,\s*168,\s*83,\s*0\.12\)\s*!important;[\s\S]*color:\s*rgba\(24,\s*128,\s*56,\s*0\.94\)\s*!important;[\s\S]*transition:\s*box-shadow 0\.16s ease !important;/,
+    expect(globalLightMixinBlock).toMatch(
+      /--copy-success-background:\s*color-mix\(\s*in srgb,\s*rgb\(52,\s*168,\s*83\) 12%,\s*transparent\s*\);/,
     );
-    expect(chatStyles).toMatch(
-      /:global\(\.dark\)\s*\.chat-message-action-rail\s*\{[\s\S]*\.chat-input-action\[data-copy-state="copied"\],[\s\S]*\.chat-input-action\[data-copy-state="copied"\]:hover,[\s\S]*\.chat-input-action\[data-copy-state="copied"\]:focus-visible[\s\S]*background:\s*rgba\(129,\s*201,\s*149,\s*0\.14\)\s*!important;[\s\S]*background-color:\s*rgba\(129,\s*201,\s*149,\s*0\.14\)\s*!important;[\s\S]*color:\s*rgba\(129,\s*201,\s*149,\s*0\.96\)\s*!important;[\s\S]*transition:\s*box-shadow 0\.16s ease !important;/,
+    expect(globalLightMixinBlock).toMatch(
+      /--copy-success-color:\s*color-mix\(\s*in srgb,\s*rgb\(24,\s*128,\s*56\) 94%,\s*transparent\s*\);/,
+    );
+    expect(globalDarkMixinBlock).toMatch(
+      /--copy-success-background:\s*color-mix\(\s*in srgb,\s*rgb\(129,\s*201,\s*149\) 14%,\s*transparent\s*\);/,
+    );
+    expect(globalDarkMixinBlock).toMatch(
+      /--copy-success-color:\s*color-mix\(\s*in srgb,\s*rgb\(129,\s*201,\s*149\) 96%,\s*transparent\s*\);/,
+    );
+    expect(messageActionRailBlock).toMatch(
+      /--message-action-copy-success-background:\s*var\(--copy-success-background\);/,
+    );
+    expect(messageActionRailBlock).toMatch(
+      /--message-action-copy-success-color:\s*var\(--copy-success-color\);/,
+    );
+    expect(messageActionRailBlock).toMatch(
+      /\.chat-input-action\[data-copy-state="copied"\],[\s\S]*\.chat-input-action\[data-copy-state="copied"\]:hover,[\s\S]*\.chat-input-action\[data-copy-state="copied"\]:focus-visible[\s\S]*background-color:\s*var\(--message-action-copy-success-background\)\s*!important;[\s\S]*color:\s*var\(--message-action-copy-success-color\)\s*!important;[\s\S]*transition:\s*box-shadow 0\.16s ease !important;/,
+    );
+    expect(messageActionRailBlock).not.toMatch(
+      /background:\s*var\(--message-action-copy-success-background\)\s*!important;/,
+    );
+    expect(messageCopySuccessToneScope).not.toMatch(
+      legacyMessageCopySuccessPaint,
     );
     expect(messageCopyStatusBlock).toMatch(/position:\s*absolute;/);
     expect(messageCopyStatusBlock).toMatch(/width:\s*1px;/);
@@ -2816,34 +2845,64 @@ describe("Gemini visual migration shell", () => {
     );
     expect(autoDarkRootBlock).toMatch(/@include dark;/);
     expect(globalLightMixinBlock).toMatch(
-      /--markdown-code-copy-success-border-color:\s*color-mix\(\s*in srgb,\s*rgb\(52,\s*168,\s*83\) 24%,\s*transparent\s*\);/,
+      /--copy-success-border-color:\s*color-mix\(\s*in srgb,\s*rgb\(52,\s*168,\s*83\) 24%,\s*transparent\s*\);/,
     );
     expect(globalLightMixinBlock).toMatch(
-      /--markdown-code-copy-success-background:\s*color-mix\(\s*in srgb,\s*rgb\(52,\s*168,\s*83\) 12%,\s*transparent\s*\);/,
+      /--copy-success-background:\s*color-mix\(\s*in srgb,\s*rgb\(52,\s*168,\s*83\) 12%,\s*transparent\s*\);/,
     );
     expect(globalLightMixinBlock).toMatch(
-      /--markdown-code-copy-success-color:\s*color-mix\(\s*in srgb,\s*rgb\(24,\s*128,\s*56\) 94%,\s*transparent\s*\);/,
+      /--copy-success-color:\s*color-mix\(\s*in srgb,\s*rgb\(24,\s*128,\s*56\) 94%,\s*transparent\s*\);/,
     );
     expect(globalLightMixinBlock).toMatch(
-      /--markdown-code-copy-success-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 10%,\s*transparent\s*\);/,
+      /--copy-success-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 10%,\s*transparent\s*\);/,
     );
     expect(globalLightMixinBlock).toMatch(
-      /--markdown-code-copy-success-accent-shadow-color:\s*color-mix\(\s*in srgb,\s*rgb\(52,\s*168,\s*83\) 12%,\s*transparent\s*\);/,
+      /--copy-success-accent-shadow-color:\s*color-mix\(\s*in srgb,\s*rgb\(52,\s*168,\s*83\) 12%,\s*transparent\s*\);/,
+    );
+    expect(globalLightMixinBlock).toMatch(
+      /--markdown-code-copy-success-border-color:\s*var\(--copy-success-border-color\);/,
+    );
+    expect(globalLightMixinBlock).toMatch(
+      /--markdown-code-copy-success-background:\s*var\(--copy-success-background\);/,
+    );
+    expect(globalLightMixinBlock).toMatch(
+      /--markdown-code-copy-success-color:\s*var\(--copy-success-color\);/,
+    );
+    expect(globalLightMixinBlock).toMatch(
+      /--markdown-code-copy-success-shadow-color:\s*var\(--copy-success-shadow-color\);/,
+    );
+    expect(globalLightMixinBlock).toMatch(
+      /--markdown-code-copy-success-accent-shadow-color:\s*var\(--copy-success-accent-shadow-color\);/,
     );
     expect(globalDarkMixinBlock).toMatch(
-      /--markdown-code-copy-success-border-color:\s*color-mix\(\s*in srgb,\s*rgb\(129,\s*201,\s*149\) 24%,\s*transparent\s*\);/,
+      /--copy-success-border-color:\s*color-mix\(\s*in srgb,\s*rgb\(129,\s*201,\s*149\) 24%,\s*transparent\s*\);/,
     );
     expect(globalDarkMixinBlock).toMatch(
-      /--markdown-code-copy-success-background:\s*color-mix\(\s*in srgb,\s*rgb\(129,\s*201,\s*149\) 14%,\s*transparent\s*\);/,
+      /--copy-success-background:\s*color-mix\(\s*in srgb,\s*rgb\(129,\s*201,\s*149\) 14%,\s*transparent\s*\);/,
     );
     expect(globalDarkMixinBlock).toMatch(
-      /--markdown-code-copy-success-color:\s*color-mix\(\s*in srgb,\s*rgb\(129,\s*201,\s*149\) 96%,\s*transparent\s*\);/,
+      /--copy-success-color:\s*color-mix\(\s*in srgb,\s*rgb\(129,\s*201,\s*149\) 96%,\s*transparent\s*\);/,
     );
     expect(globalDarkMixinBlock).toMatch(
-      /--markdown-code-copy-success-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--surface\) 24%,\s*transparent\s*\);/,
+      /--copy-success-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--surface\) 24%,\s*transparent\s*\);/,
     );
     expect(globalDarkMixinBlock).toMatch(
-      /--markdown-code-copy-success-accent-shadow-color:\s*color-mix\(\s*in srgb,\s*rgb\(129,\s*201,\s*149\) 12%,\s*transparent\s*\);/,
+      /--copy-success-accent-shadow-color:\s*color-mix\(\s*in srgb,\s*rgb\(129,\s*201,\s*149\) 12%,\s*transparent\s*\);/,
+    );
+    expect(globalDarkMixinBlock).toMatch(
+      /--markdown-code-copy-success-border-color:\s*var\(--copy-success-border-color\);/,
+    );
+    expect(globalDarkMixinBlock).toMatch(
+      /--markdown-code-copy-success-background:\s*var\(--copy-success-background\);/,
+    );
+    expect(globalDarkMixinBlock).toMatch(
+      /--markdown-code-copy-success-color:\s*var\(--copy-success-color\);/,
+    );
+    expect(globalDarkMixinBlock).toMatch(
+      /--markdown-code-copy-success-shadow-color:\s*var\(--copy-success-shadow-color\);/,
+    );
+    expect(globalDarkMixinBlock).toMatch(
+      /--markdown-code-copy-success-accent-shadow-color:\s*var\(--copy-success-accent-shadow-color\);/,
     );
     expect(globalAutoDarkRootBlock).toMatch(/@include dark;/);
     expect(markdown).toMatch(
