@@ -5557,10 +5557,6 @@ describe("Gemini visual migration shell", () => {
     const newChatRootBlock = readRootDeclarations(
       readCssBlock(newChatStyles, ".new-chat"),
     );
-    const maskHeaderBlock = readCssBlock(newChatStyles, ".mask-header");
-    const composerBlock = readCssBlock(newChatStyles, ".composer");
-    const moreButtonBlock = readCssBlock(newChatStyles, ".more");
-    const maskBlock = readCssBlock(newChatStyles, ".mask");
 
     expect(searchChat).toContain("selectSession(item.id)");
     expect(searchChat).toContain("to={Path.Chat}");
@@ -5573,21 +5569,189 @@ describe("Gemini visual migration shell", () => {
     expect(newChatStyles).not.toContain("radial-gradient");
     expect(newChatStyles).not.toContain("rgba(49, 94, 248");
     expect(newChatStyles).not.toContain("fill: white !important");
-    expect(newChatRootBlock).toMatch(/background:\s*var\(--surface\);/);
-    expect(composerBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
-    expect(composerBlock).toMatch(/border:\s*var\(--border-in-light\);/);
-    expect(composerBlock).toMatch(/box-shadow:\s*var\(--composer-shadow\);/);
+    expect(newChatRootBlock).toMatch(
+      /(?:^|\n)\s*background:\s*var\(--new-chat-page-background\);/,
+    );
+  });
+
+  test("keeps New Chat aligned with Gemini start surfaces", () => {
+    const newChat = read("app/components/new-chat.tsx");
+    const newChatStyles = read("app/components/new-chat.module.scss");
+    const newChatRootBlock = readRootDeclarations(
+      readCssBlock(newChatStyles, ".new-chat"),
+    );
+    const maskHeaderBlock = readCssBlock(newChatStyles, ".mask-header");
+    const maskHeaderButtonBlock = readCssBlock(maskHeaderBlock, "button");
+    const titleBlock = readCssBlock(newChatStyles, ".title");
+    const subtitleBlock = readCssBlock(newChatStyles, ".sub-title");
+    const composerBlock = readCssBlock(newChatStyles, ".composer");
+    const composerFocusBlock = readCssBlock(composerBlock, "&:focus-visible");
+    const composerActionBlock = readCssBlock(newChatStyles, ".composer-action");
+    const composerActionPathBlock = readCssBlock(composerActionBlock, "path");
+    const moreButtonBlock = readCssBlock(newChatStyles, ".more");
+    const maskBlock = readCssBlock(newChatStyles, ".mask");
+    const maskFocusBlock = readCssBlock(maskBlock, "&:focus-visible");
+    const darkNewChatBlock = readCssBlock(
+      newChatStyles,
+      ":global(.dark) .new-chat",
+    );
+    const autoDarkNewChatSelector = ":global(body:not(.light)) .new-chat";
+    const autoDarkNewChatIndex = newChatStyles.indexOf(autoDarkNewChatSelector);
+    const autoDarkNewChatMediaIndex = newChatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkNewChatIndex,
+    );
+    const autoDarkNewChatBlock = readCssBlock(
+      newChatStyles.slice(autoDarkNewChatMediaIndex),
+      autoDarkNewChatSelector,
+    );
+    const mobileBlock = readCssBlock(
+      newChatStyles,
+      "@media screen and (max-width: 520px)",
+    );
+    const mobileComposerBlock = readCssBlock(mobileBlock, ".composer");
+    const mobileComposerActionBlock = readCssBlock(mobileBlock, ".composer-action");
+    const newChatPaintScope = [
+      newChatRootBlock,
+      maskHeaderButtonBlock,
+      titleBlock,
+      subtitleBlock,
+      composerBlock,
+      composerFocusBlock,
+      composerActionBlock,
+      composerActionPathBlock,
+      moreButtonBlock,
+      maskBlock,
+      maskFocusBlock,
+      darkNewChatBlock,
+      autoDarkNewChatBlock,
+      mobileComposerBlock,
+      mobileComposerActionBlock,
+    ].join("\n");
+
+    expect(newChat).toContain("chatStore.newSession(mask)");
+    expect(newChat).toContain("startChat(mask ?? undefined)");
+    expect(newChat).toContain("navigate(Path.Chat)");
+    expect(newChat).toContain("navigate(Path.Masks)");
+    expect(newChat).toContain("showConfirm(Locale.NewChat.ConfirmNoShow)");
+    expect(newChat).toContain("dontShowMaskSplashScreen = true");
+    expect(newChat).toContain("dataMobileSidebarTrigger={isCompactScreen}");
+
+    expect(newChatRootBlock).toMatch(
+      /--new-chat-page-background:\s*var\(--surface\);/,
+    );
+    expect(newChatRootBlock).toMatch(
+      /--new-chat-control-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 94%,\s*var\(--white\)\s*\);/,
+    );
+    expect(newChatRootBlock).toMatch(
+      /--new-chat-mask-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 5%,\s*transparent\s*\);/,
+    );
+    expect(newChatRootBlock).toMatch(/background:\s*var\(--new-chat-page-background\);/);
+    expect(maskHeaderButtonBlock).toMatch(
+      /border:\s*1px solid var\(--new-chat-control-border-color\);/,
+    );
+    expect(maskHeaderButtonBlock).toMatch(/border-radius:\s*8px;/);
+    expect(maskHeaderButtonBlock).toMatch(
+      /background:\s*var\(--new-chat-control-background\);/,
+    );
+    expect(titleBlock).toMatch(/letter-spacing:\s*0;/);
+    expect(subtitleBlock).toMatch(/color:\s*var\(--new-chat-muted-color\);/);
+    expect(composerBlock).toMatch(/min-height:\s*60px;/);
     expect(composerBlock).toMatch(
-      /&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/,
+      /border:\s*1px solid var\(--new-chat-control-border-color\);/,
     );
-    expect(maskHeaderBlock).toMatch(
-      /button\s*\{[\s\S]*background:\s*var\(--surface-elevated\);/,
+    expect(composerBlock).toMatch(/border-radius:\s*8px;/);
+    expect(composerBlock).toMatch(
+      /background:\s*var\(--new-chat-control-background\);/,
     );
-    expect(moreButtonBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
-    expect(maskBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
-    expect(maskBlock).toMatch(/border:\s*var\(--border-in-light\);/);
-    expect(maskBlock).toMatch(/border-radius:\s*14px;/);
-    expect(maskBlock).toMatch(/&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/);
+    expect(composerBlock).toMatch(
+      /box-shadow:\s*0 14px 34px var\(--new-chat-control-shadow-color\);/,
+    );
+    expect(composerFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(composerFocusBlock).toMatch(
+      /border-color:\s*var\(--new-chat-control-focus-border-color\);/,
+    );
+    expect(composerActionBlock).toMatch(/width:\s*40px;/);
+    expect(composerActionBlock).toMatch(/height:\s*40px;/);
+    expect(composerActionBlock).toMatch(/border-radius:\s*8px;/);
+    expect(composerActionBlock).toMatch(
+      /background:\s*var\(--new-chat-action-background\);/,
+    );
+    expect(composerActionPathBlock).toMatch(
+      /fill:\s*var\(--new-chat-action-foreground\) !important;/,
+    );
+    expect(moreButtonBlock).toMatch(
+      /border:\s*1px solid var\(--new-chat-control-border-color\);/,
+    );
+    expect(moreButtonBlock).toMatch(/border-radius:\s*8px;/);
+    expect(moreButtonBlock).toMatch(
+      /background:\s*var\(--new-chat-control-background\);/,
+    );
+    expect(maskBlock).toMatch(
+      /border:\s*1px solid var\(--new-chat-control-border-color\);/,
+    );
+    expect(maskBlock).toMatch(/border-radius:\s*8px;/);
+    expect(maskBlock).toMatch(
+      /background:\s*var\(--new-chat-control-background\);/,
+    );
+    expect(maskFocusBlock).toMatch(
+      /background:\s*var\(--new-chat-mask-hover-background\);/,
+    );
+    expect(darkNewChatBlock).toMatch(
+      /--new-chat-control-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkNewChatBlock).toMatch(
+      /--new-chat-control-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 9%,\s*transparent\s*\);/,
+    );
+    expect(darkNewChatBlock).toMatch(
+      /--new-chat-control-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 12%,\s*transparent\s*\);/,
+    );
+    expect(darkNewChatBlock).toMatch(
+      /--new-chat-control-focus-border-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 34%,\s*transparent\s*\);/,
+    );
+    expect(darkNewChatBlock).toMatch(
+      /--new-chat-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 84%,\s*transparent\s*\);/,
+    );
+    expect(darkNewChatBlock).toMatch(
+      /--new-chat-action-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 92%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkNewChatBlock).toMatch(
+      /--new-chat-mask-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 9%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkNewChatIndex).toBeGreaterThan(-1);
+    expect(autoDarkNewChatMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkNewChatBlock).toMatch(
+      /--new-chat-control-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkNewChatBlock).toMatch(
+      /--new-chat-control-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 9%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkNewChatBlock).toMatch(
+      /--new-chat-control-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 12%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkNewChatBlock).toMatch(
+      /--new-chat-control-focus-border-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 34%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkNewChatBlock).toMatch(
+      /--new-chat-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 84%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkNewChatBlock).toMatch(
+      /--new-chat-action-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 92%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkNewChatBlock).toMatch(
+      /--new-chat-mask-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 9%,\s*transparent\s*\);/,
+    );
+    expect(mobileComposerBlock).toMatch(/min-height:\s*56px;/);
+    expect(mobileComposerBlock).toMatch(/border-radius:\s*8px;/);
+    expect(mobileComposerActionBlock).toMatch(/width:\s*40px;/);
+    expect(mobileComposerActionBlock).toMatch(/height:\s*40px;/);
+    expect(newChatPaintScope).not.toContain("border: var(--border-in-light)");
+    expect(newChatPaintScope).not.toContain("box-shadow: var(--composer-shadow)");
+    expect(newChatPaintScope).not.toContain("border-radius: 30px");
+    expect(newChatPaintScope).not.toContain("border-radius: 26px");
+    expect(newChatPaintScope).not.toContain("border-radius: 24px");
+    expect(newChatPaintScope).not.toContain("border-radius: 14px");
+    expect(newChatStyles).not.toContain("fill: white !important");
   });
 
   test("keeps Search Chat aligned with Gemini command surfaces", () => {

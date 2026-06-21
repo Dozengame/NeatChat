@@ -6927,3 +6927,53 @@ Known risks:
 - Live Browser computed-style verification for the actual SearchChat command surface is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
 - Search input, clear action, and chat result selection were not clicked because the target page was not reachable without credentials and those actions can mutate UI state or navigate.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-22 new-chat-start-surface-tone
+
+Result: automated checks passed; live target QA blocked by access-code gate.
+
+Target flow:
+
+- New Chat should read as a Gemini-style start surface: quiet neutral page, compact 8px primary composer, restrained utility buttons, tokenized mask shortcuts, and Dark/Auto dark-safe tone.
+- `startChat`, command mask creation, mask shortcut selection, return/mobile sidebar trigger, More Masks navigation, no-show confirmation, `dontShowMaskSplashScreen`, model config, account/secret/sync/backend/deploy behavior, dependencies, and production config must remain unchanged.
+- The slice should refine the visual surface without changing New Chat TSX behavior or persisted chat/mask/config semantics.
+
+Design direction:
+
+- Creative Production style intake selected a start-surface direction: low-noise neutral page, compact elevated controls, primary action as a contained 8px icon button, subtle primary hover wash, explicit Dark/Auto dark safety, and no decorative gradient treatment.
+- No generated raster design was used because this is a small UI-system repair inside the existing Gemini migration language. The design spec is the local token contract in `new-chat.module.scss` plus this QA record.
+
+Scope:
+
+- `app/components/new-chat.module.scss`: added local `--new-chat-*` tokens for Light/Dark/Auto dark; replaced legacy `border-in-light`, `composer-shadow`, hardcoded shadow paint, 30/26/24/14px rounded surfaces, and circular composer action with tokenized 8px start-surface controls.
+- `test/gemini-visual-migration.test.ts`: moved New Chat visual assertions out of the broad secondary-entry test and added a focused New Chat contract locking behavior entry points, token declarations, token consumers, mobile sizing, focus/hover treatment, and old target paint removal.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No New Chat TSX behavior, chat store/session semantics, mask store semantics, config store semantics, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, package files, or lockfiles were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="New Chat aligned"` failed first as expected because `.new-chat` still lacked local start-surface tokens.
+- After implementation, the focused contract passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser opened `http://localhost:3001/#/new-chat`.
+- Desktop default viewport `1280x720` and mobile viewport `390x844` both reached the local access-code gate with title `NeatChat` and gate copy `需要密码`, `管理员开启了密码验证，请在下方填入访问码`, and action `确认`.
+- Both viewport checks had no console warn/error logs, no framework overlay, and horizontal overflow `0`. The actual New Chat start surface was not rendered because the local gate blocked access.
+- In-app Browser screenshot capture failed with `Page.captureScreenshot` timeout for the tab.
+- No real access code was entered and no auth/config bypass was attempted. Start chat, mask selection, no-show confirmation, More Masks navigation, mobile drawer trigger, model/API request, account/key/sync/import/export/reset/clear, or persisted config action was not performed.
+
+Review:
+
+- Read-only sub-agent review found no P0/P1/P2 or blocking issues. It confirmed the diff is limited to `app/components/new-chat.module.scss`, `test/gemini-visual-migration.test.ts`, and this QA record, with no TSX behavior, backend/API, model config, account/secret/sync, production/deploy config, package/lockfile, or dependency changes.
+- The review raised two P3 test-hardening items: the broad secondary-entry root background assertion could match the custom property instead of the actual background consumer, and Dark/Auto dark coverage only locked one token. Both were fixed before commit.
+- The final review state confirms the new test locks `chatStore.newSession(mask)`, command mask fallback, navigation to `Path.Chat`, navigation to `Path.Masks`, no-show confirmation, `dontShowMaskSplashScreen = true`, compact-screen sidebar trigger forwarding, actual root background consumption, and the full Dark/Auto dark token set for this slice.
+- The review confirmed Browser QA is correctly described as blocked by the access-code gate and should not be described as live computed-style verification for the actual New Chat surface.
+
+Known risks:
+
+- Live Browser computed-style verification for the actual New Chat start surface is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
+- Start chat, mask selection, no-show confirmation, More Masks navigation, and mobile drawer trigger were not clicked because the target page was not reachable without credentials and those actions can mutate local state, persisted config, or route state.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
