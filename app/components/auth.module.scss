@@ -1,10 +1,84 @@
 .auth-page {
+  --auth-page-background: radial-gradient(
+      circle at top,
+      color-mix(in srgb, var(--primary) 8%, transparent),
+      transparent 36%
+    ),
+    var(--surface);
+  --auth-panel-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 92%,
+    var(--white)
+  );
+  --auth-panel-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --auth-panel-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --auth-logo-background: color-mix(
+    in srgb,
+    var(--primary) 7%,
+    var(--auth-panel-background)
+  );
+  --auth-muted-color: color-mix(
+    in srgb,
+    var(--black-50) 86%,
+    transparent
+  );
+  --auth-field-background: color-mix(
+    in srgb,
+    var(--surface) 72%,
+    var(--white)
+  );
+  --auth-field-border-color: color-mix(
+    in srgb,
+    var(--black-50) 13%,
+    transparent
+  );
+  --auth-field-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 30%,
+    transparent
+  );
+
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
+  gap: 14px;
+  position: relative;
+  isolation: isolate;
   height: 100%;
   width: 100%;
   flex-direction: column;
+  box-sizing: border-box;
+  overflow: auto;
+  padding: clamp(24px, 8vh, 72px) 20px;
+  color: var(--black);
+  background: var(--auth-page-background);
+
+  &::before {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    width: min(432px, calc(100% - 40px));
+    min-height: 392px;
+    height: min(456px, calc(100% - 48px));
+    border: 1px solid var(--auth-panel-border-color);
+    border-radius: 24px;
+    background: var(--auth-panel-background);
+    box-shadow: 0 20px 60px var(--auth-panel-shadow-color);
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+
   .top-banner {
     position: relative;
     width: 100%;
@@ -64,19 +138,34 @@
   }
 
   .auth-logo {
-    margin-top: 10vh;
-    transform: scale(1.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    margin: 0 0 8px;
+    border: 1px solid var(--auth-panel-border-color);
+    border-radius: 16px;
+    background: var(--auth-logo-background);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--white) 72%, transparent);
   }
 
   .auth-title {
-    font-size: 24px;
-    font-weight: bold;
-    line-height: 2;
-    margin-bottom: 1vh;
+    margin: 0;
+    font-size: clamp(24px, 5vw, 32px);
+    font-weight: 650;
+    line-height: 1.2;
+    letter-spacing: 0;
+    color: var(--black);
   }
 
   .auth-tips {
+    max-width: 320px;
+    margin: 0;
     font-size: 14px;
+    line-height: 1.55;
+    text-align: center;
+    color: var(--auth-muted-color);
   }
 
   .auth-input {
@@ -92,17 +181,174 @@
     justify-content: center;
     flex-direction: column;
     align-items: center;
-    width: 65px;
+    width: min(360px, 100%);
+    margin-top: 4px;
 
     button {
       width: 100%;
+      min-height: 44px;
       display: flex;
       justify-content: center;
       align-items: center;
+      border-radius: 8px;
     }
 
     button:not(:last-child) {
-      margin-bottom: 10px;
+      margin-bottom: 0;
+    }
+  }
+
+  :global(.password-input-container) {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: min(360px, 100%);
+    max-width: none;
+    min-height: 46px;
+    box-sizing: border-box;
+    margin: 8px 0 2px;
+    padding: 0 10px;
+    border: 1px solid var(--auth-field-border-color);
+    border-radius: 8px;
+    background: var(--auth-field-background);
+    transition:
+      background-color 0.18s ease,
+      border-color 0.18s ease,
+      box-shadow 0.18s ease;
+
+    &:focus-within {
+      border-color: var(--auth-field-focus-border-color);
+      box-shadow: var(--focus-ring-shadow);
+    }
+
+    :global(.password-eye) {
+      flex: 0 0 auto;
+      margin-right: 8px;
+      color: var(--auth-muted-color);
+      border-radius: 8px;
+    }
+
+    :global(.password-input) {
+      flex: 1 1 auto;
+      width: 100%;
+      min-width: 0;
+      height: 100%;
+      margin: 0;
+      padding: 0 4px;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: var(--black);
+      font-size: 14px;
+      line-height: 20px;
+
+      &::placeholder {
+        color: var(--auth-muted-color);
+      }
+
+      &:focus-visible {
+        outline: var(--focus-ring);
+        outline-offset: 12px;
+      }
+    }
+  }
+}
+
+:global(.dark) .auth-page {
+  --auth-page-background: radial-gradient(
+      circle at top,
+      color-mix(in srgb, var(--primary) 12%, transparent),
+      transparent 38%
+    ),
+    var(--surface);
+  --auth-panel-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    var(--white)
+  );
+  --auth-panel-border-color: color-mix(in srgb, var(--black) 9%, transparent);
+  --auth-panel-shadow-color: color-mix(in srgb, var(--black) 20%, transparent);
+  --auth-logo-background: color-mix(
+    in srgb,
+    var(--primary) 12%,
+    var(--auth-panel-background)
+  );
+  --auth-muted-color: color-mix(
+    in srgb,
+    var(--black-50) 84%,
+    transparent
+  );
+  --auth-field-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 78%,
+    var(--white)
+  );
+  --auth-field-border-color: color-mix(in srgb, var(--black) 9%, transparent);
+  --auth-field-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 34%,
+    transparent
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .auth-page {
+    --auth-page-background: radial-gradient(
+        circle at top,
+        color-mix(in srgb, var(--primary) 12%, transparent),
+        transparent 38%
+      ),
+      var(--surface);
+    --auth-panel-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 86%,
+      var(--white)
+    );
+    --auth-panel-border-color: color-mix(in srgb, var(--black) 9%, transparent);
+    --auth-panel-shadow-color: color-mix(in srgb, var(--black) 20%, transparent);
+    --auth-logo-background: color-mix(
+      in srgb,
+      var(--primary) 12%,
+      var(--auth-panel-background)
+    );
+    --auth-muted-color: color-mix(
+      in srgb,
+      var(--black-50) 84%,
+      transparent
+    );
+    --auth-field-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 78%,
+      var(--white)
+    );
+    --auth-field-border-color: color-mix(in srgb, var(--black) 9%, transparent);
+    --auth-field-focus-border-color: color-mix(
+      in srgb,
+      var(--primary) 34%,
+      transparent
+    );
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .auth-page {
+    padding: 28px 16px;
+    gap: 12px;
+
+    &::before {
+      width: calc(100% - 24px);
+      min-height: 360px;
+      height: min(420px, calc(100% - 32px));
+      border-radius: 20px;
+    }
+
+    .auth-logo {
+      width: 52px;
+      height: 52px;
+    }
+
+    .auth-tips {
+      max-width: min(320px, 100%);
     }
   }
 }

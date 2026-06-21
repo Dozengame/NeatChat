@@ -6815,3 +6815,61 @@ Known risks:
 - Plugin list rows share the same `mask.module.scss` surface; this is intentional for visual consistency, but any future plugin-only layout requirements should split the styling contract explicitly.
 - Mask/plugin create/edit/delete/chat/filter controls were not clicked because the target pages were not reachable without credentials and those actions can mutate local state or start a chat.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-21 auth-gate-surface-tone
+
+Result: automated checks passed; live Auth gate QA passed within no-credential boundary.
+
+Target flow:
+
+- The access-code gate should read as a Gemini-style secure entry surface: quiet elevated panel, compact 8px password field, restrained logo mark, clear title/tips hierarchy, and Dark/Auto dark-safe tone.
+- Access-code validation, success navigation, invalid/rate-limited toast handling, input binding, validating disabled state, model config, account/secret/sync/backend/deploy behavior, dependencies, and production config must remain unchanged.
+- The slice should improve the visible gate without entering a real access code or changing any auth decision semantics.
+
+Design direction:
+
+- Creative Production style intake selected a secure-entry direction: low-noise page wash, centered elevated gate panel, compact password control, subtle primary emphasis on the mark/focus state, explicit Dark/Auto dark safety, and no decorative marketing hero treatment.
+- No generated raster design was used because this is a small UI-system repair inside the existing Gemini migration language. The design spec is the local token contract in `auth.module.scss` plus this QA record.
+
+Scope:
+
+- `app/components/auth.module.scss`: added local `--auth-*` tokens for Light/Dark/Auto dark; replaced the old loose vertical layout, 10vh logo offset, scaled logo, bold/2-line title rhythm, narrow action width, and margin-based button spacing with a tokenized secure gate, 8px password field, focus styling, and mobile padding.
+- `app/components/auth.tsx`: removed the presentation-only inline `3vh` password-input margin so the Auth stylesheet owns field spacing. Access-code validation, navigation, toast handling, input value/update, visibility toggle, and disabled state were not changed.
+- `test/gemini-visual-migration.test.ts`: added a focused Auth gate contract locking existing validation/navigation/toast/input/disabled behavior entry points, Light/Dark/Auto dark token declarations, password-field token consumers, mobile padding, focus-visible treatment, and old target layout removal.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No auth store semantics, access-code validation logic, server config, account/secret/sync, backend/API, production config, deployment config, dependency files, or package files were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="auth gate"` failed first as expected because `.auth-page` lacked local secure-entry tokens and still used the old loose layout.
+- The same focused contract then exposed one overly broad old-style assertion where `line-height: 20px` matched the old `line-height: 2` substring; the assertion was corrected to match the exact old declaration.
+- After implementation, the focused contract passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `yarn build` passed with the existing Next warning that Edge runtime disables static generation for that page.
+- `git diff --check` passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser opened `http://localhost:3001/` and reached the Auth gate with title `NeatChat`, gate copy `需要密码`, `管理员开启了密码验证，请在下方填入访问码`, password placeholder `在此处填写访问码`, and action `确认`.
+- Desktop default viewport `1280x720` showed the Auth gate, no framework overlay, no console warn/error logs, and horizontal overflow `0`. Computed checks confirmed the 8px password-field radius, 360px desktop field width, 32px title size, and tokenized page spacing.
+- The password visibility button was clicked once without entering a code; it changed the input type from `password` to `text`, proving the visible control still updates local UI state without submitting credentials.
+- Mobile viewport `390x844` showed the same Auth gate, no framework overlay, no console warn/error logs, horizontal overflow `0`, `28px 16px` Auth padding, 12px gap, 8px password-field radius, and 358px responsive field width.
+- In-app Browser screenshot capture failed with `Page.captureScreenshot` timeout for the tab.
+- No real access code was entered and no auth/config bypass was attempted. No confirm/submit, model/API request, account/key/sync/import/export/reset/clear, or persisted config action was performed.
+
+Review:
+
+- Read-only sub-agent review could not complete because the session hit its usage limit. A local read-only review was performed against the current diff before commit.
+- The review found no blocking issues. It confirmed the diff is limited to `app/components/auth.module.scss`, `app/components/auth.tsx`, `test/gemini-visual-migration.test.ts`, and this QA record, with no auth store, backend/API, model config, account/secret/sync, production/deploy config, package/lockfile, or dependency changes.
+- The review confirmed the global password input overrides are scoped under `.auth-page`, so Settings/Plugin password fields keep their existing global styling.
+- The review confirmed the TSX change removes only presentation-only inline spacing; `validateAccessCode`, success `navigate(Path.Chat)`, invalid/rate-limited `showToast`, input binding, visibility toggle, and validating disabled state remain unchanged.
+- The review confirmed Browser QA is correctly described as live Auth gate validation without entering a real access code or clicking Confirm.
+
+Known risks:
+
+- The confirm/submit path was not clicked because it would transmit an access-code validation request. The source-level contract still locks `validateAccessCode`, success navigation, invalid/rate-limited toast, and validating disabled-state entry points.
+- In-app Browser screenshot capture timed out, so the live evidence is DOM/computed-style/console/interaction metrics rather than a captured screenshot.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.

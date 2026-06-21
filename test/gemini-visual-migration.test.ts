@@ -5626,6 +5626,127 @@ describe("Gemini visual migration shell", () => {
     expect(maskBlock).toMatch(/&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/);
   });
 
+  test("keeps auth gate aligned with Gemini secure entry surfaces", () => {
+    const authPage = read("app/components/auth.tsx");
+    const authStyles = read("app/components/auth.module.scss");
+    const authBlock = readCssBlock(authStyles, ".auth-page");
+    const authRootBlock = readRootDeclarations(authBlock);
+    const logoBlock = readCssBlock(authBlock, ".auth-logo");
+    const titleBlock = readCssBlock(authBlock, ".auth-title");
+    const tipsBlock = readCssBlock(authBlock, ".auth-tips");
+    const passwordContainerBlock = readCssBlock(
+      authBlock,
+      ":global(.password-input-container)",
+    );
+    const passwordEyeBlock = readCssBlock(
+      passwordContainerBlock,
+      ":global(.password-eye)",
+    );
+    const passwordInputBlock = readCssBlock(
+      passwordContainerBlock,
+      ":global(.password-input)",
+    );
+    const passwordInputFocusBlock = readCssBlock(
+      passwordInputBlock,
+      "&:focus-visible",
+    );
+    const actionsBlock = readCssBlock(authBlock, ".auth-actions");
+    const actionButtonBlock = readCssBlock(actionsBlock, "button");
+    const darkAuthBlock = readCssBlock(authStyles, ":global(.dark) .auth-page");
+    const autoDarkAuthSelector = ":global(body:not(.light)) .auth-page";
+    const autoDarkAuthIndex = authStyles.indexOf(autoDarkAuthSelector);
+    const autoDarkAuthMediaIndex = authStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkAuthIndex,
+    );
+    const autoDarkAuthBlock = readCssBlock(
+      authStyles.slice(autoDarkAuthMediaIndex),
+      autoDarkAuthSelector,
+    );
+    const mobileBlock = readCssBlock(
+      authStyles,
+      "@media screen and (max-width: 600px)",
+    );
+    const mobileAuthBlock = readCssBlock(mobileBlock, ".auth-page");
+    const authPaintScope = [
+      authRootBlock,
+      logoBlock,
+      titleBlock,
+      tipsBlock,
+      passwordContainerBlock,
+      passwordEyeBlock,
+      passwordInputBlock,
+      actionsBlock,
+      actionButtonBlock,
+      darkAuthBlock,
+      autoDarkAuthBlock,
+      mobileAuthBlock,
+    ].join("\n");
+
+    expect(authPage).toContain("accessStore.validateAccessCode()");
+    expect(authPage).toContain("navigate(Path.Chat)");
+    expect(authPage).toContain("showToast(");
+    expect(authPage).toContain('accessStore.accessCodeError === "rate_limited"');
+    expect(authPage).toContain("accessStore.setAccessCode(e.currentTarget.value)");
+    expect(authPage).toContain("disabled={accessStore.isValidatingAccessCode}");
+    expect(authPage).toContain("Locale.Auth.Validating");
+    expect(authPage).toContain("Locale.Auth.Confirm");
+    expect(authPage).not.toContain('marginTop: "3vh"');
+    expect(authPage).not.toContain('marginBottom: "3vh"');
+
+    expect(authRootBlock).toMatch(
+      /--auth-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--white\)\s*\);/,
+    );
+    expect(authRootBlock).toMatch(
+      /--auth-panel-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
+    );
+    expect(authRootBlock).toMatch(
+      /--auth-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface\) 72%,\s*var\(--white\)\s*\);/,
+    );
+    expect(authRootBlock).toMatch(/padding:\s*clamp\(24px,\s*8vh,\s*72px\) 20px;/);
+    expect(authRootBlock).toMatch(/background:\s*var\(--auth-page-background\);/);
+    expect(authRootBlock).toMatch(/gap:\s*14px;/);
+    expect(logoBlock).toMatch(/background:\s*var\(--auth-logo-background\);/);
+    expect(logoBlock).toMatch(/border:\s*1px solid var\(--auth-panel-border-color\);/);
+    expect(logoBlock).toMatch(/border-radius:\s*16px;/);
+    expect(titleBlock).toMatch(/font-size:\s*clamp\(24px,\s*5vw,\s*32px\);/);
+    expect(titleBlock).toMatch(/letter-spacing:\s*0;/);
+    expect(tipsBlock).toMatch(/color:\s*var\(--auth-muted-color\);/);
+    expect(passwordContainerBlock).toMatch(/width:\s*min\(360px,\s*100%\);/);
+    expect(passwordContainerBlock).toMatch(
+      /background:\s*var\(--auth-field-background\);/,
+    );
+    expect(passwordContainerBlock).toMatch(
+      /border:\s*1px solid var\(--auth-field-border-color\);/,
+    );
+    expect(passwordContainerBlock).toMatch(/border-radius:\s*8px;/);
+    expect(passwordEyeBlock).toMatch(/color:\s*var\(--auth-muted-color\);/);
+    expect(passwordInputBlock).toMatch(/min-width:\s*0;/);
+    expect(passwordInputBlock).toMatch(/background:\s*transparent;/);
+    expect(passwordInputBlock).toMatch(/border:\s*0;/);
+    expect(passwordInputFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(actionsBlock).toMatch(/width:\s*min\(360px,\s*100%\);/);
+    expect(actionButtonBlock).toMatch(/border-radius:\s*8px;/);
+    expect(darkAuthBlock).toMatch(
+      /--auth-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkAuthBlock).toMatch(
+      /--auth-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 78%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkAuthIndex).toBeGreaterThan(-1);
+    expect(autoDarkAuthMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkAuthBlock).toMatch(
+      /--auth-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(mobileAuthBlock).toMatch(/padding:\s*28px 16px;/);
+    expect(authPaintScope).not.toContain("margin-top: 10vh");
+    expect(authPaintScope).not.toContain("transform: scale(1.4)");
+    expect(authPaintScope).not.toContain("font-weight: bold");
+    expect(authPaintScope).not.toMatch(/line-height:\s*2;/);
+    expect(authPaintScope).not.toContain("width: 65px");
+    expect(authPaintScope).not.toContain("margin-bottom: 10px");
+  });
+
   test("keeps Masks and Plugins list surfaces aligned with Gemini utility cards", () => {
     const maskPage = read("app/components/mask.tsx");
     const pluginPage = read("app/components/plugin.tsx");

@@ -35,7 +35,6 @@ export function AuthPage() {
       <div className={styles["auth-tips"]}>{Locale.Auth.Tips}</div>
 
       <PasswordInput
-        style={{ marginTop: "3vh", marginBottom: "3vh" }}
         aria={Locale.Settings.ShowPassword}
         aria-label={Locale.Auth.Input}
         value={accessStore.accessCode}
