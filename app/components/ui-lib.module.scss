@@ -1,9 +1,77 @@
 @import "../styles/animation.scss";
 
+.card,
+.popover-mask,
+.list,
+.modal-container,
+.toast-content,
+.input,
+.select-with-icon,
+.modal-input,
+.selector {
+  --ui-lib-shadow-ink: rgb(0, 0, 0);
+  --ui-lib-surface: var(--surface-elevated);
+  --ui-lib-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --ui-lib-overlay-background: color-mix(in srgb, var(--ui-lib-shadow-ink) 46%, transparent);
+  --ui-lib-popover-mask-background: color-mix(in srgb, var(--ui-lib-shadow-ink) 30%, transparent);
+  --ui-lib-panel-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 16%, transparent);
+  --ui-lib-footer-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 7%, transparent);
+  --ui-lib-input-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 3%, transparent);
+  --ui-lib-toast-background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
+  --ui-lib-toast-border-color: color-mix(in srgb, var(--black-50) 16%, transparent);
+  --ui-lib-toast-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 10%, transparent);
+  --ui-lib-selected-background: var(--primary);
+  --ui-lib-selected-shadow-color: color-mix(in srgb, var(--primary) 18%, transparent);
+  --ui-lib-focus-border-color: var(--primary);
+}
+
+:global(.dark) .card,
+:global(.dark) .popover-mask,
+:global(.dark) .list,
+:global(.dark) .modal-container,
+:global(.dark) .toast-content,
+:global(.dark) .input,
+:global(.dark) .select-with-icon,
+:global(.dark) .modal-input,
+:global(.dark) .selector {
+  --ui-lib-overlay-background: color-mix(in srgb, var(--ui-lib-shadow-ink) 54%, transparent);
+  --ui-lib-popover-mask-background: color-mix(in srgb, var(--ui-lib-shadow-ink) 42%, transparent);
+  --ui-lib-panel-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 30%, transparent);
+  --ui-lib-footer-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 18%, transparent);
+  --ui-lib-input-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 16%, transparent);
+  --ui-lib-toast-background: color-mix(in srgb, var(--surface-elevated) 86%, transparent);
+  --ui-lib-toast-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --ui-lib-toast-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 24%, transparent);
+  --ui-lib-selected-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .card,
+  :global(body:not(.light)) .popover-mask,
+  :global(body:not(.light)) .list,
+  :global(body:not(.light)) .modal-container,
+  :global(body:not(.light)) .toast-content,
+  :global(body:not(.light)) .input,
+  :global(body:not(.light)) .select-with-icon,
+  :global(body:not(.light)) .modal-input,
+  :global(body:not(.light)) .selector {
+    --ui-lib-overlay-background: color-mix(in srgb, var(--ui-lib-shadow-ink) 54%, transparent);
+    --ui-lib-popover-mask-background: color-mix(in srgb, var(--ui-lib-shadow-ink) 42%, transparent);
+    --ui-lib-panel-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 30%, transparent);
+    --ui-lib-footer-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 18%, transparent);
+    --ui-lib-input-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 16%, transparent);
+    --ui-lib-toast-background: color-mix(in srgb, var(--surface-elevated) 86%, transparent);
+    --ui-lib-toast-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+    --ui-lib-toast-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 24%, transparent);
+    --ui-lib-selected-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
+  }
+}
+
 .card {
-  background-color: var(--white);
+  background-color: var(--ui-lib-surface);
+  border: 1px solid var(--ui-lib-border-color);
   border-radius: 10px;
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 10px 28px var(--ui-lib-panel-shadow-color);
   padding: 10px;
 }
 
@@ -30,7 +98,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: var(--ui-lib-popover-mask-background);
   backdrop-filter: blur(5px);
 }
 
@@ -77,12 +145,12 @@
 }
 
 .list {
-  border: var(--border-in-light);
+  border: 1px solid var(--ui-lib-border-color);
   border-radius: 10px;
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 12px 28px var(--ui-lib-panel-shadow-color);
   margin-bottom: 20px;
   animation: slide-in ease 0.3s;
-  background: var(--white);
+  background: var(--ui-lib-surface);
 }
 
 .list .list-item:last-child {
@@ -90,8 +158,9 @@
 }
 
 .modal-container {
-  box-shadow: var(--card-shadow);
-  background-color: var(--white);
+  box-shadow: 0 22px 70px var(--ui-lib-panel-shadow-color);
+  background-color: var(--ui-lib-surface);
+  border: 1px solid var(--ui-lib-border-color);
   border-radius: 12px;
   width: 80vw;
   max-width: 900px;
@@ -153,7 +222,7 @@
     display: flex;
     justify-content: flex-end;
     border-top: var(--border-in-light);
-    box-shadow: var(--shadow);
+    box-shadow: 0 -10px 24px var(--ui-lib-footer-shadow-color);
 
     .modal-actions {
       display: flex;
@@ -176,6 +245,16 @@
 
     .modal-content {
       max-height: 50vh;
+    }
+  }
+
+  .selector {
+    align-items: flex-end;
+
+    &-content {
+      width: min(100vw, 420px);
+      max-height: min(76dvh, 600px);
+      border-radius: 16px 16px 0 0;
     }
   }
 }
@@ -210,9 +289,11 @@
     max-width: 80vw;
     word-break: break-all;
     font-size: 14px;
-    background-color: var(--white);
-    box-shadow: var(--card-shadow);
-    border: var(--border-in-light);
+    background-color: var(--ui-lib-toast-background);
+    box-shadow:
+      0 1px 2px var(--ui-lib-toast-shadow-color),
+      0 10px 26px var(--ui-lib-toast-shadow-color);
+    border: 1px solid var(--ui-lib-toast-border-color);
     color: var(--black);
     padding: 10px 20px;
     border-radius: 50px;
@@ -220,6 +301,7 @@
     display: flex;
     align-items: center;
     pointer-events: all;
+    backdrop-filter: blur(18px);
 
     &.toast-content-passive {
       pointer-events: none;
@@ -244,12 +326,12 @@
 .input {
   appearance: none;
   box-sizing: border-box;
-  border: var(--border-in-light);
   border-radius: 10px;
   padding: 10px;
   font-family: inherit;
   line-height: 1.35;
-  background-color: var(--white);
+  background-color: var(--ui-lib-surface);
+  border: 1px solid var(--ui-lib-border-color);
   color: var(--black);
   resize: none;
   min-width: 50px;
@@ -269,14 +351,14 @@
   .select-with-icon-select {
     box-sizing: border-box;
     height: 100%;
-    border: var(--border-in-light);
     padding: 8px 25px 8px 6px;
     border-radius: 10px;
     appearance: none;
     cursor: pointer;
     font-family: inherit;
     line-height: 1;
-    background-color: var(--white);
+    background-color: var(--ui-lib-surface);
+    border: 1px solid var(--ui-lib-border-color);
     color: var(--black);
     text-align: center;
     min-width: 0;
@@ -295,9 +377,9 @@
   height: 100%;
   width: 100%;
   border-radius: 10px;
-  border: var(--border-in-light);
-  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.03);
-  background-color: var(--white);
+  border: 1px solid var(--ui-lib-border-color);
+  box-shadow: 0 -2px 5px var(--ui-lib-input-shadow-color);
+  background-color: var(--ui-lib-surface);
   color: var(--black);
   font-family: inherit;
   padding: 10px;
@@ -306,7 +388,8 @@
   box-sizing: border-box;
 
   &:focus {
-    border: 1px solid var(--primary);
+    border-color: var(--ui-lib-focus-border-color);
+    box-shadow: var(--focus-ring-shadow);
   }
 }
 
@@ -316,16 +399,18 @@
   left: 0;
   height: 100vh;
   width: 100vw;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--ui-lib-overlay-background);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 999;
 
   &-content {
-    background-color: var(--white);
+    background-color: var(--ui-lib-surface);
+    border: 1px solid var(--ui-lib-border-color);
     border-radius: 10px;
-    box-shadow: var(--shadow);
+    box-shadow: 0 22px 70px var(--ui-lib-panel-shadow-color);
     min-width: 300px;
     min-height: auto;
     max-height: 600px;
@@ -369,14 +454,14 @@
       overflow-y: auto;
       flex-grow: 1;
       min-height: auto;
-      
+
       &:has(> :last-child:nth-child(-n+8)) {
         overflow-y: hidden;
       }
 
       .list-item {
         cursor: pointer;
-        
+
         &:hover {
           background-color: var(--hover-color);
         }
@@ -403,7 +488,8 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background-color: var(--primary);
+  background-color: var(--ui-lib-selected-background);
+  box-shadow: 0 0 0 4px var(--ui-lib-selected-shadow-color);
   margin-right: 10px;
 }
 

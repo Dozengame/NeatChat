@@ -6126,3 +6126,52 @@ Known risks:
 
 - Browser QA validates the update announcement modal through compiled CSSOM because the real modal requires public server config to render; the source-level Jest contract covers component structure, storage behavior, token usage, old paint removal, and mobile sizing.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-21 shared-ui-lib-surface-tone
+
+Result: passed.
+
+Target flow:
+
+- Shared ui-lib card, popover mask, list, modal, toast, text input, select, modal input, and selector surfaces should read as the same Gemini-style elevated UI chrome across Light, explicit Dark, Auto dark, desktop, mobile, and narrow mobile.
+- Overlay scrims, panel borders, panel shadows, toast glass, input focus, and selected-dot affordance should consume local theme tokens instead of isolated hardcoded white/black/rgba paint.
+- Modal keyboard handling, selector search/selection behavior, toast actions, form values, model config semantics, account/secret/sync, backend/API, production config, deployment config, dependencies, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected a quiet shared modal/selector surface direction: tokenized overlay scrim, elevated selector panel, soft toast pill, Dark/Auto dark safety, mobile bottom-sheet safety, and no behavior/config/backend changes.
+- The slice keeps existing component structure, ARIA labels, keyboard handlers, selector selection callbacks, modal action callbacks, toast pointer-event behavior, desktop sizing, and mobile modal sizing. Only shared surface paint sources move to local tokens.
+
+Scope:
+
+- `app/components/ui-lib.module.scss`: added local `--ui-lib-*` tokens for shared elevated surfaces, replaced old hardcoded white/rgba/shadow paint in shared surfaces, added explicit Dark plus Auto dark token overrides, added selector overlay blur, added selected-dot ring, and made selector content bottom-sheet safe on mobile.
+- `test/gemini-visual-migration.test.ts`: added a focused shared ui-lib contract locking Modal/Selector/Toast source structure, Light/Dark/Auto dark token declarations, token consumers, mobile selector sizing, focus ring preservation, and absence of old hardcoded shared-surface paint in the scoped style surface.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, stores, selector/model behavior, modal/toast behavior, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, deploy files, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="shared ui-lib modal selector"` failed first as expected because the shared ui-lib root token declarations did not exist yet.
+- After implementation and test-scope correction for nested selector/mobile blocks, the same focused visual migration contract passed.
+- `git diff --check` passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- In-app Browser was used for this slice. No real access code, key, account, model/API request, upload, image-generation action, persisted production config, backend config, dependency, send action, model request, or model/config selection mutation was used. The local UI theme was temporarily changed through the real Settings Theme select for computed-style QA and restored to its original `auto` value.
+- Desktop `1439x1024` current Auto runtime: app shell completed load, chat controls were visible, horizontal overflow was `0`, compiled CSSOM contained shared ui-lib Light tokens, explicit Dark override, Auto dark override, mobile selector bottom-sheet rule, old shared white/rgba paint was absent in the ui-lib token scope, and console error logs were `0`.
+- Mobile `390x844` current Auto runtime: app shell completed load, new-chat/model/textarea/settings controls stayed inside viewport, horizontal overflow was `0`, shared ui-lib token CSSOM checks passed, mobile selector bottom-sheet rule was present, and console error logs were `0`.
+- Narrow `320x740` current Auto runtime: app shell completed load, visible controls stayed inside viewport, horizontal overflow was `0`, shared ui-lib token CSSOM checks passed, old shared paint was absent in the ui-lib token scope, and console error logs were `0`.
+- Live Settings surface check opened Settings, confirmed visible `ui-lib` input/select/list controls resolve to tokenized elevated surface paint in explicit Light (`body.light`, `--theme: light`), explicit Dark (`body.dark`, `--theme: dark`), and Auto dark (`body` without light/dark class, `--theme: dark` from current system preference). The original theme value was restored to `auto`; console error logs were `0`.
+- Model selector interaction was probed but did not expose this shared `Selector` surface in the current runtime state, so it was not used as blocking evidence.
+
+Review:
+
+- Read-only sub-agent review found no blocking issues. It confirmed the diff is limited to `app/components/ui-lib.module.scss`, `test/gemini-visual-migration.test.ts`, and this QA record; no TSX behavior, store, model config, account/secret/sync, backend/API, production/deployment config, dependency, send-path, or internal-plan changes were found.
+- The reviewer noted that Browser QA originally proved Light/current layout and CSSOM but not Dark/Auto dark computed styles. Main-thread follow-up QA addressed this with explicit Light, explicit Dark, and Auto dark computed-style checks on live Settings `ui-lib` input/select/list controls.
+- The reviewer also noted the source-level Jest contract is not a render-level Modal/Selector behavior test. This is accepted for the slice because no TSX behavior changed; the QA wording was corrected to describe source structure and visual-style coverage rather than full behavior coverage.
+
+Known risks:
+
+- Browser QA validates selector bottom-sheet rules through compiled CSSOM because the current model selector entry does not expose the shared `Selector` component in this runtime state. Source-level Jest covers the shared `Selector` source structure and style contract, not a full rendered selection/close/search behavior test.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.

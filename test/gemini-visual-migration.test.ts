@@ -4842,6 +4842,226 @@ describe("Gemini visual migration shell", () => {
     expect(mobileConfirmBlock).toMatch(/width:\s*100%;/);
   });
 
+  test("keeps shared ui-lib modal selector and toast surfaces aligned with Gemini", () => {
+    const uiLibComponents = read("app/components/ui-lib-components.tsx");
+    const uiLibStyles = read("app/components/ui-lib.module.scss");
+    const sharedSurfaceSelector =
+      ".card,\n.popover-mask,\n.list,\n.modal-container,\n.toast-content,\n.input,\n.select-with-icon,\n.modal-input,\n.selector";
+    const sharedSurfaceBlock = readRootDeclarations(
+      readCssBlock(uiLibStyles, sharedSurfaceSelector),
+    );
+    const darkSharedSurfaceBlock = readCssBlock(
+      uiLibStyles,
+      ":global(.dark) .card,\n:global(.dark) .popover-mask,\n:global(.dark) .list,\n:global(.dark) .modal-container,\n:global(.dark) .toast-content,\n:global(.dark) .input,\n:global(.dark) .select-with-icon,\n:global(.dark) .modal-input,\n:global(.dark) .selector",
+    );
+    const autoDarkSharedSurfaceSelector =
+      ":global(body:not(.light)) .card,\n  :global(body:not(.light)) .popover-mask,\n  :global(body:not(.light)) .list,\n  :global(body:not(.light)) .modal-container,\n  :global(body:not(.light)) .toast-content,\n  :global(body:not(.light)) .input,\n  :global(body:not(.light)) .select-with-icon,\n  :global(body:not(.light)) .modal-input,\n  :global(body:not(.light)) .selector";
+    const autoDarkSharedSurfaceSelectorIndex = uiLibStyles.indexOf(
+      autoDarkSharedSurfaceSelector,
+    );
+    const autoDarkSharedSurfaceMediaIndex = uiLibStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkSharedSurfaceSelectorIndex,
+    );
+    const autoDarkSharedSurfaceBlock = readCssBlock(
+      uiLibStyles.slice(autoDarkSharedSurfaceMediaIndex),
+      autoDarkSharedSurfaceSelector,
+    );
+    const cardBlock = readCssBlock(uiLibStyles, ".card");
+    const listBlock = readCssBlock(uiLibStyles, ".list");
+    const popoverMaskBlock = readCssBlock(uiLibStyles, ".popover-mask");
+    const modalContainerBlock = readRootDeclarations(
+      readCssBlock(uiLibStyles, ".modal-container"),
+    );
+    const modalFooterBlock = readCssBlock(uiLibStyles, ".modal-footer");
+    const toastContentBlock = readCssBlock(uiLibStyles, ".toast-content");
+    const inputBlock = readCssBlock(uiLibStyles, ".input");
+    const selectBlock = readCssBlock(
+      uiLibStyles,
+      ".select-with-icon-select",
+    );
+    const modalInputBlock = readCssBlock(uiLibStyles, ".modal-input");
+    const modalInputFocusBlock = readCssBlock(modalInputBlock, "&:focus");
+    const selectorStyles = uiLibStyles.slice(
+      uiLibStyles.lastIndexOf("\n.selector {"),
+    );
+    const selectorBlock = readRootDeclarations(
+      readCssBlock(selectorStyles, ".selector"),
+    );
+    const selectorContentBlock = readCssBlock(
+      selectorStyles,
+      "&-content",
+    );
+    const selectorSelectedBlock = readCssBlock(
+      uiLibStyles,
+      ".selector-item-selected",
+    );
+    const mobileSelectorMediaIndex = uiLibStyles.lastIndexOf(
+      "@media screen and (max-width: 600px)",
+      uiLibStyles.indexOf("\n.show {"),
+    );
+    const mobileBlock = readCssBlock(
+      uiLibStyles.slice(mobileSelectorMediaIndex),
+      "@media screen and (max-width: 600px)",
+    );
+    const mobileSelectorBlock = readCssBlock(mobileBlock, ".selector");
+    const mobileSelectorContentBlock = readCssBlock(
+      mobileSelectorBlock,
+      "&-content",
+    );
+    const sharedUiLibPaintScope = [
+      sharedSurfaceBlock,
+      darkSharedSurfaceBlock,
+      autoDarkSharedSurfaceBlock,
+      cardBlock,
+      listBlock,
+      popoverMaskBlock,
+      modalContainerBlock,
+      modalFooterBlock,
+      toastContentBlock,
+      inputBlock,
+      selectBlock,
+      modalInputBlock,
+      selectorBlock,
+      selectorContentBlock,
+      selectorSelectedBlock,
+    ].join("\n");
+
+    expect(uiLibComponents).toContain("export function Modal");
+    expect(uiLibComponents).toContain("window.addEventListener(\"keydown\", onKeyDown)");
+    expect(uiLibComponents).toContain('aria-label={isMax ? "Restore modal" : "Maximize modal"}');
+    expect(uiLibComponents).toContain('aria-label="Close modal"');
+    expect(uiLibComponents).toContain("props.action?.onClick?.();");
+    expect(uiLibComponents).toContain("props.onClose?.();");
+    expect(uiLibComponents).toContain('aria-label="Close selector"');
+    expect(uiLibComponents).toContain('aria-label="Search models"');
+    expect(uiLibComponents).toContain("props.onSelection?.(newSelectedValues);");
+    expect(uiLibComponents).toContain("props.onSelection?.([value]);");
+    expect(uiLibComponents).toContain("props.onClose?.();");
+
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-shadow-ink:\s*rgb\(0,\s*0,\s*0\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-surface:\s*var\(--surface-elevated\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-overlay-background:\s*color-mix\(in srgb,\s*var\(--ui-lib-shadow-ink\) 46%,\s*transparent\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-popover-mask-background:\s*color-mix\(in srgb,\s*var\(--ui-lib-shadow-ink\) 30%,\s*transparent\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-panel-shadow-color:\s*color-mix\(in srgb,\s*var\(--ui-lib-shadow-ink\) 16%,\s*transparent\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-toast-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 92%,\s*transparent\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-selected-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 18%,\s*transparent\);/,
+    );
+    expect(darkSharedSurfaceBlock).toMatch(
+      /--ui-lib-overlay-background:\s*color-mix\(in srgb,\s*var\(--ui-lib-shadow-ink\) 54%,\s*transparent\);/,
+    );
+    expect(darkSharedSurfaceBlock).toMatch(
+      /--ui-lib-toast-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 86%,\s*transparent\);/,
+    );
+    expect(darkSharedSurfaceBlock).toMatch(
+      /--ui-lib-toast-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
+    );
+    expect(autoDarkSharedSurfaceSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkSharedSurfaceMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkSharedSurfaceBlock).toMatch(
+      /--ui-lib-popover-mask-background:\s*color-mix\(in srgb,\s*var\(--ui-lib-shadow-ink\) 42%,\s*transparent\);/,
+    );
+    expect(autoDarkSharedSurfaceBlock).toMatch(
+      /--ui-lib-selected-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 24%,\s*transparent\);/,
+    );
+
+    expect(cardBlock).toMatch(/background-color:\s*var\(--ui-lib-surface\);/);
+    expect(cardBlock).toMatch(/border:\s*1px solid var\(--ui-lib-border-color\);/);
+    expect(listBlock).toMatch(/background:\s*var\(--ui-lib-surface\);/);
+    expect(listBlock).toMatch(/border:\s*1px solid var\(--ui-lib-border-color\);/);
+    expect(listBlock).toMatch(/box-shadow:[\s\S]*var\(--ui-lib-panel-shadow-color\);/);
+    expect(popoverMaskBlock).toMatch(
+      /background-color:\s*var\(--ui-lib-popover-mask-background\);/,
+    );
+    expect(modalContainerBlock).toMatch(
+      /background-color:\s*var\(--ui-lib-surface\);/,
+    );
+    expect(modalContainerBlock).toMatch(
+      /border:\s*1px solid var\(--ui-lib-border-color\);/,
+    );
+    expect(modalContainerBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--ui-lib-panel-shadow-color\);/,
+    );
+    expect(modalFooterBlock).toMatch(
+      /box-shadow:\s*0 -10px 24px var\(--ui-lib-footer-shadow-color\);/,
+    );
+    expect(toastContentBlock).toMatch(
+      /background-color:\s*var\(--ui-lib-toast-background\);/,
+    );
+    expect(toastContentBlock).toMatch(
+      /border:\s*1px solid var\(--ui-lib-toast-border-color\);/,
+    );
+    expect(toastContentBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--ui-lib-toast-shadow-color\);/,
+    );
+    expect(toastContentBlock).toMatch(/backdrop-filter:\s*blur\(18px\);/);
+    expect(inputBlock).toMatch(/background-color:\s*var\(--ui-lib-surface\);/);
+    expect(inputBlock).toMatch(/border:\s*1px solid var\(--ui-lib-border-color\);/);
+    expect(selectBlock).toMatch(/background-color:\s*var\(--ui-lib-surface\);/);
+    expect(selectBlock).toMatch(/border:\s*1px solid var\(--ui-lib-border-color\);/);
+    expect(modalInputBlock).toMatch(/background-color:\s*var\(--ui-lib-surface\);/);
+    expect(modalInputBlock).toMatch(
+      /box-shadow:\s*0 -2px 5px var\(--ui-lib-input-shadow-color\);/,
+    );
+    expect(modalInputFocusBlock).toMatch(
+      /border-color:\s*var\(--ui-lib-focus-border-color\);/,
+    );
+    expect(modalInputFocusBlock).toMatch(
+      /box-shadow:\s*var\(--focus-ring-shadow\);/,
+    );
+    expect(selectorBlock).toMatch(
+      /background-color:\s*var\(--ui-lib-overlay-background\);/,
+    );
+    expect(selectorBlock).toMatch(/backdrop-filter:\s*blur\(8px\);/);
+    expect(selectorContentBlock).toMatch(
+      /background-color:\s*var\(--ui-lib-surface\);/,
+    );
+    expect(selectorContentBlock).toMatch(
+      /border:\s*1px solid var\(--ui-lib-border-color\);/,
+    );
+    expect(selectorContentBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--ui-lib-panel-shadow-color\);/,
+    );
+    expect(selectorSelectedBlock).toMatch(
+      /background-color:\s*var\(--ui-lib-selected-background\);/,
+    );
+    expect(selectorSelectedBlock).toMatch(
+      /box-shadow:\s*0 0 0 4px var\(--ui-lib-selected-shadow-color\);/,
+    );
+    expect(mobileSelectorMediaIndex).toBeGreaterThan(-1);
+    expect(mobileSelectorBlock).toMatch(/align-items:\s*flex-end;/);
+    expect(mobileSelectorContentBlock).toMatch(
+      /width:\s*min\(100vw,\s*420px\);/,
+    );
+    expect(mobileSelectorContentBlock).toMatch(
+      /max-height:\s*min\(76dvh,\s*600px\);/,
+    );
+    expect(mobileSelectorContentBlock).toMatch(
+      /border-radius:\s*16px 16px 0 0;/,
+    );
+    expect(sharedUiLibPaintScope).not.toContain("background-color: var(--white)");
+    expect(sharedUiLibPaintScope).not.toContain("background: var(--white)");
+    expect(sharedUiLibPaintScope).not.toContain("box-shadow: var(--shadow)");
+    expect(sharedUiLibPaintScope).not.toContain("rgba(0, 0, 0, 0.5)");
+    expect(sharedUiLibPaintScope).not.toContain("rgba(0, 0, 0, 0.3)");
+  });
+
   test("keeps chat image preview overlay focus-restoring and bounded", () => {
     const chat = read("app/components/chat.tsx");
     const markdown = read("app/components/markdown.tsx");
