@@ -6811,6 +6811,180 @@ describe("Gemini visual migration shell", () => {
     expect(pluginModalPaintScope).not.toContain("box-shadow: var(--card-shadow)");
   });
 
+  test("keeps Plugin edit modal auth controls aligned with Gemini utility fields", () => {
+    const pluginPage = read("app/components/plugin.tsx");
+    const pluginStyles = read("app/components/plugin.module.scss");
+    const normalizedPluginPage = pluginPage.replace(/\s+/g, " ");
+    const pluginEditModalBlock = readCssBlock(pluginStyles, ".plugin-edit-modal");
+    const pluginEditModalRootBlock = readRootDeclarations(pluginEditModalBlock);
+    const normalizedPluginEditModalBlock = pluginEditModalBlock.replace(/\s+/g, " ");
+    const authControlSelector =
+      '.plugin-auth-row > select, .plugin-auth-row > input[type="text"], .plugin-auth-row > :global(.password-input-container)';
+    const authControlsBlock = readCssBlock(
+      normalizedPluginEditModalBlock,
+      authControlSelector,
+    );
+    const authSelectBlock = readCssBlock(
+      normalizedPluginEditModalBlock,
+      ".plugin-auth-row > select",
+    );
+    const authTextInputBlock = readCssBlock(
+      normalizedPluginEditModalBlock,
+      '.plugin-auth-row > input[type="text"]',
+    );
+    const normalizedPluginEditModalAfterAuthControls =
+      normalizedPluginEditModalBlock.slice(
+        normalizedPluginEditModalBlock.indexOf(authControlSelector) +
+          authControlSelector.length,
+      );
+    const passwordContainerBlock = readCssBlock(
+      normalizedPluginEditModalAfterAuthControls,
+      ".plugin-auth-row > :global(.password-input-container)",
+    );
+    const passwordInputBlock = readCssBlock(
+      normalizedPluginEditModalBlock,
+      ".plugin-auth-row :global(.password-input-container) :global(.password-input)",
+    );
+    const passwordEyeBlock = readCssBlock(
+      normalizedPluginEditModalBlock,
+      ".plugin-auth-row :global(.password-input-container) :global(.password-eye)",
+    );
+    const authFocusBlock = readCssBlock(
+      normalizedPluginEditModalBlock,
+      '.plugin-auth-row > select:focus-visible, .plugin-auth-row > input[type="text"]:focus-visible, .plugin-auth-row > :global(.password-input-container):focus-within',
+    );
+    const mobileBlock = readCssBlock(
+      pluginEditModalBlock,
+      "@media screen and (max-width: 600px)",
+    );
+    const mobileAuthControlsBlock = readCssBlock(
+      mobileBlock.replace(/\s+/g, " "),
+      authControlSelector,
+    );
+    const darkPluginEditModalBlock = readCssBlock(
+      pluginStyles.replace(/\s+/g, " "),
+      ":global(.dark) .plugin-edit-modal",
+    );
+    const autoDarkPluginEditModalSelector =
+      ":global(body:not(.light)) .plugin-edit-modal";
+    const normalizedPluginStyles = pluginStyles.replace(/\s+/g, " ");
+    const autoDarkPluginEditModalIndex = normalizedPluginStyles.indexOf(
+      autoDarkPluginEditModalSelector,
+    );
+    const autoDarkPluginEditModalMediaIndex = normalizedPluginStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkPluginEditModalIndex,
+    );
+    const autoDarkPluginEditModalBlock = readCssBlock(
+      normalizedPluginStyles.slice(autoDarkPluginEditModalMediaIndex),
+      autoDarkPluginEditModalSelector,
+    );
+    const pluginAuthPaintScope = [
+      pluginEditModalRootBlock,
+      authControlsBlock,
+      authSelectBlock,
+      authTextInputBlock,
+      passwordContainerBlock,
+      passwordInputBlock,
+      passwordEyeBlock,
+      authFocusBlock,
+      mobileAuthControlsBlock,
+      darkPluginEditModalBlock,
+      autoDarkPluginEditModalBlock,
+    ].join("\n");
+
+    expect(pluginPage).toContain('pluginStyles["plugin-edit-modal"]');
+    expect(pluginPage).toContain('pluginStyles["plugin-auth-row"]');
+    expect(
+      pluginPage.match(/className=\{pluginStyles\["plugin-auth-row"\]\}/g)
+        ?.length,
+    ).toBe(4);
+    expect(normalizedPluginPage).toMatch(
+      /<Modal[\s\S]*>\s*<div className=\{pluginStyles\["plugin-edit-modal"\]\}>[\s\S]*<List>[\s\S]*Locale\.Plugin\.EditModal\.Auth/,
+    );
+    expect(normalizedPluginPage).toMatch(
+      /Locale\.Plugin\.Auth\.Token[\s\S]*<PasswordInput[\s\S]*aria=\{Locale\.Plugin\.Auth\.Token\}[\s\S]*type="text"[\s\S]*plugin\.authToken = e\.currentTarget\.value;/,
+    );
+    expect(pluginPage).toContain("plugin.authType = e.target.value;");
+    expect(pluginPage).toContain("plugin.authLocation = e.target.value;");
+    expect(pluginPage).toContain("plugin.authHeader = e.target.value;");
+    expect(pluginPage).toContain("plugin.authToken = e.currentTarget.value;");
+    expect(pluginPage).toContain("aria={Locale.Plugin.Auth.Token}");
+    expect(pluginPage).toContain("loadUrlRef.current = e.currentTarget.value;");
+    expect(pluginPage).toContain("onClick={() => loadFromUrl(loadUrlRef.current)}");
+
+    expect(pluginEditModalRootBlock).toMatch(
+      /--plugin-modal-control-radius:\s*8px;/,
+    );
+    expect(pluginEditModalRootBlock).toMatch(
+      /--plugin-modal-auth-field-width:\s*min\(240px,\s*100%\);/,
+    );
+    expect(pluginEditModalRootBlock).toMatch(
+      /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*transparent\s*\);/,
+    );
+    expect(pluginEditModalRootBlock).toMatch(
+      /--plugin-modal-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 84%,\s*transparent\s*\);/,
+    );
+    expect(authControlsBlock).toMatch(
+      /width:\s*var\(--plugin-modal-auth-field-width\);/,
+    );
+    expect(authControlsBlock).toMatch(/max-width:\s*100%;/);
+    expect(authControlsBlock).toMatch(/min-height:\s*36px;/);
+    expect(authControlsBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(authControlsBlock).toMatch(
+      /border:\s*1px solid var\(--plugin-modal-border-color\);/,
+    );
+    expect(authControlsBlock).toMatch(
+      /border-radius:\s*var\(--plugin-modal-control-radius\);/,
+    );
+    expect(authControlsBlock).toMatch(
+      /background:\s*var\(--plugin-modal-field-background\);/,
+    );
+    expect(authControlsBlock).toMatch(
+      /box-shadow:\s*inset 0 1px 2px var\(--plugin-modal-shadow-color\);/,
+    );
+    expect(authControlsBlock).toMatch(/text-align:\s*left;/);
+    expect(authSelectBlock).toMatch(/appearance:\s*none;/);
+    expect(authSelectBlock).toMatch(/cursor:\s*pointer;/);
+    expect(authSelectBlock).toMatch(/linear-gradient\(/);
+    expect(authTextInputBlock).toMatch(/padding:\s*0 12px;/);
+    expect(passwordContainerBlock).toMatch(/display:\s*flex;/);
+    expect(passwordContainerBlock).toMatch(/align-items:\s*center;/);
+    expect(passwordInputBlock).toMatch(/flex:\s*1 1 auto;/);
+    expect(passwordInputBlock).toMatch(/min-width:\s*0;/);
+    expect(passwordInputBlock).toMatch(/max-width:\s*none;/);
+    expect(passwordInputBlock).toMatch(/border:\s*0;/);
+    expect(passwordInputBlock).toMatch(/background:\s*transparent;/);
+    expect(passwordInputBlock).toMatch(/box-shadow:\s*none;/);
+    expect(passwordEyeBlock).toMatch(/color:\s*var\(--plugin-modal-muted-color\);/);
+    expect(authFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(authFocusBlock).toMatch(
+      /border-color:\s*var\(--plugin-modal-focus-border-color\);/,
+    );
+    expect(mobileAuthControlsBlock).toMatch(/width:\s*100%;/);
+    expect(mobileAuthControlsBlock).toMatch(/min-width:\s*0;/);
+    expect(darkPluginEditModalBlock).toMatch(
+      /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkPluginEditModalBlock).toMatch(
+      /--plugin-modal-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 90%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkPluginEditModalIndex).toBeGreaterThan(-1);
+    expect(autoDarkPluginEditModalMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkPluginEditModalBlock).toMatch(
+      /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkPluginEditModalBlock).toMatch(
+      /--plugin-modal-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 90%,\s*transparent\s*\);/,
+    );
+    expect(pluginAuthPaintScope).not.toContain("border: var(--border-in-light)");
+    expect(pluginAuthPaintScope).not.toContain("border-radius: 10px");
+    expect(pluginAuthPaintScope).not.toContain("background: var(--white)");
+    expect(pluginAuthPaintScope).not.toContain("background-color: var(--white)");
+    expect(pluginAuthPaintScope).not.toContain("max-width: 50%");
+    expect(pluginAuthPaintScope).not.toContain("box-shadow: var(--card-shadow)");
+  });
+
   test("keeps artifacts preview shell aligned with Gemini output surfaces", () => {
     const artifacts = read("app/components/artifacts.tsx");
     const artifactsPreview = read("app/components/artifacts-preview.tsx");
