@@ -6483,3 +6483,56 @@ Known risks:
 - Live Browser computed-style verification for the prompt edit modal is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
 - Prompt edit controls were not clicked or typed into because they mutate prompt data.
 - This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.
+
+## Iteration 2026-06-21 shared-input-range-surface-tone
+
+Result: passed.
+
+Target flow:
+
+- Shared `InputRange` controls should read as Gemini-style quiet utility controls across Settings and model-configuration surfaces.
+- Range containers should use stable 8px geometry, tokenized elevated surface/border colors, soft focus affordance, disabled treatment, and a refined compact track/thumb without changing value semantics.
+- InputRange props, `onChange`, `value`, `min`, `max`, `step`, `disabled`, aria labeling, model config semantics, account/secret/sync/backend/deploy behavior, dependencies, send path, and production config must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected a quiet utility-control direction: elevated neutral pill surface, compact 4px track, primary 20px thumb, subtle thumb shadow, soft focus ring, disabled muting, Dark/Auto dark safety, and no configuration behavior change.
+- No generated raster design was used because this is a small shared UI-system repair inside the existing Gemini migration language. The design spec is the local token contract in `input-range.module.scss` plus this QA record.
+
+Scope:
+
+- `app/components/input-range.module.scss`: replaced legacy `var(--border-in-light)` and 10px radius paint with local `--input-range-*` tokens, tokenized the container, focus-within, disabled, range track, WebKit thumb, Mozilla thumb, explicit Dark, and Auto dark styles.
+- `test/gemini-visual-migration.test.ts`: added a focused shared InputRange contract locking component behavior pass-through props, Light/Dark/Auto dark token declarations, token consumers, focus/disabled states, range track/thumb geometry, and old target paint removal.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TSX behavior, model config value handling, account/secret/sync, backend/API, production config, deployment config, dependency files, deploy files, send path, model request payload construction, or Settings page-level layout/background contract was changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="shared InputRange"` failed first as expected because `.input-range` still used legacy border/radius paint and lacked local range tokens.
+- After implementation, the same focused contract passed.
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand` passed.
+- `yarn lint` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `yarn build` passed with the existing Next warning that Edge runtime disables static generation for that page.
+- `git diff --check` passed.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001`.
+- Browser QA used the local installed Chrome runtime because the Playwright-managed browser binary was not present and no browser download or dependency install was performed.
+- No real access code, key, account, model/API request, upload, image-generation action, persisted production config, backend config, dependency, send action, model request, Settings change, sync/import/export/reset/clear action, or model/config selection mutation was used.
+- Desktop `1440x1024` and mobile `390x844` checks at `http://localhost:3001/#/settings` reached the local access-code gate: `需要密码`, `管理员开启了密码验证，请在下方填入访问码`, `确认`.
+- No access code was entered and no auth/config bypass was attempted. The gate page had no console warn/error logs, no page errors, and horizontal overflow was `0` on both viewports. Direct computed-style verification for the range control is therefore blocked by local auth state.
+
+Review:
+
+- Read-only sub-agent review found no blocking issues. It confirmed the diff is limited to `app/components/input-range.module.scss`, `test/gemini-visual-migration.test.ts`, and this QA record, with no package/lock/config/API/TSX/send-path changes.
+- The reviewer confirmed the visual contract covers InputRange prop pass-through, Light/Dark/Auto dark tokens, focus/disabled states, range track/thumb geometry, and removal of the old `border-in-light` / 10px radius paint.
+- The reviewer noted the remaining Browser risk is accurately recorded: local access-code gate blocks live computed-style verification for the actual range control, and the range was not dragged to avoid configuration value mutation.
+- The reviewer found no internal plan paths, real access codes, secrets, `.env` contents, or other sensitive information in this QA record.
+
+Known risks:
+
+- Live Browser computed-style verification for `InputRange` is blocked by the local access-code gate. The slice does not enter credentials or change auth/config to bypass that gate.
+- Range controls were not clicked or dragged because Settings/model configuration changes can mutate configuration values.
+- This slice continues the existing modern `color-mix()` CSS path already present in the Gemini visual migration work. Legacy browser color fallback remains a separate product decision.

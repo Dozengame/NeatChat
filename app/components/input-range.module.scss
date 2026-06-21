@@ -1,13 +1,169 @@
 .input-range {
-  border: var(--border-in-light);
-  border-radius: 10px;
-  padding: 5px 10px 5px 10px;
+  --input-range-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 90%,
+    var(--gray)
+  );
+  --input-range-border-color: color-mix(
+    in srgb,
+    var(--black-50) 14%,
+    transparent
+  );
+  --input-range-disabled-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 78%,
+    var(--gray)
+  );
+  --input-range-track-background: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    var(--surface-elevated)
+  );
+  --input-range-thumb-background: var(--primary);
+  --input-range-thumb-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 24%,
+    transparent
+  );
+  --input-range-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 58%,
+    transparent
+  );
+  --input-range-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 16%,
+    transparent
+  );
+
+  background-color: var(--input-range-background);
+  border: 1px solid var(--input-range-border-color);
+  border-radius: 8px;
+  color: var(--black);
+  min-height: 36px;
+  padding: 5px 10px;
   font-size: 12px;
   display: flex;
+  align-items: center;
   justify-content: space-between;
   max-width: 40%;
+  box-sizing: border-box;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+
+  &:focus-within {
+    border-color: var(--input-range-focus-border-color);
+    box-shadow: 0 0 0 3px var(--input-range-focus-shadow-color);
+  }
+
+  &:has(input:disabled) {
+    background-color: var(--input-range-disabled-background);
+    cursor: not-allowed;
+  }
 
   input[type="range"] {
+    appearance: none;
+    background-color: var(--input-range-track-background);
+    border-radius: 999px;
+    height: 4px;
+    accent-color: var(--primary);
+    color: var(--black);
+    cursor: pointer;
     max-width: calc(100% - 34px);
+    outline: none;
+    transition: background-color 0.16s ease;
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.72;
+    }
+
+    &::-webkit-slider-thumb {
+      appearance: none;
+      background-color: var(--input-range-thumb-background);
+      border: none;
+      border-radius: 999px;
+      box-shadow: 0 2px 6px var(--input-range-thumb-shadow-color);
+      cursor: pointer;
+      height: 8px;
+      transition:
+        transform 0.16s ease,
+        width 0.16s ease;
+      width: 20px;
+    }
+
+    &::-moz-range-thumb {
+      appearance: none;
+      background-color: var(--input-range-thumb-background);
+      border: none;
+      border-radius: 999px;
+      box-shadow: 0 2px 6px var(--input-range-thumb-shadow-color);
+      cursor: pointer;
+      height: 8px;
+      transition:
+        transform 0.16s ease,
+        width 0.16s ease;
+      width: 20px;
+    }
+  }
+}
+
+:global(.dark) .input-range {
+  --input-range-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    var(--white)
+  );
+  --input-range-border-color: color-mix(
+    in srgb,
+    var(--black) 11%,
+    transparent
+  );
+  --input-range-disabled-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 82%,
+    var(--white)
+  );
+  --input-range-track-background: color-mix(
+    in srgb,
+    var(--black) 16%,
+    var(--surface-elevated)
+  );
+  --input-range-thumb-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 30%,
+    transparent
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .input-range {
+    --input-range-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 86%,
+      var(--white)
+    );
+    --input-range-border-color: color-mix(
+      in srgb,
+      var(--black) 11%,
+      transparent
+    );
+    --input-range-disabled-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 82%,
+      var(--white)
+    );
+    --input-range-track-background: color-mix(
+      in srgb,
+      var(--black) 16%,
+      var(--surface-elevated)
+    );
+    --input-range-thumb-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 30%,
+      transparent
+    );
   }
 }

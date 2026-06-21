@@ -7295,4 +7295,133 @@ describe("Gemini visual migration shell", () => {
     );
     expect(editPromptPaintScope).not.toContain("border-radius: 10px");
   });
+
+  test("keeps shared InputRange aligned with Gemini utility controls", () => {
+    const inputRange = read("app/components/input-range.tsx");
+    const inputRangeStyles = read("app/components/input-range.module.scss");
+    const inputRangeBlock = readCssBlock(inputRangeStyles, ".input-range");
+    const inputRangeRootBlock = readRootDeclarations(inputRangeBlock);
+    const darkInputRangeBlock = readCssBlock(
+      inputRangeStyles,
+      ":global(.dark) .input-range",
+    );
+    const autoDarkInputRangeSelector =
+      ":global(body:not(.light)) .input-range";
+    const autoDarkInputRangeSelectorIndex = inputRangeStyles.indexOf(
+      autoDarkInputRangeSelector,
+    );
+    const autoDarkInputRangeMediaIndex = inputRangeStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkInputRangeSelectorIndex,
+    );
+    const autoDarkInputRangeBlock = readCssBlock(
+      inputRangeStyles.slice(autoDarkInputRangeMediaIndex),
+      autoDarkInputRangeSelector,
+    );
+    const focusWithinBlock = readCssBlock(inputRangeBlock, "&:focus-within");
+    const disabledBlock = readCssBlock(inputRangeBlock, "&:has(input:disabled)");
+    const rangeInputBlock = readCssBlock(inputRangeBlock, 'input[type="range"]');
+    const rangeInputDisabledBlock = readCssBlock(
+      rangeInputBlock,
+      "&:disabled",
+    );
+    const webkitThumbBlock = readCssBlock(
+      rangeInputBlock,
+      "&::-webkit-slider-thumb",
+    );
+    const mozThumbBlock = readCssBlock(rangeInputBlock, "&::-moz-range-thumb");
+    const rangePaintScope = [
+      inputRangeRootBlock,
+      darkInputRangeBlock,
+      autoDarkInputRangeBlock,
+      focusWithinBlock,
+      disabledBlock,
+      rangeInputBlock,
+      rangeInputDisabledBlock,
+      webkitThumbBlock,
+      mozThumbBlock,
+    ].join("\n");
+
+    expect(inputRange).toContain("clsx(styles[\"input-range\"], className)");
+    expect(inputRange).toContain("aria-label={aria}");
+    expect(inputRange).toContain("type=\"range\"");
+    expect(inputRange).toContain("title={title}");
+    expect(inputRange).toContain("value={value}");
+    expect(inputRange).toContain("min={min}");
+    expect(inputRange).toContain("max={max}");
+    expect(inputRange).toContain("step={step}");
+    expect(inputRange).toContain("disabled={disabled}");
+    expect(inputRange).toContain("onChange={onChange}");
+
+    expect(inputRangeRootBlock).toMatch(
+      /--input-range-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\s*\);/,
+    );
+    expect(inputRangeRootBlock).toMatch(
+      /--input-range-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 14%,\s*transparent\s*\);/,
+    );
+    expect(inputRangeRootBlock).toMatch(
+      /--input-range-track-background:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(inputRangeRootBlock).toMatch(
+      /--input-range-focus-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 16%,\s*transparent\s*\);/,
+    );
+    expect(darkInputRangeBlock).toMatch(
+      /--input-range-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkInputRangeBlock).toMatch(
+      /--input-range-track-background:\s*color-mix\(\s*in srgb,\s*var\(--black\) 16%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(autoDarkInputRangeSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkInputRangeMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkInputRangeBlock).toMatch(
+      /--input-range-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkInputRangeBlock).toMatch(
+      /--input-range-track-background:\s*color-mix\(\s*in srgb,\s*var\(--black\) 16%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+
+    expect(inputRangeRootBlock).toMatch(
+      /background-color:\s*var\(--input-range-background\);/,
+    );
+    expect(inputRangeRootBlock).toMatch(
+      /border:\s*1px solid var\(--input-range-border-color\);/,
+    );
+    expect(inputRangeRootBlock).toMatch(/border-radius:\s*8px;/);
+    expect(inputRangeRootBlock).toMatch(/color:\s*var\(--black\);/);
+    expect(inputRangeRootBlock).toMatch(/min-height:\s*36px;/);
+    expect(focusWithinBlock).toMatch(
+      /border-color:\s*var\(--input-range-focus-border-color\);/,
+    );
+    expect(focusWithinBlock).toMatch(
+      /box-shadow:\s*0 0 0 3px var\(--input-range-focus-shadow-color\);/,
+    );
+    expect(disabledBlock).toMatch(
+      /background-color:\s*var\(--input-range-disabled-background\);/,
+    );
+    expect(disabledBlock).toMatch(/cursor:\s*not-allowed;/);
+
+    expect(rangeInputBlock).toMatch(/appearance:\s*none;/);
+    expect(rangeInputBlock).toMatch(
+      /background-color:\s*var\(--input-range-track-background\);/,
+    );
+    expect(rangeInputBlock).toMatch(/border-radius:\s*999px;/);
+    expect(rangeInputBlock).toMatch(/height:\s*4px;/);
+    expect(rangeInputBlock).toMatch(/accent-color:\s*var\(--primary\);/);
+    expect(rangeInputDisabledBlock).toMatch(/cursor:\s*not-allowed;/);
+    [webkitThumbBlock, mozThumbBlock].forEach((block) => {
+      expect(block).toMatch(/appearance:\s*none;/);
+      expect(block).toMatch(/height:\s*8px;/);
+      expect(block).toMatch(/width:\s*20px;/);
+      expect(block).toMatch(/border-radius:\s*999px;/);
+      expect(block).toMatch(
+        /background-color:\s*var\(--input-range-thumb-background\);/,
+      );
+      expect(block).toMatch(
+        /box-shadow:\s*0 2px 6px var\(--input-range-thumb-shadow-color\);/,
+      );
+    });
+    expect(rangePaintScope).not.toContain("border: var(--border-in-light)");
+    expect(rangePaintScope).not.toContain("border-radius: 10px");
+    expect(rangePaintScope).not.toContain("background-color: var(--white)");
+  });
 });
