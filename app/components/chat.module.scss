@@ -4105,6 +4105,19 @@
 }
 
 .chat-dropzone {
+  --chat-dropzone-active-background: color-mix(in srgb, var(--surface) 58%, transparent);
+  --chat-dropzone-scrim-background: color-mix(in srgb, var(--surface-elevated) 18%, transparent);
+  --chat-dropzone-scrim-border-color: color-mix(in srgb, var(--surface-soft) 34%, transparent);
+  --chat-dropzone-content-border-color: color-mix(in srgb, var(--surface-soft) 45%, transparent);
+  --chat-dropzone-content-active-border-color: color-mix(in srgb, var(--primary) 58%, transparent);
+  --chat-dropzone-content-shadow-color: color-mix(in srgb, var(--surface-soft) 36%, transparent);
+  --chat-dropzone-content-active-shadow-color: color-mix(in srgb, var(--primary) 10%, var(--surface-soft));
+  --chat-dropzone-content-inner-border-color: color-mix(in srgb, var(--surface-soft) 34%, transparent);
+  --chat-dropzone-summary-background: color-mix(in srgb, var(--surface-soft) 38%, transparent);
+  --chat-dropzone-summary-border-color: color-mix(in srgb, var(--surface-soft) 34%, transparent);
+  --chat-dropzone-summary-color: color-mix(in srgb, var(--primary) 88%, var(--black));
+  --chat-dropzone-hint-color: color-mix(in srgb, var(--black-50) 92%, transparent);
+
   position: absolute;
   inset: 0;
   z-index: 1000;
@@ -4128,7 +4141,7 @@
     opacity: 1;
     backdrop-filter: blur(12px) saturate(145%);
     -webkit-backdrop-filter: blur(12px) saturate(145%);
-    background-color: color-mix(in srgb, var(--surface) 58%, transparent);
+    background-color: var(--chat-dropzone-active-background);
   }
 }
 
@@ -4138,8 +4151,8 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: rgba(255, 255, 255, 0.18);
-  box-shadow: inset 0 0 0 1px rgba(60, 64, 67, 0.08);
+  background: var(--chat-dropzone-scrim-background);
+  box-shadow: inset 0 0 0 1px var(--chat-dropzone-scrim-border-color);
   opacity: 0;
   transform: scale(1.04);
   transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
@@ -4164,13 +4177,45 @@
   border: 0;
 }
 
+:global(.dark) .chat-dropzone {
+  --chat-dropzone-active-background: color-mix(in srgb, var(--gray) 66%, transparent);
+  --chat-dropzone-scrim-background: color-mix(in srgb, var(--surface-elevated) 24%, transparent);
+  --chat-dropzone-scrim-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+  --chat-dropzone-content-border-color: color-mix(in srgb, var(--black) 25%, transparent);
+  --chat-dropzone-content-active-border-color: color-mix(in srgb, var(--primary) 46%, transparent);
+  --chat-dropzone-content-shadow-color: color-mix(in srgb, var(--gray) 42%, transparent);
+  --chat-dropzone-content-active-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
+  --chat-dropzone-content-inner-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+  --chat-dropzone-summary-background: color-mix(in srgb, var(--black) 8%, transparent);
+  --chat-dropzone-summary-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+  --chat-dropzone-summary-color: color-mix(in srgb, var(--black) 92%, transparent);
+  --chat-dropzone-hint-color: color-mix(in srgb, var(--black) 78%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .chat-dropzone {
+    --chat-dropzone-active-background: color-mix(in srgb, var(--gray) 66%, transparent);
+    --chat-dropzone-scrim-background: color-mix(in srgb, var(--surface-elevated) 24%, transparent);
+    --chat-dropzone-scrim-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+    --chat-dropzone-content-border-color: color-mix(in srgb, var(--black) 25%, transparent);
+    --chat-dropzone-content-active-border-color: color-mix(in srgb, var(--primary) 46%, transparent);
+    --chat-dropzone-content-shadow-color: color-mix(in srgb, var(--gray) 42%, transparent);
+    --chat-dropzone-content-active-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
+    --chat-dropzone-content-inner-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+    --chat-dropzone-summary-background: color-mix(in srgb, var(--black) 8%, transparent);
+    --chat-dropzone-summary-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+    --chat-dropzone-summary-color: color-mix(in srgb, var(--black) 92%, transparent);
+    --chat-dropzone-hint-color: color-mix(in srgb, var(--black) 78%, transparent);
+  }
+}
+
 :global(.dark) .chat-dropzone.chat-dropzone-active {
-  background-color: color-mix(in srgb, var(--gray) 66%, transparent);
+  background-color: var(--chat-dropzone-active-background);
 }
 
 :global(.dark) .chat-dropzone.chat-dropzone-active::before {
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  background: var(--chat-dropzone-scrim-background);
+  box-shadow: inset 0 0 0 1px var(--chat-dropzone-scrim-border-color);
 }
 
 .chat-dropzone-content {
@@ -4184,13 +4229,13 @@
   width: min(420px, calc(100% - 40px));
   box-sizing: border-box;
   padding: 40px;
-  border: 2px dashed rgba(60, 64, 67, 0.25);
+  border: 2px dashed var(--chat-dropzone-content-border-color);
   border-radius: 20px;
   overflow: hidden;
   background: var(--surface-elevated);
   backdrop-filter: blur(22px) saturate(180%);
   -webkit-backdrop-filter: blur(22px) saturate(180%);
-  box-shadow: 0 22px 70px rgba(60, 64, 67, 0.18);
+  box-shadow: 0 22px 70px var(--chat-dropzone-content-shadow-color);
   opacity: 0.92;
   transform: translateY(20px) scale(0.96);
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
@@ -4202,8 +4247,8 @@
   .chat-dropzone-active & {
     opacity: 1;
     transform: translateY(0) scale(1);
-    border-color: var(--primary);
-    box-shadow: 0 18px 54px rgba(60, 64, 67, 0.18);
+    border-color: var(--chat-dropzone-content-active-border-color);
+    box-shadow: 0 18px 54px var(--chat-dropzone-content-active-shadow-color);
   }
 }
 
@@ -4214,7 +4259,7 @@
   border-radius: inherit;
   pointer-events: none;
   opacity: 0;
-  box-shadow: inset 0 0 0 1px rgba(60, 64, 67, 0.08),
+  box-shadow: inset 0 0 0 1px var(--chat-dropzone-content-inner-border-color),
               inset 0 1px 0 rgba(255, 255, 255, 0.52);
   transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -4224,9 +4269,14 @@
 }
 
 :global(.dark) .chat-dropzone-content {
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: var(--chat-dropzone-content-border-color);
   background: var(--surface-elevated);
-  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.42);
+  box-shadow: 0 22px 70px var(--chat-dropzone-content-shadow-color);
+}
+
+:global(.dark) .chat-dropzone.chat-dropzone-active .chat-dropzone-content {
+  border-color: var(--chat-dropzone-content-active-border-color);
+  box-shadow: 0 18px 54px var(--chat-dropzone-content-active-shadow-color);
 }
 
 .chat-dropzone-icon {
@@ -4268,9 +4318,9 @@
   box-sizing: border-box;
   padding: 0 12px;
   border-radius: 999px;
-  background: rgba(60, 64, 67, 0.08);
-  box-shadow: inset 0 0 0 1px rgba(60, 64, 67, 0.08);
-  color: var(--primary);
+  background: var(--chat-dropzone-summary-background);
+  box-shadow: inset 0 0 0 1px var(--chat-dropzone-summary-border-color);
+  color: var(--chat-dropzone-summary-color);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.3;
@@ -4279,9 +4329,9 @@
   margin: -4px 0 0;
 
   :global(.dark) & {
-    background: rgba(232, 234, 237, 0.08);
-    box-shadow: inset 0 0 0 1px rgba(232, 234, 237, 0.08);
-    color: rgba(232, 234, 237, 0.92);
+    background: var(--chat-dropzone-summary-background);
+    box-shadow: inset 0 0 0 1px var(--chat-dropzone-summary-border-color);
+    color: var(--chat-dropzone-summary-color);
   }
 }
 
@@ -4292,10 +4342,10 @@
   line-height: 1.45;
   font-weight: 400;
   text-align: center;
-  color: rgba(95, 99, 104, 0.92);
+  color: var(--chat-dropzone-hint-color);
 
   :global(.dark) & {
-    color: rgba(232, 234, 237, 0.78);
+    color: var(--chat-dropzone-hint-color);
   }
 }
 

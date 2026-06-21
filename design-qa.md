@@ -5493,3 +5493,56 @@ Known risks:
 
 - Browser MCP was unavailable in this turn, so this slice lacks a fresh interactive Browser CSSOM/screenshot pass. If the browser bridge recovers, a follow-up QA-only check should validate selected image editor controls in Light/Dark at desktop and mobile sizes.
 - The selected-state tones use modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
+
+## Iteration 2026-06-21 dropzone-surface-tone
+
+Result: passed.
+
+Target flow:
+
+- Dragging files or images over chat should keep the existing scoped drag handlers, file/image type checks, upload-slot limits, live status region, hidden inactive overlay, non-blocking pointer behavior, and reduced-motion fallback.
+- The multimodal dropzone overlay, scrim, content border, content shadow, summary chip, and hint copy should use local Gemini-style surface tokens instead of hardcoded gray/white paint.
+- Light, explicit Dark, and Auto dark should share the same variable contract while preserving explicit Light overrides.
+- Upload parsing, attachment limits, image/file classification, message state, model config, model requests, account/secret/sync, backend/API, production config, and deployment config must remain unchanged.
+
+Design direction:
+
+- Continue the multimodal polish track: the drag target should feel like part of the same Gemini-style surface system as the composer and attachment controls, with quieter surface-mixed tones and a restrained active accent.
+- Light theme defines dropzone overlay and content tones from `--surface`, `--surface-elevated`, `--surface-soft`, `--primary`, `--black`, and `--black-50`.
+- Explicit Dark and Auto dark override the same local variables with dark surface/text tokens; Auto dark uses `body:not(.light)` under `prefers-color-scheme: dark` so explicit Light is not overridden.
+- This slice intentionally avoids changing React drag/drop logic, upload slot calculations, file helpers, attachment state, network/model behavior, or persisted settings.
+
+Scope:
+
+- `app/components/chat.module.scss`: added local dropzone tone variables, consumed them across active overlay, scrim, content border/shadow, summary chip, and hint copy; added explicit Dark and Auto dark token paths; added a higher-specificity explicit Dark active content rule so active border/shadow are not overwritten by the dark base content rule.
+- `test/gemini-visual-migration.test.ts`: strengthened the drag-and-drop visual contract to lock Light/Dark/Auto dark token paths, active-state consumers, dark cascade order, reduced-motion preservation, live status behavior, and existing drag/drop/file-limit source contracts.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, file helper logic, upload parser, stores, model config, account/secret/sync, backend/API, production config, deployment config, persisted store keys, dependency files, deploy files, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="file drag-and-drop"` failed first as expected because the new dropzone local tone variables were missing and old rules still used direct paint values.
+- After the first implementation, focused test passed, then read-only review found two cascade/theme gaps: explicit Dark active content was overridden by the dark base content rule, and Auto dark did not receive the dark-specific dropzone tokens.
+- A second RED check failed as expected on the missing Auto dark source contract; after adding Auto dark tokens and explicit Dark active content override, the focused drag-and-drop visual contract passed.
+- Final verification before commit: `yarn lint`, `npx tsc --noEmit --pretty false`, `git diff --check`, `yarn jest test/gemini-visual-migration.test.ts --runInBand`, and `yarn build` passed.
+
+Browser QA:
+
+- in-app Browser page identity: `http://127.0.0.1:3000/#/chat`, app mounted, and Browser console warn/error logs `0` after the QA start timestamp.
+- Desktop `1439x1024`: chat mounted, horizontal overflow `0`, dropzone exists with `aria-hidden="true"`, `data-drop-active="false"`, `pointer-events: none`, opacity `0`, live status region exists with `aria-atomic="true"`, runtime CSSOM loaded the dropzone variables, active/background/scrim/content/summary/hint consumers, Auto dark selector, explicit Dark active content selector, and reduced-motion contract.
+- Mobile `390x844`: same dropzone hidden-state, CSSOM, reduced-motion, live-region, and horizontal overflow checks passed.
+- Narrow `320x740`: same dropzone hidden-state, CSSOM, reduced-motion, live-region, and horizontal overflow checks passed.
+- Browser runtime reported `prefers-color-scheme: light` with `bodyClass=""`, so computed variables were validated for the current light runtime; Auto dark and explicit Dark cascade paths were validated through source-contract tests and runtime CSSOM selector presence without mutating the user's theme.
+- Browser QA intentionally did not dispatch real drag/drop events, send a message, call a model/API, seed chat history, mutate local storage, or change persisted theme state. Drag/drop behavior and limits are covered by the existing source-contract assertions in the visual migration test.
+
+Review:
+
+- First read-only subagent review found two issues: explicit Dark active content border/shadow were overridden by the later dark base rule, and Auto dark lacked dark-specific dropzone token overrides.
+- Both issues were fixed by adding an explicit Dark active content override after the dark base rule and adding a `prefers-color-scheme: dark` + `body:not(.light)` Auto dark token block.
+- Final read-only subagent review found no blocking or important issues and confirmed the two prior findings were resolved.
+- Main-thread boundary review verified the current diff remains limited to `chat.module.scss`, `gemini-visual-migration.test.ts`, and this QA record, with no diff in `chat.tsx`, `file.ts`, stores, config, API/backend, route constants, deployment files, dependency files, upload parser, send path, or model request paths.
+
+Known risks:
+
+- The dropzone tones use modern `color-mix()` CSS, consistent with the surrounding Gemini Web alignment work and the in-app Browser runtime. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
+- Browser QA validated hidden-state layout and loaded CSSOM rather than an actual OS file drag/drop active state, because simulating a real external file drag through the in-app Browser would not match the user's OS-level drag source. Source-contract tests cover the drag handler and active-state styling contracts directly.
