@@ -7650,11 +7650,31 @@ describe("Gemini visual migration shell", () => {
     expect(dropzoneBlock).toMatch(
       /--chat-dropzone-content-active-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 58%,\s*transparent\);/,
     );
+    expect(dropzoneBlock).toMatch(/--chat-dropzone-content-radius:\s*8px;/);
+    expect(dropzoneBlock).toMatch(/--chat-dropzone-icon-radius:\s*8px;/);
+    expect(dropzoneBlock).toMatch(
+      /--chat-dropzone-icon-border-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 44%,\s*transparent\);/,
+    );
+    expect(dropzoneBlock).toMatch(
+      /--chat-dropzone-icon-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 86%,\s*transparent\);/,
+    );
+    expect(dropzoneBlock).toMatch(
+      /--chat-dropzone-icon-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 8%,\s*transparent\);/,
+    );
     expect(darkDropzoneBlock).toMatch(
       /--chat-dropzone-active-background:\s*color-mix\(in srgb,\s*var\(--gray\) 66%,\s*transparent\);/,
     );
     expect(darkDropzoneBlock).toMatch(
       /--chat-dropzone-summary-color:\s*color-mix\(in srgb,\s*var\(--black\) 92%,\s*transparent\);/,
+    );
+    expect(darkDropzoneBlock).toMatch(
+      /--chat-dropzone-icon-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 12%,\s*transparent\);/,
+    );
+    expect(darkDropzoneBlock).toMatch(
+      /--chat-dropzone-icon-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--primary\) 4%\);/,
+    );
+    expect(darkDropzoneBlock).toMatch(
+      /--chat-dropzone-icon-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 8%,\s*var\(--surface\)\);/,
     );
     expect(autoDarkDropzoneSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkDropzoneMediaIndex).toBeGreaterThan(-1);
@@ -7663,6 +7683,15 @@ describe("Gemini visual migration shell", () => {
     );
     expect(autoDarkDropzoneBlock).toMatch(
       /--chat-dropzone-summary-color:\s*color-mix\(in srgb,\s*var\(--black\) 92%,\s*transparent\);/,
+    );
+    expect(autoDarkDropzoneBlock).toMatch(
+      /--chat-dropzone-icon-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 12%,\s*transparent\);/,
+    );
+    expect(autoDarkDropzoneBlock).toMatch(
+      /--chat-dropzone-icon-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--primary\) 4%\);/,
+    );
+    expect(autoDarkDropzoneBlock).toMatch(
+      /--chat-dropzone-icon-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 8%,\s*var\(--surface\)\);/,
     );
     expect(dropzoneBlock).toMatch(
       /&\.chat-dropzone-active[\s\S]*background-color:\s*var\(--chat-dropzone-active-background\);/,
@@ -7709,8 +7738,12 @@ describe("Gemini visual migration shell", () => {
       /border:\s*2px dashed var\(--chat-dropzone-content-border-color\);/,
     );
     expect(dropzoneContentBlock).toMatch(
+      /border-radius:\s*var\(--chat-dropzone-content-radius\);/,
+    );
+    expect(dropzoneContentBlock).toMatch(
       /box-shadow:\s*0 22px 70px var\(--chat-dropzone-content-shadow-color\);/,
     );
+    expect(dropzoneContentBlock).not.toMatch(/border-radius:\s*20px;/);
     expect(dropzoneContentBlock).not.toContain("linear-gradient");
     expect(dropzoneContentBeforeBlock).toMatch(/content:\s*"";/);
     expect(dropzoneContentBeforeBlock).toMatch(/pointer-events:\s*none;/);
@@ -7725,15 +7758,22 @@ describe("Gemini visual migration shell", () => {
       /box-shadow:\s*0 18px 54px var\(--chat-dropzone-content-active-shadow-color\);/,
     );
     expect(dropzoneContentBlock).toMatch(/opacity:\s*1;/);
-    expect(dropzoneIconBlock).toMatch(/border-radius:\s*16px;/);
-    expect(dropzoneIconBlock).toMatch(/border:\s*var\(--border-in-light\);/);
     expect(dropzoneIconBlock).toMatch(
-      /background:\s*var\(--surface-soft\);/,
+      /border-radius:\s*var\(--chat-dropzone-icon-radius\);/,
+    );
+    expect(dropzoneIconBlock).toMatch(
+      /border:\s*1px solid var\(--chat-dropzone-icon-border-color\);/,
+    );
+    expect(dropzoneIconBlock).toMatch(
+      /background:\s*var\(--chat-dropzone-icon-background\);/,
     );
     expect(dropzoneIconBlock).not.toContain("linear-gradient");
     expect(dropzoneIconBlock).toMatch(
-      /box-shadow:\s*var\(--composer-shadow\);/,
+      /box-shadow:\s*0 8px 24px var\(--chat-dropzone-icon-shadow-color\);/,
     );
+    expect(dropzoneIconBlock).not.toMatch(/border-radius:\s*16px;/);
+    expect(dropzoneIconBlock).not.toContain("var(--border-in-light)");
+    expect(dropzoneIconBlock).not.toContain("var(--composer-shadow)");
     expect(dropzoneSummaryBlock).toMatch(/display:\s*inline-flex;/);
     expect(dropzoneSummaryBlock).toMatch(/min-height:\s*28px;/);
     expect(dropzoneSummaryBlock).toMatch(/border-radius:\s*999px;/);

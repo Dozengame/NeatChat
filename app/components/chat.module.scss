@@ -4252,6 +4252,11 @@
   --chat-dropzone-content-shadow-color: color-mix(in srgb, var(--surface-soft) 36%, transparent);
   --chat-dropzone-content-active-shadow-color: color-mix(in srgb, var(--primary) 10%, var(--surface-soft));
   --chat-dropzone-content-inner-border-color: color-mix(in srgb, var(--surface-soft) 34%, transparent);
+  --chat-dropzone-content-radius: 8px;
+  --chat-dropzone-icon-radius: 8px;
+  --chat-dropzone-icon-border-color: color-mix(in srgb, var(--surface-soft) 44%, transparent);
+  --chat-dropzone-icon-background: color-mix(in srgb, var(--surface-elevated) 86%, transparent);
+  --chat-dropzone-icon-shadow-color: color-mix(in srgb, var(--primary) 8%, transparent);
   --chat-dropzone-summary-background: color-mix(in srgb, var(--surface-soft) 38%, transparent);
   --chat-dropzone-summary-border-color: color-mix(in srgb, var(--surface-soft) 34%, transparent);
   --chat-dropzone-summary-color: color-mix(in srgb, var(--primary) 88%, var(--black));
@@ -4325,6 +4330,9 @@
   --chat-dropzone-content-shadow-color: color-mix(in srgb, var(--gray) 42%, transparent);
   --chat-dropzone-content-active-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
   --chat-dropzone-content-inner-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+  --chat-dropzone-icon-border-color: color-mix(in srgb, var(--black) 12%, transparent);
+  --chat-dropzone-icon-background: color-mix(in srgb, var(--surface-elevated) 84%, var(--primary) 4%);
+  --chat-dropzone-icon-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
   --chat-dropzone-summary-background: color-mix(in srgb, var(--black) 8%, transparent);
   --chat-dropzone-summary-border-color: color-mix(in srgb, var(--black) 8%, transparent);
   --chat-dropzone-summary-color: color-mix(in srgb, var(--black) 92%, transparent);
@@ -4341,6 +4349,9 @@
     --chat-dropzone-content-shadow-color: color-mix(in srgb, var(--gray) 42%, transparent);
     --chat-dropzone-content-active-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
     --chat-dropzone-content-inner-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+    --chat-dropzone-icon-border-color: color-mix(in srgb, var(--black) 12%, transparent);
+    --chat-dropzone-icon-background: color-mix(in srgb, var(--surface-elevated) 84%, var(--primary) 4%);
+    --chat-dropzone-icon-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
     --chat-dropzone-summary-background: color-mix(in srgb, var(--black) 8%, transparent);
     --chat-dropzone-summary-border-color: color-mix(in srgb, var(--black) 8%, transparent);
     --chat-dropzone-summary-color: color-mix(in srgb, var(--black) 92%, transparent);
@@ -4369,7 +4380,7 @@
   box-sizing: border-box;
   padding: 40px;
   border: 2px dashed var(--chat-dropzone-content-border-color);
-  border-radius: 20px;
+  border-radius: var(--chat-dropzone-content-radius);
   overflow: hidden;
   background: var(--surface-elevated);
   backdrop-filter: blur(22px) saturate(180%);
@@ -4421,11 +4432,11 @@
 .chat-dropzone-icon {
   width: 48px;
   height: 48px;
-  border-radius: 16px;
-  border: var(--border-in-light);
+  border-radius: var(--chat-dropzone-icon-radius);
+  border: 1px solid var(--chat-dropzone-icon-border-color);
   color: var(--primary);
-  background: var(--surface-soft);
-  box-shadow: var(--composer-shadow);
+  background: var(--chat-dropzone-icon-background);
+  box-shadow: 0 8px 24px var(--chat-dropzone-icon-shadow-color);
   display: flex;
   align-items: center;
   justify-content: center;
