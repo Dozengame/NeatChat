@@ -535,13 +535,13 @@
 }
 
 .chat-multimodal-section-title {
-  color: var(--black);
+  color: var(--chat-multimodal-section-title-color);
   font-size: 13px;
   font-weight: 600;
 }
 
 .chat-multimodal-section-subtitle {
-  color: var(--black-50);
+  color: var(--chat-multimodal-section-subtitle-color);
   font-size: 12px;
   font-weight: 400;
 }
@@ -3094,6 +3094,11 @@
 }
 
 .chat-input-action-menu {
+  --chat-multimodal-section-title-color: color-mix(in srgb, var(--black) 92%, transparent);
+  --chat-multimodal-section-subtitle-color: color-mix(in srgb, var(--black-50) 92%, transparent);
+  --chat-multimodal-section-divider-color: color-mix(in srgb, var(--black-50) 14%, transparent);
+  --chat-multimodal-section-primary-background: color-mix(in srgb, var(--primary) 7%, transparent);
+
   position: absolute;
   left: 0;
   bottom: 62px;
@@ -3152,12 +3157,12 @@
   .chat-multimodal-section + .chat-multimodal-section {
     margin-top: 4px;
     padding-top: 8px;
-    border-top: 1px solid rgba(60, 64, 67, 0.08);
+    border-top: 1px solid var(--chat-multimodal-section-divider-color);
   }
 
   .chat-multimodal-section-primary {
     min-width: 0;
-    background: rgba(49, 94, 248, 0.04);
+    background: var(--chat-multimodal-section-primary-background);
   }
 
   .chat-input-actions-end {
@@ -3192,6 +3197,28 @@
       outline-offset: 2px;
       box-shadow: var(--focus-ring-shadow);
     }
+  }
+}
+
+.chat-input-action-menu.chat-input-action-menu-open {
+  display: block;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+:global(.dark) .chat-input-action-menu .chat-multimodal-section {
+  --chat-multimodal-section-title-color: color-mix(in srgb, var(--black) 94%, transparent);
+  --chat-multimodal-section-subtitle-color: color-mix(in srgb, var(--black-50) 88%, transparent);
+  --chat-multimodal-section-divider-color: color-mix(in srgb, var(--black) 9%, transparent);
+  --chat-multimodal-section-primary-background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .chat-input-action-menu .chat-multimodal-section {
+    --chat-multimodal-section-title-color: color-mix(in srgb, var(--black) 94%, transparent);
+    --chat-multimodal-section-subtitle-color: color-mix(in srgb, var(--black-50) 88%, transparent);
+    --chat-multimodal-section-divider-color: color-mix(in srgb, var(--black) 9%, transparent);
+    --chat-multimodal-section-primary-background: color-mix(in srgb, var(--primary) 14%, var(--surface));
   }
 }
 

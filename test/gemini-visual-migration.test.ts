@@ -136,6 +136,10 @@ describe("Gemini visual migration shell", () => {
       ".chat-input-status-row",
     );
     const actionMenuBlock = readCssBlock(chatStyles, ".chat-input-action-menu");
+    const actionMenuOpenStabilizerBlock = readCssBlock(
+      chatStyles,
+      ".chat-input-action-menu.chat-input-action-menu-open",
+    );
     const scrollToBottomBlock = readCssBlock(
       chatStyles,
       ".chat-scroll-to-bottom",
@@ -178,6 +182,33 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-input-action-menu .chat-input-action-active",
     );
+    const actionMenuMultimodalDividerBlock = readCssBlock(
+      actionMenuBlock,
+      ".chat-multimodal-section + .chat-multimodal-section",
+    );
+    const actionMenuMultimodalPrimaryBlock = readCssBlock(
+      actionMenuBlock,
+      ".chat-multimodal-section-primary",
+    );
+    const darkActionMenuMultimodalSectionBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-input-action-menu .chat-multimodal-section",
+    );
+    const autoDarkActionMenuMultimodalSelector =
+      ":global(body:not(.light)) .chat-input-action-menu .chat-multimodal-section";
+    const autoDarkActionMenuMultimodalSelectorIndex = chatStyles.indexOf(
+      autoDarkActionMenuMultimodalSelector,
+    );
+    const autoDarkActionMenuMultimodalMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkActionMenuMultimodalSelectorIndex,
+    );
+    const autoDarkActionMenuMultimodalBlock = readCssBlock(
+      chatStyles.slice(autoDarkActionMenuMultimodalMediaIndex),
+      autoDarkActionMenuMultimodalSelector,
+    );
+    const legacyMultimodalSectionPaint =
+      /rgba\((?:60,\s*64,\s*67,\s*0\.08|49,\s*94,\s*248,\s*0\.04)/;
     const mobileActionMenuBlock = readCssBlock(
       mobileStyles,
       ".chat-input-action-menu",
@@ -296,6 +327,12 @@ describe("Gemini visual migration shell", () => {
     );
     const multimodalSubtitleBlock = readCssBlock(
       chatStyles,
+      ".chat-multimodal-section-subtitle",
+    );
+    const multimodalSubtitleColorBlock = readCssBlock(
+      chatStyles.slice(
+        chatStyles.lastIndexOf(".chat-multimodal-section-subtitle {\n"),
+      ),
       ".chat-multimodal-section-subtitle",
     );
     const messageRowUserBlock = readCssBlock(
@@ -1681,8 +1718,59 @@ describe("Gemini visual migration shell", () => {
     expect(multimodalHeaderBlock).toMatch(/justify-content:\s*space-between;/);
     expect(multimodalHeaderBlock).toMatch(/width:\s*100%;/);
     expect(multimodalTitleBlock).toMatch(/font-weight:\s*600;/);
-    expect(chatStyles).toMatch(
-      /\.chat-multimodal-section-subtitle\s*\{[\s\S]*color:\s*var\(--black-50\);/,
+    expect(actionMenuRootDeclarations).toMatch(
+      /--chat-multimodal-section-title-color:\s*color-mix\(in srgb,\s*var\(--black\) 92%,\s*transparent\);/,
+    );
+    expect(actionMenuRootDeclarations).toMatch(
+      /--chat-multimodal-section-subtitle-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 92%,\s*transparent\);/,
+    );
+    expect(actionMenuRootDeclarations).toMatch(
+      /--chat-multimodal-section-divider-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 14%,\s*transparent\);/,
+    );
+    expect(actionMenuRootDeclarations).toMatch(
+      /--chat-multimodal-section-primary-background:\s*color-mix\(in srgb,\s*var\(--primary\) 7%,\s*transparent\);/,
+    );
+    expect(darkActionMenuMultimodalSectionBlock).toMatch(
+      /--chat-multimodal-section-title-color:\s*color-mix\(in srgb,\s*var\(--black\) 94%,\s*transparent\);/,
+    );
+    expect(darkActionMenuMultimodalSectionBlock).toMatch(
+      /--chat-multimodal-section-subtitle-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 88%,\s*transparent\);/,
+    );
+    expect(darkActionMenuMultimodalSectionBlock).toMatch(
+      /--chat-multimodal-section-divider-color:\s*color-mix\(in srgb,\s*var\(--black\) 9%,\s*transparent\);/,
+    );
+    expect(darkActionMenuMultimodalSectionBlock).toMatch(
+      /--chat-multimodal-section-primary-background:\s*color-mix\(in srgb,\s*var\(--primary\) 14%,\s*var\(--surface\)\);/,
+    );
+    expect(autoDarkActionMenuMultimodalSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkActionMenuMultimodalMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkActionMenuMultimodalBlock).toMatch(
+      /--chat-multimodal-section-title-color:\s*color-mix\(in srgb,\s*var\(--black\) 94%,\s*transparent\);/,
+    );
+    expect(autoDarkActionMenuMultimodalBlock).toMatch(
+      /--chat-multimodal-section-primary-background:\s*color-mix\(in srgb,\s*var\(--primary\) 14%,\s*var\(--surface\)\);/,
+    );
+    expect(multimodalTitleBlock).toMatch(
+      /color:\s*var\(--chat-multimodal-section-title-color\);/,
+    );
+    expect(multimodalSubtitleColorBlock).toMatch(
+      /color:\s*var\(--chat-multimodal-section-subtitle-color\);/,
+    );
+    expect(actionMenuMultimodalDividerBlock).toMatch(
+      /border-top:\s*1px solid var\(--chat-multimodal-section-divider-color\);/,
+    );
+    expect(actionMenuMultimodalPrimaryBlock).toMatch(
+      /background:\s*var\(--chat-multimodal-section-primary-background\);/,
+    );
+    expect(
+      [
+        actionMenuMultimodalDividerBlock,
+        actionMenuMultimodalPrimaryBlock,
+        darkActionMenuMultimodalSectionBlock,
+        autoDarkActionMenuMultimodalBlock,
+      ].join("\n"),
+    ).not.toMatch(
+      legacyMultimodalSectionPaint,
     );
     expect(actionMenuRootDeclarations).toMatch(/box-sizing:\s*border-box;/);
     expect(actionMenuRootDeclarations).toMatch(
@@ -1690,6 +1778,11 @@ describe("Gemini visual migration shell", () => {
     );
     expect(actionMenuRootDeclarations).toMatch(/padding:\s*10px;/);
     expect(actionMenuRootDeclarations).toMatch(/border-radius:\s*20px;/);
+    expect(actionMenuOpenStabilizerBlock).toMatch(/display:\s*block;/);
+    expect(actionMenuOpenStabilizerBlock).toMatch(/opacity:\s*1;/);
+    expect(actionMenuOpenStabilizerBlock).toMatch(
+      /transform:\s*translateY\(0\) scale\(1\);/,
+    );
     expect(actionMenuActiveActionBlock).toMatch(
       /background:\s*rgba\(25,\s*103,\s*210,\s*0\.1\);/,
     );

@@ -5835,3 +5835,53 @@ Known risks:
 
 - This slice uses existing modern `color-mix()` CSS already adopted by the Gemini visual migration work. If old embedded WebView support becomes a product requirement, a dedicated fallback color slice should be planned.
 - Browser QA did not mutate chat state to render a real copied message button; the runtime CSSOM and focused source-contract tests cover the target copied-state selectors, and prior message-copy feedback QA covers the actual interaction path.
+
+## Iteration 2026-06-21 multimodal-menu-section-tone
+
+Result: passed.
+
+Target flow:
+
+- Composer tool menu multimodal/session section titles, subtitles, divider, and primary section surface should use local theme tokens rather than raw component paint.
+- The tool menu open state should stay visible at runtime even when compiled `@starting-style` CSS appears after the normal open rule.
+- Upload/image-generation/session actions, labels, ARIA behavior, keyboard behavior, model config semantics, account/secret/sync, backend/API, production config, deployment config, dependencies, send path, and model request payload construction must remain unchanged.
+
+Design direction:
+
+- Creative Production style intake selected a quiet Gemini-style utility surface: local section context, stable menu density, theme-tokenized heading/subheading text, a soft primary surface, and a subtle divider.
+- The slice avoids decorative backgrounds, new imagery, layout restructuring, model/menu behavior changes, and dependency changes.
+
+Scope:
+
+- `app/components/chat.module.scss`: added local multimodal section tone tokens on `.chat-input-action-menu`, dark and auto-dark overrides, token consumers for section title/subtitle/divider/primary surface, and a higher-specificity `.chat-input-action-menu.chat-input-action-menu-open` visibility stabilizer.
+- `test/gemini-visual-migration.test.ts`: strengthened the Gemini visual migration contract to lock the new light/dark/auto-dark tokens, token consumers, removal of old hardcoded section paint in this scope, and the open-state stabilizer.
+- `design-qa.md`: recorded this QA slice and review outcome.
+- No TypeScript component logic, stores, model config, account/secret/sync, backend/API, production config, deployment config, dependency files, deploy files, send path, or model request payload construction were changed.
+
+Automated checks:
+
+- `yarn jest test/gemini-visual-migration.test.ts --runInBand --testNamePattern="Gemini-style empty state hooks"` failed first as expected because the multimodal section tone tokens did not exist yet.
+- After token implementation, the same focused contract passed.
+- A second RED pass was added for the missing high-specificity open-state stabilizer after Browser QA exposed runtime `opacity: 0`; after the stabilizer, the same focused contract passed again.
+
+Browser QA:
+
+- A temporary current-repo dev server was used at `http://localhost:3001/#/chat`.
+- The local access-code screen was handled by intercepting only `/api/access-code` in the Browser QA context and returning `{ ok: true }` for a dummy access code. No real access code, key, account, model/API request, upload, image-generation action, or persisted production config was used.
+- Desktop `1439x1024`: tool menu opened with `aria-expanded="true"`, `display: block`, `opacity: 1`, transform resolved to the open matrix, trigger and menu were in viewport, horizontal overflow was `0`, runtime CSSOM contained the multimodal tone tokens and open stabilizer, scoped legacy paint was absent, and console warn/error logs were `0`.
+- Mobile `390x844`: menu opened at `left: 10`, `right: 330`, `width: 320`, stayed in viewport, `display: block`, `opacity: 1`, horizontal overflow was `0`, token rules and consumers were loaded, scoped legacy paint was absent, and console warn/error logs were `0`.
+- Narrow `320x740`: menu opened at `left: 10`, `right: 282`, `width: 272`, stayed in viewport, `display: block`, `opacity: 1`, horizontal overflow was `0`, token rules and consumers were loaded, scoped legacy paint was absent, and console warn/error logs were `0`.
+- Explicit Dark desktop QA: adding `.dark` kept open state visible with the dark title/subtitle/divider/primary token values, no overflow, close returned `display: none` and `opacity: 0`, and console warn/error logs were `0`.
+- Auto dark plus `prefers-reduced-motion: reduce` desktop QA: system dark media resolved the dark token values with no theme class, open state remained visible, close returned `display: none` and `opacity: 0`, and console warn/error logs were `0`.
+- Mobile close-state QA confirmed the open menu returned to `aria-expanded="false"`, `display: none`, and `opacity: 0`.
+
+Review:
+
+- Read-only sub-agent review found no blocking issues. It confirmed the current diff was limited to `app/components/chat.module.scss` and `test/gemini-visual-migration.test.ts` before this QA record; the open stabilizer has higher specificity than the original open and compiled `@starting-style` rules; closed state does not match the stabilizer; dark/auto-dark token inheritance is valid for the current DOM; and no plan files, internal text, secrets, deployment/production config, model config semantics, backend logic, or dependencies were changed.
+- The reviewer noted the string-based test cannot by itself prove runtime CSSOM behavior. Main-thread Browser QA covered that residual risk through computed-style open/close checks in light, explicit Dark, auto dark, reduced-motion, desktop, mobile, and narrow viewports.
+- Main-thread boundary review verified the final diff remains limited to `app/components/chat.module.scss`, `test/gemini-visual-migration.test.ts`, and this QA record, with no diff in TypeScript component logic, stores, config, API/backend, route constants, deployment files, dependency files, upload handlers, image generation handlers, send path, model request paths, or account/sync logic.
+
+Known risks:
+
+- This slice uses existing modern `color-mix()` CSS already adopted by the Gemini visual migration work. If old WebView or legacy Safari color fallback becomes a product requirement, plan a dedicated fallback slice rather than expanding this narrow menu-tone change.
+- Browser QA opens and closes the tool menu only. It intentionally does not trigger upload, image generation, session actions, model changes, or real model/API calls.
