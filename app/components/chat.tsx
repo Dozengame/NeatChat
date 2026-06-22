@@ -751,6 +751,7 @@ export function ChatAction(props: {
   ariaHasPopup?: React.AriaAttributes["aria-haspopup"];
   ariaExpanded?: boolean;
   ariaPressed?: boolean;
+  ariaDescribedBy?: string;
   role?: React.AriaRole;
 }) {
   const iconRef = useRef<HTMLDivElement>(null);
@@ -776,8 +777,10 @@ export function ChatAction(props: {
       type="button"
       className={clsx(styles["chat-input-action"], "clickable", {
         [styles["chat-input-action-active"]]: props.active,
+        [styles["chat-input-action-disabled"]]: props.disabled,
       })}
       aria-label={props.ariaLabel ?? props.text}
+      aria-describedby={props.ariaDescribedBy}
       title={props.title}
       data-copy-state={props.dataCopyState}
       aria-haspopup={props.ariaHasPopup}
@@ -1068,6 +1071,17 @@ function useChatActionsView(props: ChatActionsProps) {
             <span className={styles["chat-multimodal-section-subtitle"]}>
               <span>文件和图片</span>
             </span>
+            <span
+              id="chat-multimodal-upload-state"
+              className={clsx(
+                styles["chat-multimodal-section-meta"],
+                props.attachmentSlotsFull &&
+                  styles["chat-multimodal-section-meta-warning"],
+              )}
+              aria-live="polite"
+            >
+              {props.attachmentSlotsFull ? "已满" : "3 图 · 5 文件"}
+            </span>
           </div>
           <ChatAction
             onClick={() => {
@@ -1077,6 +1091,7 @@ function useChatActionsView(props: ChatActionsProps) {
             }}
             text={"上传附件"}
             icon={props.uploading ? <LoadingButtonIcon /> : <AttachmentIcon />}
+            ariaDescribedBy="chat-multimodal-upload-state"
             disabled={props.attachmentSlotsFull}
             title={
               props.attachmentSlotsFull

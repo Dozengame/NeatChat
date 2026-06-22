@@ -2238,8 +2238,9 @@ describe("Gemini visual migration shell", () => {
       /width:\s*min\(320px,\s*calc\(100vw - 48px\)\);/,
     );
     expect(mobileActionMenuBlock).toMatch(
-      /max-height:\s*min\(360px,\s*48vh\);/,
+      /max-height:\s*min\(380px,\s*calc\(100dvh - 140px\)\);/,
     );
+    expect(mobileActionMenuBlock).toMatch(/overscroll-behavior:\s*contain;/);
     expect(mobileActionMenuBlock).toMatch(/padding:\s*12px;/);
     expect(mobileActionMenuBlock).toMatch(
       /border-radius:\s*var\(--chat-input-action-menu-radius\);/,
@@ -2711,6 +2712,124 @@ describe("Gemini visual migration shell", () => {
     expect(sharedButtonPaintScope).not.toContain("fill: white !important");
     expect(sharedButtonPaintScope).not.toContain("border-radius: 12px");
     expect(sharedButtonPaintScope).not.toContain("border: var(--border-in-light)");
+  });
+
+  test("keeps composer multimodal menu states accessible and compact", () => {
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const actionMenuBlock = readCssBlock(chatStyles, ".chat-input-action-menu");
+    const actionMenuBackdropBlock = readCssBlock(
+      chatStyles,
+      ".chat-input-action-menu-backdrop",
+    );
+    const reducedMotionBlock = readCssBlock(
+      chatStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const actionMenuDisabledActionBlock = readCssBlock(
+      actionMenuBlock,
+      ".chat-input-action-disabled,\n  .chat-input-action:disabled",
+    );
+    const sectionMetaBlock = readCssBlock(
+      chatStyles,
+      ".chat-multimodal-section-meta",
+    );
+    const sectionMetaWarningBlock = readCssBlock(
+      chatStyles,
+      ".chat-multimodal-section-meta-warning",
+    );
+    const mobileStyles = chatStyles.slice(
+      chatStyles.lastIndexOf("@media only screen and (max-width: 600px)"),
+    );
+    const mobileActionMenuBlock = readCssBlock(
+      mobileStyles,
+      ".chat-input-action-menu",
+    );
+    const narrowStyles = chatStyles.slice(
+      chatStyles.lastIndexOf("@media only screen and (max-width: 358px)"),
+    );
+    const narrowActionMenuBlock = readCssBlock(
+      narrowStyles,
+      ".chat-input-action-menu",
+    );
+    const dropzoneBlock = readCssBlock(chatStyles, ".chat-dropzone");
+    const dropzoneContentBlock = readCssBlock(
+      chatStyles,
+      ".chat-dropzone-content",
+    );
+    const darkDropzoneBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-dropzone",
+    );
+
+    expect(chat).toMatch(
+      /className=\{clsx\(styles\["chat-input-action"\], "clickable", \{[\s\S]*styles\["chat-input-action-active"\][\s\S]*styles\["chat-input-action-disabled"\]\]: props\.disabled,/,
+    );
+    expect(chat).toContain("aria-describedby={props.ariaDescribedBy}");
+    expect(chat).toContain('id="chat-multimodal-upload-state"');
+    expect(chat).toContain('aria-live="polite"');
+    expect(chat).toMatch(
+      /className=\{clsx\([\s\S]*styles\["chat-multimodal-section-meta"\][\s\S]*props\.attachmentSlotsFull &&[\s\S]*styles\["chat-multimodal-section-meta-warning"\]/,
+    );
+    expect(chat).toMatch(
+      /props\.attachmentSlotsFull \? "已满" : "3 图 · 5 文件"/,
+    );
+    expect(chat).toMatch(
+      /text=\{"上传附件"\}[\s\S]*ariaDescribedBy="chat-multimodal-upload-state"[\s\S]*disabled=\{props\.attachmentSlotsFull\}/,
+    );
+    expect(actionMenuBlock).toMatch(/overscroll-behavior:\s*contain;/);
+    expect(actionMenuBlock).toMatch(/scrollbar-width:\s*thin;/);
+    expect(actionMenuBackdropBlock).toMatch(
+      /--chat-input-action-menu-backdrop-background:\s*color-mix\(in srgb,\s*var\(--surface\) 18%,\s*transparent\);/,
+    );
+    expect(actionMenuBackdropBlock).toMatch(
+      /&-open[\s\S]*background:\s*var\(--chat-input-action-menu-backdrop-background\);/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-input-action-menu-backdrop,\s*\.chat-input-action-menu-backdrop-open[\s\S]*backdrop-filter:\s*none !important;[\s\S]*-webkit-backdrop-filter:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(sectionMetaBlock).toMatch(/border-radius:\s*999px;/);
+    expect(sectionMetaBlock).toMatch(
+      /background:\s*var\(--chat-multimodal-section-meta-background\);/,
+    );
+    expect(sectionMetaBlock).toMatch(
+      /color:\s*var\(--chat-multimodal-section-meta-color\);/,
+    );
+    expect(sectionMetaWarningBlock).toMatch(
+      /background:\s*var\(--chat-multimodal-section-meta-warning-background\);/,
+    );
+    expect(sectionMetaWarningBlock).toMatch(
+      /color:\s*var\(--chat-multimodal-section-meta-warning-color\);/,
+    );
+    expect(actionMenuDisabledActionBlock).toMatch(
+      /background:\s*var\(--chat-input-action-disabled-background\);/,
+    );
+    expect(actionMenuDisabledActionBlock).toMatch(
+      /color:\s*var\(--chat-input-action-disabled-color\);/,
+    );
+    expect(actionMenuDisabledActionBlock).toMatch(
+      /box-shadow:\s*inset 0 0 0 1px var\(--chat-input-action-disabled-ring-color\);/,
+    );
+    expect(mobileActionMenuBlock).toMatch(/overscroll-behavior:\s*contain;/);
+    expect(mobileActionMenuBlock).toMatch(
+      /max-height:\s*min\(380px,\s*calc\(100dvh - 140px\)\);/,
+    );
+    expect(narrowActionMenuBlock).toMatch(
+      /width:\s*min\(300px,\s*calc\(100vw - 24px\)\);/,
+    );
+    expect(narrowActionMenuBlock).toMatch(/padding:\s*10px;/);
+    expect(dropzoneBlock).toMatch(
+      /--chat-dropzone-content-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 94%,\s*transparent\);/,
+    );
+    expect(dropzoneBlock).toMatch(
+      /--chat-dropzone-text-color:\s*color-mix\(in srgb,\s*var\(--black\) 88%,\s*transparent\);/,
+    );
+    expect(dropzoneContentBlock).toMatch(
+      /background:\s*var\(--chat-dropzone-content-background\);/,
+    );
+    expect(darkDropzoneBlock).toMatch(
+      /--chat-dropzone-content-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\);/,
+    );
   });
 
   test("keeps MCP market status controls aligned with Gemini utility tones", () => {
@@ -9728,7 +9847,7 @@ describe("Gemini visual migration shell", () => {
       /backdrop-filter:\s*blur\(22px\) saturate\(180%\);/,
     );
     expect(dropzoneContentBlock).toMatch(
-      /background:\s*var\(--surface-elevated\);/,
+      /background:\s*var\(--chat-dropzone-content-background\);/,
     );
     expect(dropzoneContentBlock).toMatch(
       /border:\s*2px dashed var\(--chat-dropzone-content-border-color\);/,
@@ -9789,7 +9908,7 @@ describe("Gemini visual migration shell", () => {
     expect(darkDropzoneBeforeBlock).not.toContain("radial-gradient");
     expect(darkDropzoneBeforeBlock).not.toContain("linear-gradient");
     expect(darkDropzoneContentBlock).toMatch(
-      /background:\s*var\(--surface-elevated\);/,
+      /background:\s*var\(--chat-dropzone-content-background\);/,
     );
     expect(darkDropzoneContentBlock).not.toContain("linear-gradient");
     expect(darkActiveDropzoneContentBlock).toMatch(

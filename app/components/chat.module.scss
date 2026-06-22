@@ -649,6 +649,26 @@
   font-weight: 400;
 }
 
+.chat-multimodal-section-meta {
+  flex: 0 0 auto;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--chat-multimodal-section-meta-background);
+  color: var(--chat-multimodal-section-meta-color);
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.chat-multimodal-section-meta-warning {
+  background: var(--chat-multimodal-section-meta-warning-background);
+  color: var(--chat-multimodal-section-meta-warning-color);
+}
+
 .prompt-toast {
   --prompt-toast-background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
   --prompt-toast-color: color-mix(in srgb, var(--black) 86%, transparent);
@@ -3741,6 +3761,8 @@
 }
 
 .chat-input-action-menu-backdrop {
+  --chat-input-action-menu-backdrop-background: color-mix(in srgb, var(--surface) 18%, transparent);
+
   position: fixed;
   inset: 0;
   z-index: 45;
@@ -3750,11 +3772,18 @@
   cursor: default;
 
   display: none;
-  transition: display 0.2s ease-out;
+  transition:
+    background 0.2s ease-out,
+    backdrop-filter 0.2s ease-out,
+    -webkit-backdrop-filter 0.2s ease-out,
+    display 0.2s ease-out;
   transition-behavior: allow-discrete;
 
   &-open {
     display: block;
+    background: var(--chat-input-action-menu-backdrop-background);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
   }
 }
 
@@ -3763,8 +3792,15 @@
   --chat-multimodal-section-subtitle-color: color-mix(in srgb, var(--black-50) 92%, transparent);
   --chat-multimodal-section-divider-color: color-mix(in srgb, var(--black-50) 14%, transparent);
   --chat-multimodal-section-primary-background: color-mix(in srgb, var(--primary) 7%, transparent);
+  --chat-multimodal-section-meta-background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
+  --chat-multimodal-section-meta-color: color-mix(in srgb, var(--black-50) 92%, transparent);
+  --chat-multimodal-section-meta-warning-background: color-mix(in srgb, rgb(234, 179, 8) 12%, var(--surface-elevated));
+  --chat-multimodal-section-meta-warning-color: color-mix(in srgb, rgb(133, 77, 14) 82%, var(--black));
   --chat-input-action-active-background: color-mix(in srgb, var(--primary) 10%, transparent);
   --chat-input-action-active-color: var(--primary);
+  --chat-input-action-disabled-background: color-mix(in srgb, var(--surface-soft) 46%, transparent);
+  --chat-input-action-disabled-color: color-mix(in srgb, var(--black-50) 74%, transparent);
+  --chat-input-action-disabled-ring-color: color-mix(in srgb, var(--black-50) 10%, transparent);
   --chat-input-action-menu-radius: 8px;
   --chat-input-action-menu-border-color: color-mix(in srgb, var(--black) 10%, transparent);
   --chat-input-action-menu-background: color-mix(in srgb, var(--surface-elevated) 94%, transparent);
@@ -3777,6 +3813,8 @@
   width: min(336px, calc(100vw - 32px));
   max-height: min(420px, 58vh);
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
   box-sizing: border-box;
   padding: 10px;
   border: 1px solid var(--chat-input-action-menu-border-color);
@@ -3872,6 +3910,20 @@
       box-shadow: var(--focus-ring-shadow);
     }
   }
+
+  .chat-input-action-disabled,
+  .chat-input-action:disabled {
+    cursor: default;
+    opacity: 1;
+    background: var(--chat-input-action-disabled-background);
+    color: var(--chat-input-action-disabled-color);
+    box-shadow: inset 0 0 0 1px var(--chat-input-action-disabled-ring-color);
+
+    .icon,
+    .text {
+      opacity: 0.72;
+    }
+  }
 }
 
 .chat-input-action-menu.chat-input-action-menu-open {
@@ -3885,11 +3937,18 @@
   --chat-multimodal-section-subtitle-color: color-mix(in srgb, var(--black-50) 88%, transparent);
   --chat-multimodal-section-divider-color: color-mix(in srgb, var(--black) 9%, transparent);
   --chat-multimodal-section-primary-background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+  --chat-multimodal-section-meta-background: color-mix(in srgb, var(--black) 8%, transparent);
+  --chat-multimodal-section-meta-color: color-mix(in srgb, var(--black-50) 88%, transparent);
+  --chat-multimodal-section-meta-warning-background: color-mix(in srgb, rgb(251, 191, 36) 15%, var(--surface));
+  --chat-multimodal-section-meta-warning-color: color-mix(in srgb, rgb(253, 230, 138) 74%, var(--black));
 }
 
 :global(.dark) .chat-input-action-menu {
   --chat-input-action-active-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
   --chat-input-action-active-color: color-mix(in srgb, var(--primary) 78%, var(--black));
+  --chat-input-action-disabled-background: color-mix(in srgb, var(--black) 7%, transparent);
+  --chat-input-action-disabled-color: color-mix(in srgb, var(--black-50) 88%, transparent);
+  --chat-input-action-disabled-ring-color: color-mix(in srgb, var(--black) 8%, transparent);
   --chat-input-action-menu-border-color: color-mix(in srgb, var(--black) 8%, transparent);
   --chat-input-action-menu-background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
   --chat-input-action-menu-shadow-color: color-mix(in srgb, var(--gray) 42%, transparent);
@@ -3902,11 +3961,18 @@
     --chat-multimodal-section-subtitle-color: color-mix(in srgb, var(--black-50) 88%, transparent);
     --chat-multimodal-section-divider-color: color-mix(in srgb, var(--black) 9%, transparent);
     --chat-multimodal-section-primary-background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+    --chat-multimodal-section-meta-background: color-mix(in srgb, var(--black) 8%, transparent);
+    --chat-multimodal-section-meta-color: color-mix(in srgb, var(--black-50) 88%, transparent);
+    --chat-multimodal-section-meta-warning-background: color-mix(in srgb, rgb(251, 191, 36) 15%, var(--surface));
+    --chat-multimodal-section-meta-warning-color: color-mix(in srgb, rgb(253, 230, 138) 74%, var(--black));
   }
 
   :global(body:not(.light)) .chat-input-action-menu {
     --chat-input-action-active-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
     --chat-input-action-active-color: color-mix(in srgb, var(--primary) 78%, var(--black));
+    --chat-input-action-disabled-background: color-mix(in srgb, var(--black) 7%, transparent);
+    --chat-input-action-disabled-color: color-mix(in srgb, var(--black-50) 88%, transparent);
+    --chat-input-action-disabled-ring-color: color-mix(in srgb, var(--black) 8%, transparent);
     --chat-input-action-menu-border-color: color-mix(in srgb, var(--black) 8%, transparent);
     --chat-input-action-menu-background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
     --chat-input-action-menu-shadow-color: color-mix(in srgb, var(--gray) 42%, transparent);
@@ -4063,7 +4129,8 @@
   .chat-input-action-menu {
     bottom: calc(64px + env(safe-area-inset-bottom));
     width: min(320px, calc(100vw - 48px));
-    max-height: min(360px, 48vh);
+    max-height: min(380px, calc(100dvh - 140px));
+    overscroll-behavior: contain;
     padding: 12px;
     border-radius: var(--chat-input-action-menu-radius);
 
@@ -4183,6 +4250,11 @@
 @media only screen and (max-width: 358px) {
   .clear-context {
     margin-bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+
+  .chat-input-action-menu {
+    width: min(300px, calc(100vw - 24px));
+    padding: 10px;
   }
 }
 
@@ -4962,6 +5034,7 @@
   --chat-dropzone-content-shadow-color: color-mix(in srgb, var(--surface-soft) 36%, transparent);
   --chat-dropzone-content-active-shadow-color: color-mix(in srgb, var(--primary) 10%, var(--surface-soft));
   --chat-dropzone-content-inner-border-color: color-mix(in srgb, var(--surface-soft) 34%, transparent);
+  --chat-dropzone-content-background: color-mix(in srgb, var(--surface-elevated) 94%, transparent);
   --chat-dropzone-content-radius: 8px;
   --chat-dropzone-icon-radius: 8px;
   --chat-dropzone-icon-border-color: color-mix(in srgb, var(--surface-soft) 44%, transparent);
@@ -4971,6 +5044,7 @@
   --chat-dropzone-summary-border-color: color-mix(in srgb, var(--surface-soft) 34%, transparent);
   --chat-dropzone-summary-color: color-mix(in srgb, var(--primary) 88%, var(--black));
   --chat-dropzone-hint-color: color-mix(in srgb, var(--black-50) 92%, transparent);
+  --chat-dropzone-text-color: color-mix(in srgb, var(--black) 88%, transparent);
 
   position: absolute;
   inset: 0;
@@ -5040,6 +5114,7 @@
   --chat-dropzone-content-shadow-color: color-mix(in srgb, var(--gray) 42%, transparent);
   --chat-dropzone-content-active-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
   --chat-dropzone-content-inner-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+  --chat-dropzone-content-background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
   --chat-dropzone-icon-border-color: color-mix(in srgb, var(--black) 12%, transparent);
   --chat-dropzone-icon-background: color-mix(in srgb, var(--surface-elevated) 84%, var(--primary) 4%);
   --chat-dropzone-icon-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
@@ -5047,6 +5122,7 @@
   --chat-dropzone-summary-border-color: color-mix(in srgb, var(--black) 8%, transparent);
   --chat-dropzone-summary-color: color-mix(in srgb, var(--black) 92%, transparent);
   --chat-dropzone-hint-color: color-mix(in srgb, var(--black) 78%, transparent);
+  --chat-dropzone-text-color: color-mix(in srgb, var(--black) 92%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -5059,6 +5135,7 @@
     --chat-dropzone-content-shadow-color: color-mix(in srgb, var(--gray) 42%, transparent);
     --chat-dropzone-content-active-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
     --chat-dropzone-content-inner-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+    --chat-dropzone-content-background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
     --chat-dropzone-icon-border-color: color-mix(in srgb, var(--black) 12%, transparent);
     --chat-dropzone-icon-background: color-mix(in srgb, var(--surface-elevated) 84%, var(--primary) 4%);
     --chat-dropzone-icon-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
@@ -5066,6 +5143,7 @@
     --chat-dropzone-summary-border-color: color-mix(in srgb, var(--black) 8%, transparent);
     --chat-dropzone-summary-color: color-mix(in srgb, var(--black) 92%, transparent);
     --chat-dropzone-hint-color: color-mix(in srgb, var(--black) 78%, transparent);
+    --chat-dropzone-text-color: color-mix(in srgb, var(--black) 92%, transparent);
   }
 }
 
@@ -5092,7 +5170,7 @@
   border: 2px dashed var(--chat-dropzone-content-border-color);
   border-radius: var(--chat-dropzone-content-radius);
   overflow: hidden;
-  background: var(--surface-elevated);
+  background: var(--chat-dropzone-content-background);
   backdrop-filter: blur(22px) saturate(180%);
   -webkit-backdrop-filter: blur(22px) saturate(180%);
   box-shadow: 0 22px 70px var(--chat-dropzone-content-shadow-color);
@@ -5130,7 +5208,7 @@
 
 :global(.dark) .chat-dropzone-content {
   border-color: var(--chat-dropzone-content-border-color);
-  background: var(--surface-elevated);
+  background: var(--chat-dropzone-content-background);
   box-shadow: 0 22px 70px var(--chat-dropzone-content-shadow-color);
 }
 
@@ -5161,11 +5239,11 @@
 .chat-dropzone-text {
   font-size: 16px;
   font-weight: 500;
-  color: var(--black);
+  color: var(--chat-dropzone-text-color);
   margin: 0;
 
   :global(.dark) & {
-    color: var(--white);
+    color: var(--chat-dropzone-text-color);
   }
 }
 
@@ -5215,6 +5293,13 @@
   .chat-input-action-menu {
     transform: none !important;
     transition-duration: 0.1s !important;
+  }
+
+  .chat-input-action-menu-backdrop,
+  .chat-input-action-menu-backdrop-open {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    transition-duration: 0.01ms !important;
   }
 
   .chat-dropzone::before,
