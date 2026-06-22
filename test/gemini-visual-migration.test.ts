@@ -12217,6 +12217,15 @@ describe("Gemini visual migration shell", () => {
         /--markdown-token-info-hover-color:[\s\S]*?transparent\s*\);/,
       )?.[0] ?? "",
       lightMixinBlock.match(
+        /--markdown-token-info-shadow-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      lightMixinBlock.match(
+        /--markdown-token-info-accent-shadow-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      lightMixinBlock.match(
+        /--markdown-token-info-hover-key-shadow-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      lightMixinBlock.match(
         /--markdown-token-info-hover-shadow-color:[\s\S]*?transparent\s*\);/,
       )?.[0] ?? "",
       darkMixinBlock.match(
@@ -12230,6 +12239,15 @@ describe("Gemini visual migration shell", () => {
       )?.[0] ?? "",
       darkMixinBlock.match(
         /--markdown-token-info-hover-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      darkMixinBlock.match(
+        /--markdown-token-info-shadow-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      darkMixinBlock.match(
+        /--markdown-token-info-accent-shadow-color:[\s\S]*?transparent\s*\);/,
+      )?.[0] ?? "",
+      darkMixinBlock.match(
+        /--markdown-token-info-hover-key-shadow-color:[\s\S]*?transparent\s*\);/,
       )?.[0] ?? "",
     ].join("\n");
 
@@ -12272,6 +12290,15 @@ describe("Gemini visual migration shell", () => {
       /--markdown-token-info-hover-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 92%,\s*transparent\s*\);/,
     );
     expect(lightMixinBlock).toMatch(
+      /--markdown-token-info-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 8%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-token-info-accent-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 4%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-token-info-hover-key-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 10%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
       /--markdown-token-info-hover-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 8%,\s*transparent\s*\);/,
     );
     expect(darkMixinBlock).toMatch(
@@ -12288,6 +12315,15 @@ describe("Gemini visual migration shell", () => {
     );
     expect(darkMixinBlock).toMatch(
       /--markdown-token-info-hover-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 90%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-token-info-shadow-color:\s*color-mix\(\s*in srgb,\s*rgb\(0,\s*0,\s*0\) 22%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-token-info-accent-shadow-color:\s*color-mix\(\s*in srgb,\s*rgb\(0,\s*0,\s*0\) 16%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-token-info-hover-key-shadow-color:\s*color-mix\(\s*in srgb,\s*rgb\(0,\s*0,\s*0\) 24%,\s*transparent\s*\);/,
     );
     expect(autoDarkRootBlock).toMatch(/@include dark;/);
     expect(containerBlock).toMatch(/display:\s*flex;/);
@@ -12317,7 +12353,7 @@ describe("Gemini visual migration shell", () => {
       /color:\s*var\(--markdown-token-info-color\);/,
     );
     expect(tokenInfoBlock).toMatch(
-      /box-shadow:\s*0 1px 2px rgba\(60,\s*64,\s*67,\s*0\.08\)/,
+      /box-shadow:\s*0 1px 2px var\(--markdown-token-info-shadow-color\),[\s\S]*0 8px 18px var\(--markdown-token-info-accent-shadow-color\);/,
     );
     expect(tokenInfoBlock).toMatch(
       /&:hover,\s*&:focus-visible,\s*&\[data-token-info-expanded="true"\][\s\S]*border-color:\s*var\(--markdown-token-info-hover-border-color\);/,
@@ -12329,14 +12365,17 @@ describe("Gemini visual migration shell", () => {
       /&:hover,\s*&:focus-visible,\s*&\[data-token-info-expanded="true"\][\s\S]*color:\s*var\(--markdown-token-info-hover-color\);/,
     );
     expect(tokenInfoBlock).toMatch(
-      /&:hover,\s*&:focus-visible,\s*&\[data-token-info-expanded="true"\][\s\S]*0 10px 24px var\(--markdown-token-info-hover-shadow-color\);/,
+      /&:hover,\s*&:focus-visible,\s*&\[data-token-info-expanded="true"\][\s\S]*0 1px 2px var\(--markdown-token-info-hover-key-shadow-color\),[\s\S]*0 10px 24px var\(--markdown-token-info-hover-shadow-color\);/,
     );
     expect(tokenInfoBlock).toMatch(/&:focus-visible/);
     expect(tokenInfoBlock).toMatch(/outline:\s*none;/);
     expect(tokenInfoBlock).toMatch(
-      /&:focus-visible[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 10px 24px var\(--markdown-token-info-hover-shadow-color\);/,
+      /&:focus-visible[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 1px 2px var\(--markdown-token-info-hover-key-shadow-color\),[\s\S]*0 10px 24px var\(--markdown-token-info-hover-shadow-color\);/,
     );
     expect(tokenInfoBlock).toMatch(/&\[data-token-info-expanded="true"\]/);
+    expect(darkTokenInfoBlock).toMatch(
+      /box-shadow:\s*0 1px 2px var\(--markdown-token-info-shadow-color\),[\s\S]*0 8px 18px var\(--markdown-token-info-accent-shadow-color\);/,
+    );
     expect(darkTokenInfoBlock).toMatch(
       /background:\s*var\(--markdown-token-info-background\);/,
     );
@@ -12356,10 +12395,16 @@ describe("Gemini visual migration shell", () => {
       /&:hover,\s*&:focus-visible,\s*&\[data-token-info-expanded="true"\][\s\S]*color:\s*var\(--markdown-token-info-hover-color\);/,
     );
     expect(darkTokenInfoBlock).toMatch(
-      /&:focus-visible[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 10px 24px var\(--markdown-token-info-hover-shadow-color\);/,
+      /&:hover,\s*&:focus-visible,\s*&\[data-token-info-expanded="true"\][\s\S]*0 1px 2px var\(--markdown-token-info-hover-key-shadow-color\),[\s\S]*0 10px 24px var\(--markdown-token-info-hover-shadow-color\);/,
+    );
+    expect(darkTokenInfoBlock).toMatch(
+      /&:focus-visible[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 1px 2px var\(--markdown-token-info-hover-key-shadow-color\),[\s\S]*0 10px 24px var\(--markdown-token-info-hover-shadow-color\);/,
     );
     expect(tokenInfoToneScope).not.toMatch(
       /rgba\((?:66,\s*133,\s*244|138,\s*180,\s*248)|#(?:4285f4|8ab4f8)\b/,
+    );
+    expect(tokenInfoToneScope).not.toMatch(
+      /rgba\(\s*(?:60,\s*64,\s*67|0,\s*0,\s*0)\s*,/,
     );
     expect(mobileBlock).toContain(".markdown-body-container .token-info");
     expect(mobileBlock).toMatch(/align-self:\s*flex-start;/);

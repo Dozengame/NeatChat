@@ -271,6 +271,21 @@ summary,
     var(--black) 92%,
     transparent
   );
+  --markdown-token-info-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 8%,
+    transparent
+  );
+  --markdown-token-info-accent-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 4%,
+    transparent
+  );
+  --markdown-token-info-hover-key-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
   --markdown-token-info-hover-shadow-color: color-mix(
     in srgb,
     var(--markdown-link-color) 8%,
@@ -732,6 +747,21 @@ summary,
   --markdown-token-info-hover-color: color-mix(
     in srgb,
     var(--black) 90%,
+    transparent
+  );
+  --markdown-token-info-shadow-color: color-mix(
+    in srgb,
+    rgb(0, 0, 0) 22%,
+    transparent
+  );
+  --markdown-token-info-accent-shadow-color: color-mix(
+    in srgb,
+    rgb(0, 0, 0) 16%,
+    transparent
+  );
+  --markdown-token-info-hover-key-shadow-color: color-mix(
+    in srgb,
+    rgb(0, 0, 0) 24%,
     transparent
   );
   --markdown-token-info-hover-shadow-color: color-mix(
@@ -3036,8 +3066,8 @@ summary,
     background: var(--markdown-token-info-background);
     color: var(--markdown-token-info-color);
     box-shadow:
-      0 1px 2px rgba(60, 64, 67, 0.08),
-      0 8px 18px rgba(60, 64, 67, 0.04);
+      0 1px 2px var(--markdown-token-info-shadow-color),
+      0 8px 18px var(--markdown-token-info-accent-shadow-color);
     font-family: inherit;
     font-size: 11px;
     font-weight: 500;
@@ -3063,7 +3093,7 @@ summary,
       opacity: 1;
       transform: translateY(-1px);
       box-shadow:
-        0 1px 2px rgba(60, 64, 67, 0.1),
+        0 1px 2px var(--markdown-token-info-hover-key-shadow-color),
         0 10px 24px var(--markdown-token-info-hover-shadow-color);
     }
 
@@ -3071,7 +3101,7 @@ summary,
       outline: none;
       box-shadow:
         var(--focus-ring-shadow),
-        0 1px 2px rgba(60, 64, 67, 0.1),
+        0 1px 2px var(--markdown-token-info-hover-key-shadow-color),
         0 10px 24px var(--markdown-token-info-hover-shadow-color);
     }
 
@@ -3086,8 +3116,8 @@ summary,
   background: var(--markdown-token-info-background);
   color: var(--markdown-token-info-color);
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.22),
-    0 8px 18px rgba(0, 0, 0, 0.16);
+    0 1px 2px var(--markdown-token-info-shadow-color),
+    0 8px 18px var(--markdown-token-info-accent-shadow-color);
 
   &:hover,
   &:focus-visible,
@@ -3096,14 +3126,14 @@ summary,
     background: var(--markdown-token-info-hover-background);
     color: var(--markdown-token-info-hover-color);
     box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.24),
+      0 1px 2px var(--markdown-token-info-hover-key-shadow-color),
       0 10px 24px var(--markdown-token-info-hover-shadow-color);
   }
 
   &:focus-visible {
     box-shadow:
       var(--focus-ring-shadow),
-      0 1px 2px rgba(0, 0, 0, 0.24),
+      0 1px 2px var(--markdown-token-info-hover-key-shadow-color),
       0 10px 24px var(--markdown-token-info-hover-shadow-color);
   }
 }
