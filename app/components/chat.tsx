@@ -4001,6 +4001,11 @@ function useChatInnerView() {
         )}
         aria-hidden={!dragActive}
         data-drop-active={dragActive ? "true" : "false"}
+        data-drop-accepted={
+          dragPayloadSummary?.willAdd === false ? "false" : "true"
+        }
+        aria-labelledby="chat-dropzone-status"
+        aria-describedby="chat-dropzone-summary chat-dropzone-hint"
       >
         <div className={styles["chat-dropzone-content"]}>
           <div className={styles["chat-dropzone-icon"]}>
@@ -4009,10 +4014,13 @@ function useChatInnerView() {
           <p id="chat-dropzone-status" className={styles["chat-dropzone-text"]}>
             拖拽文件或图片到此处上传
           </p>
-          <p className={styles["chat-dropzone-summary"]}>
+          <p
+            id="chat-dropzone-summary"
+            className={styles["chat-dropzone-summary"]}
+          >
             {dragPayloadSummary?.text ?? "检测拖拽附件"}
           </p>
-          <p className={styles["chat-dropzone-hint"]}>
+          <p id="chat-dropzone-hint" className={styles["chat-dropzone-hint"]}>
             {dragPayloadSummary?.hint ??
               "释放后添加到输入框 · 最多3张图片、5个文件"}
           </p>
@@ -4959,6 +4967,7 @@ function useChatInnerView() {
               [styles["chat-input-panel-collapsed"]]: !shouldExpandChatInput,
               [styles["chat-input-panel-empty"]]: showEmptyComposer,
             })}
+            data-drag-active={dragActive ? "true" : undefined}
           >
             {!showEmptyState && !hitBottom && !showChatActionMenu && (
               <button

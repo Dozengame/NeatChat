@@ -10433,6 +10433,28 @@ describe("Gemini visual migration shell", () => {
       "const handleDrop = async (e: DragEvent) => {",
     );
     const dropzoneBlock = readCssBlock(chatStyles, ".chat-dropzone");
+    const chatInputPanelBlock = readCssBlock(chatStyles, ".chat-input-panel");
+    const darkChatInputPanelBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-input-panel",
+    );
+    const autoDarkChatInputPanelSelector =
+      ":global(body:not(.light)) .chat-input-panel";
+    const autoDarkChatInputPanelSelectorIndex = chatStyles.indexOf(
+      autoDarkChatInputPanelSelector,
+    );
+    const autoDarkChatInputPanelMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkChatInputPanelSelectorIndex,
+    );
+    const autoDarkChatInputPanelBlock = readCssBlock(
+      chatStyles.slice(autoDarkChatInputPanelMediaIndex),
+      autoDarkChatInputPanelSelector,
+    );
+    const activeChatInputPanelBlock = readCssBlock(
+      chatStyles,
+      '.chat-input-panel[data-drag-active="true"] .chat-input-panel-inner',
+    );
     const dropzoneBeforeBlock = readCssBlock(
       chatStyles,
       ".chat-dropzone::before",
@@ -10461,9 +10483,22 @@ describe("Gemini visual migration shell", () => {
       chatStyles.slice(autoDarkDropzoneMediaIndex),
       autoDarkDropzoneSelector,
     );
+    const autoDarkBlockedDropzoneSelector =
+      ':global(body:not(.light)) .chat-dropzone[data-drop-accepted="false"]';
+    const autoDarkBlockedDropzoneSelectorIndex = chatStyles.indexOf(
+      autoDarkBlockedDropzoneSelector,
+    );
+    const autoDarkBlockedDropzoneBlock = readCssBlock(
+      chatStyles.slice(autoDarkDropzoneMediaIndex),
+      autoDarkBlockedDropzoneSelector,
+    );
     const darkDropzoneActiveBlock = readCssBlock(
       chatStyles,
       ":global(.dark) .chat-dropzone.chat-dropzone-active",
+    );
+    const blockedDropzoneBlock = readCssBlock(
+      chatStyles,
+      '.chat-dropzone[data-drop-accepted="false"]',
     );
     const dropzoneHintBlock = readCssBlock(chatStyles, ".chat-dropzone-hint");
     const dropzoneContentBlock = readCssBlock(
@@ -10483,6 +10518,14 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-dropzone-summary",
     );
+    const activeDropzoneIconBlock = readCssBlock(
+      chatStyles,
+      ".chat-dropzone.chat-dropzone-active .chat-dropzone-icon",
+    );
+    const activeDropzoneSummaryBlock = readCssBlock(
+      chatStyles,
+      ".chat-dropzone.chat-dropzone-active .chat-dropzone-summary",
+    );
     const darkDropzoneBeforeBlock = readCssBlock(
       chatStyles,
       ":global(.dark) .chat-dropzone.chat-dropzone-active::before",
@@ -10497,6 +10540,32 @@ describe("Gemini visual migration shell", () => {
     );
     const reducedMotionBlock = chatStyles.slice(
       chatStyles.indexOf("@media (prefers-reduced-motion: reduce)"),
+    );
+    const mobileStyles = chatStyles.slice(
+      chatStyles.lastIndexOf("@media (max-width: 600px)"),
+    );
+    const mobileDropzoneContentBlock = readCssBlock(
+      mobileStyles,
+      ".chat-dropzone-content",
+    );
+    const mobileDropzoneIconBlock = readCssBlock(
+      mobileStyles,
+      ".chat-dropzone-icon",
+    );
+    const mobileDropzoneSummaryBlock = readCssBlock(
+      mobileStyles,
+      ".chat-dropzone-summary",
+    );
+    const mobileDropzoneHintBlock = readCssBlock(
+      mobileStyles,
+      ".chat-dropzone-hint",
+    );
+    const narrowStyles = chatStyles.slice(
+      chatStyles.lastIndexOf("@media (max-width: 358px)"),
+    );
+    const narrowDropzoneContentBlock = readCssBlock(
+      narrowStyles,
+      ".chat-dropzone-content",
     );
 
     expect(chat).toContain("function hasDraggedFiles");
@@ -10555,14 +10624,50 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chat).toContain('aria-atomic="true"');
     expect(chat).toContain("aria-hidden={!dragActive}");
+    expect(chat).toContain('data-drag-active={dragActive ? "true" : undefined}');
     expect(chat).toContain('data-drop-active={dragActive ? "true" : "false"}');
+    expect(chat).toMatch(
+      /data-drop-accepted=\{[\s\S]*dragPayloadSummary\?\.willAdd === false \? "false" : "true"[\s\S]*\}/,
+    );
+    expect(chat).toContain('aria-labelledby="chat-dropzone-status"');
+    expect(chat).toContain(
+      'aria-describedby="chat-dropzone-summary chat-dropzone-hint"',
+    );
     expect(chat).toContain('id="chat-dropzone-status"');
+    expect(chat).toContain('id="chat-dropzone-summary"');
+    expect(chat).toContain('id="chat-dropzone-hint"');
     expect(chat).toContain('className={styles["chat-dropzone-summary"]}');
     expect(chat).toContain("{dragPayloadSummary?.text ??");
     expect(chat).toContain('className={styles["chat-dropzone-hint"]}');
     expect(chat).toContain("{dragPayloadSummary?.hint ??");
     expect(chat).toContain("释放后添加到输入框");
     expect(chat).toContain("最多3张图片、5个文件");
+    expect(chatInputPanelBlock).toMatch(
+      /--chat-input-drag-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 34%,\s*transparent\);/,
+    );
+    expect(chatInputPanelBlock).toMatch(
+      /--chat-input-drag-ring-color:\s*color-mix\(in srgb,\s*var\(--primary\) 14%,\s*transparent\);/,
+    );
+    expect(chatInputPanelBlock).toMatch(
+      /--chat-input-drag-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 94%,\s*var\(--primary\) 2%\);/,
+    );
+    expect(darkChatInputPanelBlock).toMatch(
+      /--chat-input-drag-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 42%,\s*transparent\);/,
+    );
+    expect(autoDarkChatInputPanelSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkChatInputPanelMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkChatInputPanelBlock).toMatch(
+      /--chat-input-drag-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 42%,\s*transparent\);/,
+    );
+    expect(activeChatInputPanelBlock).toMatch(
+      /border-color:\s*var\(--chat-input-drag-border-color\) !important;/,
+    );
+    expect(activeChatInputPanelBlock).toMatch(
+      /background-color:\s*var\(--chat-input-drag-background\);/,
+    );
+    expect(activeChatInputPanelBlock).toMatch(
+      /box-shadow:\s*var\(--composer-shadow\),[\s\S]*0 0 0 4px var\(--chat-input-drag-ring-color\);/,
+    );
     expect(chat).toMatch(
       /const remainingFileSlots = Math\.max\(0,\s*5 - currentAttachedFiles\.length\);/,
     );
@@ -10597,6 +10702,18 @@ describe("Gemini visual migration shell", () => {
     expect(dropzoneBlock).toMatch(
       /--chat-dropzone-icon-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 8%,\s*transparent\);/,
     );
+    expect(dropzoneBlock).toMatch(
+      /--chat-dropzone-blocked-border-color:\s*color-mix\(in srgb,\s*rgb\(217,\s*48,\s*37\) 34%,\s*transparent\);/,
+    );
+    expect(dropzoneBlock).toMatch(
+      /--chat-dropzone-blocked-summary-background:\s*color-mix\(in srgb,\s*rgb\(217,\s*48,\s*37\) 10%,\s*var\(--surface-elevated\)\);/,
+    );
+    expect(dropzoneBlock).toMatch(
+      /--chat-dropzone-blocked-summary-color:\s*color-mix\(in srgb,\s*rgb\(165,\s*14,\s*14\) 90%,\s*var\(--black\)\);/,
+    );
+    expect(dropzoneBlock).toMatch(
+      /--chat-dropzone-blocked-icon-color:\s*color-mix\(in srgb,\s*rgb\(217,\s*48,\s*37\) 82%,\s*var\(--black\)\);/,
+    );
     expect(darkDropzoneBlock).toMatch(
       /--chat-dropzone-active-background:\s*color-mix\(in srgb,\s*var\(--gray\) 66%,\s*transparent\);/,
     );
@@ -10629,11 +10746,41 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkDropzoneBlock).toMatch(
       /--chat-dropzone-icon-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 8%,\s*var\(--surface\)\);/,
     );
+    expect(darkDropzoneBlock).toMatch(
+      /--chat-dropzone-blocked-border-color:\s*color-mix\(in srgb,\s*rgb\(242,\s*139,\s*130\) 34%,\s*transparent\);/,
+    );
+    expect(autoDarkDropzoneBlock).toMatch(
+      /--chat-dropzone-blocked-border-color:\s*color-mix\(in srgb,\s*rgb\(242,\s*139,\s*130\) 34%,\s*transparent\);/,
+    );
+    expect(autoDarkBlockedDropzoneSelectorIndex).toBeGreaterThan(
+      autoDarkDropzoneSelectorIndex,
+    );
+    expect(autoDarkBlockedDropzoneBlock).toMatch(
+      /--chat-dropzone-content-active-border-color:\s*var\(--chat-dropzone-blocked-border-color\);/,
+    );
+    expect(autoDarkBlockedDropzoneBlock).toMatch(
+      /--chat-dropzone-summary-background:\s*var\(--chat-dropzone-blocked-summary-background\);/,
+    );
+    expect(autoDarkBlockedDropzoneBlock).toMatch(
+      /--chat-dropzone-icon-color:\s*var\(--chat-dropzone-blocked-icon-color\);/,
+    );
     expect(dropzoneBlock).toMatch(
       /&\.chat-dropzone-active[\s\S]*background-color:\s*var\(--chat-dropzone-active-background\);/,
     );
     expect(darkDropzoneActiveBlock).toMatch(
       /background-color:\s*var\(--chat-dropzone-active-background\);/,
+    );
+    expect(blockedDropzoneBlock).toMatch(
+      /--chat-dropzone-content-active-border-color:\s*var\(--chat-dropzone-blocked-border-color\);/,
+    );
+    expect(blockedDropzoneBlock).toMatch(
+      /--chat-dropzone-summary-background:\s*var\(--chat-dropzone-blocked-summary-background\);/,
+    );
+    expect(blockedDropzoneBlock).toMatch(
+      /--chat-dropzone-summary-color:\s*var\(--chat-dropzone-blocked-summary-color\);/,
+    );
+    expect(blockedDropzoneBlock).toMatch(
+      /--chat-dropzone-icon-color:\s*var\(--chat-dropzone-blocked-icon-color\);/,
     );
     expect(liveStatusBlock).toMatch(/position:\s*absolute;/);
     expect(liveStatusBlock).toMatch(/width:\s*1px;/);
@@ -10707,9 +10854,19 @@ describe("Gemini visual migration shell", () => {
     expect(dropzoneIconBlock).toMatch(
       /box-shadow:\s*0 8px 24px var\(--chat-dropzone-icon-shadow-color\);/,
     );
+    expect(dropzoneIconBlock).toMatch(/transition:\s*transform 0\.22s ease,/);
+    expect(dropzoneIconBlock).toMatch(
+      /color:\s*var\(--chat-dropzone-icon-color\);/,
+    );
     expect(dropzoneIconBlock).not.toMatch(/border-radius:\s*16px;/);
     expect(dropzoneIconBlock).not.toContain("var(--border-in-light)");
     expect(dropzoneIconBlock).not.toContain("var(--composer-shadow)");
+    expect(activeDropzoneIconBlock).toMatch(
+      /transform:\s*translateY\(-1px\) scale\(1\.04\);/,
+    );
+    expect(activeDropzoneSummaryBlock).toMatch(
+      /transform:\s*translateY\(-1px\);/,
+    );
     expect(dropzoneSummaryBlock).toMatch(/display:\s*inline-flex;/);
     expect(dropzoneSummaryBlock).toMatch(/min-height:\s*28px;/);
     expect(dropzoneSummaryBlock).toMatch(/border-radius:\s*999px;/);
@@ -10723,6 +10880,7 @@ describe("Gemini visual migration shell", () => {
       /color:\s*var\(--chat-dropzone-summary-color\);/,
     );
     expect(dropzoneSummaryBlock).toMatch(/font-weight:\s*500;/);
+    expect(dropzoneSummaryBlock).toMatch(/transition:\s*transform 0\.22s ease,/);
     expect(darkDropzoneBeforeBlock).toMatch(
       /background:\s*var\(--chat-dropzone-scrim-background\);/,
     );
@@ -10748,10 +10906,26 @@ describe("Gemini visual migration shell", () => {
     expect(dropzoneHintBlock).toMatch(
       /:global\(\.dark\) &[\s\S]*color:\s*var\(--chat-dropzone-hint-color\);/,
     );
+    expect(mobileDropzoneContentBlock).toMatch(
+      /width:\s*min\(360px,\s*calc\(100% - 28px\)\);/,
+    );
+    expect(mobileDropzoneContentBlock).toMatch(/padding:\s*28px 22px;/);
+    expect(mobileDropzoneContentBlock).toMatch(/gap:\s*12px;/);
+    expect(mobileDropzoneIconBlock).toMatch(/width:\s*44px;/);
+    expect(mobileDropzoneIconBlock).toMatch(/height:\s*44px;/);
+    expect(mobileDropzoneSummaryBlock).toMatch(/max-width:\s*100%;/);
+    expect(mobileDropzoneHintBlock).toMatch(/max-width:\s*240px;/);
+    expect(narrowDropzoneContentBlock).toMatch(
+      /width:\s*min\(292px,\s*calc\(100% - 20px\)\);/,
+    );
+    expect(narrowDropzoneContentBlock).toMatch(/padding:\s*24px 18px;/);
     expect(reducedMotionBlock).toContain(".chat-dropzone-content");
     expect(reducedMotionBlock).toContain(".chat-dropzone::before");
     expect(reducedMotionBlock).toMatch(
       /\.chat-dropzone::before,\s*\.chat-dropzone-content::before,\s*\.chat-dropzone,\s*\.chat-dropzone-content\s*\{[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-dropzone-icon,\s*\.chat-dropzone-summary\s*\{[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
     );
   });
 
