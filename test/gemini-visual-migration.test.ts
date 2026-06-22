@@ -5748,6 +5748,28 @@ describe("Gemini visual migration shell", () => {
       readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
       ":root",
     );
+    const codeChromeTokenNames = [
+      "--markdown-code-block-background",
+      "--markdown-code-block-border-color",
+      "--markdown-code-edge-surface",
+      "--markdown-code-edge-transparent",
+      "--markdown-code-fold-scrim-transparent",
+      "--markdown-code-fold-scrim-solid",
+      "--markdown-code-fold-button-border-color",
+      "--markdown-code-fold-button-background",
+      "--markdown-code-fold-button-color",
+      "--markdown-code-fold-button-shadow-color",
+      "--markdown-code-fold-button-accent-shadow-color",
+      "--markdown-code-language-color",
+    ];
+    const lightCodeChromeTokens = readCustomProperties(
+      lightMixinBlock,
+      codeChromeTokenNames,
+    );
+    const darkCodeChromeTokens = readCustomProperties(
+      darkMixinBlock,
+      codeChromeTokenNames,
+    );
     const refinedCodeStyles = markdownStyles.slice(
       Math.max(
         0,
@@ -5860,6 +5882,17 @@ describe("Gemini visual migration shell", () => {
       darkMixinBlock.match(
         /--markdown-code-fold-hover-shadow-color:[\s\S]*?transparent\s*\);/,
       )?.[0] ?? "",
+    ].join("\n");
+    const codeChromeToneScope = [
+      preBlock,
+      codeScrollFadeStartBlock,
+      codeScrollFadeEndBlock,
+      languageLabelBlock,
+      showHideButtonBlock,
+      showHideActionBlock,
+      darkPreBlock,
+      darkLanguageLabelBlock,
+      darkShowHideButtonBlock,
     ].join("\n");
     const reducedMotionBlock = markdownStyles.slice(
       markdownStyles.lastIndexOf("@media (prefers-reduced-motion: reduce)"),
@@ -5996,8 +6029,21 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toMatch(
       /\{codeScrollHint\.end && \([\s\S]*className="markdown-code-scroll-fade markdown-code-scroll-fade-end"/,
     );
-    expect(preBlock).toMatch(
-      /--markdown-code-edge-surface:\s*rgba\(248,\s*249,\s*250,\s*0\.94\);/,
+    for (const tokenName of codeChromeTokenNames) {
+      expect(lightCodeChromeTokens[tokenName]).not.toBe("");
+      expect(darkCodeChromeTokens[tokenName]).not.toBe("");
+    }
+    expect(lightCodeChromeTokens["--markdown-code-block-background"]).toContain(
+      "var(--surface",
+    );
+    expect(lightCodeChromeTokens["--markdown-code-block-border-color"]).toContain(
+      "var(--black-50)",
+    );
+    expect(darkCodeChromeTokens["--markdown-code-block-background"]).toContain(
+      "var(--surface",
+    );
+    expect(darkCodeChromeTokens["--markdown-code-block-border-color"]).toContain(
+      "var(--black)",
     );
     expect(preBlock).toMatch(/--markdown-code-block-radius:\s*8px;/);
     expect(preBlock).toMatch(/--markdown-code-block-padding-y:\s*14px;/);
@@ -6014,6 +6060,12 @@ describe("Gemini visual migration shell", () => {
     expect(preBlock).toMatch(/scrollbar-width:\s*thin;/);
     expect(preBlock).toMatch(
       /border-radius:\s*var\(--markdown-code-block-radius\);/,
+    );
+    expect(preBlock).toMatch(
+      /background-color:\s*var\(--markdown-code-block-background\);/,
+    );
+    expect(preBlock).toMatch(
+      /border:\s*1px solid var\(--markdown-code-block-border-color\);/,
     );
     expect(labeledCodeBlock).toMatch(
       /padding-top:\s*var\(--markdown-code-labeled-padding-top\);/,
@@ -6036,6 +6088,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(languageLabelBlock).toMatch(/z-index:\s*2;/);
     expect(languageLabelBlock).toMatch(/pointer-events:\s*none;/);
+    expect(languageLabelBlock).toMatch(
+      /color:\s*var\(--markdown-code-language-color\);/,
+    );
     expect(codeScrollFadeBlock).toMatch(/position:\s*absolute;/);
     expect(codeScrollFadeBlock).toMatch(/top:\s*0;/);
     expect(codeScrollFadeBlock).toMatch(/bottom:\s*0;/);
@@ -6043,7 +6098,13 @@ describe("Gemini visual migration shell", () => {
     expect(codeScrollFadeBlock).toMatch(/width:\s*28px;/);
     expect(codeScrollFadeBlock).toMatch(/z-index:\s*1;/);
     expect(codeScrollFadeStartBlock).toMatch(/linear-gradient\(\s*90deg/);
+    expect(codeScrollFadeStartBlock).toMatch(
+      /var\(--markdown-code-edge-transparent\)\s*100%/,
+    );
     expect(codeScrollFadeEndBlock).toMatch(/linear-gradient\(\s*270deg/);
+    expect(codeScrollFadeEndBlock).toMatch(
+      /var\(--markdown-code-edge-transparent\)\s*100%/,
+    );
     expect(showHideButtonBlock).toMatch(
       /bottom:\s*calc\(-1 \* var\(--markdown-code-block-padding-y\)\);/,
     );
@@ -6054,14 +6115,10 @@ describe("Gemini visual migration shell", () => {
       /padding:\s*36px var\(--markdown-code-block-padding-start\) 12px;/,
     );
     expect(darkPreBlock).toMatch(
-      /--markdown-code-edge-surface:\s*rgba\(30,\s*30,\s*46,\s*0\.94\);/,
-    );
-    expect(darkPreBlock).toMatch(/background-color:\s*#1e1e2e;/);
-    expect(darkPreBlock).toMatch(
-      /border-color:\s*rgba\(255,\s*255,\s*255,\s*0\.08\);/,
+      /background-color:\s*var\(--markdown-code-block-background\);/,
     );
     expect(darkLanguageLabelBlock).toMatch(
-      /color:\s*rgba\(255,\s*255,\s*255,\s*0\.54\);/,
+      /color:\s*var\(--markdown-code-language-color\);/,
     );
     expect(copyButtonBlock).toMatch(
       /width:\s*var\(--markdown-code-action-size,\s*34px\);/,
@@ -6132,13 +6189,25 @@ describe("Gemini visual migration shell", () => {
     );
     expect(showHideButtonBlock).toMatch(/pointer-events:\s*none;/);
     expect(showHideButtonBlock).toMatch(
-      /background:\s*linear-gradient\(\s*180deg,\s*rgba\(248,\s*249,\s*250,\s*0\),\s*rgba\(248,\s*249,\s*250,\s*0\.96\)\s*58%\s*\);/,
+      /background:\s*linear-gradient\(\s*180deg,\s*var\(--markdown-code-fold-scrim-transparent\),\s*var\(--markdown-code-fold-scrim-solid\)\s*58%\s*\);/,
     );
     expect(showHideActionBlock).toMatch(/pointer-events:\s*auto;/);
     expect(showHideActionBlock).toMatch(/border-radius:\s*999px;/);
     expect(showHideActionBlock).toMatch(/letter-spacing:\s*0;/);
     expect(showHideActionBlock).toMatch(/margin:\s*0;/);
     expect(showHideActionBlock).toMatch(/min-height:\s*32px;/);
+    expect(showHideActionBlock).toMatch(
+      /border:\s*1px solid var\(--markdown-code-fold-button-border-color\);/,
+    );
+    expect(showHideActionBlock).toMatch(
+      /background:\s*var\(--markdown-code-fold-button-background\);/,
+    );
+    expect(showHideActionBlock).toMatch(
+      /color:\s*var\(--markdown-code-fold-button-color\);/,
+    );
+    expect(showHideActionBlock).toMatch(
+      /0 1px 2px var\(--markdown-code-fold-button-shadow-color\),[\s\S]*0 8px 18px var\(--markdown-code-fold-button-accent-shadow-color\);/,
+    );
     expect(showHideActionBlock).toMatch(
       /&:hover,\s*&:focus-visible[\s\S]*border-color:\s*var\(--markdown-code-fold-hover-border-color\);/,
     );
@@ -6155,7 +6224,7 @@ describe("Gemini visual migration shell", () => {
       /&:focus-visible[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 10px 24px var\(--markdown-code-fold-hover-shadow-color\);/,
     );
     expect(darkShowHideButtonBlock).toMatch(
-      /background:\s*linear-gradient\(\s*180deg,\s*rgba\(30,\s*30,\s*46,\s*0\),\s*rgba\(30,\s*30,\s*46,\s*0\.96\)\s*58%\s*\);/,
+      /background:\s*linear-gradient\(\s*180deg,\s*var\(--markdown-code-fold-scrim-transparent\),\s*var\(--markdown-code-fold-scrim-solid\)\s*58%\s*\);/,
     );
     expect(darkShowHideButtonBlock).toMatch(
       /&:hover,\s*&:focus-visible[\s\S]*border-color:\s*var\(--markdown-code-fold-hover-border-color\);/,
@@ -6171,6 +6240,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(codeFoldToneScope).not.toMatch(
       /rgba\((?:66,\s*133,\s*244|138,\s*180,\s*248)|#(?:4285f4|8ab4f8)\b/,
+    );
+    expect(codeChromeToneScope).not.toMatch(
+      /#(?:f8f9fa|1e1e2e)\b|rgba\((?:248,\s*249,\s*250|30,\s*30,\s*46|60,\s*64,\s*67|255,\s*255,\s*255|0,\s*0,\s*0)/,
     );
     expect(reducedMotionBlock).toContain(
       ".markdown-body pre .show-hide-button button",

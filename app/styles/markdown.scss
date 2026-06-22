@@ -181,6 +181,66 @@ summary,
     var(--markdown-link-color) 10%,
     transparent
   );
+  --markdown-code-block-background: color-mix(
+    in srgb,
+    var(--surface-soft) 64%,
+    var(--surface-elevated)
+  );
+  --markdown-code-block-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --markdown-code-edge-surface: color-mix(
+    in srgb,
+    var(--markdown-code-block-background) 94%,
+    transparent
+  );
+  --markdown-code-edge-transparent: color-mix(
+    in srgb,
+    var(--markdown-code-block-background) 0%,
+    transparent
+  );
+  --markdown-code-fold-scrim-transparent: color-mix(
+    in srgb,
+    var(--markdown-code-block-background) 0%,
+    transparent
+  );
+  --markdown-code-fold-scrim-solid: color-mix(
+    in srgb,
+    var(--markdown-code-block-background) 96%,
+    transparent
+  );
+  --markdown-code-fold-button-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --markdown-code-fold-button-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 92%,
+    transparent
+  );
+  --markdown-code-fold-button-color: color-mix(
+    in srgb,
+    var(--black) 82%,
+    transparent
+  );
+  --markdown-code-fold-button-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --markdown-code-fold-button-accent-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 8%,
+    transparent
+  );
+  --markdown-code-language-color: color-mix(
+    in srgb,
+    var(--black-50) 78%,
+    transparent
+  );
   --markdown-token-info-border-color: color-mix(
     in srgb,
     var(--black) 10%,
@@ -582,6 +642,66 @@ summary,
   --markdown-code-fold-hover-shadow-color: color-mix(
     in srgb,
     var(--markdown-link-color) 12%,
+    transparent
+  );
+  --markdown-code-block-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 72%,
+    var(--surface-soft)
+  );
+  --markdown-code-block-border-color: color-mix(
+    in srgb,
+    var(--black) 9%,
+    transparent
+  );
+  --markdown-code-edge-surface: color-mix(
+    in srgb,
+    var(--markdown-code-block-background) 94%,
+    transparent
+  );
+  --markdown-code-edge-transparent: color-mix(
+    in srgb,
+    var(--markdown-code-block-background) 0%,
+    transparent
+  );
+  --markdown-code-fold-scrim-transparent: color-mix(
+    in srgb,
+    var(--markdown-code-block-background) 0%,
+    transparent
+  );
+  --markdown-code-fold-scrim-solid: color-mix(
+    in srgb,
+    var(--markdown-code-block-background) 96%,
+    transparent
+  );
+  --markdown-code-fold-button-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --markdown-code-fold-button-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 84%,
+    transparent
+  );
+  --markdown-code-fold-button-color: color-mix(
+    in srgb,
+    var(--black) 78%,
+    transparent
+  );
+  --markdown-code-fold-button-shadow-color: color-mix(
+    in srgb,
+    var(--surface) 24%,
+    transparent
+  );
+  --markdown-code-fold-button-accent-shadow-color: color-mix(
+    in srgb,
+    var(--surface) 18%,
+    transparent
+  );
+  --markdown-code-language-color: color-mix(
+    in srgb,
+    var(--black) 58%,
     transparent
   );
   --markdown-token-info-border-color: color-mix(
@@ -2373,7 +2493,6 @@ summary,
 .markdown-body .highlight pre,
 .markdown-body pre {
   /* R4: Gemini-style refined code block card */
-  --markdown-code-edge-surface: rgba(248, 249, 250, 0.94);
   --markdown-code-block-radius: 8px;
   --markdown-code-block-padding-y: 14px;
   --markdown-code-block-padding-start: 16px;
@@ -2394,8 +2513,8 @@ summary,
   line-height: 1.6;
   border-radius: var(--markdown-code-block-radius);
   direction: ltr;
-  background-color: #f8f9fa;
-  border: 1px solid rgba(60, 64, 67, 0.1);
+  background-color: var(--markdown-code-block-background);
+  border: 1px solid var(--markdown-code-block-border-color);
   position: relative;
 }
 
@@ -2446,8 +2565,8 @@ summary,
   padding: 36px var(--markdown-code-block-padding-start) 12px;
   background: linear-gradient(
     180deg,
-    rgba(248, 249, 250, 0),
-    rgba(248, 249, 250, 0.96) 58%
+    var(--markdown-code-fold-scrim-transparent),
+    var(--markdown-code-fold-scrim-solid) 58%
   );
   pointer-events: none;
 
@@ -2459,13 +2578,13 @@ summary,
     min-height: 32px;
     margin: 0;
     padding: 0 14px;
-    border: 1px solid rgba(60, 64, 67, 0.12);
+    border: 1px solid var(--markdown-code-fold-button-border-color);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.92);
-    color: rgba(60, 64, 67, 0.82);
+    background: var(--markdown-code-fold-button-background);
+    color: var(--markdown-code-fold-button-color);
     box-shadow:
-      0 1px 2px rgba(60, 64, 67, 0.1),
-      0 8px 18px rgba(60, 64, 67, 0.08);
+      0 1px 2px var(--markdown-code-fold-button-shadow-color),
+      0 8px 18px var(--markdown-code-fold-button-accent-shadow-color);
     font-family: inherit;
     font-size: 12px;
     font-weight: 600;
@@ -2486,7 +2605,7 @@ summary,
       color: var(--markdown-code-fold-hover-color);
       transform: translateY(-1px);
       box-shadow:
-        0 1px 2px rgba(60, 64, 67, 0.12),
+        0 1px 2px var(--markdown-code-fold-button-shadow-color),
         0 10px 24px var(--markdown-code-fold-hover-shadow-color);
     }
 
@@ -2494,7 +2613,7 @@ summary,
       outline: none;
       box-shadow:
         var(--focus-ring-shadow),
-        0 1px 2px rgba(60, 64, 67, 0.12),
+        0 1px 2px var(--markdown-code-fold-button-shadow-color),
         0 10px 24px var(--markdown-code-fold-hover-shadow-color);
     }
 
@@ -2516,7 +2635,7 @@ summary,
       var(--markdown-code-block-padding-start)
   );
   overflow: hidden;
-  color: rgba(60, 64, 67, 0.56);
+  color: var(--markdown-code-language-color);
   font-size: 11px;
   font-weight: 600;
   line-height: 32px;
@@ -2541,7 +2660,7 @@ summary,
   background: linear-gradient(
     90deg,
     var(--markdown-code-edge-surface) 0%,
-    rgba(248, 249, 250, 0) 100%
+    var(--markdown-code-edge-transparent) 100%
   );
 }
 
@@ -2550,31 +2669,30 @@ summary,
   background: linear-gradient(
     270deg,
     var(--markdown-code-edge-surface) 0%,
-    rgba(248, 249, 250, 0) 100%
+    var(--markdown-code-edge-transparent) 100%
   );
 }
 
 .dark .markdown-body .highlight pre,
 .dark .markdown-body pre {
-  --markdown-code-edge-surface: rgba(30, 30, 46, 0.94);
-  background-color: #1e1e2e;
-  border-color: rgba(255, 255, 255, 0.08);
+  background-color: var(--markdown-code-block-background);
+  border-color: var(--markdown-code-block-border-color);
 }
 
 .dark .markdown-body pre .show-hide-button {
   background: linear-gradient(
     180deg,
-    rgba(30, 30, 46, 0),
-    rgba(30, 30, 46, 0.96) 58%
+    var(--markdown-code-fold-scrim-transparent),
+    var(--markdown-code-fold-scrim-solid) 58%
   );
 
   button {
-    border-color: rgba(255, 255, 255, 0.1);
-    background: rgba(32, 33, 36, 0.92);
-    color: rgba(232, 234, 237, 0.82);
+    border-color: var(--markdown-code-fold-button-border-color);
+    background: var(--markdown-code-fold-button-background);
+    color: var(--markdown-code-fold-button-color);
     box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.24),
-      0 8px 18px rgba(0, 0, 0, 0.18);
+      0 1px 2px var(--markdown-code-fold-button-shadow-color),
+      0 8px 18px var(--markdown-code-fold-button-accent-shadow-color);
 
     &:hover,
     &:focus-visible {
@@ -2582,21 +2700,21 @@ summary,
       background: var(--markdown-code-fold-hover-background);
       color: var(--markdown-code-fold-hover-color);
       box-shadow:
-        0 1px 2px rgba(0, 0, 0, 0.24),
+        0 1px 2px var(--markdown-code-fold-button-shadow-color),
         0 10px 24px var(--markdown-code-fold-hover-shadow-color);
     }
 
     &:focus-visible {
       box-shadow:
         var(--focus-ring-shadow),
-        0 1px 2px rgba(0, 0, 0, 0.24),
+        0 1px 2px var(--markdown-code-fold-button-shadow-color),
         0 10px 24px var(--markdown-code-fold-hover-shadow-color);
     }
   }
 }
 
 .dark .markdown-code-language {
-  color: rgba(255, 255, 255, 0.54);
+  color: var(--markdown-code-language-color);
 }
 
 .markdown-body pre code,
