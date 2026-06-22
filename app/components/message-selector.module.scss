@@ -24,6 +24,7 @@
     var(--black-50) 12%,
     transparent
   );
+  --message-selector-row-background: transparent;
   --message-selector-selected-background: color-mix(
     in srgb,
     var(--primary) 10%,
@@ -39,6 +40,32 @@
     var(--primary) 6%,
     transparent
   );
+  --message-selector-active-background: color-mix(
+    in srgb,
+    var(--primary) 12%,
+    transparent
+  );
+  --message-selector-date-color: color-mix(
+    in srgb,
+    var(--black-50) 68%,
+    transparent
+  );
+  --message-selector-content-color: color-mix(
+    in srgb,
+    var(--black) 82%,
+    transparent
+  );
+  --message-selector-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 56%,
+    transparent
+  );
+  --message-selector-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 16%,
+    transparent
+  );
+  --message-selector-radius: 8px;
 
   .message-filter {
     display: flex;
@@ -48,13 +75,15 @@
     .filter-item {
       min-height: 36px;
       border: 1px solid var(--message-selector-control-border-color);
-      border-radius: 8px;
+      border-radius: var(--message-selector-radius);
       background: var(--message-selector-control-background);
       color: var(--black);
 
       &:focus-visible {
         outline: var(--focus-ring);
         outline-offset: 2px;
+        border-color: var(--message-selector-focus-border-color);
+        box-shadow: 0 0 0 3px var(--message-selector-focus-shadow-color);
       }
     }
 
@@ -74,29 +103,12 @@
       }
     }
 
-    @media screen and (max-width: 600px) {
-      flex-direction: column;
-      gap: 12px;
-
-      .search-bar {
-        margin-right: 0;
-      }
-
-      .actions {
-        margin-top: 0;
-        width: 100%;
-
-        button {
-          flex-grow: 1;
-        }
-      }
-    }
   }
 
   .messages {
     margin-top: 20px;
     border: 1px solid var(--message-selector-panel-border-color);
-    border-radius: 8px;
+    border-radius: var(--message-selector-radius);
     overflow: hidden;
     background: var(--message-selector-panel-background);
     box-shadow: 0 12px 30px var(--message-selector-panel-shadow-color);
@@ -106,10 +118,19 @@
       align-items: center;
       padding: 8px 10px;
       cursor: pointer;
+      background-color: var(--message-selector-row-background);
       transition: background-color 0.16s ease;
 
       &:hover {
         background-color: var(--message-selector-hover-background);
+      }
+
+      &:focus-within {
+        background-color: var(--message-selector-hover-background);
+      }
+
+      &:active {
+        background-color: var(--message-selector-active-background);
       }
 
       &-selected {
@@ -126,29 +147,75 @@
       }
 
       .body {
-        flex: 1;
-        max-width: calc(100% - 80px);
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: none;
 
         .date {
           font-size: 12px;
           line-height: 1.2;
-          opacity: 0.5;
+          color: var(--message-selector-date-color);
         }
 
         .content {
           font-size: 12px;
+          color: var(--message-selector-content-color);
         }
       }
 
       .checkbox {
         display: flex;
         justify-content: flex-end;
-        flex: 1;
+        flex: 0 0 44px;
         min-width: 44px;
 
-        input[type="checkbox"]:not([aria-hidden="true"]):focus-visible {
+        input[type="checkbox"]:focus-visible {
           outline: var(--focus-ring);
           outline-offset: 2px;
+          box-shadow: 0 0 0 3px var(--message-selector-focus-shadow-color);
+        }
+      }
+    }
+  }
+
+  @media screen and (max-width: 600px) {
+    .message-filter {
+      flex-direction: column;
+      gap: 12px;
+
+      .search-bar {
+        width: 100%;
+        min-width: 0;
+        margin-right: 0;
+      }
+
+      .actions {
+        margin-top: 0;
+        width: 100%;
+
+        button {
+          flex: 1 1 0;
+        }
+      }
+    }
+
+    .messages {
+      margin-top: 16px;
+
+      .message {
+        align-items: flex-start;
+        gap: 8px;
+
+        .avatar {
+          margin-right: 0;
+        }
+
+        .body {
+          min-width: 0;
+        }
+
+        .checkbox {
+          flex: 0 0 44px;
         }
       }
     }
@@ -181,6 +248,7 @@
     var(--black) 9%,
     transparent
   );
+  --message-selector-row-background: transparent;
   --message-selector-selected-background: color-mix(
     in srgb,
     var(--primary) 14%,
@@ -196,6 +264,32 @@
     var(--primary) 9%,
     transparent
   );
+  --message-selector-active-background: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
+  --message-selector-date-color: color-mix(
+    in srgb,
+    var(--black-50) 76%,
+    transparent
+  );
+  --message-selector-content-color: color-mix(
+    in srgb,
+    var(--black) 88%,
+    transparent
+  );
+  --message-selector-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 52%,
+    transparent
+  );
+  --message-selector-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 22%,
+    transparent
+  );
+  --message-selector-radius: 8px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -225,6 +319,7 @@
       var(--black) 9%,
       transparent
     );
+    --message-selector-row-background: transparent;
     --message-selector-selected-background: color-mix(
       in srgb,
       var(--primary) 14%,
@@ -240,5 +335,31 @@
       var(--primary) 9%,
       transparent
     );
+    --message-selector-active-background: color-mix(
+      in srgb,
+      var(--primary) 18%,
+      transparent
+    );
+    --message-selector-date-color: color-mix(
+      in srgb,
+      var(--black-50) 76%,
+      transparent
+    );
+    --message-selector-content-color: color-mix(
+      in srgb,
+      var(--black) 88%,
+      transparent
+    );
+    --message-selector-focus-border-color: color-mix(
+      in srgb,
+      var(--primary) 52%,
+      transparent
+    );
+    --message-selector-focus-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 22%,
+      transparent
+    );
+    --message-selector-radius: 8px;
   }
 }

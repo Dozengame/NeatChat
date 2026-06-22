@@ -206,13 +206,6 @@ export function MessageSelector(props: {
               <div className={styles["checkbox"]}>
                 <input
                   type="checkbox"
-                  checked={isSelected}
-                  readOnly
-                  aria-hidden="true"
-                  tabIndex={-1}
-                />
-                <input
-                  type="checkbox"
                   aria-label={getMessageTextContent(m)}
                   checked={isSelected}
                   onChange={() => {

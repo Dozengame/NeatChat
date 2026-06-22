@@ -4750,7 +4750,8 @@
 }
 
 .chat-desktop-header-action-export {
-  display: none !important;
+  display: flex;
+  align-items: center;
 }
 
 .chat-desktop-header-action-fullscreen {

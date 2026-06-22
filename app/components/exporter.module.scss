@@ -128,6 +128,12 @@
         color: var(--export-stepper-step-hover-color);
       }
 
+      &:focus-visible {
+        outline: var(--focus-ring);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 3px var(--export-stepper-current-index-border-color);
+      }
+
       .step-index {
         background: var(--export-stepper-index-background);
         border: 1px solid var(--export-stepper-index-border-color);
@@ -198,6 +204,7 @@
     var(--black) 96%,
     transparent
   );
+  --export-stepper-current-color: var(--primary);
   --export-stepper-index-background: color-mix(
     in srgb,
     var(--surface-elevated) 82%,
@@ -262,6 +269,7 @@
       var(--black) 96%,
       transparent
     );
+    --export-stepper-current-color: var(--primary);
     --export-stepper-index-background: color-mix(
       in srgb,
       var(--surface-elevated) 82%,
@@ -286,16 +294,37 @@
 }
 
 .preview-actions {
-  margin-bottom: 20px;
+  --export-preview-actions-gap: 8px;
+  --export-preview-action-min-width: min(150px, 100%);
+  margin-bottom: 16px;
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--export-preview-actions-gap);
 
   button {
-    flex-grow: 1;
+    flex: 1 1 0;
+    min-width: var(--export-preview-action-min-width);
 
     &:not(:last-child) {
-      margin-right: 10px;
+      margin-right: 0;
     }
+  }
+
+  @media screen and (max-width: 600px) {
+    flex-wrap: wrap;
+
+    button {
+      flex: 1 1 100%;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .steps-progress-inner,
+  .step {
+    transition-duration: 0.01ms !important;
   }
 }
 
