@@ -218,6 +218,14 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-empty-suggestion-text",
     );
+    const emptySuggestionTitleBlock = readCssBlock(
+      chatStyles,
+      ".chat-empty-suggestion-title",
+    );
+    const emptySuggestionIconWrapperBlock = readCssBlock(
+      chatStyles,
+      ".chat-empty-suggestion-icon-wrapper",
+    );
     const emptySuggestionAffordanceBlock = readCssBlock(
       chatStyles,
       ".chat-empty-suggestion-affordance",
@@ -225,6 +233,39 @@ describe("Gemini visual migration shell", () => {
     const emptySuggestionFocusAffordanceBlock = readCssBlock(
       chatStyles,
       ".chat-empty-suggestion:focus-visible .chat-empty-suggestion-affordance",
+    );
+    const darkEmptySuggestionBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-empty-suggestion",
+    );
+    const darkEmptySuggestionTitleBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-empty-suggestion-title",
+    );
+    const darkEmptySuggestionTextBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-empty-suggestion-text",
+    );
+    const darkEmptySuggestionIconWrapperBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-empty-suggestion-icon-wrapper",
+    );
+    const darkEmptySuggestionAffordanceBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-empty-suggestion-affordance",
+    );
+    const autoDarkEmptySuggestionSelector =
+      ":global(body:not(.light)) .chat-empty-suggestion";
+    const autoDarkEmptySuggestionSelectorIndex = chatStyles.indexOf(
+      autoDarkEmptySuggestionSelector,
+    );
+    const autoDarkEmptySuggestionMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkEmptySuggestionSelectorIndex,
+    );
+    const autoDarkEmptySuggestionBlock = readCssBlock(
+      chatStyles.slice(autoDarkEmptySuggestionMediaIndex),
+      autoDarkEmptySuggestionSelector,
     );
     const actionMenuRootDeclarations = readRootDeclarations(actionMenuBlock);
     const actionMenuActiveActionBlock = readCssBlock(
@@ -285,6 +326,21 @@ describe("Gemini visual migration shell", () => {
     ].join("\n");
     const legacyPromptHintSelectedPaint =
       /rgba\(66,\s*133,\s*244,\s*(?:0\.1|0\.18|0\.22)\)/;
+    const emptySuggestionToneScope = [
+      emptySuggestionBlock,
+      emptySuggestionTitleBlock,
+      emptySuggestionTextBlock,
+      emptySuggestionIconWrapperBlock,
+      emptySuggestionAffordanceBlock,
+      darkEmptySuggestionBlock,
+      darkEmptySuggestionTitleBlock,
+      darkEmptySuggestionTextBlock,
+      darkEmptySuggestionIconWrapperBlock,
+      darkEmptySuggestionAffordanceBlock,
+      autoDarkEmptySuggestionBlock,
+    ].join("\n");
+    const legacyEmptySuggestionPaint =
+      /(?:rgba\((?:255,\s*255,\s*255|60,\s*64,\s*67|49,\s*94,\s*248|138,\s*180,\s*248)|#[0-9a-fA-F]{3,6})/;
     const mobileActionMenuBlock = readCssBlock(
       mobileStyles,
       ".chat-input-action-menu",
@@ -1587,20 +1643,110 @@ describe("Gemini visual migration shell", () => {
     expect(emptySuggestionBlock).toMatch(/justify-content:\s*center;/);
     expect(emptySuggestionBlock).toMatch(/gap:\s*8px;/);
     expect(emptySuggestionBlock).toMatch(/width:\s*100%;/);
+    expect(emptySuggestionBlock).toMatch(
+      /--chat-empty-suggestion-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\);/,
+    );
+    expect(emptySuggestionBlock).toMatch(
+      /--chat-empty-suggestion-border-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 14%,\s*transparent\);/,
+    );
+    expect(emptySuggestionBlock).toMatch(
+      /--chat-empty-suggestion-title-color:\s*color-mix\(in srgb,\s*var\(--black\) 92%,\s*transparent\);/,
+    );
+    expect(emptySuggestionBlock).toMatch(
+      /--chat-empty-suggestion-radius:\s*8px;/,
+    );
+    expect(emptySuggestionBlock).toMatch(
+      /border:\s*1px solid var\(--chat-empty-suggestion-border-color\);/,
+    );
+    expect(emptySuggestionBlock).toMatch(
+      /border-radius:\s*var\(--chat-empty-suggestion-radius\);/,
+    );
+    expect(emptySuggestionBlock).toMatch(
+      /background:\s*var\(--chat-empty-suggestion-background\);/,
+    );
+    expect(emptySuggestionBlock).toMatch(
+      /color:\s*var\(--chat-empty-suggestion-color\);/,
+    );
+    expect(emptySuggestionBlock).toMatch(
+      /box-shadow:\s*0 4px 18px var\(--chat-empty-suggestion-shadow-color\);/,
+    );
+    expect(emptySuggestionBlock).toMatch(
+      /&:hover,\s*&:focus-visible\s*\{[\s\S]*border-color:\s*var\(--chat-empty-suggestion-hover-border-color\);[\s\S]*background:\s*var\(--chat-empty-suggestion-hover-background\);/,
+    );
+    expect(emptySuggestionBlock).toMatch(
+      /&:focus-visible\s*\{[\s\S]*outline:\s*var\(--focus-ring\);[\s\S]*outline-offset:\s*2px;[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\),[\s\S]*0 0 0 3px var\(--chat-empty-suggestion-ring-color\);/,
+    );
     expect(emptySuggestionBlock).toContain("&:active");
     expect(emptySuggestionBlock).toMatch(
       /&:active[\s\S]*transform:\s*translateY\(0\) scale\(0\.995\);/,
     );
-    expect(emptySuggestionAffordanceBlock).toMatch(/flex:\s*0 0 18px;/);
-    expect(emptySuggestionAffordanceBlock).toMatch(/width:\s*18px;/);
-    expect(emptySuggestionAffordanceBlock).toMatch(/height:\s*18px;/);
+    expect(emptySuggestionTitleBlock).toMatch(
+      /color:\s*var\(--chat-empty-suggestion-title-color\);/,
+    );
+    expect(emptySuggestionTextBlock).toMatch(
+      /color:\s*var\(--chat-empty-suggestion-text-color\)\s*!important;/,
+    );
+    expect(emptySuggestionIconWrapperBlock).toMatch(
+      /background:\s*var\(--chat-empty-suggestion-icon-background\);/,
+    );
+    expect(emptySuggestionIconWrapperBlock).toMatch(
+      /color:\s*var\(--chat-empty-suggestion-icon-color\);/,
+    );
+    expect(emptySuggestionAffordanceBlock).toMatch(/flex:\s*0 0 24px;/);
+    expect(emptySuggestionAffordanceBlock).toMatch(/width:\s*24px;/);
+    expect(emptySuggestionAffordanceBlock).toMatch(/height:\s*24px;/);
     expect(emptySuggestionAffordanceBlock).toMatch(/border-radius:\s*999px;/);
+    expect(emptySuggestionAffordanceBlock).toMatch(
+      /background:\s*var\(--chat-empty-suggestion-affordance-background\);/,
+    );
+    expect(emptySuggestionAffordanceBlock).toMatch(
+      /color:\s*var\(--chat-empty-suggestion-affordance-color\);/,
+    );
     expect(emptySuggestionAffordanceBlock).toMatch(/font-size:\s*12px;/);
     expect(emptySuggestionFocusAffordanceBlock).toMatch(
       /transform:\s*translateX\(2px\);/,
     );
     expect(emptySuggestionFocusAffordanceBlock).toMatch(
-      /background-color:\s*rgba\(49,\s*94,\s*248,\s*0\.1\);/,
+      /background-color:\s*var\(--chat-empty-suggestion-affordance-hover-background\);/,
+    );
+    expect(emptySuggestionFocusAffordanceBlock).toMatch(
+      /color:\s*var\(--chat-empty-suggestion-affordance-hover-color\);/,
+    );
+    expect(darkEmptySuggestionBlock).toMatch(
+      /--chat-empty-suggestion-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 78%,\s*transparent\);/,
+    );
+    expect(darkEmptySuggestionBlock).toMatch(
+      /--chat-empty-suggestion-hover-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--surface\)\);/,
+    );
+    expect(darkEmptySuggestionBlock).toMatch(
+      /--chat-empty-suggestion-affordance-hover-color:\s*color-mix\(in srgb,\s*var\(--primary\) 44%,\s*var\(--black\)\);/,
+    );
+    expect(darkEmptySuggestionBlock).toMatch(
+      /&:focus-visible\s*\{[\s\S]*outline:\s*var\(--focus-ring\);[\s\S]*outline-offset:\s*2px;[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\),[\s\S]*0 0 0 3px var\(--chat-empty-suggestion-ring-color\);/,
+    );
+    expect(darkEmptySuggestionTitleBlock).toMatch(
+      /color:\s*var\(--chat-empty-suggestion-title-color\);/,
+    );
+    expect(darkEmptySuggestionTextBlock).toMatch(
+      /color:\s*var\(--chat-empty-suggestion-text-color\)\s*!important;/,
+    );
+    expect(darkEmptySuggestionIconWrapperBlock).toMatch(
+      /background:\s*var\(--chat-empty-suggestion-icon-background\);/,
+    );
+    expect(darkEmptySuggestionAffordanceBlock).toMatch(
+      /background:\s*var\(--chat-empty-suggestion-affordance-background\);/,
+    );
+    expect(autoDarkEmptySuggestionSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkEmptySuggestionMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkEmptySuggestionBlock).toMatch(
+      /--chat-empty-suggestion-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 78%,\s*transparent\);/,
+    );
+    expect(autoDarkEmptySuggestionBlock).toMatch(
+      /--chat-empty-suggestion-hover-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--surface\)\);/,
+    );
+    expect(emptySuggestionToneScope).not.toMatch(legacyEmptySuggestionPaint);
+    expect(reducedMotionBlock).toMatch(
+      /\.prompt-hints,\s*\.prompt-hint\s*\{[\s\S]*animation:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
     );
     expect(reducedMotionBlock).toMatch(
       /\.chat-empty-suggestion,\s*\.chat-empty-suggestion-affordance\s*\{[\s\S]*transition-duration:\s*0\.01ms !important;/,
