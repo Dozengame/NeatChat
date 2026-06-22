@@ -1,6 +1,7 @@
 import { Select } from "@/app/components/ui-lib";
 
 import { ControlParamItem } from "./control-param-item";
+import styles from "./sd-panel.module.scss";
 
 export function ControlParam(props: {
   columns: any[];
@@ -22,7 +23,7 @@ export function ControlParam(props: {
                 <textarea
                   aria-label={item.name}
                   rows={item.rows || 3}
-                  style={{ maxWidth: "100%", width: "100%", padding: "10px" }}
+                  className={styles["ctrl-param-field"]}
                   placeholder={item.placeholder}
                   onChange={(e) => {
                     props.onChange(item.value, e.currentTarget.value);
@@ -41,6 +42,7 @@ export function ControlParam(props: {
               >
                 <Select
                   aria-label={item.name}
+                  className={styles["ctrl-param-select"]}
                   value={props.data[item.value]}
                   onChange={(e) => {
                     props.onChange(item.value, e.currentTarget.value);
@@ -66,6 +68,7 @@ export function ControlParam(props: {
               >
                 <input
                   aria-label={item.name}
+                  className={styles["ctrl-param-field"]}
                   type="number"
                   min={item.min}
                   max={item.max}
@@ -86,9 +89,9 @@ export function ControlParam(props: {
               >
                 <input
                   aria-label={item.name}
+                  className={styles["ctrl-param-field"]}
                   type="text"
                   value={props.data[item.value]}
-                  style={{ maxWidth: "100%", width: "100%" }}
                   onChange={(e) => {
                     props.onChange(item.value, e.currentTarget.value);
                   }}

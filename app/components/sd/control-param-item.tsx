@@ -14,7 +14,9 @@ export function ControlParamItem(props: {
         <div className={styles["ctrl-param-item-title"]}>
           <div>
             {props.title}
-            {props.required && <span style={{ color: "red" }}>*</span>}
+            {props.required && (
+              <span className={styles["ctrl-param-item-required"]}>*</span>
+            )}
           </div>
         </div>
       </div>

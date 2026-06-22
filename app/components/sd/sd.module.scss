@@ -1,25 +1,124 @@
 .sd-img-list {
   --sd-output-thumb-radius: 8px;
-  --sd-output-thumb-background: color-mix(in srgb, var(--surface-soft) 82%, transparent);
-  --sd-output-thumb-border-color: color-mix(in srgb, var(--black-50) 12%, transparent);
+  --sd-output-card-radius: 8px;
+  --sd-output-thumb-background: color-mix(
+    in srgb,
+    var(--surface-soft) 82%,
+    transparent
+  );
+  --sd-output-thumb-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
   --sd-output-thumb-color: color-mix(in srgb, var(--black-50) 74%, transparent);
-  --sd-output-thumb-shadow-color: color-mix(in srgb, var(--black-50) 10%, transparent);
+  --sd-output-thumb-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --sd-output-card-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 88%,
+    transparent
+  );
+  --sd-output-card-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --sd-output-card-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 6%,
+    transparent
+  );
+  --sd-output-title-color: var(--black);
+  --sd-output-meta-color: color-mix(in srgb, var(--black) 62%, transparent);
+  --sd-output-inline-hover-color: color-mix(
+    in srgb,
+    var(--primary) 76%,
+    var(--black)
+  );
+  --sd-output-status-success-base: #168a45;
+  --sd-output-status-error-base: #b3261e;
+  --sd-output-status-wait-base: #8a6100;
+  --sd-output-status-default-color: color-mix(
+    in srgb,
+    var(--black) 58%,
+    transparent
+  );
+  --sd-output-status-success-color: color-mix(
+    in srgb,
+    var(--sd-output-status-success-base) 82%,
+    var(--black)
+  );
+  --sd-output-status-error-color: color-mix(
+    in srgb,
+    var(--sd-output-status-error-base) 82%,
+    var(--black)
+  );
+  --sd-output-status-wait-color: color-mix(
+    in srgb,
+    var(--sd-output-status-wait-base) 80%,
+    var(--black)
+  );
+  --sd-output-status-running-color: color-mix(
+    in srgb,
+    var(--primary) 76%,
+    var(--black)
+  );
+  --sd-output-empty-background: color-mix(
+    in srgb,
+    var(--surface-soft) 78%,
+    transparent
+  );
+  --sd-output-empty-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --sd-output-param-background: color-mix(
+    in srgb,
+    var(--surface-soft) 72%,
+    transparent
+  );
+  --sd-output-param-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
 
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 12px;
 
   .sd-img-item {
-    width: 48%;
+    display: flex;
+    gap: 12px;
+    width: calc(50% - 6px);
+    min-width: 320px;
+    padding: 10px;
+    box-sizing: border-box;
+    border: 1px solid var(--sd-output-card-border-color);
+    border-radius: var(--sd-output-card-radius);
+    background: var(--sd-output-card-background);
+    box-shadow: 0 8px 24px var(--sd-output-card-shadow-color);
 
     .sd-img-item-info {
       flex: 1;
       width: 100%;
+      min-width: 0;
       overflow: hidden;
       user-select: text;
+      color: var(--sd-output-meta-color);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
 
       p {
-        margin: 6px;
+        margin: 0;
         font-size: 12px;
       }
 
@@ -28,6 +127,71 @@
         white-space: nowrap;
         text-overflow: ellipsis;
       }
+    }
+
+    .sd-img-item-prompt {
+      color: var(--sd-output-title-color);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .sd-img-item-status {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      color: var(--sd-output-status-default-color);
+      font-size: 12px;
+
+      &[data-status="success"] {
+        color: var(--sd-output-status-success-color);
+      }
+
+      &[data-status="error"] {
+        color: var(--sd-output-status-error-color);
+      }
+
+      &[data-status="wait"] {
+        color: var(--sd-output-status-wait-color);
+      }
+
+      &[data-status="running"] {
+        color: var(--sd-output-status-running-color);
+      }
+    }
+
+    .sd-img-item-inline-action {
+      display: inline-block;
+      max-width: 100%;
+      overflow: hidden;
+      vertical-align: bottom;
+      white-space: nowrap;
+      text-align: left;
+      text-overflow: ellipsis;
+      background: none;
+      border: 0;
+      color: inherit;
+      padding: 0;
+      font: inherit;
+      cursor: pointer;
+
+      &:hover {
+        color: var(--sd-output-inline-hover-color);
+      }
+
+      &:focus-visible {
+        outline: var(--focus-ring);
+        outline-offset: 2px;
+      }
+    }
+
+    .sd-img-item-actions {
+      margin-top: 8px;
+    }
+
+    .sd-img-item-action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
     }
 
     .pre-img {
@@ -55,6 +219,9 @@
     }
 
     button.img {
+      background: none;
+      border: 0;
+      padding: 0;
       box-shadow: 0 10px 28px var(--sd-output-thumb-shadow-color);
 
       &:hover {
@@ -77,31 +244,313 @@
     }
 
     &:not(:last-child) {
-      margin-bottom: 20px;
+      margin-bottom: 0;
     }
+  }
+
+  .sd-img-empty {
+    width: 100%;
+    min-height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 24px;
+    color: var(--sd-output-meta-color);
+    background: var(--sd-output-empty-background);
+    border: 1px solid var(--sd-output-empty-border-color);
+    border-radius: var(--sd-output-card-radius);
   }
 }
 
 :global(.dark) .sd-img-list {
-  --sd-output-thumb-background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
-  --sd-output-thumb-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --sd-output-thumb-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 78%,
+    transparent
+  );
+  --sd-output-thumb-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
   --sd-output-thumb-color: color-mix(in srgb, var(--black) 72%, transparent);
-  --sd-output-thumb-shadow-color: color-mix(in srgb, var(--gray) 28%, transparent);
+  --sd-output-thumb-shadow-color: color-mix(
+    in srgb,
+    var(--gray) 28%,
+    transparent
+  );
+  --sd-output-card-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 82%,
+    transparent
+  );
+  --sd-output-card-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --sd-output-card-shadow-color: color-mix(
+    in srgb,
+    var(--gray) 18%,
+    transparent
+  );
+  --sd-output-title-color: var(--black);
+  --sd-output-meta-color: color-mix(in srgb, var(--black) 70%, transparent);
+  --sd-output-inline-hover-color: color-mix(
+    in srgb,
+    var(--primary) 70%,
+    var(--black)
+  );
+  --sd-output-status-success-base: #6fbf8c;
+  --sd-output-status-error-base: #ffb4ab;
+  --sd-output-status-wait-base: #e2c16d;
+  --sd-output-status-default-color: color-mix(
+    in srgb,
+    var(--black) 66%,
+    transparent
+  );
+  --sd-output-status-success-color: color-mix(
+    in srgb,
+    var(--sd-output-status-success-base) 78%,
+    var(--black)
+  );
+  --sd-output-status-error-color: color-mix(
+    in srgb,
+    var(--sd-output-status-error-base) 78%,
+    var(--black)
+  );
+  --sd-output-status-wait-color: color-mix(
+    in srgb,
+    var(--sd-output-status-wait-base) 78%,
+    var(--black)
+  );
+  --sd-output-status-running-color: color-mix(
+    in srgb,
+    var(--primary) 70%,
+    var(--black)
+  );
+  --sd-output-empty-background: color-mix(
+    in srgb,
+    var(--surface-soft) 72%,
+    transparent
+  );
+  --sd-output-empty-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --sd-output-param-background: color-mix(
+    in srgb,
+    var(--surface-soft) 68%,
+    transparent
+  );
+  --sd-output-param-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
 }
 
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .sd-img-list {
-    --sd-output-thumb-background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
-    --sd-output-thumb-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+    --sd-output-thumb-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 78%,
+      transparent
+    );
+    --sd-output-thumb-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
     --sd-output-thumb-color: color-mix(in srgb, var(--black) 72%, transparent);
-    --sd-output-thumb-shadow-color: color-mix(in srgb, var(--gray) 28%, transparent);
+    --sd-output-thumb-shadow-color: color-mix(
+      in srgb,
+      var(--gray) 28%,
+      transparent
+    );
+    --sd-output-card-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 82%,
+      transparent
+    );
+    --sd-output-card-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --sd-output-card-shadow-color: color-mix(
+      in srgb,
+      var(--gray) 18%,
+      transparent
+    );
+    --sd-output-title-color: var(--black);
+    --sd-output-meta-color: color-mix(in srgb, var(--black) 70%, transparent);
+    --sd-output-inline-hover-color: color-mix(
+      in srgb,
+      var(--primary) 70%,
+      var(--black)
+    );
+    --sd-output-status-success-base: #6fbf8c;
+    --sd-output-status-error-base: #ffb4ab;
+    --sd-output-status-wait-base: #e2c16d;
+    --sd-output-status-default-color: color-mix(
+      in srgb,
+      var(--black) 66%,
+      transparent
+    );
+    --sd-output-status-success-color: color-mix(
+      in srgb,
+      var(--sd-output-status-success-base) 78%,
+      var(--black)
+    );
+    --sd-output-status-error-color: color-mix(
+      in srgb,
+      var(--sd-output-status-error-base) 78%,
+      var(--black)
+    );
+    --sd-output-status-wait-color: color-mix(
+      in srgb,
+      var(--sd-output-status-wait-base) 78%,
+      var(--black)
+    );
+    --sd-output-status-running-color: color-mix(
+      in srgb,
+      var(--primary) 70%,
+      var(--black)
+    );
+    --sd-output-empty-background: color-mix(
+      in srgb,
+      var(--surface-soft) 72%,
+      transparent
+    );
+    --sd-output-empty-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --sd-output-param-background: color-mix(
+      in srgb,
+      var(--surface-soft) 68%,
+      transparent
+    );
+    --sd-output-param-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+  }
+}
+
+.sd-img-modal-detail {
+  --sd-output-status-error-color: color-mix(in srgb, #b3261e 82%, var(--black));
+
+  user-select: text;
+  word-break: break-word;
+  color: var(--black);
+  line-height: 1.6;
+
+  &[data-status="error"] {
+    color: var(--sd-output-status-error-color);
+  }
+}
+
+.sd-img-params-detail {
+  --sd-output-param-background: color-mix(
+    in srgb,
+    var(--surface-soft) 72%,
+    transparent
+  );
+  --sd-output-param-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+
+  user-select: text;
+  display: grid;
+  gap: 8px;
+
+  .sd-img-params-detail-row {
+    padding: 8px 10px;
+    border: 1px solid var(--sd-output-param-border-color);
+    border-radius: 8px;
+    background: var(--sd-output-param-background);
+    word-break: break-word;
+  }
+}
+
+:global(.dark) .sd-img-modal-detail {
+  --sd-output-status-error-color: color-mix(in srgb, #ffb4ab 78%, var(--black));
+}
+
+:global(.dark) .sd-img-params-detail {
+  --sd-output-param-background: color-mix(
+    in srgb,
+    var(--surface-soft) 68%,
+    transparent
+  );
+  --sd-output-param-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .sd-img-modal-detail {
+    --sd-output-status-error-color: color-mix(
+      in srgb,
+      #ffb4ab 78%,
+      var(--black)
+    );
+  }
+
+  :global(body:not(.light)) .sd-img-params-detail {
+    --sd-output-param-background: color-mix(
+      in srgb,
+      var(--surface-soft) 68%,
+      transparent
+    );
+    --sd-output-param-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
   }
 }
 
 @media only screen and (max-width: 600px) {
   .sd-img-list {
+    gap: 10px;
+
     .sd-img-item {
       width: 100%;
+      min-width: 0;
+      padding: 10px;
+    }
+
+    .sd-img-item-action-row {
+      gap: 4px;
+    }
+  }
+}
+
+@media only screen and (max-width: 360px) {
+  .sd-img-list {
+    .sd-img-item {
+      gap: 10px;
+    }
+
+    .pre-img {
+      width: 112px;
+      height: 112px;
+    }
+
+    .img {
+      width: 112px;
+      height: 112px;
     }
   }
 }

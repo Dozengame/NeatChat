@@ -26,7 +26,6 @@ import { useSdStore } from "@/app/store/sd";
 import LoadingIcon from "@/app/icons/three-dots.svg";
 import ErrorIcon from "@/app/icons/delete.svg";
 import SDIcon from "@/app/icons/sd.svg";
-import { Property } from "csstype";
 import {
   showConfirm,
   showImageModal,
@@ -41,32 +40,27 @@ import clsx from "clsx";
 
 function getSdTaskStatus(item: any) {
   let s: string;
-  let color: Property.Color | undefined = undefined;
   switch (item.status) {
     case "success":
       s = Locale.Sd.Status.Success;
-      color = "green";
       break;
     case "error":
       s = Locale.Sd.Status.Error;
-      color = "red";
       break;
     case "wait":
       s = Locale.Sd.Status.Wait;
-      color = "yellow";
       break;
     case "running":
       s = Locale.Sd.Status.Running;
-      color = "blue";
       break;
     default:
       s = item.status.toUpperCase();
   }
   return (
     <div
-      className={styles["line-1"]}
+      className={clsx(styles["line-1"], styles["sd-img-item-status"])}
+      data-status={item.status}
       title={item.error}
-      style={{ color: color }}
     >
       <span>
         {Locale.Sd.Status.Name}: {s}
@@ -74,22 +68,19 @@ function getSdTaskStatus(item: any) {
       {item.status === "error" && (
         <button
           type="button"
-          className="clickable"
+          className={clsx("clickable", styles["sd-img-item-inline-action"])}
           onClick={() => {
             showModal({
               title: Locale.Sd.Detail,
               children: (
-                <div style={{ color: color, userSelect: "text" }}>
+                <div
+                  className={styles["sd-img-modal-detail"]}
+                  data-status={item.status}
+                >
                   {item.error}
                 </div>
               ),
             });
-          }}
-          style={{
-            background: "none",
-            border: 0,
-            color: "inherit",
-            padding: 0,
           }}
         >
           - {item.error}
@@ -175,16 +166,13 @@ export function Sd() {
               {sdImages.length > 0 ? (
                 sdImages.map((item: any) => {
                   return (
-                    <div
-                      key={item.id}
-                      style={{ display: "flex" }}
-                      className={styles["sd-img-item"]}
-                    >
+                    <div key={item.id} className={styles["sd-img-item"]}>
                       {item.status === "success" ? (
                         <>
                           <button
                             type="button"
                             className={styles["img"]}
+                            title={item.params.prompt || item.id}
                             onClick={() =>
                               showImageModal(
                                 item.img_data,
@@ -197,17 +185,12 @@ export function Sd() {
                                   : { width: "100%", height: "100%" },
                               )
                             }
-                            style={{
-                              background: "none",
-                              border: 0,
-                              padding: 0,
-                            }}
                           >
                             <Image
                               unoptimized
                               className={styles["img"]}
                               src={item.img_data}
-                              alt={item.id}
+                              alt={item.params.prompt || item.id}
                               width={512}
                               height={512}
                             />
@@ -222,31 +205,32 @@ export function Sd() {
                           <LoadingIcon />
                         </div>
                       )}
-                      <div
-                        style={{ marginLeft: "10px" }}
-                        className={styles["sd-img-item-info"]}
-                      >
-                        <div className={styles["line-1"]}>
+                      <div className={styles["sd-img-item-info"]}>
+                        <div
+                          className={clsx(
+                            styles["line-1"],
+                            styles["sd-img-item-prompt"],
+                          )}
+                        >
                           {Locale.SdPanel.Prompt}:{" "}
                           <button
                             type="button"
-                            className="clickable"
+                            className={clsx(
+                              "clickable",
+                              styles["sd-img-item-inline-action"],
+                            )}
                             title={item.params.prompt}
                             onClick={() => {
                               showModal({
                                 title: Locale.Sd.Detail,
                                 children: (
-                                  <div style={{ userSelect: "text" }}>
+                                  <div
+                                    className={styles["sd-img-modal-detail"]}
+                                  >
                                     {item.params.prompt}
                                   </div>
                                 ),
                               });
-                            }}
-                            style={{
-                              background: "none",
-                              border: 0,
-                              color: "inherit",
-                              padding: 0,
                             }}
                           >
                             {item.params.prompt}
@@ -257,8 +241,18 @@ export function Sd() {
                         </p>
                         {getSdTaskStatus(item)}
                         <p>{item.created_at}</p>
-                        <div className={chatStyles["chat-message-actions"]}>
-                          <div className={chatStyles["chat-input-actions"]}>
+                        <div
+                          className={clsx(
+                            chatStyles["chat-message-actions"],
+                            styles["sd-img-item-actions"],
+                          )}
+                        >
+                          <div
+                            className={clsx(
+                              chatStyles["chat-input-actions"],
+                              styles["sd-img-item-action-row"],
+                            )}
+                          >
                             <ChatAction
                               text={Locale.Sd.Actions.Params}
                               icon={<PromptIcon />}
@@ -266,7 +260,9 @@ export function Sd() {
                                 showModal({
                                   title: Locale.Sd.GenerateParams,
                                   children: (
-                                    <div style={{ userSelect: "text" }}>
+                                    <div
+                                      className={styles["sd-img-params-detail"]}
+                                    >
                                       {Object.keys(item.params).map((key) => {
                                         let label = key;
                                         let value = item.params[key];
@@ -307,7 +303,9 @@ export function Sd() {
                                         return (
                                           <div
                                             key={key}
-                                            style={{ margin: "10px" }}
+                                            className={
+                                              styles["sd-img-params-detail-row"]
+                                            }
                                           >
                                             <strong>{label}: </strong>
                                             {value}
@@ -360,7 +358,9 @@ export function Sd() {
                   );
                 })
               ) : (
-                <div>{Locale.Sd.EmptyRecord}</div>
+                <div className={styles["sd-img-empty"]}>
+                  {Locale.Sd.EmptyRecord}
+                </div>
               )}
             </div>
           </div>

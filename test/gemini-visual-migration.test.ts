@@ -6463,6 +6463,11 @@ describe("Gemini visual migration shell", () => {
     const rootDeclarations = readRootDeclarations(rootBlock);
     const textareaBlock = readCssBlock(rootBlock, "textarea");
     const textareaFocusBlock = readCssBlock(textareaBlock, "&:focus-visible");
+    const inputBlock = readCssBlock(rootBlock, "input.ctrl-param-field");
+    const inputFocusBlock = readCssBlock(inputBlock, "&:focus-visible");
+    const selectBlock = readCssBlock(rootBlock, ".ctrl-param-select");
+    const selectNativeBlock = readCssBlock(selectBlock, "select");
+    const requiredBlock = readCssBlock(rootBlock, ".ctrl-param-item-required");
     const darkRootBlock = readCssBlock(
       sdPanelStyles,
       ":global(.dark) .ctrl-param-item",
@@ -6489,24 +6494,29 @@ describe("Gemini visual migration shell", () => {
     expect(controlParam).toContain("<textarea");
     expect(controlParam).toContain("aria-label={item.name}");
     expect(controlParam).toContain("rows={item.rows || 3}");
+    expect(controlParam).toContain('className={styles["ctrl-param-field"]}');
+    expect(controlParam).toContain('className={styles["ctrl-param-select"]}');
     expect(controlParam).toContain("placeholder={item.placeholder}");
     expect(controlParam).toContain(
       "props.onChange(item.value, e.currentTarget.value);",
     );
     expect(controlParam).toContain("value={props.data[item.value]}");
+    expect(controlParam).not.toContain('style={{ maxWidth: "100%"');
     expect(controlParamItem).toContain('styles["ctrl-param-item"]');
+    expect(controlParamItem).toContain('styles["ctrl-param-item-required"]');
+    expect(controlParamItem).not.toContain('style={{ color: "red" }}');
     expect(rootDeclarations).toMatch(/--sd-panel-field-radius:\s*8px;/);
     expect(rootDeclarations).toMatch(
-      /--sd-panel-field-border-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 12%,\s*transparent\);/,
+      /--sd-panel-field-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
     );
     expect(rootDeclarations).toMatch(
-      /--sd-panel-field-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 92%,\s*transparent\);/,
+      /--sd-panel-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*transparent\s*\);/,
     );
     expect(rootDeclarations).toMatch(
-      /--sd-panel-field-focus-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 42%,\s*transparent\);/,
+      /--sd-panel-field-focus-border-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 42%,\s*transparent\s*\);/,
     );
     expect(rootDeclarations).toMatch(
-      /--sd-panel-field-focus-shadow:\s*0 0 0 3px color-mix\(in srgb,\s*var\(--primary\) 10%,\s*transparent\);/,
+      /--sd-panel-field-focus-shadow:\s*0 0 0 3px\s*color-mix\(in srgb,\s*var\(--primary\) 10%,\s*transparent\);/,
     );
     expect(textareaBlock).toMatch(/appearance:\s*none;/);
     expect(textareaBlock).toMatch(
@@ -6519,6 +6529,9 @@ describe("Gemini visual migration shell", () => {
       /background:\s*var\(--sd-panel-field-background\);/,
     );
     expect(textareaBlock).toMatch(/color:\s*var\(--sd-panel-field-color\);/);
+    expect(textareaBlock).toMatch(/width:\s*100%;/);
+    expect(textareaBlock).toMatch(/max-width:\s*100%;/);
+    expect(textareaBlock).toMatch(/padding:\s*10px;/);
     expect(textareaBlock).toMatch(/font-family:\s*inherit;/);
     expect(textareaBlock).toMatch(
       /transition:[\s\S]*border-color 0\.18s ease,[\s\S]*box-shadow 0\.18s ease,[\s\S]*background 0\.18s ease;/,
@@ -6530,23 +6543,43 @@ describe("Gemini visual migration shell", () => {
     expect(textareaFocusBlock).toMatch(
       /box-shadow:\s*var\(--sd-panel-field-focus-shadow\);/,
     );
+    expect(inputBlock).toMatch(/appearance:\s*none;/);
+    expect(inputBlock).toMatch(/width:\s*100%;/);
+    expect(inputBlock).toMatch(/max-width:\s*100%;/);
+    expect(inputBlock).toMatch(
+      /border:\s*1px solid var\(--sd-panel-field-border-color\);/,
+    );
+    expect(inputBlock).toMatch(
+      /background:\s*var\(--sd-panel-field-background\);/,
+    );
+    expect(inputFocusBlock).toMatch(
+      /border-color:\s*var\(--sd-panel-field-focus-border-color\);/,
+    );
+    expect(selectBlock).toMatch(/width:\s*100%;/);
+    expect(selectBlock).toMatch(/max-width:\s*100%;/);
+    expect(selectNativeBlock).toMatch(/width:\s*100%;/);
+    expect(selectNativeBlock).toMatch(/max-width:\s*100%;/);
+    expect(requiredBlock).toMatch(/color:\s*var\(--sd-panel-required-color\);/);
     expect(darkRootBlock).toMatch(
-      /--sd-panel-field-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
+      /--sd-panel-field-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
     );
     expect(darkRootBlock).toMatch(
-      /--sd-panel-field-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\);/,
+      /--sd-panel-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\s*\);/,
     );
     expect(autoDarkSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkRootBlock).toMatch(
-      /--sd-panel-field-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
+      /--sd-panel-field-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
     );
     expect(autoDarkRootBlock).toMatch(
-      /--sd-panel-field-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\);/,
+      /--sd-panel-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\s*\);/,
     );
-    expect(sdPanelFieldToneScope).not.toContain("border: var(--border-in-light)");
+    expect(sdPanelFieldToneScope).not.toContain(
+      "border: var(--border-in-light)",
+    );
     expect(sdPanelFieldToneScope).not.toContain("background: var(--white)");
     expect(sdPanelFieldToneScope).not.toContain("border-radius: 10px");
+    expect(sdPanelFieldToneScope).not.toContain("max-width: 50%");
   });
 
   test("keeps SD output thumbnails aligned with Gemini multimodal surfaces", () => {
@@ -6555,6 +6588,29 @@ describe("Gemini visual migration shell", () => {
     const listBlock = readCssBlock(sdStyles, ".sd-img-list");
     const listRootDeclarations = readRootDeclarations(listBlock);
     const itemBlock = readCssBlock(listBlock, ".sd-img-item");
+    const itemRootDeclarations = readRootDeclarations(itemBlock);
+    const infoBlock = readCssBlock(itemBlock, ".sd-img-item-info");
+    const promptBlock = readCssBlock(itemBlock, ".sd-img-item-prompt");
+    const statusBlock = readCssBlock(itemBlock, ".sd-img-item-status");
+    const statusSuccessBlock = readCssBlock(
+      statusBlock,
+      '&[data-status="success"]',
+    );
+    const statusErrorBlock = readCssBlock(
+      statusBlock,
+      '&[data-status="error"]',
+    );
+    const statusWaitBlock = readCssBlock(statusBlock, '&[data-status="wait"]');
+    const statusRunningBlock = readCssBlock(
+      statusBlock,
+      '&[data-status="running"]',
+    );
+    const inlineActionBlock = readCssBlock(
+      itemBlock,
+      ".sd-img-item-inline-action",
+    );
+    const actionsBlock = readCssBlock(itemBlock, ".sd-img-item-actions");
+    const actionRowBlock = readCssBlock(itemBlock, ".sd-img-item-action-row");
     const placeholderBlock = readCssBlock(itemBlock, ".pre-img");
     const thumbnailBlock = readCssBlock(itemBlock, ".img");
     const thumbnailButtonBlock = readCssBlock(itemBlock, "button.img");
@@ -6562,10 +6618,18 @@ describe("Gemini visual migration shell", () => {
       thumbnailButtonBlock,
       "&:focus-visible",
     );
-    const darkListBlock = readCssBlock(
-      sdStyles,
-      ":global(.dark) .sd-img-list",
+    const emptyBlock = readCssBlock(listBlock, ".sd-img-empty");
+    const modalDetailBlock = readCssBlock(sdStyles, ".sd-img-modal-detail");
+    const modalErrorDetailBlock = readCssBlock(
+      modalDetailBlock,
+      '&[data-status="error"]',
     );
+    const paramsDetailBlock = readCssBlock(sdStyles, ".sd-img-params-detail");
+    const paramsDetailRowBlock = readCssBlock(
+      paramsDetailBlock,
+      ".sd-img-params-detail-row",
+    );
+    const darkListBlock = readCssBlock(sdStyles, ":global(.dark) .sd-img-list");
     const autoDarkSelector = ":global(body:not(.light)) .sd-img-list";
     const autoDarkSelectorIndex = sdStyles.indexOf(autoDarkSelector);
     const autoDarkMediaIndex = sdStyles.lastIndexOf(
@@ -6576,8 +6640,21 @@ describe("Gemini visual migration shell", () => {
       sdStyles.slice(autoDarkMediaIndex),
       autoDarkSelector,
     );
+    const mobileListBlock = readCssBlock(
+      readCssBlock(sdStyles, "@media only screen and (max-width: 600px)"),
+      ".sd-img-list",
+    );
+    const mobileItemBlock = readCssBlock(mobileListBlock, ".sd-img-item");
+    const narrowListBlock = readCssBlock(
+      readCssBlock(sdStyles, "@media only screen and (max-width: 360px)"),
+      ".sd-img-list",
+    );
+    const narrowPlaceholderBlock = readCssBlock(narrowListBlock, ".pre-img");
+    const narrowThumbnailBlock = readCssBlock(narrowListBlock, ".img");
     const sdOutputToneScope = [
       listRootDeclarations,
+      itemRootDeclarations,
+      statusBlock,
       placeholderBlock,
       thumbnailBlock,
       thumbnailButtonBlock,
@@ -6588,19 +6665,81 @@ describe("Gemini visual migration shell", () => {
 
     expect(sd).toContain('className={styles["sd-img-list"]}');
     expect(sd).toContain('className={styles["sd-img-item"]}');
+    expect(sd).toContain('className={styles["sd-img-empty"]}');
+    expect(sd).toContain("data-status={item.status}");
+    expect(sd).toContain('styles["sd-img-item-status"]');
+    expect(sd).toContain('styles["sd-img-item-actions"]');
+    expect(sd).toContain('styles["sd-img-item-action-row"]');
+    expect(sd).toContain('styles["sd-img-item-inline-action"]');
+    expect(sd).toContain('styles["sd-img-modal-detail"]');
+    expect(sd).toContain('styles["sd-img-params-detail"]');
+    expect(sd).toContain('styles["sd-img-params-detail-row"]');
     expect(sd).toContain('className={styles["pre-img"]}');
     expect(sd).toContain('className={styles["img"]}');
     expect(sd).toContain("showImageModal(");
     expect(sd).toContain("copyToClipboard(");
     expect(sd).toContain("getMessageTextContent({");
     expect(sd).toContain("removeImage(item.img_data)");
+    expect(sd).not.toContain('color = "green"');
+    expect(sd).not.toContain('color = "red"');
+    expect(sd).not.toContain('color = "yellow"');
+    expect(sd).not.toContain('color = "blue"');
+    expect(sd).not.toContain("style={{ color: color }}");
+    expect(sd).not.toContain('style={{ display: "flex" }}');
+    expect(sd).not.toContain('style={{ marginLeft: "10px" }}');
+    expect(sd).not.toContain('style={{ margin: "10px" }}');
     expect(listRootDeclarations).toMatch(/--sd-output-thumb-radius:\s*8px;/);
+    expect(listRootDeclarations).toMatch(/--sd-output-card-radius:\s*8px;/);
     expect(listRootDeclarations).toMatch(
-      /--sd-output-thumb-background:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 82%,\s*transparent\);/,
+      /--sd-output-thumb-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 82%,\s*transparent\s*\);/,
     );
     expect(listRootDeclarations).toMatch(
-      /--sd-output-thumb-border-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 12%,\s*transparent\);/,
+      /--sd-output-thumb-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
     );
+    expect(listRootDeclarations).toMatch(
+      /--sd-output-card-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\s*\);/,
+    );
+    expect(listRootDeclarations).toMatch(
+      /--sd-output-status-success-base:\s*#168a45;/,
+    );
+    expect(listRootDeclarations).toMatch(
+      /--sd-output-status-success-color:\s*color-mix\(\s*in srgb,\s*var\(--sd-output-status-success-base\) 82%,\s*var\(--black\)\s*\);/,
+    );
+    expect(itemRootDeclarations).toMatch(/display:\s*flex;/);
+    expect(itemRootDeclarations).toMatch(/gap:\s*12px;/);
+    expect(itemRootDeclarations).toMatch(/padding:\s*10px;/);
+    expect(itemRootDeclarations).toMatch(
+      /background:\s*var\(--sd-output-card-background\);/,
+    );
+    expect(itemRootDeclarations).toMatch(
+      /border:\s*1px solid var\(--sd-output-card-border-color\);/,
+    );
+    expect(infoBlock).toMatch(/min-width:\s*0;/);
+    expect(infoBlock).toMatch(/color:\s*var\(--sd-output-meta-color\);/);
+    expect(promptBlock).toMatch(/color:\s*var\(--sd-output-title-color\);/);
+    expect(statusBlock).toMatch(
+      /color:\s*var\(--sd-output-status-default-color\);/,
+    );
+    expect(statusSuccessBlock).toMatch(
+      /color:\s*var\(--sd-output-status-success-color\);/,
+    );
+    expect(statusErrorBlock).toMatch(
+      /color:\s*var\(--sd-output-status-error-color\);/,
+    );
+    expect(statusWaitBlock).toMatch(
+      /color:\s*var\(--sd-output-status-wait-color\);/,
+    );
+    expect(statusRunningBlock).toMatch(
+      /color:\s*var\(--sd-output-status-running-color\);/,
+    );
+    expect(inlineActionBlock).toMatch(/background:\s*none;/);
+    expect(inlineActionBlock).toMatch(/border:\s*0;/);
+    expect(inlineActionBlock).toMatch(/color:\s*inherit;/);
+    expect(inlineActionBlock).toMatch(/text-overflow:\s*ellipsis;/);
+    expect(actionsBlock).toMatch(/margin-top:\s*8px;/);
+    expect(actionRowBlock).toMatch(/display:\s*flex;/);
+    expect(actionRowBlock).toMatch(/flex-wrap:\s*wrap;/);
+    expect(actionRowBlock).toMatch(/gap:\s*6px;/);
     expect(placeholderBlock).toMatch(/width:\s*130px;/);
     expect(placeholderBlock).toMatch(/height:\s*130px;/);
     expect(placeholderBlock).toMatch(
@@ -6621,29 +6760,61 @@ describe("Gemini visual migration shell", () => {
       /transition:[\s\S]*opacity 0\.18s ease,[\s\S]*transform 0\.18s ease,[\s\S]*box-shadow 0\.18s ease;/,
     );
     expect(thumbnailButtonBlock).toMatch(/box-shadow:\s*0 10px 28px/);
+    expect(thumbnailButtonBlock).toMatch(/background:\s*none;/);
+    expect(thumbnailButtonBlock).toMatch(/border:\s*0;/);
+    expect(thumbnailButtonBlock).toMatch(/padding:\s*0;/);
     expect(thumbnailButtonBlock).toMatch(/&:hover[\s\S]*opacity:\s*0\.86;/);
     expect(thumbnailButtonBlock).toMatch(
       /&:hover[\s\S]*transform:\s*translateY\(-1px\);/,
     );
-    expect(thumbnailButtonFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(thumbnailButtonFocusBlock).toMatch(
+      /outline:\s*var\(--focus-ring\);/,
+    );
     expect(thumbnailButtonFocusBlock).toMatch(/outline-offset:\s*2px;/);
     expect(thumbnailButtonFocusBlock).toMatch(
       /box-shadow:\s*var\(--focus-ring-shadow\),[\s\S]*0 10px 28px var\(--sd-output-thumb-shadow-color\);/,
     );
-    expect(darkListBlock).toMatch(
-      /--sd-output-thumb-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 78%,\s*transparent\);/,
+    expect(emptyBlock).toMatch(/width:\s*100%;/);
+    expect(emptyBlock).toMatch(/min-height:\s*160px;/);
+    expect(emptyBlock).toMatch(/display:\s*flex;/);
+    expect(emptyBlock).toMatch(
+      /background:\s*var\(--sd-output-empty-background\);/,
+    );
+    expect(modalDetailBlock).toMatch(/user-select:\s*text;/);
+    expect(modalDetailBlock).toMatch(/word-break:\s*break-word;/);
+    expect(modalErrorDetailBlock).toMatch(
+      /color:\s*var\(--sd-output-status-error-color\);/,
+    );
+    expect(paramsDetailBlock).toMatch(/user-select:\s*text;/);
+    expect(paramsDetailBlock).toMatch(/display:\s*grid;/);
+    expect(paramsDetailRowBlock).toMatch(
+      /background:\s*var\(--sd-output-param-background\);/,
     );
     expect(darkListBlock).toMatch(
-      /--sd-output-thumb-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
+      /--sd-output-thumb-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 78%,\s*transparent\s*\);/,
+    );
+    expect(darkListBlock).toMatch(
+      /--sd-output-thumb-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
+    );
+    expect(darkListBlock).toMatch(
+      /--sd-output-card-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 82%,\s*transparent\s*\);/,
     );
     expect(autoDarkSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkListBlock).toMatch(
-      /--sd-output-thumb-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 78%,\s*transparent\);/,
+      /--sd-output-thumb-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 78%,\s*transparent\s*\);/,
     );
     expect(autoDarkListBlock).toMatch(
-      /--sd-output-thumb-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
+      /--sd-output-thumb-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
     );
+    expect(autoDarkListBlock).toMatch(
+      /--sd-output-card-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 82%,\s*transparent\s*\);/,
+    );
+    expect(mobileItemBlock).toMatch(/width:\s*100%;/);
+    expect(mobileItemBlock).toMatch(/min-width:\s*0;/);
+    expect(mobileItemBlock).toMatch(/padding:\s*10px;/);
+    expect(narrowPlaceholderBlock).toMatch(/width:\s*112px;/);
+    expect(narrowThumbnailBlock).toMatch(/width:\s*112px;/);
     expect(sdOutputToneScope).not.toContain("background-color: var(--second)");
     expect(sdOutputToneScope).not.toContain("border-radius: 10px");
     expect(sdOutputToneScope).not.toContain("transition: all .3s");
