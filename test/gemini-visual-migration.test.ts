@@ -6966,6 +6966,7 @@ describe("Gemini visual migration shell", () => {
     const authStyles = read("app/components/auth.module.scss");
     const authBlock = readCssBlock(authStyles, ".auth-page");
     const authRootBlock = readRootDeclarations(authBlock);
+    const panelBlock = readCssBlock(authBlock, "&::before");
     const logoBlock = readCssBlock(authBlock, ".auth-logo");
     const titleBlock = readCssBlock(authBlock, ".auth-title");
     const tipsBlock = readCssBlock(authBlock, ".auth-tips");
@@ -6985,8 +6986,13 @@ describe("Gemini visual migration shell", () => {
       passwordInputBlock,
       "&:focus-visible",
     );
+    const passwordContainerFocusBlock = readCssBlock(
+      passwordContainerBlock,
+      "&:focus-within",
+    );
     const actionsBlock = readCssBlock(authBlock, ".auth-actions");
     const actionButtonBlock = readCssBlock(actionsBlock, "button");
+    const actionButtonDisabledBlock = readCssBlock(actionButtonBlock, "&[disabled]");
     const darkAuthBlock = readCssBlock(authStyles, ":global(.dark) .auth-page");
     const autoDarkAuthSelector = ":global(body:not(.light)) .auth-page";
     const autoDarkAuthIndex = authStyles.indexOf(autoDarkAuthSelector);
@@ -7003,19 +7009,62 @@ describe("Gemini visual migration shell", () => {
       "@media screen and (max-width: 600px)",
     );
     const mobileAuthBlock = readCssBlock(mobileBlock, ".auth-page");
+    const mobilePanelBlock = readCssBlock(mobileAuthBlock, "&::before");
+    const mobileTitleBlock = readCssBlock(mobileAuthBlock, ".auth-title");
+    const authThemeTokenNames = [
+      "--auth-page-background",
+      "--auth-panel-background",
+      "--auth-panel-border-color",
+      "--auth-panel-shadow-color",
+      "--auth-panel-radius",
+      "--auth-panel-shadow",
+      "--auth-control-radius",
+      "--auth-logo-background",
+      "--auth-logo-shadow",
+      "--auth-title-color",
+      "--auth-muted-color",
+      "--auth-field-background",
+      "--auth-field-color",
+      "--auth-field-border-color",
+      "--auth-field-shadow",
+      "--auth-field-focus-border-color",
+      "--auth-field-focus-shadow",
+      "--auth-action-background",
+      "--auth-action-color",
+      "--auth-action-shadow",
+      "--auth-action-hover-border-color",
+      "--auth-action-disabled-background",
+      "--auth-action-disabled-color",
+    ];
+    const authThemeTokenMap = readCustomProperties(
+      authRootBlock,
+      authThemeTokenNames,
+    );
+    const darkAuthThemeTokenMap = readCustomProperties(
+      darkAuthBlock,
+      authThemeTokenNames,
+    );
+    const autoDarkAuthThemeTokenMap = readCustomProperties(
+      autoDarkAuthBlock,
+      authThemeTokenNames,
+    );
     const authPaintScope = [
       authRootBlock,
+      panelBlock,
       logoBlock,
       titleBlock,
       tipsBlock,
       passwordContainerBlock,
+      passwordContainerFocusBlock,
       passwordEyeBlock,
       passwordInputBlock,
       actionsBlock,
       actionButtonBlock,
+      actionButtonDisabledBlock,
       darkAuthBlock,
       autoDarkAuthBlock,
       mobileAuthBlock,
+      mobilePanelBlock,
     ].join("\n");
 
     expect(authPage).toContain("accessStore.validateAccessCode()");
@@ -7038,14 +7087,31 @@ describe("Gemini visual migration shell", () => {
     expect(authRootBlock).toMatch(
       /--auth-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface\) 72%,\s*var\(--white\)\s*\);/,
     );
+    for (const tokenMap of [
+      authThemeTokenMap,
+      darkAuthThemeTokenMap,
+      autoDarkAuthThemeTokenMap,
+    ]) {
+      expect(Object.values(tokenMap)).not.toContain("");
+    }
+    expect(authRootBlock).toMatch(/--auth-panel-radius:\s*8px;/);
+    expect(authRootBlock).toMatch(/--auth-control-radius:\s*8px;/);
     expect(authRootBlock).toMatch(/padding:\s*clamp\(24px,\s*8vh,\s*72px\) 20px;/);
     expect(authRootBlock).toMatch(/background:\s*var\(--auth-page-background\);/);
     expect(authRootBlock).toMatch(/gap:\s*14px;/);
+    expect(panelBlock).toMatch(
+      /border:\s*1px solid var\(--auth-panel-border-color\);/,
+    );
+    expect(panelBlock).toMatch(/border-radius:\s*var\(--auth-panel-radius\);/);
+    expect(panelBlock).toMatch(/box-shadow:\s*var\(--auth-panel-shadow\);/);
     expect(logoBlock).toMatch(/background:\s*var\(--auth-logo-background\);/);
     expect(logoBlock).toMatch(/border:\s*1px solid var\(--auth-panel-border-color\);/);
-    expect(logoBlock).toMatch(/border-radius:\s*16px;/);
-    expect(titleBlock).toMatch(/font-size:\s*clamp\(24px,\s*5vw,\s*32px\);/);
+    expect(logoBlock).toMatch(/border-radius:\s*var\(--auth-control-radius\);/);
+    expect(logoBlock).toMatch(/box-shadow:\s*var\(--auth-logo-shadow\);/);
+    expect(titleBlock).toMatch(/font-size:\s*28px;/);
+    expect(titleBlock).not.toMatch(/font-size:[^;]*vw/);
     expect(titleBlock).toMatch(/letter-spacing:\s*0;/);
+    expect(titleBlock).toMatch(/color:\s*var\(--auth-title-color\);/);
     expect(tipsBlock).toMatch(/color:\s*var\(--auth-muted-color\);/);
     expect(passwordContainerBlock).toMatch(/width:\s*min\(360px,\s*100%\);/);
     expect(passwordContainerBlock).toMatch(
@@ -7054,32 +7120,77 @@ describe("Gemini visual migration shell", () => {
     expect(passwordContainerBlock).toMatch(
       /border:\s*1px solid var\(--auth-field-border-color\);/,
     );
-    expect(passwordContainerBlock).toMatch(/border-radius:\s*8px;/);
+    expect(passwordContainerBlock).toMatch(
+      /border-radius:\s*var\(--auth-control-radius\);/,
+    );
+    expect(passwordContainerBlock).toMatch(
+      /box-shadow:\s*var\(--auth-field-shadow\);/,
+    );
+    expect(passwordContainerFocusBlock).toMatch(
+      /box-shadow:\s*var\(--auth-field-focus-shadow\);/,
+    );
     expect(passwordEyeBlock).toMatch(/color:\s*var\(--auth-muted-color\);/);
     expect(passwordInputBlock).toMatch(/min-width:\s*0;/);
     expect(passwordInputBlock).toMatch(/background:\s*transparent;/);
     expect(passwordInputBlock).toMatch(/border:\s*0;/);
-    expect(passwordInputFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(passwordInputBlock).toMatch(/color:\s*var\(--auth-field-color\);/);
+    expect(passwordInputFocusBlock).toMatch(/outline:\s*none;/);
+    expect(passwordInputFocusBlock).not.toMatch(/outline-offset:\s*12px;/);
     expect(actionsBlock).toMatch(/width:\s*min\(360px,\s*100%\);/);
-    expect(actionButtonBlock).toMatch(/border-radius:\s*8px;/);
+    expect(actionButtonBlock).toMatch(
+      /--icon-button-primary-background:\s*var\(--auth-action-background\);/,
+    );
+    expect(actionButtonBlock).toMatch(
+      /--icon-button-primary-color:\s*var\(--auth-action-color\);/,
+    );
+    expect(actionButtonBlock).toMatch(
+      /border-radius:\s*var\(--auth-control-radius\);/,
+    );
+    expect(actionButtonBlock).toMatch(
+      /box-shadow:\s*var\(--auth-action-shadow\);/,
+    );
+    expect(actionButtonDisabledBlock).toMatch(/opacity:\s*1;/);
+    expect(actionButtonDisabledBlock).toMatch(
+      /background-color:\s*var\(--auth-action-disabled-background\);/,
+    );
+    expect(actionButtonDisabledBlock).toMatch(
+      /color:\s*var\(--auth-action-disabled-color\);/,
+    );
     expect(darkAuthBlock).toMatch(
       /--auth-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
     );
     expect(darkAuthBlock).toMatch(
+      /--auth-panel-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--gray\) 48%,\s*transparent\s*\);/,
+    );
+    expect(darkAuthBlock).toMatch(
       /--auth-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 78%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkAuthBlock).not.toMatch(
+      /--auth-panel-shadow-color:[^;]*var\(--black\)/,
     );
     expect(autoDarkAuthIndex).toBeGreaterThan(-1);
     expect(autoDarkAuthMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkAuthBlock).toMatch(
       /--auth-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
     );
+    expect(autoDarkAuthBlock).toMatch(
+      /--auth-panel-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--gray\) 48%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkAuthThemeTokenMap).toEqual(darkAuthThemeTokenMap);
     expect(mobileAuthBlock).toMatch(/padding:\s*28px 16px;/);
+    expect(mobilePanelBlock).toMatch(
+      /border-radius:\s*var\(--auth-panel-radius\);/,
+    );
+    expect(mobileTitleBlock).toMatch(/font-size:\s*24px;/);
     expect(authPaintScope).not.toContain("margin-top: 10vh");
     expect(authPaintScope).not.toContain("transform: scale(1.4)");
     expect(authPaintScope).not.toContain("font-weight: bold");
     expect(authPaintScope).not.toMatch(/line-height:\s*2;/);
     expect(authPaintScope).not.toContain("width: 65px");
     expect(authPaintScope).not.toContain("margin-bottom: 10px");
+    expect(authPaintScope).not.toContain("border-radius: 24px");
+    expect(authPaintScope).not.toContain("border-radius: 20px");
+    expect(authPaintScope).not.toContain("border-radius: 16px");
   });
 
   test("keeps Masks and Plugins list surfaces aligned with Gemini utility cards", () => {
