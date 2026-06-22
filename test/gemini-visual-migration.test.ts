@@ -4293,6 +4293,141 @@ describe("Gemini visual migration shell", () => {
     expect(mobileAttachFileBlock).toMatch(/height:\s*58px;/);
   });
 
+  test("keeps attached file editing modal aligned with Gemini utility fields", () => {
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const fileEditScrollBlock = readCssBlock(chatStyles, ".file-edit-scroll");
+    const fileEditTextareaBlock = readRootCssBlock(
+      chatStyles,
+      ".file-edit-textarea",
+    );
+    const fileEditTextareaFocusBlock = readCssBlock(
+      fileEditTextareaBlock,
+      "&:focus-visible",
+    );
+    const darkFileEditTextareaBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .file-edit-textarea",
+    );
+    const autoDarkFileEditTextareaSelector =
+      ":global(body:not(.light)) .file-edit-textarea";
+    const autoDarkFileEditTextareaSelectorIndex = chatStyles.indexOf(
+      autoDarkFileEditTextareaSelector,
+    );
+    const autoDarkFileEditTextareaMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkFileEditTextareaSelectorIndex,
+    );
+    const autoDarkFileEditTextareaBlock = readCssBlock(
+      chatStyles.slice(autoDarkFileEditTextareaMediaIndex),
+      autoDarkFileEditTextareaSelector,
+    );
+    const mobileFileEditIndex = chatStyles.indexOf("\n  .file-edit-scroll {");
+    const mobileFileEditMediaIndex = chatStyles.lastIndexOf(
+      "@media only screen and (max-width: 600px)",
+      mobileFileEditIndex,
+    );
+    const mobileFileEditStyles = readCssBlock(
+      chatStyles.slice(mobileFileEditMediaIndex),
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileFileEditScrollBlock = readCssBlock(
+      mobileFileEditStyles,
+      ".file-edit-scroll",
+    );
+    const mobileFileEditTextareaBlock = readCssBlock(
+      mobileFileEditStyles,
+      ".file-edit-textarea",
+    );
+    const reducedMotionBlock = readCssBlock(
+      chatStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const fileEditPaintScope = [
+      fileEditScrollBlock,
+      fileEditTextareaBlock,
+      darkFileEditTextareaBlock,
+      autoDarkFileEditTextareaBlock,
+    ].join("\n");
+
+    expect(chat).toContain("showFileEditModal && editingFile");
+    expect(chat).toContain('styles["file-edit-scroll"]');
+    expect(chat).toContain('styles["file-edit-textarea"]');
+    expect(chat).toContain(
+      'aria-label={`编辑文件内容: ${editingFile.name}`}',
+    );
+    expect(fileEditScrollBlock).toMatch(/max-height:\s*min\(58dvh,\s*540px\);/);
+    expect(fileEditScrollBlock).toMatch(/overflow:\s*auto;/);
+    expect(fileEditScrollBlock).toMatch(/min-width:\s*0;/);
+    expect(fileEditScrollBlock).toMatch(/padding:\s*4px;/);
+    expect(fileEditTextareaBlock).toMatch(
+      /--file-edit-textarea-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\);/,
+    );
+    expect(fileEditTextareaBlock).toMatch(
+      /--file-edit-textarea-border-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 14%,\s*transparent\);/,
+    );
+    expect(fileEditTextareaBlock).toMatch(
+      /--file-edit-textarea-color:\s*color-mix\(in srgb,\s*var\(--black\) 92%,\s*transparent\);/,
+    );
+    expect(fileEditTextareaBlock).toMatch(/width:\s*100%;/);
+    expect(fileEditTextareaBlock).toMatch(/min-width:\s*0;/);
+    expect(fileEditTextareaBlock).toMatch(/min-height:\s*min\(340px,\s*52dvh\);/);
+    expect(fileEditTextareaBlock).toMatch(/max-height:\s*min\(58dvh,\s*540px\);/);
+    expect(fileEditTextareaBlock).toMatch(
+      /border:\s*1px solid var\(--file-edit-textarea-border-color\);/,
+    );
+    expect(fileEditTextareaBlock).toMatch(/border-radius:\s*8px;/);
+    expect(fileEditTextareaBlock).toMatch(
+      /background-color:\s*var\(--file-edit-textarea-background\);/,
+    );
+    expect(fileEditTextareaBlock).toMatch(
+      /color:\s*var\(--file-edit-textarea-color\);/,
+    );
+    expect(fileEditTextareaBlock).toMatch(
+      /box-shadow:\s*0 1px 2px var\(--file-edit-textarea-shadow-color\),\s*inset 0 1px 0 var\(--file-edit-textarea-inner-shadow-color\);/,
+    );
+    expect(fileEditTextareaBlock).toMatch(/line-height:\s*1\.5;/);
+    expect(fileEditTextareaBlock).toMatch(/overflow:\s*auto;/);
+    expect(fileEditTextareaBlock).toMatch(/resize:\s*vertical;/);
+    expect(fileEditTextareaBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(fileEditTextareaBlock).toMatch(
+      /transition:\s*border-color 0\.2s ease,\s*background-color 0\.2s ease,\s*box-shadow 0\.2s ease,\s*color 0\.2s ease;/,
+    );
+    expect(fileEditTextareaFocusBlock).toMatch(
+      /border-color:\s*var\(--file-edit-textarea-focus-border-color\);/,
+    );
+    expect(fileEditTextareaFocusBlock).toMatch(
+      /box-shadow:\s*0 0 0 3px var\(--file-edit-textarea-focus-shadow-color\),\s*inset 0 1px 0 var\(--file-edit-textarea-inner-shadow-color\);/,
+    );
+    expect(darkFileEditTextareaBlock).toMatch(
+      /--file-edit-textarea-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--white\)\);/,
+    );
+    expect(darkFileEditTextareaBlock).toMatch(
+      /--file-edit-textarea-focus-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 22%,\s*transparent\);/,
+    );
+    expect(autoDarkFileEditTextareaSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkFileEditTextareaMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkFileEditTextareaBlock).toMatch(
+      /--file-edit-textarea-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--white\)\);/,
+    );
+    expect(autoDarkFileEditTextareaBlock).toMatch(
+      /--file-edit-textarea-focus-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 22%,\s*transparent\);/,
+    );
+    expect(mobileFileEditIndex).toBeGreaterThan(-1);
+    expect(mobileFileEditMediaIndex).toBeGreaterThan(-1);
+    expect(mobileFileEditScrollBlock).toMatch(/max-height:\s*50dvh;/);
+    expect(mobileFileEditScrollBlock).toMatch(/padding:\s*4px;/);
+    expect(mobileFileEditTextareaBlock).toMatch(
+      /min-height:\s*min\(300px,\s*46dvh\);/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.file-edit-textarea\s*\{[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(fileEditPaintScope).not.toMatch(
+      /border:\s*1px solid #ccc|border-radius:\s*4px|background-color:\s*var\(--white\)|rgba\(\$color:\s*#000/,
+    );
+  });
+
   test("keeps attachment strip add action as a direct native picker entry", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
