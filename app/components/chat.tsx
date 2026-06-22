@@ -5304,7 +5304,10 @@ function useChatInnerView() {
                                   <FileIcon />
                                 </div>
                                 <div className={styles["attach-file-info"]}>
-                                  <div className={styles["attach-file-name"]}>
+                                  <div
+                                    className={styles["attach-file-name"]}
+                                    title={file.name}
+                                  >
                                     {file.name}
                                   </div>
                                   <div className={styles["attach-file-size"]}>

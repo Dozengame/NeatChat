@@ -57,7 +57,7 @@
 }
 
 .attachments-scroll-shell {
-  --attachment-edge-surface: rgba(255, 255, 255, 0.96);
+  --attachment-edge-surface: color-mix(in srgb, var(--surface-elevated) 96%, transparent);
   position: relative;
   width: 100%;
   min-width: 0;
@@ -65,7 +65,7 @@
 }
 
 :global(.dark) .attachments-scroll-shell {
-  --attachment-edge-surface: rgba(32, 33, 36, 0.92);
+  --attachment-edge-surface: color-mix(in srgb, var(--surface-elevated) 86%, transparent);
 }
 
 .attach-item {
@@ -79,6 +79,24 @@
   --attachment-file-icon-color: color-mix(in srgb, var(--primary) 82%, var(--black));
   --attachment-file-name-color: color-mix(in srgb, var(--black) 92%, transparent);
   --attachment-file-size-color: color-mix(in srgb, var(--black-50) 88%, transparent);
+  --attachment-touch-mask-strong-color: color-mix(in srgb, var(--black-50) 16%, transparent);
+  --attachment-touch-mask-soft-color: color-mix(in srgb, var(--black-50) 8%, transparent);
+  --attachment-touch-mask-background: radial-gradient(
+    circle at top right,
+    var(--attachment-touch-mask-strong-color) 0,
+    var(--attachment-touch-mask-soft-color) 34px,
+    transparent 52px
+  );
+  --attachment-swipe-delete-mask-strong-color: color-mix(in srgb, rgb(234, 67, 53) 24%, transparent);
+  --attachment-swipe-delete-mask-soft-color: color-mix(in srgb, rgb(234, 67, 53) 12%, transparent);
+  --attachment-swipe-delete-mask-gradient-color: color-mix(in srgb, rgb(234, 67, 53) 10%, transparent);
+  --attachment-swipe-delete-mask-background: radial-gradient(
+      circle at top right,
+      var(--attachment-swipe-delete-mask-strong-color) 0,
+      var(--attachment-swipe-delete-mask-soft-color) 36px,
+      transparent 58px
+    ),
+    linear-gradient(270deg, var(--attachment-swipe-delete-mask-gradient-color), transparent 58%);
 
   position: relative;
   flex: 0 0 auto;
@@ -96,6 +114,11 @@
   --attachment-file-icon-color: color-mix(in srgb, var(--primary) 42%, var(--black));
   --attachment-file-name-color: color-mix(in srgb, var(--black) 88%, transparent);
   --attachment-file-size-color: color-mix(in srgb, var(--black) 66%, transparent);
+  --attachment-touch-mask-strong-color: color-mix(in srgb, var(--black) 18%, transparent);
+  --attachment-touch-mask-soft-color: color-mix(in srgb, var(--black) 8%, transparent);
+  --attachment-swipe-delete-mask-strong-color: color-mix(in srgb, rgb(242, 139, 130) 26%, transparent);
+  --attachment-swipe-delete-mask-soft-color: color-mix(in srgb, rgb(242, 139, 130) 12%, transparent);
+  --attachment-swipe-delete-mask-gradient-color: color-mix(in srgb, rgb(242, 139, 130) 12%, transparent);
 }
 
 .attach-item[data-swipe-delete-active="true"] {
@@ -133,14 +156,7 @@
 
 .attach-item[data-swipe-delete-active="true"] .attach-image-mask {
   opacity: 1;
-  background:
-    radial-gradient(
-      circle at top right,
-      rgba(234, 67, 53, 0.24) 0,
-      rgba(234, 67, 53, 0.12) 36px,
-      transparent 58px
-    ),
-    linear-gradient(270deg, rgba(234, 67, 53, 0.1), transparent 58%);
+  background: var(--attachment-swipe-delete-mask-background);
 }
 
 .delete-image {
@@ -224,12 +240,7 @@
   .attach-image-mask {
     opacity: 1;
     pointer-events: none;
-    background: radial-gradient(
-      circle at top right,
-      rgba(60, 64, 67, 0.16) 0,
-      rgba(60, 64, 67, 0.08) 34px,
-      transparent 52px
-    );
+    background: var(--attachment-touch-mask-background);
   }
 
   .delete-image {
@@ -245,12 +256,7 @@
   }
 
   :global(.dark) .attach-image-mask {
-    background: radial-gradient(
-      circle at top right,
-      rgba(232, 234, 237, 0.18) 0,
-      rgba(232, 234, 237, 0.08) 34px,
-      transparent 52px
-    );
+    background: var(--attachment-touch-mask-background);
   }
 
   :global(.dark) .delete-image {
@@ -260,14 +266,7 @@
 }
 
 :global(.dark) .attach-item[data-swipe-delete-active="true"] .attach-image-mask {
-  background:
-    radial-gradient(
-      circle at top right,
-      rgba(242, 139, 130, 0.26) 0,
-      rgba(242, 139, 130, 0.12) 36px,
-      transparent 58px
-    ),
-    linear-gradient(270deg, rgba(242, 139, 130, 0.12), transparent 58%);
+  background: var(--attachment-swipe-delete-mask-background);
 }
 
 :global(.dark) .attach-item[data-swipe-delete-active="true"] .delete-image {
@@ -308,6 +307,11 @@
     box-shadow:
       var(--focus-ring-shadow),
       0 8px 24px var(--attachment-item-hover-shadow-color);
+  }
+
+  &:active {
+    transform: scale(0.985);
+    box-shadow: 0 4px 16px var(--attachment-item-hover-shadow-color);
   }
 }
 
@@ -353,6 +357,15 @@
     background: var(--attachment-add-button-hover-background);
     border-color: var(--attachment-add-button-hover-border-color);
     box-shadow:
+      inset 0 0 0 1px var(--attachment-add-button-hover-inner-ring-color),
+      0 8px 24px var(--attachment-add-button-hover-shadow-color);
+  }
+
+  &:not(:disabled):focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    box-shadow:
+      var(--focus-ring-shadow),
       inset 0 0 0 1px var(--attachment-add-button-hover-inner-ring-color),
       0 8px 24px var(--attachment-add-button-hover-shadow-color);
   }
@@ -428,6 +441,10 @@
 }
 
 @media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .attachments-scroll-shell {
+    --attachment-edge-surface: color-mix(in srgb, var(--surface-elevated) 86%, transparent);
+  }
+
   :global(body:not(.light)) .attach-item {
     --attachment-item-border-color: color-mix(in srgb, var(--black) 10%, transparent);
     --attachment-item-background: color-mix(in srgb, var(--surface-elevated) 74%, transparent);
@@ -438,6 +455,11 @@
     --attachment-file-icon-color: color-mix(in srgb, var(--primary) 42%, var(--black));
     --attachment-file-name-color: color-mix(in srgb, var(--black) 88%, transparent);
     --attachment-file-size-color: color-mix(in srgb, var(--black) 66%, transparent);
+    --attachment-touch-mask-strong-color: color-mix(in srgb, var(--black) 18%, transparent);
+    --attachment-touch-mask-soft-color: color-mix(in srgb, var(--black) 8%, transparent);
+    --attachment-swipe-delete-mask-strong-color: color-mix(in srgb, rgb(242, 139, 130) 26%, transparent);
+    --attachment-swipe-delete-mask-soft-color: color-mix(in srgb, rgb(242, 139, 130) 12%, transparent);
+    --attachment-swipe-delete-mask-gradient-color: color-mix(in srgb, rgb(242, 139, 130) 12%, transparent);
   }
 
   :global(body:not(.light)) .delete-image {
@@ -499,6 +521,15 @@
     background: var(--attachment-add-button-hover-background);
     border-color: var(--attachment-add-button-hover-border-color);
     box-shadow:
+      inset 0 0 0 1px var(--attachment-add-button-hover-inner-ring-color),
+      0 8px 24px var(--attachment-add-button-hover-shadow-color);
+  }
+
+  &:not(:disabled):focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    box-shadow:
+      var(--focus-ring-shadow),
       inset 0 0 0 1px var(--attachment-add-button-hover-inner-ring-color),
       0 8px 24px var(--attachment-add-button-hover-shadow-color);
   }
@@ -4708,6 +4739,11 @@
       0 8px 24px var(--attachment-item-hover-shadow-color);
   }
 
+  &:active {
+    transform: scale(0.985);
+    box-shadow: 0 4px 16px var(--attachment-item-hover-shadow-color);
+  }
+
   .attach-file-card {
     display: flex;
     flex-direction: row;
@@ -4716,8 +4752,10 @@
     gap: 10px;
     width: 100%;
     height: 100%;
+    min-width: 0;
     padding: 8px 12px;
     box-sizing: border-box;
+    overflow: hidden;
   }
 
   .attach-file-icon {
@@ -4740,9 +4778,12 @@
   }
 
   .attach-file-name {
+    display: block;
+    min-width: 0;
     font-size: 11px;
     color: var(--attachment-file-name-color);
     white-space: nowrap;
+    overflow-wrap: anywhere;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
@@ -4751,6 +4792,9 @@
   .attach-file-size {
     font-size: 10px;
     color: var(--attachment-file-size-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
@@ -5428,6 +5472,21 @@
   .image-preview-button:active {
     transform: none !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .attach-image,
+  .attach-file,
+  .attachment-add-button,
+  .delete-image,
+  .attach-image-mask {
+    transition-duration: 0.01ms !important;
+  }
+
+  .attach-image:active,
+  .attach-file:active,
+  .attachment-add-button:active,
+  .attach-item[data-swipe-delete-active="true"] .delete-image {
+    transform: none !important;
   }
 
   .attach-item[data-swipe-delete-active="true"] .delete-image {

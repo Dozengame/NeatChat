@@ -4026,6 +4026,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["attach-file-card"]');
     expect(chat).toContain('styles["attach-file-icon"]');
     expect(chat).toContain('styles["delete-image"]');
+    expect(chat).toMatch(
+      /<div(?=[^>]*className=\{styles\["attach-file-name"\]\})(?=[^>]*title=\{file\.name\})[^>]*>\s*\{file\.name\}\s*<\/div>/,
+    );
     expect(chat).toContain("getFileIconClass(file.type)");
     expect(attachItemBlock).toMatch(/--attachment-item-radius:\s*8px;/);
     expect(attachItemBlock).toMatch(
@@ -4087,6 +4090,8 @@ describe("Gemini visual migration shell", () => {
     expect(attachFileNameBlock).toMatch(
       /color:\s*var\(--attachment-file-name-color\);/,
     );
+    expect(attachFileNameBlock).toMatch(/min-width:\s*0;/);
+    expect(attachFileNameBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(attachFileSizeBlock).toMatch(
       /color:\s*var\(--attachment-file-size-color\);/,
     );
@@ -4667,6 +4672,195 @@ describe("Gemini visual migration shell", () => {
     expect(swipeActiveDeleteBlock).toMatch(/box-shadow:/);
     expect(chatStyles).toMatch(
       /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.attach-item\[data-swipe-delete-active="true"\] \.delete-image[\s\S]*transition-duration:\s*0\.01ms !important;[\s\S]*transform:\s*none !important;/,
+    );
+  });
+
+  test("keeps composer attachment strip tactile surfaces comfortable", () => {
+    const chatStyles = read("app/components/chat.module.scss");
+    const attachmentShellBlock = readCssBlock(
+      chatStyles,
+      ".attachments-scroll-shell",
+    );
+    const darkAttachmentShellBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .attachments-scroll-shell",
+    );
+    const autoDarkAttachmentShellSelector =
+      ":global(body:not(.light)) .attachments-scroll-shell";
+    const autoDarkAttachmentShellSelectorIndex = chatStyles.indexOf(
+      autoDarkAttachmentShellSelector,
+    );
+    const autoDarkAttachmentShellMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkAttachmentShellSelectorIndex,
+    );
+    const autoDarkAttachmentShellBlock = readCssBlock(
+      chatStyles.slice(autoDarkAttachmentShellMediaIndex),
+      autoDarkAttachmentShellSelector,
+    );
+    const attachItemRootDeclarations = readRootDeclarations(
+      readCssBlock(chatStyles, ".attach-item"),
+    );
+    const swipeActiveMaskBlock = readCssBlock(
+      chatStyles,
+      '.attach-item[data-swipe-delete-active="true"] .attach-image-mask',
+    );
+    const darkSwipeActiveMaskBlock = readCssBlock(
+      chatStyles,
+      ':global(.dark) .attach-item[data-swipe-delete-active="true"] .attach-image-mask',
+    );
+    const touchAttachmentStyles = readCssBlock(
+      chatStyles,
+      "@media (hover: none), (pointer: coarse), (max-width: 600px)",
+    );
+    const touchAttachImageMaskBlock = readCssBlock(
+      touchAttachmentStyles,
+      ".attach-image-mask",
+    );
+    const darkTouchAttachImageMaskBlock = readCssBlock(
+      touchAttachmentStyles,
+      ":global(.dark) .attach-image-mask",
+    );
+    const attachImageBlock = readCssBlock(chatStyles, ".attach-image");
+    const attachFileBlock = readCssBlock(
+      chatStyles.slice(chatStyles.lastIndexOf("\n.attach-file {")),
+      ".attach-file",
+    );
+    const attachFileCardBlock = readCssBlock(
+      attachFileBlock,
+      ".attach-file-card",
+    );
+    const attachFileNameBlock = readCssBlock(
+      attachFileBlock,
+      ".attach-file-name",
+    );
+    const attachFileSizeBlock = readCssBlock(
+      attachFileBlock,
+      ".attach-file-size",
+    );
+    const attachmentAddButtonBlock = readCssBlock(
+      chatStyles,
+      ".attachment-add-button",
+    );
+    const attachmentAddButtonFocusSelector =
+      "&:not(:disabled):focus-visible";
+    const attachmentAddButtonFocusBlock = readCssBlock(
+      attachmentAddButtonBlock.slice(
+        attachmentAddButtonBlock.lastIndexOf(attachmentAddButtonFocusSelector),
+      ),
+      attachmentAddButtonFocusSelector,
+    );
+    const darkAttachmentAddButtonBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .attachment-add-button",
+    );
+    const darkAttachmentAddButtonFocusBlock = readCssBlock(
+      darkAttachmentAddButtonBlock.slice(
+        darkAttachmentAddButtonBlock.lastIndexOf(
+          attachmentAddButtonFocusSelector,
+        ),
+      ),
+      attachmentAddButtonFocusSelector,
+    );
+    const reducedMotionBlock = readCssBlock(
+      chatStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const attachmentMaskToneScope = [
+      attachmentShellBlock,
+      darkAttachmentShellBlock,
+      autoDarkAttachmentShellBlock,
+      attachItemRootDeclarations,
+      swipeActiveMaskBlock,
+      darkSwipeActiveMaskBlock,
+      touchAttachImageMaskBlock,
+      darkTouchAttachImageMaskBlock,
+    ].join("\n");
+    const legacyAttachmentMaskPaint =
+      /rgba\((?:255,\s*255,\s*255|32,\s*33,\s*36|60,\s*64,\s*67|232,\s*234,\s*237|234,\s*67,\s*53|242,\s*139,\s*130)/;
+
+    expect(attachmentShellBlock).toMatch(
+      /--attachment-edge-surface:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 96%,\s*transparent\);/,
+    );
+    expect(darkAttachmentShellBlock).toMatch(
+      /--attachment-edge-surface:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 86%,\s*transparent\);/,
+    );
+    expect(autoDarkAttachmentShellSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkAttachmentShellMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkAttachmentShellBlock).toMatch(
+      /--attachment-edge-surface:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 86%,\s*transparent\);/,
+    );
+    expect(attachItemRootDeclarations).toMatch(
+      /--attachment-touch-mask-strong-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 16%,\s*transparent\);/,
+    );
+    expect(attachItemRootDeclarations).toMatch(
+      /--attachment-swipe-delete-mask-strong-color:\s*color-mix\(in srgb,\s*rgb\(234,\s*67,\s*53\) 24%,\s*transparent\);/,
+    );
+    expect(attachItemRootDeclarations).toMatch(
+      /var\(--attachment-swipe-delete-mask-strong-color\) 0/,
+    );
+    expect(attachItemRootDeclarations).toMatch(
+      /linear-gradient\(270deg,\s*var\(--attachment-swipe-delete-mask-gradient-color\),\s*transparent 58%\)/,
+    );
+    expect(swipeActiveMaskBlock).toMatch(
+      /background:\s*var\(--attachment-swipe-delete-mask-background\);/,
+    );
+    expect(darkSwipeActiveMaskBlock).toMatch(
+      /background:\s*var\(--attachment-swipe-delete-mask-background\);/,
+    );
+    expect(attachItemRootDeclarations).toMatch(
+      /var\(--attachment-touch-mask-strong-color\) 0/,
+    );
+    expect(touchAttachImageMaskBlock).toMatch(
+      /background:\s*var\(--attachment-touch-mask-background\);/,
+    );
+    expect(darkTouchAttachImageMaskBlock).toMatch(
+      /background:\s*var\(--attachment-touch-mask-background\);/,
+    );
+    expect(attachmentMaskToneScope).not.toMatch(legacyAttachmentMaskPaint);
+    expect(attachImageBlock).toMatch(
+      /&:active\s*\{[\s\S]*transform:\s*scale\(0\.985\);[\s\S]*box-shadow:\s*0 4px 16px var\(--attachment-item-hover-shadow-color\);/,
+    );
+    expect(attachFileBlock).toMatch(
+      /&:active\s*\{[\s\S]*transform:\s*scale\(0\.985\);[\s\S]*box-shadow:\s*0 4px 16px var\(--attachment-item-hover-shadow-color\);/,
+    );
+    expect(attachFileCardBlock).toMatch(/min-width:\s*0;/);
+    expect(attachFileCardBlock).toMatch(/overflow:\s*hidden;/);
+    expect(attachFileNameBlock).toMatch(/min-width:\s*0;/);
+    expect(attachFileNameBlock).toMatch(/max-width:\s*100%;/);
+    expect(attachFileSizeBlock).toMatch(/white-space:\s*nowrap;/);
+    expect(attachFileSizeBlock).toMatch(/text-overflow:\s*ellipsis;/);
+    expect(attachmentAddButtonFocusBlock).toMatch(
+      /outline:\s*var\(--focus-ring\);/,
+    );
+    expect(attachmentAddButtonFocusBlock).toMatch(/outline-offset:\s*2px;/);
+    expect(attachmentAddButtonFocusBlock).toContain("var(--focus-ring-shadow)");
+    expect(attachmentAddButtonFocusBlock).toContain(
+      "inset 0 0 0 1px var(--attachment-add-button-hover-inner-ring-color)",
+    );
+    expect(attachmentAddButtonFocusBlock).toContain(
+      "0 8px 24px var(--attachment-add-button-hover-shadow-color)",
+    );
+    expect(darkAttachmentAddButtonFocusBlock).toMatch(
+      /outline:\s*var\(--focus-ring\);/,
+    );
+    expect(darkAttachmentAddButtonFocusBlock).toMatch(
+      /outline-offset:\s*2px;/,
+    );
+    expect(darkAttachmentAddButtonFocusBlock).toContain(
+      "var(--focus-ring-shadow)",
+    );
+    expect(darkAttachmentAddButtonFocusBlock).toContain(
+      "inset 0 0 0 1px var(--attachment-add-button-hover-inner-ring-color)",
+    );
+    expect(darkAttachmentAddButtonFocusBlock).toContain(
+      "0 8px 24px var(--attachment-add-button-hover-shadow-color)",
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.attach-image,\s*\.attach-file,\s*\.attachment-add-button,\s*\.delete-image,\s*\.attach-image-mask\s*\{[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.attach-image:active,\s*\.attach-file:active,\s*\.attachment-add-button:active,\s*\.attach-item\[data-swipe-delete-active="true"\] \.delete-image\s*\{[\s\S]*transform:\s*none !important;/,
     );
   });
 
