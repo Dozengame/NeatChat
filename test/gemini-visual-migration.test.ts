@@ -29,6 +29,18 @@ function readCssBlock(source: string, selector: string) {
   return "";
 }
 
+function readRootCssBlock(source: string, selector: string) {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const selectorMatch = new RegExp(`(?:^|\\n)${escapedSelector}\\s*\\{`).exec(
+    source,
+  );
+  if (!selectorMatch) return "";
+
+  const selectorIndex =
+    selectorMatch.index + (selectorMatch[0].startsWith("\n") ? 1 : 0);
+  return readCssBlock(source.slice(selectorIndex), selector);
+}
+
 function readRootDeclarations(block: string) {
   const nestedIndex = block.search(/\n\s+[.&:#][^{]+\{/);
   return nestedIndex < 0 ? block : block.slice(0, nestedIndex);
@@ -10160,8 +10172,28 @@ describe("Gemini visual migration shell", () => {
     const selectWithIconBlock = readRootDeclarations(
       readCssBlock(uiLibStyles, ".select-with-icon"),
     );
-    const modalInputBlock = readCssBlock(uiLibStyles, ".modal-input");
+    const modalInputBlock = readRootCssBlock(uiLibStyles, ".modal-input");
     const modalInputFocusBlock = readCssBlock(modalInputBlock, "&:focus");
+    const modalInputFocusVisibleBlock = readCssBlock(
+      modalInputBlock,
+      "&:focus-visible",
+    );
+    const modalInputPlaceholderBlock = readCssBlock(
+      modalInputBlock,
+      "&::placeholder",
+    );
+    const modalInputSelectionBlock = readCssBlock(
+      modalInputBlock,
+      "&::selection",
+    );
+    const longModalInputBlock = readRootCssBlock(
+      uiLibStyles,
+      '.modal-input[data-long-input="true"]',
+    );
+    const longModalContentBlock = readCssBlock(
+      uiLibStyles,
+      '.modal-content:has(.modal-input[data-long-input="true"])',
+    );
     const selectorStyles = uiLibStyles.slice(
       uiLibStyles.lastIndexOf("\n.selector {"),
     );
@@ -10193,6 +10225,14 @@ describe("Gemini visual migration shell", () => {
     const mobileModalBlock = readRootDeclarations(
       readCssBlock(mobileBlock, ".modal-container"),
     );
+    const mobileLongModalContentBlock = readCssBlock(
+      mobileBlock,
+      '.modal-content:has(.modal-input[data-long-input="true"])',
+    );
+    const mobileLongModalInputBlock = readCssBlock(
+      mobileBlock,
+      '.modal-input[data-long-input="true"]',
+    );
     const mobileSelectorBlock = readCssBlock(mobileBlock, ".selector");
     const mobileSelectorContentBlock = readCssBlock(
       mobileSelectorBlock,
@@ -10219,6 +10259,10 @@ describe("Gemini visual migration shell", () => {
       selectWithIconBlock,
       selectBlock,
       modalInputBlock,
+      modalInputPlaceholderBlock,
+      modalInputSelectionBlock,
+      longModalInputBlock,
+      longModalContentBlock,
       selectorBlock,
       selectorContentBlock,
       selectorSearchBlock,
@@ -10275,6 +10319,21 @@ describe("Gemini visual migration shell", () => {
     expect(sharedSurfaceBlock).toMatch(
       /--ui-lib-selected-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 18%,\s*transparent\);/,
     );
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-input-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--gray\)\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-input-border-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 14%,\s*transparent\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-input-placeholder-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 72%,\s*transparent\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-input-selection-background:\s*color-mix\(in srgb,\s*var\(--primary\) 18%,\s*transparent\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-input-focus-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*transparent\);/,
+    );
     expect(darkSharedSurfaceBlock).toMatch(
       /--ui-lib-overlay-background:\s*color-mix\(in srgb,\s*var\(--ui-lib-shadow-ink\) 54%,\s*transparent\);/,
     );
@@ -10290,6 +10349,15 @@ describe("Gemini visual migration shell", () => {
     expect(darkSharedSurfaceBlock).toMatch(
       /--ui-lib-list-hover-background:\s*color-mix\(in srgb,\s*var\(--black\) 8%,\s*transparent\);/,
     );
+    expect(darkSharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-input-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\);/,
+    );
+    expect(darkSharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-input-placeholder-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 78%,\s*transparent\);/,
+    );
+    expect(darkSharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-input-focus-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 22%,\s*transparent\);/,
+    );
     expect(autoDarkSharedSurfaceSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkSharedSurfaceMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkSharedSurfaceBlock).toMatch(
@@ -10300,6 +10368,12 @@ describe("Gemini visual migration shell", () => {
     );
     expect(autoDarkSharedSurfaceBlock).toMatch(
       /--ui-lib-divider-color:\s*color-mix\(in srgb,\s*var\(--black\) 12%,\s*transparent\);/,
+    );
+    expect(autoDarkSharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-input-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\);/,
+    );
+    expect(autoDarkSharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-input-focus-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 22%,\s*transparent\);/,
     );
 
     expect(cardBlock).toMatch(/background-color:\s*var\(--ui-lib-surface\);/);
@@ -10402,18 +10476,51 @@ describe("Gemini visual migration shell", () => {
     expect(selectBlock).toMatch(/border:\s*1px solid var\(--ui-lib-border-color\);/);
     expect(selectBlock).toMatch(/border-radius:\s*var\(--ui-lib-control-radius\);/);
     expect(selectBlock).toMatch(/width:\s*100%;/);
-    expect(modalInputBlock).toMatch(/background-color:\s*var\(--ui-lib-surface\);/);
+    expect(modalInputBlock).toMatch(
+      /background-color:\s*var\(--ui-lib-modal-input-background\);/,
+    );
     expect(modalInputBlock).toMatch(
       /border-radius:\s*var\(--ui-lib-control-radius\);/,
     );
     expect(modalInputBlock).toMatch(
-      /box-shadow:\s*0 -2px 5px var\(--ui-lib-input-shadow-color\);/,
+      /border:\s*1px solid var\(--ui-lib-modal-input-border-color\);/,
+    );
+    expect(modalInputBlock).toMatch(
+      /color:\s*var\(--ui-lib-modal-input-color\);/,
+    );
+    expect(modalInputBlock).toMatch(
+      /box-shadow:\s*0 1px 2px var\(--ui-lib-modal-input-shadow-color\),\s*inset 0 1px 0 var\(--ui-lib-modal-input-inner-shadow-color\);/,
+    );
+    expect(modalInputBlock).toMatch(/line-height:\s*1\.5;/);
+    expect(modalInputBlock).toMatch(/min-width:\s*0;/);
+    expect(modalInputBlock).toMatch(/max-width:\s*100%;/);
+    expect(modalInputBlock).toMatch(/min-height:\s*calc\(4\.5em \+ 22px\);/);
+    expect(modalInputBlock).toMatch(/max-height:\s*min\(48dvh,\s*520px\);/);
+    expect(modalInputBlock).toMatch(/overflow:\s*auto;/);
+    expect(modalInputPlaceholderBlock).toMatch(
+      /color:\s*var\(--ui-lib-modal-input-placeholder-color\);/,
+    );
+    expect(modalInputSelectionBlock).toMatch(
+      /background:\s*var\(--ui-lib-modal-input-selection-background\);/,
     );
     expect(modalInputFocusBlock).toMatch(
-      /border-color:\s*var\(--ui-lib-focus-border-color\);/,
+      /border-color:\s*var\(--ui-lib-modal-input-focus-border-color\);/,
     );
     expect(modalInputFocusBlock).toMatch(
-      /box-shadow:\s*var\(--focus-ring-shadow\);/,
+      /box-shadow:\s*0 0 0 3px var\(--ui-lib-modal-input-focus-shadow-color\),\s*inset 0 1px 0 var\(--ui-lib-modal-input-inner-shadow-color\);/,
+    );
+    expect(modalInputFocusVisibleBlock).toMatch(/outline:\s*none;/);
+    expect(modalInputFocusVisibleBlock).toMatch(
+      /border-color:\s*var\(--ui-lib-modal-input-focus-border-color\);/,
+    );
+    expect(longModalInputBlock).toMatch(
+      /min-height:\s*min\(300px,\s*42dvh\);/,
+    );
+    expect(longModalContentBlock).toMatch(/display:\s*flex;/);
+    expect(longModalContentBlock).toMatch(/min-height:\s*min\(360px,\s*46dvh\);/);
+    expect(longModalContentBlock).toMatch(/overflow:\s*hidden;/);
+    expect(longModalContentBlock).toMatch(
+      /\.modal-input\s*\{[\s\S]*flex:\s*1 1 auto;[\s\S]*\}/,
     );
     expect(selectorBlock).toMatch(
       /background-color:\s*var\(--ui-lib-overlay-background\);/,
@@ -10466,6 +10573,13 @@ describe("Gemini visual migration shell", () => {
     expect(mobileSelectorMediaIndex).toBeGreaterThan(-1);
     expect(mobileModalBlock).toMatch(/min-width:\s*0;/);
     expect(mobileModalBlock).toMatch(/max-width:\s*100vw;/);
+    expect(mobileLongModalContentBlock).toMatch(
+      /min-height:\s*min\(320px,\s*50dvh\);/,
+    );
+    expect(mobileLongModalContentBlock).toMatch(/padding:\s*14px;/);
+    expect(mobileLongModalInputBlock).toMatch(
+      /min-height:\s*min\(280px,\s*46dvh\);/,
+    );
     expect(mobileSelectorBlock).toMatch(/align-items:\s*flex-end;/);
     expect(mobileSelectorContentBlock).toMatch(
       /width:\s*min\(100vw,\s*420px\);/,
@@ -10489,7 +10603,7 @@ describe("Gemini visual migration shell", () => {
     expect(sharedUiLibPaintScope).not.toContain("rgba(0, 0, 0, 0.5)");
     expect(sharedUiLibPaintScope).not.toContain("rgba(0, 0, 0, 0.3)");
     expect(reducedMotionBlock).toMatch(
-      /\.popover-content,[\s\S]*\.list-item,[\s\S]*\.list,[\s\S]*\.modal-container,[\s\S]*\.show,[\s\S]*\.hide[\s\S]*animation:\s*none !important;[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+      /\.popover-content,[\s\S]*\.list-item,[\s\S]*\.list,[\s\S]*\.modal-container,[\s\S]*\.show,[\s\S]*\.hide,[\s\S]*\.modal-input[\s\S]*animation:\s*none !important;[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
     );
   });
 

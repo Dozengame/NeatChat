@@ -29,6 +29,15 @@
   --ui-lib-selected-shadow-color: color-mix(in srgb, var(--primary) 18%, transparent);
   --ui-lib-focus-border-color: var(--primary);
   --ui-lib-list-hover-background: color-mix(in srgb, var(--black) 6%, transparent);
+  --ui-lib-modal-input-background: color-mix(in srgb, var(--surface-elevated) 88%, var(--gray));
+  --ui-lib-modal-input-border-color: color-mix(in srgb, var(--black-50) 14%, transparent);
+  --ui-lib-modal-input-color: color-mix(in srgb, var(--black) 92%, transparent);
+  --ui-lib-modal-input-placeholder-color: color-mix(in srgb, var(--black-50) 72%, transparent);
+  --ui-lib-modal-input-shadow-color: color-mix(in srgb, var(--black-50) 6%, transparent);
+  --ui-lib-modal-input-inner-shadow-color: color-mix(in srgb, var(--white) 58%, transparent);
+  --ui-lib-modal-input-focus-border-color: var(--primary);
+  --ui-lib-modal-input-focus-shadow-color: color-mix(in srgb, var(--primary) 16%, transparent);
+  --ui-lib-modal-input-selection-background: color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
 :global(.dark) .card,
@@ -52,6 +61,15 @@
   --ui-lib-toast-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 24%, transparent);
   --ui-lib-selected-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
   --ui-lib-list-hover-background: color-mix(in srgb, var(--black) 8%, transparent);
+  --ui-lib-modal-input-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--white));
+  --ui-lib-modal-input-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --ui-lib-modal-input-color: color-mix(in srgb, var(--black) 94%, transparent);
+  --ui-lib-modal-input-placeholder-color: color-mix(in srgb, var(--black-50) 78%, transparent);
+  --ui-lib-modal-input-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 18%, transparent);
+  --ui-lib-modal-input-inner-shadow-color: color-mix(in srgb, var(--black) 5%, transparent);
+  --ui-lib-modal-input-focus-border-color: color-mix(in srgb, var(--primary) 82%, var(--black));
+  --ui-lib-modal-input-focus-shadow-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  --ui-lib-modal-input-selection-background: color-mix(in srgb, var(--primary) 24%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -76,6 +94,15 @@
     --ui-lib-toast-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 24%, transparent);
     --ui-lib-selected-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
     --ui-lib-list-hover-background: color-mix(in srgb, var(--black) 8%, transparent);
+    --ui-lib-modal-input-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--white));
+    --ui-lib-modal-input-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+    --ui-lib-modal-input-color: color-mix(in srgb, var(--black) 94%, transparent);
+    --ui-lib-modal-input-placeholder-color: color-mix(in srgb, var(--black-50) 78%, transparent);
+    --ui-lib-modal-input-shadow-color: color-mix(in srgb, var(--ui-lib-shadow-ink) 18%, transparent);
+    --ui-lib-modal-input-inner-shadow-color: color-mix(in srgb, var(--black) 5%, transparent);
+    --ui-lib-modal-input-focus-border-color: color-mix(in srgb, var(--primary) 82%, var(--black));
+    --ui-lib-modal-input-focus-shadow-color: color-mix(in srgb, var(--primary) 22%, transparent);
+    --ui-lib-modal-input-selection-background: color-mix(in srgb, var(--primary) 24%, transparent);
   }
 }
 
@@ -247,6 +274,16 @@
     overflow: auto;
   }
 
+  .modal-content:has(.modal-input[data-long-input="true"]) {
+    display: flex;
+    min-height: min(360px, 46dvh);
+    overflow: hidden;
+
+    .modal-input {
+      flex: 1 1 auto;
+    }
+  }
+
   .modal-footer {
     padding: var(--modal-padding);
     display: flex;
@@ -279,6 +316,15 @@
 
     .modal-content {
       max-height: 50vh;
+    }
+
+    .modal-content:has(.modal-input[data-long-input="true"]) {
+      min-height: min(320px, 50dvh);
+      padding: 14px;
+    }
+
+    .modal-input[data-long-input="true"] {
+      min-height: min(280px, 46dvh);
     }
   }
 
@@ -431,23 +477,50 @@
 }
 
 .modal-input {
-  height: 100%;
+  height: auto;
   width: 100%;
   border-radius: var(--ui-lib-control-radius);
-  border: 1px solid var(--ui-lib-border-color);
-  box-shadow: 0 -2px 5px var(--ui-lib-input-shadow-color);
-  background-color: var(--ui-lib-surface);
-  color: var(--black);
+  border: 1px solid var(--ui-lib-modal-input-border-color);
+  box-shadow:
+    0 1px 2px var(--ui-lib-modal-input-shadow-color),
+    inset 0 1px 0 var(--ui-lib-modal-input-inner-shadow-color);
+  background-color: var(--ui-lib-modal-input-background);
+  color: var(--ui-lib-modal-input-color);
   font-family: inherit;
+  line-height: 1.5;
   padding: 10px;
+  min-width: 0;
+  max-width: 100%;
+  min-height: calc(4.5em + 22px);
+  max-height: min(48dvh, 520px);
+  overflow: auto;
   resize: none;
   outline: none;
   box-sizing: border-box;
 
   &:focus {
-    border-color: var(--ui-lib-focus-border-color);
-    box-shadow: var(--focus-ring-shadow);
+    border-color: var(--ui-lib-modal-input-focus-border-color);
+    box-shadow:
+      0 0 0 3px var(--ui-lib-modal-input-focus-shadow-color),
+      inset 0 1px 0 var(--ui-lib-modal-input-inner-shadow-color);
   }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--ui-lib-modal-input-focus-border-color);
+  }
+
+  &::placeholder {
+    color: var(--ui-lib-modal-input-placeholder-color);
+  }
+
+  &::selection {
+    background: var(--ui-lib-modal-input-selection-background);
+  }
+}
+
+.modal-input[data-long-input="true"] {
+  min-height: min(300px, 42dvh);
 }
 
 .selector {
@@ -565,7 +638,8 @@
   .list,
   .modal-container,
   .show,
-  .hide {
+  .hide,
+  .modal-input {
     animation: none !important;
     transform: none !important;
     transition-duration: 0.01ms !important;
