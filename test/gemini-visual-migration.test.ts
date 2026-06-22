@@ -5346,13 +5346,20 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body .katex-display > .katex",
     );
-    const darkKatexDisplayBlock = readCssBlock(
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const autoDarkMediaBlock = readCssBlock(
       markdownStyles,
-      ".dark .markdown-body .katex-display",
+      "@media (prefers-color-scheme: dark)",
     );
+    const autoDarkRootBlock = readCssBlock(autoDarkMediaBlock, ":root");
     const mobileBlock = readCssBlock(
       markdownStyles,
       "@media only screen and (max-width: 600px)",
+    );
+    const mobileKatexDisplayBlock = readCssBlock(
+      mobileBlock,
+      ".markdown-body .katex-display",
     );
 
     expect(markdown).toContain('import "katex/dist/katex.min.css";');
@@ -5360,7 +5367,23 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toContain('import RehypeKatex from "rehype-katex";');
     expect(markdown).toContain("remarkPlugins={[RemarkMath, RemarkGfm, RemarkBreaks]}");
     expect(markdown).toContain("RehypeKatex");
+    expect(lightMixinBlock).toMatch(
+      /--markdown-math-display-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-math-display-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 72%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-math-display-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-math-display-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 62%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkRootBlock).toMatch(/@include dark;/);
     expect(katexDisplayBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(readRootDeclarations(katexDisplayBlock)).toMatch(
+      /--markdown-math-display-radius:\s*8px;/,
+    );
     expect(katexDisplayBlock).toMatch(/width:\s*100%;/);
     expect(katexDisplayBlock).toMatch(/max-width:\s*100%;/);
     expect(katexDisplayBlock).toMatch(/margin:\s*14px 0 16px;/);
@@ -5371,23 +5394,27 @@ describe("Gemini visual migration shell", () => {
     expect(katexDisplayBlock).toMatch(/scrollbar-width:\s*thin;/);
     expect(katexDisplayBlock).toMatch(/-webkit-overflow-scrolling:\s*touch;/);
     expect(katexDisplayBlock).toMatch(
-      /border:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.1\);/,
+      /border:\s*1px solid var\(--markdown-math-display-border-color\);/,
     );
-    expect(katexDisplayBlock).toMatch(/border-radius:\s*14px;/);
     expect(katexDisplayBlock).toMatch(
-      /background:\s*rgba\(248,\s*249,\s*250,\s*0\.72\);/,
+      /border-radius:\s*var\(--markdown-math-display-radius\);/,
+    );
+    expect(katexDisplayBlock).toMatch(
+      /background:\s*var\(--markdown-math-display-background\);/,
     );
     expect(katexDisplayFormulaBlock).toMatch(/display:\s*inline-block;/);
     expect(katexDisplayFormulaBlock).toMatch(/min-width:\s*max-content;/);
     expect(katexDisplayFormulaBlock).toMatch(/max-width:\s*none;/);
-    expect(darkKatexDisplayBlock).toMatch(
-      /background:\s*rgba\(255,\s*255,\s*255,\s*0\.045\);/,
+    expect(markdownStyles).not.toMatch(
+      /\.dark\s+\.markdown-body\s+\.katex-display\s*\{/,
     );
-    expect(darkKatexDisplayBlock).toMatch(
-      /border-color:\s*rgba\(255,\s*255,\s*255,\s*0\.08\);/,
+    expect(katexDisplayBlock).not.toMatch(
+      /rgba\(60,\s*64,\s*67|rgba\(248,\s*249,\s*250|rgba\(255,\s*255,\s*255/,
     );
+    expect(mobileKatexDisplayBlock).toMatch(/padding:\s*10px 12px;/);
+    expect(mobileKatexDisplayBlock).not.toMatch(/border-radius:\s*12px;/);
     expect(mobileBlock).toMatch(
-      /\.markdown-body \.katex-display\s*\{[\s\S]*padding:\s*10px 12px;[\s\S]*border-radius:\s*12px;/,
+      /\.markdown-body \.katex-display\s*\{[\s\S]*padding:\s*10px 12px;/,
     );
     expect(markdownStyles).not.toMatch(
       /\.markdown-body\s+\.katex\s*\{[\s\S]*display:\s*block;/,

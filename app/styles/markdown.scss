@@ -125,6 +125,16 @@ summary,
     var(--markdown-link-color) 8%,
     transparent
   );
+  --markdown-math-display-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --markdown-math-display-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 72%,
+    transparent
+  );
   --markdown-table-shell-border-color: color-mix(
     in srgb,
     var(--black-50) 12%,
@@ -279,6 +289,16 @@ summary,
   --markdown-token-info-hover-shadow-color: color-mix(
     in srgb,
     var(--markdown-link-color) 8%,
+    transparent
+  );
+  --markdown-math-display-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --markdown-math-display-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 62%,
     transparent
   );
   --markdown-table-shell-border-color: color-mix(
@@ -864,6 +884,7 @@ summary,
 }
 
 .markdown-body .katex-display {
+  --markdown-math-display-radius: 8px;
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
@@ -874,9 +895,9 @@ summary,
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
-  border: 1px solid rgba(60, 64, 67, 0.1);
-  border-radius: 14px;
-  background: rgba(248, 249, 250, 0.72);
+  border: 1px solid var(--markdown-math-display-border-color);
+  border-radius: var(--markdown-math-display-radius);
+  background: var(--markdown-math-display-background);
   text-align: left;
 }
 
@@ -884,11 +905,6 @@ summary,
   display: inline-block;
   min-width: max-content;
   max-width: none;
-}
-
-.dark .markdown-body .katex-display {
-  background: rgba(255, 255, 255, 0.045);
-  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .markdown-table-scroll-fade {
@@ -2344,7 +2360,6 @@ summary,
 @media only screen and (max-width: 600px) {
   .markdown-body .katex-display {
     padding: 10px 12px;
-    border-radius: 12px;
   }
 
   .markdown-body-container .token-info {
