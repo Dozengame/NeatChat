@@ -337,9 +337,29 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-mobile-model-title",
     );
+    const mobileModelTitleExpandedBlock = readCssBlock(
+      chatStyles,
+      '.chat-mobile-model-title[aria-expanded="true"]',
+    );
+    const mobileModelTitleFocusBlock = readCssBlock(
+      chatStyles,
+      ".chat-mobile-model-title:focus-visible",
+    );
+    const desktopModelTitleBlock = readCssBlock(
+      chatStyles,
+      ".chat-desktop-model-title",
+    );
+    const desktopModelTitleExpandedBlock = readCssBlock(
+      chatStyles,
+      '.chat-desktop-model-title[aria-expanded="true"]',
+    );
     const mobileModelMenuBlock = readCssBlock(
       chatStyles,
       ".chat-mobile-model-menu",
+    );
+    const desktopModelMenuBlock = readCssBlock(
+      chatStyles,
+      ".chat-desktop-model-menu",
     );
     const mobileModelListBlock = readCssBlock(
       chatStyles,
@@ -348,6 +368,10 @@ describe("Gemini visual migration shell", () => {
     const mobileModelOptionBlock = readCssBlock(
       chatStyles,
       ".chat-mobile-model-option",
+    );
+    const mobileModelOptionSharedBlock = readCssBlock(
+      chatStyles,
+      ".chat-mobile-model-option,\n.chat-mobile-reasoning-option",
     );
     const mobileMenuModelOptionBlock = readCssBlock(
       chatStyles,
@@ -368,6 +392,18 @@ describe("Gemini visual migration shell", () => {
     const desktopMenuModelOptionSelectedBlock = readCssBlock(
       chatStyles,
       ".chat-desktop-model-menu .chat-mobile-model-option-selected",
+    );
+    const mobileReasoningOptionSelectedBlock = readCssBlock(
+      chatStyles,
+      ".chat-mobile-reasoning-option-selected",
+    );
+    const mobileMenuReasoningOptionSelectedBlock = readCssBlock(
+      chatStyles,
+      ".chat-mobile-model-menu .chat-mobile-reasoning-option-selected",
+    );
+    const desktopMenuReasoningOptionSelectedBlock = readCssBlock(
+      chatStyles,
+      ".chat-desktop-model-menu .chat-mobile-reasoning-option-selected",
     );
     const mobileMenuCheckBlock = readCssBlock(
       chatStyles,
@@ -436,6 +472,52 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-desktop-header-action",
     );
+    const darkMobileModelMenuBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-mobile-model-menu",
+    );
+    const darkDesktopModelMenuBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-desktop-model-menu",
+    );
+    const darkMobileModelTitleBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-mobile-model-title",
+    );
+    const darkDesktopModelTitleBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-desktop-model-title",
+    );
+    const darkDesktopHeaderActionsBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-desktop-header-actions",
+    );
+    const autoDarkMobileModelMenuSelector =
+      ":global(body:not(.light)) .chat-mobile-model-menu";
+    const autoDarkMobileModelMenuSelectorIndex = chatStyles.indexOf(
+      autoDarkMobileModelMenuSelector,
+    );
+    const autoDarkMobileModelMenuMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkMobileModelMenuSelectorIndex,
+    );
+    const autoDarkMobileModelMenuBlock = readCssBlock(
+      chatStyles.slice(autoDarkMobileModelMenuMediaIndex),
+      autoDarkMobileModelMenuSelector,
+    );
+    const autoDarkDesktopModelMenuSelector =
+      ":global(body:not(.light)) .chat-desktop-model-menu";
+    const autoDarkDesktopModelMenuSelectorIndex = chatStyles.indexOf(
+      autoDarkDesktopModelMenuSelector,
+    );
+    const autoDarkDesktopModelMenuMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkDesktopModelMenuSelectorIndex,
+    );
+    const autoDarkDesktopModelMenuBlock = readCssBlock(
+      chatStyles.slice(autoDarkDesktopModelMenuMediaIndex),
+      autoDarkDesktopModelMenuSelector,
+    );
     const mobileDesktopHeaderActionsBlock = readCssBlock(
       mobileStyles,
       ".chat-desktop-header-actions",
@@ -450,6 +532,44 @@ describe("Gemini visual migration shell", () => {
     ].join("\n");
     const legacyMessageCopySuccessPaint =
       /rgba\((?:52,\s*168,\s*83|24,\s*128,\s*56|129,\s*201,\s*149)/;
+    const modelMenuTokenNames = [
+      "--chat-model-menu-background",
+      "--chat-model-menu-border-color",
+      "--chat-model-menu-shadow",
+      "--chat-model-option-hover-background",
+      "--chat-model-option-selected-background",
+      "--chat-model-option-selected-border-color",
+      "--chat-model-option-selected-accent-shadow",
+      "--chat-model-section-head-background",
+      "--chat-model-divider-color",
+      "--chat-model-option-text-color",
+      "--chat-model-option-muted-color",
+      "--chat-model-option-check-color",
+    ];
+    const mobileModelMenuTokenMap = readCustomProperties(
+      mobileModelMenuBlock,
+      modelMenuTokenNames,
+    );
+    const desktopModelMenuTokenMap = readCustomProperties(
+      desktopModelMenuBlock,
+      modelMenuTokenNames,
+    );
+    const darkMobileModelMenuTokenMap = readCustomProperties(
+      darkMobileModelMenuBlock,
+      modelMenuTokenNames,
+    );
+    const darkDesktopModelMenuTokenMap = readCustomProperties(
+      darkDesktopModelMenuBlock,
+      modelMenuTokenNames,
+    );
+    const autoDarkMobileModelMenuTokenMap = readCustomProperties(
+      autoDarkMobileModelMenuBlock,
+      modelMenuTokenNames,
+    );
+    const autoDarkDesktopModelMenuTokenMap = readCustomProperties(
+      autoDarkDesktopModelMenuBlock,
+      modelMenuTokenNames,
+    );
     const messageCopyStatusBlock = readCssBlock(
       chatStyles,
       ".chat-message-copy-status",
@@ -1680,6 +1800,18 @@ describe("Gemini visual migration shell", () => {
     expect(desktopHeaderActionsBlock).toMatch(/padding:\s*3px;/);
     expect(desktopHeaderActionsBlock).toMatch(/border-radius:\s*999px;/);
     expect(desktopHeaderActionsBlock).toMatch(
+      /--chat-header-actions-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\)/,
+    );
+    expect(desktopHeaderActionsBlock).toMatch(
+      /border:\s*1px solid var\(--chat-header-actions-border-color\);/,
+    );
+    expect(desktopHeaderActionsBlock).toMatch(
+      /background:\s*var\(--chat-header-actions-background\);/,
+    );
+    expect(desktopHeaderActionsBlock).toMatch(
+      /box-shadow:\s*var\(--chat-header-actions-shadow\);/,
+    );
+    expect(desktopHeaderActionsBlock).toMatch(
       /max-width:\s*min\(240px,\s*28vw\);/,
     );
     expect(desktopHeaderActionBlock).toMatch(/flex:\s*0 0 auto;/);
@@ -1695,36 +1827,87 @@ describe("Gemini visual migration shell", () => {
     expect(desktopHeaderActionBlock).toMatch(
       /:global\(button\)[\s\S]*padding:\s*0;/,
     );
+    expect(desktopHeaderActionBlock).toMatch(
+      /:global\(button:hover\),[\s\S]*:global\(button:focus-visible\)[\s\S]*border-color:\s*var\(--chat-header-action-hover-border-color\);/,
+    );
     expect(mobileDesktopHeaderActionsBlock).toMatch(/display:\s*none;/);
     expect(chatStyles).toContain(".chat-mobile-header");
     expect(chatStyles).toContain(".chat-mobile-header-button");
     expect(mobileHeaderButtonBlock).toMatch(/width:\s*40px;/);
     expect(mobileHeaderButtonBlock).toMatch(/height:\s*40px;/);
+    expect(mobileHeaderButtonBlock).toMatch(
+      /--chat-mobile-header-button-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--black-50\)/,
+    );
+    expect(mobileHeaderButtonBlock).toMatch(
+      /&:hover[\s\S]*background:\s*var\(--chat-mobile-header-button-hover-background\)\s*!important;/,
+    );
     expect(mobileModelTitleBlock).toMatch(/min-height:\s*40px;/);
     expect(mobileModelTitleBlock).toMatch(/padding:\s*0 12px;/);
     expect(mobileModelTitleBlock).toMatch(
-      /border:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.1\);/,
+      /--chat-model-title-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--black-50\)/,
     );
     expect(mobileModelTitleBlock).toMatch(/border-radius:\s*999px;/);
     expect(mobileModelTitleBlock).toMatch(
-      /background:\s*rgba\(255,\s*255,\s*255,\s*0\.78\);/,
+      /color:\s*var\(--chat-model-title-color\);/,
     );
     expect(mobileModelTitleBlock).toMatch(
-      /box-shadow:\s*0 2px 10px rgba\(60,\s*64,\s*67,\s*0\.1\);/,
+      /background:\s*transparent\s*!important;/,
     );
     expect(mobileModelTitleBlock).toMatch(/backdrop-filter:\s*blur\(14px\);/);
     expect(mobileModelTitleBlock).toMatch(
-      /&:hover[\s\S]*background:\s*var\(--hover-color\);/,
+      /&:hover[\s\S]*background:\s*var\(--chat-model-title-hover-background\)\s*!important;/,
+    );
+    expect(desktopModelTitleBlock).toMatch(
+      /--chat-model-title-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--black-50\)/,
+    );
+    expect(desktopModelTitleBlock).toMatch(
+      /&:hover[\s\S]*background:\s*var\(--chat-model-title-hover-background\)\s*!important;/,
     );
     expect(chatStyles).toMatch(/@media only screen and \(min-width: 901px\)/);
     expect(chatStyles).toContain(".chat-input-action-menu");
     expect(chatStyles).toContain(".chat-input-action-menu-backdrop");
     expect(chatStyles).toContain(".chat-mobile-model-title[aria-expanded");
-    expect(chatStyles).toMatch(
-      /\.chat-mobile-model-title\[aria-expanded="true"\][\s\S]*background:\s*var\(--surface-elevated\);[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\);/,
+    expect(mobileModelTitleExpandedBlock).toMatch(
+      /border-color:\s*var\(--chat-model-title-expanded-border-color\)\s*!important;/,
+    );
+    expect(mobileModelTitleExpandedBlock).toMatch(
+      /background:\s*var\(--chat-model-title-expanded-background\)\s*!important;/,
+    );
+    expect(mobileModelTitleExpandedBlock).toMatch(
+      /box-shadow:\s*var\(--focus-ring-shadow\)\s*!important;/,
+    );
+    expect(mobileModelTitleFocusBlock).toMatch(
+      /box-shadow:\s*var\(--focus-ring-shadow\)\s*!important;/,
+    );
+    expect(desktopModelTitleExpandedBlock).toMatch(
+      /border-color:\s*var\(--chat-model-title-expanded-border-color\)\s*!important;/,
+    );
+    expect(darkMobileModelTitleBlock).not.toMatch(
+      /(border-color:\s*transparent|background:\s*transparent|box-shadow:\s*none)\s*!important;/,
+    );
+    expect(darkDesktopModelTitleBlock).not.toMatch(
+      /(border-color:\s*transparent|background:\s*transparent|box-shadow:\s*none)\s*!important;/,
     );
     expect(chatStyles).toContain(".chat-mobile-model-menu-backdrop");
     expect(chatStyles).toContain(".chat-mobile-model-menu");
+    for (const tokenMap of [
+      mobileModelMenuTokenMap,
+      desktopModelMenuTokenMap,
+      darkMobileModelMenuTokenMap,
+      darkDesktopModelMenuTokenMap,
+      autoDarkMobileModelMenuTokenMap,
+      autoDarkDesktopModelMenuTokenMap,
+    ]) {
+      expect(Object.values(tokenMap)).not.toContain("");
+    }
+    expect(autoDarkMobileModelMenuSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkMobileModelMenuMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkDesktopModelMenuSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkDesktopModelMenuMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkMobileModelMenuTokenMap).toEqual(darkMobileModelMenuTokenMap);
+    expect(autoDarkDesktopModelMenuTokenMap).toEqual(
+      darkDesktopModelMenuTokenMap,
+    );
     expect(mobileModelMenuBlock).toMatch(
       /width:\s*min\(320px,\s*calc\(100vw - 48px\)\);/,
     );
@@ -1735,49 +1918,96 @@ describe("Gemini visual migration shell", () => {
       /max-height:\s*min\(640px,\s*calc\(100vh - 96px\)\);/,
     );
     expect(mobileModelMenuBlock).toMatch(/padding:\s*12px;/);
-    expect(mobileModelMenuBlock).toMatch(/border-radius:\s*24px;/);
+    expect(mobileModelMenuBlock).toMatch(
+      /border:\s*1px solid var\(--chat-model-menu-border-color\);/,
+    );
+    expect(mobileModelMenuBlock).toMatch(
+      /border-radius:\s*var\(--chat-model-menu-radius\);/,
+    );
+    expect(mobileModelMenuBlock).toMatch(
+      /background:\s*var\(--chat-model-menu-background\);/,
+    );
+    expect(mobileModelMenuBlock).toMatch(
+      /box-shadow:\s*var\(--chat-model-menu-shadow\);/,
+    );
+    expect(desktopModelMenuBlock).toMatch(
+      /border:\s*1px solid var\(--chat-model-menu-border-color\);/,
+    );
+    expect(desktopModelMenuBlock).toMatch(
+      /background:\s*var\(--chat-model-menu-background\);/,
+    );
+    expect(desktopModelMenuBlock).toMatch(
+      /box-shadow:\s*var\(--chat-model-menu-shadow\);/,
+    );
     expect(mobileModelListBlock).toMatch(/max-height:\s*min\(260px,\s*34vh\);/);
     expect(mobileModelListBlock).toMatch(/padding-right:\s*2px;/);
     expect(mobileModelOptionBlock).toMatch(
       /grid-template-columns:\s*34px minmax\(0,\s*1fr\);/,
     );
     expect(mobileModelOptionBlock).toMatch(/padding:\s*9px 12px 9px 0;/);
+    expect(mobileModelOptionSharedBlock).toMatch(
+      /color:\s*var\(--chat-model-option-text-color\);/,
+    );
+    expect(mobileModelOptionSharedBlock).toMatch(
+      /&:hover,[\s\S]*&:focus-visible[\s\S]*background:\s*var\(--chat-model-option-hover-background\);/,
+    );
     expect(mobileModelOptionSelectedBlock).toMatch(
-      /background:\s*rgba\(25,\s*103,\s*210,\s*0\.1\);/,
+      /background:\s*var\(--chat-model-option-selected-background\);/,
+    );
+    expect(mobileReasoningOptionSelectedBlock).toMatch(
+      /background:\s*var\(--chat-model-option-selected-background\);/,
     );
     expect(mobileMenuModelOptionBlock).toMatch(/box-sizing:\s*border-box;/);
     expect(mobileMenuModelOptionBlock).toMatch(
       /border:\s*1px solid transparent;/,
     );
     expect(mobileMenuModelOptionSelectedBlock).toMatch(
-      /border-color:\s*rgba\(25,\s*103,\s*210,\s*0\.18\);/,
+      /border-color:\s*var\(--chat-model-option-selected-border-color\);/,
     );
     expect(mobileMenuModelOptionSelectedBlock).toMatch(
-      /color:\s*var\(--primary\);/,
+      /color:\s*var\(--chat-model-option-selected-color\);/,
     );
     expect(mobileMenuModelOptionSelectedBlock).toMatch(/font-weight:\s*600;/);
     expect(mobileMenuModelOptionSelectedBlock).toMatch(
-      /box-shadow:\s*inset 3px 0 0 rgba\(25,\s*103,\s*210,\s*0\.55\);/,
+      /box-shadow:\s*var\(--chat-model-option-selected-accent-shadow\);/,
+    );
+    expect(mobileMenuReasoningOptionSelectedBlock).toMatch(
+      /border-color:\s*var\(--chat-model-option-selected-border-color\);/,
+    );
+    expect(mobileMenuReasoningOptionSelectedBlock).toMatch(
+      /box-shadow:\s*var\(--chat-model-option-selected-accent-shadow\);/,
     );
     expect(desktopMenuModelOptionBlock).toMatch(/box-sizing:\s*border-box;/);
     expect(desktopMenuModelOptionBlock).toMatch(
       /border:\s*1px solid transparent;/,
     );
     expect(desktopMenuModelOptionSelectedBlock).toMatch(
-      /border-color:\s*rgba\(25,\s*103,\s*210,\s*0\.16\);/,
+      /border-color:\s*var\(--chat-model-option-selected-border-color\);/,
     );
     expect(desktopMenuModelOptionSelectedBlock).toMatch(
-      /color:\s*var\(--primary\);/,
+      /color:\s*var\(--chat-model-option-selected-color\);/,
     );
     expect(desktopMenuModelOptionSelectedBlock).toMatch(/font-weight:\s*600;/);
     expect(desktopMenuModelOptionSelectedBlock).toMatch(
-      /box-shadow:\s*inset 3px 0 0 rgba\(25,\s*103,\s*210,\s*0\.42\);/,
+      /box-shadow:\s*var\(--chat-model-option-selected-accent-shadow\);/,
+    );
+    expect(desktopMenuReasoningOptionSelectedBlock).toMatch(
+      /border-color:\s*var\(--chat-model-option-selected-border-color\);/,
+    );
+    expect(desktopMenuReasoningOptionSelectedBlock).toMatch(
+      /box-shadow:\s*var\(--chat-model-option-selected-accent-shadow\);/,
     );
     expect(mobileMenuCheckBlock).toMatch(/display:\s*inline-flex;/);
     expect(mobileMenuCheckBlock).toMatch(/align-items:\s*center;/);
     expect(mobileMenuCheckBlock).toMatch(/justify-content:\s*center;/);
     expect(mobileMenuCheckBlock).toMatch(/width:\s*34px;/);
+    expect(mobileMenuCheckBlock).toMatch(
+      /color:\s*var\(--chat-model-option-check-color\);/,
+    );
     expect(mobileReasoningHeadBlock).toMatch(/padding:\s*10px 12px 10px 46px;/);
+    expect(mobileReasoningHeadBlock).toMatch(
+      /background:\s*var\(--chat-model-section-head-background\);/,
+    );
     expect(mobileReasoningListBlock).toMatch(/padding-right:\s*2px;/);
     expect(mobileReasoningOptionBlock).toMatch(
       /grid-template-columns:\s*34px minmax\(0,\s*1fr\);/,

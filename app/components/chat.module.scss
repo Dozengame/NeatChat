@@ -1038,6 +1038,13 @@
 }
 
 .chat-mobile-header-button {
+  --chat-mobile-header-button-color: var(--black);
+  --chat-mobile-header-button-hover-background: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+
   appearance: none;
   display: flex;
   align-items: center;
@@ -1048,13 +1055,11 @@
   border: var(--border-in-light);
   border-color: transparent !important;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.78);
   background: transparent !important;
-  box-shadow: 0 2px 10px rgba(60, 64, 67, 0.1);
   box-shadow: none !important;
   backdrop-filter: blur(14px);
   backdrop-filter: none !important;
-  color: var(--black);
+  color: var(--chat-mobile-header-button-color);
   cursor: pointer;
 
   svg {
@@ -1063,32 +1068,42 @@
   }
 
   &:hover {
-    background: rgba(0, 0, 0, 0.06) !important;
+    background: var(--chat-mobile-header-button-hover-background) !important;
   }
 
   &:focus-visible {
     outline: var(--focus-ring);
     outline-offset: 2px;
-    background: rgba(0, 0, 0, 0.06) !important;
+    background: var(--chat-mobile-header-button-hover-background) !important;
     box-shadow: none !important;
   }
 }
 
 .chat-mobile-model-title {
+  --chat-model-title-color: var(--black);
+  --chat-model-title-muted-color: var(--black-50);
+  --chat-model-title-hover-background: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --chat-model-title-expanded-background: var(--surface-elevated);
+  --chat-model-title-expanded-border-color: color-mix(
+    in srgb,
+    var(--primary) 26%,
+    transparent
+  );
+
   appearance: none;
   min-width: 0;
   min-height: 40px;
   max-width: calc(100% - 112px);
   padding: 0 12px;
   box-sizing: border-box;
-
-  // Required by Jest tests, DO NOT delete or reorder:
-  border: 1px solid rgba(60, 64, 67, 0.1);
+  border: 1px solid transparent;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow: 0 2px 10px rgba(60, 64, 67, 0.1);
   backdrop-filter: blur(14px);
-  color: var(--black);
+  color: var(--chat-model-title-color);
   cursor: pointer;
   font: inherit;
   font-size: 14px;
@@ -1112,23 +1127,23 @@
   box-shadow: none !important;
 
   &:hover {
-    background: var(--hover-color);
-    background: rgba(0, 0, 0, 0.06) !important;
+    background: var(--chat-model-title-hover-background) !important;
   }
 }
 
 .chat-mobile-model-title-arrow {
   flex: 0 0 auto;
-  color: var(--black-50);
+  color: var(--chat-model-title-muted-color);
   font-size: 13px;
   line-height: 1;
   transform: translateY(1px);
 }
 
 .chat-mobile-model-title[aria-expanded="true"] {
-  color: var(--black);
-  background: var(--surface-elevated);
-  box-shadow: var(--focus-ring-shadow);
+  border-color: var(--chat-model-title-expanded-border-color) !important;
+  color: var(--chat-model-title-color);
+  background: var(--chat-model-title-expanded-background) !important;
+  box-shadow: var(--focus-ring-shadow) !important;
 
   .chat-mobile-model-title-arrow {
     transform: rotate(180deg) translateY(-1px);
@@ -1139,7 +1154,7 @@
   outline: var(--focus-ring);
   outline-offset: 4px;
   border-radius: 999px;
-  box-shadow: var(--focus-ring-shadow);
+  box-shadow: var(--focus-ring-shadow) !important;
 }
 
 .chat-mobile-model-menu-backdrop {
@@ -1157,6 +1172,52 @@
 }
 
 .chat-mobile-model-menu {
+  --chat-model-menu-radius: 8px;
+  --chat-model-menu-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 94%,
+    transparent
+  );
+  --chat-model-menu-border-color: color-mix(
+    in srgb,
+    var(--black-50) 16%,
+    transparent
+  );
+  --chat-model-menu-shadow: 0 24px 64px
+      color-mix(in srgb, var(--black-50) 18%, transparent),
+    0 6px 18px color-mix(in srgb, var(--black-50) 10%, transparent);
+  --chat-model-option-hover-background: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --chat-model-option-selected-background: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    transparent
+  );
+  --chat-model-option-selected-border-color: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
+  --chat-model-option-selected-accent-shadow: inset 3px 0 0
+    color-mix(in srgb, var(--primary) 55%, transparent);
+  --chat-model-option-selected-color: var(--primary);
+  --chat-model-section-head-background: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --chat-model-divider-color: color-mix(
+    in srgb,
+    var(--black-50) 18%,
+    transparent
+  );
+  --chat-model-option-text-color: var(--black);
+  --chat-model-option-muted-color: var(--black-50);
+  --chat-model-option-check-color: var(--primary);
+
   position: fixed;
   top: calc(env(safe-area-inset-top) + 60px);
   left: 50%;
@@ -1168,12 +1229,10 @@
   transform: translateX(-50%);
   overflow: auto;
   overscroll-behavior: contain;
-  border: 1px solid rgba(60, 64, 67, 0.1);
-  border-radius: 24px;
-  background: var(--surface-elevated);
-  box-shadow:
-    0 26px 72px rgba(60, 64, 67, 0.14),
-    0 6px 18px rgba(60, 64, 67, 0.1);
+  border: 1px solid var(--chat-model-menu-border-color);
+  border-radius: var(--chat-model-menu-radius);
+  background: var(--chat-model-menu-background);
+  box-shadow: var(--chat-model-menu-shadow);
   backdrop-filter: blur(24px);
 
   // Transitions & Hidden States
@@ -1233,13 +1292,13 @@
   border: 0;
   border-radius: 14px;
   background: transparent;
-  color: var(--black);
+  color: var(--chat-model-option-text-color);
   cursor: pointer;
   text-align: left;
 
   &:hover,
   &:focus-visible {
-    background: rgba(60, 64, 67, 0.08);
+    background: var(--chat-model-option-hover-background);
   }
 
   &:focus-visible {
@@ -1250,11 +1309,11 @@
 }
 
 .chat-mobile-model-option-selected {
-  background: rgba(25, 103, 210, 0.1);
+  background: var(--chat-model-option-selected-background);
 }
 
 .chat-mobile-reasoning-option-selected {
-  background: rgba(25, 103, 210, 0.1);
+  background: var(--chat-model-option-selected-background);
 }
 
 .chat-mobile-model-option {
@@ -1277,17 +1336,17 @@
 }
 
 .chat-mobile-model-menu .chat-mobile-model-option-selected {
-  border-color: rgba(25, 103, 210, 0.18);
-  color: var(--primary);
+  border-color: var(--chat-model-option-selected-border-color);
+  color: var(--chat-model-option-selected-color);
   font-weight: 600;
-  box-shadow: inset 3px 0 0 rgba(25, 103, 210, 0.55);
+  box-shadow: var(--chat-model-option-selected-accent-shadow);
 }
 
 .chat-mobile-model-menu .chat-mobile-reasoning-option-selected {
-  border-color: rgba(25, 103, 210, 0.18);
-  color: var(--primary);
+  border-color: var(--chat-model-option-selected-border-color);
+  color: var(--chat-model-option-selected-color);
   font-weight: 600;
-  box-shadow: inset 3px 0 0 rgba(25, 103, 210, 0.55);
+  box-shadow: var(--chat-model-option-selected-accent-shadow);
 }
 
 .chat-desktop-model-menu .chat-mobile-model-option {
@@ -1301,17 +1360,17 @@
 }
 
 .chat-desktop-model-menu .chat-mobile-model-option-selected {
-  border-color: rgba(25, 103, 210, 0.16);
-  color: var(--primary);
+  border-color: var(--chat-model-option-selected-border-color);
+  color: var(--chat-model-option-selected-color);
   font-weight: 600;
-  box-shadow: inset 3px 0 0 rgba(25, 103, 210, 0.42);
+  box-shadow: var(--chat-model-option-selected-accent-shadow);
 }
 
 .chat-desktop-model-menu .chat-mobile-reasoning-option-selected {
-  border-color: rgba(25, 103, 210, 0.16);
-  color: var(--primary);
+  border-color: var(--chat-model-option-selected-border-color);
+  color: var(--chat-model-option-selected-color);
   font-weight: 600;
-  box-shadow: inset 3px 0 0 rgba(25, 103, 210, 0.42);
+  box-shadow: var(--chat-model-option-selected-accent-shadow);
 }
 
 .chat-mobile-menu-check {
@@ -1320,7 +1379,7 @@
   justify-content: center;
   width: 34px;
   min-width: 34px;
-  color: var(--primary);
+  color: var(--chat-model-option-check-color);
   font-size: 20px;
   line-height: 1;
 }
@@ -1345,7 +1404,7 @@
 
 .chat-mobile-model-provider {
   overflow: hidden;
-  color: var(--black-50);
+  color: var(--chat-model-option-muted-color);
   font-size: 13px;
   line-height: 1.25;
   letter-spacing: 0;
@@ -1355,7 +1414,7 @@
 
 .chat-mobile-model-empty {
   padding: 18px;
-  color: var(--black-50);
+  color: var(--chat-model-option-muted-color);
   font-size: 14px;
   text-align: center;
 }
@@ -1363,7 +1422,7 @@
 .chat-mobile-model-divider {
   height: 1px;
   margin: 8px 0 10px;
-  background: rgba(60, 64, 67, 0.14);
+  background: var(--chat-model-divider-color);
 }
 
 .chat-mobile-reasoning-head {
@@ -1377,8 +1436,8 @@
   padding: 10px 12px 10px 46px;
   border: 0;
   border-radius: 14px;
-  background: rgba(60, 64, 67, 0.08);
-  color: var(--black);
+  background: var(--chat-model-section-head-background);
+  color: var(--chat-model-option-text-color);
   cursor: pointer;
   font: inherit;
   text-align: left;
@@ -1396,7 +1455,7 @@
 
   small {
     margin-top: 5px;
-    color: var(--black-50);
+    color: var(--chat-model-option-muted-color);
     font-size: 13px;
     line-height: 1.25;
   }
@@ -1409,27 +1468,82 @@
 }
 
 .chat-mobile-reasoning-caret {
-  color: var(--black-50);
+  color: var(--chat-model-option-muted-color);
   font-size: 16px;
   line-height: 1;
 }
 
 :global(.dark) .chat-mobile-model-menu {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: var(--surface-elevated);
-  box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.42),
-    0 4px 16px rgba(0, 0, 0, 0.32);
+  --chat-model-menu-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 90%,
+    transparent
+  );
+  --chat-model-menu-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --chat-model-menu-shadow: 0 22px 60px
+      color-mix(in srgb, var(--gray) 46%, transparent),
+    0 4px 16px color-mix(in srgb, var(--gray) 36%, transparent);
+  --chat-model-option-hover-background: color-mix(
+    in srgb,
+    var(--black) 8%,
+    transparent
+  );
+  --chat-model-option-selected-background: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    var(--surface)
+  );
+  --chat-model-option-selected-border-color: color-mix(
+    in srgb,
+    var(--primary) 28%,
+    transparent
+  );
+  --chat-model-option-selected-accent-shadow: inset 3px 0 0
+    color-mix(in srgb, var(--primary) 46%, var(--black));
+  --chat-model-option-selected-color: color-mix(
+    in srgb,
+    var(--black) 94%,
+    transparent
+  );
+  --chat-model-section-head-background: color-mix(
+    in srgb,
+    var(--black) 8%,
+    transparent
+  );
+  --chat-model-divider-color: color-mix(
+    in srgb,
+    var(--black) 12%,
+    transparent
+  );
+  --chat-model-option-text-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
+  --chat-model-option-muted-color: color-mix(
+    in srgb,
+    var(--black) 62%,
+    transparent
+  );
+  --chat-model-option-check-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
 }
 
 :global(.dark) .chat-mobile-model-option,
 :global(.dark) .chat-mobile-reasoning-option,
 :global(.dark) .chat-mobile-reasoning-head {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--chat-model-option-text-color);
 }
 
 :global(.dark) .chat-mobile-menu-check {
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--chat-model-option-check-color);
 }
 
 :global(.dark) .chat-mobile-model-option:hover,
@@ -1437,22 +1551,22 @@
 :global(.dark) .chat-mobile-reasoning-option:hover,
 :global(.dark) .chat-mobile-reasoning-option:focus-visible,
 :global(.dark) .chat-mobile-reasoning-head {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--chat-model-option-hover-background);
 }
 
 :global(.dark) .chat-mobile-model-option-selected,
 :global(.dark) .chat-mobile-reasoning-option-selected {
-  background: rgba(138, 180, 248, 0.16);
+  background: var(--chat-model-option-selected-background);
 }
 
 :global(.dark) .chat-mobile-model-provider,
 :global(.dark) .chat-mobile-reasoning-head small,
 :global(.dark) .chat-mobile-reasoning-caret {
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--chat-model-option-muted-color);
 }
 
 :global(.dark) .chat-mobile-model-divider {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--chat-model-divider-color);
 }
 
 .chat-body {
@@ -1904,6 +2018,19 @@
 }
 
 .chat-desktop-model-title {
+  --chat-model-title-color: var(--black);
+  --chat-model-title-muted-color: var(--black-50);
+  --chat-model-title-hover-background: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --chat-model-title-expanded-border-color: color-mix(
+    in srgb,
+    var(--primary) 26%,
+    transparent
+  );
+
   appearance: none;
   min-width: 0;
   max-width: min(360px, 34vw);
@@ -1912,7 +2039,7 @@
   border: 1px solid transparent !important;
   border-radius: 999px;
   background: transparent !important;
-  color: var(--black);
+  color: var(--chat-model-title-color);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -1928,7 +2055,7 @@
 
   &:hover {
     border-color: transparent !important;
-    background: rgba(0, 0, 0, 0.06) !important;
+    background: var(--chat-model-title-hover-background) !important;
     box-shadow: none !important;
   }
 
@@ -1936,13 +2063,13 @@
     outline: var(--focus-ring);
     outline-offset: 2px;
     border-color: transparent !important;
-    background: rgba(0, 0, 0, 0.06) !important;
+    background: var(--chat-model-title-hover-background) !important;
     box-shadow: none !important;
   }
 }
 
 .chat-desktop-model-title[aria-expanded="true"] {
-  border-color: rgba(49, 94, 248, 0.28);
+  border-color: var(--chat-model-title-expanded-border-color) !important;
 
   .chat-desktop-model-title-arrow {
     transform: rotate(180deg) translateY(-1px);
@@ -1958,19 +2085,19 @@
 }
 
 .chat-desktop-model-name {
-  color: var(--black);
+  color: var(--chat-model-title-color);
   font-size: 13px;
   font-weight: 600;
 }
 
 .chat-desktop-model-meta {
-  color: var(--black-50);
+  color: var(--chat-model-title-muted-color);
   font-size: 12px;
 }
 
 .chat-desktop-model-title-arrow {
   flex: 0 0 auto;
-  color: var(--black-50);
+  color: var(--chat-model-title-muted-color);
   font-size: 12px;
   line-height: 1;
   transform: translateY(1px);
@@ -1991,6 +2118,52 @@
 }
 
 .chat-desktop-model-menu {
+  --chat-model-menu-radius: 8px;
+  --chat-model-menu-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 94%,
+    transparent
+  );
+  --chat-model-menu-border-color: color-mix(
+    in srgb,
+    var(--black-50) 16%,
+    transparent
+  );
+  --chat-model-menu-shadow: 0 24px 64px
+      color-mix(in srgb, var(--black-50) 18%, transparent),
+    0 6px 18px color-mix(in srgb, var(--black-50) 10%, transparent);
+  --chat-model-option-hover-background: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --chat-model-option-selected-background: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    transparent
+  );
+  --chat-model-option-selected-border-color: color-mix(
+    in srgb,
+    var(--primary) 16%,
+    transparent
+  );
+  --chat-model-option-selected-accent-shadow: inset 3px 0 0
+    color-mix(in srgb, var(--primary) 42%, transparent);
+  --chat-model-option-selected-color: var(--primary);
+  --chat-model-section-head-background: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --chat-model-divider-color: color-mix(
+    in srgb,
+    var(--black-50) 18%,
+    transparent
+  );
+  --chat-model-option-text-color: var(--black);
+  --chat-model-option-muted-color: var(--black-50);
+  --chat-model-option-check-color: var(--primary);
+
   position: absolute;
   top: 54px;
   left: 18px;
@@ -2001,12 +2174,10 @@
   box-sizing: border-box;
   overflow: auto;
   overscroll-behavior: contain;
-  border: 1px solid rgba(60, 64, 67, 0.1);
-  border-radius: 20px;
-  background: var(--surface-elevated);
-  box-shadow:
-    0 26px 72px rgba(60, 64, 67, 0.14),
-    0 6px 18px rgba(60, 64, 67, 0.1);
+  border: 1px solid var(--chat-model-menu-border-color);
+  border-radius: var(--chat-model-menu-radius);
+  background: var(--chat-model-menu-background);
+  box-shadow: var(--chat-model-menu-shadow);
   backdrop-filter: blur(24px);
 
   // Transitions & Hidden States
@@ -2032,47 +2203,168 @@
 }
 
 :global(.dark) .chat-desktop-model-title {
-  border-color: rgba(255, 255, 255, 0.08) !important;
-  background: rgba(255, 255, 255, 0.06) !important;
-  box-shadow: none !important;
-  color: rgba(255, 255, 255, 0.9);
+  --chat-model-title-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
+  --chat-model-title-muted-color: color-mix(
+    in srgb,
+    var(--black) 62%,
+    transparent
+  );
+  --chat-model-title-hover-background: color-mix(
+    in srgb,
+    var(--black) 9%,
+    transparent
+  );
+  --chat-model-title-expanded-border-color: color-mix(
+    in srgb,
+    var(--primary) 30%,
+    transparent
+  );
+
+  color: var(--chat-model-title-color);
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1) !important;
+    background: var(--chat-model-title-hover-background) !important;
   }
 }
 
 :global(.dark) .chat-mobile-model-title {
-  border-color: transparent !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  color: rgba(255, 255, 255, 0.9);
+  --chat-model-title-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
+  --chat-model-title-muted-color: color-mix(
+    in srgb,
+    var(--black) 62%,
+    transparent
+  );
+  --chat-model-title-hover-background: color-mix(
+    in srgb,
+    var(--black) 9%,
+    transparent
+  );
+  --chat-model-title-expanded-background: var(--surface-elevated);
+  --chat-model-title-expanded-border-color: color-mix(
+    in srgb,
+    var(--primary) 30%,
+    transparent
+  );
+
+  color: var(--chat-model-title-color);
 
   &:hover {
-    background: rgba(255, 255, 255, 0.08) !important;
+    background: var(--chat-model-title-hover-background) !important;
   }
 }
 
 :global(.dark) .chat-mobile-header-button {
+  --chat-mobile-header-button-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
+  --chat-mobile-header-button-hover-background: color-mix(
+    in srgb,
+    var(--black) 9%,
+    transparent
+  );
+
   border-color: transparent !important;
   background: transparent !important;
   box-shadow: none !important;
-  color: rgba(255, 255, 255, 0.9) !important;
+  color: var(--chat-mobile-header-button-color) !important;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.08) !important;
+    background: var(--chat-mobile-header-button-hover-background) !important;
   }
 }
 
 :global(.dark) .chat-desktop-model-menu {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: var(--surface-elevated);
-  box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.42),
-    0 4px 16px rgba(0, 0, 0, 0.32);
+  --chat-model-menu-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 90%,
+    transparent
+  );
+  --chat-model-menu-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --chat-model-menu-shadow: 0 22px 60px
+      color-mix(in srgb, var(--gray) 46%, transparent),
+    0 4px 16px color-mix(in srgb, var(--gray) 36%, transparent);
+  --chat-model-option-hover-background: color-mix(
+    in srgb,
+    var(--black) 8%,
+    transparent
+  );
+  --chat-model-option-selected-background: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    var(--surface)
+  );
+  --chat-model-option-selected-border-color: color-mix(
+    in srgb,
+    var(--primary) 28%,
+    transparent
+  );
+  --chat-model-option-selected-accent-shadow: inset 3px 0 0
+    color-mix(in srgb, var(--primary) 46%, var(--black));
+  --chat-model-option-selected-color: color-mix(
+    in srgb,
+    var(--black) 94%,
+    transparent
+  );
+  --chat-model-section-head-background: color-mix(
+    in srgb,
+    var(--black) 8%,
+    transparent
+  );
+  --chat-model-divider-color: color-mix(
+    in srgb,
+    var(--black) 12%,
+    transparent
+  );
+  --chat-model-option-text-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
+  --chat-model-option-muted-color: color-mix(
+    in srgb,
+    var(--black) 62%,
+    transparent
+  );
+  --chat-model-option-check-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
 }
 
 .chat-desktop-header-actions {
+  --chat-header-actions-border-color: color-mix(
+    in srgb,
+    var(--black-50) 14%,
+    transparent
+  );
+  --chat-header-actions-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 78%,
+    transparent
+  );
+  --chat-header-actions-shadow: 0 4px 18px
+    color-mix(in srgb, var(--black-50) 10%, transparent);
+  --chat-header-action-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
+
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
@@ -2080,10 +2372,10 @@
   max-width: min(240px, 28vw);
   min-width: 0;
   padding: 3px;
-  border: 1px solid rgba(60, 64, 67, 0.08);
+  border: 1px solid var(--chat-header-actions-border-color);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.62);
-  box-shadow: 0 4px 18px rgba(60, 64, 67, 0.08);
+  background: var(--chat-header-actions-background);
+  box-shadow: var(--chat-header-actions-shadow);
   overflow: hidden;
   backdrop-filter: blur(18px);
 }
@@ -2105,14 +2397,236 @@
   :global(button:hover),
   :global(button:focus-visible) {
     background: var(--hover-color);
-    border-color: rgba(49, 94, 248, 0.18);
+    border-color: var(--chat-header-action-hover-border-color);
   }
 }
 
 :global(.dark) .chat-desktop-header-actions {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(30, 30, 30, 0.66);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);
+  --chat-header-actions-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --chat-header-actions-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 72%,
+    transparent
+  );
+  --chat-header-actions-shadow: 0 10px 28px
+    color-mix(in srgb, var(--gray) 34%, transparent);
+  --chat-header-action-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 28%,
+    transparent
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .chat-mobile-model-menu {
+    --chat-model-menu-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 90%,
+      transparent
+    );
+    --chat-model-menu-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --chat-model-menu-shadow: 0 22px 60px
+        color-mix(in srgb, var(--gray) 46%, transparent),
+      0 4px 16px color-mix(in srgb, var(--gray) 36%, transparent);
+    --chat-model-option-hover-background: color-mix(
+      in srgb,
+      var(--black) 8%,
+      transparent
+    );
+    --chat-model-option-selected-background: color-mix(
+      in srgb,
+      var(--primary) 18%,
+      var(--surface)
+    );
+    --chat-model-option-selected-border-color: color-mix(
+      in srgb,
+      var(--primary) 28%,
+      transparent
+    );
+    --chat-model-option-selected-accent-shadow: inset 3px 0 0
+      color-mix(in srgb, var(--primary) 46%, var(--black));
+    --chat-model-option-selected-color: color-mix(
+      in srgb,
+      var(--black) 94%,
+      transparent
+    );
+    --chat-model-section-head-background: color-mix(
+      in srgb,
+      var(--black) 8%,
+      transparent
+    );
+    --chat-model-divider-color: color-mix(
+      in srgb,
+      var(--black) 12%,
+      transparent
+    );
+    --chat-model-option-text-color: color-mix(
+      in srgb,
+      var(--black) 92%,
+      transparent
+    );
+    --chat-model-option-muted-color: color-mix(
+      in srgb,
+      var(--black) 62%,
+      transparent
+    );
+    --chat-model-option-check-color: color-mix(
+      in srgb,
+      var(--black) 92%,
+      transparent
+    );
+  }
+
+  :global(body:not(.light)) .chat-desktop-model-menu {
+    --chat-model-menu-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 90%,
+      transparent
+    );
+    --chat-model-menu-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --chat-model-menu-shadow: 0 22px 60px
+        color-mix(in srgb, var(--gray) 46%, transparent),
+      0 4px 16px color-mix(in srgb, var(--gray) 36%, transparent);
+    --chat-model-option-hover-background: color-mix(
+      in srgb,
+      var(--black) 8%,
+      transparent
+    );
+    --chat-model-option-selected-background: color-mix(
+      in srgb,
+      var(--primary) 18%,
+      var(--surface)
+    );
+    --chat-model-option-selected-border-color: color-mix(
+      in srgb,
+      var(--primary) 28%,
+      transparent
+    );
+    --chat-model-option-selected-accent-shadow: inset 3px 0 0
+      color-mix(in srgb, var(--primary) 46%, var(--black));
+    --chat-model-option-selected-color: color-mix(
+      in srgb,
+      var(--black) 94%,
+      transparent
+    );
+    --chat-model-section-head-background: color-mix(
+      in srgb,
+      var(--black) 8%,
+      transparent
+    );
+    --chat-model-divider-color: color-mix(
+      in srgb,
+      var(--black) 12%,
+      transparent
+    );
+    --chat-model-option-text-color: color-mix(
+      in srgb,
+      var(--black) 92%,
+      transparent
+    );
+    --chat-model-option-muted-color: color-mix(
+      in srgb,
+      var(--black) 62%,
+      transparent
+    );
+    --chat-model-option-check-color: color-mix(
+      in srgb,
+      var(--black) 92%,
+      transparent
+    );
+  }
+
+  :global(body:not(.light)) .chat-desktop-model-title {
+    --chat-model-title-color: color-mix(
+      in srgb,
+      var(--black) 92%,
+      transparent
+    );
+    --chat-model-title-muted-color: color-mix(
+      in srgb,
+      var(--black) 62%,
+      transparent
+    );
+    --chat-model-title-hover-background: color-mix(
+      in srgb,
+      var(--black) 9%,
+      transparent
+    );
+    --chat-model-title-expanded-border-color: color-mix(
+      in srgb,
+      var(--primary) 30%,
+      transparent
+    );
+  }
+
+  :global(body:not(.light)) .chat-mobile-model-title {
+    --chat-model-title-color: color-mix(
+      in srgb,
+      var(--black) 92%,
+      transparent
+    );
+    --chat-model-title-muted-color: color-mix(
+      in srgb,
+      var(--black) 62%,
+      transparent
+    );
+    --chat-model-title-hover-background: color-mix(
+      in srgb,
+      var(--black) 9%,
+      transparent
+    );
+    --chat-model-title-expanded-background: var(--surface-elevated);
+    --chat-model-title-expanded-border-color: color-mix(
+      in srgb,
+      var(--primary) 30%,
+      transparent
+    );
+  }
+
+  :global(body:not(.light)) .chat-mobile-header-button {
+    --chat-mobile-header-button-color: color-mix(
+      in srgb,
+      var(--black) 92%,
+      transparent
+    );
+    --chat-mobile-header-button-hover-background: color-mix(
+      in srgb,
+      var(--black) 9%,
+      transparent
+    );
+  }
+
+  :global(body:not(.light)) .chat-desktop-header-actions {
+    --chat-header-actions-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --chat-header-actions-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 72%,
+      transparent
+    );
+    --chat-header-actions-shadow: 0 10px 28px
+      color-mix(in srgb, var(--gray) 34%, transparent);
+    --chat-header-action-hover-border-color: color-mix(
+      in srgb,
+      var(--primary) 28%,
+      transparent
+    );
+  }
 }
 
 @media only screen and (max-width: 600px) {
