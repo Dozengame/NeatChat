@@ -2816,9 +2816,24 @@
   .chat-input-action[data-copy-state="copied"],
   .chat-input-action[data-copy-state="copied"]:hover,
   .chat-input-action[data-copy-state="copied"]:focus-visible {
+    width: auto;
+    min-width: 74px;
+    gap: 6px;
+    padding: 0 10px;
     background-color: var(--message-action-copy-success-background) !important;
     color: var(--message-action-copy-success-color) !important;
     transition: box-shadow 0.16s ease !important;
+
+    .text {
+      display: inline-flex;
+      max-width: 72px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1;
+    }
   }
 
   .icon {
@@ -5354,6 +5369,11 @@
 
   .attach-item[data-swipe-delete-active="true"] .delete-image {
     transform: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .chat-message-action-rail .chat-input-action,
+  .chat-message-action-rail .chat-input-action[data-copy-state="copied"] {
     transition-duration: 0.01ms !important;
   }
 

@@ -1330,6 +1330,17 @@ describe("Gemini visual migration shell", () => {
       /setCopiedMessageActionId\(\(currentActionId\) =>[\s\S]*currentActionId === messageActionId \? null : currentActionId,/,
     );
     expect(chat).toMatch(/setTimeout\([\s\S]*1400[\s\S]*\);/);
+    expect(chat).toContain("const getMessageActionId = useCallback");
+    expect(chat).toMatch(
+      /const getMessageActionId = useCallback\(\s*\(message: ChatMessage, index: number\) => message\.id \?\? index,\s*\[\],?\s*\);/,
+    );
+    expect(chat).toMatch(
+      /let lastNonUserMessage: ChatMessage \| undefined;[\s\S]*let lastNonUserMessageIndex = -1;[\s\S]*for \(\s*let messageIndex = messages\.length - 1;[\s\S]*messageIndex >= 0;[\s\S]*messageIndex -= 1[\s\S]*\)[\s\S]*lastNonUserMessage = candidateMessage;[\s\S]*lastNonUserMessageIndex = messageIndex;[\s\S]*break;/,
+    );
+    expect(chat).toMatch(
+      /void copyMessageContent\([\s\S]*lastNonUserMessage,[\s\S]*getMessageActionId\(lastNonUserMessage, lastNonUserMessageIndex\),[\s\S]*\);/,
+    );
+    expect(chat).not.toContain("copyToClipboard(lastMessageContent);");
     expect(chat).not.toContain(
       "copyToClipboard(getMessageTextContent(message)).finally",
     );
@@ -1337,7 +1348,7 @@ describe("Gemini visual migration shell", () => {
       /return \(\) => \{[\s\S]*if \(messageCopyFeedbackTimerRef\.current\) \{[\s\S]*clearTimeout\(messageCopyFeedbackTimerRef\.current\);[\s\S]*\}[\s\S]*\};/,
     );
     expect(chat).toMatch(
-      /const messageActionId = message\.id \?\? i;[\s\S]*const isMessageCopied =[\s\S]*copiedMessageActionId === messageActionId;/,
+      /const messageActionId = getMessageActionId\(message, i\);[\s\S]*const isMessageCopied =[\s\S]*copiedMessageActionId === messageActionId;/,
     );
     expect(chat).toMatch(
       /const messageCopyActionLabel = `\$\{messageActionLabel\}：\$\{[\s\S]*isMessageCopied[\s\S]*\? Locale\.Copy\.Success[\s\S]*: Locale\.Chat\.Actions\.Copy[\s\S]*\}`;/,
@@ -1642,6 +1653,12 @@ describe("Gemini visual migration shell", () => {
     expect(messageActionRailBlock).toMatch(
       /\.chat-input-action\[data-copy-state="copied"\],[\s\S]*\.chat-input-action\[data-copy-state="copied"\]:hover,[\s\S]*\.chat-input-action\[data-copy-state="copied"\]:focus-visible[\s\S]*background-color:\s*var\(--message-action-copy-success-background\)\s*!important;[\s\S]*color:\s*var\(--message-action-copy-success-color\)\s*!important;[\s\S]*transition:\s*box-shadow 0\.16s ease !important;/,
     );
+    expect(messageActionRailBlock).toMatch(
+      /\.chat-input-action\[data-copy-state="copied"\],[\s\S]*\.chat-input-action\[data-copy-state="copied"\]:hover,[\s\S]*\.chat-input-action\[data-copy-state="copied"\]:focus-visible[\s\S]*width:\s*auto;[\s\S]*min-width:\s*74px;[\s\S]*gap:\s*6px;[\s\S]*padding:\s*0 10px;/,
+    );
+    expect(messageActionRailBlock).toMatch(
+      /\.chat-input-action\[data-copy-state="copied"\][\s\S]*\.text[\s\S]*display:\s*inline-flex;[\s\S]*max-width:\s*72px;[\s\S]*overflow:\s*hidden;[\s\S]*text-overflow:\s*ellipsis;[\s\S]*white-space:\s*nowrap;/,
+    );
     expect(messageActionRailBlock).not.toMatch(
       /background:\s*var\(--message-action-copy-success-background\)\s*!important;/,
     );
@@ -1654,6 +1671,9 @@ describe("Gemini visual migration shell", () => {
     expect(messageCopyStatusBlock).toMatch(/overflow:\s*hidden;/);
     expect(messageCopyStatusBlock).toMatch(/clip-path:\s*inset\(50%\);/);
     expect(messageCopyStatusBlock).toMatch(/white-space:\s*nowrap;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-message-action-rail \.chat-input-action,\s*\.chat-message-action-rail \.chat-input-action\[data-copy-state="copied"\]\s*\{[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
     expect(chatStyles).toContain(".attach-image-item");
     expect(chatStyles).toContain(".attach-file-item");
     expect(attachmentsContainerBlock).toMatch(/align-items:\s*center;/);

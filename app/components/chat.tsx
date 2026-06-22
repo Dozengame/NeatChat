@@ -3264,6 +3264,10 @@ function useChatInnerView() {
     },
     [],
   );
+  const getMessageActionId = useCallback(
+    (message: ChatMessage, index: number) => message.id ?? index,
+    [],
+  );
   const copyMessageContent = useCallback(
     async (
       message: ChatMessage,
@@ -3373,12 +3377,25 @@ function useChatInnerView() {
         event.key.toLowerCase() === "c"
       ) {
         event.preventDefault();
-        const lastNonUserMessage = messages
-          .filter((message) => message.role !== "user")
-          .pop();
+        let lastNonUserMessage: ChatMessage | undefined;
+        let lastNonUserMessageIndex = -1;
+        for (
+          let messageIndex = messages.length - 1;
+          messageIndex >= 0;
+          messageIndex -= 1
+        ) {
+          const candidateMessage = messages[messageIndex];
+          if (candidateMessage.role !== "user") {
+            lastNonUserMessage = candidateMessage;
+            lastNonUserMessageIndex = messageIndex;
+            break;
+          }
+        }
         if (lastNonUserMessage) {
-          const lastMessageContent = getMessageTextContent(lastNonUserMessage);
-          copyToClipboard(lastMessageContent);
+          void copyMessageContent(
+            lastNonUserMessage,
+            getMessageActionId(lastNonUserMessage, lastNonUserMessageIndex),
+          );
         }
       }
       // 展示快捷键 command + /
@@ -3397,7 +3414,14 @@ function useChatInnerView() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [messages, chatStore, navigate, openShortcutKeyModal]);
+  }, [
+    messages,
+    chatStore,
+    navigate,
+    openShortcutKeyModal,
+    copyMessageContent,
+    getMessageActionId,
+  ]);
 
   const [showChatSidePanel, setShowChatSidePanel] = useState(false);
 
@@ -4605,7 +4629,7 @@ function useChatInnerView() {
                   i + 1
                 }`;
                 const messageActionLabel = `${messageLabel} 操作`;
-                const messageActionId = message.id ?? i;
+                const messageActionId = getMessageActionId(message, i);
                 const isMessageCopied =
                   copiedMessageActionId === messageActionId;
                 const messageCopyActionLabel = `${messageActionLabel}：${
