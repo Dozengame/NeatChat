@@ -59,6 +59,12 @@
   --copy-success-color: color-mix(in srgb, rgb(24, 128, 56) 94%, transparent);
   --copy-success-shadow-color: color-mix(in srgb, var(--black-50) 10%, transparent);
   --copy-success-accent-shadow-color: color-mix(in srgb, rgb(52, 168, 83) 12%, transparent);
+  --markdown-code-copy-button-border-color: color-mix(in srgb, var(--black-50) 12%, transparent);
+  --markdown-code-copy-button-background: color-mix(in srgb, var(--black-50) 8%, transparent);
+  --markdown-code-copy-button-color: color-mix(in srgb, var(--black-50) 86%, transparent);
+  --markdown-code-copy-button-hover-border-color: color-mix(in srgb, var(--black-50) 16%, transparent);
+  --markdown-code-copy-button-hover-background: color-mix(in srgb, var(--black-50) 12%, transparent);
+  --markdown-code-copy-button-hover-color: color-mix(in srgb, var(--black) 90%, transparent);
   --markdown-code-copy-success-border-color: var(--copy-success-border-color);
   --markdown-code-copy-success-background: var(--copy-success-background);
   --markdown-code-copy-success-color: var(--copy-success-color);
@@ -103,6 +109,12 @@
   --copy-success-color: color-mix(in srgb, rgb(129, 201, 149) 96%, transparent);
   --copy-success-shadow-color: color-mix(in srgb, var(--surface) 24%, transparent);
   --copy-success-accent-shadow-color: color-mix(in srgb, rgb(129, 201, 149) 12%, transparent);
+  --markdown-code-copy-button-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+  --markdown-code-copy-button-background: color-mix(in srgb, var(--black) 10%, transparent);
+  --markdown-code-copy-button-color: color-mix(in srgb, var(--black) 78%, transparent);
+  --markdown-code-copy-button-hover-border-color: color-mix(in srgb, var(--black) 12%, transparent);
+  --markdown-code-copy-button-hover-background: color-mix(in srgb, var(--black) 16%, transparent);
+  --markdown-code-copy-button-hover-color: color-mix(in srgb, var(--black) 96%, transparent);
   --markdown-code-copy-success-border-color: var(--copy-success-border-color);
   --markdown-code-copy-success-background: var(--copy-success-background);
   --markdown-code-copy-success-color: var(--copy-success-color);
@@ -376,9 +388,9 @@ pre {
     height: var(--markdown-code-action-size, 34px);
     cursor: pointer;
     padding: 0;
-    background-color: rgba(60, 64, 67, 0.08);
-    color: rgba(60, 64, 67, 0.74);
-    border: 1px solid rgba(60, 64, 67, 0.08);
+    background-color: var(--markdown-code-copy-button-background);
+    color: var(--markdown-code-copy-button-color);
+    border: 1px solid var(--markdown-code-copy-button-border-color);
     border-radius: 999px;
     transform: translateY(-2px);
     pointer-events: none;
@@ -402,8 +414,9 @@ pre {
 
     &:hover {
       opacity: 1;
-      background-color: rgba(60, 64, 67, 0.12);
-      color: rgba(60, 64, 67, 0.9);
+      background-color: var(--markdown-code-copy-button-hover-background);
+      color: var(--markdown-code-copy-button-hover-color);
+      border-color: var(--markdown-code-copy-button-hover-border-color);
     }
 
     &[data-copy-state="copied"] {
@@ -445,13 +458,14 @@ pre {
 }
 
 .dark pre .copy-code-button {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.78);
-  border-color: rgba(255, 255, 255, 0.08);
+  background-color: var(--markdown-code-copy-button-background);
+  color: var(--markdown-code-copy-button-color);
+  border-color: var(--markdown-code-copy-button-border-color);
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.16);
-    color: rgba(255, 255, 255, 0.96);
+    background-color: var(--markdown-code-copy-button-hover-background);
+    color: var(--markdown-code-copy-button-hover-color);
+    border-color: var(--markdown-code-copy-button-hover-border-color);
   }
 
   &[data-copy-state="copied"] {

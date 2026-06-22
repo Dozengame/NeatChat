@@ -5762,6 +5762,22 @@ describe("Gemini visual migration shell", () => {
       "--markdown-code-fold-button-accent-shadow-color",
       "--markdown-code-language-color",
     ];
+    const codeCopyButtonTokenNames = [
+      "--markdown-code-copy-button-border-color",
+      "--markdown-code-copy-button-background",
+      "--markdown-code-copy-button-color",
+      "--markdown-code-copy-button-hover-border-color",
+      "--markdown-code-copy-button-hover-background",
+      "--markdown-code-copy-button-hover-color",
+    ];
+    const lightCodeCopyButtonTokens = readCustomProperties(
+      globalLightMixinBlock,
+      codeCopyButtonTokenNames,
+    );
+    const darkCodeCopyButtonTokens = readCustomProperties(
+      globalDarkMixinBlock,
+      codeCopyButtonTokenNames,
+    );
     const lightCodeChromeTokens = readCustomProperties(
       lightMixinBlock,
       codeChromeTokenNames,
@@ -5788,6 +5804,8 @@ describe("Gemini visual migration shell", () => {
       globalStyles.indexOf(".copy-code-button {\n    position"),
     );
     const copyButtonBlock = readCssBlock(copyButtonStyles, ".copy-code-button");
+    const copyButtonRootDeclarations = readRootDeclarations(copyButtonBlock);
+    const copyButtonHoverBlock = readCssBlock(copyButtonBlock, "&:hover");
     const copyButtonCopiedBlock = readCssBlock(
       copyButtonBlock,
       '&[data-copy-state="copied"]',
@@ -5801,6 +5819,12 @@ describe("Gemini visual migration shell", () => {
       globalStyles,
       ".dark pre .copy-code-button",
     );
+    const darkCopyButtonRootDeclarations =
+      readRootDeclarations(darkCopyButtonBlock);
+    const darkCopyButtonHoverBlock = readCssBlock(
+      darkCopyButtonBlock,
+      "&:hover",
+    );
     const darkCopyButtonCopiedBlock = readCssBlock(
       darkCopyButtonBlock,
       '&[data-copy-state="copied"]',
@@ -5809,6 +5833,19 @@ describe("Gemini visual migration shell", () => {
       copyButtonCopiedBlock,
       darkCopyButtonCopiedBlock,
     ].join("\n");
+    const copyButtonBasePaintDeclarations = [
+      copyButtonRootDeclarations,
+      copyButtonHoverBlock,
+      darkCopyButtonRootDeclarations,
+      darkCopyButtonHoverBlock,
+    ].flatMap((block) =>
+      Array.from(
+        block.matchAll(
+          /(?:^|\n)\s*(background-color|color|border(?:-color)?)\s*:\s*([^;]+);/g,
+        ),
+        ([, property, value]) => `${property}: ${value.trim()}`,
+      ),
+    );
     const legacyCopyButtonCopiedPaint =
       /rgba\((?:52,\s*168,\s*83|24,\s*128,\s*56|129,\s*201,\s*149)/;
     const touchCopyButtonBlock = readCssBlock(
@@ -6020,6 +6057,17 @@ describe("Gemini visual migration shell", () => {
       /--markdown-code-copy-success-accent-shadow-color:\s*var\(--copy-success-accent-shadow-color\);/,
     );
     expect(globalAutoDarkRootBlock).toMatch(/@include dark;/);
+    for (const tokenName of codeCopyButtonTokenNames) {
+      expect(lightCodeCopyButtonTokens[tokenName]).not.toBe("");
+      expect(darkCodeCopyButtonTokens[tokenName]).not.toBe("");
+      expect(lightCodeCopyButtonTokens[tokenName]).toContain("var(--");
+      expect(darkCodeCopyButtonTokens[tokenName]).toContain("var(--");
+      expect(
+        `${lightCodeCopyButtonTokens[tokenName]}\n${darkCodeCopyButtonTokens[tokenName]}`,
+      ).not.toMatch(
+        /(?:\brgba?\(|\bhsla?\(|#[\da-fA-F]{3,8})/,
+      );
+    }
     expect(markdown).toMatch(
       /className=\{clsx\([\s\S]*"markdown-code-block"[\s\S]*\)\}[\s\S]*data-overflow-start=\{codeScrollHint\.start \? "true" : "false"\}[\s\S]*data-overflow-end=\{codeScrollHint\.end \? "true" : "false"\}[\s\S]*onScroll=\{syncCodeScrollHint\}/,
     );
@@ -6135,6 +6183,42 @@ describe("Gemini visual migration shell", () => {
     expect(copyButtonBlock).toMatch(/z-index:\s*3;/);
     expect(copyButtonBlock).toMatch(/pointer-events:\s*none;/);
     expect(copyButtonBlock).toMatch(/opacity:\s*0;/);
+    expect(copyButtonBlock).toMatch(
+      /background-color:\s*var\(--markdown-code-copy-button-background\);/,
+    );
+    expect(copyButtonBlock).toMatch(
+      /color:\s*var\(--markdown-code-copy-button-color\);/,
+    );
+    expect(copyButtonBlock).toMatch(
+      /border:\s*1px solid var\(--markdown-code-copy-button-border-color\);/,
+    );
+    expect(copyButtonHoverBlock).toMatch(
+      /background-color:\s*var\(--markdown-code-copy-button-hover-background\);/,
+    );
+    expect(copyButtonHoverBlock).toMatch(
+      /color:\s*var\(--markdown-code-copy-button-hover-color\);/,
+    );
+    expect(copyButtonHoverBlock).toMatch(
+      /border-color:\s*var\(--markdown-code-copy-button-hover-border-color\);/,
+    );
+    expect(darkCopyButtonBlock).toMatch(
+      /background-color:\s*var\(--markdown-code-copy-button-background\);/,
+    );
+    expect(darkCopyButtonBlock).toMatch(
+      /color:\s*var\(--markdown-code-copy-button-color\);/,
+    );
+    expect(darkCopyButtonBlock).toMatch(
+      /border-color:\s*var\(--markdown-code-copy-button-border-color\);/,
+    );
+    expect(darkCopyButtonHoverBlock).toMatch(
+      /background-color:\s*var\(--markdown-code-copy-button-hover-background\);/,
+    );
+    expect(darkCopyButtonHoverBlock).toMatch(
+      /color:\s*var\(--markdown-code-copy-button-hover-color\);/,
+    );
+    expect(darkCopyButtonHoverBlock).toMatch(
+      /border-color:\s*var\(--markdown-code-copy-button-hover-border-color\);/,
+    );
     expect(copyButtonBlock).toMatch(/stroke:\s*currentColor !important;/);
     expect(copyButtonStatusBlock).toMatch(/position:\s*absolute;/);
     expect(copyButtonStatusBlock).toMatch(/width:\s*1px;/);
@@ -6174,6 +6258,13 @@ describe("Gemini visual migration shell", () => {
     expect(copyButtonCopiedToneScope).not.toMatch(
       legacyCopyButtonCopiedPaint,
     );
+    expect(copyButtonBasePaintDeclarations).toHaveLength(12);
+    for (const declaration of copyButtonBasePaintDeclarations) {
+      expect(declaration).toMatch(/var\(--markdown-code-copy-button-/);
+      expect(declaration).not.toMatch(
+        /(?:\brgba?\(|\bhsla?\(|#[\da-fA-F]{3,8}|color-mix\()/,
+      );
+    }
     expect(desktopHoverBlock).toMatch(/pointer-events:\s*all;/);
     expect(desktopHoverBlock).toMatch(/opacity:\s*0\.72;/);
     expect(desktopHoverBlock).toMatch(/transform:\s*translateY\(0\);/);
