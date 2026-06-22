@@ -7202,11 +7202,14 @@ describe("Gemini visual migration shell", () => {
     const subtitleBlock = readCssBlock(newChatStyles, ".sub-title");
     const composerBlock = readCssBlock(newChatStyles, ".composer");
     const composerFocusBlock = readCssBlock(composerBlock, "&:focus-visible");
+    const composerActiveBlock = readCssBlock(composerBlock, "&:active");
     const composerActionBlock = readCssBlock(newChatStyles, ".composer-action");
     const composerActionPathBlock = readCssBlock(composerActionBlock, "path");
     const moreButtonBlock = readCssBlock(newChatStyles, ".more");
+    const masksBlock = readCssBlock(newChatStyles, ".masks");
     const maskBlock = readCssBlock(newChatStyles, ".mask");
     const maskFocusBlock = readCssBlock(maskBlock, "&:focus-visible");
+    const maskActiveBlock = readCssBlock(maskBlock, "&:active");
     const darkNewChatBlock = readCssBlock(
       newChatStyles,
       ":global(.dark) .new-chat",
@@ -7227,6 +7230,11 @@ describe("Gemini visual migration shell", () => {
     );
     const mobileComposerBlock = readCssBlock(mobileBlock, ".composer");
     const mobileComposerActionBlock = readCssBlock(mobileBlock, ".composer-action");
+    const mobileMasksBlock = readCssBlock(mobileBlock, ".masks");
+    const reducedMotionBlock = readCssBlock(
+      newChatStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
     const newChatPaintScope = [
       newChatRootBlock,
       maskHeaderButtonBlock,
@@ -7237,12 +7245,15 @@ describe("Gemini visual migration shell", () => {
       composerActionBlock,
       composerActionPathBlock,
       moreButtonBlock,
+      masksBlock,
       maskBlock,
       maskFocusBlock,
+      maskActiveBlock,
       darkNewChatBlock,
       autoDarkNewChatBlock,
       mobileComposerBlock,
       mobileComposerActionBlock,
+      mobileMasksBlock,
     ].join("\n");
 
     expect(newChat).toContain("chatStore.newSession(mask)");
@@ -7273,6 +7284,8 @@ describe("Gemini visual migration shell", () => {
     expect(titleBlock).toMatch(/letter-spacing:\s*0;/);
     expect(subtitleBlock).toMatch(/color:\s*var\(--new-chat-muted-color\);/);
     expect(composerBlock).toMatch(/min-height:\s*60px;/);
+    expect(composerBlock).toMatch(/min-width:\s*0;/);
+    expect(composerBlock).toMatch(/touch-action:\s*manipulation;/);
     expect(composerBlock).toMatch(
       /border:\s*1px solid var\(--new-chat-control-border-color\);/,
     );
@@ -7286,6 +7299,9 @@ describe("Gemini visual migration shell", () => {
     expect(composerFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
     expect(composerFocusBlock).toMatch(
       /border-color:\s*var\(--new-chat-control-focus-border-color\);/,
+    );
+    expect(composerActiveBlock).toMatch(
+      /transform:\s*translateY\(0\) scale\(0\.99\);/,
     );
     expect(composerActionBlock).toMatch(/width:\s*40px;/);
     expect(composerActionBlock).toMatch(/height:\s*40px;/);
@@ -7303,14 +7319,23 @@ describe("Gemini visual migration shell", () => {
     expect(moreButtonBlock).toMatch(
       /background:\s*var\(--new-chat-control-background\);/,
     );
+    expect(masksBlock).toMatch(/max-width:\s*100%;/);
+    expect(masksBlock).toMatch(/min-width:\s*0;/);
     expect(maskBlock).toMatch(
       /border:\s*1px solid var\(--new-chat-control-border-color\);/,
     );
     expect(maskBlock).toMatch(/border-radius:\s*8px;/);
+    expect(maskBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(maskBlock).toMatch(/gap:\s*10px;/);
+    expect(maskBlock).toMatch(/text-align:\s*left;/);
+    expect(maskBlock).toMatch(/touch-action:\s*manipulation;/);
     expect(maskBlock).toMatch(
       /background:\s*var\(--new-chat-control-background\);/,
     );
     expect(maskFocusBlock).toMatch(
+      /background:\s*var\(--new-chat-mask-hover-background\);/,
+    );
+    expect(maskActiveBlock).toMatch(
       /background:\s*var\(--new-chat-mask-hover-background\);/,
     );
     expect(darkNewChatBlock).toMatch(
@@ -7361,6 +7386,16 @@ describe("Gemini visual migration shell", () => {
     expect(mobileComposerBlock).toMatch(/border-radius:\s*8px;/);
     expect(mobileComposerActionBlock).toMatch(/width:\s*40px;/);
     expect(mobileComposerActionBlock).toMatch(/height:\s*40px;/);
+    expect(mobileMasksBlock).toMatch(/grid-template-columns:\s*1fr;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.title,[\s\S]*\.sub-title,[\s\S]*\.composer,[\s\S]*\.actions,[\s\S]*\.masks[\s\S]*animation:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.composer,[\s\S]*\.mask-header button,[\s\S]*\.more,[\s\S]*\.mask[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.composer,[\s\S]*\.mask[\s\S]*transform:\s*none !important;/,
+    );
     expect(newChatPaintScope).not.toContain("border: var(--border-in-light)");
     expect(newChatPaintScope).not.toContain("box-shadow: var(--composer-shadow)");
     expect(newChatPaintScope).not.toContain("border-radius: 30px");
@@ -7380,6 +7415,7 @@ describe("Gemini visual migration shell", () => {
     const closeButtonBlock = readCssBlock(closeBlock, "button");
     const titleBlock = readCssBlock(searchChatStyles, ".search-title");
     const subtitleBlock = readCssBlock(searchChatStyles, ".search-subtitle");
+    const searchBoxBlock = readCssBlock(searchChatStyles, ".search-box");
     const searchInputBlock = readCssBlock(searchChatStyles, ".search-input");
     const searchInputFocusBlock = readCssBlock(searchInputBlock, "&:focus-visible");
     const scopedSearchInputBlock = readCssBlock(
@@ -7392,6 +7428,9 @@ describe("Gemini visual migration shell", () => {
     const headingBlock = readCssBlock(searchChatStyles, ".result-heading");
     const resultItemBlock = readCssBlock(searchChatStyles, ".result-item");
     const resultItemFocusBlock = readCssBlock(resultItemBlock, "&:focus-visible");
+    const resultItemActiveBlock = readCssBlock(resultItemBlock, "&:active");
+    const resultContentBlock = readCssBlock(searchChatStyles, ".result-content");
+    const resultNameBlock = readCssBlock(searchChatStyles, ".result-name");
     const snippetBlock = readCssBlock(searchChatStyles, ".result-snippet");
     const actionBlock = readCssBlock(searchChatStyles, ".result-action");
     const emptyStateBlock = readCssBlock(searchChatStyles, ".empty-state");
@@ -7415,11 +7454,18 @@ describe("Gemini visual migration shell", () => {
     );
     const mobileSearchInputBlock = readCssBlock(mobileBlock, ".search-input");
     const mobileResultPanelBlock = readCssBlock(mobileBlock, ".result-panel");
+    const mobileResultItemBlock = readCssBlock(mobileBlock, ".result-item");
+    const mobileResultActionBlock = readCssBlock(mobileBlock, ".result-action");
+    const reducedMotionBlock = readCssBlock(
+      searchChatStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
     const searchPaintScope = [
       searchRootBlock,
       closeButtonBlock,
       titleBlock,
       subtitleBlock,
+      searchBoxBlock,
       searchInputBlock,
       searchInputFocusBlock,
       scopedSearchInputBlock,
@@ -7429,6 +7475,9 @@ describe("Gemini visual migration shell", () => {
       headingBlock,
       resultItemBlock,
       resultItemFocusBlock,
+      resultItemActiveBlock,
+      resultContentBlock,
+      resultNameBlock,
       snippetBlock,
       actionBlock,
       emptyStateBlock,
@@ -7436,6 +7485,8 @@ describe("Gemini visual migration shell", () => {
       autoDarkSearchBlock,
       mobileSearchInputBlock,
       mobileResultPanelBlock,
+      mobileResultItemBlock,
+      mobileResultActionBlock,
     ].join("\n");
 
     expect(searchChat).toContain("selectSession(item.id)");
@@ -7464,7 +7515,9 @@ describe("Gemini visual migration shell", () => {
     expect(closeButtonBlock).toMatch(/background:\s*var\(--search-panel-background\);/);
     expect(titleBlock).toMatch(/letter-spacing:\s*0;/);
     expect(subtitleBlock).toMatch(/color:\s*var\(--search-muted-color\);/);
+    expect(searchBoxBlock).toMatch(/min-width:\s*0;/);
     expect(searchInputBlock).toMatch(/height:\s*56px;/);
+    expect(searchInputBlock).toMatch(/min-width:\s*0;/);
     expect(searchInputBlock).toMatch(/border:\s*1px solid var\(--search-field-border-color\);/);
     expect(searchInputBlock).toMatch(/border-radius:\s*8px;/);
     expect(searchInputBlock).toMatch(/background:\s*var\(--search-field-background\);/);
@@ -7481,17 +7534,34 @@ describe("Gemini visual migration shell", () => {
     expect(clearSearchFocusBlock).toMatch(
       /background:\s*var\(--search-item-hover-background\);/,
     );
+    expect(clearSearchFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(clearSearchFocusBlock).toMatch(/box-shadow:\s*var\(--focus-ring-shadow\);/);
     expect(resultPanelBlock).toMatch(/border:\s*1px solid var\(--search-panel-border-color\);/);
     expect(resultPanelBlock).toMatch(/border-radius:\s*8px;/);
+    expect(resultPanelBlock).toMatch(/max-width:\s*100%;/);
+    expect(resultPanelBlock).toMatch(/min-width:\s*0;/);
     expect(resultPanelBlock).toMatch(/background:\s*var\(--search-panel-background\);/);
     expect(resultPanelBlock).toMatch(/box-shadow:\s*0 14px 34px var\(--search-panel-shadow-color\);/);
     expect(headingBlock).toMatch(/color:\s*var\(--search-muted-color\);/);
     expect(resultItemBlock).toMatch(/border-radius:\s*8px;/);
+    expect(resultItemBlock).toMatch(/min-width:\s*0;/);
+    expect(resultItemBlock).toMatch(/touch-action:\s*manipulation;/);
     expect(resultItemFocusBlock).toMatch(
       /background:\s*var\(--search-item-hover-background\);/,
     );
+    expect(resultItemActiveBlock).toMatch(
+      /background:\s*var\(--search-item-hover-background\);/,
+    );
+    expect(resultContentBlock).toMatch(/flex:\s*1 1 auto;/);
+    expect(resultContentBlock).toMatch(/min-width:\s*0;/);
+    expect(resultNameBlock).toMatch(/min-width:\s*0;/);
     expect(snippetBlock).toMatch(/color:\s*var\(--search-muted-color\);/);
+    expect(snippetBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(actionBlock).toMatch(/color:\s*var\(--search-action-color\);/);
+    expect(actionBlock).toMatch(/display:\s*inline-flex;/);
+    expect(actionBlock).toMatch(/min-height:\s*28px;/);
+    expect(actionBlock).toMatch(/border-radius:\s*8px;/);
+    expect(actionBlock).toMatch(/white-space:\s*nowrap;/);
     expect(emptyStateBlock).toMatch(/border-radius:\s*8px;/);
     expect(emptyStateBlock).toMatch(/background:\s*var\(--search-empty-background\);/);
     expect(darkSearchBlock).toMatch(
@@ -7505,6 +7575,14 @@ describe("Gemini visual migration shell", () => {
     expect(mobileSearchInputBlock).toMatch(/height:\s*52px;/);
     expect(mobileSearchInputBlock).toMatch(/border-radius:\s*8px;/);
     expect(mobileResultPanelBlock).toMatch(/border-radius:\s*8px;/);
+    expect(mobileResultItemBlock).toMatch(/gap:\s*8px;/);
+    expect(mobileResultActionBlock).toMatch(/align-self:\s*flex-start;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.search-hero,[\s\S]*\.result-panel[\s\S]*animation:\s*none !important;[\s\S]*\.search-input,[\s\S]*\.result-item,[\s\S]*\.clear-search[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.search-input,[\s\S]*\.result-item,[\s\S]*\.clear-search,[\s\S]*\.search-close button[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
     expect(searchPaintScope).not.toContain("border: var(--border-in-light)");
     expect(searchPaintScope).not.toContain("box-shadow: var(--composer-shadow)");
     expect(searchPaintScope).not.toContain("border-radius: 28px");
@@ -7562,6 +7640,10 @@ describe("Gemini visual migration shell", () => {
     const mobileAuthBlock = readCssBlock(mobileBlock, ".auth-page");
     const mobilePanelBlock = readCssBlock(mobileAuthBlock, "&::before");
     const mobileTitleBlock = readCssBlock(mobileAuthBlock, ".auth-title");
+    const reducedMotionBlock = readCssBlock(
+      authStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
     const authThemeTokenNames = [
       "--auth-page-background",
       "--auth-panel-background",
@@ -7648,6 +7730,7 @@ describe("Gemini visual migration shell", () => {
     expect(authRootBlock).toMatch(/--auth-panel-radius:\s*8px;/);
     expect(authRootBlock).toMatch(/--auth-control-radius:\s*8px;/);
     expect(authRootBlock).toMatch(/padding:\s*clamp\(24px,\s*8vh,\s*72px\) 20px;/);
+    expect(authRootBlock).toMatch(/min-width:\s*0;/);
     expect(authRootBlock).toMatch(/background:\s*var\(--auth-page-background\);/);
     expect(authRootBlock).toMatch(/gap:\s*14px;/);
     expect(panelBlock).toMatch(
@@ -7665,6 +7748,7 @@ describe("Gemini visual migration shell", () => {
     expect(titleBlock).toMatch(/color:\s*var\(--auth-title-color\);/);
     expect(tipsBlock).toMatch(/color:\s*var\(--auth-muted-color\);/);
     expect(passwordContainerBlock).toMatch(/width:\s*min\(360px,\s*100%\);/);
+    expect(passwordContainerBlock).toMatch(/min-width:\s*0;/);
     expect(passwordContainerBlock).toMatch(
       /background:\s*var\(--auth-field-background\);/,
     );
@@ -7688,6 +7772,7 @@ describe("Gemini visual migration shell", () => {
     expect(passwordInputFocusBlock).toMatch(/outline:\s*none;/);
     expect(passwordInputFocusBlock).not.toMatch(/outline-offset:\s*12px;/);
     expect(actionsBlock).toMatch(/width:\s*min\(360px,\s*100%\);/);
+    expect(actionsBlock).toMatch(/min-width:\s*0;/);
     expect(actionButtonBlock).toMatch(
       /--icon-button-primary-background:\s*var\(--auth-action-background\);/,
     );
@@ -7700,6 +7785,7 @@ describe("Gemini visual migration shell", () => {
     expect(actionButtonBlock).toMatch(
       /box-shadow:\s*var\(--auth-action-shadow\);/,
     );
+    expect(actionButtonBlock).toMatch(/touch-action:\s*manipulation;/);
     expect(actionButtonDisabledBlock).toMatch(/opacity:\s*1;/);
     expect(actionButtonDisabledBlock).toMatch(
       /background-color:\s*var\(--auth-action-disabled-background\);/,
@@ -7733,6 +7819,12 @@ describe("Gemini visual migration shell", () => {
       /border-radius:\s*var\(--auth-panel-radius\);/,
     );
     expect(mobileTitleBlock).toMatch(/font-size:\s*24px;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.auth-header,[\s\S]*\.auth-logo,[\s\S]*\.auth-title,[\s\S]*\.auth-tips,[\s\S]*:global\(\.password-input-container\),[\s\S]*\.auth-actions[\s\S]*animation:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.auth-actions button[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
     expect(authPaintScope).not.toContain("margin-top: 10vh");
     expect(authPaintScope).not.toContain("transform: scale(1.4)");
     expect(authPaintScope).not.toContain("font-weight: bold");

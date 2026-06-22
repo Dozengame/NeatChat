@@ -123,11 +123,13 @@
   align-self: stretch;
   width: 100%;
   max-width: 720px;
+  min-width: 0;
   margin: 28px auto 0;
 }
 
 .search-input {
   width: 100%;
+  min-width: 0;
   height: 56px;
   padding: 0 54px 0 18px;
   box-sizing: border-box;
@@ -182,15 +184,23 @@
     height: 16px;
   }
 
-  &:hover,
-  &:focus-visible {
+  &:hover {
     background: var(--search-item-hover-background);
     outline: none;
+  }
+
+  &:focus-visible {
+    background: var(--search-item-hover-background);
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    box-shadow: var(--focus-ring-shadow);
   }
 }
 
 .result-panel {
   width: min(720px, 100%);
+  max-width: 100%;
+  min-width: 0;
   margin: 34px auto 0;
   padding: 10px;
   box-sizing: border-box;
@@ -216,6 +226,7 @@
 }
 
 .result-item {
+  min-width: 0;
   min-height: 64px;
   display: flex;
   align-items: center;
@@ -228,6 +239,7 @@
   background: transparent;
   color: var(--black);
   text-decoration: none;
+  touch-action: manipulation;
   transition:
     background 0.2s ease,
     border-color 0.2s ease;
@@ -239,13 +251,20 @@
     outline: var(--focus-ring);
     outline-offset: 2px;
   }
+
+  &:active {
+    border-color: color-mix(in srgb, var(--primary) 18%, transparent);
+    background: var(--search-item-hover-background);
+  }
 }
 
 .result-content {
+  flex: 1 1 auto;
   min-width: 0;
 }
 
 .result-name {
+  min-width: 0;
   color: var(--black);
   font-size: 14px;
   font-weight: 650;
@@ -262,6 +281,7 @@
   line-height: 1.45;
   display: -webkit-box;
   overflow: hidden;
+  overflow-wrap: anywhere;
   word-break: break-word;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -269,10 +289,16 @@
 
 .result-action {
   flex: 0 0 auto;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border-radius: 8px;
   color: var(--search-action-color);
   font-size: 12px;
   font-weight: 600;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .empty-state {
@@ -287,6 +313,20 @@
   color: var(--search-muted-color);
   font-size: 14px;
   text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-hero,
+  .result-panel {
+    animation: none !important;
+  }
+
+  .search-input,
+  .result-item,
+  .clear-search,
+  .search-close button {
+    transition-duration: 0.01ms !important;
+  }
 }
 
 :global(.dark) .search-page {
@@ -429,11 +469,12 @@
   .result-item {
     min-height: 72px;
     align-items: flex-start;
-    gap: 10px;
+    gap: 8px;
     padding: 13px 10px;
   }
 
   .result-action {
+    align-self: flex-start;
     padding-top: 3px;
   }
 }
