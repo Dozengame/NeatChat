@@ -3392,6 +3392,22 @@
 }
 
 .image-preview-mask {
+  --image-preview-mask-background: color-mix(in srgb, var(--black) 84%, transparent);
+  --image-preview-toolbar-border-color: color-mix(in srgb, var(--surface) 18%, transparent);
+  --image-preview-toolbar-background: color-mix(in srgb, var(--black) 50%, transparent);
+  --image-preview-toolbar-shadow-color: color-mix(in srgb, var(--black) 34%, transparent);
+  --image-preview-button-border-color: color-mix(in srgb, var(--surface) 18%, transparent);
+  --image-preview-button-background: color-mix(in srgb, var(--surface) 8%, transparent);
+  --image-preview-button-color: color-mix(in srgb, var(--surface) 96%, transparent);
+  --image-preview-button-shadow-color: color-mix(in srgb, var(--black) 24%, transparent);
+  --image-preview-button-hover-border-color: color-mix(in srgb, var(--surface) 30%, transparent);
+  --image-preview-button-hover-background: color-mix(in srgb, var(--surface) 16%, transparent);
+  --image-preview-button-hover-shadow-color: color-mix(in srgb, var(--black) 30%, transparent);
+  --image-preview-button-active-background: color-mix(in srgb, var(--surface) 12%, transparent);
+  --image-preview-button-active-shadow-color: color-mix(in srgb, var(--black) 26%, transparent);
+  --image-preview-button-focus-shadow-color: color-mix(in srgb, var(--black) 32%, transparent);
+  --image-preview-image-shadow-color: color-mix(in srgb, var(--black) 42%, transparent);
+
   border: 0;
   position: fixed;
   inset: 0;
@@ -3405,8 +3421,46 @@
   align-items: center;
   justify-content: center;
   padding: 72px 24px 24px;
-  background: rgba($color: #000, $alpha: 0.82);
+  background: var(--image-preview-mask-background);
   box-sizing: border-box;
+}
+
+:global(.dark) .image-preview-mask {
+  --image-preview-mask-background: color-mix(in srgb, var(--gray) 86%, transparent);
+  --image-preview-toolbar-border-color: color-mix(in srgb, var(--primary) 18%, transparent);
+  --image-preview-toolbar-background: color-mix(in srgb, var(--surface-soft) 62%, transparent);
+  --image-preview-toolbar-shadow-color: color-mix(in srgb, var(--gray) 44%, transparent);
+  --image-preview-button-border-color: color-mix(in srgb, var(--primary) 16%, transparent);
+  --image-preview-button-background: color-mix(in srgb, var(--black) 8%, transparent);
+  --image-preview-button-color: color-mix(in srgb, var(--black) 94%, transparent);
+  --image-preview-button-shadow-color: color-mix(in srgb, var(--gray) 34%, transparent);
+  --image-preview-button-hover-border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  --image-preview-button-hover-background: color-mix(in srgb, var(--black) 16%, transparent);
+  --image-preview-button-hover-shadow-color: color-mix(in srgb, var(--gray) 38%, transparent);
+  --image-preview-button-active-background: color-mix(in srgb, var(--black) 12%, transparent);
+  --image-preview-button-active-shadow-color: color-mix(in srgb, var(--gray) 36%, transparent);
+  --image-preview-button-focus-shadow-color: color-mix(in srgb, var(--gray) 40%, transparent);
+  --image-preview-image-shadow-color: color-mix(in srgb, var(--gray) 48%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .image-preview-mask {
+    --image-preview-mask-background: color-mix(in srgb, var(--gray) 86%, transparent);
+    --image-preview-toolbar-border-color: color-mix(in srgb, var(--primary) 18%, transparent);
+    --image-preview-toolbar-background: color-mix(in srgb, var(--surface-soft) 62%, transparent);
+    --image-preview-toolbar-shadow-color: color-mix(in srgb, var(--gray) 44%, transparent);
+    --image-preview-button-border-color: color-mix(in srgb, var(--primary) 16%, transparent);
+    --image-preview-button-background: color-mix(in srgb, var(--black) 8%, transparent);
+    --image-preview-button-color: color-mix(in srgb, var(--black) 94%, transparent);
+    --image-preview-button-shadow-color: color-mix(in srgb, var(--gray) 34%, transparent);
+    --image-preview-button-hover-border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+    --image-preview-button-hover-background: color-mix(in srgb, var(--black) 16%, transparent);
+    --image-preview-button-hover-shadow-color: color-mix(in srgb, var(--gray) 38%, transparent);
+    --image-preview-button-active-background: color-mix(in srgb, var(--black) 12%, transparent);
+    --image-preview-button-active-shadow-color: color-mix(in srgb, var(--gray) 36%, transparent);
+    --image-preview-button-focus-shadow-color: color-mix(in srgb, var(--gray) 40%, transparent);
+    --image-preview-image-shadow-color: color-mix(in srgb, var(--gray) 48%, transparent);
+  }
 }
 
 .file-edit-scroll {
@@ -3433,10 +3487,10 @@
   display: flex;
   gap: 4px;
   padding: 4px;
-  border: 1px solid rgba($color: #fff, $alpha: 0.18);
+  border: 1px solid var(--image-preview-toolbar-border-color);
   border-radius: 999px;
-  background: rgba($color: #1f1f1f, $alpha: 0.46);
-  box-shadow: 0 18px 48px rgba($color: #000, $alpha: 0.34);
+  background: var(--image-preview-toolbar-background);
+  box-shadow: 0 18px 48px var(--image-preview-toolbar-shadow-color);
   backdrop-filter: blur(18px) saturate(1.25);
   -webkit-backdrop-filter: blur(18px) saturate(1.25);
 }
@@ -3446,10 +3500,10 @@
   height: 42px;
   padding: 0;
   border-radius: 999px;
-  border: 1px solid rgba($color: #fff, $alpha: 0.18);
-  background: rgba($color: #fff, $alpha: 0.08);
-  color: #fff;
-  box-shadow: 0 8px 20px rgba($color: #000, $alpha: 0.24);
+  border: 1px solid var(--image-preview-button-border-color);
+  background: var(--image-preview-button-background);
+  color: var(--image-preview-button-color);
+  box-shadow: 0 8px 20px var(--image-preview-button-shadow-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3461,15 +3515,15 @@
     box-shadow 0.16s ease;
 
   &:hover {
-    border-color: rgba($color: #fff, $alpha: 0.3);
-    background: rgba($color: #fff, $alpha: 0.16);
-    box-shadow: 0 12px 26px rgba($color: #000, $alpha: 0.3);
+    border-color: var(--image-preview-button-hover-border-color);
+    background: var(--image-preview-button-hover-background);
+    box-shadow: 0 12px 26px var(--image-preview-button-hover-shadow-color);
     transform: translateY(-1px);
   }
 
   &:active {
-    background: rgba($color: #fff, $alpha: 0.12);
-    box-shadow: 0 5px 14px rgba($color: #000, $alpha: 0.26);
+    background: var(--image-preview-button-active-background);
+    box-shadow: 0 5px 14px var(--image-preview-button-active-shadow-color);
     transform: translateY(0) scale(0.96);
   }
 
@@ -3477,7 +3531,7 @@
     outline: var(--focus-ring);
     box-shadow:
       var(--focus-ring-shadow),
-      0 12px 32px rgba($color: #000, $alpha: 0.32);
+      0 12px 32px var(--image-preview-button-focus-shadow-color);
   }
 
   svg {
@@ -3485,11 +3539,6 @@
     height: 18px;
     filter: invert(1);
   }
-}
-
-:global(.dark) .image-preview-toolbar {
-  border-color: rgba($color: #8ab4f8, $alpha: 0.18);
-  background: rgba($color: #202124, $alpha: 0.62);
 }
 
 .image-preview-image {
@@ -3500,7 +3549,7 @@
   max-height: 100%;
   object-fit: contain;
   border-radius: 8px;
-  box-shadow: 0 24px 72px rgba($color: #000, $alpha: 0.42);
+  box-shadow: 0 24px 72px var(--image-preview-image-shadow-color);
 }
 
 @media only screen and (max-width: 600px) {

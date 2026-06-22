@@ -10529,6 +10529,79 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".image-preview-image",
     );
+    const imagePreviewMobileMediaIndex = chatStyles.indexOf(
+      "@media only screen and (max-width: 600px)",
+      chatStyles.indexOf(".image-preview-image"),
+    );
+    const imagePreviewMobileStyles = chatStyles.slice(
+      imagePreviewMobileMediaIndex,
+    );
+    const mobileImagePreviewMaskBlock = readCssBlock(
+      imagePreviewMobileStyles,
+      ".image-preview-mask",
+    );
+    const mobileImagePreviewToolbarBlock = readCssBlock(
+      imagePreviewMobileStyles,
+      ".image-preview-toolbar",
+    );
+    const mobileImagePreviewButtonBlock = readCssBlock(
+      imagePreviewMobileStyles,
+      ".image-preview-button",
+    );
+    const imagePreviewTokenNames = [
+      "--image-preview-mask-background",
+      "--image-preview-toolbar-border-color",
+      "--image-preview-toolbar-background",
+      "--image-preview-toolbar-shadow-color",
+      "--image-preview-button-border-color",
+      "--image-preview-button-background",
+      "--image-preview-button-color",
+      "--image-preview-button-shadow-color",
+      "--image-preview-button-hover-border-color",
+      "--image-preview-button-hover-background",
+      "--image-preview-button-hover-shadow-color",
+      "--image-preview-button-active-background",
+      "--image-preview-button-active-shadow-color",
+      "--image-preview-button-focus-shadow-color",
+      "--image-preview-image-shadow-color",
+    ];
+    const imagePreviewLightTokens = readCustomProperties(
+      readRootDeclarations(imagePreviewMaskBlock),
+      imagePreviewTokenNames,
+    );
+    const darkImagePreviewMaskBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .image-preview-mask",
+    );
+    const autoDarkImagePreviewMaskSelector =
+      ":global(body:not(.light)) .image-preview-mask";
+    const autoDarkImagePreviewMaskIndex = chatStyles.indexOf(
+      autoDarkImagePreviewMaskSelector,
+    );
+    const autoDarkImagePreviewMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkImagePreviewMaskIndex,
+    );
+    const autoDarkImagePreviewMaskBlock = readCssBlock(
+      chatStyles.slice(autoDarkImagePreviewMediaIndex),
+      autoDarkImagePreviewMaskSelector,
+    );
+    const imagePreviewDarkTokens = readCustomProperties(
+      darkImagePreviewMaskBlock,
+      imagePreviewTokenNames,
+    );
+    const imagePreviewAutoDarkTokens = readCustomProperties(
+      autoDarkImagePreviewMaskBlock,
+      imagePreviewTokenNames,
+    );
+    const imagePreviewPaintScope = [
+      readRootDeclarations(imagePreviewMaskBlock),
+      imagePreviewToolbarBlock,
+      imagePreviewButtonBlock,
+      imagePreviewImageBlock,
+      darkImagePreviewMaskBlock,
+      autoDarkImagePreviewMaskBlock,
+    ].join("\n");
 
     expect(chat).toMatch(
       /function MessageImagePreview\([\s\S]*onPreview: \(\s*src: string,\s*options\?: \{ trigger\?: HTMLButtonElement \| null; label\?: string \},\s*\) => void;[\s\S]*onClick=\{\(event\) =>\s*props\.onPreview\(props\.src, \{[\s\S]*trigger: event\.currentTarget,[\s\S]*label: props\.alt,[\s\S]*\}\)[\s\S]*\}/,
@@ -10584,21 +10657,72 @@ describe("Gemini visual migration shell", () => {
     expect(imagePreviewMaskBlock).toMatch(/margin:\s*0;/);
     expect(imagePreviewMaskBlock).toMatch(/display:\s*flex;/);
     expect(imagePreviewMaskBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(imagePreviewMaskBlock).toMatch(
+      /background:\s*var\(--image-preview-mask-background\);/,
+    );
+    expect(
+      Object.values(imagePreviewLightTokens).every(Boolean),
+    ).toBeTruthy();
+    expect(Object.values(imagePreviewDarkTokens).every(Boolean)).toBeTruthy();
+    expect(
+      Object.values(imagePreviewAutoDarkTokens).every(Boolean),
+    ).toBeTruthy();
+    expect(imagePreviewLightTokens["--image-preview-mask-background"]).toMatch(
+      /color-mix\(in srgb,\s*var\(--black\) 84%,\s*transparent\)/,
+    );
+    expect(
+      imagePreviewLightTokens["--image-preview-toolbar-background"],
+    ).toMatch(
+      /color-mix\(in srgb,\s*var\(--black\) 50%,\s*transparent\)/,
+    );
+    expect(imagePreviewLightTokens["--image-preview-button-color"]).toMatch(
+      /color-mix\(in srgb,\s*var\(--surface\) 96%,\s*transparent\)/,
+    );
     expect(imagePreviewToolbarBlock).toMatch(/padding:\s*4px;/);
     expect(imagePreviewToolbarBlock).toMatch(
-      /border:\s*1px solid rgba\(\$color:\s*#fff,\s*\$alpha:\s*0\.18\);/,
+      /border:\s*1px solid var\(--image-preview-toolbar-border-color\);/,
     );
     expect(imagePreviewToolbarBlock).toMatch(
-      /background:\s*rgba\(\$color:\s*#1f1f1f,\s*\$alpha:\s*0\.46\);/,
+      /background:\s*var\(--image-preview-toolbar-background\);/,
+    );
+    expect(imagePreviewToolbarBlock).toMatch(
+      /box-shadow:\s*0 18px 48px var\(--image-preview-toolbar-shadow-color\);/,
     );
     expect(imagePreviewToolbarBlock).toMatch(
       /backdrop-filter:\s*blur\(18px\) saturate\(1\.25\);/,
     );
     expect(imagePreviewButtonBlock).toMatch(
+      /border:\s*1px solid var\(--image-preview-button-border-color\);/,
+    );
+    expect(imagePreviewButtonBlock).toMatch(
+      /background:\s*var\(--image-preview-button-background\);/,
+    );
+    expect(imagePreviewButtonBlock).toMatch(
+      /color:\s*var\(--image-preview-button-color\);/,
+    );
+    expect(imagePreviewButtonBlock).toMatch(
+      /box-shadow:\s*0 8px 20px var\(--image-preview-button-shadow-color\);/,
+    );
+    expect(imagePreviewButtonBlock).toMatch(
       /transition:[\s\S]*background 0\.16s ease,[\s\S]*border-color 0\.16s ease,[\s\S]*transform 0\.16s ease,[\s\S]*box-shadow 0\.16s ease;/,
     );
     expect(imagePreviewButtonHoverBlock).toMatch(
+      /border-color:\s*var\(--image-preview-button-hover-border-color\);/,
+    );
+    expect(imagePreviewButtonHoverBlock).toMatch(
+      /background:\s*var\(--image-preview-button-hover-background\);/,
+    );
+    expect(imagePreviewButtonHoverBlock).toMatch(
+      /box-shadow:\s*0 12px 26px var\(--image-preview-button-hover-shadow-color\);/,
+    );
+    expect(imagePreviewButtonHoverBlock).toMatch(
       /transform:\s*translateY\(-1px\);/,
+    );
+    expect(imagePreviewButtonActiveBlock).toMatch(
+      /background:\s*var\(--image-preview-button-active-background\);/,
+    );
+    expect(imagePreviewButtonActiveBlock).toMatch(
+      /box-shadow:\s*0 5px 14px var\(--image-preview-button-active-shadow-color\);/,
     );
     expect(imagePreviewButtonActiveBlock).toMatch(
       /transform:\s*translateY\(0\) scale\(0\.96\);/,
@@ -10607,10 +10731,36 @@ describe("Gemini visual migration shell", () => {
       /outline:\s*var\(--focus-ring\);/,
     );
     expect(imagePreviewButtonFocusBlock).toMatch(
-      /box-shadow:\s*var\(--focus-ring-shadow\),/,
+      /box-shadow:\s*var\(--focus-ring-shadow\),\s*0 12px 32px var\(--image-preview-button-focus-shadow-color\);/,
     );
     expect(imagePreviewImageBlock).toMatch(/max-width:\s*min\(100%, 1600px\);/);
     expect(imagePreviewImageBlock).toMatch(/max-height:\s*100%;/);
+    expect(imagePreviewImageBlock).toMatch(
+      /box-shadow:\s*0 24px 72px var\(--image-preview-image-shadow-color\);/,
+    );
+    expect(darkImagePreviewMaskBlock).toMatch(
+      /--image-preview-mask-background:\s*color-mix\(in srgb,\s*var\(--gray\) 86%,\s*transparent\);/,
+    );
+    expect(darkImagePreviewMaskBlock).toMatch(
+      /--image-preview-toolbar-background:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 62%,\s*transparent\);/,
+    );
+    expect(autoDarkImagePreviewMaskIndex).toBeGreaterThan(-1);
+    expect(autoDarkImagePreviewMediaIndex).toBeGreaterThan(-1);
+    expect(imagePreviewAutoDarkTokens).toEqual(imagePreviewDarkTokens);
+    expect(imagePreviewMobileMediaIndex).toBeGreaterThan(-1);
+    expect(mobileImagePreviewMaskBlock).toMatch(
+      /padding:\s*calc\(env\(safe-area-inset-top\) \+ 70px\) 12px\s*calc\(env\(safe-area-inset-bottom\) \+ 18px\);/,
+    );
+    expect(mobileImagePreviewToolbarBlock).toMatch(
+      /top:\s*calc\(env\(safe-area-inset-top\) \+ 14px\);/,
+    );
+    expect(mobileImagePreviewToolbarBlock).toMatch(
+      /right:\s*calc\(env\(safe-area-inset-right\) \+ 14px\);/,
+    );
+    expect(mobileImagePreviewButtonBlock).toMatch(/width:\s*44px;/);
+    expect(mobileImagePreviewButtonBlock).toMatch(/height:\s*44px;/);
+    expect(imagePreviewPaintScope).not.toMatch(/rgba\(\$color:\s*#/);
+    expect(imagePreviewPaintScope).not.toMatch(/#[0-9a-fA-F]{3,6}/);
     expect(reducedMotionBlock).toMatch(
       /\.image-preview-button,\s*\.image-preview-button:hover,\s*\.image-preview-button:active\s*\{[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
     );
