@@ -4280,25 +4280,32 @@
 @keyframes streamingSurfaceHandoff {
   0% {
     box-shadow:
-      inset 0 0 0 1px color-mix(in srgb, var(--primary) 12%, transparent),
-      0 8px 24px color-mix(in srgb, var(--primary) 7%, transparent);
+      inset 0 0 0 1px var(--chat-streaming-handoff-border-start),
+      0 8px 24px var(--chat-streaming-handoff-shadow-start);
   }
   58% {
     box-shadow:
-      inset 0 0 0 1px color-mix(in srgb, var(--primary) 7%, transparent),
-      0 4px 16px color-mix(in srgb, var(--primary) 4%, transparent);
+      inset 0 0 0 1px var(--chat-streaming-handoff-border-mid),
+      0 4px 16px var(--chat-streaming-handoff-shadow-mid);
   }
   100% {
     box-shadow:
-      inset 0 0 0 0 color-mix(in srgb, var(--primary) 0%, transparent),
-      0 0 0 color-mix(in srgb, var(--primary) 0%, transparent);
+      inset 0 0 0 0 var(--chat-streaming-handoff-border-end),
+      0 0 0 var(--chat-streaming-handoff-shadow-end);
   }
 }
 
 .chat-message-shimmer {
+  --chat-streaming-wait-border-color: color-mix(in srgb, var(--primary) 18%, transparent);
+  --chat-streaming-wait-line-base: var(--surface-soft);
+  --chat-streaming-wait-line-start: color-mix(in srgb, var(--surface-soft) 76%, transparent);
+  --chat-streaming-wait-line-highlight: color-mix(in srgb, var(--surface-elevated) 88%, var(--primary) 12%);
+  --chat-streaming-wait-line-tail: color-mix(in srgb, var(--surface-soft) 88%, transparent);
+  --chat-streaming-wait-line-end: color-mix(in srgb, var(--surface-soft) 76%, transparent);
+
   min-height: 72px;
   overflow: hidden;
-  border-color: color-mix(in srgb, var(--primary) 18%, transparent) !important;
+  border-color: var(--chat-streaming-wait-border-color) !important;
 
   :global(.markdown-body-container),
   :global(.markdown-body) {
@@ -4321,13 +4328,13 @@
     display: block;
     height: 12px;
     border-radius: 999px;
-    background-color: var(--surface-soft);
+    background-color: var(--chat-streaming-wait-line-base);
     background-image: linear-gradient(
       90deg,
-      color-mix(in srgb, var(--surface-soft) 76%, transparent) 0%,
-      color-mix(in srgb, var(--surface-elevated) 88%, var(--primary) 12%) 38%,
-      color-mix(in srgb, var(--surface-soft) 88%, transparent) 68%,
-      color-mix(in srgb, var(--surface-soft) 76%, transparent) 100%
+      var(--chat-streaming-wait-line-start) 0%,
+      var(--chat-streaming-wait-line-highlight) 38%,
+      var(--chat-streaming-wait-line-tail) 68%,
+      var(--chat-streaming-wait-line-end) 100%
     );
     background-size: 200% 100%;
     animation: shimmer 1.6s infinite linear;
@@ -4350,7 +4357,18 @@
 }
 
 .chat-message-streaming-reveal {
+  --chat-streaming-reveal-strip-primary: color-mix(in srgb, var(--primary) 14%, transparent);
+  --chat-streaming-reveal-strip-surface: color-mix(in srgb, var(--surface-elevated) 72%, transparent);
+  --chat-streaming-reveal-strip-secondary: color-mix(in srgb, var(--primary) 10%, transparent);
+  --chat-streaming-handoff-border-start: color-mix(in srgb, var(--primary) 12%, transparent);
+  --chat-streaming-handoff-border-mid: color-mix(in srgb, var(--primary) 7%, transparent);
+  --chat-streaming-handoff-border-end: color-mix(in srgb, var(--primary) 0%, transparent);
+  --chat-streaming-handoff-shadow-start: color-mix(in srgb, var(--primary) 7%, transparent);
+  --chat-streaming-handoff-shadow-mid: color-mix(in srgb, var(--primary) 4%, transparent);
+  --chat-streaming-handoff-shadow-end: color-mix(in srgb, var(--primary) 0%, transparent);
+
   transition: border-color 0.18s ease;
+  overflow: hidden;
   overflow-anchor: none;
   isolation: isolate;
   animation: streamingSurfaceHandoff 0.42s cubic-bezier(0.2, 0, 0, 1) both;
@@ -4365,9 +4383,9 @@
     background-image: linear-gradient(
       90deg,
       transparent 0%,
-      color-mix(in srgb, var(--primary) 14%, transparent) 32%,
-      color-mix(in srgb, var(--surface-elevated) 72%, transparent) 50%,
-      color-mix(in srgb, var(--primary) 10%, transparent) 66%,
+      var(--chat-streaming-reveal-strip-primary) 32%,
+      var(--chat-streaming-reveal-strip-surface) 50%,
+      var(--chat-streaming-reveal-strip-secondary) 66%,
       transparent 100%
     );
     animation: streamingShimmerFade 0.42s cubic-bezier(0.2, 0, 0, 1) both;
@@ -4383,33 +4401,40 @@
 }
 
 :global(.dark) .chat-message-shimmer {
-  border-color: color-mix(in srgb, var(--primary) 22%, transparent) !important;
-
-  &::after,
-  :global(.markdown-body)::before,
-  :global(.markdown-body)::after {
-    background-color: var(--surface-soft);
-    background-image: linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--surface-soft) 70%, transparent) 0%,
-      color-mix(in srgb, var(--surface-elevated) 82%, var(--primary) 18%) 38%,
-      color-mix(in srgb, var(--surface-soft) 82%, transparent) 68%,
-      color-mix(in srgb, var(--surface-soft) 70%, transparent) 100%
-    );
-    background-size: 200% 100%;
-  }
+  --chat-streaming-wait-border-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  --chat-streaming-wait-line-start: color-mix(in srgb, var(--surface-soft) 70%, transparent);
+  --chat-streaming-wait-line-highlight: color-mix(in srgb, var(--surface-elevated) 82%, var(--primary) 18%);
+  --chat-streaming-wait-line-tail: color-mix(in srgb, var(--surface-soft) 82%, transparent);
+  --chat-streaming-wait-line-end: color-mix(in srgb, var(--surface-soft) 70%, transparent);
 }
 
 :global(.dark) .chat-message-streaming-reveal {
-  &::after {
-    background-image: linear-gradient(
-      90deg,
-      transparent 0%,
-      color-mix(in srgb, var(--primary) 18%, transparent) 32%,
-      color-mix(in srgb, var(--surface-elevated) 64%, transparent) 50%,
-      color-mix(in srgb, var(--primary) 12%, transparent) 66%,
-      transparent 100%
-    );
+  --chat-streaming-reveal-strip-primary: color-mix(in srgb, var(--primary) 18%, transparent);
+  --chat-streaming-reveal-strip-surface: color-mix(in srgb, var(--surface-elevated) 64%, transparent);
+  --chat-streaming-reveal-strip-secondary: color-mix(in srgb, var(--primary) 12%, transparent);
+  --chat-streaming-handoff-border-start: color-mix(in srgb, var(--primary) 14%, transparent);
+  --chat-streaming-handoff-border-mid: color-mix(in srgb, var(--primary) 8%, transparent);
+  --chat-streaming-handoff-shadow-start: color-mix(in srgb, var(--primary) 6%, transparent);
+  --chat-streaming-handoff-shadow-mid: color-mix(in srgb, var(--primary) 3%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .chat-message-shimmer {
+    --chat-streaming-wait-border-color: color-mix(in srgb, var(--primary) 22%, transparent);
+    --chat-streaming-wait-line-start: color-mix(in srgb, var(--surface-soft) 70%, transparent);
+    --chat-streaming-wait-line-highlight: color-mix(in srgb, var(--surface-elevated) 82%, var(--primary) 18%);
+    --chat-streaming-wait-line-tail: color-mix(in srgb, var(--surface-soft) 82%, transparent);
+    --chat-streaming-wait-line-end: color-mix(in srgb, var(--surface-soft) 70%, transparent);
+  }
+
+  :global(body:not(.light)) .chat-message-streaming-reveal {
+    --chat-streaming-reveal-strip-primary: color-mix(in srgb, var(--primary) 18%, transparent);
+    --chat-streaming-reveal-strip-surface: color-mix(in srgb, var(--surface-elevated) 64%, transparent);
+    --chat-streaming-reveal-strip-secondary: color-mix(in srgb, var(--primary) 12%, transparent);
+    --chat-streaming-handoff-border-start: color-mix(in srgb, var(--primary) 14%, transparent);
+    --chat-streaming-handoff-border-mid: color-mix(in srgb, var(--primary) 8%, transparent);
+    --chat-streaming-handoff-shadow-start: color-mix(in srgb, var(--primary) 6%, transparent);
+    --chat-streaming-handoff-shadow-mid: color-mix(in srgb, var(--primary) 3%, transparent);
   }
 }
 
