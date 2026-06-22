@@ -9800,6 +9800,10 @@ describe("Gemini visual migration shell", () => {
     );
     const noteBlock = readCssBlock(updateAnnouncementStyles, ".note");
     const footerBlock = readCssBlock(updateAnnouncementStyles, ".footer");
+    const confirmBlock = readCssBlock(updateAnnouncementStyles, ".confirm");
+    const confirmHoverBlock = readCssBlock(confirmBlock, "&:hover");
+    const confirmActiveBlock = readCssBlock(confirmBlock, "&:active");
+    const confirmFocusBlock = readCssBlock(confirmBlock, "&:focus-visible");
     const darkMaskBlock = readCssBlock(
       updateAnnouncementStyles,
       ":global(.dark) .mask",
@@ -9812,7 +9816,12 @@ describe("Gemini visual migration shell", () => {
       autoDarkMaskSelectorIndex,
     );
     const autoDarkMaskBlock = readCssBlock(
-      updateAnnouncementStyles.slice(autoDarkMaskMediaIndex),
+      autoDarkMaskMediaIndex >= 0
+        ? readCssBlock(
+            updateAnnouncementStyles.slice(autoDarkMaskMediaIndex),
+            "@media (prefers-color-scheme: dark)",
+          )
+        : "",
       autoDarkMaskSelector,
     );
     const mobileBlock = readCssBlock(
@@ -9821,7 +9830,41 @@ describe("Gemini visual migration shell", () => {
     );
     const mobileMaskBlock = readCssBlock(mobileBlock, ".mask");
     const mobilePanelBlock = readCssBlock(mobileBlock, ".panel");
+    const mobilePanelRootBlock = readRootDeclarations(mobilePanelBlock);
     const mobileConfirmBlock = readCssBlock(mobileBlock, ".confirm");
+    const reducedMotionBlock = readCssBlock(
+      updateAnnouncementStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const maskKeyframesBlock = readCssBlock(
+      updateAnnouncementStyles,
+      "@keyframes updateAnnouncementMaskIn",
+    );
+    const panelKeyframesBlock = readCssBlock(
+      updateAnnouncementStyles,
+      "@keyframes updateAnnouncementPanelIn",
+    );
+    const sheetKeyframesBlock = readCssBlock(
+      updateAnnouncementStyles,
+      "@keyframes updateAnnouncementSheetIn",
+    );
+    const updateAnnouncementTokenNames = [
+      "--update-announcement-confirm-shadow-color",
+      "--update-announcement-confirm-hover-shadow-color",
+      "--update-announcement-confirm-active-shadow-color",
+    ];
+    const lightUpdateAnnouncementTokens = readCustomProperties(
+      maskRootBlock,
+      updateAnnouncementTokenNames,
+    );
+    const darkUpdateAnnouncementTokens = readCustomProperties(
+      darkMaskBlock,
+      updateAnnouncementTokenNames,
+    );
+    const autoDarkUpdateAnnouncementTokens = readCustomProperties(
+      autoDarkMaskBlock,
+      updateAnnouncementTokenNames,
+    );
 
     expect(updateAnnouncement).toContain(
       'const SEEN_KEY_PREFIX = "neatchat:update-announcement:seen";',
@@ -9843,8 +9886,18 @@ describe("Gemini visual migration shell", () => {
     );
     expect(updateAnnouncement).toContain('text="我知道了"');
     expect(updateAnnouncement).toContain("onClick={onConfirm}");
+    expect(updateAnnouncementStyles).toContain("@keyframes updateAnnouncementMaskIn");
+    expect(updateAnnouncementStyles).toContain("@keyframes updateAnnouncementPanelIn");
+    expect(updateAnnouncementStyles).toContain("@keyframes updateAnnouncementSheetIn");
     expect(updateAnnouncementStyles).not.toContain("rgba(49, 94, 248");
     expect(updateAnnouncementStyles).not.toContain("rgba(0, 0, 0, 0.36)");
+    for (const tokenName of updateAnnouncementTokenNames) {
+      expect(lightUpdateAnnouncementTokens[tokenName]).toBeTruthy();
+      expect(darkUpdateAnnouncementTokens[tokenName]).toBeTruthy();
+      expect(autoDarkUpdateAnnouncementTokens[tokenName]).toBe(
+        darkUpdateAnnouncementTokens[tokenName],
+      );
+    }
     expect(maskRootBlock).toMatch(
       /--update-announcement-shadow-ink:\s*rgb\(0,\s*0,\s*0\);/,
     );
@@ -9884,6 +9937,18 @@ describe("Gemini visual migration shell", () => {
     expect(maskRootBlock).toMatch(
       /--update-announcement-panel-hairline-shadow-color:\s*color-mix\(in srgb,\s*var\(--update-announcement-shadow-ink\) 8%,\s*transparent\);/,
     );
+    expect(maskRootBlock).toMatch(
+      /--update-announcement-confirm-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 20%,\s*transparent\);/,
+    );
+    expect(maskRootBlock).toMatch(
+      /--update-announcement-confirm-hover-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 26%,\s*transparent\);/,
+    );
+    expect(maskRootBlock).toMatch(
+      /--update-announcement-confirm-active-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 18%,\s*transparent\);/,
+    );
+    expect(maskRootBlock).toMatch(
+      /animation:\s*updateAnnouncementMaskIn 0\.18s ease-out both;/,
+    );
     expect(maskRootBlock).toMatch(/--update-announcement-panel-radius:\s*8px;/);
     expect(maskRootBlock).toMatch(
       /--update-announcement-mobile-panel-radius:\s*8px 8px 0 0;/,
@@ -9905,6 +9970,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(panelBlock).toMatch(
       /0 1px 2px var\(--update-announcement-panel-hairline-shadow-color\);/,
+    );
+    expect(panelBlock).toMatch(
+      /animation:\s*updateAnnouncementPanelIn 0\.24s cubic-bezier\(0\.2,\s*0,\s*0,\s*1\) both;/,
     );
     expect(headerBlock).toMatch(
       /border-bottom:\s*1px solid var\(--update-announcement-divider-color\);/,
@@ -9931,6 +9999,26 @@ describe("Gemini visual migration shell", () => {
     expect(footerBlock).toMatch(
       /border-top:\s*1px solid var\(--update-announcement-divider-color\);/,
     );
+    expect(confirmBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--update-announcement-confirm-shadow-color\)/,
+    );
+    expect(confirmBlock).toMatch(
+      /transition:[\s\S]*transform 0\.18s ease,[\s\S]*box-shadow 0\.18s ease,[\s\S]*filter 0\.18s ease;/,
+    );
+    expect(confirmHoverBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--update-announcement-confirm-hover-shadow-color\)/,
+    );
+    expect(confirmHoverBlock).toMatch(/transform:\s*translateY\(-1px\);/);
+    expect(confirmActiveBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--update-announcement-confirm-active-shadow-color\)/,
+    );
+    expect(confirmActiveBlock).toMatch(
+      /transform:\s*translateY\(0\) scale\(0\.98\);/,
+    );
+    expect(confirmFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(confirmFocusBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--focus-ring-shadow\)[\s\S]*var\(--update-announcement-confirm-hover-shadow-color\)/,
+    );
     expect(darkMaskBlock).toMatch(
       /--update-announcement-panel-border-ink:\s*rgb\(255,\s*255,\s*255\);/,
     );
@@ -9951,6 +10039,15 @@ describe("Gemini visual migration shell", () => {
     );
     expect(darkMaskBlock).toMatch(
       /--update-announcement-section-color:\s*color-mix\(in srgb,\s*var\(--primary\) 42%,\s*var\(--black\)\);/,
+    );
+    expect(darkMaskBlock).toMatch(
+      /--update-announcement-confirm-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 18%,\s*var\(--surface\)\);/,
+    );
+    expect(darkMaskBlock).toMatch(
+      /--update-announcement-confirm-hover-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 24%,\s*var\(--surface\)\);/,
+    );
+    expect(darkMaskBlock).toMatch(
+      /--update-announcement-confirm-active-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*var\(--surface\)\);/,
     );
     expect(autoDarkMaskBlock).toMatch(
       /--update-announcement-panel-border-ink:\s*rgb\(255,\s*255,\s*255\);/,
@@ -9987,7 +10084,22 @@ describe("Gemini visual migration shell", () => {
     expect(mobilePanelBlock).toMatch(
       /border-radius:\s*var\(--update-announcement-mobile-panel-radius\);/,
     );
+    expect(mobilePanelRootBlock).toMatch(
+      /animation:\s*updateAnnouncementSheetIn 0\.28s cubic-bezier\(0\.2,\s*0,\s*0,\s*1\) both;/,
+    );
     expect(mobileConfirmBlock).toMatch(/width:\s*100%;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.mask,[\s\S]*\.panel,[\s\S]*\.confirm\s*\{[\s\S]*animation:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;[\s\S]*transform:\s*none !important;/,
+    );
+    expect(maskKeyframesBlock).toMatch(
+      /from\s*\{[\s\S]*opacity:\s*0;[\s\S]*\}[\s\S]*to\s*\{[\s\S]*opacity:\s*1;/,
+    );
+    expect(panelKeyframesBlock).toMatch(
+      /from\s*\{[\s\S]*opacity:\s*0;[\s\S]*transform:\s*translateY\(14px\) scale\(0\.98\);[\s\S]*\}[\s\S]*to\s*\{[\s\S]*opacity:\s*1;[\s\S]*transform:\s*translateY\(0\) scale\(1\);/,
+    );
+    expect(sheetKeyframesBlock).toMatch(
+      /from\s*\{[\s\S]*opacity:\s*0;[\s\S]*transform:\s*translateY\(18px\);[\s\S]*\}[\s\S]*to\s*\{[\s\S]*opacity:\s*1;[\s\S]*transform:\s*translateY\(0\);/,
+    );
   });
 
   test("keeps shared ui-lib modal selector and toast surfaces aligned with Gemini", () => {

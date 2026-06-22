@@ -1,5 +1,3 @@
-@import "../styles/animation.scss";
-
 .mask {
   --update-announcement-shadow-ink: rgb(0, 0, 0);
   --update-announcement-panel-border-ink: rgb(60, 64, 67);
@@ -14,6 +12,9 @@
   --update-announcement-note-color: color-mix(in srgb, var(--black) 72%, transparent);
   --update-announcement-divider-color: color-mix(in srgb, var(--update-announcement-panel-border-ink) 10%, transparent);
   --update-announcement-panel-hairline-shadow-color: color-mix(in srgb, var(--update-announcement-shadow-ink) 8%, transparent);
+  --update-announcement-confirm-shadow-color: color-mix(in srgb, var(--primary) 20%, transparent);
+  --update-announcement-confirm-hover-shadow-color: color-mix(in srgb, var(--primary) 26%, transparent);
+  --update-announcement-confirm-active-shadow-color: color-mix(in srgb, var(--primary) 18%, transparent);
   --update-announcement-panel-radius: 8px;
   --update-announcement-mobile-panel-radius: 8px 8px 0 0;
 
@@ -27,6 +28,7 @@
   box-sizing: border-box;
   background: var(--update-announcement-mask-background);
   backdrop-filter: blur(8px);
+  animation: updateAnnouncementMaskIn 0.18s ease-out both;
 }
 
 .panel {
@@ -42,7 +44,7 @@
   box-shadow:
     0 22px 70px var(--update-announcement-panel-shadow-color),
     0 1px 2px var(--update-announcement-panel-hairline-shadow-color);
-  animation: slide-in ease 0.24s;
+  animation: updateAnnouncementPanelIn 0.24s cubic-bezier(0.2, 0, 0, 1) both;
 }
 
 .header {
@@ -126,6 +128,29 @@
 
 .confirm {
   min-width: 112px;
+  box-shadow: 0 8px 20px var(--update-announcement-confirm-shadow-color);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    filter 0.18s ease;
+
+  &:hover {
+    box-shadow: 0 10px 24px var(--update-announcement-confirm-hover-shadow-color);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    box-shadow: 0 6px 16px var(--update-announcement-confirm-active-shadow-color);
+    transform: translateY(0) scale(0.98);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    box-shadow:
+      var(--focus-ring-shadow),
+      0 10px 24px var(--update-announcement-confirm-hover-shadow-color);
+  }
 }
 
 :global(.dark) .mask {
@@ -140,6 +165,9 @@
   --update-announcement-section-color: color-mix(in srgb, var(--primary) 42%, var(--black));
   --update-announcement-bullet-color: color-mix(in srgb, var(--primary) 42%, var(--black));
   --update-announcement-note-color: color-mix(in srgb, var(--black) 74%, transparent);
+  --update-announcement-confirm-shadow-color: color-mix(in srgb, var(--primary) 18%, var(--surface));
+  --update-announcement-confirm-hover-shadow-color: color-mix(in srgb, var(--primary) 24%, var(--surface));
+  --update-announcement-confirm-active-shadow-color: color-mix(in srgb, var(--primary) 16%, var(--surface));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -155,6 +183,9 @@
     --update-announcement-section-color: color-mix(in srgb, var(--primary) 42%, var(--black));
     --update-announcement-bullet-color: color-mix(in srgb, var(--primary) 42%, var(--black));
     --update-announcement-note-color: color-mix(in srgb, var(--black) 74%, transparent);
+    --update-announcement-confirm-shadow-color: color-mix(in srgb, var(--primary) 18%, var(--surface));
+    --update-announcement-confirm-hover-shadow-color: color-mix(in srgb, var(--primary) 24%, var(--surface));
+    --update-announcement-confirm-active-shadow-color: color-mix(in srgb, var(--primary) 16%, var(--surface));
   }
 }
 
@@ -176,6 +207,7 @@
     border-bottom: 0;
     border-left: 0;
     border-radius: var(--update-announcement-mobile-panel-radius);
+    animation: updateAnnouncementSheetIn 0.28s cubic-bezier(0.2, 0, 0, 1) both;
   }
 
   .header {
@@ -192,5 +224,49 @@
 
   .confirm {
     width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mask,
+  .panel,
+  .confirm {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+    transform: none !important;
+  }
+}
+
+@keyframes updateAnnouncementMaskIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes updateAnnouncementPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes updateAnnouncementSheetIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
