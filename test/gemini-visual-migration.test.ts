@@ -193,6 +193,20 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-scroll-to-bottom",
     );
+    const scrollToBottomRootBlock =
+      readRootDeclarations(scrollToBottomBlock);
+    const scrollToBottomHoverBlock = readCssBlock(
+      scrollToBottomBlock,
+      "&:hover",
+    );
+    const scrollToBottomActiveBlock = readCssBlock(
+      scrollToBottomBlock,
+      "&:active",
+    );
+    const scrollToBottomFocusBlock = readCssBlock(
+      scrollToBottomBlock,
+      "&:focus-visible",
+    );
     const sendButtonDisabledBlock = chatStyles.slice(
       chatStyles.indexOf("&:disabled,"),
       chatStyles.indexOf(":global(.dark) .chat-input-send:disabled"),
@@ -201,9 +215,73 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ":global(.dark) .chat-input-send:disabled",
     );
+    const darkScrollToBottomBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-scroll-to-bottom",
+    );
     const darkScrollToBottomHoverBlock = readCssBlock(
       chatStyles,
       ":global(.dark) .chat-scroll-to-bottom:hover",
+    );
+    const darkScrollToBottomActiveBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-scroll-to-bottom:active",
+    );
+    const autoDarkScrollToBottomSelector =
+      ":global(body:not(.light)) .chat-scroll-to-bottom";
+    const autoDarkScrollToBottomHoverSelector =
+      ":global(body:not(.light)) .chat-scroll-to-bottom:hover";
+    const autoDarkScrollToBottomActiveSelector =
+      ":global(body:not(.light)) .chat-scroll-to-bottom:active";
+    const autoDarkScrollToBottomIndex = chatStyles.indexOf(
+      autoDarkScrollToBottomSelector,
+    );
+    const autoDarkScrollToBottomMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkScrollToBottomIndex,
+    );
+    const autoDarkScrollToBottomMediaBlock =
+      autoDarkScrollToBottomMediaIndex >= 0
+        ? readCssBlock(
+            chatStyles.slice(autoDarkScrollToBottomMediaIndex),
+            "@media (prefers-color-scheme: dark)",
+          )
+        : "";
+    const autoDarkScrollToBottomBlock = readCssBlock(
+      autoDarkScrollToBottomMediaBlock,
+      autoDarkScrollToBottomSelector,
+    );
+    const autoDarkScrollToBottomHoverBlock = readCssBlock(
+      autoDarkScrollToBottomMediaBlock,
+      autoDarkScrollToBottomHoverSelector,
+    );
+    const autoDarkScrollToBottomActiveBlock = readCssBlock(
+      autoDarkScrollToBottomMediaBlock,
+      autoDarkScrollToBottomActiveSelector,
+    );
+    const scrollToBottomTokenNames = [
+      "--chat-scroll-bottom-border-color",
+      "--chat-scroll-bottom-background",
+      "--chat-scroll-bottom-color",
+      "--chat-scroll-bottom-shadow-color",
+      "--chat-scroll-bottom-hover-border-color",
+      "--chat-scroll-bottom-hover-shadow-color",
+      "--chat-scroll-bottom-hover-ring-color",
+      "--chat-scroll-bottom-active-border-color",
+      "--chat-scroll-bottom-active-shadow-color",
+      "--chat-scroll-bottom-active-ring-color",
+    ];
+    const lightScrollToBottomTokens = readCustomProperties(
+      scrollToBottomRootBlock,
+      scrollToBottomTokenNames,
+    );
+    const darkScrollToBottomTokens = readCustomProperties(
+      darkScrollToBottomBlock,
+      scrollToBottomTokenNames,
+    );
+    const autoDarkScrollToBottomTokens = readCustomProperties(
+      autoDarkScrollToBottomBlock,
+      scrollToBottomTokenNames,
     );
     const emptyStateBlock = readCssBlock(chatStyles, ".chat-empty-state");
     const emptySuggestionsBlock = readCssBlock(
@@ -1913,25 +1991,93 @@ describe("Gemini visual migration shell", () => {
     expect(scrollToBottomBlock).toMatch(/width:\s*42px;/);
     expect(scrollToBottomBlock).toMatch(/height:\s*42px;/);
     expect(scrollToBottomBlock).toMatch(/border-radius:\s*999px;/);
+    for (const tokenName of scrollToBottomTokenNames) {
+      expect(lightScrollToBottomTokens[tokenName]).toBeTruthy();
+      expect(darkScrollToBottomTokens[tokenName]).toBeTruthy();
+      expect(autoDarkScrollToBottomTokens[tokenName]).toBeTruthy();
+      expect(autoDarkScrollToBottomTokens[tokenName]).toBe(
+        darkScrollToBottomTokens[tokenName],
+      );
+    }
+    expect(autoDarkScrollToBottomIndex).toBeGreaterThan(-1);
+    expect(autoDarkScrollToBottomMediaIndex).toBeGreaterThan(-1);
+    expect(scrollToBottomRootBlock).toMatch(
+      /--chat-scroll-bottom-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
+    );
+    expect(scrollToBottomRootBlock).toMatch(
+      /--chat-scroll-bottom-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 28%,\s*transparent\s*\);/,
+    );
+    expect(darkScrollToBottomBlock).toMatch(
+      /--chat-scroll-bottom-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
+    );
+    expect(darkScrollToBottomBlock).toMatch(
+      /--chat-scroll-bottom-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 34%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkScrollToBottomBlock).toMatch(
+      /--chat-scroll-bottom-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
+    );
     expect(scrollToBottomBlock).toMatch(
-      /background:\s*var\(--surface-elevated\);/,
+      /border:\s*1px solid var\(--chat-scroll-bottom-border-color\);/,
+    );
+    expect(scrollToBottomBlock).toMatch(
+      /background:\s*var\(--chat-scroll-bottom-background\);/,
+    );
+    expect(scrollToBottomBlock).toMatch(
+      /color:\s*var\(--chat-scroll-bottom-color\);/,
+    );
+    expect(scrollToBottomBlock).toMatch(
+      /box-shadow:[\s\S]*0 8px 26px var\(--chat-scroll-bottom-shadow-color\),[\s\S]*0 1px 2px var\(--chat-scroll-bottom-shadow-color\);/,
     );
     expect(scrollToBottomBlock).toMatch(
       /backdrop-filter:\s*blur\(18px\) saturate\(160%\);/,
     );
+    expect(scrollToBottomHoverBlock).toMatch(
+      /border-color:\s*var\(--chat-scroll-bottom-hover-border-color\);/,
+    );
+    expect(scrollToBottomHoverBlock).toMatch(
+      /box-shadow:[\s\S]*0 10px 30px var\(--chat-scroll-bottom-hover-shadow-color\),[\s\S]*0 0 0 3px var\(--chat-scroll-bottom-hover-ring-color\);/,
+    );
+    expect(scrollToBottomActiveBlock).toMatch(
+      /border-color:\s*var\(--chat-scroll-bottom-active-border-color\);/,
+    );
     expect(scrollToBottomBlock).toMatch(
       /&:active[\s\S]*transform:\s*translateX\(-50%\) translateY\(0\) scale\(0\.96\);/,
     );
-    expect(scrollToBottomBlock).toMatch(
-      /&:active[\s\S]*box-shadow:[\s\S]*0 6px 18px rgba\(60,\s*64,\s*67,\s*0\.14\)/,
+    expect(scrollToBottomActiveBlock).toMatch(
+      /box-shadow:[\s\S]*0 6px 18px var\(--chat-scroll-bottom-active-shadow-color\),[\s\S]*0 0 0 2px var\(--chat-scroll-bottom-active-ring-color\);/,
     );
-    expect(scrollToBottomBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(scrollToBottomFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(scrollToBottomFocusBlock).toMatch(
+      /box-shadow:\s*var\(--focus-ring-shadow\);/,
+    );
     expect(darkScrollToBottomHoverBlock).toMatch(
-      /border-color:\s*rgba\(138,\s*180,\s*248,\s*0\.28\);/,
+      /border-color:\s*var\(--chat-scroll-bottom-hover-border-color\);/,
     );
     expect(darkScrollToBottomHoverBlock).toMatch(
-      /box-shadow:[\s\S]*0 12px 32px rgba\(0,\s*0,\s*0,\s*0\.34\)/,
+      /box-shadow:[\s\S]*0 12px 32px var\(--chat-scroll-bottom-hover-shadow-color\),[\s\S]*0 0 0 3px var\(--chat-scroll-bottom-hover-ring-color\);/,
     );
+    expect(darkScrollToBottomActiveBlock).toMatch(
+      /border-color:\s*var\(--chat-scroll-bottom-active-border-color\);/,
+    );
+    expect(autoDarkScrollToBottomHoverBlock).toMatch(
+      /border-color:\s*var\(--chat-scroll-bottom-hover-border-color\);/,
+    );
+    expect(autoDarkScrollToBottomActiveBlock).toMatch(
+      /border-color:\s*var\(--chat-scroll-bottom-active-border-color\);/,
+    );
+    expect(
+      [
+        scrollToBottomRootBlock,
+        scrollToBottomHoverBlock,
+        scrollToBottomActiveBlock,
+        darkScrollToBottomBlock,
+        darkScrollToBottomHoverBlock,
+        darkScrollToBottomActiveBlock,
+        autoDarkScrollToBottomBlock,
+        autoDarkScrollToBottomHoverBlock,
+        autoDarkScrollToBottomActiveBlock,
+      ].join("\n"),
+    ).not.toMatch(/rgba?\(|#[0-9a-fA-F]{3,8}\b/);
     expect(mobileScrollToBottomBlock).toMatch(/top:\s*-52px;/);
     expect(mobileScrollToBottomBlock).toMatch(/width:\s*40px;/);
     expect(mobileScrollToBottomBlock).toMatch(/height:\s*40px;/);

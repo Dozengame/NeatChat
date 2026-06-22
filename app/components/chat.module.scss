@@ -1642,6 +1642,53 @@
 }
 
 .chat-scroll-to-bottom {
+  --chat-scroll-bottom-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --chat-scroll-bottom-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 92%,
+    transparent
+  );
+  --chat-scroll-bottom-color: var(--primary);
+  --chat-scroll-bottom-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 14%,
+    transparent
+  );
+  --chat-scroll-bottom-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 28%,
+    transparent
+  );
+  --chat-scroll-bottom-hover-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 16%,
+    transparent
+  );
+  --chat-scroll-bottom-hover-ring-color: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    transparent
+  );
+  --chat-scroll-bottom-active-border-color: color-mix(
+    in srgb,
+    var(--primary) 24%,
+    transparent
+  );
+  --chat-scroll-bottom-active-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --chat-scroll-bottom-active-ring-color: color-mix(
+    in srgb,
+    var(--primary) 9%,
+    transparent
+  );
+
   position: absolute;
   left: 50%;
   top: -56px;
@@ -1652,13 +1699,13 @@
   width: 42px;
   height: 42px;
   padding: 0;
-  border: 1px solid rgba(60, 64, 67, 0.1);
+  border: 1px solid var(--chat-scroll-bottom-border-color);
   border-radius: 999px;
-  background: var(--surface-elevated);
-  color: var(--primary);
+  background: var(--chat-scroll-bottom-background);
+  color: var(--chat-scroll-bottom-color);
   box-shadow:
-    0 8px 26px rgba(60, 64, 67, 0.16),
-    0 1px 2px rgba(60, 64, 67, 0.1);
+    0 8px 26px var(--chat-scroll-bottom-shadow-color),
+    0 1px 2px var(--chat-scroll-bottom-shadow-color);
   transform: translateX(-50%);
   cursor: pointer;
   backdrop-filter: blur(18px) saturate(160%);
@@ -1676,18 +1723,18 @@
   }
 
   &:hover {
-    border-color: rgba(49, 94, 248, 0.22);
+    border-color: var(--chat-scroll-bottom-hover-border-color);
     box-shadow:
-      0 10px 30px rgba(60, 64, 67, 0.18),
-      0 0 0 3px rgba(49, 94, 248, 0.08);
+      0 10px 30px var(--chat-scroll-bottom-hover-shadow-color),
+      0 0 0 3px var(--chat-scroll-bottom-hover-ring-color);
     transform: translateX(-50%) translateY(-2px);
   }
 
   &:active {
-    border-color: rgba(49, 94, 248, 0.2);
+    border-color: var(--chat-scroll-bottom-active-border-color);
     box-shadow:
-      0 6px 18px rgba(60, 64, 67, 0.14),
-      0 0 0 2px rgba(49, 94, 248, 0.08);
+      0 6px 18px var(--chat-scroll-bottom-active-shadow-color),
+      0 0 0 2px var(--chat-scroll-bottom-active-ring-color);
     transform: translateX(-50%) translateY(0) scale(0.96);
   }
 
@@ -1699,18 +1746,147 @@
 }
 
 :global(.dark) .chat-scroll-to-bottom {
-  border-color: rgba(255, 255, 255, 0.1);
-  background: var(--surface-elevated);
+  --chat-scroll-bottom-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --chat-scroll-bottom-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 88%,
+    transparent
+  );
+  --chat-scroll-bottom-color: color-mix(
+    in srgb,
+    var(--primary) 92%,
+    var(--black)
+  );
+  --chat-scroll-bottom-shadow-color: color-mix(
+    in srgb,
+    var(--surface) 38%,
+    transparent
+  );
+  --chat-scroll-bottom-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 34%,
+    transparent
+  );
+  --chat-scroll-bottom-hover-shadow-color: color-mix(
+    in srgb,
+    var(--surface) 46%,
+    transparent
+  );
+  --chat-scroll-bottom-hover-ring-color: color-mix(
+    in srgb,
+    var(--primary) 12%,
+    transparent
+  );
+  --chat-scroll-bottom-active-border-color: color-mix(
+    in srgb,
+    var(--primary) 28%,
+    transparent
+  );
+  --chat-scroll-bottom-active-shadow-color: color-mix(
+    in srgb,
+    var(--surface) 34%,
+    transparent
+  );
+  --chat-scroll-bottom-active-ring-color: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    transparent
+  );
+
   box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.28),
-    0 1px 2px rgba(0, 0, 0, 0.22);
+    0 10px 30px var(--chat-scroll-bottom-shadow-color),
+    0 1px 2px var(--chat-scroll-bottom-shadow-color);
 }
 
 :global(.dark) .chat-scroll-to-bottom:hover {
-  border-color: rgba(138, 180, 248, 0.28);
+  border-color: var(--chat-scroll-bottom-hover-border-color);
   box-shadow:
-    0 12px 32px rgba(0, 0, 0, 0.34),
-    0 0 0 3px rgba(138, 180, 248, 0.1);
+    0 12px 32px var(--chat-scroll-bottom-hover-shadow-color),
+    0 0 0 3px var(--chat-scroll-bottom-hover-ring-color);
+}
+
+:global(.dark) .chat-scroll-to-bottom:active {
+  border-color: var(--chat-scroll-bottom-active-border-color);
+  box-shadow:
+    0 8px 22px var(--chat-scroll-bottom-active-shadow-color),
+    0 0 0 2px var(--chat-scroll-bottom-active-ring-color);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .chat-scroll-to-bottom {
+    --chat-scroll-bottom-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --chat-scroll-bottom-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 88%,
+      transparent
+    );
+    --chat-scroll-bottom-color: color-mix(
+      in srgb,
+      var(--primary) 92%,
+      var(--black)
+    );
+    --chat-scroll-bottom-shadow-color: color-mix(
+      in srgb,
+      var(--surface) 38%,
+      transparent
+    );
+    --chat-scroll-bottom-hover-border-color: color-mix(
+      in srgb,
+      var(--primary) 34%,
+      transparent
+    );
+    --chat-scroll-bottom-hover-shadow-color: color-mix(
+      in srgb,
+      var(--surface) 46%,
+      transparent
+    );
+    --chat-scroll-bottom-hover-ring-color: color-mix(
+      in srgb,
+      var(--primary) 12%,
+      transparent
+    );
+    --chat-scroll-bottom-active-border-color: color-mix(
+      in srgb,
+      var(--primary) 28%,
+      transparent
+    );
+    --chat-scroll-bottom-active-shadow-color: color-mix(
+      in srgb,
+      var(--surface) 34%,
+      transparent
+    );
+    --chat-scroll-bottom-active-ring-color: color-mix(
+      in srgb,
+      var(--primary) 10%,
+      transparent
+    );
+
+    box-shadow:
+      0 10px 30px var(--chat-scroll-bottom-shadow-color),
+      0 1px 2px var(--chat-scroll-bottom-shadow-color);
+  }
+
+  :global(body:not(.light)) .chat-scroll-to-bottom:hover {
+    border-color: var(--chat-scroll-bottom-hover-border-color);
+    box-shadow:
+      0 12px 32px var(--chat-scroll-bottom-hover-shadow-color),
+      0 0 0 3px var(--chat-scroll-bottom-hover-ring-color);
+  }
+
+  :global(body:not(.light)) .chat-scroll-to-bottom:active {
+    border-color: var(--chat-scroll-bottom-active-border-color);
+    box-shadow:
+      0 8px 22px var(--chat-scroll-bottom-active-shadow-color),
+      0 0 0 2px var(--chat-scroll-bottom-active-ring-color);
+  }
 }
 
 .chat-reading-surface {
