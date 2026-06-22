@@ -160,12 +160,45 @@
 }
 
 .sidebar {
+  --sidebar-background: color-mix(in srgb, var(--surface-elevated) 86%, transparent);
+  --sidebar-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --sidebar-drag-background: transparent;
+  --sidebar-drag-hover-background: color-mix(in srgb, var(--black) 1%, transparent);
+  --sidebar-mobile-shadow: 0 16px 48px color-mix(in srgb, var(--black-50) 24%, transparent);
+  --sidebar-item-active-background: color-mix(in srgb, var(--primary) 10%, transparent);
+  --sidebar-item-active-soft-background: color-mix(in srgb, var(--primary) 8%, transparent);
+  --sidebar-item-active-border-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  --sidebar-item-active-muted-color: color-mix(in srgb, var(--primary) 72%, var(--black-50));
+  --sidebar-card-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+  --sidebar-card-hover-border-color: color-mix(in srgb, var(--primary) 18%, transparent);
+  --sidebar-card-hover-background: color-mix(in srgb, var(--surface-elevated) 94%, var(--primary) 6%);
+  --sidebar-card-hover-shadow: 0 6px 22px color-mix(in srgb, var(--black-50) 12%, transparent);
+  --sidebar-card-focus-background: var(--surface-elevated);
+  --sidebar-action-active-background: color-mix(in srgb, var(--primary) 10%, transparent);
+  --sidebar-action-active-ring-shadow: color-mix(in srgb, var(--primary) 22%, transparent);
+  --sidebar-action-active-drop-shadow: color-mix(in srgb, var(--primary) 12%, transparent);
+  --sidebar-tail-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --sidebar-avatar-background: linear-gradient(
+    135deg,
+    var(--primary),
+    color-mix(in srgb, var(--primary) 66%, var(--surface-elevated))
+  );
+  --sidebar-avatar-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 22%, transparent);
+  --sidebar-avatar-face-background: color-mix(in srgb, var(--surface-elevated) 88%, var(--primary) 12%);
+  --sidebar-avatar-face-shadow:
+    inset 0 -3px 0 color-mix(in srgb, var(--primary) 12%, transparent),
+    0 2px 8px color-mix(in srgb, var(--black-50) 20%, transparent);
+  --sidebar-avatar-feature-color: var(--primary);
+  --sidebar-avatar-count-shadow: 0 1px 3px color-mix(in srgb, var(--black) 20%, transparent);
+  --sidebar-mobile-account-settings-background: color-mix(in srgb, var(--surface-elevated) 72%, transparent);
+  --sidebar-on-primary: rgb(255, 255, 255);
+
   top: 0;
   width: var(--sidebar-width);
   box-sizing: border-box;
   padding: 18px 12px 14px;
   /* R5: Glassmorphism sidebar — semi-transparent with blur */
-  background-color: rgba(249, 251, 253, 0.82);
+  background-color: var(--sidebar-background);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   display: flex;
@@ -173,7 +206,7 @@
   box-shadow: none;
   position: relative;
   transition: width ease 0.05s;
-  border-right: 1px solid rgba(60, 64, 67, 0.1);
+  border-right: 1px solid var(--sidebar-border-color);
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
   -ms-overflow-style: -ms-autohiding-scrollbar;
@@ -213,8 +246,11 @@
   }
 
   :global(.dark) & {
-    background-color: rgba(19, 20, 22, 0.82);
-    border-right-color: var(--border-in-light);
+    --sidebar-background: color-mix(in srgb, var(--surface-elevated) 84%, transparent);
+    --sidebar-mobile-shadow: 0 16px 48px color-mix(in srgb, rgb(0, 0, 0) 44%, transparent);
+    --sidebar-card-hover-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--primary) 14%);
+    --sidebar-card-hover-shadow: none;
+    --sidebar-action-active-drop-shadow: color-mix(in srgb, var(--primary) 14%, transparent);
   }
 
   .sidebar-header-bar {
@@ -235,7 +271,7 @@
   &:hover,
   &:active {
     .sidebar-drag {
-      background-color: rgba($color: #000000, $alpha: 0.01);
+      background-color: var(--sidebar-drag-hover-background);
 
       svg {
         opacity: 0.2;
@@ -252,7 +288,7 @@
   right: 0;
   height: 100%;
   width: $width;
-  background-color: rgba($color: #000000, $alpha: 0);
+  background-color: var(--sidebar-drag-background);
   cursor: ew-resize;
   transition: all ease 0.3s;
   display: flex;
@@ -293,7 +329,7 @@
     height: var(--full-height);
     transition: left 0.2s ease-out, display 0.2s ease-out;
     transition-behavior: allow-discrete;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
+    box-shadow: var(--sidebar-mobile-shadow);
 
     @starting-style {
       left: -100%;
@@ -469,7 +505,7 @@
 }
 
 .chat-item-selected {
-  background-color: rgba(49, 94, 248, 0.1);
+  background-color: var(--sidebar-item-active-background);
   color: var(--black);
 
   &::before {
@@ -614,7 +650,7 @@
 }
 
 .sidebar-nav-item-active {
-  background-color: rgba(49, 94, 248, 0.1);
+  background-color: var(--sidebar-item-active-background);
   box-shadow: inset 3px 0 0 var(--primary);
   color: var(--primary);
   font-weight: 600;
@@ -637,7 +673,7 @@
   width: 100%;
   min-height: 58px;
   padding: 8px 12px;
-  border: 1px solid rgba(60, 64, 67, 0.08);
+  border: 1px solid var(--sidebar-card-border-color);
   border-radius: 8px;
   background: var(--surface-elevated);
   color: var(--black);
@@ -653,16 +689,16 @@
     box-shadow 0.16s ease;
 
   &:hover {
-    border-color: rgba(49, 94, 248, 0.18);
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: 0 6px 22px rgba(60, 64, 67, 0.08);
+    border-color: var(--sidebar-card-hover-border-color);
+    background: var(--sidebar-card-hover-background);
+    box-shadow: var(--sidebar-card-hover-shadow);
   }
 
   &:focus-visible {
     outline: var(--focus-ring);
     outline-offset: 2px;
-    border-color: rgba(49, 94, 248, 0.18);
-    background: var(--surface-elevated);
+    border-color: var(--sidebar-card-hover-border-color);
+    background: var(--sidebar-card-focus-background);
     box-shadow: var(--focus-ring-shadow);
   }
 
@@ -674,8 +710,8 @@
 }
 
 .sidebar-content-card-active {
-  border-color: rgba(49, 94, 248, 0.22);
-  background: rgba(25, 103, 210, 0.1);
+  border-color: var(--sidebar-item-active-border-color);
+  background: var(--sidebar-item-active-background);
   box-shadow: inset 3px 0 0 var(--primary);
   color: var(--primary);
 
@@ -684,7 +720,7 @@
   }
 
   .sidebar-content-subtitle {
-    color: rgba(49, 94, 248, 0.72);
+    color: var(--sidebar-item-active-muted-color);
   }
 }
 
@@ -715,19 +751,19 @@
 }
 
 :global(.dark) .sidebar-content-card {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--sidebar-card-border-color);
   background: var(--surface-elevated);
 
   &:hover,
   &:focus-visible {
-    border-color: rgba(138, 180, 248, 0.24);
-    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--sidebar-card-hover-border-color);
+    background: var(--sidebar-card-hover-background);
   }
 }
 
 :global(.dark) .sidebar-content-card-active {
-  border-color: rgba(138, 180, 248, 0.28);
-  background: rgba(138, 180, 248, 0.14);
+  border-color: var(--sidebar-item-active-border-color);
+  background: var(--sidebar-item-active-background);
   color: var(--primary);
 
   .sidebar-content-title {
@@ -735,7 +771,7 @@
   }
 
   .sidebar-content-subtitle {
-    color: rgba(138, 180, 248, 0.72);
+    color: var(--sidebar-item-active-muted-color);
   }
 }
 
@@ -824,13 +860,13 @@
 
   .sidebar-nav-item-active {
     box-shadow: none !important;
-    background-color: rgba(25, 103, 210, 0.08);
+    background-color: var(--sidebar-item-active-soft-background);
     color: var(--primary);
   }
 
   .sidebar-content-card-active {
     box-shadow: none !important;
-    background-color: rgba(25, 103, 210, 0.08);
+    background-color: var(--sidebar-item-active-soft-background);
     color: var(--primary);
   }
 
@@ -876,7 +912,7 @@
       transform: none;
       border-radius: 50%;
       overflow: hidden;
-      background: rgba(0, 0, 0, 0.03);
+      background: var(--sidebar-item-active-soft-background);
 
       :global(.user-avatar) {
         width: 36px !important;
@@ -893,14 +929,14 @@
       height: 16px;
       border-radius: 8px;
       background: var(--primary);
-      color: #fff;
+      color: var(--sidebar-on-primary);
       font-size: 10px;
       font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 0 4px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      box-shadow: var(--sidebar-avatar-count-shadow);
       border: 1.5px solid var(--surface-elevated);
       line-height: 1;
       opacity: 1;
@@ -927,7 +963,7 @@
   display: flex;
   justify-content: space-between;
   padding: 14px 4px 0;
-  border-top: 1px solid rgba(60, 64, 67, 0.1);
+  border-top: 1px solid var(--sidebar-tail-border-color);
 }
 
 .sidebar-actions {
@@ -1030,8 +1066,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #315ef8, #5f8bff);
-  box-shadow: 0 10px 24px rgba(49, 94, 248, 0.22);
+  background: var(--sidebar-avatar-background);
+  box-shadow: var(--sidebar-avatar-shadow);
   overflow: hidden;
 
   svg {
@@ -1045,10 +1081,8 @@
   width: 28px;
   height: 28px;
   border-radius: 10px;
-  background: #f7fbff;
-  box-shadow:
-    inset 0 -3px 0 rgba(49, 94, 248, 0.12),
-    0 2px 8px rgba(18, 28, 45, 0.16);
+  background: var(--sidebar-avatar-face-background);
+  box-shadow: var(--sidebar-avatar-face-shadow);
   display: block;
   position: relative;
 }
@@ -1060,7 +1094,7 @@
   width: 5px;
   height: 5px;
   border-radius: 2px;
-  background: #315ef8;
+  background: var(--sidebar-avatar-feature-color);
 }
 
 .sidebar-mobile-pixel-eye-left {
@@ -1078,7 +1112,7 @@
   width: 10px;
   height: 4px;
   border-radius: 999px;
-  background: #315ef8;
+  background: var(--sidebar-avatar-feature-color);
 }
 
 .sidebar-mobile-account-copy {
@@ -1113,7 +1147,7 @@
     height: 40px;
     padding: 10px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.72);
+    background: var(--sidebar-mobile-account-settings-background);
   }
 }
 
@@ -1131,19 +1165,19 @@
 .sidebar-settings-link-active {
   button {
     color: var(--primary);
-    background: rgba(25, 103, 210, 0.1);
+    background: var(--sidebar-action-active-background);
     box-shadow:
-      0 0 0 1px rgba(49, 94, 248, 0.22),
-      0 6px 20px rgba(49, 94, 248, 0.12);
+      0 0 0 1px var(--sidebar-action-active-ring-shadow),
+      0 6px 20px var(--sidebar-action-active-drop-shadow);
   }
 }
 
 :global(.dark) .sidebar-settings-link-active {
   button {
-    background: rgba(138, 180, 248, 0.14);
+    background: var(--sidebar-action-active-background);
     box-shadow:
-      0 0 0 1px rgba(138, 180, 248, 0.28),
-      0 6px 20px rgba(138, 180, 248, 0.14);
+      0 0 0 1px var(--sidebar-action-active-ring-shadow),
+      0 6px 20px var(--sidebar-action-active-drop-shadow);
   }
 }
 

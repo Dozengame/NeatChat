@@ -794,6 +794,49 @@ describe("Gemini visual migration shell", () => {
       homeStyles.slice(homeStyles.indexOf("\n.sidebar {")),
       ".sidebar",
     );
+    const sidebarRootDeclarations = readRootDeclarations(sidebarBlock);
+    const sidebarTokens = readCustomProperties(sidebarRootDeclarations, [
+      "--sidebar-background",
+      "--sidebar-border-color",
+      "--sidebar-drag-background",
+      "--sidebar-drag-hover-background",
+      "--sidebar-mobile-shadow",
+      "--sidebar-item-active-background",
+      "--sidebar-item-active-soft-background",
+      "--sidebar-item-active-border-color",
+      "--sidebar-item-active-muted-color",
+      "--sidebar-card-border-color",
+      "--sidebar-card-hover-border-color",
+      "--sidebar-card-hover-background",
+      "--sidebar-card-hover-shadow",
+      "--sidebar-card-focus-background",
+      "--sidebar-action-active-background",
+      "--sidebar-action-active-ring-shadow",
+      "--sidebar-action-active-drop-shadow",
+      "--sidebar-tail-border-color",
+      "--sidebar-avatar-background",
+      "--sidebar-avatar-shadow",
+      "--sidebar-avatar-face-background",
+      "--sidebar-avatar-face-shadow",
+      "--sidebar-avatar-feature-color",
+      "--sidebar-avatar-count-shadow",
+      "--sidebar-mobile-account-settings-background",
+      "--sidebar-on-primary",
+    ]);
+    const darkSidebarOverrideBlock = readCssBlock(
+      sidebarBlock,
+      ":global(.dark) &",
+    );
+    const darkSidebarOverrideTokens = readCustomProperties(
+      darkSidebarOverrideBlock,
+      [
+        "--sidebar-background",
+        "--sidebar-mobile-shadow",
+        "--sidebar-card-hover-background",
+        "--sidebar-card-hover-shadow",
+        "--sidebar-action-active-drop-shadow",
+      ],
+    );
     const sidebarBodyBlock = readCssBlock(
       homeStyles.slice(homeStyles.lastIndexOf("\n.sidebar-body {")),
       ".sidebar-body",
@@ -810,6 +853,27 @@ describe("Gemini visual migration shell", () => {
     const sidebarSettingsLinkActiveBlock = readCssBlock(
       homeStyles,
       ".sidebar-settings-link-active",
+    );
+    const sidebarTailBlock = readRootCssBlock(homeStyles, ".sidebar-tail");
+    const sidebarMobileAccountAvatarBlock = readCssBlock(
+      homeStyles,
+      ".sidebar-mobile-account-avatar",
+    );
+    const sidebarMobilePixelFaceBlock = readCssBlock(
+      homeStyles,
+      ".sidebar-mobile-pixel-face",
+    );
+    const sidebarMobilePixelEyesBlock = readCssBlock(
+      homeStyles,
+      ".sidebar-mobile-pixel-eye-left,\n.sidebar-mobile-pixel-eye-right",
+    );
+    const sidebarMobilePixelMouthBlock = readCssBlock(
+      homeStyles,
+      ".sidebar-mobile-pixel-mouth",
+    );
+    const sidebarMobileAccountSettingsBlock = readCssBlock(
+      homeStyles,
+      ".sidebar-mobile-account-settings",
     );
     const darkSidebarContentCardActiveBlock = readCssBlock(
       homeStyles,
@@ -2620,7 +2684,7 @@ describe("Gemini visual migration shell", () => {
     expect(buttonStyles).toContain("&:focus-visible");
     expect(buttonStyles).toContain("outline: var(--focus-ring)");
     expect(buttonStyles).toContain("box-shadow: var(--focus-ring-shadow)");
-    expect(homeStyles).toContain("rgba(249, 251, 253");
+    expect(homeStyles).toContain("--sidebar-background:");
     expect(homeStyles).toContain("--mobile-sidebar-drawer-width: 304px;");
     expect(homeStyles).toContain("--mobile-sidebar-drawer-offset: -304px;");
     expect(homeStyles).toContain("@media only screen and (max-width: 358px)");
@@ -2751,6 +2815,99 @@ describe("Gemini visual migration shell", () => {
     expect(sidebarBlock).toMatch(
       /&:hover,\s*&:focus-within[\s\S]*\.sidebar-body[\s\S]*scrollbar-color:\s*var\(--scrollbar-thumb-color\) transparent;[\s\S]*&::-webkit-scrollbar-thumb[\s\S]*background-color:\s*var\(--scrollbar-thumb-color\);/,
     );
+    expect(sidebarTokens["--sidebar-background"]).toContain(
+      "var(--surface-elevated)",
+    );
+    expect(sidebarTokens["--sidebar-border-color"]).toContain("var(--black)");
+    expect(sidebarTokens["--sidebar-drag-background"]).toBe("transparent");
+    expect(sidebarTokens["--sidebar-drag-hover-background"]).toContain(
+      "var(--black)",
+    );
+    expect(sidebarTokens["--sidebar-mobile-shadow"]).toContain(
+      "var(--black-50)",
+    );
+    expect(sidebarTokens["--sidebar-item-active-background"]).toContain(
+      "var(--primary)",
+    );
+    expect(sidebarTokens["--sidebar-item-active-soft-background"]).toContain(
+      "var(--primary)",
+    );
+    expect(sidebarTokens["--sidebar-item-active-border-color"]).toContain(
+      "var(--primary)",
+    );
+    expect(sidebarTokens["--sidebar-item-active-muted-color"]).toContain(
+      "var(--primary)",
+    );
+    expect(sidebarTokens["--sidebar-card-border-color"]).toContain(
+      "var(--black)",
+    );
+    expect(sidebarTokens["--sidebar-card-hover-border-color"]).toContain(
+      "var(--primary)",
+    );
+    expect(sidebarTokens["--sidebar-card-hover-background"]).toContain(
+      "var(--surface-elevated)",
+    );
+    expect(sidebarTokens["--sidebar-card-hover-shadow"]).toContain(
+      "var(--black-50)",
+    );
+    expect(sidebarTokens["--sidebar-card-focus-background"]).toContain(
+      "var(--surface-elevated)",
+    );
+    expect(sidebarTokens["--sidebar-action-active-background"]).toContain(
+      "var(--primary)",
+    );
+    expect(sidebarTokens["--sidebar-action-active-ring-shadow"]).toContain(
+      "var(--primary)",
+    );
+    expect(sidebarTokens["--sidebar-action-active-drop-shadow"]).toContain(
+      "var(--primary)",
+    );
+    expect(sidebarTokens["--sidebar-tail-border-color"]).toContain(
+      "var(--black)",
+    );
+    expect(sidebarTokens["--sidebar-avatar-background"]).toContain(
+      "var(--primary)",
+    );
+    expect(sidebarTokens["--sidebar-avatar-shadow"]).toContain(
+      "var(--primary)",
+    );
+    expect(sidebarTokens["--sidebar-avatar-face-background"]).toContain(
+      "var(--surface-elevated)",
+    );
+    expect(sidebarTokens["--sidebar-avatar-face-shadow"]).toContain(
+      "var(--primary)",
+    );
+    expect(sidebarTokens["--sidebar-avatar-feature-color"]).toBe(
+      "var(--primary)",
+    );
+    expect(sidebarTokens["--sidebar-avatar-count-shadow"]).toContain(
+      "var(--black)",
+    );
+    expect(
+      sidebarTokens["--sidebar-mobile-account-settings-background"],
+    ).toContain("var(--surface-elevated)");
+    expect(sidebarTokens["--sidebar-on-primary"]).toBe("rgb(255, 255, 255)");
+    expect(darkSidebarOverrideTokens["--sidebar-background"]).toContain(
+      "var(--surface-elevated)",
+    );
+    expect(darkSidebarOverrideTokens["--sidebar-mobile-shadow"]).toContain(
+      "rgb(0, 0, 0)",
+    );
+    expect(
+      darkSidebarOverrideTokens["--sidebar-card-hover-background"],
+    ).toContain("var(--surface-elevated)");
+    expect(darkSidebarOverrideTokens["--sidebar-card-hover-shadow"]).toBe(
+      "none",
+    );
+    expect(
+      darkSidebarOverrideTokens["--sidebar-action-active-drop-shadow"],
+    ).toContain("var(--primary)");
+    expect(sidebarBlock).toMatch(
+      /background-color:\s*var\(--sidebar-background\);/,
+    );
+    expect(sidebarBlock).toMatch(
+      /border-right:\s*1px solid var\(--sidebar-border-color\);/,
+    );
     expect(sidebarBodyBlock).toMatch(/scrollbar-width:\s*thin;/);
     expect(sidebarBodyBlock).toMatch(
       /scrollbar-color:\s*transparent transparent;/,
@@ -2766,31 +2923,37 @@ describe("Gemini visual migration shell", () => {
     expect(sidebarNavItemActiveBlock).toMatch(/color:\s*var\(--primary\);/);
     expect(sidebarNavItemActiveBlock).toMatch(/font-weight:\s*600;/);
     expect(sidebarContentCardActiveBlock).toMatch(
-      /border-color:\s*rgba\(49,\s*94,\s*248,\s*0\.22\);/,
+      /border-color:\s*var\(--sidebar-item-active-border-color\);/,
     );
     expect(sidebarContentCardActiveBlock).toMatch(
-      /background:\s*rgba\(25,\s*103,\s*210,\s*0\.1\);/,
+      /background:\s*var\(--sidebar-item-active-background\);/,
     );
     expect(sidebarContentCardActiveBlock).toMatch(
       /box-shadow:\s*inset 3px 0 0 var\(--primary\);/,
     );
     expect(sidebarContentCardActiveBlock).toMatch(/color:\s*var\(--primary\);/);
     expect(darkSidebarContentCardActiveBlock).toMatch(
-      /background:\s*rgba\(138,\s*180,\s*248,\s*0\.14\);/,
+      /background:\s*var\(--sidebar-item-active-background\);/,
     );
     expect(narrowSidebarBlock).toMatch(
-      /\.sidebar-content-card-active\s*\{[\s\S]*background-color:\s*rgba\(25,\s*103,\s*210,\s*0\.08\);[\s\S]*color:\s*var\(--primary\);/,
+      /\.sidebar-content-card-active\s*\{[\s\S]*background-color:\s*var\(--sidebar-item-active-soft-background\);[\s\S]*color:\s*var\(--primary\);/,
     );
     expect(sidebarSettingsLinkActiveBlock).toMatch(
-      /button\s*\{[\s\S]*background:\s*rgba\(25,\s*103,\s*210,\s*0\.1\);/,
+      /button\s*\{[\s\S]*background:\s*var\(--sidebar-action-active-background\);/,
     );
     expect(sidebarSettingsLinkActiveBlock).toMatch(
-      /box-shadow:\s*0 0 0 1px rgba\(49,\s*94,\s*248,\s*0\.22\)/,
+      /box-shadow:\s*0 0 0 1px var\(--sidebar-action-active-ring-shadow\)/,
     );
     expect(sidebarNavItemActiveBlock).toMatch(
       /box-shadow:\s*inset 3px 0 0 var\(--primary\);/,
     );
+    expect(sidebarNavItemActiveBlock).toMatch(
+      /background-color:\s*var\(--sidebar-item-active-background\);/,
+    );
     expect(chatItemBlock).toMatch(/padding:\s*8px 40px 8px 12px;/);
+    expect(chatItemSelectedBlock).toMatch(
+      /background-color:\s*var\(--sidebar-item-active-background\);/,
+    );
     expect(chatItemSelectedBlock).toMatch(/&::before[\s\S]*left:\s*0;/);
     expect(chatItemSelectedBlock).toMatch(/&::before[\s\S]*width:\s*3px;/);
     expect(chatItemSelectedBlock).toMatch(
@@ -2819,11 +2982,41 @@ describe("Gemini visual migration shell", () => {
     expect(narrowSidebarBlock).toMatch(
       /\.chat-item-delete[\s\S]*width:\s*34px;[\s\S]*height:\s*34px;/,
     );
+    expect(narrowSidebarBlock).toMatch(
+      /\.sidebar-nav-item-active\s*\{[\s\S]*background-color:\s*var\(--sidebar-item-active-soft-background\);/,
+    );
+    expect(narrowSidebarBlock).toMatch(
+      /\.chat-item-narrow-count\s*\{[\s\S]*color:\s*var\(--sidebar-on-primary\);[\s\S]*box-shadow:\s*var\(--sidebar-avatar-count-shadow\);/,
+    );
     expect(mobileChatItemDeleteBlock).toMatch(/opacity:\s*0.72;/);
     expect(mobileChatItemDeleteBlock).toMatch(/width:\s*34px;/);
     expect(mobileChatItemDeleteBlock).toMatch(/height:\s*34px;/);
     expect(compactSidebarShowDeleteBlock).toMatch(/opacity:\s*0.72;/);
     expect(compactSidebarShowDeleteBlock).toMatch(/pointer-events:\s*auto;/);
+    expect(sidebarTailBlock).toMatch(
+      /border-top:\s*1px solid var\(--sidebar-tail-border-color\);/,
+    );
+    expect(sidebarMobileAccountAvatarBlock).toMatch(
+      /background:\s*var\(--sidebar-avatar-background\);/,
+    );
+    expect(sidebarMobileAccountAvatarBlock).toMatch(
+      /box-shadow:\s*var\(--sidebar-avatar-shadow\);/,
+    );
+    expect(sidebarMobilePixelFaceBlock).toMatch(
+      /background:\s*var\(--sidebar-avatar-face-background\);/,
+    );
+    expect(sidebarMobilePixelFaceBlock).toMatch(
+      /box-shadow:\s*var\(--sidebar-avatar-face-shadow\);/,
+    );
+    expect(sidebarMobilePixelEyesBlock).toMatch(
+      /background:\s*var\(--sidebar-avatar-feature-color\);/,
+    );
+    expect(sidebarMobilePixelMouthBlock).toMatch(
+      /background:\s*var\(--sidebar-avatar-feature-color\);/,
+    );
+    expect(sidebarMobileAccountSettingsBlock).toMatch(
+      /button\s*\{[\s\S]*background:\s*var\(--sidebar-mobile-account-settings-background\);/,
+    );
     expect(cnLocale).toContain('EmptyTitle: "你好！想聊点什么？"');
     expect(cnLocale).toContain("EmptySuggestions:");
     expect(cnLocale).toContain("PrimarySection:");
