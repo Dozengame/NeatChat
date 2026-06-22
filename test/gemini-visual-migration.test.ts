@@ -11199,6 +11199,11 @@ describe("Gemini visual migration shell", () => {
       "--markdown-loading-dot-secondary",
       "--markdown-loading-dot-trailing",
     ];
+    const markdownStreamingTokenNames = [
+      "--markdown-streaming-caret-background",
+      "--markdown-streaming-caret-border-color",
+      "--markdown-streaming-caret-shadow-color",
+    ];
     const darkShimmerTokenMap = readCustomProperties(
       darkShimmerBlock,
       streamingDarkShimmerTokenNames,
@@ -11222,6 +11227,14 @@ describe("Gemini visual migration shell", () => {
     const darkMarkdownLoadingTokens = readCustomProperties(
       darkMixinBlock,
       markdownLoadingTokenNames,
+    );
+    const lightMarkdownStreamingTokens = readCustomProperties(
+      lightMixinBlock,
+      markdownStreamingTokenNames,
+    );
+    const darkMarkdownStreamingTokens = readCustomProperties(
+      darkMixinBlock,
+      markdownStreamingTokenNames,
     );
     const streamingToneScope = [
       shimmerBlock,
@@ -11257,6 +11270,19 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body .markdown-loading-label",
     );
+    const markdownStreamingCaretSelector = [
+      '.markdown-body[data-streaming="true"] > :is(p, h1, h2, h3, h4, h5, h6):last-child::after',
+      '.markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after',
+      '.markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after',
+    ].join(",\n");
+    const markdownStreamingCaretBlock = readCssBlock(
+      markdownStyles,
+      markdownStreamingCaretSelector,
+    );
+    const markdownBodyAfterBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body::after",
+    );
 
     expect(chat).toContain("const isStreamingReveal");
     expect(chat).toMatch(
@@ -11278,6 +11304,9 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toContain('className="markdown-loading-visual"');
     expect(markdown).toMatch(
       /className="markdown-loading-visual"[\s\S]*aria-hidden="true"[\s\S]*className="markdown-loading-dot"[\s\S]*className="markdown-loading-label"[\s\S]*\{Locale\.Chat\.Typing\}/,
+    );
+    expect(markdown).toMatch(
+      /data-streaming=\{\s*streaming && !loading && !isUser && content\.length > 0\s*\? "true"\s*:\s*undefined\s*\}/,
     );
     expect(markdown).not.toMatch(
       /loading \? \(\s*<LoadingIcon \/>[\s\S]*\) : \(/,
@@ -11341,6 +11370,50 @@ describe("Gemini visual migration shell", () => {
       /animation:\s*markdownLoadingPulse 1\.35s ease-in-out infinite;/,
     );
     expect(markdownLoadingLabelBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    for (const tokenName of markdownStreamingTokenNames) {
+      expect(lightMarkdownStreamingTokens[tokenName]).toBeTruthy();
+      expect(darkMarkdownStreamingTokens[tokenName]).toBeTruthy();
+    }
+    expect(Object.values(lightMarkdownStreamingTokens).join("\n")).not.toMatch(
+      /rgba\(|#[0-9a-fA-F]{3,8}\b/,
+    );
+    expect(Object.values(darkMarkdownStreamingTokens).join("\n")).not.toMatch(
+      /rgba\(|#[0-9a-fA-F]{3,8}\b/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-streaming-caret-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 64%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-streaming-caret-background:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 72%,\s*transparent\s*\);/,
+    );
+    expect(markdownStyles).toContain("@keyframes markdownStreamingCaretPulse");
+    expect(markdownStyles).not.toContain(
+      '.markdown-body[data-streaming="true"]::after',
+    );
+    expect(markdownBodyAfterBlock).toMatch(/display:\s*table;/);
+    expect(markdownBodyAfterBlock).toMatch(/clear:\s*both;/);
+    expect(markdownStyles).toContain(
+      '.markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after',
+    );
+    expect(markdownStyles).toContain(
+      '.markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after',
+    );
+    expect(markdownStreamingCaretBlock).toMatch(/content:\s*"";/);
+    expect(markdownStreamingCaretBlock).toMatch(/display:\s*inline-block;/);
+    expect(markdownStreamingCaretBlock).toMatch(/width:\s*7px;/);
+    expect(markdownStreamingCaretBlock).toMatch(/height:\s*1\.05em;/);
+    expect(markdownStreamingCaretBlock).toMatch(/max-height:\s*18px;/);
+    expect(markdownStreamingCaretBlock).toMatch(/margin-left:\s*4px;/);
+    expect(markdownStreamingCaretBlock).toMatch(
+      /background:\s*var\(--markdown-streaming-caret-background\);/,
+    );
+    expect(markdownStreamingCaretBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--markdown-streaming-caret-border-color\)[\s\S]*var\(--markdown-streaming-caret-shadow-color\);/,
+    );
+    expect(markdownStreamingCaretBlock).toMatch(
+      /animation:\s*markdownStreamingCaretPulse 1\.08s ease-in-out infinite;/,
+    );
+    expect(markdownStreamingCaretBlock).toMatch(/pointer-events:\s*none;/);
     expect(streamingToneScope).not.toMatch(legacyStreamingPaint);
     expect(shimmerBlock).toMatch(/min-height:\s*72px;/);
     expect(shimmerBlock).toContain("&::after");
@@ -11454,6 +11527,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(markdownReducedMotionBlock).toMatch(
       /\.markdown-loading-dot[\s\S]*animation:\s*none !important;[\s\S]*box-shadow:[\s\S]*var\(--markdown-loading-dot-secondary\)[\s\S]*var\(--markdown-loading-dot-trailing\);/,
+    );
+    expect(markdownReducedMotionBlock).toMatch(
+      /\.markdown-body\[data-streaming="true"\] > :is\(p, h1, h2, h3, h4, h5, h6\):last-child::after[\s\S]*animation:\s*none !important;[\s\S]*opacity:\s*0\.72;/,
     );
   });
 

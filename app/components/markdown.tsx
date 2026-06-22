@@ -1159,6 +1159,11 @@ export function Markdown(
         }}
         ref={mdRef}
         dir="auto"
+        data-streaming={
+          streaming && !loading && !isUser && content.length > 0
+            ? "true"
+            : undefined
+        }
       >
         {loading ? (
           <>

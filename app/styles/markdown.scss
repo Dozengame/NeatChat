@@ -221,6 +221,21 @@ summary,
     var(--primary) 28%,
     var(--surface-soft)
   );
+  --markdown-streaming-caret-background: color-mix(
+    in srgb,
+    var(--primary) 64%,
+    transparent
+  );
+  --markdown-streaming-caret-border-color: color-mix(
+    in srgb,
+    var(--surface-elevated) 82%,
+    transparent
+  );
+  --markdown-streaming-caret-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 16%,
+    transparent
+  );
   --markdown-math-display-border-color: color-mix(
     in srgb,
     var(--black-50) 12%,
@@ -549,6 +564,21 @@ summary,
     var(--markdown-link-color) 32%,
     var(--surface-soft)
   );
+  --markdown-streaming-caret-background: color-mix(
+    in srgb,
+    var(--markdown-link-color) 72%,
+    transparent
+  );
+  --markdown-streaming-caret-border-color: color-mix(
+    in srgb,
+    var(--surface-elevated) 70%,
+    transparent
+  );
+  --markdown-streaming-caret-shadow-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 18%,
+    transparent
+  );
   --markdown-math-display-border-color: color-mix(
     in srgb,
     var(--black) 10%,
@@ -809,6 +839,18 @@ summary,
   }
 }
 
+@keyframes markdownStreamingCaretPulse {
+  0%,
+  100% {
+    opacity: 0.42;
+    transform: translateY(1px) scaleY(0.72);
+  }
+  45% {
+    opacity: 0.88;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
 .markdown-body .markdown-loading-status {
   position: absolute;
   width: 1px;
@@ -859,6 +901,27 @@ summary,
   min-width: 0;
   margin-left: 20px;
   overflow-wrap: anywhere;
+}
+
+.markdown-body[data-streaming="true"] > :is(p, h1, h2, h3, h4, h5, h6):last-child::after,
+.markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after,
+.markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 1.05em;
+  max-height: 18px;
+  min-height: 13px;
+  margin-left: 4px;
+  border-radius: 999px;
+  background: var(--markdown-streaming-caret-background);
+  box-shadow:
+    0 0 0 1px var(--markdown-streaming-caret-border-color),
+    0 4px 12px var(--markdown-streaming-caret-shadow-color);
+  vertical-align: -0.18em;
+  transform-origin: center bottom;
+  animation: markdownStreamingCaretPulse 1.08s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .markdown-body .octicon {
@@ -2708,6 +2771,9 @@ summary,
     details.markdown-thinking
     > summary.markdown-thinking-summary::before,
   .markdown-loading-dot,
+  .markdown-body[data-streaming="true"] > :is(p, h1, h2, h3, h4, h5, h6):last-child::after,
+  .markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after,
+  .markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after,
   .markdown-body-container .token-info {
     animation: none !important;
     transform: none !important;
@@ -2718,5 +2784,11 @@ summary,
     box-shadow:
       10px 0 0 var(--markdown-loading-dot-secondary),
       20px 0 0 var(--markdown-loading-dot-trailing);
+  }
+
+  .markdown-body[data-streaming="true"] > :is(p, h1, h2, h3, h4, h5, h6):last-child::after,
+  .markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after,
+  .markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after {
+    opacity: 0.72;
   }
 }
