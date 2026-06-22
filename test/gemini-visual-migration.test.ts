@@ -5167,9 +5167,11 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
-  test("keeps Gemini-style markdown table dark surfaces", () => {
+  test("keeps Gemini-style markdown table surfaces readable across themes", () => {
     const markdown = read("app/components/markdown.tsx");
     const markdownStyles = read("app/styles/markdown.scss");
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
     const tableShellBlock = readCssBlock(
       markdownStyles,
       ".markdown-table-scroll-shell",
@@ -5199,25 +5201,70 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body .markdown-table-scroll-viewport > table",
     );
-    const darkTableShellBlock = readCssBlock(
-      markdownStyles,
-      ".dark .markdown-table-scroll-shell",
-    );
     const tableHeaderBlock = readCssBlock(
       markdownStyles,
       ".markdown-body table th",
     );
-    const darkTableHeaderBlock = readCssBlock(
+    const tableCellBlock = readCssBlock(
       markdownStyles,
-      ".dark .markdown-body table th",
+      ".markdown-body table th,\n.markdown-body table td",
     );
     const tableRowHoverBlock = readCssBlock(
       markdownStyles,
       ".markdown-body table tr:hover",
     );
-    const darkTableRowHoverBlock = readCssBlock(
+    const tableZebraBlock = readCssBlock(
       markdownStyles,
-      ".dark .markdown-body table tr:hover",
+      ".markdown-body table tr:nth-child(2n):not(:hover)",
+    );
+    const autoDarkRootBlock = readCssBlock(
+      readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
+      ":root",
+    );
+    const tableToneScope = [
+      tableShellBlock,
+      tableFadeStartBlock,
+      tableFadeEndBlock,
+      tableHeaderBlock,
+      tableCellBlock,
+      tableRowHoverBlock,
+    ].join("\n");
+
+    const tableTokenNames = [
+      "--markdown-table-shell-border-color",
+      "--markdown-table-shell-background",
+      "--markdown-table-edge-surface",
+      "--markdown-table-header-background",
+      "--markdown-table-cell-border-color",
+      "--markdown-table-row-hover-background",
+    ];
+
+    for (const tokenName of tableTokenNames) {
+      expect(lightMixinBlock).toContain(tokenName);
+      expect(darkMixinBlock).toContain(tokenName);
+    }
+
+    expect(lightMixinBlock).toMatch(
+      /--markdown-table-shell-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 72%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-table-cell-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-table-row-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 7%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-table-shell-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 62%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-table-cell-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-table-row-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 12%,\s*var\(--surface-soft\)\s*\);/,
+    );
+    expect(autoDarkRootBlock).toMatch(/@include dark;/);
+    expect(readRootDeclarations(tableShellBlock)).toMatch(
+      /--markdown-table-shell-radius:\s*8px;/,
     );
 
     expect(markdown).toContain("function MarkdownTable");
@@ -5242,11 +5289,13 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toContain("table: MarkdownTable");
     expect(tableShellBlock).toMatch(/position:\s*relative;/);
     expect(tableShellBlock).toMatch(
-      /border:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.1\);/,
+      /border:\s*1px solid var\(--markdown-table-shell-border-color\);/,
     );
-    expect(tableShellBlock).toMatch(/border-radius:\s*12px;/);
     expect(tableShellBlock).toMatch(
-      /background:\s*rgba\(255,\s*255,\s*255,\s*0\.35\);/,
+      /border-radius:\s*var\(--markdown-table-shell-radius\);/,
+    );
+    expect(tableShellBlock).toMatch(
+      /background:\s*var\(--markdown-table-shell-background\);/,
     );
     expect(tableShellBlock).toMatch(/overflow:\s*hidden;/);
     expect(tableShellSpacingBlock).toMatch(/margin-top:\s*0;/);
@@ -5268,23 +5317,21 @@ describe("Gemini visual migration shell", () => {
     expect(tableBlock).toMatch(/background:\s*transparent;/);
     expect(tableBlock).not.toMatch(/overflow-x:\s*auto;/);
     expect(tableInsideShellBlock).toMatch(/margin-bottom:\s*0;/);
-    expect(darkTableShellBlock).toMatch(
-      /background:\s*rgba\(255,\s*255,\s*255,\s*0\.03\);/,
-    );
-    expect(darkTableShellBlock).toMatch(
-      /border-color:\s*rgba\(255,\s*255,\s*255,\s*0\.08\);/,
-    );
     expect(tableHeaderBlock).toMatch(
-      /background-color:\s*rgba\(60,\s*64,\s*67,\s*0\.04\);/,
+      /background-color:\s*var\(--markdown-table-header-background\);/,
     );
-    expect(darkTableHeaderBlock).toMatch(
-      /background-color:\s*rgba\(255,\s*255,\s*255,\s*0\.05\);/,
+    expect(tableCellBlock).toMatch(
+      /border-bottom:\s*1px solid var\(--markdown-table-cell-border-color\);/,
     );
     expect(tableRowHoverBlock).toMatch(
-      /background-color:\s*rgba\(60,\s*64,\s*67,\s*0\.04\);/,
+      /background-color:\s*var\(--markdown-table-row-hover-background\);/,
     );
-    expect(darkTableRowHoverBlock).toMatch(
-      /background-color:\s*rgba\(255,\s*255,\s*255,\s*0\.04\);/,
+    expect(tableZebraBlock).toMatch(/background-color:\s*transparent;/);
+    expect(markdownStyles).not.toMatch(
+      /\.markdown-body table tr:nth-child\(2n\)\s*\{/,
+    );
+    expect(tableToneScope).not.toMatch(
+      /rgba\(60,\s*64,\s*67|rgba\(255,\s*255,\s*255|var\(--color-border-muted\)/,
     );
   });
 

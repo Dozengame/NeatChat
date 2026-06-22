@@ -125,6 +125,36 @@ summary,
     var(--markdown-link-color) 8%,
     transparent
   );
+  --markdown-table-shell-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --markdown-table-shell-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 72%,
+    transparent
+  );
+  --markdown-table-edge-surface: color-mix(
+    in srgb,
+    var(--surface-elevated) 94%,
+    transparent
+  );
+  --markdown-table-header-background: color-mix(
+    in srgb,
+    var(--surface-soft) 76%,
+    transparent
+  );
+  --markdown-table-cell-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --markdown-table-row-hover-background: color-mix(
+    in srgb,
+    var(--primary) 7%,
+    var(--surface-elevated)
+  );
 }
 
 @mixin dark {
@@ -250,6 +280,36 @@ summary,
     in srgb,
     var(--markdown-link-color) 8%,
     transparent
+  );
+  --markdown-table-shell-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --markdown-table-shell-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 62%,
+    transparent
+  );
+  --markdown-table-edge-surface: color-mix(
+    in srgb,
+    var(--surface-elevated) 88%,
+    transparent
+  );
+  --markdown-table-header-background: color-mix(
+    in srgb,
+    var(--surface-soft) 66%,
+    transparent
+  );
+  --markdown-table-cell-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --markdown-table-row-hover-background: color-mix(
+    in srgb,
+    var(--markdown-link-color) 12%,
+    var(--surface-soft)
   );
 }
 
@@ -778,14 +838,14 @@ summary,
 }
 
 .markdown-table-scroll-shell {
-  --markdown-table-edge-surface: rgba(255, 255, 255, 0.86);
+  --markdown-table-shell-radius: 8px;
   position: relative;
   width: 100%;
   max-width: 100%;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.35);
-  border: 1px solid rgba(60, 64, 67, 0.1);
-  border-radius: 12px;
+  background: var(--markdown-table-shell-background);
+  border: 1px solid var(--markdown-table-shell-border-color);
+  border-radius: var(--markdown-table-shell-radius);
 }
 
 .markdown-table-scroll-viewport {
@@ -801,12 +861,6 @@ summary,
 .markdown-body .markdown-table-scroll-shell {
   margin-top: 0;
   margin-bottom: 16px;
-}
-
-.dark .markdown-table-scroll-shell {
-  --markdown-table-edge-surface: rgba(30, 30, 46, 0.9);
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .markdown-body .katex-display {
@@ -853,7 +907,7 @@ summary,
   background: linear-gradient(
     90deg,
     var(--markdown-table-edge-surface) 0%,
-    rgba(255, 255, 255, 0) 100%
+    transparent 100%
   );
 }
 
@@ -862,7 +916,7 @@ summary,
   background: linear-gradient(
     270deg,
     var(--markdown-table-edge-surface) 0%,
-    rgba(255, 255, 255, 0) 100%
+    transparent 100%
   );
 }
 
@@ -1485,12 +1539,8 @@ summary,
 .markdown-body table th {
   font-weight: var(--base-text-weight-semibold, 600);
   /* R4: Gemini-style table header */
-  background-color: rgba(60, 64, 67, 0.04);
+  background-color: var(--markdown-table-header-background);
   color: var(--color-fg-default);
-}
-
-.dark .markdown-body table th {
-  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .markdown-body table th,
@@ -1498,7 +1548,7 @@ summary,
   padding: 8px 16px;
   /* R4: Only horizontal separators – borderless columns */
   border: none;
-  border-bottom: 1px solid var(--color-border-muted);
+  border-bottom: 1px solid var(--markdown-table-cell-border-color);
 }
 
 .markdown-body table tr {
@@ -1507,14 +1557,10 @@ summary,
 }
 
 .markdown-body table tr:hover {
-  background-color: rgba(60, 64, 67, 0.04);
+  background-color: var(--markdown-table-row-hover-background);
 }
 
-.dark .markdown-body table tr:hover {
-  background-color: rgba(255, 255, 255, 0.04);
-}
-
-.markdown-body table tr:nth-child(2n) {
+.markdown-body table tr:nth-child(2n):not(:hover) {
   background-color: transparent;
 }
 
