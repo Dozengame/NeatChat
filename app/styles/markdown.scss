@@ -1708,14 +1708,25 @@ summary,
 .markdown-body pre {
   /* R4: Gemini-style refined code block card */
   --markdown-code-edge-surface: rgba(248, 249, 250, 0.94);
-  padding: 14px 64px 14px 16px;
+  --markdown-code-block-radius: 8px;
+  --markdown-code-block-padding-y: 14px;
+  --markdown-code-block-padding-start: 16px;
+  --markdown-code-action-rail-width: 64px;
+  --markdown-code-action-inset: 12px;
+  --markdown-code-action-size: 34px;
+  --markdown-code-labeled-padding-top: 52px;
+  --markdown-code-fold-overlay-offset: 68px;
+  padding: var(--markdown-code-block-padding-y)
+    var(--markdown-code-action-rail-width)
+    var(--markdown-code-block-padding-y)
+    var(--markdown-code-block-padding-start);
   overflow: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
   font-size: 85%;
   line-height: 1.6;
-  border-radius: 10px;
+  border-radius: var(--markdown-code-block-radius);
   direction: ltr;
   background-color: #f8f9fa;
   border: 1px solid rgba(60, 64, 67, 0.1);
@@ -1723,18 +1734,21 @@ summary,
 }
 
 .markdown-body pre.markdown-code-block-labeled {
-  padding-top: 52px;
-  scroll-padding-top: 52px;
+  padding-top: var(--markdown-code-labeled-padding-top);
+  scroll-padding-top: var(--markdown-code-labeled-padding-top);
 }
 
 .markdown-body pre .show-hide-button {
   position: sticky;
   z-index: 2;
-  bottom: -14px;
+  bottom: calc(-1 * var(--markdown-code-block-padding-y));
   display: flex;
   justify-content: center;
-  margin: -68px -64px -14px -16px;
-  padding: 36px 16px 12px;
+  margin: calc(-1 * var(--markdown-code-fold-overlay-offset))
+    calc(-1 * var(--markdown-code-action-rail-width))
+    calc(-1 * var(--markdown-code-block-padding-y))
+    calc(-1 * var(--markdown-code-block-padding-start));
+  padding: 36px var(--markdown-code-block-padding-start) 12px;
   background: linear-gradient(
     180deg,
     rgba(248, 249, 250, 0),
@@ -1797,10 +1811,15 @@ summary,
 
 .markdown-code-language {
   position: absolute;
-  top: 12px;
-  right: 52px;
+  top: var(--markdown-code-action-inset);
+  right: calc(
+    var(--markdown-code-action-inset) + var(--markdown-code-action-size) + 6px
+  );
   z-index: 2;
-  max-width: min(160px, calc(100% - 96px));
+  max-width: calc(
+    100% - var(--markdown-code-action-rail-width) -
+      var(--markdown-code-block-padding-start)
+  );
   overflow: hidden;
   color: rgba(60, 64, 67, 0.56);
   font-size: 11px;

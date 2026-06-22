@@ -4249,14 +4249,41 @@ describe("Gemini visual migration shell", () => {
     expect(preBlock).toMatch(
       /--markdown-code-edge-surface:\s*rgba\(248,\s*249,\s*250,\s*0\.94\);/,
     );
-    expect(preBlock).toMatch(/padding:\s*14px 64px 14px 16px;/);
+    expect(preBlock).toMatch(/--markdown-code-block-radius:\s*8px;/);
+    expect(preBlock).toMatch(/--markdown-code-block-padding-y:\s*14px;/);
+    expect(preBlock).toMatch(/--markdown-code-block-padding-start:\s*16px;/);
+    expect(preBlock).toMatch(/--markdown-code-action-rail-width:\s*64px;/);
+    expect(preBlock).toMatch(/--markdown-code-action-inset:\s*12px;/);
+    expect(preBlock).toMatch(/--markdown-code-action-size:\s*34px;/);
+    expect(preBlock).toMatch(/--markdown-code-labeled-padding-top:\s*52px;/);
+    expect(preBlock).toMatch(/--markdown-code-fold-overlay-offset:\s*68px;/);
+    expect(preBlock).toMatch(
+      /padding:\s*var\(--markdown-code-block-padding-y\)\s*var\(--markdown-code-action-rail-width\)\s*var\(--markdown-code-block-padding-y\)\s*var\(--markdown-code-block-padding-start\);/,
+    );
     expect(preBlock).toMatch(/overscroll-behavior-x:\s*contain;/);
     expect(preBlock).toMatch(/scrollbar-width:\s*thin;/);
-    expect(labeledCodeBlock).toMatch(/padding-top:\s*52px;/);
-    expect(labeledCodeBlock).toMatch(/scroll-padding-top:\s*52px;/);
+    expect(preBlock).toMatch(
+      /border-radius:\s*var\(--markdown-code-block-radius\);/,
+    );
+    expect(labeledCodeBlock).toMatch(
+      /padding-top:\s*var\(--markdown-code-labeled-padding-top\);/,
+    );
+    expect(labeledCodeBlock).toMatch(
+      /scroll-padding-top:\s*var\(--markdown-code-labeled-padding-top\);/,
+    );
     expect(languageLabelBlock).toMatch(/position:\s*absolute;/);
-    expect(languageLabelBlock).toMatch(/right:\s*52px;/);
-    expect(languageLabelBlock).toMatch(/top:\s*12px;/);
+    expect(languageLabelBlock).toMatch(
+      /max-width:\s*calc\(\s*100%\s*-\s*var\(--markdown-code-action-rail-width\)\s*-\s*var\(--markdown-code-block-padding-start\)\s*\);/,
+    );
+    expect(languageLabelBlock).toMatch(/overflow:\s*hidden;/);
+    expect(languageLabelBlock).toMatch(/text-overflow:\s*ellipsis;/);
+    expect(languageLabelBlock).toMatch(/white-space:\s*nowrap;/);
+    expect(languageLabelBlock).toMatch(
+      /right:\s*calc\(\s*var\(--markdown-code-action-inset\)\s*\+\s*var\(--markdown-code-action-size\)\s*\+\s*6px\s*\);/,
+    );
+    expect(languageLabelBlock).toMatch(
+      /top:\s*var\(--markdown-code-action-inset\);/,
+    );
     expect(languageLabelBlock).toMatch(/z-index:\s*2;/);
     expect(languageLabelBlock).toMatch(/pointer-events:\s*none;/);
     expect(codeScrollFadeBlock).toMatch(/position:\s*absolute;/);
@@ -4267,6 +4294,15 @@ describe("Gemini visual migration shell", () => {
     expect(codeScrollFadeBlock).toMatch(/z-index:\s*1;/);
     expect(codeScrollFadeStartBlock).toMatch(/linear-gradient\(\s*90deg/);
     expect(codeScrollFadeEndBlock).toMatch(/linear-gradient\(\s*270deg/);
+    expect(showHideButtonBlock).toMatch(
+      /bottom:\s*calc\(-1 \* var\(--markdown-code-block-padding-y\)\);/,
+    );
+    expect(showHideButtonBlock).toMatch(
+      /margin:\s*calc\(-1 \* var\(--markdown-code-fold-overlay-offset\)\)\s*calc\(-1 \* var\(--markdown-code-action-rail-width\)\)\s*calc\(-1 \* var\(--markdown-code-block-padding-y\)\)\s*calc\(-1 \* var\(--markdown-code-block-padding-start\)\);/,
+    );
+    expect(showHideButtonBlock).toMatch(
+      /padding:\s*36px var\(--markdown-code-block-padding-start\) 12px;/,
+    );
     expect(darkPreBlock).toMatch(
       /--markdown-code-edge-surface:\s*rgba\(30,\s*30,\s*46,\s*0\.94\);/,
     );
@@ -4277,10 +4313,18 @@ describe("Gemini visual migration shell", () => {
     expect(darkLanguageLabelBlock).toMatch(
       /color:\s*rgba\(255,\s*255,\s*255,\s*0\.54\);/,
     );
-    expect(copyButtonBlock).toMatch(/width:\s*34px;/);
-    expect(copyButtonBlock).toMatch(/height:\s*34px;/);
-    expect(copyButtonBlock).toMatch(/right:\s*12px;/);
-    expect(copyButtonBlock).toMatch(/top:\s*12px;/);
+    expect(copyButtonBlock).toMatch(
+      /width:\s*var\(--markdown-code-action-size,\s*34px\);/,
+    );
+    expect(copyButtonBlock).toMatch(
+      /height:\s*var\(--markdown-code-action-size,\s*34px\);/,
+    );
+    expect(copyButtonBlock).toMatch(
+      /right:\s*var\(--markdown-code-action-inset,\s*12px\);/,
+    );
+    expect(copyButtonBlock).toMatch(
+      /top:\s*var\(--markdown-code-action-inset,\s*12px\);/,
+    );
     expect(copyButtonBlock).toMatch(/z-index:\s*3;/);
     expect(copyButtonBlock).toMatch(/pointer-events:\s*none;/);
     expect(copyButtonBlock).toMatch(/opacity:\s*0;/);
@@ -4333,7 +4377,9 @@ describe("Gemini visual migration shell", () => {
     expect(touchCopyButtonBlock).toMatch(/opacity:\s*1;/);
     expect(touchCopyButtonBlock).toMatch(/transform:\s*translateY\(0\);/);
     expect(showHideButtonBlock).toMatch(/position:\s*sticky;/);
-    expect(showHideButtonBlock).toMatch(/bottom:\s*-14px;/);
+    expect(showHideButtonBlock).toMatch(
+      /bottom:\s*calc\(-1 \* var\(--markdown-code-block-padding-y\)\);/,
+    );
     expect(showHideButtonBlock).toMatch(/pointer-events:\s*none;/);
     expect(showHideButtonBlock).toMatch(
       /background:\s*linear-gradient\(\s*180deg,\s*rgba\(248,\s*249,\s*250,\s*0\),\s*rgba\(248,\s*249,\s*250,\s*0\.96\)\s*58%\s*\);/,
