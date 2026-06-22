@@ -10086,12 +10086,21 @@ describe("Gemini visual migration shell", () => {
       ".user-prompt-search",
     );
     const promptSearchFocusBlock = readCssBlock(promptSearchBlock, "&:focus");
+    const promptSearchFocusVisibleBlock = readCssBlock(
+      promptSearchBlock,
+      "&:focus-visible",
+    );
     const promptListBlock = readCssBlock(
       userPromptModalBlock,
       ".user-prompt-list",
     );
     const promptItemBlock = readCssBlock(promptListBlock, ".user-prompt-item");
     const promptItemHoverBlock = readCssBlock(promptItemBlock, "&:hover");
+    const promptItemFocusWithinBlock = readCssBlock(
+      promptItemBlock,
+      "&:focus-within",
+    );
+    const promptItemActiveBlock = readCssBlock(promptItemBlock, "&:active");
     const promptItemDividerBlock = readCssBlock(
       promptItemBlock,
       "&:not(:last-child)",
@@ -10104,18 +10113,95 @@ describe("Gemini visual migration shell", () => {
       promptItemBlock,
       ".user-prompt-content",
     );
+    const promptHeaderBlock = readCssBlock(
+      promptItemBlock,
+      ".user-prompt-header",
+    );
+    const promptButtonsBlock = readCssBlock(
+      promptItemBlock,
+      ".user-prompt-buttons",
+    );
+    const promptButtonBlock = readCssBlock(
+      promptButtonsBlock,
+      ".user-prompt-button",
+    );
+    const settingsMobileBlock = readCssBlock(
+      settingsStyles,
+      "@media (max-width: 600px)",
+    );
+    const settingsMobileRootBlock = readCssBlock(settingsMobileBlock, ".settings");
+    const mobilePromptModalBlock = readCssBlock(
+      settingsMobileRootBlock,
+      ".user-prompt-modal",
+    );
+    const mobilePromptItemBlock = readCssBlock(
+      mobilePromptModalBlock,
+      ".user-prompt-item",
+    );
+    const mobilePromptHeaderBlock = readCssBlock(
+      mobilePromptItemBlock,
+      ".user-prompt-header",
+    );
+    const mobilePromptButtonsBlock = readCssBlock(
+      mobilePromptItemBlock,
+      ".user-prompt-buttons",
+    );
+    const mobilePromptButtonBlock = readCssBlock(
+      mobilePromptButtonsBlock,
+      ".user-prompt-button",
+    );
+    const settingsPromptTokenNames = [
+      "--settings-prompt-list-background",
+      "--settings-prompt-item-background",
+      "--settings-prompt-search-background",
+      "--settings-prompt-border-color",
+      "--settings-prompt-divider-color",
+      "--settings-prompt-search-shadow-color",
+      "--settings-prompt-title-color",
+      "--settings-prompt-muted-color",
+      "--settings-prompt-hover-background",
+      "--settings-prompt-active-background",
+      "--settings-prompt-focus-border-color",
+      "--settings-prompt-focus-shadow-color",
+      "--settings-prompt-radius",
+      "--settings-prompt-action-size",
+      "--settings-prompt-action-gap",
+    ];
+    const settingsPromptTokenMap = readCustomProperties(
+      userPromptModalRootBlock,
+      settingsPromptTokenNames,
+    );
+    const darkSettingsPromptTokenMap = readCustomProperties(
+      darkSettingsPromptBlock,
+      settingsPromptTokenNames,
+    );
+    const autoDarkSettingsPromptTokenMap = readCustomProperties(
+      autoDarkSettingsPromptBlock,
+      settingsPromptTokenNames,
+    );
     const settingsPromptPaintScope = [
       userPromptModalRootBlock,
       darkSettingsPromptBlock,
       autoDarkSettingsPromptBlock,
       promptSearchBlock,
       promptSearchFocusBlock,
+      promptSearchFocusVisibleBlock,
       promptListBlock,
       promptItemBlock,
       promptItemHoverBlock,
+      promptItemFocusWithinBlock,
+      promptItemActiveBlock,
       promptItemDividerBlock,
       promptTitleBlock,
       promptContentBlock,
+      promptHeaderBlock,
+      promptButtonsBlock,
+      promptButtonBlock,
+      mobilePromptModalBlock,
+      mobilePromptItemBlock,
+      mobilePromptHeaderBlock,
+      mobilePromptButtonsBlock,
+      mobilePromptButtonBlock,
     ].join("\n");
 
     expect(settings).toContain("setShowPromptModal(true)");
@@ -10135,16 +10221,42 @@ describe("Gemini visual migration shell", () => {
       /--settings-prompt-divider-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 10%,\s*transparent\s*\);/,
     );
     expect(userPromptModalRootBlock).toMatch(
+      /--settings-prompt-search-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 4%,\s*transparent\s*\);/,
+    );
+    expect(userPromptModalRootBlock).toMatch(
+      /--settings-prompt-title-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 92%,\s*transparent\s*\);/,
+    );
+    expect(userPromptModalRootBlock).toMatch(
       /--settings-prompt-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 74%,\s*transparent\s*\);/,
     );
     expect(userPromptModalRootBlock).toMatch(
       /--settings-prompt-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 7%,\s*var\(--surface-elevated\)\s*\);/,
     );
     expect(userPromptModalRootBlock).toMatch(
+      /--settings-prompt-active-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 10%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(userPromptModalRootBlock).toMatch(
       /--settings-prompt-focus-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 16%,\s*transparent\s*\);/,
     );
+    expect(userPromptModalRootBlock).toMatch(/--settings-prompt-radius:\s*8px;/);
+    expect(userPromptModalRootBlock).toMatch(
+      /--settings-prompt-action-size:\s*32px;/,
+    );
+    expect(userPromptModalRootBlock).toMatch(
+      /--settings-prompt-action-gap:\s*4px;/,
+    );
+    for (const tokenMap of [
+      settingsPromptTokenMap,
+      darkSettingsPromptTokenMap,
+      autoDarkSettingsPromptTokenMap,
+    ]) {
+      expect(Object.values(tokenMap)).not.toContain("");
+    }
     expect(darkSettingsPromptBlock).toMatch(
       /--settings-prompt-search-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkSettingsPromptBlock).toMatch(
+      /--settings-prompt-title-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 94%,\s*transparent\s*\);/,
     );
     expect(darkSettingsPromptBlock).toMatch(
       /--settings-prompt-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 56%,\s*transparent\s*\);/,
@@ -10157,6 +10269,10 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkSettingsPromptBlock).toMatch(
       /--settings-prompt-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 12%,\s*var\(--surface-elevated\)\s*\);/,
     );
+    expect(autoDarkSettingsPromptBlock).toMatch(
+      /--settings-prompt-active-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 16%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(autoDarkSettingsPromptTokenMap).toEqual(darkSettingsPromptTokenMap);
 
     expect(promptSearchBlock).toMatch(
       /background-color:\s*var\(--settings-prompt-search-background\);/,
@@ -10164,11 +10280,22 @@ describe("Gemini visual migration shell", () => {
     expect(promptSearchBlock).toMatch(
       /border:\s*1px solid var\(--settings-prompt-border-color\);/,
     );
-    expect(promptSearchBlock).toMatch(/border-radius:\s*8px;/);
+    expect(promptSearchBlock).toMatch(
+      /border-radius:\s*var\(--settings-prompt-radius\);/,
+    );
+    expect(promptSearchBlock).toMatch(
+      /box-shadow:\s*0 1px 2px var\(--settings-prompt-search-shadow-color\);/,
+    );
     expect(promptSearchFocusBlock).toMatch(
       /border-color:\s*var\(--settings-prompt-focus-border-color\);/,
     );
     expect(promptSearchFocusBlock).toMatch(
+      /box-shadow:\s*0 0 0 3px var\(--settings-prompt-focus-shadow-color\);/,
+    );
+    expect(promptSearchFocusVisibleBlock).toMatch(
+      /border-color:\s*var\(--settings-prompt-focus-border-color\);/,
+    );
+    expect(promptSearchFocusVisibleBlock).toMatch(
       /box-shadow:\s*0 0 0 3px var\(--settings-prompt-focus-shadow-color\);/,
     );
     expect(promptListBlock).toMatch(
@@ -10177,19 +10304,48 @@ describe("Gemini visual migration shell", () => {
     expect(promptListBlock).toMatch(
       /border:\s*1px solid var\(--settings-prompt-border-color\);/,
     );
-    expect(promptListBlock).toMatch(/border-radius:\s*8px;/);
+    expect(promptListBlock).toMatch(
+      /border-radius:\s*var\(--settings-prompt-radius\);/,
+    );
     expect(promptItemBlock).toMatch(
       /background-color:\s*var\(--settings-prompt-item-background\);/,
     );
+    expect(promptHeaderBlock).toMatch(/flex:\s*1 1 auto;/);
+    expect(promptHeaderBlock).toMatch(/min-width:\s*0;/);
+    expect(promptButtonsBlock).toMatch(/flex:\s*0 0 auto;/);
+    expect(promptButtonsBlock).toMatch(/column-gap:\s*var\(--settings-prompt-action-gap\);/);
+    expect(promptButtonBlock).toMatch(/width:\s*var\(--settings-prompt-action-size\);/);
+    expect(promptButtonBlock).toMatch(/height:\s*var\(--settings-prompt-action-size\);/);
     expect(promptItemHoverBlock).toMatch(
       /background-color:\s*var\(--settings-prompt-hover-background\);/,
+    );
+    expect(promptItemFocusWithinBlock).toMatch(
+      /background-color:\s*var\(--settings-prompt-hover-background\);/,
+    );
+    expect(promptItemActiveBlock).toMatch(
+      /background-color:\s*var\(--settings-prompt-active-background\);/,
     );
     expect(promptItemDividerBlock).toMatch(
       /border-bottom:\s*1px solid var\(--settings-prompt-divider-color\);/,
     );
-    expect(promptTitleBlock).toMatch(/color:\s*var\(--black\);/);
+    expect(promptTitleBlock).toMatch(
+      /color:\s*var\(--settings-prompt-title-color\);/,
+    );
+    expect(promptTitleBlock).toMatch(/line-height:\s*1\.35;/);
+    expect(promptTitleBlock).toMatch(/font-weight:\s*600;/);
     expect(promptContentBlock).toMatch(
       /color:\s*var\(--settings-prompt-muted-color\);/,
+    );
+    expect(promptContentBlock).toMatch(/line-height:\s*1\.45;/);
+    expect(mobilePromptModalBlock).toMatch(/min-height:\s*auto;/);
+    expect(mobilePromptItemBlock).toMatch(/gap:\s*8px;/);
+    expect(mobilePromptItemBlock).toMatch(/align-items:\s*flex-start;/);
+    expect(mobilePromptHeaderBlock).toMatch(/max-width:\s*none;/);
+    expect(mobilePromptButtonsBlock).toMatch(
+      /column-gap:\s*var\(--settings-prompt-action-gap\);/,
+    );
+    expect(mobilePromptButtonBlock).toMatch(
+      /flex:\s*0 0 var\(--settings-prompt-action-size\);/,
     );
     expect(settingsPromptPaintScope).not.toContain(
       "background-color: var(--gray)",
@@ -10197,6 +10353,8 @@ describe("Gemini visual migration shell", () => {
     expect(settingsPromptPaintScope).not.toContain("border: var(--border-in-light)");
     expect(settingsPromptPaintScope).not.toContain("border-bottom: var(--border-in-light)");
     expect(settingsPromptPaintScope).not.toContain("border-radius: 10px");
+    expect(settingsPromptPaintScope).not.toContain("font-weight: bold");
+    expect(settingsPromptPaintScope).not.toMatch(/line-height:\s*2;/);
   });
 
   test("keeps Settings prompt editor aligned with Gemini utility fields", () => {
@@ -10242,9 +10400,17 @@ describe("Gemini visual migration shell", () => {
       editPromptTitleBlock,
       "&:focus",
     );
+    const editPromptTitleFocusVisibleBlock = readCssBlock(
+      editPromptTitleBlock,
+      "&:focus-visible",
+    );
     const editPromptContentFocusBlock = readCssBlock(
       editPromptContentBlock,
       "&:focus",
+    );
+    const editPromptContentFocusVisibleBlock = readCssBlock(
+      editPromptContentBlock,
+      "&:focus-visible",
     );
     const editPromptTitleReadOnlyBlock = readCssBlock(
       editPromptTitleBlock,
@@ -10254,6 +10420,28 @@ describe("Gemini visual migration shell", () => {
       editPromptContentBlock,
       "&:read-only",
     );
+    const settingsEditTokenNames = [
+      "--settings-edit-field-background",
+      "--settings-edit-field-border-color",
+      "--settings-edit-field-muted-background",
+      "--settings-edit-field-muted-color",
+      "--settings-edit-field-color",
+      "--settings-edit-field-focus-border-color",
+      "--settings-edit-field-focus-shadow-color",
+      "--settings-edit-field-radius",
+    ];
+    const settingsEditTokenMap = readCustomProperties(
+      editPromptModalRootBlock,
+      settingsEditTokenNames,
+    );
+    const darkSettingsEditTokenMap = readCustomProperties(
+      darkEditPromptModalBlock,
+      settingsEditTokenNames,
+    );
+    const autoDarkSettingsEditTokenMap = readCustomProperties(
+      autoDarkEditPromptModalBlock,
+      settingsEditTokenNames,
+    );
     const editPromptPaintScope = [
       editPromptModalRootBlock,
       darkEditPromptModalBlock,
@@ -10262,6 +10450,8 @@ describe("Gemini visual migration shell", () => {
       editPromptContentBlock,
       editPromptTitleFocusBlock,
       editPromptContentFocusBlock,
+      editPromptTitleFocusVisibleBlock,
+      editPromptContentFocusVisibleBlock,
       editPromptTitleReadOnlyBlock,
       editPromptContentReadOnlyBlock,
     ].join("\n");
@@ -10287,11 +10477,22 @@ describe("Gemini visual migration shell", () => {
       /--settings-edit-field-muted-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 78%,\s*var\(--gray\)\s*\);/,
     );
     expect(editPromptModalRootBlock).toMatch(
+      /--settings-edit-field-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 92%,\s*transparent\s*\);/,
+    );
+    expect(editPromptModalRootBlock).toMatch(
       /--settings-edit-field-focus-border-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 58%,\s*transparent\s*\);/,
     );
     expect(editPromptModalRootBlock).toMatch(
       /--settings-edit-field-focus-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 16%,\s*transparent\s*\);/,
     );
+    expect(editPromptModalRootBlock).toMatch(/--settings-edit-field-radius:\s*8px;/);
+    for (const tokenMap of [
+      settingsEditTokenMap,
+      darkSettingsEditTokenMap,
+      autoDarkSettingsEditTokenMap,
+    ]) {
+      expect(Object.values(tokenMap)).not.toContain("");
+    }
     expect(darkEditPromptModalBlock).toMatch(
       /--settings-edit-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
     );
@@ -10303,6 +10504,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(darkEditPromptModalBlock).toMatch(
       /--settings-edit-field-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 58%,\s*transparent\s*\);/,
+    );
+    expect(darkEditPromptModalBlock).toMatch(
+      /--settings-edit-field-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 94%,\s*transparent\s*\);/,
     );
     expect(autoDarkEditPromptModalSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkEditPromptModalMediaIndex).toBeGreaterThan(-1);
@@ -10318,6 +10522,7 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkEditPromptModalBlock).toMatch(
       /--settings-edit-field-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 58%,\s*transparent\s*\);/,
     );
+    expect(autoDarkSettingsEditTokenMap).toEqual(darkSettingsEditTokenMap);
 
     [editPromptTitleBlock, editPromptContentBlock].forEach((block) => {
       expect(block).toMatch(
@@ -10326,8 +10531,10 @@ describe("Gemini visual migration shell", () => {
       expect(block).toMatch(
         /border:\s*1px solid var\(--settings-edit-field-border-color\);/,
       );
-      expect(block).toMatch(/border-radius:\s*8px;/);
-      expect(block).toMatch(/color:\s*var\(--black\);/);
+      expect(block).toMatch(
+        /border-radius:\s*var\(--settings-edit-field-radius\);/,
+      );
+      expect(block).toMatch(/color:\s*var\(--settings-edit-field-color\);/);
       expect(block).toMatch(
         /transition:[\s\S]*background-color 0\.16s ease,[\s\S]*border-color 0\.16s ease,[\s\S]*box-shadow 0\.16s ease/,
       );
@@ -10340,6 +10547,16 @@ describe("Gemini visual migration shell", () => {
         /box-shadow:\s*0 0 0 3px var\(--settings-edit-field-focus-shadow-color\);/,
       );
     });
+    [editPromptTitleFocusVisibleBlock, editPromptContentFocusVisibleBlock].forEach(
+      (block) => {
+        expect(block).toMatch(
+          /border-color:\s*var\(--settings-edit-field-focus-border-color\);/,
+        );
+        expect(block).toMatch(
+          /box-shadow:\s*0 0 0 3px var\(--settings-edit-field-focus-shadow-color\);/,
+        );
+      },
+    );
     [editPromptTitleReadOnlyBlock, editPromptContentReadOnlyBlock].forEach(
       (block) => {
         expect(block).toMatch(

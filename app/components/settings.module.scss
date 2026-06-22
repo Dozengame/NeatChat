@@ -4,6 +4,16 @@
 }
 
 :global(.dark) .user-prompt-modal {
+  --settings-prompt-list-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    var(--white)
+  );
+  --settings-prompt-item-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    var(--white)
+  );
   --settings-prompt-search-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
@@ -19,6 +29,16 @@
     var(--black) 9%,
     transparent
   );
+  --settings-prompt-search-shadow-color: color-mix(
+    in srgb,
+    var(--gray) 20%,
+    transparent
+  );
+  --settings-prompt-title-color: color-mix(
+    in srgb,
+    var(--black) 94%,
+    transparent
+  );
   --settings-prompt-muted-color: color-mix(
     in srgb,
     var(--black) 56%,
@@ -29,10 +49,38 @@
     var(--primary) 12%,
     var(--surface-elevated)
   );
+  --settings-prompt-active-background: color-mix(
+    in srgb,
+    var(--primary) 16%,
+    var(--surface-elevated)
+  );
+  --settings-prompt-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 54%,
+    transparent
+  );
+  --settings-prompt-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
+  --settings-prompt-radius: 8px;
+  --settings-prompt-action-size: 32px;
+  --settings-prompt-action-gap: 4px;
 }
 
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .user-prompt-modal {
+    --settings-prompt-list-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 86%,
+      var(--white)
+    );
+    --settings-prompt-item-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 86%,
+      var(--white)
+    );
     --settings-prompt-search-background: color-mix(
       in srgb,
       var(--surface-elevated) 86%,
@@ -48,6 +96,16 @@
       var(--black) 9%,
       transparent
     );
+    --settings-prompt-search-shadow-color: color-mix(
+      in srgb,
+      var(--gray) 20%,
+      transparent
+    );
+    --settings-prompt-title-color: color-mix(
+      in srgb,
+      var(--black) 94%,
+      transparent
+    );
     --settings-prompt-muted-color: color-mix(
       in srgb,
       var(--black) 56%,
@@ -58,6 +116,24 @@
       var(--primary) 12%,
       var(--surface-elevated)
     );
+    --settings-prompt-active-background: color-mix(
+      in srgb,
+      var(--primary) 16%,
+      var(--surface-elevated)
+    );
+    --settings-prompt-focus-border-color: color-mix(
+      in srgb,
+      var(--primary) 54%,
+      transparent
+    );
+    --settings-prompt-focus-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 18%,
+      transparent
+    );
+    --settings-prompt-radius: 8px;
+    --settings-prompt-action-size: 32px;
+    --settings-prompt-action-gap: 4px;
   }
 }
 
@@ -82,6 +158,22 @@
     var(--black) 58%,
     transparent
   );
+  --settings-edit-field-color: color-mix(
+    in srgb,
+    var(--black) 94%,
+    transparent
+  );
+  --settings-edit-field-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 54%,
+    transparent
+  );
+  --settings-edit-field-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
+  --settings-edit-field-radius: 8px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -106,6 +198,22 @@
       var(--black) 58%,
       transparent
     );
+    --settings-edit-field-color: color-mix(
+      in srgb,
+      var(--black) 94%,
+      transparent
+    );
+    --settings-edit-field-focus-border-color: color-mix(
+      in srgb,
+      var(--primary) 54%,
+      transparent
+    );
+    --settings-edit-field-focus-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 18%,
+      transparent
+    );
+    --settings-edit-field-radius: 8px;
   }
 }
 
@@ -136,6 +244,11 @@
     var(--black-50) 66%,
     transparent
   );
+  --settings-edit-field-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
   --settings-edit-field-focus-border-color: color-mix(
     in srgb,
     var(--primary) 58%,
@@ -146,6 +259,7 @@
     var(--primary) 16%,
     transparent
   );
+  --settings-edit-field-radius: 8px;
   display: flex;
   flex-direction: column;
 
@@ -155,14 +269,19 @@
     text-align: left;
     background-color: var(--settings-edit-field-background);
     border: 1px solid var(--settings-edit-field-border-color);
-    border-radius: 8px;
-    color: var(--black);
+    border-radius: var(--settings-edit-field-radius);
+    color: var(--settings-edit-field-color);
     transition:
       background-color 0.16s ease,
       border-color 0.16s ease,
       box-shadow 0.16s ease;
 
     &:focus {
+      border-color: var(--settings-edit-field-focus-border-color);
+      box-shadow: 0 0 0 3px var(--settings-edit-field-focus-shadow-color);
+    }
+
+    &:focus-visible {
       border-color: var(--settings-edit-field-focus-border-color);
       box-shadow: 0 0 0 3px var(--settings-edit-field-focus-shadow-color);
     }
@@ -177,14 +296,19 @@
     max-width: unset;
     background-color: var(--settings-edit-field-background);
     border: 1px solid var(--settings-edit-field-border-color);
-    border-radius: 8px;
-    color: var(--black);
+    border-radius: var(--settings-edit-field-radius);
+    color: var(--settings-edit-field-color);
     transition:
       background-color 0.16s ease,
       border-color 0.16s ease,
       box-shadow 0.16s ease;
 
     &:focus {
+      border-color: var(--settings-edit-field-focus-border-color);
+      box-shadow: 0 0 0 3px var(--settings-edit-field-focus-shadow-color);
+    }
+
+    &:focus-visible {
       border-color: var(--settings-edit-field-focus-border-color);
       box-shadow: 0 0 0 3px var(--settings-edit-field-focus-shadow-color);
     }
@@ -214,6 +338,16 @@
     var(--black-50) 10%,
     transparent
   );
+  --settings-prompt-search-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 4%,
+    transparent
+  );
+  --settings-prompt-title-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
   --settings-prompt-muted-color: color-mix(
     in srgb,
     var(--black-50) 74%,
@@ -222,6 +356,11 @@
   --settings-prompt-hover-background: color-mix(
     in srgb,
     var(--primary) 7%,
+    var(--surface-elevated)
+  );
+  --settings-prompt-active-background: color-mix(
+    in srgb,
+    var(--primary) 10%,
     var(--surface-elevated)
   );
   --settings-prompt-focus-border-color: color-mix(
@@ -234,6 +373,9 @@
     var(--primary) 16%,
     transparent
   );
+  --settings-prompt-radius: 8px;
+  --settings-prompt-action-size: 32px;
+  --settings-prompt-action-gap: 4px;
   min-height: 40vh;
 
   .user-prompt-search {
@@ -242,9 +384,8 @@
     margin-bottom: 10px;
     background-color: var(--settings-prompt-search-background);
     border: 1px solid var(--settings-prompt-border-color);
-    border-radius: 8px;
-    box-shadow: 0 1px 2px
-      color-mix(in srgb, var(--black-50) 4%, transparent);
+    border-radius: var(--settings-prompt-radius);
+    box-shadow: 0 1px 2px var(--settings-prompt-search-shadow-color);
     color: var(--black);
     transition:
       background-color 0.16s ease,
@@ -255,12 +396,17 @@
       border-color: var(--settings-prompt-focus-border-color);
       box-shadow: 0 0 0 3px var(--settings-prompt-focus-shadow-color);
     }
+
+    &:focus-visible {
+      border-color: var(--settings-prompt-focus-border-color);
+      box-shadow: 0 0 0 3px var(--settings-prompt-focus-shadow-color);
+    }
   }
 
   .user-prompt-list {
     background-color: var(--settings-prompt-list-background);
     border: 1px solid var(--settings-prompt-border-color);
-    border-radius: 8px;
+    border-radius: var(--settings-prompt-radius);
     overflow: hidden;
 
     .user-prompt-item {
@@ -274,32 +420,45 @@
         background-color: var(--settings-prompt-hover-background);
       }
 
+      &:focus-within {
+        background-color: var(--settings-prompt-hover-background);
+      }
+
+      &:active {
+        background-color: var(--settings-prompt-active-background);
+      }
+
       &:not(:last-child) {
         border-bottom: 1px solid var(--settings-prompt-divider-color);
       }
 
       .user-prompt-header {
-        max-width: calc(100% - 100px);
+        flex: 1 1 auto;
+        min-width: 0;
 
         .user-prompt-title {
-          color: var(--black);
+          color: var(--settings-prompt-title-color);
           font-size: 14px;
-          line-height: 2;
-          font-weight: bold;
+          line-height: 1.35;
+          font-weight: 600;
         }
         .user-prompt-content {
           color: var(--settings-prompt-muted-color);
           font-size: 12px;
+          line-height: 1.45;
         }
       }
 
       .user-prompt-buttons {
         display: flex;
+        flex: 0 0 auto;
         align-items: center;
-        column-gap: 2px;
+        column-gap: var(--settings-prompt-action-gap);
 
         .user-prompt-button {
-          //height: 100%;
+          width: var(--settings-prompt-action-size);
+          height: var(--settings-prompt-action-size);
+          flex: 0 0 var(--settings-prompt-action-size);
           padding: 7px;
         }
       }
@@ -352,6 +511,29 @@
     
     :global(.icon-button) {
       padding: 8px !important;
+    }
+
+    .user-prompt-modal {
+      min-height: auto;
+
+      .user-prompt-list {
+        .user-prompt-item {
+          align-items: flex-start;
+          gap: 8px;
+
+          .user-prompt-header {
+            max-width: none;
+          }
+
+          .user-prompt-buttons {
+            column-gap: var(--settings-prompt-action-gap);
+
+            .user-prompt-button {
+              flex: 0 0 var(--settings-prompt-action-size);
+            }
+          }
+        }
+      }
     }
     
     .custom-model-container {
