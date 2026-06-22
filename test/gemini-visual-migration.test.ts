@@ -3206,6 +3206,198 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps composer attachment preview items aligned with Gemini multimodal surfaces", () => {
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const attachItemBlock = readRootDeclarations(
+      readCssBlock(chatStyles, ".attach-item"),
+    );
+    const attachImageBlock = readCssBlock(chatStyles, ".attach-image");
+    const attachFileBlock = readCssBlock(
+      chatStyles.slice(chatStyles.lastIndexOf("\n.attach-file {")),
+      ".attach-file",
+    );
+    const attachFileIconBlock = readCssBlock(
+      attachFileBlock,
+      ".attach-file-icon",
+    );
+    const attachFileNameBlock = readCssBlock(
+      attachFileBlock,
+      ".attach-file-name",
+    );
+    const attachFileSizeBlock = readCssBlock(
+      attachFileBlock,
+      ".attach-file-size",
+    );
+    const fileWordBlock = readCssBlock(
+      chatStyles,
+      ".attach-file-icon:global(.file-word)",
+    );
+    const filePdfBlock = readCssBlock(
+      chatStyles,
+      ".attach-file-icon:global(.file-pdf)",
+    );
+    const deleteImageBlock = readCssBlock(chatStyles, ".delete-image");
+    const darkAttachItemBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .attach-item",
+    );
+    const darkDeleteImageBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .delete-image",
+    );
+    const autoDarkAttachItemSelector = ":global(body:not(.light)) .attach-item";
+    const autoDarkAttachItemSelectorIndex = chatStyles.indexOf(
+      autoDarkAttachItemSelector,
+    );
+    const autoDarkAttachItemMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkAttachItemSelectorIndex,
+    );
+    const autoDarkAttachItemBlock = readCssBlock(
+      chatStyles.slice(autoDarkAttachItemMediaIndex),
+      autoDarkAttachItemSelector,
+    );
+    const autoDarkDeleteImageSelector =
+      ":global(body:not(.light)) .delete-image";
+    const autoDarkDeleteImageSelectorIndex = chatStyles.indexOf(
+      autoDarkDeleteImageSelector,
+    );
+    const autoDarkDeleteImageMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkDeleteImageSelectorIndex,
+    );
+    const autoDarkDeleteImageBlock = readCssBlock(
+      chatStyles.slice(autoDarkDeleteImageMediaIndex),
+      autoDarkDeleteImageSelector,
+    );
+    const mobileStyles = chatStyles.slice(
+      chatStyles.lastIndexOf("@media screen and (max-width: 600px)"),
+    );
+    const mobileAttachImageBlock = readCssBlock(mobileStyles, ".attach-image");
+    const mobileAttachFileBlock = readCssBlock(mobileStyles, ".attach-file");
+    const attachmentPreviewToneScope = [
+      attachItemBlock,
+      attachImageBlock,
+      attachFileBlock,
+      deleteImageBlock,
+      darkAttachItemBlock,
+      darkDeleteImageBlock,
+      autoDarkAttachItemBlock,
+      autoDarkDeleteImageBlock,
+    ].join("\n");
+
+    expect(chat).toContain('styles["attach-image-item"]');
+    expect(chat).toContain('styles["attach-file-item"]');
+    expect(chat).toContain('styles["attach-image"]');
+    expect(chat).toContain('styles["attach-file"]');
+    expect(chat).toContain('styles["attach-file-card"]');
+    expect(chat).toContain('styles["attach-file-icon"]');
+    expect(chat).toContain('styles["delete-image"]');
+    expect(chat).toContain("getFileIconClass(file.type)");
+    expect(attachItemBlock).toMatch(/--attachment-item-radius:\s*8px;/);
+    expect(attachItemBlock).toMatch(
+      /--attachment-item-border-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 14%,\s*transparent\);/,
+    );
+    expect(attachItemBlock).toMatch(
+      /--attachment-item-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 92%,\s*transparent\);/,
+    );
+    expect(attachItemBlock).toMatch(
+      /--attachment-item-hover-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 28%,\s*transparent\);/,
+    );
+    expect(attachItemBlock).toMatch(
+      /--attachment-file-icon-background:\s*color-mix\(in srgb,\s*var\(--primary\) 10%,\s*var\(--surface-elevated\)\);/,
+    );
+    expect(attachImageBlock).toMatch(
+      /border:\s*1px solid var\(--attachment-item-border-color\);/,
+    );
+    expect(attachImageBlock).toMatch(
+      /border-radius:\s*var\(--attachment-item-radius\);/,
+    );
+    expect(attachImageBlock).toMatch(
+      /background-color:\s*var\(--attachment-item-background\);/,
+    );
+    expect(attachImageBlock).toMatch(
+      /0 8px 24px var\(--attachment-item-shadow-color\);/,
+    );
+    expect(attachImageBlock).toMatch(
+      /&:hover,[\s\S]*&:focus-visible[\s\S]*border-color:\s*var\(--attachment-item-hover-border-color\);/,
+    );
+    expect(attachImageBlock).toMatch(
+      /&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\),[\s\S]*0 8px 24px var\(--attachment-item-hover-shadow-color\);/,
+    );
+    expect(attachFileBlock).toMatch(
+      /border:\s*1px solid var\(--attachment-item-border-color\);/,
+    );
+    expect(attachFileBlock).toMatch(
+      /border-radius:\s*var\(--attachment-item-radius\);/,
+    );
+    expect(attachFileBlock).toMatch(
+      /background-color:\s*var\(--attachment-item-background\);/,
+    );
+    expect(attachFileBlock).toMatch(
+      /0 8px 24px var\(--attachment-item-shadow-color\);/,
+    );
+    expect(attachFileBlock).toMatch(
+      /&:hover,[\s\S]*&:focus-visible[\s\S]*border-color:\s*var\(--attachment-item-hover-border-color\);/,
+    );
+    expect(attachFileIconBlock).toMatch(/border-radius:\s*8px;/);
+    expect(attachFileIconBlock).toMatch(
+      /background:\s*var\(--attachment-file-icon-background\);/,
+    );
+    expect(attachFileIconBlock).toMatch(
+      /color:\s*var\(--attachment-file-icon-color\);/,
+    );
+    expect(fileWordBlock).toMatch(
+      /--attachment-file-icon-color:\s*#2b579a;/,
+    );
+    expect(filePdfBlock).toMatch(/--attachment-file-icon-color:\s*#f40f02;/);
+    expect(attachFileNameBlock).toMatch(
+      /color:\s*var\(--attachment-file-name-color\);/,
+    );
+    expect(attachFileSizeBlock).toMatch(
+      /color:\s*var\(--attachment-file-size-color\);/,
+    );
+    expect(deleteImageBlock).toMatch(
+      /--attachment-delete-button-border-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 16%,\s*transparent\);/,
+    );
+    expect(deleteImageBlock).toMatch(
+      /border:\s*1px solid var\(--attachment-delete-button-border-color\);/,
+    );
+    expect(deleteImageBlock).toMatch(
+      /background-color:\s*var\(--attachment-delete-button-background\);/,
+    );
+    expect(deleteImageBlock).toMatch(
+      /color:\s*var\(--attachment-delete-button-color\);/,
+    );
+    expect(deleteImageBlock).toMatch(
+      /&:hover,[\s\S]*&:focus-visible[\s\S]*background-color:\s*var\(--attachment-delete-button-hover-background\);/,
+    );
+    expect(darkAttachItemBlock).toMatch(
+      /--attachment-item-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 74%,\s*transparent\);/,
+    );
+    expect(darkDeleteImageBlock).toMatch(
+      /--attachment-delete-button-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 84%,\s*transparent\);/,
+    );
+    expect(autoDarkAttachItemSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkAttachItemMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkAttachItemBlock).toMatch(
+      /--attachment-item-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 74%,\s*transparent\);/,
+    );
+    expect(autoDarkDeleteImageSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkDeleteImageMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkDeleteImageBlock).toMatch(
+      /--attachment-delete-button-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 84%,\s*transparent\);/,
+    );
+    expect(attachmentPreviewToneScope).not.toMatch(
+      /border:\s*var\(--border-in-light\)|background-color:\s*var\(--white\)|rgba\(\$color:\s*#000|rgba\(\$color:\s*#888/,
+    );
+    expect(mobileAttachImageBlock).toMatch(/width:\s*58px;/);
+    expect(mobileAttachImageBlock).toMatch(/height:\s*58px;/);
+    expect(mobileAttachFileBlock).toMatch(/width:\s*min\(170px,\s*55vw\);/);
+    expect(mobileAttachFileBlock).toMatch(/height:\s*58px;/);
+  });
+
   test("keeps attachment strip add action as a direct native picker entry", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
@@ -3255,7 +3447,9 @@ describe("Gemini visual migration shell", () => {
     expect(attachAddItemBlock).toMatch(/width:\s*64px;/);
     expect(attachmentAddButtonBlock).toMatch(/width:\s*64px;/);
     expect(attachmentAddButtonBlock).toMatch(/height:\s*64px;/);
-    expect(attachmentAddButtonBlock).toMatch(/border-radius:\s*12px;/);
+    expect(attachmentAddButtonBlock).toMatch(
+      /border-radius:\s*var\(--attachment-item-radius\);/,
+    );
     expect(attachmentAddButtonBlock).toMatch(
       /--attachment-add-button-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 38%,\s*transparent\);/,
     );
@@ -3430,7 +3624,9 @@ describe("Gemini visual migration shell", () => {
     expect(attachFullItemBlock).toMatch(/width:\s*64px;/);
     expect(attachmentFullIndicatorBlock).toMatch(/width:\s*64px;/);
     expect(attachmentFullIndicatorBlock).toMatch(/height:\s*64px;/);
-    expect(attachmentFullIndicatorBlock).toMatch(/border-radius:\s*12px;/);
+    expect(attachmentFullIndicatorBlock).toMatch(
+      /border-radius:\s*var\(--attachment-item-radius\);/,
+    );
     expect(attachmentFullIndicatorBlock).toMatch(/cursor:\s*default;/);
     expect(attachmentFullIndicatorBlock).toMatch(/font-size:\s*11px;/);
     expect(attachmentFullIndicatorBlock).toMatch(/font-weight:\s*520;/);
