@@ -356,7 +356,6 @@ function usePluginPageView() {
                     <input
                       type="text"
                       aria-label={Locale.Plugin.EditModal.Content}
-                      style={{ minWidth: 200 }}
                       onInput={(e) => {
                         loadUrlRef.current = e.currentTarget.value;
                       }}

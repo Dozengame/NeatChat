@@ -3156,6 +3156,7 @@ describe("Gemini visual migration shell", () => {
     );
     const toolsListBlock = readCssBlock(mcpMarketStyles, ".tools-list");
     const toolItemBlock = readCssBlock(toolsListBlock, ".tool-item");
+    const toolNameBlock = readCssBlock(toolItemBlock, ".tool-name");
     const toolDescriptionBlock = readCssBlock(
       toolItemBlock,
       ".tool-description",
@@ -3165,6 +3166,23 @@ describe("Gemini visual migration shell", () => {
     const listSubTitleBlock = readCssBlock(
       mcpMarketStyles,
       ".list-sub-title",
+    );
+    const mobileMcpMarketBlock = readCssBlock(
+      mcpMarketStyles,
+      "@media screen and (max-width: 600px)",
+    );
+    const mobileMcpMarketPageBlock = readCssBlock(
+      mobileMcpMarketBlock,
+      ".mcp-market-page",
+    );
+    const mobilePathItemBlock = readCssBlock(
+      mobileMcpMarketPageBlock,
+      ".path-item",
+    );
+    const mobilePathInputBlock = readCssBlock(mobilePathItemBlock, "input");
+    const mobilePathAddButtonBlock = readCssBlock(
+      mobileMcpMarketPageBlock,
+      ".path-list .add-button",
     );
     const mcpMarketFormPaintScope = [
       mcpMarketRootBlock,
@@ -3199,8 +3217,14 @@ describe("Gemini visual migration shell", () => {
       inputItemFocusBlock,
       inputItemPlaceholderBlock,
       globalListItemBlock,
+      toolsListBlock,
+      toolNameBlock,
       toolDescriptionBlock,
       listSubTitleBlock,
+      mobileMcpMarketPageBlock,
+      mobilePathItemBlock,
+      mobilePathInputBlock,
+      mobilePathAddButtonBlock,
     ].join("\n");
 
     expect(mcpMarket).toContain("onClick={saveServerConfig}");
@@ -3263,6 +3287,8 @@ describe("Gemini visual migration shell", () => {
     );
 
     [arrayInputBlock, configArrayInputBlock].forEach((block) => {
+      expect(block).toMatch(/box-sizing:\s*border-box;/);
+      expect(block).toMatch(/min-width:\s*0;/);
       expect(block).toMatch(
         /border:\s*1px solid var\(--mcp-market-form-border-color\);/,
       );
@@ -3273,6 +3299,8 @@ describe("Gemini visual migration shell", () => {
     });
 
     [arrayInputTextBlock, configArrayInputTextBlock].forEach((block) => {
+      expect(block).toMatch(/box-sizing:\s*border-box;/);
+      expect(block).toMatch(/min-width:\s*0;/);
       expect(block).toMatch(
         /background-color:\s*var\(--mcp-market-form-soft-surface\);/,
       );
@@ -3312,6 +3340,8 @@ describe("Gemini visual migration shell", () => {
     });
 
     [pathInputBlock, inputItemTextBlock].forEach((block) => {
+      expect(block).toMatch(/box-sizing:\s*border-box;/);
+      expect(block).toMatch(/min-width:\s*0;/);
       expect(block).toMatch(
         /border:\s*1px solid var\(--mcp-market-form-border-color\);/,
       );
@@ -3352,6 +3382,7 @@ describe("Gemini visual migration shell", () => {
     expect(configIconButtonBlock).toMatch(
       /border:\s*1px solid var\(--mcp-market-form-border-color\);/,
     );
+    expect(configIconButtonBlock).toMatch(/flex:\s*0 0 32px;/);
     expect(configIconButtonBlock).toMatch(/border-radius:\s*8px;/);
     expect(configIconButtonHoverBlock).toMatch(
       /background-color:\s*var\(--mcp-market-form-hover-surface\);/,
@@ -3379,6 +3410,17 @@ describe("Gemini visual migration shell", () => {
       );
       expect(block).toMatch(/border-radius:\s*8px;/);
     });
+    expect(pathItemBlock).toMatch(/min-width:\s*0;/);
+    expect(toolsListBlock).toMatch(/min-width:\s*0;/);
+    expect(toolsListBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    [toolNameBlock, toolDescriptionBlock].forEach((block) => {
+      expect(block).toMatch(/overflow-wrap:\s*anywhere;/);
+    });
+    expect(mobileMcpMarketPageBlock).toContain(".path-item");
+    expect(mobilePathItemBlock).toMatch(/flex-direction:\s*column;/);
+    expect(mobilePathItemBlock).toMatch(/align-items:\s*stretch;/);
+    expect(mobilePathInputBlock).toMatch(/width:\s*100%;/);
+    expect(mobilePathAddButtonBlock).toMatch(/width:\s*100%;/);
     expect(globalListItemBlock).toMatch(/border-radius:\s*8px;/);
     expect(mcpMarketFormPaintScope).not.toMatch(
       /var\(--(?:gray-(?:50|100|200|300|500)|primary-10|danger)\)/,
@@ -3447,9 +3489,90 @@ describe("Gemini visual migration shell", () => {
       marketItemLoadingBlock,
       "&::after",
     );
+    const marketHeaderBlock = readCssBlock(
+      marketItemBlock,
+      ".mcp-market-header",
+    );
+    const marketTitleBlock = readCssBlock(
+      marketHeaderBlock,
+      ".mcp-market-title",
+    );
+    const marketNameBlock = readCssBlock(
+      marketHeaderBlock,
+      ".mcp-market-name",
+    );
+    const operationStatusBlock = readCssBlock(
+      mcpMarketStyles,
+      ".operation-status",
+    );
+    const serverStatusBlock = readCssBlock(mcpMarketStyles, ".server-status");
+    const marketActionsBlock = readCssBlock(
+      marketHeaderBlock,
+      ".mcp-market-actions",
+    );
+    const actionButtonBlock = readCssBlock(
+      marketActionsBlock,
+      ":global(.icon-button)",
+    );
     const tagBlock = readCssBlock(mcpMarketStyles, ".tag");
     const marketInfoBlock = readCssBlock(mcpMarketStyles, ".mcp-market-info");
     const listBlock = readCssBlock(mcpMarketStyles, ".list");
+    const mobileMcpMarketBlock = readCssBlock(
+      mcpMarketStyles,
+      "@media screen and (max-width: 600px)",
+    );
+    const mobileMcpMarketPageBlock = readCssBlock(
+      mobileMcpMarketBlock,
+      ".mcp-market-page",
+    );
+    const mobilePageBodyBlock = readCssBlock(
+      mobileMcpMarketPageBlock,
+      ".mcp-market-page-body",
+    );
+    const mobileMarketFilterBlock = readCssBlock(
+      mobileMcpMarketPageBlock,
+      ".mcp-market-filter",
+    );
+    const mobileMarketItemBlock = readCssBlock(
+      mobileMcpMarketPageBlock,
+      ".mcp-market-item",
+    );
+    const mobileMarketHeaderBlock = readCssBlock(
+      mobileMcpMarketPageBlock,
+      ".mcp-market-header",
+    );
+    const mobileMarketTitleBlock = readCssBlock(
+      mobileMcpMarketPageBlock,
+      ".mcp-market-title",
+    );
+    const mobileMarketNameBlock = readCssBlock(
+      mobileMcpMarketPageBlock,
+      ".mcp-market-name",
+    );
+    const mobileMarketInfoBlock = readCssBlock(
+      mobileMcpMarketPageBlock,
+      ".mcp-market-info",
+    );
+    const mobileMarketActionsBlock = readCssBlock(
+      mobileMcpMarketPageBlock,
+      ".mcp-market-actions",
+    );
+    const mobileMarketActionButtonBlock = readCssBlock(
+      mobileMarketActionsBlock,
+      ":global(.icon-button)",
+    );
+    const reducedMotionBlock = readCssBlock(
+      mcpMarketStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const reducedAnimatedSurfacesBlock = readCssBlock(
+      reducedMotionBlock,
+      ".mcp-market-page .mcp-market-page-body .mcp-market-filter,\n  .mcp-market-page .mcp-market-page-body .loading-container,\n  .mcp-market-page .mcp-market-page-body .empty-container,\n  .mcp-market-page .mcp-market-page-body .mcp-market-item",
+    );
+    const reducedPulseBlock = readCssBlock(
+      reducedMotionBlock,
+      ".mcp-market-page .mcp-market-page-body .mcp-market-item.loading::after,\n  .mcp-market-page .mcp-market-page-body .mcp-market-item .operation-status,\n  .mcp-market-page .mcp-market-page-body .mcp-market-item .server-status.initializing",
+    );
     const marketListPaintScope = [
       mcpMarketRootBlock,
       darkMcpMarketBlock,
@@ -3466,9 +3589,28 @@ describe("Gemini visual migration shell", () => {
       marketItemHoverBlock,
       marketItemNotLastBlock,
       marketItemLoadingAfterBlock,
+      marketHeaderBlock,
+      marketTitleBlock,
+      marketNameBlock,
+      operationStatusBlock,
+      serverStatusBlock,
+      marketActionsBlock,
+      actionButtonBlock,
       tagBlock,
       marketInfoBlock,
       listBlock,
+      mobileMcpMarketPageBlock,
+      mobilePageBodyBlock,
+      mobileMarketFilterBlock,
+      mobileMarketItemBlock,
+      mobileMarketHeaderBlock,
+      mobileMarketTitleBlock,
+      mobileMarketNameBlock,
+      mobileMarketInfoBlock,
+      mobileMarketActionsBlock,
+      mobileMarketActionButtonBlock,
+      reducedAnimatedSurfacesBlock,
+      reducedPulseBlock,
     ].join("\n");
 
     expect(mcpMarket).toContain("onInput={(event) => setSearchText");
@@ -3569,11 +3711,44 @@ describe("Gemini visual migration shell", () => {
     expect(marketItemLoadingAfterBlock).toContain(
       "var(--mcp-market-loading-shine-color)",
     );
+    expect(marketHeaderBlock).toMatch(/gap:\s*16px;/);
+    expect(marketTitleBlock).toMatch(/min-width:\s*0;/);
+    expect(marketTitleBlock).toMatch(/max-width:\s*100%;/);
+    expect(marketNameBlock).toMatch(/flex-wrap:\s*wrap;/);
+    expect(marketNameBlock).toMatch(/min-width:\s*0;/);
+    [operationStatusBlock, serverStatusBlock].forEach((block) => {
+      expect(block).toMatch(/max-width:\s*100%;/);
+      expect(block).toMatch(/overflow-wrap:\s*anywhere;/);
+    });
+    expect(marketActionsBlock).toMatch(/min-width:\s*0;/);
+    expect(marketActionsBlock).toMatch(/flex-wrap:\s*wrap;/);
+    expect(actionButtonBlock).toMatch(/min-width:\s*0;/);
     expect(tagBlock).toMatch(/background:\s*var\(--mcp-market-tag-background\);/);
     expect(tagBlock).toMatch(/border:\s*1px solid var\(--mcp-market-tag-border-color\);/);
     expect(tagBlock).toMatch(/color:\s*var\(--mcp-market-tag-color\);/);
     expect(tagBlock).toMatch(/border-radius:\s*999px;/);
     expect(marketInfoBlock).toMatch(/color:\s*var\(--mcp-market-muted-color\);/);
+    expect(marketInfoBlock).toMatch(/min-width:\s*0;/);
+    expect(mobileMcpMarketPageBlock).toContain(".mcp-market-header");
+    expect(mobilePageBodyBlock).toMatch(/padding:\s*14px;/);
+    expect(mobileMarketFilterBlock).toMatch(/height:\s*auto;/);
+    expect(mobileMarketItemBlock).toMatch(/padding:\s*14px;/);
+    expect(mobileMarketHeaderBlock).toMatch(/flex-direction:\s*column;/);
+    expect(mobileMarketHeaderBlock).toMatch(/gap:\s*12px;/);
+    expect(mobileMarketTitleBlock).toMatch(/width:\s*100%;/);
+    expect(mobileMarketTitleBlock).toMatch(/margin-right:\s*0;/);
+    expect(mobileMarketNameBlock).toMatch(/line-height:\s*1\.4;/);
+    expect(mobileMarketInfoBlock).toMatch(/white-space:\s*normal;/);
+    expect(mobileMarketActionsBlock).toMatch(/width:\s*100%;/);
+    expect(mobileMarketActionsBlock).toMatch(/justify-content:\s*flex-start;/);
+    expect(mobileMarketActionButtonBlock).toMatch(
+      /flex:\s*1 1 min\(130px,\s*100%\);/,
+    );
+    expect(reducedAnimatedSurfacesBlock).toMatch(/animation:\s*none;/);
+    expect(reducedAnimatedSurfacesBlock).toMatch(
+      /transition-duration:\s*0\.01ms;/,
+    );
+    expect(reducedPulseBlock).toMatch(/animation:\s*none;/);
     expect(marketListPaintScope).not.toMatch(
       /background(?:-color)?:\s*var\(--white\)|background:\s*var\(--gray\)|border:\s*var\(--border-in-light\)|rgba\(255,\s*255,\s*255,\s*0\.2\)/,
     );
@@ -7678,11 +7853,13 @@ describe("Gemini visual migration shell", () => {
     const pluginSchemaBlock = readCssBlock(schemaStylesSource, ".plugin-schema");
     const schemaInputBlock = readCssBlock(pluginSchemaBlock, "input");
     const schemaInputFocusBlock = readCssBlock(schemaInputBlock, "&:focus-visible");
+    const schemaButtonBlock = readCssBlock(pluginSchemaBlock, "button");
     const mobileSchemaBlock = readCssBlock(
       pluginSchemaBlock,
       "@media screen and (max-width: 600px)",
     );
     const mobileInputBlock = readCssBlock(mobileSchemaBlock, "input");
+    const mobileButtonBlock = readCssBlock(mobileSchemaBlock, "button");
     const darkPluginContentBlock = readCssBlock(
       normalizedPluginStyles,
       ":global(.dark) .plugin-content, :global(.dark) .plugin-schema",
@@ -7727,6 +7904,7 @@ describe("Gemini visual migration shell", () => {
     expect(pluginPage).toContain("loadUrlRef.current = e.currentTarget.value;");
     expect(pluginPage).toContain("onClick={() => loadFromUrl(loadUrlRef.current)}");
     expect(pluginPage).toContain("FunctionToolService.add(plugin, true)");
+    expect(pluginPage).not.toContain("style={{ minWidth: 200 }}");
 
     expect(sharedSurfaceBlock).toMatch(/--plugin-modal-control-radius:\s*8px;/);
     expect(sharedSurfaceBlock).toMatch(
@@ -7747,6 +7925,7 @@ describe("Gemini visual migration shell", () => {
     expect(contentCodeBlock).toMatch(/width:\s*100%;/);
     expect(contentCodeBlock).toMatch(/min-width:\s*0;/);
     expect(contentCodeBlock).toMatch(/max-height:\s*min\(42vh,\s*360px\);/);
+    expect(contentCodeBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(contentCodeBlock).toMatch(/padding:\s*12px;/);
     expect(contentCodeBlock).toMatch(
       /border:\s*1px solid var\(--plugin-modal-border-color\);/,
@@ -7763,7 +7942,12 @@ describe("Gemini visual migration shell", () => {
     expect(codeFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
     expect(pluginSchemaBlock).toMatch(/gap:\s*10px;/);
     expect(pluginSchemaBlock).toMatch(/align-items:\s*center;/);
+    expect(pluginSchemaBlock).toMatch(/min-width:\s*0;/);
     expect(schemaInputBlock).toMatch(/margin-right:\s*0;/);
+    expect(schemaInputBlock).toMatch(/flex:\s*1 1 240px;/);
+    expect(schemaInputBlock).toMatch(/width:\s*100%;/);
+    expect(schemaInputBlock).toMatch(/min-width:\s*0;/);
+    expect(schemaInputBlock).toMatch(/max-width:\s*100%;/);
     expect(schemaInputBlock).toMatch(/min-height:\s*36px;/);
     expect(schemaInputBlock).toMatch(
       /border:\s*1px solid var\(--plugin-modal-border-color\);/,
@@ -7778,10 +7962,13 @@ describe("Gemini visual migration shell", () => {
     expect(schemaInputFocusBlock).toMatch(
       /border-color:\s*var\(--plugin-modal-focus-border-color\);/,
     );
+    expect(schemaButtonBlock).toMatch(/flex:\s*0 0 auto;/);
+    expect(schemaButtonBlock).toMatch(/max-width:\s*100%;/);
     expect(mobileSchemaBlock).toMatch(/gap:\s*8px;/);
     expect(mobileSchemaBlock).toMatch(/align-items:\s*stretch;/);
     expect(mobileInputBlock).toMatch(/width:\s*100%;/);
     expect(mobileInputBlock).toMatch(/min-width:\s*0 !important;/);
+    expect(mobileButtonBlock).toMatch(/width:\s*100%;/);
     expect(darkPluginContentBlock).toMatch(
       /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
     );

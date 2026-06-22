@@ -107,6 +107,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 
   .loading-indicator {
     font-size: 12px;
@@ -119,6 +120,7 @@
   .mcp-market-page-body {
     padding: 20px;
     overflow-y: auto;
+    min-width: 0;
 
     .loading-container,
     .empty-container {
@@ -143,6 +145,7 @@
     .mcp-market-filter {
       width: 100%;
       max-width: 100%;
+      min-width: 0;
       margin-bottom: 20px;
       animation: slide-in ease 0.3s;
       height: 40px;
@@ -183,9 +186,12 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
+      min-width: 0;
     }
 
     .mcp-market-item {
+      box-sizing: border-box;
+      min-width: 0;
       padding: 20px;
       border: 1px solid var(--mcp-market-card-border-color);
       border-radius: 8px;
@@ -257,11 +263,15 @@
 
         display: inline-flex;
         align-items: center;
+        max-width: 100%;
+        min-width: 0;
         margin-left: 10px;
         padding: 2px 8px;
         border: 1px solid var(--mcp-market-status-border-color);
         border-radius: 999px;
         font-size: 12px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
         background-color: var(--mcp-market-status-background);
         color: var(--mcp-market-status-color);
         animation: pulse 1.5s infinite;
@@ -283,12 +293,14 @@
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
+        gap: 16px;
         width: 100%;
 
         .mcp-market-title {
-          flex-grow: 1;
-          margin-right: 20px;
-          max-width: calc(100% - 300px);
+          flex: 1 1 auto;
+          min-width: 0;
+          margin-right: 0;
+          max-width: 100%;
         }
 
         .mcp-market-name {
@@ -296,7 +308,10 @@
           font-weight: bold;
           display: flex;
           align-items: center;
+          flex-wrap: wrap;
           gap: 8px;
+          row-gap: 6px;
+          min-width: 0;
           margin-bottom: 8px;
 
           .server-status {
@@ -319,11 +334,15 @@
 
             display: inline-flex;
             align-items: center;
+            max-width: 100%;
+            min-width: 0;
             margin-left: 10px;
             padding: 2px 8px;
             border: 1px solid var(--mcp-market-status-border-color);
             border-radius: 999px;
             font-size: 12px;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
             background-color: var(--mcp-market-status-background);
             color: var(--mcp-market-status-color);
 
@@ -341,8 +360,10 @@
             }
 
             .error-message {
+              min-width: 0;
               margin-left: 4px;
               font-size: 12px;
+              overflow-wrap: anywhere;
             }
           }
         }
@@ -352,6 +373,7 @@
           font-size: 12px;
           display: inline-flex;
           align-items: center;
+          flex-shrink: 0;
           gap: 4px;
           text-decoration: none;
           opacity: 0.8;
@@ -387,6 +409,7 @@
         .mcp-market-info {
           color: var(--mcp-market-muted-color);
           font-size: 12px;
+          min-width: 0;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
@@ -396,19 +419,27 @@
           display: flex;
           gap: 12px;
           align-items: flex-start;
-          flex-shrink: 0;
-          min-width: 180px;
+          flex: 0 1 auto;
+          flex-wrap: wrap;
+          min-width: 0;
+          max-width: 100%;
           justify-content: flex-end;
+
+          :global(.icon-button) {
+            min-width: 0;
+          }
         }
       }
     }
   }
 
   .array-input {
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 12px;
     width: 100%;
+    min-width: 0;
     padding: 16px;
     border: 1px solid var(--mcp-market-form-border-color);
     border-radius: 8px;
@@ -419,10 +450,13 @@
       gap: 8px;
       align-items: center;
       width: 100%;
+      min-width: 0;
       padding: 0;
 
       input {
+        box-sizing: border-box;
         width: 100%;
+        min-width: 0;
         padding: 8px 12px;
         background-color: var(--mcp-market-form-soft-surface);
         border-radius: 8px;
@@ -477,6 +511,7 @@
 
   .path-list {
     width: 100%;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -485,10 +520,13 @@
       display: flex;
       gap: 10px;
       width: 100%;
+      min-width: 0;
 
       input {
+        box-sizing: border-box;
         flex: 1;
         width: 100%;
+        min-width: 0;
         max-width: 100%;
         padding: 10px;
         border: 1px solid var(--mcp-market-form-border-color);
@@ -510,6 +548,7 @@
       }
 
       .browse-button {
+        flex: 0 0 auto;
         padding: 8px;
         border: 1px solid var(--mcp-market-form-border-color);
         border-radius: 8px;
@@ -529,6 +568,7 @@
       }
 
       .delete-button {
+        flex: 0 0 auto;
         padding: 8px;
         border: 1px solid var(--mcp-market-form-border-color);
         border-radius: 8px;
@@ -563,6 +603,7 @@
       border-radius: 8px;
       color: var(--black);
       font-size: 12px;
+      max-width: 100%;
       margin-top: 5px;
 
       &:hover {
@@ -580,6 +621,7 @@
 
   .config-section {
     width: 100%;
+    min-width: 0;
 
     .config-header {
       margin-bottom: 12px;
@@ -594,15 +636,18 @@
       .config-description {
         font-size: 12px;
         color: var(--mcp-market-form-description-color);
+        overflow-wrap: anywhere;
         margin-top: 4px;
       }
     }
 
     .array-input {
+      box-sizing: border-box;
       display: flex;
       flex-direction: column;
       gap: 12px;
       width: 100%;
+      min-width: 0;
       padding: 16px;
       border: 1px solid var(--mcp-market-form-border-color);
       border-radius: 8px;
@@ -613,10 +658,13 @@
         gap: 8px;
         align-items: center;
         width: 100%;
+        min-width: 0;
         padding: 0;
 
         input {
+          box-sizing: border-box;
           width: 100%;
+          min-width: 0;
           padding: 8px 12px;
           background-color: var(--mcp-market-form-soft-surface);
           border-radius: 8px;
@@ -648,7 +696,7 @@
           border-radius: 8px;
           background-color: transparent;
           border: 1px solid var(--mcp-market-form-border-color);
-          flex-shrink: 0;
+          flex: 0 0 32px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -696,9 +744,12 @@
 
   .input-item {
     width: 100%;
+    min-width: 0;
 
     input {
+      box-sizing: border-box;
       width: 100%;
+      min-width: 0;
       padding: 10px;
       border: 1px solid var(--mcp-market-form-border-color);
       border-radius: 8px;
@@ -729,14 +780,17 @@
     flex-direction: column;
     gap: 16px;
     width: 100%;
+    min-width: 0;
     padding: 20px;
     max-width: 100%;
     overflow-x: hidden;
+    overflow-wrap: anywhere;
     word-break: break-word;
     box-sizing: border-box;
 
     .tool-item {
       width: 100%;
+      min-width: 0;
       box-sizing: border-box;
 
       .tool-name {
@@ -748,6 +802,7 @@
         border-left: 3px solid var(--primary);
         box-sizing: border-box;
         width: 100%;
+        overflow-wrap: anywhere;
       }
 
       .tool-description {
@@ -757,6 +812,7 @@
         padding-left: 15px;
         box-sizing: border-box;
         width: 100%;
+        overflow-wrap: anywhere;
       }
     }
   }
@@ -924,6 +980,85 @@
   );
 }
 
+@media screen and (max-width: 600px) {
+  .mcp-market-page {
+    .mcp-market-page-body {
+      padding: 14px;
+    }
+
+    .mcp-market-filter {
+      height: auto;
+      margin-bottom: 14px;
+    }
+
+    .mcp-market-item {
+      padding: 14px;
+    }
+
+    .mcp-market-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+
+    .mcp-market-title {
+      width: 100%;
+      margin-right: 0;
+    }
+
+    .mcp-market-name {
+      line-height: 1.4;
+    }
+
+    .mcp-market-info {
+      white-space: normal;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .mcp-market-actions {
+      width: 100%;
+      justify-content: flex-start;
+      gap: 8px;
+
+      :global(.icon-button) {
+        flex: 1 1 min(130px, 100%);
+        min-width: 0;
+      }
+    }
+
+    .path-item {
+      flex-direction: column;
+      align-items: stretch;
+
+      input {
+        width: 100%;
+      }
+    }
+
+    .path-list .add-button {
+      width: 100%;
+      justify-content: center;
+    }
+
+    :global {
+      .modal-content {
+        min-width: 0;
+      }
+
+      .list {
+        padding: 8px;
+      }
+
+      .list-item {
+        min-width: 0;
+        padding: 8px;
+      }
+    }
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .mcp-market-page {
     --mcp-market-add-path-button-hover-background: color-mix(
@@ -1043,6 +1178,22 @@
       var(--mcp-market-status-ink) 58%,
       var(--black)
     );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mcp-market-page .mcp-market-page-body .mcp-market-filter,
+  .mcp-market-page .mcp-market-page-body .loading-container,
+  .mcp-market-page .mcp-market-page-body .empty-container,
+  .mcp-market-page .mcp-market-page-body .mcp-market-item {
+    animation: none;
+    transition-duration: 0.01ms;
+  }
+
+  .mcp-market-page .mcp-market-page-body .mcp-market-item.loading::after,
+  .mcp-market-page .mcp-market-page-body .mcp-market-item .operation-status,
+  .mcp-market-page .mcp-market-page-body .mcp-market-item .server-status.initializing {
+    animation: none;
   }
 }
 
