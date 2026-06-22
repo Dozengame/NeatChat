@@ -11137,6 +11137,12 @@ describe("Gemini visual migration shell", () => {
     const chatStyles = read("app/components/chat.module.scss");
     const markdown = read("app/components/markdown.tsx");
     const markdownStyles = read("app/styles/markdown.scss");
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const autoDarkRootBlock = readCssBlock(
+      readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
+      ":root",
+    );
     const shimmerBlock = readCssBlock(chatStyles, ".chat-message-shimmer");
     const darkShimmerBlock = readCssBlock(
       chatStyles,
@@ -11184,6 +11190,15 @@ describe("Gemini visual migration shell", () => {
       "--chat-streaming-handoff-shadow-start",
       "--chat-streaming-handoff-shadow-mid",
     ];
+    const markdownLoadingTokenNames = [
+      "--markdown-loading-chip-border-color",
+      "--markdown-loading-chip-background",
+      "--markdown-loading-chip-color",
+      "--markdown-loading-chip-shadow-color",
+      "--markdown-loading-dot-primary",
+      "--markdown-loading-dot-secondary",
+      "--markdown-loading-dot-trailing",
+    ];
     const darkShimmerTokenMap = readCustomProperties(
       darkShimmerBlock,
       streamingDarkShimmerTokenNames,
@@ -11200,6 +11215,14 @@ describe("Gemini visual migration shell", () => {
       autoDarkStreamingRevealBlock,
       streamingDarkRevealTokenNames,
     );
+    const lightMarkdownLoadingTokens = readCustomProperties(
+      lightMixinBlock,
+      markdownLoadingTokenNames,
+    );
+    const darkMarkdownLoadingTokens = readCustomProperties(
+      darkMixinBlock,
+      markdownLoadingTokenNames,
+    );
     const streamingToneScope = [
       shimmerBlock,
       darkShimmerBlock,
@@ -11215,9 +11238,24 @@ describe("Gemini visual migration shell", () => {
     const reducedMotionBlock = chatStyles.slice(
       chatStyles.indexOf("@media (prefers-reduced-motion: reduce)"),
     );
+    const markdownReducedMotionBlock = markdownStyles.slice(
+      markdownStyles.lastIndexOf("@media (prefers-reduced-motion: reduce)"),
+    );
     const markdownLoadingStatusBlock = readCssBlock(
       markdownStyles,
       ".markdown-body .markdown-loading-status",
+    );
+    const markdownLoadingVisualBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-loading-visual",
+    );
+    const markdownLoadingDotBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-loading-dot",
+    );
+    const markdownLoadingLabelBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-loading-label",
     );
 
     expect(chat).toContain("const isStreamingReveal");
@@ -11237,6 +11275,10 @@ describe("Gemini visual migration shell", () => {
       /role="status"[\s\S]*aria-live="polite"[\s\S]*aria-atomic="true"/,
     );
     expect(markdown).toMatch(/\{Locale\.Chat\.Typing\}/);
+    expect(markdown).toContain('className="markdown-loading-visual"');
+    expect(markdown).toMatch(
+      /className="markdown-loading-visual"[\s\S]*aria-hidden="true"[\s\S]*className="markdown-loading-dot"[\s\S]*className="markdown-loading-label"[\s\S]*\{Locale\.Chat\.Typing\}/,
+    );
     expect(markdown).not.toMatch(
       /loading \? \(\s*<LoadingIcon \/>[\s\S]*\) : \(/,
     );
@@ -11246,6 +11288,59 @@ describe("Gemini visual migration shell", () => {
     expect(markdownLoadingStatusBlock).toMatch(/overflow:\s*hidden;/);
     expect(markdownLoadingStatusBlock).toMatch(/clip:\s*rect\(0 0 0 0\);/);
     expect(markdownLoadingStatusBlock).not.toMatch(/min-height/);
+    for (const tokenName of markdownLoadingTokenNames) {
+      expect(lightMarkdownLoadingTokens[tokenName]).toBeTruthy();
+      expect(darkMarkdownLoadingTokens[tokenName]).toBeTruthy();
+    }
+    expect(Object.values(lightMarkdownLoadingTokens).join("\n")).not.toMatch(
+      /rgba\(|#[0-9a-fA-F]{3,8}\b/,
+    );
+    expect(Object.values(darkMarkdownLoadingTokens).join("\n")).not.toMatch(
+      /rgba\(|#[0-9a-fA-F]{3,8}\b/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-loading-chip-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 78%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-loading-dot-primary:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 72%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-loading-chip-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 68%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-loading-dot-primary:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 76%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkRootBlock).toMatch(/@include dark;/);
+    expect(markdownStyles).toContain("@keyframes markdownLoadingPulse");
+    expect(markdownLoadingVisualBlock).toMatch(/display:\s*inline-flex;/);
+    expect(markdownLoadingVisualBlock).toMatch(/align-items:\s*center;/);
+    expect(markdownLoadingVisualBlock).toMatch(/min-height:\s*28px;/);
+    expect(markdownLoadingVisualBlock).toMatch(/max-width:\s*100%;/);
+    expect(markdownLoadingVisualBlock).toMatch(/border-radius:\s*999px;/);
+    expect(markdownLoadingVisualBlock).toMatch(
+      /border:\s*1px solid var\(--markdown-loading-chip-border-color\);/,
+    );
+    expect(markdownLoadingVisualBlock).toMatch(
+      /background:\s*var\(--markdown-loading-chip-background\);/,
+    );
+    expect(markdownLoadingVisualBlock).toMatch(
+      /color:\s*var\(--markdown-loading-chip-color\);/,
+    );
+    expect(markdownLoadingVisualBlock).toMatch(
+      /box-shadow:\s*0 8px 22px var\(--markdown-loading-chip-shadow-color\);/,
+    );
+    expect(markdownLoadingDotBlock).toMatch(/width:\s*6px;/);
+    expect(markdownLoadingDotBlock).toMatch(/height:\s*6px;/);
+    expect(markdownLoadingDotBlock).toMatch(
+      /background:\s*var\(--markdown-loading-dot-primary\);/,
+    );
+    expect(markdownLoadingDotBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--markdown-loading-dot-secondary\)[\s\S]*var\(--markdown-loading-dot-trailing\);/,
+    );
+    expect(markdownLoadingDotBlock).toMatch(
+      /animation:\s*markdownLoadingPulse 1\.35s ease-in-out infinite;/,
+    );
+    expect(markdownLoadingLabelBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(streamingToneScope).not.toMatch(legacyStreamingPaint);
     expect(shimmerBlock).toMatch(/min-height:\s*72px;/);
     expect(shimmerBlock).toContain("&::after");
@@ -11356,6 +11451,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(reducedMotionBlock).toMatch(
       /\.chat-message-streaming-reveal[\s\S]*animation:\s*none !important;[\s\S]*box-shadow:\s*none !important;/,
+    );
+    expect(markdownReducedMotionBlock).toMatch(
+      /\.markdown-loading-dot[\s\S]*animation:\s*none !important;[\s\S]*box-shadow:[\s\S]*var\(--markdown-loading-dot-secondary\)[\s\S]*var\(--markdown-loading-dot-trailing\);/,
     );
   });
 

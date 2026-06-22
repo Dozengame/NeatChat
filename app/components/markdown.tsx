@@ -1161,14 +1161,22 @@ export function Markdown(
         dir="auto"
       >
         {loading ? (
-          <div
-            className="markdown-loading-status"
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-          >
-            {Locale.Chat.Typing}
-          </div>
+          <>
+            <div
+              className="markdown-loading-status"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {Locale.Chat.Typing}
+            </div>
+            <div className="markdown-loading-visual" aria-hidden="true">
+              <span className="markdown-loading-dot" />
+              <span className="markdown-loading-label">
+                {Locale.Chat.Typing}
+              </span>
+            </div>
+          </>
         ) : (
           <MarkdownFeatureContext.Provider value={markdownFeatures}>
             <MarkdownContent
