@@ -11711,6 +11711,134 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps streaming code blocks visibly active without changing code behavior", () => {
+    const markdown = read("app/components/markdown.tsx");
+    const markdownStyles = read("app/styles/markdown.scss");
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const autoDarkRootBlock = readCssBlock(
+      readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
+      ":root",
+    );
+    const streamingCodeSelector =
+      '.markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ iframe:last-child))';
+    const streamingCodeBlock = readCssBlock(
+      markdownStyles,
+      streamingCodeSelector,
+    );
+    const streamingCodeRailBlock = readCssBlock(streamingCodeBlock, "&::before");
+    const markdownReducedMotionBlock = markdownStyles.slice(
+      markdownStyles.lastIndexOf("@media (prefers-reduced-motion: reduce)"),
+    );
+    const streamingCodeTokenNames = [
+      "--markdown-code-streaming-border-color",
+      "--markdown-code-streaming-shadow-color",
+      "--markdown-code-streaming-rail-start",
+      "--markdown-code-streaming-rail-mid",
+      "--markdown-code-streaming-rail-end",
+      "--markdown-code-streaming-rail-shadow-color",
+    ];
+    const lightStreamingCodeTokens = readCustomProperties(
+      lightMixinBlock,
+      streamingCodeTokenNames,
+    );
+    const darkStreamingCodeTokens = readCustomProperties(
+      darkMixinBlock,
+      streamingCodeTokenNames,
+    );
+    const streamingCodePaintScope = [
+      streamingCodeBlock,
+      streamingCodeRailBlock,
+    ].join("\n");
+
+    expect(markdown).toMatch(
+      /data-streaming=\{\s*streaming && !loading && !isUser && content\.length > 0\s*\? "true"\s*:\s*undefined\s*\}/,
+    );
+    expect(markdown).toContain('"markdown-code-block"');
+    expect(markdown).toContain("className={clsx(");
+    expect(markdown).toContain("className=\"copy-code-button\"");
+    expect(markdown).toContain("className=\"markdown-code-language\"");
+    expect(markdown).toContain("className=\"copy-code-status\"");
+    expect(markdown).toContain('"show-hide-button"');
+    expect(markdown).toContain("<Mermaid code={mermaidCode} key={mermaidCode} />");
+    expect(markdown).toContain("<HTMLPreview");
+    expect(streamingCodeSelector).toContain(":has(+ .mermaid:last-child)");
+    expect(streamingCodeSelector).toContain(":has(+ iframe:last-child)");
+    for (const tokenName of streamingCodeTokenNames) {
+      expect(lightStreamingCodeTokens[tokenName]).toBeTruthy();
+      expect(darkStreamingCodeTokens[tokenName]).toBeTruthy();
+    }
+    expect(Object.values(lightStreamingCodeTokens).join("\n")).not.toMatch(
+      /rgba\(|#[0-9a-fA-F]{3,8}\b/,
+    );
+    expect(Object.values(darkStreamingCodeTokens).join("\n")).not.toMatch(
+      /rgba\(|#[0-9a-fA-F]{3,8}\b/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-code-streaming-border-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 20%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-code-streaming-rail-mid:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 48%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-code-streaming-border-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 24%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-code-streaming-rail-mid:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 56%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkRootBlock).toMatch(/@include dark;/);
+    expect(markdownStyles).toContain("@keyframes markdownCodeStreamingRail");
+    expect(markdownStyles).not.toContain(
+      '.markdown-body[data-streaming="true"] > pre.markdown-code-block:last-child {',
+    );
+    expect(markdownStyles).not.toContain(
+      '.markdown-body[data-streaming="true"] > pre.markdown-code-block:last-child::after',
+    );
+    expect(streamingCodeBlock).toMatch(
+      /border-color:\s*var\(--markdown-code-streaming-border-color\);/,
+    );
+    expect(streamingCodeBlock).toMatch(
+      /box-shadow:[\s\S]*0 0 0 1px var\(--markdown-code-streaming-border-color\),[\s\S]*0 12px 30px var\(--markdown-code-streaming-shadow-color\);/,
+    );
+    expect(streamingCodeBlock).toMatch(/isolation:\s*isolate;/);
+    expect(streamingCodeBlock).toMatch(/&::before/);
+    expect(streamingCodeRailBlock).toMatch(/content:\s*"";/);
+    expect(streamingCodeRailBlock).toMatch(/position:\s*absolute;/);
+    expect(streamingCodeRailBlock).toMatch(
+      /top:\s*var\(--markdown-code-block-padding-y\);/,
+    );
+    expect(streamingCodeRailBlock).toMatch(
+      /bottom:\s*var\(--markdown-code-block-padding-y\);/,
+    );
+    expect(streamingCodeRailBlock).toMatch(/left:\s*6px;/);
+    expect(streamingCodeRailBlock).toMatch(/width:\s*3px;/);
+    expect(streamingCodeRailBlock).toMatch(/border-radius:\s*999px;/);
+    expect(streamingCodeRailBlock).toMatch(
+      /background:\s*linear-gradient\(\s*180deg,[\s\S]*var\(--markdown-code-streaming-rail-start\)[\s\S]*var\(--markdown-code-streaming-rail-mid\)[\s\S]*var\(--markdown-code-streaming-rail-end\)/,
+    );
+    expect(streamingCodeRailBlock).toMatch(
+      /box-shadow:\s*0 0 18px var\(--markdown-code-streaming-rail-shadow-color\);/,
+    );
+    expect(streamingCodeRailBlock).toMatch(
+      /animation:\s*markdownCodeStreamingRail 1\.25s ease-in-out infinite;/,
+    );
+    expect(streamingCodeRailBlock).toMatch(/pointer-events:\s*none;/);
+    expect(streamingCodePaintScope).not.toMatch(
+      /rgba\(|#[0-9a-fA-F]{3,8}\b/,
+    );
+    expect(markdownReducedMotionBlock).toContain(`${streamingCodeSelector},`);
+    expect(markdownReducedMotionBlock).toContain(
+      `${streamingCodeSelector}::before,`,
+    );
+    expect(markdownReducedMotionBlock).toMatch(
+      /animation:\s*none !important;[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(markdownReducedMotionBlock).toContain(
+      `${streamingCodeSelector}::before {`,
+    );
+    expect(markdownReducedMotionBlock).toMatch(/opacity:\s*0\.72;/);
+  });
+
   test("keeps the context prompt toast as a Gemini-style contextual chip", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");

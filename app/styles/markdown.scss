@@ -266,6 +266,36 @@ summary,
     var(--primary) 16%,
     transparent
   );
+  --markdown-code-streaming-border-color: color-mix(
+    in srgb,
+    var(--primary) 20%,
+    transparent
+  );
+  --markdown-code-streaming-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 12%,
+    transparent
+  );
+  --markdown-code-streaming-rail-start: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    transparent
+  );
+  --markdown-code-streaming-rail-mid: color-mix(
+    in srgb,
+    var(--primary) 48%,
+    transparent
+  );
+  --markdown-code-streaming-rail-end: color-mix(
+    in srgb,
+    var(--primary) 14%,
+    transparent
+  );
+  --markdown-code-streaming-rail-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
   --markdown-math-display-border-color: color-mix(
     in srgb,
     var(--black-50) 12%,
@@ -639,6 +669,36 @@ summary,
     var(--markdown-link-color) 18%,
     transparent
   );
+  --markdown-code-streaming-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 24%,
+    transparent
+  );
+  --markdown-code-streaming-shadow-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 16%,
+    transparent
+  );
+  --markdown-code-streaming-rail-start: color-mix(
+    in srgb,
+    var(--markdown-link-color) 12%,
+    transparent
+  );
+  --markdown-code-streaming-rail-mid: color-mix(
+    in srgb,
+    var(--markdown-link-color) 56%,
+    transparent
+  );
+  --markdown-code-streaming-rail-end: color-mix(
+    in srgb,
+    var(--markdown-link-color) 16%,
+    transparent
+  );
+  --markdown-code-streaming-rail-shadow-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 22%,
+    transparent
+  );
   --markdown-math-display-border-color: color-mix(
     in srgb,
     var(--black) 10%,
@@ -908,6 +968,19 @@ summary,
   45% {
     opacity: 0.88;
     transform: translateY(0) scaleY(1);
+  }
+}
+
+@keyframes markdownCodeStreamingRail {
+  0%,
+  100% {
+    opacity: 0.46;
+    transform: scaleY(0.82);
+  }
+
+  50% {
+    opacity: 0.9;
+    transform: scaleY(1);
   }
 }
 
@@ -2326,6 +2399,35 @@ summary,
   position: relative;
 }
 
+.markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ iframe:last-child)) {
+  border-color: var(--markdown-code-streaming-border-color);
+  box-shadow:
+    0 0 0 1px var(--markdown-code-streaming-border-color),
+    0 12px 30px var(--markdown-code-streaming-shadow-color);
+  isolation: isolate;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: var(--markdown-code-block-padding-y);
+    bottom: var(--markdown-code-block-padding-y);
+    left: 6px;
+    z-index: 2;
+    width: 3px;
+    border-radius: 999px;
+    background: linear-gradient(
+      180deg,
+      var(--markdown-code-streaming-rail-start) 0%,
+      var(--markdown-code-streaming-rail-mid) 48%,
+      var(--markdown-code-streaming-rail-end) 100%
+    );
+    box-shadow: 0 0 18px var(--markdown-code-streaming-rail-shadow-color);
+    transform-origin: center;
+    animation: markdownCodeStreamingRail 1.25s ease-in-out infinite;
+    pointer-events: none;
+  }
+}
+
 .markdown-body pre.markdown-code-block-labeled {
   padding-top: var(--markdown-code-labeled-padding-top);
   scroll-padding-top: var(--markdown-code-labeled-padding-top);
@@ -2911,6 +3013,8 @@ summary,
   .markdown-body[data-streaming="true"] > :is(p, h1, h2, h3, h4, h5, h6):last-child::after,
   .markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after,
   .markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after,
+  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ iframe:last-child)),
+  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ iframe:last-child))::before,
   .markdown-body-container .token-info {
     animation: none !important;
     transform: none !important;
@@ -2926,6 +3030,10 @@ summary,
   .markdown-body[data-streaming="true"] > :is(p, h1, h2, h3, h4, h5, h6):last-child::after,
   .markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after,
   .markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after {
+    opacity: 0.72;
+  }
+
+  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ iframe:last-child))::before {
     opacity: 0.72;
   }
 }
