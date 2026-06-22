@@ -5275,10 +5275,6 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body .markdown-image-frame",
     );
-    const darkImageFrameBlock = readCssBlock(
-      markdownStyles,
-      ".dark .markdown-body .markdown-image-frame",
-    );
     const imagePreviewButtonBlock = readCssBlock(
       markdownStyles,
       ".markdown-body .markdown-image-preview-button",
@@ -5291,45 +5287,119 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body .markdown-image-download",
     );
-    const darkImageDownloadBlock = readCssBlock(
-      markdownStyles,
-      ".dark .markdown-body .markdown-image-download",
-    );
     const markdownReducedMotionBlock = readCssBlock(
       markdownStyles,
       "@media (prefers-reduced-motion: reduce)",
     );
-    const imageFrameToneScope = [
+    const touchBlock = readCssBlock(
+      markdownStyles,
+      "@media (hover: none), (pointer: coarse), (max-width: 600px)",
+    );
+    const touchFrameBlock = readCssBlock(
+      touchBlock,
+      ".markdown-body .markdown-image-frame",
+    );
+    const touchPreviewBlock = readCssBlock(
+      touchBlock,
+      ".markdown-body .markdown-image-preview-button,\n  .markdown-body img.markdown-image-preview",
+    );
+    const touchDownloadBlock = readCssBlock(
+      touchBlock,
+      ".markdown-body .markdown-image-download",
+    );
+    const markdownImageTokenNames = [
+      "--markdown-image-frame-border-color",
+      "--markdown-image-frame-background",
+      "--markdown-image-frame-shadow-color",
+      "--markdown-image-frame-hover-border-color",
+      "--markdown-image-frame-hover-shadow-color",
+      "--markdown-image-download-ink",
+      "--markdown-image-download-border-color",
+      "--markdown-image-download-hover-border-color",
+      "--markdown-image-download-background",
+      "--markdown-image-download-hover-background",
+      "--markdown-image-download-active-background",
+      "--markdown-image-download-shadow-color",
+      "--markdown-image-download-hover-shadow-color",
+      "--markdown-image-download-active-shadow-color",
+      "--markdown-image-download-icon-filter",
+    ];
+    const lightImageTokens = readCustomProperties(
+      lightMixinBlock,
+      markdownImageTokenNames,
+    );
+    const darkImageTokens = readCustomProperties(
+      darkMixinBlock,
+      markdownImageTokenNames,
+    );
+    const imageSelectorPaintScope = [
       imageFrameBlock,
-      darkImageFrameBlock,
       imageDownloadBlock,
-      darkImageDownloadBlock,
-      lightMixinBlock.match(
-        /--markdown-image-frame-hover-border-color:[\s\S]*?transparent\s*\);/,
-      )?.[0] ?? "",
-      darkMixinBlock.match(
-        /--markdown-image-frame-hover-border-color:[\s\S]*?transparent\s*\);/,
-      )?.[0] ?? "",
-      lightMixinBlock.match(
-        /--markdown-image-download-border-color:[\s\S]*?;/,
-      )?.[0] ?? "",
-      darkMixinBlock.match(
-        /--markdown-image-download-border-color:[\s\S]*?transparent\s*\);/,
-      )?.[0] ?? "",
+      imagePreviewButtonBlock,
+      imagePreviewBlock,
     ].join("\n");
 
     expect(markdown).toContain('className="markdown-image-frame"');
     expect(markdown).toContain('className="markdown-image-preview-button"');
     expect(markdown).toContain('className="markdown-image-preview"');
     expect(markdown).toContain('className="markdown-image-download"');
+    for (const tokenName of markdownImageTokenNames) {
+      expect(lightImageTokens[tokenName]).toBeTruthy();
+      expect(darkImageTokens[tokenName]).toBeTruthy();
+    }
+    expect(Object.values(lightImageTokens).join("\n")).not.toMatch(
+      /rgba\(|#[0-9a-fA-F]{3,8}\b/,
+    );
+    expect(Object.values(darkImageTokens).join("\n")).not.toMatch(
+      /rgba\(|#[0-9a-fA-F]{3,8}\b/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-image-frame-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-image-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-image-frame-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 10%,\s*transparent\s*\);/,
+    );
     expect(lightMixinBlock).toMatch(
       /--markdown-image-frame-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 24%,\s*transparent\s*\);/,
     );
     expect(lightMixinBlock).toMatch(
-      /--markdown-image-download-border-color:\s*rgba\(255,\s*255,\s*255,\s*0\.18\);/,
+      /--markdown-image-frame-hover-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 14%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-image-download-ink:\s*rgb\(31,\s*31,\s*31\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-image-download-border-color:\s*color-mix\(\s*in srgb,\s*rgb\(255,\s*255,\s*255\) 18%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-image-download-background:\s*color-mix\(\s*in srgb,\s*var\(--markdown-image-download-ink\) 52%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-image-download-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--markdown-image-download-ink\) 68%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-image-download-shadow-color:\s*color-mix\(\s*in srgb,\s*rgb\(0,\s*0,\s*0\) 24%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-image-frame-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-image-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-image-frame-shadow-color:\s*color-mix\(\s*in srgb,\s*rgb\(0,\s*0,\s*0\) 26%,\s*transparent\s*\);/,
     );
     expect(darkMixinBlock).toMatch(
       /--markdown-image-frame-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 34%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-image-frame-hover-shadow-color:\s*color-mix\(\s*in srgb,\s*rgb\(0,\s*0,\s*0\) 30%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-image-download-ink:\s*rgb\(32,\s*33,\s*36\);/,
     );
     expect(darkMixinBlock).toMatch(
       /--markdown-image-download-border-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 22%,\s*transparent\s*\);/,
@@ -5337,31 +5407,25 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkRootBlock).toMatch(/@include dark;/);
     expect(imageFrameBlock).toMatch(/display:\s*inline-flex;/);
     expect(imageFrameBlock).toMatch(/max-width:\s*min\(100%, 760px\);/);
+    expect(imageFrameBlock).toMatch(/min-width:\s*0;/);
     expect(imageFrameBlock).toMatch(/box-sizing:\s*border-box;/);
     expect(imageFrameBlock).toMatch(/overflow:\s*hidden;/);
     expect(imageFrameBlock).toMatch(/padding:\s*4px;/);
-    expect(imageFrameBlock).toMatch(/border-radius:\s*18px;/);
+    expect(imageFrameBlock).toMatch(/border-radius:\s*8px;/);
     expect(imageFrameBlock).toMatch(
-      /border:\s*1px solid rgba\(60, 64, 67, 0\.12\);/,
+      /border:\s*1px solid var\(--markdown-image-frame-border-color\);/,
     );
-    expect(imageFrameBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
     expect(imageFrameBlock).toMatch(
-      /box-shadow:\s*0 10px 28px rgba\(60, 64, 67, 0\.12\);/,
+      /background:\s*var\(--markdown-image-frame-background\);/,
     );
-    expect(darkImageFrameBlock).toMatch(
-      /border-color:\s*rgba\(232,\s*234,\s*237,\s*0\.12\);/,
-    );
-    expect(darkImageFrameBlock).toMatch(
-      /box-shadow:\s*0 14px 36px rgba\(0,\s*0,\s*0,\s*0\.28\);/,
+    expect(imageFrameBlock).toMatch(
+      /box-shadow:\s*0 8px 24px var\(--markdown-image-frame-shadow-color\);/,
     );
     expect(imageFrameBlock).toMatch(
       /&:hover,\s*&:focus-within[\s\S]*border-color:\s*var\(--markdown-image-frame-hover-border-color\);/,
     );
-    expect(darkImageFrameBlock).toMatch(
-      /&:hover,\s*&:focus-within[\s\S]*border-color:\s*var\(--markdown-image-frame-hover-border-color\);/,
-    );
-    expect(darkImageFrameBlock).toMatch(
-      /&:hover,\s*&:focus-within[\s\S]*box-shadow:\s*0 16px 40px rgba\(0,\s*0,\s*0,\s*0\.34\);/,
+    expect(imageFrameBlock).toMatch(
+      /&:hover,\s*&:focus-within[\s\S]*box-shadow:\s*0 10px 26px var\(--markdown-image-frame-hover-shadow-color\);/,
     );
     expect(imageFrameBlock).toMatch(
       /&:hover,\s*&:focus-within[\s\S]*transform:\s*translateY\(-1px\);/,
@@ -5369,13 +5433,13 @@ describe("Gemini visual migration shell", () => {
     expect(imageFrameBlock).toMatch(
       /&:hover,\s*&:focus-within[\s\S]*\.markdown-image-download[\s\S]*opacity:\s*1;[\s\S]*pointer-events:\s*auto;/,
     );
-    expect(imagePreviewButtonBlock).toMatch(/border-radius:\s*14px;/);
+    expect(imagePreviewButtonBlock).toMatch(/border-radius:\s*6px;/);
     expect(imagePreviewButtonBlock).toMatch(/overflow:\s*hidden;/);
     expect(imagePreviewButtonBlock).toMatch(
       /&:focus-visible[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\);/,
     );
     expect(imagePreviewBlock).toMatch(/max-width:\s*100%;/);
-    expect(imagePreviewBlock).toMatch(/border-radius:\s*14px;/);
+    expect(imagePreviewBlock).toMatch(/border-radius:\s*6px;/);
     expect(imagePreviewBlock).toMatch(/border:\s*0;/);
     expect(imageDownloadBlock).toMatch(/top:\s*8px;/);
     expect(imageDownloadBlock).toMatch(/right:\s*8px;/);
@@ -5385,7 +5449,10 @@ describe("Gemini visual migration shell", () => {
       /border:\s*1px solid var\(--markdown-image-download-border-color\);/,
     );
     expect(imageDownloadBlock).toMatch(
-      /background:\s*rgba\(\$color:\s*#1f1f1f,\s*\$alpha:\s*0\.52\);/,
+      /background:\s*var\(--markdown-image-download-background\);/,
+    );
+    expect(imageDownloadBlock).toMatch(
+      /box-shadow:\s*0 8px 22px var\(--markdown-image-download-shadow-color\);/,
     );
     expect(imageDownloadBlock).toMatch(
       /backdrop-filter:\s*blur\(16px\) saturate\(1\.2\);/,
@@ -5396,7 +5463,19 @@ describe("Gemini visual migration shell", () => {
       /transition:[\s\S]*opacity 0\.18s ease,[\s\S]*transform 0\.18s ease,[\s\S]*background 0\.18s ease,[\s\S]*border-color 0\.18s ease,[\s\S]*box-shadow 0\.18s ease;/,
     );
     expect(imageFrameBlock).toMatch(
+      /\.markdown-image-download:hover[\s\S]*border-color:\s*var\(--markdown-image-download-hover-border-color\);/,
+    );
+    expect(imageFrameBlock).toMatch(
+      /\.markdown-image-download:hover[\s\S]*background:\s*var\(--markdown-image-download-hover-background\);/,
+    );
+    expect(imageFrameBlock).toMatch(
+      /\.markdown-image-download:hover[\s\S]*box-shadow:\s*0 12px 26px var\(--markdown-image-download-hover-shadow-color\);/,
+    );
+    expect(imageFrameBlock).toMatch(
       /\.markdown-image-download:hover[\s\S]*transform:\s*translateY\(-1px\);/,
+    );
+    expect(imageFrameBlock).toMatch(
+      /\.markdown-image-download:active[\s\S]*background:\s*var\(--markdown-image-download-active-background\);/,
     );
     expect(imageFrameBlock).toMatch(
       /\.markdown-image-download:active[\s\S]*transform:\s*translateY\(0\) scale\(0\.96\);/,
@@ -5406,27 +5485,24 @@ describe("Gemini visual migration shell", () => {
       /&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/,
     );
     expect(imageDownloadBlock).toMatch(
-      /&:focus-visible[\s\S]*box-shadow:[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 8px 22px rgba\(\$color:\s*#000,\s*\$alpha:\s*0\.24\);/,
+      /&:focus-visible[\s\S]*box-shadow:[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 8px 22px var\(--markdown-image-download-shadow-color\);/,
     );
-    expect(darkImageDownloadBlock).not.toMatch(/border-color:/);
-    expect(darkImageDownloadBlock).toMatch(
-      /background:\s*rgba\(\$color:\s*#202124,\s*\$alpha:\s*0\.62\);/,
+    expect(imageDownloadBlock).toMatch(/filter:\s*var\(--markdown-image-download-icon-filter\);/);
+    expect(markdownStyles).not.toMatch(
+      /\.dark\s+\.markdown-body\s+\.markdown-image-(?:frame|download)[\s\S]*?rgba\(/,
     );
-    expect(imageFrameToneScope).not.toMatch(
-      /rgba\((?:66,\s*133,\s*244|138,\s*180,\s*248)|#8ab4f8\b/,
+    expect(imageSelectorPaintScope).not.toMatch(
+      /rgba\(|rgb\(|#[0-9a-fA-F]{3,8}\b/,
     );
-    expect(markdownStyles).toMatch(
-      /@media \(hover: none\), \(pointer: coarse\), \(max-width: 600px\)[\s\S]*\.markdown-body \.markdown-image-frame[\s\S]*padding:\s*3px;[\s\S]*border-radius:\s*16px;/,
+    expect(touchFrameBlock).toMatch(/padding:\s*3px;/);
+    expect(touchFrameBlock).toMatch(/border-radius:\s*8px;/);
+    expect(touchFrameBlock).toMatch(
+      /&:hover,\s*&:focus-within[\s\S]*transform:\s*none;/,
     );
-    expect(markdownStyles).toMatch(
-      /@media \(hover: none\), \(pointer: coarse\), \(max-width: 600px\)[\s\S]*\.markdown-body \.markdown-image-frame[\s\S]*&:hover,\s*&:focus-within[\s\S]*transform:\s*none;/,
-    );
-    expect(markdownStyles).toMatch(
-      /@media \(hover: none\), \(pointer: coarse\), \(max-width: 600px\)[\s\S]*\.markdown-body \.markdown-image-download[\s\S]*opacity:\s*1(?: !important)?;[\s\S]*pointer-events:\s*auto;/,
-    );
-    expect(markdownStyles).toMatch(
-      /@media \(hover: none\), \(pointer: coarse\), \(max-width: 600px\)[\s\S]*\.markdown-body \.markdown-image-download[\s\S]*opacity:\s*1 !important;[\s\S]*transform:\s*none !important;/,
-    );
+    expect(touchPreviewBlock).toMatch(/border-radius:\s*6px;/);
+    expect(touchDownloadBlock).toMatch(/opacity:\s*1 !important;/);
+    expect(touchDownloadBlock).toMatch(/pointer-events:\s*auto;/);
+    expect(touchDownloadBlock).toMatch(/transform:\s*none !important;/);
     expect(markdownReducedMotionBlock).toMatch(
       /\.markdown-body \.markdown-image-frame,[\s\S]*\.markdown-body \.markdown-image-frame:hover,[\s\S]*\.markdown-body \.markdown-image-frame:focus-within,[\s\S]*\.markdown-body \.markdown-image-download,[\s\S]*\.markdown-body \.markdown-image-download:hover,[\s\S]*\.markdown-body \.markdown-image-download:active[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
     );
