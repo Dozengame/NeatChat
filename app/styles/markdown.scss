@@ -135,6 +135,76 @@ summary,
     var(--surface-elevated) 72%,
     transparent
   );
+  --markdown-thinking-card-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --markdown-thinking-card-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 72%,
+    transparent
+  );
+  --markdown-thinking-card-color: color-mix(
+    in srgb,
+    var(--black) 88%,
+    transparent
+  );
+  --markdown-thinking-card-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 8%,
+    transparent
+  );
+  --markdown-thinking-summary-border-color: color-mix(
+    in srgb,
+    var(--primary) 16%,
+    transparent
+  );
+  --markdown-thinking-summary-background: color-mix(
+    in srgb,
+    var(--primary) 8%,
+    var(--surface-elevated)
+  );
+  --markdown-thinking-summary-color: color-mix(
+    in srgb,
+    var(--black) 86%,
+    transparent
+  );
+  --markdown-thinking-summary-ring-color: color-mix(
+    in srgb,
+    var(--surface-elevated) 42%,
+    transparent
+  );
+  --markdown-thinking-marker-color: color-mix(
+    in srgb,
+    var(--primary) 82%,
+    transparent
+  );
+  --markdown-thinking-loader-dot-primary: color-mix(
+    in srgb,
+    var(--primary) 72%,
+    transparent
+  );
+  --markdown-thinking-loader-dot-secondary: color-mix(
+    in srgb,
+    var(--primary) 45%,
+    transparent
+  );
+  --markdown-thinking-loader-dot-trailing: color-mix(
+    in srgb,
+    var(--primary) 32%,
+    var(--surface-soft)
+  );
+  --markdown-thinking-loader-dot-active-secondary: color-mix(
+    in srgb,
+    var(--primary) 76%,
+    transparent
+  );
+  --markdown-thinking-loader-dot-active-trailing: color-mix(
+    in srgb,
+    var(--primary) 44%,
+    var(--surface-soft)
+  );
   --markdown-table-shell-border-color: color-mix(
     in srgb,
     var(--black-50) 12%,
@@ -300,6 +370,76 @@ summary,
     in srgb,
     var(--surface-elevated) 62%,
     transparent
+  );
+  --markdown-thinking-card-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --markdown-thinking-card-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 62%,
+    transparent
+  );
+  --markdown-thinking-card-color: color-mix(
+    in srgb,
+    var(--black) 86%,
+    transparent
+  );
+  --markdown-thinking-card-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 8%,
+    transparent
+  );
+  --markdown-thinking-summary-border-color: color-mix(
+    in srgb,
+    var(--primary) 20%,
+    transparent
+  );
+  --markdown-thinking-summary-background: color-mix(
+    in srgb,
+    var(--primary) 14%,
+    var(--surface)
+  );
+  --markdown-thinking-summary-color: color-mix(
+    in srgb,
+    var(--black) 90%,
+    transparent
+  );
+  --markdown-thinking-summary-ring-color: color-mix(
+    in srgb,
+    var(--surface-elevated) 28%,
+    transparent
+  );
+  --markdown-thinking-marker-color: color-mix(
+    in srgb,
+    var(--primary) 86%,
+    transparent
+  );
+  --markdown-thinking-loader-dot-primary: color-mix(
+    in srgb,
+    var(--primary) 78%,
+    transparent
+  );
+  --markdown-thinking-loader-dot-secondary: color-mix(
+    in srgb,
+    var(--primary) 50%,
+    transparent
+  );
+  --markdown-thinking-loader-dot-trailing: color-mix(
+    in srgb,
+    var(--primary) 36%,
+    var(--surface-soft)
+  );
+  --markdown-thinking-loader-dot-active-secondary: color-mix(
+    in srgb,
+    var(--primary) 80%,
+    transparent
+  );
+  --markdown-thinking-loader-dot-active-trailing: color-mix(
+    in srgb,
+    var(--primary) 48%,
+    var(--surface-soft)
   );
   --markdown-table-shell-border-color: color-mix(
     in srgb,
@@ -964,22 +1104,20 @@ summary,
 }
 
 .markdown-body details.markdown-thinking {
+  --markdown-thinking-card-radius: 8px;
   margin: 0 0 16px;
   padding: 10px 12px;
   border-width: 1px;
   border-style: solid;
-  border-top-color: color-mix(in srgb, var(--surface-soft) 64%, transparent);
-  border-right-color: color-mix(in srgb, var(--surface-soft) 64%, transparent);
-  border-bottom-color: color-mix(in srgb, var(--surface-soft) 64%, transparent);
-  border-left-color: color-mix(in srgb, var(--surface-soft) 64%, transparent);
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--surface-elevated) 76%, transparent);
+  border-color: var(--markdown-thinking-card-border-color);
+  border-radius: var(--markdown-thinking-card-radius);
+  background: var(--markdown-thinking-card-background);
   backdrop-filter: blur(14px) saturate(160%);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
   box-shadow:
-    0 1px 2px color-mix(in srgb, var(--surface-soft) 42%, transparent),
-    0 12px 30px color-mix(in srgb, var(--primary) 8%, transparent);
-  color: color-mix(in srgb, var(--black) 88%, transparent);
+    0 1px 2px var(--markdown-thinking-card-border-color),
+    0 12px 30px var(--markdown-thinking-card-shadow-color);
+  color: var(--markdown-thinking-card-color);
   overflow-wrap: anywhere;
 }
 
@@ -993,14 +1131,11 @@ summary,
   padding: 5px 10px;
   border-width: 1px;
   border-style: solid;
-  border-top-color: color-mix(in srgb, var(--primary) 16%, transparent);
-  border-right-color: color-mix(in srgb, var(--primary) 16%, transparent);
-  border-bottom-color: color-mix(in srgb, var(--primary) 16%, transparent);
-  border-left-color: color-mix(in srgb, var(--primary) 16%, transparent);
+  border-color: var(--markdown-thinking-summary-border-color);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--primary) 10%, transparent);
-  color: color-mix(in srgb, var(--black) 86%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--surface-elevated) 42%, transparent);
+  background: var(--markdown-thinking-summary-background);
+  color: var(--markdown-thinking-summary-color);
+  box-shadow: inset 0 0 0 1px var(--markdown-thinking-summary-ring-color);
   font-size: 0.92em;
   font-weight: 600;
   line-height: 1.2;
@@ -1021,7 +1156,7 @@ summary,
     flex: 0 0 16px;
     width: 16px;
     height: 16px;
-    color: color-mix(in srgb, var(--primary) 82%, transparent);
+    color: var(--markdown-thinking-marker-color);
     transform: rotate(-90deg);
     transition: transform 0.18s ease;
   }
@@ -1044,10 +1179,10 @@ summary,
   margin-left: 0;
   border: 0;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--primary) 72%, transparent);
+  background: var(--markdown-thinking-loader-dot-primary);
   box-shadow:
-    10px 0 0 color-mix(in srgb, var(--primary) 45%, transparent),
-    20px 0 0 color-mix(in srgb, var(--primary) 32%, var(--surface-soft));
+    10px 0 0 var(--markdown-thinking-loader-dot-secondary),
+    20px 0 0 var(--markdown-thinking-loader-dot-trailing);
   animation: thinking-dot-pulse 1.2s ease-in-out infinite;
   position: relative;
   top: 0;
@@ -1065,42 +1200,9 @@ summary,
     opacity: 1;
     transform: translateY(-2px);
     box-shadow:
-      10px 0 0 color-mix(in srgb, var(--primary) 76%, transparent),
-      20px 0 0 color-mix(in srgb, var(--primary) 44%, var(--surface-soft));
+      10px 0 0 var(--markdown-thinking-loader-dot-active-secondary),
+      20px 0 0 var(--markdown-thinking-loader-dot-active-trailing);
   }
-}
-
-.dark .markdown-body details.markdown-thinking {
-  border-top-color: color-mix(in srgb, var(--surface-soft) 56%, transparent);
-  border-right-color: color-mix(in srgb, var(--surface-soft) 56%, transparent);
-  border-bottom-color: color-mix(in srgb, var(--surface-soft) 56%, transparent);
-  border-left-color: color-mix(in srgb, var(--surface-soft) 56%, transparent);
-  background: color-mix(in srgb, var(--surface-soft) 66%, transparent);
-  box-shadow:
-    0 1px 2px color-mix(in srgb, var(--surface-elevated) 18%, transparent),
-    0 12px 30px color-mix(in srgb, var(--primary) 8%, transparent);
-  color: color-mix(in srgb, var(--black) 86%, transparent);
-}
-
-.dark .markdown-body details.markdown-thinking > summary.markdown-thinking-summary {
-  border-top-color: color-mix(in srgb, var(--primary) 20%, transparent);
-  border-right-color: color-mix(in srgb, var(--primary) 20%, transparent);
-  border-bottom-color: color-mix(in srgb, var(--primary) 20%, transparent);
-  border-left-color: color-mix(in srgb, var(--primary) 20%, transparent);
-  background: color-mix(in srgb, var(--primary) 14%, transparent);
-  color: color-mix(in srgb, var(--black) 90%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--surface-elevated) 28%, transparent);
-
-  &::before {
-    color: color-mix(in srgb, var(--primary) 86%, transparent);
-  }
-}
-
-.dark .markdown-body details.markdown-thinking .thinking-loader {
-  background: color-mix(in srgb, var(--primary) 78%, transparent);
-  box-shadow:
-    10px 0 0 color-mix(in srgb, var(--primary) 50%, transparent),
-    20px 0 0 color-mix(in srgb, var(--primary) 36%, var(--surface-soft));
 }
 
 .markdown-body a:focus,

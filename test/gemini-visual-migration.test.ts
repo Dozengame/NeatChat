@@ -5698,60 +5698,86 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       "@keyframes thinking-dot-pulse",
     );
-    const darkThinkingBlock = readCssBlock(
-      markdownStyles,
-      ".dark .markdown-body details.markdown-thinking",
-    );
-    const darkThinkingSummaryBlock = readCssBlock(
-      markdownStyles,
-      ".dark .markdown-body details.markdown-thinking > summary.markdown-thinking-summary",
-    );
-    const darkThinkingLoaderBlock = readCssBlock(
-      markdownStyles,
-      ".dark .markdown-body details.markdown-thinking .thinking-loader",
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const autoDarkRootBlock = readCssBlock(
+      readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
+      ":root",
     );
     const thinkingToneScope = [
       thinkingBlock,
       thinkingSummaryBlock,
       thinkingLoaderBlock,
       thinkingPulseBlock,
-      darkThinkingBlock,
-      darkThinkingSummaryBlock,
-      darkThinkingLoaderBlock,
     ].join("\n");
     const reducedMotionBlock = markdownStyles.slice(
       markdownStyles.indexOf("@media (prefers-reduced-motion: reduce)"),
     );
+    const thinkingTokenNames = [
+      "--markdown-thinking-card-border-color",
+      "--markdown-thinking-card-background",
+      "--markdown-thinking-card-color",
+      "--markdown-thinking-card-shadow-color",
+      "--markdown-thinking-summary-border-color",
+      "--markdown-thinking-summary-background",
+      "--markdown-thinking-summary-color",
+      "--markdown-thinking-summary-ring-color",
+      "--markdown-thinking-marker-color",
+      "--markdown-thinking-loader-dot-primary",
+      "--markdown-thinking-loader-dot-secondary",
+      "--markdown-thinking-loader-dot-trailing",
+      "--markdown-thinking-loader-dot-active-secondary",
+      "--markdown-thinking-loader-dot-active-trailing",
+    ];
 
     expect(markdown).toContain('class="markdown-thinking"');
     expect(markdown).toContain('class="markdown-thinking-summary"');
     expect(markdown).toContain('class="thinking-loader" aria-hidden="true"');
     expect(markdown).toContain("return <details {...props} open />");
     expect(markdown).toContain("return <summary {...props} />");
+    for (const tokenName of thinkingTokenNames) {
+      expect(lightMixinBlock).toContain(tokenName);
+      expect(darkMixinBlock).toContain(tokenName);
+    }
+    expect(lightMixinBlock).toMatch(
+      /--markdown-thinking-card-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 72%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-thinking-card-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-thinking-summary-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 8%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-thinking-card-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 62%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-thinking-card-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-thinking-summary-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 14%,\s*var\(--surface\)\s*\);/,
+    );
+    expect(autoDarkRootBlock).toMatch(/@include dark;/);
+    expect(readRootDeclarations(thinkingBlock)).toMatch(
+      /--markdown-thinking-card-radius:\s*8px;/,
+    );
     expect(thinkingBlock).toMatch(/padding:\s*10px 12px;/);
-    expect(thinkingBlock).toMatch(/border-radius:\s*16px;/);
+    expect(thinkingBlock).toMatch(
+      /border-radius:\s*var\(--markdown-thinking-card-radius\);/,
+    );
     expect(thinkingBlock).toMatch(/border-width:\s*1px;/);
     expect(thinkingBlock).toMatch(/border-style:\s*solid;/);
     expect(thinkingBlock).toMatch(
-      /border-top-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 64%,\s*transparent\);/,
+      /border-color:\s*var\(--markdown-thinking-card-border-color\);/,
     );
     expect(thinkingBlock).toMatch(
-      /border-right-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 64%,\s*transparent\);/,
+      /background:\s*var\(--markdown-thinking-card-background\);/,
     );
     expect(thinkingBlock).toMatch(
-      /border-bottom-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 64%,\s*transparent\);/,
+      /box-shadow:[\s\S]*0 12px 30px var\(--markdown-thinking-card-shadow-color\);/,
     );
     expect(thinkingBlock).toMatch(
-      /border-left-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 64%,\s*transparent\);/,
-    );
-    expect(thinkingBlock).toMatch(
-      /background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 76%,\s*transparent\);/,
-    );
-    expect(thinkingBlock).toMatch(
-      /box-shadow:\s*0 1px 2px color-mix\(in srgb,\s*var\(--surface-soft\) 42%,\s*transparent\),\s*0 12px 30px color-mix\(in srgb,\s*var\(--primary\) 8%,\s*transparent\);/,
-    );
-    expect(thinkingBlock).toMatch(
-      /color:\s*color-mix\(in srgb,\s*var\(--black\) 88%,\s*transparent\);/,
+      /color:\s*var\(--markdown-thinking-card-color\);/,
     );
     expect(thinkingBlock).toMatch(
       /backdrop-filter:\s*blur\(14px\) saturate\(160%\);/,
@@ -5766,16 +5792,16 @@ describe("Gemini visual migration shell", () => {
     expect(thinkingSummaryBlock).toMatch(/border-width:\s*1px;/);
     expect(thinkingSummaryBlock).toMatch(/border-style:\s*solid;/);
     expect(thinkingSummaryBlock).toMatch(
-      /border-top-color:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*transparent\);/,
+      /border-color:\s*var\(--markdown-thinking-summary-border-color\);/,
     );
     expect(thinkingSummaryBlock).toMatch(
-      /background:\s*color-mix\(in srgb,\s*var\(--primary\) 10%,\s*transparent\);/,
+      /background:\s*var\(--markdown-thinking-summary-background\);/,
     );
     expect(thinkingSummaryBlock).toMatch(
-      /color:\s*color-mix\(in srgb,\s*var\(--black\) 86%,\s*transparent\);/,
+      /color:\s*var\(--markdown-thinking-summary-color\);/,
     );
     expect(thinkingSummaryBlock).toMatch(
-      /box-shadow:\s*inset 0 0 0 1px color-mix\(in srgb,\s*var\(--surface-elevated\) 42%,\s*transparent\);/,
+      /box-shadow:\s*inset 0 0 0 1px var\(--markdown-thinking-summary-ring-color\);/,
     );
     expect(thinkingSummaryBlock).toMatch(/letter-spacing:\s*0;/);
     expect(thinkingSummaryBlock).toMatch(/list-style:\s*none;/);
@@ -5784,47 +5810,26 @@ describe("Gemini visual migration shell", () => {
     );
     expect(thinkingSummaryBlock).toMatch(/&::before[\s\S]*content:\s*"⌄";/);
     expect(thinkingSummaryBlock).toMatch(
-      /&::before[\s\S]*color:\s*color-mix\(in srgb,\s*var\(--primary\) 82%,\s*transparent\);/,
+      /&::before[\s\S]*color:\s*var\(--markdown-thinking-marker-color\);/,
     );
     expect(thinkingLoaderBlock).toMatch(/width:\s*6px;/);
     expect(thinkingLoaderBlock).toMatch(/height:\s*6px;/);
     expect(thinkingLoaderBlock).toMatch(/border:\s*0;/);
     expect(thinkingLoaderBlock).toMatch(
-      /background:\s*color-mix\(in srgb,\s*var\(--primary\) 72%,\s*transparent\);/,
+      /background:\s*var\(--markdown-thinking-loader-dot-primary\);/,
     );
     expect(thinkingLoaderBlock).toMatch(
-      /box-shadow:\s*10px 0 0 color-mix\(in srgb,\s*var\(--primary\) 45%,\s*transparent\),\s*20px 0 0 color-mix\(in srgb,\s*var\(--primary\) 32%,\s*var\(--surface-soft\)\);/,
+      /box-shadow:\s*10px 0 0 var\(--markdown-thinking-loader-dot-secondary\),\s*20px 0 0 var\(--markdown-thinking-loader-dot-trailing\);/,
     );
     expect(thinkingLoaderBlock).toMatch(
       /animation:\s*thinking-dot-pulse 1\.2s ease-in-out infinite;/,
     );
     expect(markdownStyles).toContain("@keyframes thinking-dot-pulse");
     expect(thinkingPulseBlock).toMatch(
-      /box-shadow:\s*10px 0 0 color-mix\(in srgb,\s*var\(--primary\) 76%,\s*transparent\),\s*20px 0 0 color-mix\(in srgb,\s*var\(--primary\) 44%,\s*var\(--surface-soft\)\);/,
+      /box-shadow:\s*10px 0 0 var\(--markdown-thinking-loader-dot-active-secondary\),\s*20px 0 0 var\(--markdown-thinking-loader-dot-active-trailing\);/,
     );
-    expect(darkThinkingBlock).toMatch(
-      /background:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 66%,\s*transparent\);/,
-    );
-    expect(darkThinkingBlock).toMatch(
-      /border-top-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 56%,\s*transparent\);/,
-    );
-    expect(darkThinkingBlock).toMatch(
-      /color:\s*color-mix\(in srgb,\s*var\(--black\) 86%,\s*transparent\);/,
-    );
-    expect(darkThinkingSummaryBlock).toMatch(
-      /background:\s*color-mix\(in srgb,\s*var\(--primary\) 14%,\s*transparent\);/,
-    );
-    expect(darkThinkingSummaryBlock).toMatch(
-      /border-top-color:\s*color-mix\(in srgb,\s*var\(--primary\) 20%,\s*transparent\);/,
-    );
-    expect(darkThinkingSummaryBlock).toMatch(
-      /color:\s*color-mix\(in srgb,\s*var\(--black\) 90%,\s*transparent\);/,
-    );
-    expect(darkThinkingLoaderBlock).toMatch(
-      /background:\s*color-mix\(in srgb,\s*var\(--primary\) 78%,\s*transparent\);/,
-    );
-    expect(darkThinkingLoaderBlock).toMatch(
-      /box-shadow:\s*10px 0 0 color-mix\(in srgb,\s*var\(--primary\) 50%,\s*transparent\),\s*20px 0 0 color-mix\(in srgb,\s*var\(--primary\) 36%,\s*var\(--surface-soft\)\);/,
+    expect(markdownStyles).not.toMatch(
+      /\.dark\s+\.markdown-body\s+details\.markdown-thinking/,
     );
     expect(thinkingToneScope).not.toMatch(
       /(?:rgba?|hsla?)\(|#[0-9a-fA-F]{3,8}\b/,
