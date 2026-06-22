@@ -89,6 +89,36 @@ summary,
     var(--black-50) 14%,
     transparent
   );
+  --markdown-media-frame-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --markdown-media-frame-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 88%,
+    transparent
+  );
+  --markdown-media-frame-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 8%,
+    transparent
+  );
+  --markdown-media-frame-hover-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 22%,
+    transparent
+  );
+  --markdown-media-frame-hover-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --markdown-media-control-background: color-mix(
+    in srgb,
+    var(--surface-soft) 70%,
+    transparent
+  );
   --markdown-image-download-ink: rgb(31, 31, 31);
   --markdown-image-download-border-color: color-mix(
     in srgb,
@@ -430,6 +460,36 @@ summary,
   --markdown-image-frame-hover-shadow-color: color-mix(
     in srgb,
     rgb(0, 0, 0) 30%,
+    transparent
+  );
+  --markdown-media-frame-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --markdown-media-frame-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 84%,
+    var(--white)
+  );
+  --markdown-media-frame-shadow-color: color-mix(
+    in srgb,
+    rgb(0, 0, 0) 24%,
+    transparent
+  );
+  --markdown-media-frame-hover-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 30%,
+    transparent
+  );
+  --markdown-media-frame-hover-shadow-color: color-mix(
+    in srgb,
+    rgb(0, 0, 0) 28%,
+    transparent
+  );
+  --markdown-media-control-background: color-mix(
+    in srgb,
+    var(--surface-soft) 82%,
     transparent
   );
   --markdown-image-download-ink: rgb(32, 33, 36);
@@ -1164,6 +1224,60 @@ summary,
   }
 }
 
+.markdown-body .markdown-media-frame {
+  position: relative;
+  display: block;
+  width: min(100%, 720px);
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin: 12px 0;
+  padding: 8px;
+  border: 1px solid var(--markdown-media-frame-border-color);
+  border-radius: 8px;
+  background: var(--markdown-media-frame-background);
+  box-shadow: 0 8px 24px var(--markdown-media-frame-shadow-color);
+  line-height: 0;
+  overflow: hidden;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+
+  &:hover,
+  &:focus-within {
+    border-color: var(--markdown-media-frame-hover-border-color);
+    box-shadow: 0 10px 26px var(--markdown-media-frame-hover-shadow-color);
+    transform: translateY(-1px);
+  }
+
+  &:focus-within {
+    box-shadow:
+      var(--focus-ring-shadow),
+      0 10px 26px var(--markdown-media-frame-hover-shadow-color);
+  }
+}
+
+.markdown-body .markdown-media-audio {
+  width: min(100%, 560px);
+}
+
+.markdown-body .markdown-audio-player,
+.markdown-body .markdown-video-player {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  border-radius: 6px;
+  background: var(--markdown-media-control-background);
+}
+
+.markdown-body .markdown-media-video .markdown-video-player {
+  height: auto;
+  max-height: min(58vh, 560px);
+  object-fit: contain;
+}
+
 @media (hover: none), (pointer: coarse), (max-width: 600px) {
   .markdown-body .markdown-image-frame {
     max-width: 100%;
@@ -1189,6 +1303,22 @@ summary,
     pointer-events: auto;
     transform: none !important;
   }
+
+  .markdown-body .markdown-media-frame {
+    width: 100%;
+    padding: 6px;
+    margin: 10px 0;
+    transform: none;
+
+    &:hover,
+    &:focus-within {
+      transform: none;
+    }
+  }
+
+  .markdown-body .markdown-media-video .markdown-video-player {
+    max-height: min(54vh, 420px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1198,6 +1328,13 @@ summary,
   .markdown-body .markdown-image-download,
   .markdown-body .markdown-image-download:hover,
   .markdown-body .markdown-image-download:active {
+    transform: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .markdown-body .markdown-media-frame,
+  .markdown-body .markdown-media-frame:hover,
+  .markdown-body .markdown-media-frame:focus-within {
     transform: none !important;
     transition-duration: 0.01ms !important;
   }

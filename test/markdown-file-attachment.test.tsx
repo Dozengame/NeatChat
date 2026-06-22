@@ -106,6 +106,38 @@ describe("Markdown file attachments", () => {
     expect(screen.getByText("bad")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "bad" })).not.toBeInTheDocument();
   });
+
+  test("renders audio and video links as media cards without figure wrappers", () => {
+    const { container } = render(
+      <Markdown
+        content={
+          "[listen](https://example.com/clip.mp3)\n\n[watch](https://example.com/clip.mp4)"
+        }
+      />,
+    );
+
+    const audioFrame = container.querySelector(".markdown-media-audio");
+    const videoFrame = container.querySelector(".markdown-media-video");
+    const audioPlayer = container.querySelector(".markdown-audio-player");
+    const videoPlayer = container.querySelector(".markdown-video-player");
+    const videoSource = container.querySelector(".markdown-video-player source");
+
+    expect(audioFrame?.tagName).toBe("SPAN");
+    expect(videoFrame?.tagName).toBe("SPAN");
+    expect(container.querySelector("figure.markdown-media-frame")).toBeNull();
+    expect(audioPlayer).toHaveAttribute(
+      "src",
+      "https://example.com/clip.mp3",
+    );
+    expect(audioPlayer).toHaveAttribute("controls");
+    expect(audioPlayer).toHaveAttribute("aria-label", "音频附件");
+    expect(videoPlayer).toHaveAttribute("controls");
+    expect(videoPlayer).toHaveAttribute("aria-label", "视频附件");
+    expect(videoSource).toHaveAttribute("src", "https://example.com/clip.mp4");
+    expect(container.querySelector(".markdown-video-player")).not.toHaveAttribute(
+      "width",
+    );
+  });
 });
 
 describe("Markdown image actions", () => {

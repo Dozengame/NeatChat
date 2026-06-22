@@ -5868,6 +5868,184 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps Gemini-style markdown audio video media cards", () => {
+    const markdown = read("app/components/markdown.tsx");
+    const markdownStyles = read("app/styles/markdown.scss");
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const autoDarkRootBlock = readCssBlock(
+      readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
+      ":root",
+    );
+    const mediaFrameBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-media-frame",
+    );
+    const mediaAudioBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-media-audio",
+    );
+    const mediaPlayerBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-audio-player,\n.markdown-body .markdown-video-player",
+    );
+    const mediaVideoSelector =
+      ".markdown-body .markdown-media-video .markdown-video-player";
+    const mediaVideoBlock = readCssBlock(
+      markdownStyles,
+      mediaVideoSelector,
+    );
+    const touchBlock = readCssBlock(
+      markdownStyles,
+      "@media (hover: none), (pointer: coarse), (max-width: 600px)",
+    );
+    const touchMediaFrameBlock = readCssBlock(
+      touchBlock,
+      ".markdown-body .markdown-media-frame",
+    );
+    const touchVideoBlock = readCssBlock(
+      touchBlock,
+      ".markdown-body .markdown-media-video .markdown-video-player",
+    );
+    const markdownReducedMotionBlock = readCssBlock(
+      markdownStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const markdownMediaTokenNames = [
+      "--markdown-media-frame-border-color",
+      "--markdown-media-frame-background",
+      "--markdown-media-frame-shadow-color",
+      "--markdown-media-frame-hover-border-color",
+      "--markdown-media-frame-hover-shadow-color",
+      "--markdown-media-control-background",
+    ];
+    const lightMediaTokens = readCustomProperties(
+      lightMixinBlock,
+      markdownMediaTokenNames,
+    );
+    const darkMediaTokens = readCustomProperties(
+      darkMixinBlock,
+      markdownMediaTokenNames,
+    );
+    const mediaSelectorPaintScope = [
+      mediaFrameBlock,
+      mediaPlayerBlock,
+      mediaVideoBlock,
+    ].join("\n");
+
+    expect(markdown).toMatch(/if \(\/\\\.\(aac\|mp3\|opus\|wav\)\$\/\.test\(href\)\)/);
+    expect(markdown).toMatch(
+      /if \(\/\\\.\(3gp\|3g2\|webm\|ogv\|mpeg\|mp4\|avi\)\$\/\.test\(href\)\)/,
+    );
+    expect(markdown).toContain('aria-label="音频附件"');
+    expect(markdown).toContain('aria-label="视频附件"');
+    expect(markdown).toContain(
+      '<span className="markdown-media-frame markdown-media-audio">',
+    );
+    expect(markdown).toContain('className="markdown-audio-player"');
+    expect(markdown).toContain(
+      '<span className="markdown-media-frame markdown-media-video">',
+    );
+    expect(markdown).toContain('className="markdown-video-player"');
+    expect(markdown).toContain("<source src={href} />");
+    expect(markdown).not.toContain(
+      '<figure className="markdown-media-frame',
+    );
+    expect(markdown).not.toContain('width="99.9%"');
+
+    for (const tokenName of markdownMediaTokenNames) {
+      expect(lightMediaTokens[tokenName]).toBeTruthy();
+      expect(darkMediaTokens[tokenName]).toBeTruthy();
+    }
+    expect(Object.values(lightMediaTokens).join("\n")).not.toMatch(
+      /rgba\(|#[0-9a-fA-F]{3,8}\b/,
+    );
+    expect(Object.values(darkMediaTokens).join("\n")).not.toMatch(
+      /rgba\(|#[0-9a-fA-F]{3,8}\b/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-media-frame-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 10%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-media-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-media-frame-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 8%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-media-frame-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 22%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-media-frame-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-media-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-media-frame-shadow-color:\s*color-mix\(\s*in srgb,\s*rgb\(0,\s*0,\s*0\) 24%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-media-frame-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 30%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkRootBlock).toMatch(/@include dark;/);
+
+    expect(mediaFrameBlock).toMatch(/display:\s*block;/);
+    expect(mediaFrameBlock).toMatch(/width:\s*min\(100%, 720px\);/);
+    expect(mediaFrameBlock).toMatch(/min-width:\s*0;/);
+    expect(mediaFrameBlock).toMatch(/max-width:\s*100%;/);
+    expect(mediaFrameBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(mediaFrameBlock).toMatch(/margin:\s*12px 0;/);
+    expect(mediaFrameBlock).toMatch(/padding:\s*8px;/);
+    expect(mediaFrameBlock).toMatch(/border-radius:\s*8px;/);
+    expect(mediaFrameBlock).toMatch(
+      /border:\s*1px solid var\(--markdown-media-frame-border-color\);/,
+    );
+    expect(mediaFrameBlock).toMatch(
+      /background:\s*var\(--markdown-media-frame-background\);/,
+    );
+    expect(mediaFrameBlock).toMatch(
+      /box-shadow:\s*0 8px 24px var\(--markdown-media-frame-shadow-color\);/,
+    );
+    expect(mediaFrameBlock).toMatch(/overflow:\s*hidden;/);
+    expect(mediaFrameBlock).toMatch(
+      /&:hover,\s*&:focus-within[\s\S]*border-color:\s*var\(--markdown-media-frame-hover-border-color\);/,
+    );
+    expect(mediaFrameBlock).toMatch(
+      /&:hover,\s*&:focus-within[\s\S]*box-shadow:\s*0 10px 26px var\(--markdown-media-frame-hover-shadow-color\);/,
+    );
+    expect(mediaFrameBlock).toMatch(
+      /&:hover,\s*&:focus-within[\s\S]*transform:\s*translateY\(-1px\);/,
+    );
+    expect(mediaFrameBlock).toMatch(
+      /&:focus-within[\s\S]*box-shadow:[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 10px 26px var\(--markdown-media-frame-hover-shadow-color\);/,
+    );
+    expect(mediaAudioBlock).toMatch(/width:\s*min\(100%, 560px\);/);
+    expect(mediaPlayerBlock).toMatch(/display:\s*block;/);
+    expect(mediaPlayerBlock).toMatch(/width:\s*100%;/);
+    expect(mediaPlayerBlock).toMatch(/min-width:\s*0;/);
+    expect(mediaPlayerBlock).toMatch(/max-width:\s*100%;/);
+    expect(mediaPlayerBlock).toMatch(/border-radius:\s*6px;/);
+    expect(mediaPlayerBlock).toMatch(
+      /background:\s*var\(--markdown-media-control-background\);/,
+    );
+    expect(mediaVideoBlock).toMatch(/height:\s*auto;/);
+    expect(mediaVideoBlock).toMatch(/max-height:\s*min\(58vh, 560px\);/);
+    expect(mediaVideoBlock).toMatch(/object-fit:\s*contain;/);
+    expect(mediaSelectorPaintScope).not.toMatch(
+      /rgba\(|#[0-9a-fA-F]{3,8}\b/,
+    );
+    expect(touchMediaFrameBlock).toMatch(/width:\s*100%;/);
+    expect(touchMediaFrameBlock).toMatch(/padding:\s*6px;/);
+    expect(touchMediaFrameBlock).toMatch(/margin:\s*10px 0;/);
+    expect(touchMediaFrameBlock).toMatch(
+      /&:hover,\s*&:focus-within[\s\S]*transform:\s*none;/,
+    );
+    expect(touchVideoBlock).toMatch(/max-height:\s*min\(54vh, 420px\);/);
+    expect(markdownReducedMotionBlock).toMatch(
+      /\.markdown-body \.markdown-media-frame,[\s\S]*\.markdown-body \.markdown-media-frame:hover,[\s\S]*\.markdown-body \.markdown-media-frame:focus-within[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+  });
+
   test("labels image actions with image-specific context", () => {
     const chat = read("app/components/chat.tsx");
     const markdown = read("app/components/markdown.tsx");

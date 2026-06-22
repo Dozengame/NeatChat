@@ -924,21 +924,32 @@ function MarkDownContentInner(
           // 处理音频链接
           if (/\.(aac|mp3|opus|wav)$/.test(href)) {
             return (
-              <figure>
-                <audio controls src={href} aria-label="音频附件">
+              <span className="markdown-media-frame markdown-media-audio">
+                <audio
+                  className="markdown-audio-player"
+                  controls
+                  src={href}
+                  aria-label="音频附件"
+                >
                   <track kind="captions" />
                 </audio>
-              </figure>
+              </span>
             );
           }
 
           // 处理视频链接
           if (/\.(3gp|3g2|webm|ogv|mpeg|mp4|avi)$/.test(href)) {
             return (
-              <video controls width="99.9%" aria-label="视频附件">
-                <source src={href} />
-                <track kind="captions" />
-              </video>
+              <span className="markdown-media-frame markdown-media-video">
+                <video
+                  className="markdown-video-player"
+                  controls
+                  aria-label="视频附件"
+                >
+                  <source src={href} />
+                  <track kind="captions" />
+                </video>
+              </span>
             );
           }
 
