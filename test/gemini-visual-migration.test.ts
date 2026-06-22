@@ -134,6 +134,53 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-input-panel.chat-input-panel-empty",
     );
+    const chatInputPanelBlock = readCssBlock(chatStyles, ".chat-input-panel");
+    const chatInputPanelRootBlock = readRootDeclarations(chatInputPanelBlock);
+    const chatInputPanelTokenNames = [
+      "--chat-input-focus-border-color",
+      "--chat-input-focus-ring-color",
+      "--chat-input-menu-focus-border-color",
+      "--chat-input-menu-focus-ring-color",
+      "--chat-input-mode-chip-border-color",
+      "--chat-input-mode-chip-background",
+      "--chat-input-mode-chip-color",
+      "--chat-input-send-shadow-color",
+      "--chat-input-send-disabled-background",
+      "--chat-input-send-disabled-icon-color",
+    ];
+    const chatInputPanelTokens = readCustomProperties(
+      chatInputPanelRootBlock,
+      chatInputPanelTokenNames,
+    );
+    const darkChatInputPanelTokens = readCustomProperties(
+      readCssBlock(chatStyles, ":global(.dark) .chat-input-panel"),
+      chatInputPanelTokenNames,
+    );
+    const autoDarkChatInputPanelSelector =
+      ":global(body:not(.light)) .chat-input-panel";
+    const autoDarkChatInputPanelSelectorIndex = chatStyles.indexOf(
+      autoDarkChatInputPanelSelector,
+    );
+    const autoDarkChatInputPanelMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkChatInputPanelSelectorIndex,
+    );
+    const autoDarkChatInputPanelMediaBlock = readCssBlock(
+      chatStyles.slice(autoDarkChatInputPanelMediaIndex),
+      "@media (prefers-color-scheme: dark)",
+    );
+    const autoDarkChatInputPanelBlock = readCssBlock(
+      autoDarkChatInputPanelMediaBlock,
+      autoDarkChatInputPanelSelector,
+    );
+    const autoDarkChatInputPanelTokens = readCustomProperties(
+      autoDarkChatInputPanelBlock,
+      chatInputPanelTokenNames,
+    );
+    const inputPanelInnerFocusBlock = readCssBlock(
+      chatStyles,
+      ".chat-input-panel-inner:has(.chat-input:focus)",
+    );
     const inputPanelFocusMenuButtonBlock = readCssBlock(
       chatStyles,
       ".chat-input-panel:focus-within .chat-input-menu-button",
@@ -219,9 +266,10 @@ describe("Gemini visual migration shell", () => {
       scrollToBottomBlock,
       "&:focus-visible",
     );
-    const sendButtonDisabledBlock = chatStyles.slice(
-      chatStyles.indexOf("&:disabled,"),
-      chatStyles.indexOf(":global(.dark) .chat-input-send:disabled"),
+    const sendButtonBlock = readRootCssBlock(chatStyles, ".chat-input-send");
+    const sendButtonDisabledBlock = readCssBlock(
+      sendButtonBlock,
+      "&:disabled,\n  &:disabled:hover,\n  &:disabled:active",
     );
     const darkSendButtonDisabledBlock = readCssBlock(
       chatStyles,
@@ -443,6 +491,10 @@ describe("Gemini visual migration shell", () => {
       mobileStyles,
       ".chat-input-status-row",
     );
+    const mobileInputRowFocusBlock = readCssBlock(
+      mobileStyles,
+      ".chat-input-row:has(.chat-input:focus)",
+    );
     const tabletCollapsedInputPanelBlock = readCssBlock(
       tabletStyles,
       ".chat-input-panel-inner-collapsed",
@@ -450,6 +502,10 @@ describe("Gemini visual migration shell", () => {
     const tabletCollapsedStatusRowBlock = readCssBlock(
       tabletCollapsedInputPanelBlock,
       ".chat-input-status-row",
+    );
+    const tabletInputRowFocusBlock = readCssBlock(
+      tabletStyles,
+      ".chat-input-row:has(.chat-input:focus)",
     );
     const mobileEmptySuggestionBlock = readCssBlock(
       mobileStyles,
@@ -2158,22 +2214,28 @@ describe("Gemini visual migration shell", () => {
     expect(mobileScrollToBottomBlock).toMatch(/width:\s*40px;/);
     expect(mobileScrollToBottomBlock).toMatch(/height:\s*40px;/);
     expect(sendButtonDisabledBlock).toMatch(
-      /&:disabled,[\s\S]*&:disabled:hover,[\s\S]*&:disabled:active[\s\S]*cursor:\s*default;/,
+      /cursor:\s*default;/,
     );
     expect(sendButtonDisabledBlock).toMatch(
-      /&:disabled,[\s\S]*box-shadow:\s*none;/,
+      /box-shadow:\s*none;/,
     );
     expect(sendButtonDisabledBlock).toMatch(
-      /&:disabled,[\s\S]*transform:\s*none;/,
+      /transform:\s*none;/,
     );
     expect(sendButtonDisabledBlock).toMatch(
-      /&:disabled,[\s\S]*svg path[\s\S]*fill:\s*rgba\(60,\s*64,\s*67,\s*0\.42\) !important;/,
+      /background:\s*var\(--chat-input-send-disabled-background\);/,
+    );
+    expect(sendButtonDisabledBlock).toMatch(
+      /svg path[\s\S]*fill:\s*var\(--chat-input-send-disabled-icon-color\) !important;/,
+    );
+    expect(sendButtonBlock).toMatch(
+      /box-shadow:\s*0 12px 26px var\(--chat-input-send-shadow-color\);/,
     );
     expect(darkSendButtonDisabledBlock).toMatch(
-      /background:\s*rgba\(232,\s*234,\s*237,\s*0\.12\);/,
+      /background:\s*var\(--chat-input-send-disabled-background\);/,
     );
     expect(darkSendButtonDisabledBlock).toMatch(
-      /svg path[\s\S]*fill:\s*rgba\(232,\s*234,\s*237,\s*0\.48\) !important;/,
+      /svg path[\s\S]*fill:\s*var\(--chat-input-send-disabled-icon-color\) !important;/,
     );
     expect(
       chatStyles.indexOf(".chat-reading-surface > .chat-message-row-user"),
@@ -2420,23 +2482,82 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain(
       ".chat-input-panel:focus-within .chat-input-menu-button",
     );
+    expect(chatInputPanelTokens["--chat-input-focus-border-color"]).toContain(
+      "var(--primary)",
+    );
+    expect(chatInputPanelTokens["--chat-input-focus-ring-color"]).toContain(
+      "var(--primary)",
+    );
+    expect(
+      chatInputPanelTokens["--chat-input-menu-focus-border-color"],
+    ).toContain("var(--primary)");
+    expect(
+      chatInputPanelTokens["--chat-input-menu-focus-ring-color"],
+    ).toContain("var(--primary)");
+    expect(
+      chatInputPanelTokens["--chat-input-mode-chip-border-color"],
+    ).toContain("var(--primary)");
+    expect(
+      chatInputPanelTokens["--chat-input-mode-chip-background"],
+    ).toContain("var(--primary)");
+    expect(chatInputPanelTokens["--chat-input-mode-chip-color"]).toContain(
+      "var(--primary)",
+    );
+    expect(chatInputPanelTokens["--chat-input-send-shadow-color"]).toContain(
+      "var(--primary)",
+    );
+    expect(
+      chatInputPanelTokens["--chat-input-send-disabled-background"],
+    ).toContain("var(--black)");
+    expect(
+      chatInputPanelTokens["--chat-input-send-disabled-icon-color"],
+    ).toContain("var(--black-50)");
+    for (const tokenName of chatInputPanelTokenNames) {
+      expect(chatInputPanelTokens[tokenName]).not.toBe("");
+      expect(darkChatInputPanelTokens[tokenName]).not.toBe("");
+      expect(autoDarkChatInputPanelTokens[tokenName]).not.toBe("");
+    }
+    expect(darkChatInputPanelTokens["--chat-input-focus-border-color"]).toContain(
+      "var(--primary)",
+    );
+    expect(darkChatInputPanelTokens["--chat-input-focus-ring-color"]).toContain(
+      "var(--primary)",
+    );
+    expect(
+      darkChatInputPanelTokens["--chat-input-mode-chip-background"],
+    ).toContain("var(--primary)");
+    expect(
+      darkChatInputPanelTokens["--chat-input-send-disabled-background"],
+    ).toContain("var(--black)");
+    expect(autoDarkChatInputPanelSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkChatInputPanelMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkChatInputPanelMediaBlock).toContain(
+      autoDarkChatInputPanelSelector,
+    );
+    expect(autoDarkChatInputPanelTokens).toEqual(darkChatInputPanelTokens);
+    expect(inputPanelInnerFocusBlock).toMatch(
+      /border-color:\s*var\(--chat-input-focus-border-color\) !important;/,
+    );
+    expect(inputPanelInnerFocusBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--composer-shadow\),[\s\S]*0 0 0 4px var\(--chat-input-focus-ring-color\);/,
+    );
     expect(inputPanelFocusMenuButtonBlock).toMatch(
-      /border-color:\s*rgba\(49,\s*94,\s*248,\s*0\.28\);/,
+      /border-color:\s*var\(--chat-input-menu-focus-border-color\);/,
     );
     expect(inputPanelFocusMenuButtonBlock).toMatch(
       /background:\s*var\(--surface-elevated\);/,
     );
     expect(inputPanelFocusMenuButtonBlock).toMatch(
-      /box-shadow:[\s\S]*var\(--composer-shadow\),[\s\S]*0 0 0 3px rgba\(49,\s*94,\s*248,\s*0\.08\);/,
+      /box-shadow:[\s\S]*var\(--composer-shadow\),[\s\S]*0 0 0 3px var\(--chat-input-menu-focus-ring-color\);/,
     );
     expect(chatStyles).toContain(
       ".chat-input-panel.chat-input-panel-empty:focus-within .chat-input-menu-button",
     );
     expect(emptyInputPanelFocusMenuButtonBlock).toMatch(
-      /border-color:\s*rgba\(49,\s*94,\s*248,\s*0\.28\);/,
+      /border-color:\s*var\(--chat-input-menu-focus-border-color\);/,
     );
     expect(emptyInputPanelFocusMenuButtonBlock).toMatch(
-      /box-shadow:[\s\S]*var\(--composer-shadow\),[\s\S]*0 0 0 3px rgba\(49,\s*94,\s*248,\s*0\.08\);/,
+      /box-shadow:[\s\S]*var\(--composer-shadow\),[\s\S]*0 0 0 3px var\(--chat-input-menu-focus-ring-color\);/,
     );
     expect(inputStatusRowBlock).toMatch(/position:\s*absolute;/);
     expect(inputStatusRowBlock).toMatch(/left:\s*14px;/);
@@ -2447,12 +2568,33 @@ describe("Gemini visual migration shell", () => {
     expect(inputModeChipBlock).toMatch(/height:\s*30px;/);
     expect(inputModeChipBlock).toMatch(/max-width:\s*100%;/);
     expect(inputModeChipBlock).toMatch(/border-radius:\s*15px;/);
+    expect(inputModeChipBlock).toMatch(
+      /border:\s*1px solid var\(--chat-input-mode-chip-border-color\);/,
+    );
+    expect(inputModeChipBlock).toMatch(
+      /background-color:\s*var\(--chat-input-mode-chip-background\);/,
+    );
+    expect(inputModeChipBlock).toMatch(
+      /color:\s*var\(--chat-input-mode-chip-color\);/,
+    );
     expect(mobileStatusRowBlock).toMatch(/right:\s*52px;/);
+    expect(mobileInputRowFocusBlock).toMatch(
+      /border-color:\s*var\(--chat-input-focus-border-color\);/,
+    );
+    expect(mobileInputRowFocusBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--composer-shadow\),[\s\S]*0 0 0 3px var\(--chat-input-focus-ring-color\);/,
+    );
     expect(mobileEmptyStatusRowBlock).toMatch(/width:\s*1px;/);
     expect(mobileEmptyStatusRowBlock).toMatch(/clip-path:\s*inset\(50%\);/);
     expect(tabletCollapsedStatusRowBlock).not.toMatch(/display:\s*none;/);
     expect(tabletCollapsedStatusRowBlock).toMatch(/width:\s*1px;/);
     expect(tabletCollapsedStatusRowBlock).toMatch(/clip-path:\s*inset\(50%\);/);
+    expect(tabletInputRowFocusBlock).toMatch(
+      /border-color:\s*var\(--chat-input-focus-border-color\);/,
+    );
+    expect(tabletInputRowFocusBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--composer-shadow\),[\s\S]*0 0 0 3px var\(--chat-input-focus-ring-color\);/,
+    );
     expect(mobileHeaderButtonBlock).toMatch(/appearance:\s*none;/);
     expect(mobileHeaderButtonBlock).toMatch(
       /border:\s*var\(--border-in-light\);/,

@@ -3678,6 +3678,16 @@
 }
 
 .chat-input-panel {
+  --chat-input-focus-border-color: color-mix(in srgb, var(--primary) 38%, transparent);
+  --chat-input-focus-ring-color: color-mix(in srgb, var(--primary) 12%, transparent);
+  --chat-input-menu-focus-border-color: color-mix(in srgb, var(--primary) 28%, transparent);
+  --chat-input-menu-focus-ring-color: color-mix(in srgb, var(--primary) 8%, transparent);
+  --chat-input-mode-chip-border-color: color-mix(in srgb, var(--primary) 28%, transparent);
+  --chat-input-mode-chip-background: color-mix(in srgb, var(--primary) 12%, transparent);
+  --chat-input-mode-chip-color: color-mix(in srgb, var(--primary) 92%, var(--black));
+  --chat-input-send-shadow-color: color-mix(in srgb, var(--primary) 28%, transparent);
+  --chat-input-send-disabled-background: color-mix(in srgb, var(--black) 12%, transparent);
+  --chat-input-send-disabled-icon-color: color-mix(in srgb, var(--black-50) 72%, transparent);
   --chat-input-drag-border-color: color-mix(in srgb, var(--primary) 34%, transparent);
   --chat-input-drag-ring-color: color-mix(in srgb, var(--primary) 14%, transparent);
   --chat-input-drag-background: color-mix(in srgb, var(--surface-elevated) 94%, var(--primary) 2%);
@@ -3705,6 +3715,16 @@
 }
 
 :global(.dark) .chat-input-panel {
+  --chat-input-focus-border-color: color-mix(in srgb, var(--primary) 46%, var(--black));
+  --chat-input-focus-ring-color: color-mix(in srgb, var(--primary) 16%, transparent);
+  --chat-input-menu-focus-border-color: color-mix(in srgb, var(--primary) 34%, transparent);
+  --chat-input-menu-focus-ring-color: color-mix(in srgb, var(--primary) 12%, transparent);
+  --chat-input-mode-chip-border-color: color-mix(in srgb, var(--primary) 38%, transparent);
+  --chat-input-mode-chip-background: color-mix(in srgb, var(--primary) 20%, var(--surface));
+  --chat-input-mode-chip-color: color-mix(in srgb, var(--primary) 54%, var(--black));
+  --chat-input-send-shadow-color: color-mix(in srgb, var(--primary) 20%, transparent);
+  --chat-input-send-disabled-background: color-mix(in srgb, var(--black) 12%, transparent);
+  --chat-input-send-disabled-icon-color: color-mix(in srgb, var(--black-50) 70%, transparent);
   --chat-input-drag-border-color: color-mix(in srgb, var(--primary) 42%, transparent);
   --chat-input-drag-ring-color: color-mix(in srgb, var(--primary) 18%, transparent);
   --chat-input-drag-background: color-mix(in srgb, var(--surface-elevated) 88%, var(--primary) 4%);
@@ -3712,6 +3732,16 @@
 
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .chat-input-panel {
+    --chat-input-focus-border-color: color-mix(in srgb, var(--primary) 46%, var(--black));
+    --chat-input-focus-ring-color: color-mix(in srgb, var(--primary) 16%, transparent);
+    --chat-input-menu-focus-border-color: color-mix(in srgb, var(--primary) 34%, transparent);
+    --chat-input-menu-focus-ring-color: color-mix(in srgb, var(--primary) 12%, transparent);
+    --chat-input-mode-chip-border-color: color-mix(in srgb, var(--primary) 38%, transparent);
+    --chat-input-mode-chip-background: color-mix(in srgb, var(--primary) 20%, var(--surface));
+    --chat-input-mode-chip-color: color-mix(in srgb, var(--primary) 54%, var(--black));
+    --chat-input-send-shadow-color: color-mix(in srgb, var(--primary) 20%, transparent);
+    --chat-input-send-disabled-background: color-mix(in srgb, var(--black) 12%, transparent);
+    --chat-input-send-disabled-icon-color: color-mix(in srgb, var(--black-50) 70%, transparent);
     --chat-input-drag-border-color: color-mix(in srgb, var(--primary) 42%, transparent);
     --chat-input-drag-ring-color: color-mix(in srgb, var(--primary) 18%, transparent);
     --chat-input-drag-background: color-mix(in srgb, var(--surface-elevated) 88%, var(--primary) 4%);
@@ -3940,10 +3970,10 @@
 }
 
 .chat-input-panel-inner:has(.chat-input:focus) {
-  border-color: rgba(66, 133, 244, 0.38) !important;
+  border-color: var(--chat-input-focus-border-color) !important;
   box-shadow:
     var(--composer-shadow),
-    0 0 0 4px rgba(66, 133, 244, 0.12);
+    0 0 0 4px var(--chat-input-focus-ring-color);
 }
 
 .chat-input-panel[data-drag-active="true"] .chat-input-panel-inner {
@@ -4033,9 +4063,9 @@
   gap: 5px;
   padding: 0 10px;
   border-radius: 15px;
-  border: 1px solid rgba(49, 94, 248, 0.28);
-  background-color: rgba(49, 94, 248, 0.12);
-  color: var(--primary);
+  border: 1px solid var(--chat-input-mode-chip-border-color);
+  background-color: var(--chat-input-mode-chip-background);
+  color: var(--chat-input-mode-chip-color);
   font-size: 13px;
   line-height: 1;
   pointer-events: auto;
@@ -4051,6 +4081,8 @@
     flex: 0 0 auto;
     width: 15px;
     height: 15px;
+    filter: none;
+    color: var(--chat-input-mode-chip-color);
   }
 }
 
@@ -4064,25 +4096,25 @@
 }
 
 :global(.dark) .chat-input-mode-chip {
-  border-color: rgba(118, 168, 255, 0.48);
-  background-color: rgba(49, 94, 248, 0.26);
-  color: rgb(125, 174, 255);
+  border-color: var(--chat-input-mode-chip-border-color);
+  background-color: var(--chat-input-mode-chip-background);
+  color: var(--chat-input-mode-chip-color);
 
   svg {
     filter: none;
-    color: rgb(125, 174, 255);
+    color: var(--chat-input-mode-chip-color);
   }
 }
 
 @media (prefers-color-scheme: dark) {
-  .chat-input-mode-chip {
-    border-color: rgba(118, 168, 255, 0.48);
-    background-color: rgba(49, 94, 248, 0.26);
-    color: rgb(125, 174, 255);
+  :global(body:not(.light)) .chat-input-mode-chip {
+    border-color: var(--chat-input-mode-chip-border-color);
+    background-color: var(--chat-input-mode-chip-background);
+    color: var(--chat-input-mode-chip-color);
 
     svg {
       filter: none;
-      color: rgb(125, 174, 255);
+      color: var(--chat-input-mode-chip-color);
     }
   }
 }
@@ -4108,28 +4140,28 @@
   height: 42px;
   padding: 11px;
   border-radius: 50%;
-  box-shadow: 0 12px 26px rgba(49, 94, 248, 0.28);
+  box-shadow: 0 12px 26px var(--chat-input-send-shadow-color);
 
   &:disabled,
   &:disabled:hover,
   &:disabled:active {
     cursor: default;
     opacity: 1;
-    background: rgba(60, 64, 67, 0.12);
+    background: var(--chat-input-send-disabled-background);
     box-shadow: none;
     transform: none;
 
     svg path {
-      fill: rgba(60, 64, 67, 0.42) !important;
+      fill: var(--chat-input-send-disabled-icon-color) !important;
     }
   }
 }
 
 :global(.dark) .chat-input-send:disabled {
-  background: rgba(232, 234, 237, 0.12);
+  background: var(--chat-input-send-disabled-background);
 
   svg path {
-    fill: rgba(232, 234, 237, 0.48) !important;
+    fill: var(--chat-input-send-disabled-icon-color) !important;
   }
 }
 
@@ -4506,10 +4538,10 @@
   }
 
   .chat-input-row:has(.chat-input:focus) {
-    border-color: rgba(49, 94, 248, 0.22);
+    border-color: var(--chat-input-focus-border-color);
     box-shadow:
       var(--composer-shadow),
-      0 0 0 3px rgba(49, 94, 248, 0.1);
+      0 0 0 3px var(--chat-input-focus-ring-color);
   }
 
   .chat-input-menu-button {
@@ -4780,10 +4812,10 @@
   }
 
   .chat-input-row:has(.chat-input:focus) {
-    border-color: rgba(49, 94, 248, 0.22);
+    border-color: var(--chat-input-focus-border-color);
     box-shadow:
       var(--composer-shadow),
-      0 0 0 3px rgba(49, 94, 248, 0.1);
+      0 0 0 3px var(--chat-input-focus-ring-color);
   }
 
   .chat-input {
@@ -4848,36 +4880,36 @@
 }
 
 .chat-input-panel:focus-within .chat-input-menu-button {
-  border-color: rgba(49, 94, 248, 0.28);
+  border-color: var(--chat-input-menu-focus-border-color);
   background: var(--surface-elevated);
   box-shadow:
     var(--composer-shadow),
-    0 0 0 3px rgba(49, 94, 248, 0.08);
+    0 0 0 3px var(--chat-input-menu-focus-ring-color);
 }
 
 .chat-input-panel.chat-input-panel-empty:focus-within .chat-input-menu-button {
-  border-color: rgba(49, 94, 248, 0.28);
+  border-color: var(--chat-input-menu-focus-border-color);
   background: var(--surface-elevated);
   box-shadow:
     var(--composer-shadow),
-    0 0 0 3px rgba(49, 94, 248, 0.08);
+    0 0 0 3px var(--chat-input-menu-focus-ring-color);
 }
 
 .chat-input-panel.chat-input-panel-collapsed:focus-within
   .chat-input-menu-button {
-  border-color: rgba(49, 94, 248, 0.28);
+  border-color: var(--chat-input-menu-focus-border-color);
   background: var(--surface-elevated);
   box-shadow:
     var(--composer-shadow),
-    0 0 0 3px rgba(49, 94, 248, 0.08);
+    0 0 0 3px var(--chat-input-menu-focus-ring-color);
 }
 
 :global(.dark) .chat-input-panel:focus-within .chat-input-menu-button {
-  border-color: rgba(138, 180, 248, 0.28);
+  border-color: var(--chat-input-menu-focus-border-color);
   background: var(--surface-elevated);
   box-shadow:
     var(--composer-shadow),
-    0 0 0 3px rgba(138, 180, 248, 0.12);
+    0 0 0 3px var(--chat-input-menu-focus-ring-color);
 }
 
 :global(.dark)
@@ -4886,11 +4918,11 @@
 :global(.dark)
   .chat-input-panel.chat-input-panel-collapsed:focus-within
   .chat-input-menu-button {
-  border-color: rgba(138, 180, 248, 0.28);
+  border-color: var(--chat-input-menu-focus-border-color);
   background: var(--surface-elevated);
   box-shadow:
     var(--composer-shadow),
-    0 0 0 3px rgba(138, 180, 248, 0.12);
+    0 0 0 3px var(--chat-input-menu-focus-ring-color);
 }
 
 .shortcut-key-container {
