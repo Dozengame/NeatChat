@@ -40,13 +40,16 @@
   border: 1px solid var(--input-range-border-color);
   border-radius: 8px;
   color: var(--black);
+  gap: 8px;
   min-height: 36px;
+  min-width: 0;
   padding: 5px 10px;
   font-size: 12px;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 40%;
+  max-width: min(100%, 360px);
   box-sizing: border-box;
   transition:
     background-color 0.16s ease,
@@ -63,15 +66,25 @@
     cursor: not-allowed;
   }
 
+  .input-range-value {
+    flex: 0 1 auto;
+    min-width: 24px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   input[type="range"] {
     appearance: none;
+    flex: 1 1 120px;
     background-color: var(--input-range-track-background);
     border-radius: 999px;
     height: 4px;
     accent-color: var(--primary);
     color: var(--black);
     cursor: pointer;
-    max-width: calc(100% - 34px);
+    max-width: 100%;
+    min-width: 80px;
     outline: none;
     transition: background-color 0.16s ease;
 
@@ -107,6 +120,22 @@
         width 0.16s ease;
       width: 20px;
     }
+  }
+}
+
+@media (max-width: 600px) {
+  .input-range {
+    max-width: 100%;
+    padding: 6px 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .input-range,
+  .input-range input[type="range"],
+  .input-range input[type="range"]::-webkit-slider-thumb,
+  .input-range input[type="range"]::-moz-range-thumb {
+    transition-duration: 0.01ms !important;
   }
 }
 

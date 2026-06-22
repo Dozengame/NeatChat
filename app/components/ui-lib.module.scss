@@ -84,6 +84,8 @@
   border: 1px solid var(--ui-lib-border-color);
   border-radius: var(--ui-lib-panel-radius);
   box-shadow: 0 10px 28px var(--ui-lib-panel-shadow-color);
+  box-sizing: border-box;
+  min-width: 0;
   padding: 10px;
 }
 
@@ -118,7 +120,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   min-height: 40px;
+  min-width: 0;
   border-bottom: 1px solid var(--ui-lib-divider-color);
   padding: 10px 12px;
   animation: slide-in ease 0.6s;
@@ -126,19 +130,24 @@
   .list-header {
     display: flex;
     align-items: center;
+    min-width: 0;
 
     .list-icon {
+      flex: 0 0 auto;
       margin-right: 8px;
     }
 
     .list-item-title {
       font-size: 14px;
       font-weight: bolder;
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
 
     .list-item-sub-title {
       font-size: 12px;
       font-weight: normal;
+      overflow-wrap: anywhere;
     }
   }
 
@@ -174,9 +183,12 @@
   background-color: var(--ui-lib-surface);
   border: 1px solid var(--ui-lib-border-color);
   border-radius: var(--ui-lib-panel-radius);
+  box-sizing: border-box;
   width: 80vw;
-  max-width: 900px;
-  min-width: 300px;
+  max-width: min(900px, calc(100vw - 24px));
+  min-width: min(300px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: hidden;
   animation: slide-in ease 0.3s;
 
   --modal-padding: 20px;
@@ -199,22 +211,28 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
     border-bottom: 1px solid var(--ui-lib-divider-color);
 
     .modal-title {
       font-weight: bolder;
       font-size: 16px;
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
 
     .modal-header-actions {
       display: flex;
+      gap: 8px;
 
       .modal-header-action {
+        align-items: center;
+        border-radius: 6px;
         cursor: pointer;
-
-        &:not(:last-child) {
-          margin-right: 20px;
-        }
+        display: inline-flex;
+        justify-content: center;
+        min-height: 32px;
+        min-width: 32px;
 
         &:hover {
           filter: brightness(1.2);
@@ -232,6 +250,8 @@
   .modal-footer {
     padding: var(--modal-padding);
     display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
     justify-content: flex-end;
     border-top: 1px solid var(--ui-lib-divider-color);
     box-shadow: 0 -10px 24px var(--ui-lib-footer-shadow-color);
@@ -239,11 +259,11 @@
     .modal-actions {
       display: flex;
       align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
 
       .modal-action {
-        &:not(:last-child) {
-          margin-right: 20px;
-        }
+        min-width: 0;
       }
     }
   }
@@ -252,6 +272,8 @@
 @media screen and (max-width: 600px) {
   .modal-container {
     width: 100vw;
+    max-width: 100vw;
+    min-width: 0;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
 
@@ -265,6 +287,8 @@
 
     &-content {
       width: min(100vw, 420px);
+      max-width: 100vw;
+      min-width: 0;
       max-height: min(76dvh, 600px);
       border-radius: var(--ui-lib-mobile-sheet-radius);
     }
@@ -298,8 +322,10 @@
   pointer-events: none;
 
   .toast-content {
-    max-width: 80vw;
-    word-break: break-all;
+    box-sizing: border-box;
+    max-width: min(560px, calc(100vw - 24px));
+    word-break: normal;
+    overflow-wrap: anywhere;
     font-size: 14px;
     background-color: var(--ui-lib-toast-background);
     box-shadow:
@@ -308,10 +334,11 @@
     border: 1px solid var(--ui-lib-toast-border-color);
     color: var(--black);
     padding: 10px 20px;
-    border-radius: 50px;
+    border-radius: 8px;
     margin-bottom: 20px;
     display: flex;
     align-items: center;
+    gap: 12px;
     pointer-events: all;
     backdrop-filter: blur(18px);
 
@@ -320,16 +347,24 @@
     }
 
     .toast-action {
-      padding-left: 20px;
+      border-radius: 6px;
       color: var(--primary);
+      flex: 0 0 auto;
+      min-height: 28px;
       opacity: 0.8;
       border: 0;
       background: none;
       cursor: pointer;
       font-family: inherit;
+      padding: 0 8px;
 
       &:hover {
         opacity: 1;
+      }
+
+      &:focus-visible {
+        outline: var(--focus-ring);
+        box-shadow: var(--focus-ring-shadow);
       }
     }
   }
@@ -346,12 +381,21 @@
   border: 1px solid var(--ui-lib-border-color);
   color: var(--black);
   resize: none;
-  min-width: 50px;
+  min-width: 0;
+  width: 100%;
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--ui-lib-focus-border-color);
+    box-shadow: var(--focus-ring-shadow);
+  }
 }
 
 .select-with-icon {
   position: relative;
-  max-width: fit-content;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
 
   &.left-align-option {
     option {
@@ -374,6 +418,7 @@
     color: var(--black);
     text-align: center;
     min-width: 0;
+    width: 100%;
   }
 
   .select-with-icon-icon {
@@ -423,12 +468,19 @@
     border: 1px solid var(--ui-lib-border-color);
     border-radius: var(--ui-lib-panel-radius);
     box-shadow: 0 22px 70px var(--ui-lib-panel-shadow-color);
-    min-width: 300px;
+    box-sizing: border-box;
+    width: fit-content;
+    min-width: min(300px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
     min-height: auto;
-    max-height: 600px;
+    max-height: min(78dvh, 600px);
     display: flex;
     flex-direction: column;
     overflow: hidden;
+
+    &:has(.selector-search) {
+      width: min(520px, calc(100vw - 24px));
+    }
 
     .selector-search {
       box-sizing: border-box;
@@ -448,6 +500,7 @@
         border: none;
         border-radius: 0;
         background: transparent;
+        box-sizing: border-box;
       }
     }
 
@@ -492,6 +545,7 @@
 }
 
 .selector-item-selected {
+  flex: 0 0 10px;
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -503,4 +557,17 @@
 .selector-item-disabled {
   opacity: 0.6;
   cursor: not-allowed !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popover-content,
+  .list-item,
+  .list,
+  .modal-container,
+  .show,
+  .hide {
+    animation: none !important;
+    transform: none !important;
+    transition-duration: 0.01ms !important;
+  }
 }
