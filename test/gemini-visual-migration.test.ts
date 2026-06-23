@@ -9252,6 +9252,7 @@ describe("Gemini visual migration shell", () => {
     const resultItemBlock = readCssBlock(searchChatStyles, ".result-item");
     const resultItemFocusBlock = readCssBlock(resultItemBlock, "&:focus-visible");
     const resultItemActiveBlock = readCssBlock(resultItemBlock, "&:active");
+    const resultRowBlock = readCssBlock(searchChatStyles, ".result-row");
     const resultContentBlock = readCssBlock(searchChatStyles, ".result-content");
     const resultNameBlock = readCssBlock(searchChatStyles, ".result-name");
     const snippetBlock = readCssBlock(searchChatStyles, ".result-snippet");
@@ -9299,6 +9300,7 @@ describe("Gemini visual migration shell", () => {
       resultItemBlock,
       resultItemFocusBlock,
       resultItemActiveBlock,
+      resultRowBlock,
       resultContentBlock,
       resultNameBlock,
       snippetBlock,
@@ -9319,6 +9321,18 @@ describe("Gemini visual migration shell", () => {
     expect(searchChat).toContain("const hasSearchText = searchText.trim().length > 0");
     expect(searchChat).toContain("Locale.SearchChat.Page.NoResult");
     expect(searchChat).toContain("Locale.SearchChat.Page.NoData");
+    expect(searchChat).toContain('aria-controls="search-chat-results"');
+    expect(searchChat).toContain('id="search-chat-results-heading"');
+    expect(searchChat).toContain('aria-labelledby="search-chat-results-heading"');
+    expect(searchChat).toContain('aria-live="polite"');
+    expect(searchChat).toContain('role="status"');
+    expect(searchChat).toContain('id="search-chat-results"');
+    expect(searchChat).toContain('role="list"');
+    expect(searchChat).toContain("aria-label={listTitle}");
+    expect(searchChat).toContain('role="listitem"');
+    expect(searchChat).toMatch(
+      /aria-label=\{`\$\{item\.name\}: \$\{item\.content\.slice\(0, 120\)\} \$\{Locale\.SearchChat\.Item\.View\}`\}/,
+    );
 
     expect(searchRootBlock).toMatch(
       /--search-page-background:\s*var\(--surface\);/,
@@ -9375,6 +9389,7 @@ describe("Gemini visual migration shell", () => {
     expect(resultItemActiveBlock).toMatch(
       /background:\s*var\(--search-item-hover-background\);/,
     );
+    expect(resultRowBlock).toMatch(/min-width:\s*0;/);
     expect(resultContentBlock).toMatch(/flex:\s*1 1 auto;/);
     expect(resultContentBlock).toMatch(/min-width:\s*0;/);
     expect(resultNameBlock).toMatch(/min-width:\s*0;/);

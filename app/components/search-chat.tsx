@@ -141,6 +141,7 @@ export function SearchChatPage() {
               <input
                 type="text"
                 aria-label={Locale.SearchChat.Page.Search}
+                aria-controls="search-chat-results"
                 className={styles["search-input"]}
                 placeholder={Locale.SearchChat.Page.Search}
                 value={searchText}
@@ -159,36 +160,64 @@ export function SearchChatPage() {
             </div>
           </section>
 
-          <section className={styles["result-panel"]}>
-            <div className={styles["result-heading"]}>{listTitle}</div>
+          <section
+            className={styles["result-panel"]}
+            aria-labelledby="search-chat-results-heading"
+          >
+            <div
+              className={styles["result-heading"]}
+              id="search-chat-results-heading"
+              aria-live="polite"
+            >
+              {listTitle}
+            </div>
 
             {listItems.length === 0 ? (
-              <div className={styles["empty-state"]}>
+              <div
+                className={styles["empty-state"]}
+                id="search-chat-results"
+                role="status"
+                aria-live="polite"
+              >
                 {hasSearchText
                   ? Locale.SearchChat.Page.NoResult
                   : Locale.SearchChat.Page.NoData}
               </div>
             ) : (
-              <div className={styles["result-list"]}>
+              <div
+                className={styles["result-list"]}
+                id="search-chat-results"
+                role="list"
+                aria-label={listTitle}
+              >
                 {listItems.map((item) => (
-                  <Link
-                    to={Path.Chat}
-                    className={styles["result-item"]}
+                  <div
+                    className={styles["result-row"]}
                     key={item.id}
-                    onClick={() => {
-                      selectSession(item.id);
-                    }}
+                    role="listitem"
                   >
-                    <div className={styles["result-content"]}>
-                      <div className={styles["result-name"]}>{item.name}</div>
-                      <div className={styles["result-snippet"]}>
-                        {item.content.slice(0, 120)}
+                    <Link
+                      to={Path.Chat}
+                      className={styles["result-item"]}
+                      aria-label={`${item.name}: ${item.content.slice(
+                        0,
+                        120,
+                      )} ${Locale.SearchChat.Item.View}`}
+                      onClick={() => {
+                        selectSession(item.id);
+                      }}
+                    >
+                      <div className={styles["result-content"]}>
+                        <div className={styles["result-name"]}>{item.name}</div>
+                        <div className={styles["result-snippet"]}>
+                          {item.content.slice(0, 120)}
+                        </div>
                       </div>
-                    </div>
-                    <span className={styles["result-action"]}>
-                      {Locale.SearchChat.Item.View}
-                    </span>
-                  </Link>
+                      <span className={styles["result-action"]}>
+                        {Locale.SearchChat.Item.View}
+                      </span>
+                    </Link>
+                  </div>
                 ))}
               </div>
             )}
