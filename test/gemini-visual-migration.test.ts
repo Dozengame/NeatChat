@@ -8902,6 +8902,10 @@ describe("Gemini visual migration shell", () => {
       imageEditorStyles,
       ".canvas-container",
     );
+    const editorCanvasBlock = readCssBlock(
+      imageEditorStyles,
+      ".editor-canvas",
+    );
     const mobileBlock = readCssBlock(
       imageEditorStyles,
       "@media screen and (max-width: 600px)",
@@ -8963,6 +8967,22 @@ describe("Gemini visual migration shell", () => {
     expect(imageEditorContainerBlock).toMatch(
       /--image-editor-swatch-rest-ring-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 22%,\s*transparent\s*\);/,
     );
+    expect(imageEditorContainerBlock).toMatch(
+      /--image-editor-canvas-stage-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 78%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(imageEditorContainerBlock).toMatch(
+      /--image-editor-canvas-grid-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 9%,\s*transparent\s*\);/,
+    );
+    expect(imageEditorContainerBlock).toMatch(
+      /--image-editor-canvas-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 96%,\s*var\(--gray\)\s*\);/,
+    );
+    expect(imageEditorContainerBlock).toMatch(
+      /--image-editor-canvas-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 12%,\s*transparent\s*\);/,
+    );
+    expect(imageEditorContainerBlock).toMatch(
+      /--image-editor-canvas-shadow-color:\s*color-mix\(\s*in srgb,\s*rgb\(0,\s*0,\s*0\) 12%,\s*transparent\s*\);/,
+    );
+    expect(imageEditorContainerBlock).toMatch(/--image-editor-canvas-radius:\s*6px;/);
     expect(darkImageEditorContainerBlock).toMatch(
       /--image-editor-option-selected-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 14%,\s*transparent\s*\);/,
     );
@@ -8984,11 +9004,29 @@ describe("Gemini visual migration shell", () => {
     expect(darkImageEditorContainerBlock).toMatch(
       /--image-editor-control-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 88%,\s*transparent\s*\);/,
     );
+    expect(darkImageEditorContainerBlock).toMatch(
+      /--image-editor-canvas-stage-background:\s*color-mix\(\s*in srgb,\s*var\(--surface\) 84%,\s*var\(--surface-soft\)\s*\);/,
+    );
+    expect(darkImageEditorContainerBlock).toMatch(
+      /--image-editor-canvas-grid-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 7%,\s*transparent\s*\);/,
+    );
+    expect(darkImageEditorContainerBlock).toMatch(
+      /--image-editor-canvas-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkImageEditorContainerBlock).toMatch(
+      /--image-editor-canvas-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
+    );
+    expect(darkImageEditorContainerBlock).toMatch(
+      /--image-editor-canvas-shadow-color:\s*color-mix\(\s*in srgb,\s*rgb\(0,\s*0,\s*0\) 30%,\s*transparent\s*\);/,
+    );
     expect(imageEditorAutoDarkMediaBlock).toContain(
       ":global(body:not(.light)) .image-editor-container",
     );
     expect(imageEditorAutoDarkMediaBlock).toMatch(
       /--image-editor-panel-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 12%,\s*transparent\s*\);/,
+    );
+    expect(imageEditorAutoDarkMediaBlock).toMatch(
+      /--image-editor-canvas-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
     );
     expect(toolsContainerBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
     expect(toolsContainerBlock).toMatch(
@@ -9054,7 +9092,9 @@ describe("Gemini visual migration shell", () => {
       /:global\(\.dark\) \.(?:tool-option|color-option)/,
     );
     expect(imageEditorStyles).toContain(".size-dot");
-    expect(canvasContainerBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
+    expect(canvasContainerBlock).toMatch(
+      /background:[\s\S]*var\(--image-editor-canvas-stage-background\);/,
+    );
     expect(canvasContainerBlock).toMatch(
       /border:\s*1px solid var\(--image-editor-panel-border-color\);/,
     );
@@ -9064,7 +9104,26 @@ describe("Gemini visual migration shell", () => {
     expect(canvasContainerBlock).toMatch(
       /box-shadow:\s*inset 0 0 0 1px var\(--image-editor-panel-inset-color\);/,
     );
+    expect(canvasContainerBlock).toMatch(/display:\s*flex;/);
+    expect(canvasContainerBlock).toMatch(/justify-content:\s*center;/);
+    expect(canvasContainerBlock).toMatch(/padding:\s*14px;/);
+    expect(canvasContainerBlock).toMatch(
+      /background:[\s\S]*var\(--image-editor-canvas-grid-color\)[\s\S]*var\(--image-editor-canvas-stage-background\);/,
+    );
+    expect(canvasContainerBlock).toMatch(/background-size:\s*18px 18px;/);
     expect(canvasContainerBlock).toMatch(/min-width:\s*0;/);
+    expect(editorCanvasBlock).toMatch(
+      /background:\s*var\(--image-editor-canvas-background\);/,
+    );
+    expect(editorCanvasBlock).not.toMatch(/border:\s*1px solid/);
+    expect(editorCanvasBlock).toMatch(
+      /border-radius:\s*var\(--image-editor-canvas-radius\);/,
+    );
+    expect(editorCanvasBlock).toMatch(
+      /box-shadow:\s*0 0 0 1px var\(--image-editor-canvas-border-color\),\s*0 12px 28px var\(--image-editor-canvas-shadow-color\);/,
+    );
+    expect(editorCanvasBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(editorCanvasBlock).not.toMatch(/background:\s*white;/);
     expect(
       [toolsContainerBlock, toolAndSizeOptionBlock, canvasContainerBlock, mobileBlock].join(
         "\n",
@@ -9081,9 +9140,13 @@ describe("Gemini visual migration shell", () => {
     expect(mobileBlock).toMatch(
       /\.canvas-container[\s\S]*border-radius:\s*var\(--image-editor-panel-radius\);/,
     );
+    expect(mobileBlock).toMatch(/\.canvas-container[\s\S]*padding:\s*10px;/);
+    expect(mobileBlock).toMatch(/\.editor-canvas[\s\S]*border-radius:\s*var\(--image-editor-canvas-radius\);/);
     expect(reducedMotionBlock).toContain(".tool-option");
     expect(reducedMotionBlock).toContain(".color-option");
     expect(reducedMotionBlock).toContain(".size-option");
+    expect(reducedMotionBlock).toContain(".canvas-container");
+    expect(reducedMotionBlock).toContain(".editor-canvas");
     expect(reducedMotionBlock).toMatch(/transition-duration:\s*0\.01ms !important;/);
   });
 

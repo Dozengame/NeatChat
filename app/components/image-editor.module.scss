@@ -58,6 +58,32 @@
     var(--black-50) 22%,
     transparent
   );
+  --image-editor-canvas-stage-background: color-mix(
+    in srgb,
+    var(--surface-soft) 78%,
+    var(--surface-elevated)
+  );
+  --image-editor-canvas-grid-color: color-mix(
+    in srgb,
+    var(--black-50) 9%,
+    transparent
+  );
+  --image-editor-canvas-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 96%,
+    var(--gray)
+  );
+  --image-editor-canvas-border-color: color-mix(
+    in srgb,
+    var(--black) 12%,
+    transparent
+  );
+  --image-editor-canvas-shadow-color: color-mix(
+    in srgb,
+    rgb(0, 0, 0) 12%,
+    transparent
+  );
+  --image-editor-canvas-radius: 6px;
 
   box-sizing: border-box;
   display: flex;
@@ -189,22 +215,65 @@
 
 .canvas-container {
   box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
   width: 100%;
   min-width: 0;
+  padding: 14px;
   overflow: auto;
   max-height: 60vh;
   border: 1px solid var(--image-editor-panel-border-color);
   border-radius: var(--image-editor-panel-radius);
-  background: var(--surface-elevated);
+  background:
+    linear-gradient(
+      45deg,
+      var(--image-editor-canvas-grid-color) 25%,
+      transparent 25%
+    ),
+    linear-gradient(
+      -45deg,
+      var(--image-editor-canvas-grid-color) 25%,
+      transparent 25%
+    ),
+    linear-gradient(
+      45deg,
+      transparent 75%,
+      var(--image-editor-canvas-grid-color) 75%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 75%,
+      var(--image-editor-canvas-grid-color) 75%
+    ),
+    var(--image-editor-canvas-stage-background);
+  background-position:
+    0 0,
+    0 9px,
+    9px -9px,
+    -9px 0;
+  background-size: 18px 18px;
   box-shadow: inset 0 0 0 1px var(--image-editor-panel-inset-color);
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
 }
 
 .editor-canvas {
+  box-sizing: border-box;
   max-width: 100%;
   height: auto;
   display: block;
-  background: white;
+  border-radius: var(--image-editor-canvas-radius);
+  background: var(--image-editor-canvas-background);
+  box-shadow:
+    0 0 0 1px var(--image-editor-canvas-border-color),
+    0 12px 28px var(--image-editor-canvas-shadow-color);
   cursor: crosshair;
+  transition:
+    background-color 0.16s ease,
+    box-shadow 0.16s ease;
 }
 
 :global(.dark) .image-editor-container {
@@ -271,6 +340,31 @@
   --image-editor-swatch-rest-ring-color: color-mix(
     in srgb,
     var(--black) 20%,
+    transparent
+  );
+  --image-editor-canvas-stage-background: color-mix(
+    in srgb,
+    var(--surface) 84%,
+    var(--surface-soft)
+  );
+  --image-editor-canvas-grid-color: color-mix(
+    in srgb,
+    var(--black) 7%,
+    transparent
+  );
+  --image-editor-canvas-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 88%,
+    var(--white)
+  );
+  --image-editor-canvas-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --image-editor-canvas-shadow-color: color-mix(
+    in srgb,
+    rgb(0, 0, 0) 30%,
     transparent
   );
 }
@@ -342,6 +436,31 @@
       var(--black) 20%,
       transparent
     );
+    --image-editor-canvas-stage-background: color-mix(
+      in srgb,
+      var(--surface) 84%,
+      var(--surface-soft)
+    );
+    --image-editor-canvas-grid-color: color-mix(
+      in srgb,
+      var(--black) 7%,
+      transparent
+    );
+    --image-editor-canvas-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 88%,
+      var(--white)
+    );
+    --image-editor-canvas-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --image-editor-canvas-shadow-color: color-mix(
+      in srgb,
+      rgb(0, 0, 0) 30%,
+      transparent
+    );
   }
 }
 
@@ -377,14 +496,21 @@
 
   .canvas-container {
     max-height: 52vh;
+    padding: 10px;
     border-radius: var(--image-editor-panel-radius);
+  }
+
+  .editor-canvas {
+    border-radius: var(--image-editor-canvas-radius);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .tool-option,
   .color-option,
-  .size-option {
+  .size-option,
+  .canvas-container,
+  .editor-canvas {
     transform: none !important;
     transition-duration: 0.01ms !important;
   }
