@@ -10883,6 +10883,167 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps error recovery surface aligned with Gemini utility panels", () => {
+    const errorBoundary = read("app/components/error.tsx");
+    const globalStyles = read("app/styles/globals.scss");
+    const errorBlock = readRootCssBlock(globalStyles, ".error");
+    const errorRootBlock = readRootDeclarations(errorBlock);
+    const darkErrorBlock = readCssBlock(globalStyles, ".dark .error");
+    const autoDarkErrorSelector = "body:not(.light) .error";
+    const autoDarkErrorSelectorIndex =
+      globalStyles.indexOf(autoDarkErrorSelector);
+    const autoDarkErrorMediaIndex = globalStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkErrorSelectorIndex,
+    );
+    const autoDarkErrorBlock = readCssBlock(
+      globalStyles.slice(autoDarkErrorMediaIndex),
+      autoDarkErrorSelector,
+    );
+    const errorTitleBlock = readCssBlock(errorBlock, ".error-title");
+    const errorDetailsBlock = readCssBlock(errorBlock, ".error-details");
+    const errorActionsBlock = readCssBlock(errorBlock, ".error-actions");
+    const errorReportBlock = readCssBlock(errorBlock, ".error-report-link");
+    const errorActionButtonBlock = readCssBlock(
+      errorBlock,
+      ".error-action-button",
+    );
+    const errorMobileMediaIndex = globalStyles.indexOf(
+      "@media only screen and (max-width: 600px)",
+      globalStyles.indexOf(".error {"),
+    );
+    const mobileBlock = readCssBlock(
+      globalStyles.slice(errorMobileMediaIndex),
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileErrorBlock = readCssBlock(mobileBlock, ".error");
+    const mobileErrorActionsBlock = readCssBlock(
+      mobileErrorBlock,
+      ".error-actions",
+    );
+    const mobileErrorActionButtonBlock = readCssBlock(
+      mobileErrorBlock,
+      ".error-action-button",
+    );
+    const reducedMotionBlock = readCssBlock(
+      globalStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const errorTokenNames = [
+      "--error-panel-background",
+      "--error-panel-border-color",
+      "--error-panel-shadow-color",
+      "--error-title-color",
+      "--error-details-background",
+      "--error-details-border-color",
+      "--error-details-color",
+      "--error-action-gap",
+    ];
+    const errorTokenMap = readCustomProperties(
+      errorRootBlock,
+      errorTokenNames,
+    );
+    const darkErrorTokenMap = readCustomProperties(
+      darkErrorBlock,
+      errorTokenNames,
+    );
+    const autoDarkErrorTokenMap = readCustomProperties(
+      autoDarkErrorBlock,
+      errorTokenNames,
+    );
+    const errorPaintScope = [
+      errorRootBlock,
+      darkErrorBlock,
+      autoDarkErrorBlock,
+      errorTitleBlock,
+      errorDetailsBlock,
+      errorActionsBlock,
+      errorReportBlock,
+      errorActionButtonBlock,
+    ].join("\n");
+
+    expect(errorBoundary).toContain('className="error"');
+    expect(errorBoundary).toContain('className="error-title"');
+    expect(errorBoundary).toContain('className="error-details"');
+    expect(errorBoundary).toContain('className="error-actions"');
+    expect(errorBoundary).toContain('className="error-report-link"');
+    expect(errorBoundary).toContain('className="error-action-button"');
+    expect(errorBoundary).not.toContain('style={{ display: "flex"');
+    expect(errorBoundary).toContain("href={ISSUE_URL}");
+    expect(errorBoundary).toMatch(
+      /<IconButton[\s\S]*text="Report This Error"[\s\S]*icon=\{<GithubIcon \/>\}[\s\S]*bordered/,
+    );
+    expect(errorBoundary).toMatch(
+      /<IconButton[\s\S]*icon=\{<ResetIcon \/>\}[\s\S]*text="Clear All Data"[\s\S]*showConfirm\(Locale\.Settings\.Danger\.Reset\.Confirm\)[\s\S]*this\.clearAndSaveData\(\);/,
+    );
+    expect(errorBoundary).toMatch(
+      /clearAndSaveData\(\) \{[\s\S]*useSyncStore\.getState\(\)\.export\(\);[\s\S]*useChatStore\.getState\(\)\.clearAllData\(\);[\s\S]*\}/,
+    );
+
+    for (const tokenMap of [
+      errorTokenMap,
+      darkErrorTokenMap,
+      autoDarkErrorTokenMap,
+    ]) {
+      expect(Object.values(tokenMap)).not.toContain("");
+    }
+    expect(darkErrorTokenMap).toEqual(autoDarkErrorTokenMap);
+    expect(autoDarkErrorSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkErrorMediaIndex).toBeGreaterThan(-1);
+    expect(errorMobileMediaIndex).toBeGreaterThan(-1);
+
+    expect(errorRootBlock).toMatch(
+      /width:\s*min\(720px, calc\(100vw - 32px\)\);/,
+    );
+    expect(errorRootBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(errorRootBlock).toMatch(/border-radius:\s*12px;/);
+    expect(errorRootBlock).toMatch(
+      /background:\s*var\(--error-panel-background\);/,
+    );
+    expect(errorRootBlock).toMatch(
+      /border:\s*1px solid var\(--error-panel-border-color\);/,
+    );
+    expect(errorRootBlock).toMatch(
+      /box-shadow:\s*0 18px 48px var\(--error-panel-shadow-color\);/,
+    );
+    expect(errorTitleBlock).toMatch(/margin:\s*0 0 12px;/);
+    expect(errorTitleBlock).toMatch(/color:\s*var\(--error-title-color\);/);
+    expect(errorDetailsBlock).toMatch(/max-height:\s*min\(44vh, 320px\);/);
+    expect(errorDetailsBlock).toMatch(/overflow:\s*auto;/);
+    expect(errorDetailsBlock).toMatch(
+      /background:\s*var\(--error-details-background\);/,
+    );
+    expect(errorDetailsBlock).toMatch(
+      /border:\s*1px solid var\(--error-details-border-color\);/,
+    );
+    expect(errorDetailsBlock).toMatch(/border-radius:\s*8px;/);
+    expect(errorDetailsBlock).toMatch(
+      /color:\s*var\(--error-details-color\);/,
+    );
+    expect(errorDetailsBlock).toMatch(/white-space:\s*pre-wrap;/);
+    expect(errorDetailsBlock).toMatch(/word-break:\s*break-word;/);
+    expect(errorDetailsBlock).toMatch(/user-select:\s*text;/);
+    expect(errorActionsBlock).toMatch(/display:\s*flex;/);
+    expect(errorActionsBlock).toMatch(/flex-wrap:\s*wrap;/);
+    expect(errorActionsBlock).toMatch(/justify-content:\s*space-between;/);
+    expect(errorActionsBlock).toMatch(/gap:\s*var\(--error-action-gap\);/);
+    expect(errorReportBlock).toMatch(/text-decoration:\s*none;/);
+    expect(errorActionButtonBlock).toMatch(/min-width:\s*0;/);
+    expect(errorActionButtonBlock).toMatch(/flex:\s*0 1 auto;/);
+    expect(mobileErrorBlock).toMatch(/width:\s*calc\(100vw - 24px\);/);
+    expect(mobileErrorBlock).toMatch(/padding:\s*16px;/);
+    expect(mobileErrorActionsBlock).toMatch(/flex-direction:\s*column;/);
+    expect(mobileErrorActionsBlock).toMatch(/align-items:\s*stretch;/);
+    expect(mobileErrorActionButtonBlock).toMatch(/width:\s*100%;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.error,[\s\S]*\.error-action-button[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(errorPaintScope).not.toContain("border: var(--border-in-light)");
+    expect(errorPaintScope).not.toContain("box-shadow: var(--card-shadow)");
+    expect(errorPaintScope).not.toContain("background-color: var(--white)");
+    expect(errorPaintScope).not.toContain("border-radius: 20px");
+  });
+
   test("keeps shared ui-lib modal selector and toast surfaces aligned with Gemini", () => {
     const uiLibComponents = read("app/components/ui-lib-components.tsx");
     const uiLibStyles = read("app/components/ui-lib.module.scss");

@@ -40,21 +40,23 @@ export class ErrorBoundary extends React.Component<any, IErrorBoundaryState> {
       // Render error message
       return (
         <div className="error">
-          <h2>Oops, something went wrong!</h2>
-          <pre>
+          <h2 className="error-title">Oops, something went wrong!</h2>
+          <pre className="error-details">
             <code>{this.state.error?.toString()}</code>
             <code>{this.state.info?.componentStack}</code>
           </pre>
 
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <a href={ISSUE_URL} className="report">
+          <div className="error-actions">
+            <a href={ISSUE_URL} className="error-report-link">
               <IconButton
+                className="error-action-button"
                 text="Report This Error"
                 icon={<GithubIcon />}
                 bordered
               />
             </a>
             <IconButton
+              className="error-action-button"
               icon={<ResetIcon />}
               text="Clear All Data"
               onClick={async () => {
