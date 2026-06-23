@@ -262,6 +262,283 @@
   }
 }
 
+.settings-danger-surface {
+  --settings-danger-surface-background: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 3%,
+    transparent
+  );
+  --settings-danger-list-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 92%,
+    var(--gray)
+  );
+  --settings-danger-border-color: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 18%,
+    transparent
+  );
+  --settings-danger-divider-color: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 12%,
+    transparent
+  );
+  --settings-danger-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 5%,
+    transparent
+  );
+  --settings-danger-item-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 94%,
+    transparent
+  );
+  --settings-danger-item-hover-background: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 5%,
+    var(--surface-elevated)
+  );
+  --settings-danger-item-active-background: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 8%,
+    var(--surface-elevated)
+  );
+  --settings-danger-title-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
+  --settings-danger-muted-color: color-mix(
+    in srgb,
+    var(--black-50) 72%,
+    transparent
+  );
+  --settings-danger-action-shadow-color: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 8%,
+    transparent
+  );
+  --settings-danger-action-hover-shadow-color: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 16%,
+    transparent
+  );
+  --settings-danger-focus-shadow-color: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 16%,
+    transparent
+  );
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin-bottom: 20px;
+  padding: 4px;
+  background: var(--settings-danger-surface-background);
+  border-radius: 8px;
+}
+
+.settings-danger-surface :global(#settings-danger-list) {
+  --ui-lib-surface: var(--settings-danger-list-background);
+  --ui-lib-border-color: var(--settings-danger-border-color);
+  --ui-lib-divider-color: var(--settings-danger-divider-color);
+  --ui-lib-panel-shadow-color: var(--settings-danger-shadow-color);
+  margin-bottom: 0;
+}
+
+.settings-danger-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+  background-color: var(--settings-danger-item-background);
+  color: var(--settings-danger-title-color);
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease;
+
+  &:hover {
+    background-color: var(--settings-danger-item-hover-background);
+  }
+
+  &:focus-within {
+    background-color: var(--settings-danger-item-hover-background);
+  }
+
+  &:active {
+    background-color: var(--settings-danger-item-active-background);
+  }
+}
+
+.settings-danger-subtitle {
+  color: var(--settings-danger-muted-color);
+}
+
+.settings-danger-action {
+  flex: 0 0 auto;
+  min-width: 88px;
+  min-height: 34px;
+  box-shadow: 0 1px 2px var(--settings-danger-action-shadow-color);
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+
+  &:hover {
+    box-shadow: 0 2px 8px var(--settings-danger-action-hover-shadow-color);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:focus-visible {
+    box-shadow:
+      0 0 0 3px var(--settings-danger-focus-shadow-color),
+      0 1px 2px var(--settings-danger-action-shadow-color);
+  }
+}
+
+:global(.dark) .settings-danger-surface {
+  --settings-danger-surface-background: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 8%,
+    transparent
+  );
+  --settings-danger-list-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    var(--white)
+  );
+  --settings-danger-border-color: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 24%,
+    transparent
+  );
+  --settings-danger-divider-color: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 18%,
+    transparent
+  );
+  --settings-danger-shadow-color: color-mix(
+    in srgb,
+    var(--black) 18%,
+    transparent
+  );
+  --settings-danger-item-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 88%,
+    transparent
+  );
+  --settings-danger-item-hover-background: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 12%,
+    var(--surface-elevated)
+  );
+  --settings-danger-item-active-background: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 16%,
+    var(--surface-elevated)
+  );
+  --settings-danger-title-color: color-mix(
+    in srgb,
+    var(--black) 94%,
+    transparent
+  );
+  --settings-danger-muted-color: color-mix(
+    in srgb,
+    var(--black-50) 78%,
+    transparent
+  );
+  --settings-danger-action-shadow-color: color-mix(
+    in srgb,
+    var(--black) 12%,
+    transparent
+  );
+  --settings-danger-action-hover-shadow-color: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 18%,
+    transparent
+  );
+  --settings-danger-focus-shadow-color: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 22%,
+    transparent
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .settings-danger-surface {
+    --settings-danger-surface-background: color-mix(
+      in srgb,
+      rgb(217, 48, 37) 8%,
+      transparent
+    );
+    --settings-danger-list-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 86%,
+      var(--white)
+    );
+    --settings-danger-border-color: color-mix(
+      in srgb,
+      rgb(217, 48, 37) 24%,
+      transparent
+    );
+    --settings-danger-divider-color: color-mix(
+      in srgb,
+      rgb(217, 48, 37) 18%,
+      transparent
+    );
+    --settings-danger-shadow-color: color-mix(
+      in srgb,
+      var(--black) 18%,
+      transparent
+    );
+    --settings-danger-item-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 88%,
+      transparent
+    );
+    --settings-danger-item-hover-background: color-mix(
+      in srgb,
+      rgb(217, 48, 37) 12%,
+      var(--surface-elevated)
+    );
+    --settings-danger-item-active-background: color-mix(
+      in srgb,
+      rgb(217, 48, 37) 16%,
+      var(--surface-elevated)
+    );
+    --settings-danger-title-color: color-mix(
+      in srgb,
+      var(--black) 94%,
+      transparent
+    );
+    --settings-danger-muted-color: color-mix(
+      in srgb,
+      var(--black-50) 78%,
+      transparent
+    );
+    --settings-danger-action-shadow-color: color-mix(
+      in srgb,
+      var(--black) 12%,
+      transparent
+    );
+    --settings-danger-action-hover-shadow-color: color-mix(
+      in srgb,
+      rgb(217, 48, 37) 18%,
+      transparent
+    );
+    --settings-danger-focus-shadow-color: color-mix(
+      in srgb,
+      rgb(217, 48, 37) 22%,
+      transparent
+    );
+  }
+}
+
 :global(.dark) .user-prompt-modal {
   --settings-prompt-list-background: color-mix(
     in srgb,
@@ -1008,6 +1285,22 @@
       flex: 1 1 auto;
     }
 
+    .settings-danger-surface {
+      margin-top: 4px;
+    }
+
+    .settings-danger-item {
+      align-items: stretch;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .settings-danger-action {
+      width: 100%;
+      justify-content: center;
+      min-height: 38px;
+    }
+
     .settings-sync-config-modal {
       select,
       input[type="text"],
@@ -1062,10 +1355,17 @@
 
 @media (prefers-reduced-motion: reduce) {
   .custom-instructions-input,
+  .settings-danger-item,
+  .settings-danger-action,
   .settings-sync-action-cluster,
   .settings-sync-config-modal select,
   .settings-sync-config-modal input[type="text"],
   .settings-sync-config-modal :global(.password-input-container) {
     transition-duration: 0.01ms !important;
+  }
+
+  .settings-danger-action:hover,
+  .settings-danger-action:active {
+    transform: none !important;
   }
 }

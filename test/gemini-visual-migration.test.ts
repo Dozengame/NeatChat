@@ -15831,6 +15831,241 @@ describe("Gemini visual migration shell", () => {
     expect(syncPaintScope).not.toContain("max-width: 50%");
   });
 
+  test("keeps Settings danger zone clear without changing destructive semantics", () => {
+    const settings = read("app/components/settings.tsx");
+    const dangerItems = read("app/components/settings-danger-items.tsx");
+    const settingsStyles = read("app/components/settings.module.scss");
+    const dangerSurfaceBlock = readRootCssBlock(
+      settingsStyles,
+      ".settings-danger-surface",
+    );
+    const dangerSurfaceRootBlock = readRootDeclarations(dangerSurfaceBlock);
+    const dangerListBlock = readCssBlock(
+      settingsStyles,
+      ":global(#settings-danger-list)",
+    );
+    const dangerItemBlock = readRootCssBlock(
+      settingsStyles,
+      ".settings-danger-item",
+    );
+    const dangerItemHoverBlock = readCssBlock(dangerItemBlock, "&:hover");
+    const dangerItemFocusBlock = readCssBlock(
+      dangerItemBlock,
+      "&:focus-within",
+    );
+    const dangerItemActiveBlock = readCssBlock(dangerItemBlock, "&:active");
+    const dangerSubtitleBlock = readCssBlock(
+      settingsStyles,
+      ".settings-danger-subtitle",
+    );
+    const dangerActionBlock = readRootCssBlock(
+      settingsStyles,
+      ".settings-danger-action",
+    );
+    const dangerActionHoverBlock = readCssBlock(dangerActionBlock, "&:hover");
+    const dangerActionActiveBlock = readCssBlock(dangerActionBlock, "&:active");
+    const dangerActionFocusBlock = readCssBlock(
+      dangerActionBlock,
+      "&:focus-visible",
+    );
+    const darkDangerSurfaceBlock = readCssBlock(
+      settingsStyles,
+      ":global(.dark) .settings-danger-surface",
+    );
+    const autoDarkDangerSurfaceSelector =
+      ":global(body:not(.light)) .settings-danger-surface";
+    const autoDarkDangerSurfaceSelectorIndex = settingsStyles.indexOf(
+      autoDarkDangerSurfaceSelector,
+    );
+    const autoDarkDangerSurfaceMediaIndex = settingsStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkDangerSurfaceSelectorIndex,
+    );
+    const autoDarkDangerSurfaceBlock = readCssBlock(
+      settingsStyles.slice(autoDarkDangerSurfaceMediaIndex),
+      autoDarkDangerSurfaceSelector,
+    );
+    const settingsMobileBlock = readCssBlock(
+      settingsStyles,
+      "@media (max-width: 600px)",
+    );
+    const settingsMobileRootBlock = readCssBlock(
+      settingsMobileBlock,
+      ".settings",
+    );
+    const mobileDangerSurfaceBlock = readCssBlock(
+      settingsMobileRootBlock,
+      ".settings-danger-surface",
+    );
+    const mobileDangerItemBlock = readCssBlock(
+      settingsMobileRootBlock,
+      ".settings-danger-item",
+    );
+    const mobileDangerActionBlock = readCssBlock(
+      settingsMobileRootBlock,
+      ".settings-danger-action",
+    );
+    const reducedMotionBlock = readCssBlock(
+      settingsStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const dangerTokenNames = [
+      "--settings-danger-surface-background",
+      "--settings-danger-list-background",
+      "--settings-danger-border-color",
+      "--settings-danger-divider-color",
+      "--settings-danger-shadow-color",
+      "--settings-danger-item-background",
+      "--settings-danger-item-hover-background",
+      "--settings-danger-item-active-background",
+      "--settings-danger-title-color",
+      "--settings-danger-muted-color",
+      "--settings-danger-action-shadow-color",
+      "--settings-danger-action-hover-shadow-color",
+      "--settings-danger-focus-shadow-color",
+    ];
+    const dangerTokenMap = readCustomProperties(
+      dangerSurfaceRootBlock,
+      dangerTokenNames,
+    );
+    const darkDangerTokenMap = readCustomProperties(
+      darkDangerSurfaceBlock,
+      dangerTokenNames,
+    );
+    const autoDarkDangerTokenMap = readCustomProperties(
+      autoDarkDangerSurfaceBlock,
+      dangerTokenNames,
+    );
+    const dangerPaintScope = [
+      dangerSurfaceRootBlock,
+      dangerListBlock,
+      dangerItemBlock,
+      dangerItemHoverBlock,
+      dangerItemFocusBlock,
+      dangerItemActiveBlock,
+      dangerSubtitleBlock,
+      dangerActionBlock,
+      dangerActionHoverBlock,
+      dangerActionActiveBlock,
+      dangerActionFocusBlock,
+      darkDangerSurfaceBlock,
+      autoDarkDangerSurfaceBlock,
+    ].join("\n");
+
+    expect(settings).toContain("<DangerItems />");
+    expect(dangerItems).toContain('import styles from "./settings.module.scss";');
+    expect(dangerItems).toContain("const dangerRegionLabel =");
+    expect(dangerItems).toContain('className={styles["settings-danger-surface"]}');
+    expect(dangerItems).toContain("aria-label={dangerRegionLabel}");
+    expect(dangerItems).toContain('<List id="settings-danger-list">');
+    expect(dangerItems).toMatch(
+      /<ListItem[\s\S]*className=\{styles\["settings-danger-item"\]\}[\s\S]*title=\{Locale\.Settings\.Danger\.Reset\.Title\}[\s\S]*subTitle=\{\s*<span className=\{styles\["settings-danger-subtitle"\]\}>[\s\S]*Locale\.Settings\.Danger\.Reset\.SubTitle[\s\S]*<\/span>\s*\}/,
+    );
+    expect(dangerItems).toMatch(
+      /<IconButton[\s\S]*aria=\{Locale\.Settings\.Danger\.Reset\.Title\}[\s\S]*className=\{styles\["settings-danger-action"\]\}[\s\S]*text=\{Locale\.Settings\.Danger\.Reset\.Action\}[\s\S]*bordered[\s\S]*showConfirm\(Locale\.Settings\.Danger\.Reset\.Confirm\)[\s\S]*appConfig\.reset\(\);[\s\S]*type="danger"/,
+    );
+    expect(dangerItems).toMatch(
+      /if \(await showConfirm\(Locale\.Settings\.Danger\.Reset\.Confirm\)\) \{\s*appConfig\.reset\(\);\s*\}/,
+    );
+    expect(dangerItems).toMatch(
+      /<ListItem[\s\S]*className=\{styles\["settings-danger-item"\]\}[\s\S]*title=\{Locale\.Settings\.Danger\.Clear\.Title\}[\s\S]*subTitle=\{\s*<span className=\{styles\["settings-danger-subtitle"\]\}>[\s\S]*Locale\.Settings\.Danger\.Clear\.SubTitle[\s\S]*<\/span>\s*\}/,
+    );
+    expect(dangerItems).toMatch(
+      /<IconButton[\s\S]*aria=\{Locale\.Settings\.Danger\.Clear\.Title\}[\s\S]*className=\{styles\["settings-danger-action"\]\}[\s\S]*text=\{Locale\.Settings\.Danger\.Clear\.Action\}[\s\S]*bordered[\s\S]*showConfirm\(Locale\.Settings\.Danger\.Clear\.Confirm\)[\s\S]*chatStore\.clearAllData\(\);[\s\S]*type="danger"/,
+    );
+    expect(dangerItems).toMatch(
+      /if \(await showConfirm\(Locale\.Settings\.Danger\.Clear\.Confirm\)\) \{\s*chatStore\.clearAllData\(\);\s*\}/,
+    );
+
+    for (const tokenMap of [
+      dangerTokenMap,
+      darkDangerTokenMap,
+      autoDarkDangerTokenMap,
+    ]) {
+      expect(Object.values(tokenMap)).not.toContain("");
+    }
+    expect(darkDangerTokenMap).toEqual(autoDarkDangerTokenMap);
+    expect(autoDarkDangerSurfaceSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkDangerSurfaceMediaIndex).toBeGreaterThan(-1);
+
+    expect(dangerSurfaceRootBlock).toMatch(
+      /--settings-danger-surface-background:\s*color-mix\(\s*in srgb,\s*rgb\(217,\s*48,\s*37\) 3%,\s*transparent\s*\);/,
+    );
+    expect(dangerSurfaceRootBlock).toMatch(
+      /--settings-danger-border-color:\s*color-mix\(\s*in srgb,\s*rgb\(217,\s*48,\s*37\) 18%,\s*transparent\s*\);/,
+    );
+    expect(darkDangerSurfaceBlock).toMatch(
+      /--settings-danger-surface-background:\s*color-mix\(\s*in srgb,\s*rgb\(217,\s*48,\s*37\) 8%,\s*transparent\s*\);/,
+    );
+    expect(dangerSurfaceRootBlock).toMatch(/width:\s*100%;/);
+    expect(dangerSurfaceRootBlock).toMatch(/max-width:\s*100%;/);
+    expect(dangerSurfaceRootBlock).toMatch(/min-width:\s*0;/);
+    expect(dangerSurfaceRootBlock).toMatch(
+      /background:\s*var\(--settings-danger-surface-background\);/,
+    );
+    expect(dangerSurfaceRootBlock).toMatch(/border-radius:\s*8px;/);
+    expect(dangerListBlock).toMatch(
+      /--ui-lib-surface:\s*var\(--settings-danger-list-background\);/,
+    );
+    expect(dangerListBlock).toMatch(
+      /--ui-lib-border-color:\s*var\(--settings-danger-border-color\);/,
+    );
+    expect(dangerListBlock).toMatch(
+      /--ui-lib-divider-color:\s*var\(--settings-danger-divider-color\);/,
+    );
+    expect(dangerListBlock).toMatch(
+      /--ui-lib-panel-shadow-color:\s*var\(--settings-danger-shadow-color\);/,
+    );
+    expect(dangerItemBlock).toMatch(/display:\s*flex;/);
+    expect(dangerItemBlock).toMatch(/flex-wrap:\s*wrap;/);
+    expect(dangerItemBlock).toMatch(/min-width:\s*0;/);
+    expect(dangerItemBlock).toMatch(
+      /background-color:\s*var\(--settings-danger-item-background\);/,
+    );
+    expect(dangerItemBlock).toMatch(
+      /color:\s*var\(--settings-danger-title-color\);/,
+    );
+    expect(dangerItemHoverBlock).toMatch(
+      /background-color:\s*var\(--settings-danger-item-hover-background\);/,
+    );
+    expect(dangerItemFocusBlock).toMatch(
+      /background-color:\s*var\(--settings-danger-item-hover-background\);/,
+    );
+    expect(dangerItemActiveBlock).toMatch(
+      /background-color:\s*var\(--settings-danger-item-active-background\);/,
+    );
+    expect(dangerSubtitleBlock).toMatch(
+      /color:\s*var\(--settings-danger-muted-color\);/,
+    );
+    expect(dangerActionBlock).toMatch(/flex:\s*0 0 auto;/);
+    expect(dangerActionBlock).toMatch(/min-width:\s*88px;/);
+    expect(dangerActionBlock).toMatch(/min-height:\s*34px;/);
+    expect(dangerActionBlock).toMatch(
+      /box-shadow:\s*0 1px 2px var\(--settings-danger-action-shadow-color\);/,
+    );
+    expect(dangerActionHoverBlock).toMatch(
+      /box-shadow:\s*0 2px 8px var\(--settings-danger-action-hover-shadow-color\);/,
+    );
+    expect(dangerActionHoverBlock).toMatch(/transform:\s*translateY\(-1px\);/);
+    expect(dangerActionActiveBlock).toMatch(/transform:\s*translateY\(0\);/);
+    expect(dangerActionFocusBlock).toMatch(
+      /box-shadow:\s*0 0 0 3px var\(--settings-danger-focus-shadow-color\),\s*0 1px 2px var\(--settings-danger-action-shadow-color\);/,
+    );
+    expect(mobileDangerSurfaceBlock).toMatch(/margin-top:\s*4px;/);
+    expect(mobileDangerItemBlock).toMatch(/align-items:\s*stretch;/);
+    expect(mobileDangerItemBlock).toMatch(/flex-direction:\s*column;/);
+    expect(mobileDangerItemBlock).toMatch(/gap:\s*8px;/);
+    expect(mobileDangerActionBlock).toMatch(/width:\s*100%;/);
+    expect(mobileDangerActionBlock).toMatch(/justify-content:\s*center;/);
+    expect(mobileDangerActionBlock).toMatch(/min-height:\s*38px;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.settings-danger-item,[\s\S]*\.settings-danger-action[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(dangerPaintScope).not.toContain("box-shadow: var(--card-shadow)");
+    expect(dangerPaintScope).not.toContain("border-radius: 10px");
+    expect(dangerPaintScope).not.toContain("background-color: var(--white)");
+  });
+
   test("keeps Settings custom instructions aligned with Gemini utility fields", () => {
     const settings = read("app/components/settings.tsx");
     const settingsStyles = read("app/components/settings.module.scss");
