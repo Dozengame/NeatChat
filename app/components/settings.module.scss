@@ -749,11 +749,233 @@
 }
 
 .custom-instructions-input {
+  --settings-custom-instructions-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 90%,
+    var(--gray)
+  );
+  --settings-custom-instructions-border-color: color-mix(
+    in srgb,
+    var(--black-50) 14%,
+    transparent
+  );
+  --settings-custom-instructions-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
+  --settings-custom-instructions-placeholder-color: color-mix(
+    in srgb,
+    var(--black-50) 70%,
+    transparent
+  );
+  --settings-custom-instructions-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 5%,
+    transparent
+  );
+  --settings-custom-instructions-inner-shadow-color: color-mix(
+    in srgb,
+    var(--white) 52%,
+    transparent
+  );
+  --settings-custom-instructions-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 58%,
+    transparent
+  );
+  --settings-custom-instructions-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 16%,
+    transparent
+  );
+  --settings-custom-instructions-disabled-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 76%,
+    var(--gray)
+  );
+  --settings-custom-instructions-disabled-color: color-mix(
+    in srgb,
+    var(--black-50) 68%,
+    transparent
+  );
+  --settings-custom-instructions-selection-background: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
   width: 100%;
-  max-width: unset;
+  max-width: 100%;
+  min-width: 0;
   box-sizing: border-box;
+  min-height: 132px;
+  padding: 12px 14px;
+  resize: vertical;
   line-height: 1.6;
   margin-top: 6px;
+  background-color: var(--settings-custom-instructions-background);
+  border: 1px solid var(--settings-custom-instructions-border-color);
+  border-radius: 8px;
+  color: var(--settings-custom-instructions-color);
+  box-shadow:
+    0 1px 2px var(--settings-custom-instructions-shadow-color),
+    inset 0 1px 0 var(--settings-custom-instructions-inner-shadow-color);
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--settings-custom-instructions-focus-border-color);
+    box-shadow:
+      0 0 0 3px var(--settings-custom-instructions-focus-shadow-color),
+      inset 0 1px 0 var(--settings-custom-instructions-inner-shadow-color);
+  }
+
+  &:disabled {
+    background-color: var(--settings-custom-instructions-disabled-background);
+    color: var(--settings-custom-instructions-disabled-color);
+    cursor: not-allowed;
+  }
+
+  &::placeholder {
+    color: var(--settings-custom-instructions-placeholder-color);
+  }
+
+  &::selection {
+    background: var(--settings-custom-instructions-selection-background);
+  }
+}
+
+.custom-instructions-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+:global(.dark) .custom-instructions-input {
+  --settings-custom-instructions-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 84%,
+    var(--white)
+  );
+  --settings-custom-instructions-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --settings-custom-instructions-color: color-mix(
+    in srgb,
+    var(--black) 94%,
+    transparent
+  );
+  --settings-custom-instructions-placeholder-color: color-mix(
+    in srgb,
+    var(--black-50) 78%,
+    transparent
+  );
+  --settings-custom-instructions-shadow-color: color-mix(
+    in srgb,
+    var(--surface) 24%,
+    transparent
+  );
+  --settings-custom-instructions-inner-shadow-color: color-mix(
+    in srgb,
+    var(--black) 5%,
+    transparent
+  );
+  --settings-custom-instructions-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 82%,
+    var(--black)
+  );
+  --settings-custom-instructions-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 22%,
+    transparent
+  );
+  --settings-custom-instructions-disabled-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 72%,
+    var(--white)
+  );
+  --settings-custom-instructions-disabled-color: color-mix(
+    in srgb,
+    var(--black-50) 72%,
+    transparent
+  );
+  --settings-custom-instructions-selection-background: color-mix(
+    in srgb,
+    var(--primary) 24%,
+    transparent
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .custom-instructions-input {
+    --settings-custom-instructions-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 84%,
+      var(--white)
+    );
+    --settings-custom-instructions-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --settings-custom-instructions-color: color-mix(
+      in srgb,
+      var(--black) 94%,
+      transparent
+    );
+    --settings-custom-instructions-placeholder-color: color-mix(
+      in srgb,
+      var(--black-50) 78%,
+      transparent
+    );
+    --settings-custom-instructions-shadow-color: color-mix(
+      in srgb,
+      var(--surface) 24%,
+      transparent
+    );
+    --settings-custom-instructions-inner-shadow-color: color-mix(
+      in srgb,
+      var(--black) 5%,
+      transparent
+    );
+    --settings-custom-instructions-focus-border-color: color-mix(
+      in srgb,
+      var(--primary) 82%,
+      var(--black)
+    );
+    --settings-custom-instructions-focus-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 22%,
+      transparent
+    );
+    --settings-custom-instructions-disabled-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 72%,
+      var(--white)
+    );
+    --settings-custom-instructions-disabled-color: color-mix(
+      in srgb,
+      var(--black-50) 72%,
+      transparent
+    );
+    --settings-custom-instructions-selection-background: color-mix(
+      in srgb,
+      var(--primary) 24%,
+      transparent
+    );
+  }
 }
 
 @media (max-width: 600px) {
@@ -829,10 +1051,17 @@
         font-size: 12px;
       }
     }
+
+    .custom-instructions-input {
+      max-width: 100%;
+      min-height: 148px;
+      padding: 12px;
+    }
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .custom-instructions-input,
   .settings-sync-action-cluster,
   .settings-sync-config-modal select,
   .settings-sync-config-modal input[type="text"],

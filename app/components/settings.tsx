@@ -107,6 +107,12 @@ function useSettingsView() {
   const promptStore = usePromptStore();
   const builtinCount = SearchService.count.builtin;
   const customCount = promptStore.getUserPrompts().length ?? 0;
+  const customInstructionsDescriptionId =
+    "settings-custom-instructions-description";
+  const customInstructionsDescription =
+    Locale.Settings.CustomInstructions.Content.SubTitle(
+      config.customInstructions.length,
+    );
   const [shouldShowPromptModal, setShowPromptModal] = useState(false);
 
   const showUsage = accessStore.isAuthorized();
@@ -1137,28 +1143,35 @@ function useSettingsView() {
 
           <ListItem
             title={Locale.Settings.CustomInstructions.Content.Title}
-            subTitle={Locale.Settings.CustomInstructions.Content.SubTitle(
-              config.customInstructions.length,
-            )}
+            subTitle={customInstructionsDescription}
             vertical
           >
-            <Input
-              aria-label={Locale.Settings.CustomInstructions.Content.Title}
-              className={styles["custom-instructions-input"]}
-              value={config.customInstructions}
-              maxLength={1500}
-              rows={6}
-              disabled={!config.enableCustomInstructions}
-              placeholder={
-                Locale.Settings.CustomInstructions.Content.Placeholder
-              }
-              onInput={(e) =>
-                updateConfig(
-                  (config) =>
-                    (config.customInstructions = e.currentTarget.value),
-                )
-              }
-            />
+            <>
+              <Input
+                aria-label={Locale.Settings.CustomInstructions.Content.Title}
+                aria-describedby={customInstructionsDescriptionId}
+                className={styles["custom-instructions-input"]}
+                value={config.customInstructions}
+                maxLength={1500}
+                rows={6}
+                disabled={!config.enableCustomInstructions}
+                placeholder={
+                  Locale.Settings.CustomInstructions.Content.Placeholder
+                }
+                onInput={(e) =>
+                  updateConfig(
+                    (config) =>
+                      (config.customInstructions = e.currentTarget.value),
+                  )
+                }
+              />
+              <span
+                id={customInstructionsDescriptionId}
+                className={styles["custom-instructions-status"]}
+              >
+                {customInstructionsDescription}
+              </span>
+            </>
           </ListItem>
         </List>
 

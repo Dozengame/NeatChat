@@ -15831,6 +15831,222 @@ describe("Gemini visual migration shell", () => {
     expect(syncPaintScope).not.toContain("max-width: 50%");
   });
 
+  test("keeps Settings custom instructions aligned with Gemini utility fields", () => {
+    const settings = read("app/components/settings.tsx");
+    const settingsStyles = read("app/components/settings.module.scss");
+    const customInputBlock = readRootCssBlock(
+      settingsStyles,
+      ".custom-instructions-input",
+    );
+    const customInputRootBlock = readRootDeclarations(customInputBlock);
+    const customInputFocusBlock = readCssBlock(
+      customInputBlock,
+      "&:focus-visible",
+    );
+    const customInputDisabledBlock = readCssBlock(
+      customInputBlock,
+      "&:disabled",
+    );
+    const customInputPlaceholderBlock = readCssBlock(
+      customInputBlock,
+      "&::placeholder",
+    );
+    const customInputSelectionBlock = readCssBlock(
+      customInputBlock,
+      "&::selection",
+    );
+    const customStatusBlock = readRootCssBlock(
+      settingsStyles,
+      ".custom-instructions-status",
+    );
+    const darkCustomInputBlock = readCssBlock(
+      settingsStyles,
+      ":global(.dark) .custom-instructions-input",
+    );
+    const autoDarkCustomInputSelector =
+      ":global(body:not(.light)) .custom-instructions-input";
+    const autoDarkCustomInputSelectorIndex = settingsStyles.indexOf(
+      autoDarkCustomInputSelector,
+    );
+    const autoDarkCustomInputMediaIndex = settingsStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkCustomInputSelectorIndex,
+    );
+    const autoDarkCustomInputBlock = readCssBlock(
+      settingsStyles.slice(autoDarkCustomInputMediaIndex),
+      autoDarkCustomInputSelector,
+    );
+    const settingsMobileBlock = readCssBlock(
+      settingsStyles,
+      "@media (max-width: 600px)",
+    );
+    const settingsMobileRootBlock = readCssBlock(
+      settingsMobileBlock,
+      ".settings",
+    );
+    const mobileCustomInputBlock = readCssBlock(
+      settingsMobileRootBlock,
+      ".custom-instructions-input",
+    );
+    const reducedMotionBlock = readCssBlock(
+      settingsStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const customInstructionTokenNames = [
+      "--settings-custom-instructions-background",
+      "--settings-custom-instructions-border-color",
+      "--settings-custom-instructions-color",
+      "--settings-custom-instructions-placeholder-color",
+      "--settings-custom-instructions-shadow-color",
+      "--settings-custom-instructions-inner-shadow-color",
+      "--settings-custom-instructions-focus-border-color",
+      "--settings-custom-instructions-focus-shadow-color",
+      "--settings-custom-instructions-disabled-background",
+      "--settings-custom-instructions-disabled-color",
+      "--settings-custom-instructions-selection-background",
+    ];
+    const customInstructionTokenMap = readCustomProperties(
+      customInputRootBlock,
+      customInstructionTokenNames,
+    );
+    const darkCustomInstructionTokenMap = readCustomProperties(
+      darkCustomInputBlock,
+      customInstructionTokenNames,
+    );
+    const autoDarkCustomInstructionTokenMap = readCustomProperties(
+      autoDarkCustomInputBlock,
+      customInstructionTokenNames,
+    );
+    const customInstructionsPaintScope = [
+      customInputRootBlock,
+      customInputFocusBlock,
+      customInputDisabledBlock,
+      customInputPlaceholderBlock,
+      customInputSelectionBlock,
+      darkCustomInputBlock,
+      autoDarkCustomInputBlock,
+    ].join("\n");
+
+    expect(settings).toMatch(
+      /const customInstructionsDescriptionId =\s*"settings-custom-instructions-description";/,
+    );
+    expect(settings).toContain(
+      "checked={config.enableCustomInstructions}",
+    );
+    expect(settings).toMatch(
+      /config\.enableCustomInstructions = e\.currentTarget\.checked/,
+    );
+    expect(settings).toContain(
+      'className={styles["custom-instructions-input"]}',
+    );
+    expect(settings).toContain(
+      "aria-describedby={customInstructionsDescriptionId}",
+    );
+    expect(settings).toContain(
+      'id={customInstructionsDescriptionId}',
+    );
+    expect(settings).toContain(
+      'className={styles["custom-instructions-status"]}',
+    );
+    expect(settings).toContain("value={config.customInstructions}");
+    expect(settings).toContain("maxLength={1500}");
+    expect(settings).toContain("rows={6}");
+    expect(settings).toContain(
+      "disabled={!config.enableCustomInstructions}",
+    );
+    expect(settings).toContain(
+      "Locale.Settings.CustomInstructions.Content.Placeholder",
+    );
+    expect(settings).toMatch(
+      /config\.customInstructions = e\.currentTarget\.value/,
+    );
+
+    for (const tokenMap of [
+      customInstructionTokenMap,
+      darkCustomInstructionTokenMap,
+      autoDarkCustomInstructionTokenMap,
+    ]) {
+      expect(Object.values(tokenMap)).not.toContain("");
+    }
+    expect(darkCustomInstructionTokenMap).toEqual(
+      autoDarkCustomInstructionTokenMap,
+    );
+    expect(autoDarkCustomInputSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkCustomInputMediaIndex).toBeGreaterThan(-1);
+
+    expect(customInputRootBlock).toMatch(
+      /--settings-custom-instructions-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\s*\);/,
+    );
+    expect(customInputRootBlock).toMatch(
+      /--settings-custom-instructions-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 14%,\s*transparent\s*\);/,
+    );
+    expect(darkCustomInputBlock).toMatch(
+      /--settings-custom-instructions-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--white\)\s*\);/,
+    );
+    expect(customInputRootBlock).toMatch(/width:\s*100%;/);
+    expect(customInputRootBlock).toMatch(/max-width:\s*100%;/);
+    expect(customInputRootBlock).toMatch(/min-width:\s*0;/);
+    expect(customInputRootBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(customInputRootBlock).toMatch(/line-height:\s*1\.6;/);
+    expect(customInputRootBlock).toMatch(/border-radius:\s*8px;/);
+    expect(customInputRootBlock).toMatch(
+      /background-color:\s*var\(--settings-custom-instructions-background\);/,
+    );
+    expect(customInputRootBlock).toMatch(
+      /border:\s*1px solid var\(--settings-custom-instructions-border-color\);/,
+    );
+    expect(customInputRootBlock).toMatch(
+      /color:\s*var\(--settings-custom-instructions-color\);/,
+    );
+    expect(customInputRootBlock).toMatch(/resize:\s*vertical;/);
+    expect(customInputRootBlock).toMatch(/min-height:\s*132px;/);
+    expect(customInputRootBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--settings-custom-instructions-shadow-color\)[\s\S]*var\(--settings-custom-instructions-inner-shadow-color\)/,
+    );
+    expect(customInputRootBlock).toMatch(
+      /transition:[\s\S]*background-color 0\.16s ease,[\s\S]*border-color 0\.16s ease,[\s\S]*box-shadow 0\.16s ease/,
+    );
+    expect(customInputFocusBlock).toMatch(/outline:\s*none;/);
+    expect(customInputFocusBlock).toMatch(
+      /border-color:\s*var\(--settings-custom-instructions-focus-border-color\);/,
+    );
+    expect(customInputFocusBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--settings-custom-instructions-focus-shadow-color\)/,
+    );
+    expect(customInputDisabledBlock).toMatch(
+      /background-color:\s*var\(--settings-custom-instructions-disabled-background\);/,
+    );
+    expect(customInputDisabledBlock).toMatch(
+      /color:\s*var\(--settings-custom-instructions-disabled-color\);/,
+    );
+    expect(customInputDisabledBlock).toMatch(/cursor:\s*not-allowed;/);
+    expect(customInputPlaceholderBlock).toMatch(
+      /color:\s*var\(--settings-custom-instructions-placeholder-color\);/,
+    );
+    expect(customInputSelectionBlock).toMatch(
+      /background:\s*var\(--settings-custom-instructions-selection-background\);/,
+    );
+    expect(customStatusBlock).toMatch(/position:\s*absolute;/);
+    expect(customStatusBlock).toMatch(/width:\s*1px;/);
+    expect(customStatusBlock).toMatch(/clip:\s*rect\(0 0 0 0\);/);
+    expect(mobileCustomInputBlock).toMatch(/min-height:\s*148px;/);
+    expect(mobileCustomInputBlock).toMatch(/padding:\s*12px;/);
+    expect(mobileCustomInputBlock).toMatch(/max-width:\s*100%;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.custom-instructions-input[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(customInstructionsPaintScope).not.toContain("max-width: unset");
+    expect(customInstructionsPaintScope).not.toContain(
+      "border: var(--border-in-light)",
+    );
+    expect(customInstructionsPaintScope).not.toContain(
+      "box-shadow: var(--card-shadow)",
+    );
+    expect(customInstructionsPaintScope).not.toContain(
+      "background-color: var(--white)",
+    );
+  });
+
   test("keeps shared InputRange aligned with Gemini utility controls", () => {
     const inputRange = read("app/components/input-range.tsx");
     const inputRangeStyles = read("app/components/input-range.module.scss");
@@ -15989,4 +16205,5 @@ describe("Gemini visual migration shell", () => {
     expect(rangePaintScope).not.toContain("border-radius: 10px");
     expect(rangePaintScope).not.toContain("background-color: var(--white)");
   });
+
 });
