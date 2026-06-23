@@ -3274,6 +3274,8 @@
   grid-gap: 10px;
   grid-template-columns: repeat(var(--image-count), auto);
   margin-top: 10px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .chat-message-item-image-multi {
@@ -3286,13 +3288,36 @@
 .chat-message-item-image,
 .chat-message-item-image-multi {
   box-sizing: border-box;
-  border-radius: 10px;
-  border: rgba($color: #888, $alpha: 0.2) 1px solid;
+  border-radius: var(--chat-message-image-radius);
+  border: 1px solid var(--chat-message-image-border-color);
+  background: var(--chat-message-image-background);
+  box-shadow: 0 8px 24px var(--chat-message-image-shadow-color);
   cursor: zoom-in;
   display: block;
+  max-width: 100%;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
 }
 
 .chat-message-image-frame {
+  --chat-message-image-radius: 8px;
+  --chat-message-image-border-color: color-mix(in srgb, var(--black-50) 14%, transparent);
+  --chat-message-image-background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
+  --chat-message-image-shadow-color: color-mix(in srgb, var(--black-50) 8%, transparent);
+  --chat-message-image-hover-border-color: color-mix(in srgb, var(--primary) 24%, transparent);
+  --chat-message-image-hover-shadow-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  --chat-message-image-download-border-color: color-mix(in srgb, var(--surface) 34%, transparent);
+  --chat-message-image-download-background: color-mix(in srgb, rgb(32, 33, 36) 68%, transparent);
+  --chat-message-image-download-color: color-mix(in srgb, var(--surface) 96%, transparent);
+  --chat-message-image-download-shadow-color: color-mix(in srgb, rgb(32, 33, 36) 24%, transparent);
+  --chat-message-image-download-hover-border-color: color-mix(in srgb, var(--surface) 48%, transparent);
+  --chat-message-image-download-hover-background: color-mix(in srgb, rgb(32, 33, 36) 80%, transparent);
+  --chat-message-image-download-hover-shadow-color: color-mix(in srgb, rgb(32, 33, 36) 30%, transparent);
+  --chat-message-image-download-active-background: color-mix(in srgb, rgb(32, 33, 36) 88%, transparent);
+  --chat-message-image-download-active-shadow-color: color-mix(in srgb, rgb(32, 33, 36) 22%, transparent);
+  --chat-message-image-download-focus-shadow-color: color-mix(in srgb, var(--primary) 18%, transparent);
+
   position: relative;
   display: block;
   width: max-content;
@@ -3307,6 +3332,52 @@
       transform: translateY(0);
       pointer-events: auto;
     }
+
+    .chat-message-item-image,
+    .chat-message-item-image-multi {
+      border-color: var(--chat-message-image-hover-border-color);
+      box-shadow: 0 10px 28px var(--chat-message-image-hover-shadow-color);
+    }
+  }
+}
+
+:global(.dark) .chat-message-image-frame {
+  --chat-message-image-radius: 8px;
+  --chat-message-image-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --chat-message-image-background: color-mix(in srgb, var(--surface-soft) 74%, transparent);
+  --chat-message-image-shadow-color: color-mix(in srgb, rgb(0, 0, 0) 22%, transparent);
+  --chat-message-image-hover-border-color: color-mix(in srgb, var(--primary) 28%, transparent);
+  --chat-message-image-hover-shadow-color: color-mix(in srgb, var(--primary) 12%, transparent);
+  --chat-message-image-download-border-color: color-mix(in srgb, var(--black) 12%, transparent);
+  --chat-message-image-download-background: color-mix(in srgb, var(--surface) 70%, transparent);
+  --chat-message-image-download-color: color-mix(in srgb, var(--black) 92%, transparent);
+  --chat-message-image-download-shadow-color: color-mix(in srgb, rgb(0, 0, 0) 30%, transparent);
+  --chat-message-image-download-hover-border-color: color-mix(in srgb, var(--black) 18%, transparent);
+  --chat-message-image-download-hover-background: color-mix(in srgb, var(--surface-soft) 84%, transparent);
+  --chat-message-image-download-hover-shadow-color: color-mix(in srgb, rgb(0, 0, 0) 36%, transparent);
+  --chat-message-image-download-active-background: color-mix(in srgb, var(--surface-soft) 92%, transparent);
+  --chat-message-image-download-active-shadow-color: color-mix(in srgb, rgb(0, 0, 0) 28%, transparent);
+  --chat-message-image-download-focus-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .chat-message-image-frame {
+    --chat-message-image-radius: 8px;
+    --chat-message-image-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+    --chat-message-image-background: color-mix(in srgb, var(--surface-soft) 74%, transparent);
+    --chat-message-image-shadow-color: color-mix(in srgb, rgb(0, 0, 0) 22%, transparent);
+    --chat-message-image-hover-border-color: color-mix(in srgb, var(--primary) 28%, transparent);
+    --chat-message-image-hover-shadow-color: color-mix(in srgb, var(--primary) 12%, transparent);
+    --chat-message-image-download-border-color: color-mix(in srgb, var(--black) 12%, transparent);
+    --chat-message-image-download-background: color-mix(in srgb, var(--surface) 70%, transparent);
+    --chat-message-image-download-color: color-mix(in srgb, var(--black) 92%, transparent);
+    --chat-message-image-download-shadow-color: color-mix(in srgb, rgb(0, 0, 0) 30%, transparent);
+    --chat-message-image-download-hover-border-color: color-mix(in srgb, var(--black) 18%, transparent);
+    --chat-message-image-download-hover-background: color-mix(in srgb, var(--surface-soft) 84%, transparent);
+    --chat-message-image-download-hover-shadow-color: color-mix(in srgb, rgb(0, 0, 0) 36%, transparent);
+    --chat-message-image-download-active-background: color-mix(in srgb, var(--surface-soft) 92%, transparent);
+    --chat-message-image-download-active-shadow-color: color-mix(in srgb, rgb(0, 0, 0) 28%, transparent);
+    --chat-message-image-download-focus-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
   }
 }
 
@@ -3318,6 +3389,13 @@
   background: transparent;
   line-height: 0;
   cursor: zoom-in;
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 3px;
+    box-shadow: var(--focus-ring-shadow);
+    border-radius: var(--chat-message-image-radius);
+  }
 }
 
 .chat-message-item-images {
@@ -3334,10 +3412,11 @@
   width: 34px;
   height: 34px;
   padding: 0;
-  border: 1px solid rgba($color: #fff, $alpha: 0.34);
+  border: 1px solid var(--chat-message-image-download-border-color);
   border-radius: 999px;
-  background: rgba($color: #000, $alpha: 0.64);
-  box-shadow: 0 8px 24px rgba($color: #000, $alpha: 0.24);
+  background: var(--chat-message-image-download-background);
+  color: var(--chat-message-image-download-color);
+  box-shadow: 0 8px 24px var(--chat-message-image-download-shadow-color);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -3351,13 +3430,51 @@
     background 0.18s ease;
 
   &:hover {
-    background: rgba($color: #000, $alpha: 0.78);
+    border-color: var(--chat-message-image-download-hover-border-color);
+    background: var(--chat-message-image-download-hover-background);
+    box-shadow: 0 12px 28px var(--chat-message-image-download-hover-shadow-color);
+    transform: translateY(-5px);
+  }
+
+  &:active {
+    background: var(--chat-message-image-download-active-background);
+    box-shadow: 0 5px 14px var(--chat-message-image-download-active-shadow-color);
+    transform: translateY(-2px) scale(0.96);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    box-shadow:
+      var(--focus-ring-shadow),
+      0 12px 30px var(--chat-message-image-download-focus-shadow-color);
   }
 
   svg {
     width: 17px;
     height: 17px;
-    filter: invert(1);
+    color: inherit;
+    filter: none;
+  }
+
+  svg path {
+    stroke: currentColor !important;
+  }
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 600px) {
+  .chat-message-image-download {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+
+    &:hover,
+    &:active {
+      transform: none;
+    }
   }
 }
 
@@ -3365,8 +3482,8 @@
   $calc-image-width: calc(100vw / 3 * 2 / var(--image-count));
 
   .chat-message-item-image-multi {
-    width: $calc-image-width;
-    height: $calc-image-width;
+    width: min(100%, $calc-image-width);
+    height: min(60vw, $calc-image-width);
   }
 
   .chat-message-item-image {
@@ -3382,7 +3499,22 @@
   }
 }
 
-@media screen and (min-width: 600px) {
+@media screen and (min-width: 600px) and (max-width: 767px) {
+  $calc-image-width: calc(100vw / 3 * 2 / var(--image-count));
+
+  .chat-message-item-image-multi {
+    width: min(100%, $calc-image-width);
+    height: min(60vw, $calc-image-width);
+    max-width: $calc-image-width;
+    max-height: $calc-image-width;
+  }
+
+  .chat-message-item-image {
+    max-width: calc(100vw / 3 * 2);
+  }
+}
+
+@media screen and (min-width: 768px) {
   $max-image-width: calc(
     calc(1200px - var(--sidebar-width)) / 3 * 2 / var(--image-count)
   );
@@ -5925,6 +6057,13 @@
   .image-preview-button,
   .image-preview-button:hover,
   .image-preview-button:active {
+    transform: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .chat-message-image-download,
+  .chat-message-image-download:hover,
+  .chat-message-image-download:active {
     transform: none !important;
     transition-duration: 0.01ms !important;
   }

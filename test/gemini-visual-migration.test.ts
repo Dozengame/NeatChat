@@ -11580,6 +11580,284 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps chat message image cards theme-aware and touch-safe", () => {
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const messageImageFrameBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-image-frame",
+    );
+    const messageImageFrameRootBlock =
+      readRootDeclarations(messageImageFrameBlock);
+    const messageImagePreviewButtonBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-image-preview-button",
+    );
+    const messageImagePreviewButtonFocusBlock = readCssBlock(
+      messageImagePreviewButtonBlock,
+      "&:focus-visible",
+    );
+    const messageImageBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-item-image,\n.chat-message-item-image-multi",
+    );
+    const messageImageDownloadStyles = chatStyles.slice(
+      chatStyles.indexOf("\n.chat-message-image-download {"),
+    );
+    const messageImageDownloadBlock = readCssBlock(
+      messageImageDownloadStyles,
+      ".chat-message-image-download",
+    );
+    const messageImageDownloadHoverBlock = readCssBlock(
+      messageImageDownloadBlock,
+      "&:hover",
+    );
+    const messageImageDownloadActiveBlock = readCssBlock(
+      messageImageDownloadBlock,
+      "&:active",
+    );
+    const messageImageDownloadFocusBlock = readCssBlock(
+      messageImageDownloadBlock,
+      "&:focus-visible",
+    );
+    const messageImageDownloadSvgBlock = readCssBlock(
+      messageImageDownloadBlock,
+      "svg",
+    );
+    const messageImageDownloadSvgPathBlock = readCssBlock(
+      messageImageDownloadBlock,
+      "svg path",
+    );
+    const messageImageGridBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-item-images",
+    );
+    const darkMessageImageFrameBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-message-image-frame",
+    );
+    const autoDarkMessageImageFrameSelector =
+      ":global(body:not(.light)) .chat-message-image-frame";
+    const autoDarkMessageImageFrameIndex = chatStyles.indexOf(
+      autoDarkMessageImageFrameSelector,
+    );
+    const autoDarkMessageImageMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkMessageImageFrameIndex,
+    );
+    const autoDarkMessageImageFrameBlock = readCssBlock(
+      chatStyles.slice(autoDarkMessageImageMediaIndex),
+      autoDarkMessageImageFrameSelector,
+    );
+    const mobileMessageImageMediaIndex = chatStyles.indexOf(
+      "@media only screen and (max-width: 600px)",
+      chatStyles.indexOf(".chat-message-item-image-multi"),
+    );
+    const mobileMessageImageBlock = readCssBlock(
+      chatStyles.slice(mobileMessageImageMediaIndex),
+      ".chat-message-item-image-multi",
+    );
+    const messageImageResponsiveStyles = chatStyles.slice(
+      chatStyles.indexOf(
+        "\n@media only screen and (max-width: 600px)",
+        chatStyles.indexOf("\n.chat-message-image-download {"),
+      ),
+    );
+    const tabletMessageImageMediaBlock = readCssBlock(
+      messageImageResponsiveStyles,
+      "@media screen and (min-width: 600px) and (max-width: 767px)",
+    );
+    const tabletMessageImageBlock = readCssBlock(
+      tabletMessageImageMediaBlock,
+      ".chat-message-item-image-multi",
+    );
+    const tabletSingleMessageImageBlock = readCssBlock(
+      tabletMessageImageMediaBlock,
+      ".chat-message-item-image",
+    );
+    const desktopMessageImageMediaBlock = readCssBlock(
+      messageImageResponsiveStyles,
+      "@media screen and (min-width: 768px)",
+    );
+    const touchMessageImageBlock = readCssBlock(
+      readCssBlock(
+        chatStyles.slice(chatStyles.indexOf("\n.chat-message-image-download {")),
+        "@media (hover: none), (pointer: coarse), (max-width: 600px)",
+      ),
+      ".chat-message-image-download",
+    );
+    const reducedMotionBlock = readCssBlock(
+      chatStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const messageImageTokenNames = [
+      "--chat-message-image-radius",
+      "--chat-message-image-border-color",
+      "--chat-message-image-background",
+      "--chat-message-image-shadow-color",
+      "--chat-message-image-hover-border-color",
+      "--chat-message-image-hover-shadow-color",
+      "--chat-message-image-download-border-color",
+      "--chat-message-image-download-background",
+      "--chat-message-image-download-color",
+      "--chat-message-image-download-shadow-color",
+      "--chat-message-image-download-hover-border-color",
+      "--chat-message-image-download-hover-background",
+      "--chat-message-image-download-hover-shadow-color",
+      "--chat-message-image-download-active-background",
+      "--chat-message-image-download-active-shadow-color",
+      "--chat-message-image-download-focus-shadow-color",
+    ];
+    const lightMessageImageTokens = readCustomProperties(
+      messageImageFrameRootBlock,
+      messageImageTokenNames,
+    );
+    const darkMessageImageTokens = readCustomProperties(
+      darkMessageImageFrameBlock,
+      messageImageTokenNames,
+    );
+    const autoDarkMessageImageTokens = readCustomProperties(
+      autoDarkMessageImageFrameBlock,
+      messageImageTokenNames,
+    );
+    const messageImagePaintScope = [
+      messageImageFrameRootBlock,
+      messageImageBlock,
+      messageImageDownloadBlock,
+      darkMessageImageFrameBlock,
+      autoDarkMessageImageFrameBlock,
+    ].join("\n");
+
+    expect(chat).toMatch(
+      /function MessageImagePreview\([\s\S]*className=\{styles\["chat-message-image-preview-button"\]\}[\s\S]*props\.onPreview\(props\.src, \{[\s\S]*trigger: event\.currentTarget,[\s\S]*label: props\.alt,[\s\S]*\}\)[\s\S]*className=\{props\.className\}[\s\S]*className=\{styles\["chat-message-image-download"\]\}[\s\S]*aria-label=\{props\.actionLabels\.download\}[\s\S]*title=\{props\.actionLabels\.download\}[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);[\s\S]*props\.onDownload\(props\.src\);/,
+    );
+    expect(chat).toContain('styles["chat-message-item-image"]');
+    expect(chat).toContain('styles["chat-message-item-image-multi"]');
+    expect(chat).toContain('styles["chat-message-item-images"]');
+    expect(Object.values(lightMessageImageTokens).every(Boolean)).toBeTruthy();
+    expect(Object.values(darkMessageImageTokens).every(Boolean)).toBeTruthy();
+    expect(
+      Object.values(autoDarkMessageImageTokens).every(Boolean),
+    ).toBeTruthy();
+    expect(lightMessageImageTokens["--chat-message-image-radius"]).toBe("8px");
+    expect(
+      lightMessageImageTokens["--chat-message-image-border-color"],
+    ).toContain("var(--black-50)");
+    expect(
+      darkMessageImageTokens["--chat-message-image-border-color"],
+    ).toContain("var(--black)");
+    expect(autoDarkMessageImageTokens).toEqual(darkMessageImageTokens);
+    expect(messageImageBlock).toMatch(
+      /border-radius:\s*var\(--chat-message-image-radius\);/,
+    );
+    expect(messageImageBlock).toMatch(
+      /border:\s*1px solid var\(--chat-message-image-border-color\);/,
+    );
+    expect(messageImageBlock).toMatch(
+      /background:\s*var\(--chat-message-image-background\);/,
+    );
+    expect(messageImageBlock).toMatch(
+      /box-shadow:\s*0 8px 24px var\(--chat-message-image-shadow-color\);/,
+    );
+    expect(messageImageBlock).toMatch(/max-width:\s*100%;/);
+    expect(messageImageFrameBlock).toMatch(
+      /&:hover,\s*&:focus-within[\s\S]*\.chat-message-item-image,[\s\S]*\.chat-message-item-image-multi[\s\S]*border-color:\s*var\(--chat-message-image-hover-border-color\);/,
+    );
+    expect(messageImageFrameBlock).toMatch(
+      /&:hover,\s*&:focus-within[\s\S]*\.chat-message-item-image,[\s\S]*\.chat-message-item-image-multi[\s\S]*box-shadow:\s*0 10px 28px var\(--chat-message-image-hover-shadow-color\);/,
+    );
+    expect(messageImagePreviewButtonFocusBlock).toMatch(
+      /outline:\s*var\(--focus-ring\);/,
+    );
+    expect(messageImagePreviewButtonFocusBlock).toMatch(
+      /box-shadow:\s*var\(--focus-ring-shadow\);/,
+    );
+    expect(messageImageDownloadBlock).toMatch(
+      /border:\s*1px solid var\(--chat-message-image-download-border-color\);/,
+    );
+    expect(messageImageDownloadBlock).toMatch(
+      /background:\s*var\(--chat-message-image-download-background\);/,
+    );
+    expect(messageImageDownloadBlock).toMatch(
+      /color:\s*var\(--chat-message-image-download-color\);/,
+    );
+    expect(messageImageDownloadBlock).toMatch(
+      /box-shadow:\s*0 8px 24px var\(--chat-message-image-download-shadow-color\);/,
+    );
+    expect(messageImageDownloadHoverBlock).toMatch(
+      /border-color:\s*var\(--chat-message-image-download-hover-border-color\);/,
+    );
+    expect(messageImageDownloadHoverBlock).toMatch(
+      /background:\s*var\(--chat-message-image-download-hover-background\);/,
+    );
+    expect(messageImageDownloadHoverBlock).toMatch(
+      /box-shadow:\s*0 12px 28px var\(--chat-message-image-download-hover-shadow-color\);/,
+    );
+    expect(messageImageDownloadActiveBlock).toMatch(
+      /background:\s*var\(--chat-message-image-download-active-background\);/,
+    );
+    expect(messageImageDownloadActiveBlock).toMatch(
+      /box-shadow:\s*0 5px 14px var\(--chat-message-image-download-active-shadow-color\);/,
+    );
+    expect(messageImageDownloadFocusBlock).toMatch(
+      /outline:\s*var\(--focus-ring\);/,
+    );
+    expect(messageImageDownloadFocusBlock).toMatch(
+      /box-shadow:\s*var\(--focus-ring-shadow\),\s*0 12px 30px var\(--chat-message-image-download-focus-shadow-color\);/,
+    );
+    expect(messageImageDownloadSvgBlock).toMatch(/color:\s*inherit;/);
+    expect(messageImageDownloadSvgBlock).toMatch(/filter:\s*none;/);
+    expect(messageImageDownloadSvgPathBlock).toMatch(
+      /stroke:\s*currentColor !important;/,
+    );
+    expect(messageImageGridBlock).toMatch(/max-width:\s*100%;/);
+    expect(messageImageGridBlock).toMatch(/min-width:\s*0;/);
+    expect(mobileMessageImageMediaIndex).toBeGreaterThan(-1);
+    expect(mobileMessageImageBlock).toMatch(
+      /width:\s*min\(100%, \$calc-image-width\);/,
+    );
+    expect(mobileMessageImageBlock).toMatch(
+      /height:\s*min\(60vw, \$calc-image-width\);/,
+    );
+    expect(touchMessageImageBlock).toMatch(/opacity:\s*1;/);
+    expect(touchMessageImageBlock).toMatch(/pointer-events:\s*auto;/);
+    expect(touchMessageImageBlock).toMatch(/transform:\s*none;/);
+    expect(touchMessageImageBlock).toMatch(
+      /&:hover,\s*&:active[\s\S]*transform:\s*none;/,
+    );
+    expect(messageImageResponsiveStyles).toContain(
+      "@media screen and (min-width: 600px) and (max-width: 767px)",
+    );
+    expect(tabletMessageImageMediaBlock).not.toBe("");
+    expect(tabletMessageImageBlock).toMatch(
+      /width:\s*min\(100%, \$calc-image-width\);/,
+    );
+    expect(tabletMessageImageBlock).toMatch(
+      /height:\s*min\(60vw, \$calc-image-width\);/,
+    );
+    expect(tabletMessageImageBlock).toMatch(
+      /max-width:\s*\$calc-image-width;/,
+    );
+    expect(tabletMessageImageBlock).toMatch(
+      /max-height:\s*\$calc-image-width;/,
+    );
+    expect(tabletSingleMessageImageBlock).toMatch(
+      /max-width:\s*calc\(100vw \/ 3 \* 2\);/,
+    );
+    expect(messageImageResponsiveStyles).toContain(
+      "@media screen and (min-width: 768px)",
+    );
+    expect(desktopMessageImageMediaBlock).not.toBe("");
+    expect(desktopMessageImageMediaBlock).not.toContain(
+      "@media screen and (min-width: 600px)",
+    );
+    expect(messageImagePaintScope).not.toMatch(/rgba\(\$color:\s*#/);
+    expect(messageImagePaintScope).not.toMatch(/#[0-9a-fA-F]{3,6}/);
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-message-image-download,\s*\.chat-message-image-download:hover,\s*\.chat-message-image-download:active[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+  });
+
   test("keeps shortcut key modal bounded on compact screens", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
