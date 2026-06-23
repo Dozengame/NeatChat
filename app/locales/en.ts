@@ -936,6 +936,11 @@ const en: LocaleType = {
     SubTitle: "Chat with the Soul behind the Mask",
     More: "Find More",
     CodeBlockExpand: "Show full code block",
+    Mermaid: {
+      Preview: "Preview Mermaid diagram",
+      Unavailable: "Diagram preview unavailable",
+      SourceLabel: "Mermaid source",
+    },
     NotShow: "Never Show Again",
     ConfirmNoShow: "Confirm to disable？You can enable it in settings later.",
     Thinking: "Thinking...",

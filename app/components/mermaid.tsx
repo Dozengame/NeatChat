@@ -2,26 +2,36 @@
 
 import { useEffect, useRef, useState } from "react";
 import mermaid from "mermaid";
-import clsx from "clsx";
 import { showImageModal } from "./ui-lib-actions";
+import Locale from "../locales";
 
 export function Mermaid(props: { code: string }) {
   const ref = useRef<HTMLButtonElement>(null);
-  const [hasError, setHasError] = useState(false);
+  const [failedCode, setFailedCode] = useState<string | null>(null);
+  const hasError = failedCode === props.code;
 
   useEffect(() => {
+    let disposed = false;
+    setFailedCode(null);
+
     if (props.code && ref.current) {
       mermaid
         .run({
           nodes: [ref.current],
-          suppressErrors: true,
         })
-        .catch((e) => {
-          setHasError(true);
-          console.error("[Mermaid] ", e.message);
+        .catch((error) => {
+          if (disposed) return;
+
+          const message =
+            error instanceof Error ? error.message : String(error);
+          setFailedCode(props.code);
+          console.error("[Mermaid] ", message);
         });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    return () => {
+      disposed = true;
+    };
   }, [props.code]);
 
   function viewSvgInNewWindow() {
@@ -33,16 +43,32 @@ export function Mermaid(props: { code: string }) {
   }
 
   if (hasError) {
-    return null;
+    return (
+      <div
+        className="markdown-mermaid-fallback"
+        role="status"
+        aria-live="polite"
+      >
+        <span className="markdown-mermaid-fallback-title">
+          {Locale.NewChat.Mermaid.Unavailable}
+        </span>
+        <code className="markdown-mermaid-fallback-code">
+          {Locale.NewChat.Mermaid.SourceLabel}
+          {": "}
+          {props.code}
+        </code>
+      </div>
+    );
   }
 
   return (
     <button
       type="button"
-      className={clsx("no-dark", "mermaid")}
+      className="mermaid"
       ref={ref}
       onClick={() => viewSvgInNewWindow()}
-      aria-label="Open Mermaid diagram preview"
+      aria-label={Locale.NewChat.Mermaid.Preview}
+      title={Locale.NewChat.Mermaid.Preview}
     >
       {props.code}
     </button>

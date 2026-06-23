@@ -6906,6 +6906,243 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps Gemini-style Mermaid diagram frame and fallback", () => {
+    const mermaid = read("app/components/mermaid.tsx");
+    const markdownStyles = read("app/styles/markdown.scss");
+    const cnLocale = read("app/locales/cn.ts");
+    const enLocale = read("app/locales/en.ts");
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const autoDarkRootBlock = readCssBlock(
+      readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
+      ":root",
+    );
+    const mermaidResetBlock = readCssBlock(markdownStyles, ".mermaid");
+    const mermaidFrameBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .mermaid",
+    );
+    const mermaidFallbackBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-mermaid-fallback",
+    );
+    const mermaidFallbackTitleBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-mermaid-fallback-title",
+    );
+    const mermaidFallbackCodeBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-mermaid-fallback-code",
+    );
+    const streamingMermaidFallbackSelector =
+      '.markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ iframe:last-child))';
+    const streamingMermaidFallbackBlock = readCssBlock(
+      markdownStyles,
+      streamingMermaidFallbackSelector,
+    );
+    const touchBlock = readCssBlock(
+      markdownStyles,
+      "@media (hover: none), (pointer: coarse), (max-width: 600px)",
+    );
+    const touchMermaidFrameBlock = readCssBlock(
+      touchBlock,
+      ".markdown-body .mermaid",
+    );
+    const touchMermaidFallbackBlock = readCssBlock(
+      touchBlock,
+      ".markdown-body .markdown-mermaid-fallback",
+    );
+    const markdownReducedMotionBlock = readCssBlock(
+      markdownStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const mermaidTokenNames = [
+      "--markdown-mermaid-frame-border-color",
+      "--markdown-mermaid-frame-background",
+      "--markdown-mermaid-frame-shadow-color",
+      "--markdown-mermaid-frame-hover-border-color",
+      "--markdown-mermaid-frame-hover-shadow-color",
+      "--markdown-mermaid-fallback-border-color",
+      "--markdown-mermaid-fallback-background",
+      "--markdown-mermaid-fallback-color",
+      "--markdown-mermaid-fallback-accent-color",
+    ];
+    const lightMermaidTokens = readCustomProperties(
+      lightMixinBlock,
+      mermaidTokenNames,
+    );
+    const darkMermaidTokens = readCustomProperties(
+      darkMixinBlock,
+      mermaidTokenNames,
+    );
+    const mermaidSelectorPaintScope = [
+      mermaidFrameBlock,
+      mermaidFallbackBlock,
+      mermaidFallbackTitleBlock,
+      mermaidFallbackCodeBlock,
+    ].join("\n");
+    const mermaidTokenValues = Object.values({
+      ...lightMermaidTokens,
+      ...darkMermaidTokens,
+    }).join("\n");
+
+    expect(mermaid).toContain('import Locale from "../locales";');
+    expect(mermaid).toMatch(
+      /const \[failedCode, setFailedCode\] = useState<string \| null>\(null\);/,
+    );
+    expect(mermaid).toContain("const hasError = failedCode === props.code;");
+    expect(mermaid).toContain("setFailedCode(null);");
+    expect(mermaid).toContain("setFailedCode(props.code);");
+    expect(mermaid).toContain("Locale.NewChat.Mermaid.Preview");
+    expect(mermaid).toContain("Locale.NewChat.Mermaid.Unavailable");
+    expect(mermaid).toContain("Locale.NewChat.Mermaid.SourceLabel");
+    expect(mermaid).toContain('className="mermaid"');
+    expect(mermaid).toContain('className="markdown-mermaid-fallback"');
+    expect(mermaid).toContain('className="markdown-mermaid-fallback-title"');
+    expect(mermaid).toContain('className="markdown-mermaid-fallback-code"');
+    expect(mermaid).toContain('role="status"');
+    expect(mermaid).toContain('aria-live="polite"');
+    expect(mermaid).not.toContain('"no-dark"');
+    expect(mermaid).not.toContain("suppressErrors: true");
+    expect(mermaid).not.toContain("return null;");
+    expect(cnLocale).toContain("Mermaid: {");
+    expect(cnLocale).toContain('Preview: "预览 Mermaid 图表"');
+    expect(cnLocale).toContain('Unavailable: "图表暂不可用"');
+    expect(cnLocale).toContain('SourceLabel: "Mermaid 源码"');
+    expect(enLocale).toContain("Mermaid: {");
+    expect(enLocale).toContain('Preview: "Preview Mermaid diagram"');
+    expect(enLocale).toContain('Unavailable: "Diagram preview unavailable"');
+    expect(enLocale).toContain('SourceLabel: "Mermaid source"');
+
+    for (const tokenName of mermaidTokenNames) {
+      expect(lightMermaidTokens[tokenName]).toBeTruthy();
+      expect(darkMermaidTokens[tokenName]).toBeTruthy();
+    }
+    expect(Object.values(lightMermaidTokens).join("\n")).not.toMatch(
+      /rgba\(|#[0-9a-fA-F]{3,8}\b/,
+    );
+    expect(Object.values(darkMermaidTokens).join("\n")).not.toMatch(
+      /rgba\(|#[0-9a-fA-F]{3,8}\b/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-mermaid-frame-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 10%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-mermaid-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*transparent\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-mermaid-fallback-accent-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 82%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-mermaid-frame-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-mermaid-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--surface\)\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-mermaid-fallback-accent-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 90%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkRootBlock).toMatch(/@include dark;/);
+
+    expect(mermaidResetBlock).toMatch(/appearance:\s*none;/);
+    expect(mermaidResetBlock).toMatch(/font:\s*inherit;/);
+    expect(mermaidFrameBlock).toMatch(/display:\s*block;/);
+    expect(mermaidFrameBlock).toMatch(/width:\s*min\(100%, 760px\);/);
+    expect(mermaidFrameBlock).toMatch(/max-width:\s*100%;/);
+    expect(mermaidFrameBlock).toMatch(/min-width:\s*0;/);
+    expect(mermaidFrameBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(mermaidFrameBlock).toMatch(/margin:\s*12px 0;/);
+    expect(mermaidFrameBlock).toMatch(/padding:\s*12px;/);
+    expect(mermaidFrameBlock).toMatch(/border-radius:\s*8px;/);
+    expect(mermaidFrameBlock).toMatch(
+      /border:\s*1px solid var\(--markdown-mermaid-frame-border-color\);/,
+    );
+    expect(mermaidFrameBlock).toMatch(
+      /background:\s*var\(--markdown-mermaid-frame-background\);/,
+    );
+    expect(mermaidFrameBlock).toMatch(
+      /box-shadow:\s*0 8px 24px var\(--markdown-mermaid-frame-shadow-color\);/,
+    );
+    expect(mermaidFrameBlock).toMatch(/overflow:\s*auto;/);
+    expect(mermaidFrameBlock).toMatch(/overscroll-behavior-x:\s*contain;/);
+    expect(mermaidFrameBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*border-color:\s*var\(--markdown-mermaid-frame-hover-border-color\);/,
+    );
+    expect(mermaidFrameBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*box-shadow:\s*0 10px 26px var\(--markdown-mermaid-frame-hover-shadow-color\);/,
+    );
+    expect(mermaidFrameBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*transform:\s*translateY\(-1px\);/,
+    );
+    expect(mermaidFrameBlock).toMatch(
+      /&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/,
+    );
+    expect(mermaidFrameBlock).toMatch(
+      /&:focus-visible[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 10px 26px var\(--markdown-mermaid-frame-hover-shadow-color\);/,
+    );
+    expect(mermaidFrameBlock).toMatch(
+      /svg[\s\S]*max-width:\s*100%;[\s\S]*height:\s*auto;/,
+    );
+
+    expect(mermaidFallbackBlock).toMatch(/display:\s*flex;/);
+    expect(mermaidFallbackBlock).toMatch(/width:\s*min\(100%, 760px\);/);
+    expect(mermaidFallbackBlock).toMatch(/max-width:\s*100%;/);
+    expect(mermaidFallbackBlock).toMatch(/min-width:\s*0;/);
+    expect(mermaidFallbackBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(mermaidFallbackBlock).toMatch(/gap:\s*8px;/);
+    expect(mermaidFallbackBlock).toMatch(/margin:\s*12px 0;/);
+    expect(mermaidFallbackBlock).toMatch(/padding:\s*12px;/);
+    expect(mermaidFallbackBlock).toMatch(/border-radius:\s*8px;/);
+    expect(mermaidFallbackBlock).toMatch(
+      /border:\s*1px dashed var\(--markdown-mermaid-fallback-border-color\);/,
+    );
+    expect(mermaidFallbackBlock).toMatch(
+      /background:\s*var\(--markdown-mermaid-fallback-background\);/,
+    );
+    expect(mermaidFallbackBlock).toMatch(
+      /color:\s*var\(--markdown-mermaid-fallback-color\);/,
+    );
+    expect(mermaidFallbackBlock).toMatch(/overflow:\s*hidden;/);
+    expect(mermaidFallbackBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(mermaidFallbackTitleBlock).toMatch(/font-weight:\s*600;/);
+    expect(mermaidFallbackTitleBlock).toMatch(
+      /color:\s*var\(--markdown-mermaid-fallback-accent-color\);/,
+    );
+    expect(mermaidFallbackCodeBlock).toMatch(/display:\s*block;/);
+    expect(mermaidFallbackCodeBlock).toMatch(/max-width:\s*100%;/);
+    expect(mermaidFallbackCodeBlock).toMatch(
+      /max-height:\s*min\(38vh, 320px\);/,
+    );
+    expect(mermaidFallbackCodeBlock).toMatch(/overflow:\s*auto;/);
+    expect(mermaidFallbackCodeBlock).toMatch(/overflow-x:\s*auto;/);
+    expect(mermaidFallbackCodeBlock).toMatch(/white-space:\s*pre-wrap;/);
+    expect(mermaidFallbackCodeBlock).toMatch(/word-break:\s*break-word;/);
+    expect(mermaidTokenValues).not.toContain("var(--white)");
+    expect(mermaidSelectorPaintScope).not.toMatch(
+      /(?:border:\s*var\(--border-in-light\)|background-color:\s*var\(--white\)|border-radius:\s*4px|rgba\(|#[0-9a-fA-F]{3,8}\b)/,
+    );
+    expect(streamingMermaidFallbackSelector).toContain(
+      ":has(+ .markdown-mermaid-fallback:last-child)",
+    );
+    expect(streamingMermaidFallbackBlock).toMatch(
+      /border-color:\s*var\(--markdown-code-streaming-border-color\);/,
+    );
+
+    expect(touchMermaidFrameBlock).toMatch(/width:\s*100%;/);
+    expect(touchMermaidFrameBlock).toMatch(/padding:\s*10px;/);
+    expect(touchMermaidFrameBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*transform:\s*none;/,
+    );
+    expect(touchMermaidFallbackBlock).toMatch(/width:\s*100%;/);
+    expect(touchMermaidFallbackBlock).toMatch(/padding:\s*10px;/);
+    expect(markdownReducedMotionBlock).toMatch(
+      /\.markdown-body \.mermaid,[\s\S]*\.markdown-body \.mermaid:hover,[\s\S]*\.markdown-body \.mermaid:focus-visible,[\s\S]*\.markdown-body \.markdown-mermaid-fallback[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(markdownStyles).toContain(
+      ":has(+ .markdown-mermaid-fallback:last-child)",
+    );
+  });
+
   test("labels image actions with image-specific context", () => {
     const chat = read("app/components/chat.tsx");
     const markdown = read("app/components/markdown.tsx");
@@ -14188,7 +14425,7 @@ describe("Gemini visual migration shell", () => {
       ":root",
     );
     const streamingCodeSelector =
-      '.markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ iframe:last-child))';
+      '.markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ iframe:last-child))';
     const streamingCodeBlock = readCssBlock(
       markdownStyles,
       streamingCodeSelector,
@@ -14230,6 +14467,9 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toContain("<Mermaid code={mermaidCode} key={mermaidCode} />");
     expect(markdown).toContain("<HTMLPreview");
     expect(streamingCodeSelector).toContain(":has(+ .mermaid:last-child)");
+    expect(streamingCodeSelector).toContain(
+      ":has(+ .markdown-mermaid-fallback:last-child)",
+    );
     expect(streamingCodeSelector).toContain(":has(+ iframe:last-child)");
     for (const tokenName of streamingCodeTokenNames) {
       expect(lightStreamingCodeTokens[tokenName]).toBeTruthy();

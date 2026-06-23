@@ -926,6 +926,11 @@ const cn = {
     SubTitle: "现在开始，与面具背后的灵魂思维碰撞",
     More: "查看全部",
     CodeBlockExpand: "展开完整代码块",
+    Mermaid: {
+      Preview: "预览 Mermaid 图表",
+      Unavailable: "图表暂不可用",
+      SourceLabel: "Mermaid 源码",
+    },
     Think: "已深度思考",
     Thinking: "正在思考中...",
     ThinkingTime: (seconds: number) => ` (用时 ${seconds} 秒)`,
