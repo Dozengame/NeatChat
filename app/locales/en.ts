@@ -678,6 +678,11 @@ const en: LocaleType = {
         Title: "Realtime Chat",
         SubTitle: "Enable realtime chat feature",
       },
+      Start: "Start voice",
+      Pause: "Pause voice",
+      Connecting: "Connecting",
+      Ready: "Voice ready",
+      Listening: "Listening",
       Provider: {
         Title: "Model Provider",
         SubTitle: "Switch between different providers",

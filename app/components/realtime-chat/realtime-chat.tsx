@@ -21,6 +21,7 @@ import {
 import { AudioHandler } from "@/app/lib/audio";
 import { uploadImage } from "@/app/utils/chat";
 import { VoicePrint } from "@/app/components/voice-print";
+import Locale from "@/app/locales";
 
 interface RealtimeChatProps {
   onClose?: () => void;
@@ -344,32 +345,62 @@ function useRealtimeChatView({
     }
     disconnect().catch(console.error);
   };
+  const realtimeStatusText =
+    status ||
+    (isConnected
+      ? isRecording
+        ? Locale.Settings.Realtime.Listening
+        : Locale.Settings.Realtime.Ready
+      : Locale.Settings.Realtime.Connecting);
 
   return (
-    <div className={styles["realtime-chat"]}>
+    <div
+      className={clsx(styles["realtime-chat"], {
+        [styles["realtime-chat-recording"]]: isRecording,
+        [styles["realtime-chat-connected"]]: isConnected,
+      })}
+      role="group"
+      aria-label={Locale.Settings.Realtime.Enable.Title}
+    >
       <div
         className={clsx(styles["circle-mic"], {
           [styles["pulse"]]: isRecording,
         })}
+        aria-hidden="true"
       >
         <VoicePrint frequencies={frequencies} isActive={isRecording} />
       </div>
 
       <div className={styles["bottom-icons"]}>
-        <div>
+        <div className={styles["icon-left"]}>
           <IconButton
             icon={isRecording ? <VoiceIcon /> : <VoiceOffIcon />}
             onClick={toggleRecording}
             disabled={!isConnected}
+            className={styles["realtime-control-button"]}
+            aria={
+              isRecording
+                ? Locale.Settings.Realtime.Pause
+                : Locale.Settings.Realtime.Start
+            }
             shadow
             bordered
           />
         </div>
-        <div className={styles["icon-center"]}>{status}</div>
-        <div>
+        <div
+          className={styles["icon-center"]}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {realtimeStatusText}
+        </div>
+        <div className={styles["icon-right"]}>
           <IconButton
             icon={<PowerIcon />}
             onClick={handleClose}
+            className={styles["realtime-control-button"]}
+            aria={Locale.UI.Close}
             shadow
             bordered
           />

@@ -17388,6 +17388,232 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps Realtime voice overlay aligned with Gemini voice surfaces", () => {
+    const realtimeChat = read("app/components/realtime-chat/realtime-chat.tsx");
+    const realtimeStyles = read(
+      "app/components/realtime-chat/realtime-chat.module.scss",
+    );
+    const cnLocale = read("app/locales/cn.ts");
+    const enLocale = read("app/locales/en.ts");
+    const rootBlock = readRootCssBlock(realtimeStyles, ".realtime-chat");
+    const rootDeclarations = readRootDeclarations(rootBlock);
+    const micBlock = readCssBlock(rootBlock, ".circle-mic");
+    const recordingMicBlock = readCssBlock(
+      realtimeStyles,
+      ".realtime-chat-recording .circle-mic",
+    );
+    const bottomIconsBlock = readCssBlock(rootBlock, ".bottom-icons");
+    const iconSlotsBlock = readCssBlock(rootBlock, ".icon-left,\n  .icon-right");
+    const controlButtonBlock = readCssBlock(
+      rootBlock,
+      ".realtime-control-button",
+    );
+    const statusBlock = readCssBlock(rootBlock, ".icon-center");
+    const darkBlock = readCssBlock(
+      realtimeStyles,
+      ":global(.dark) .realtime-chat",
+    );
+    const autoDarkRealtimeSelector =
+      ":global(body:not(.light)) .realtime-chat";
+    const autoDarkRealtimeIndex = realtimeStyles.indexOf(
+      autoDarkRealtimeSelector,
+    );
+    const autoDarkRealtimeMediaIndex = realtimeStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkRealtimeIndex,
+    );
+    const autoDarkBlock = readCssBlock(
+      realtimeStyles.slice(autoDarkRealtimeMediaIndex),
+      autoDarkRealtimeSelector,
+    );
+    const mobileBlock = readCssBlock(
+      realtimeStyles,
+      "@media screen and (max-width: 600px)",
+    );
+    const mobileRootBlock = readCssBlock(mobileBlock, ".realtime-chat");
+    const mobileMicBlock = readCssBlock(mobileRootBlock, ".circle-mic");
+    const mobileBottomIconsBlock = readCssBlock(
+      mobileRootBlock,
+      ".bottom-icons",
+    );
+    const mobileControlButtonBlock = readCssBlock(
+      mobileRootBlock,
+      ".realtime-control-button",
+    );
+    const reducedMotionBlock = readCssBlock(
+      realtimeStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const realtimeTokenNames = [
+      "--realtime-background",
+      "--realtime-mic-background",
+      "--realtime-mic-border-color",
+      "--realtime-mic-shadow-color",
+      "--realtime-mic-active-ring-color",
+      "--realtime-control-background",
+      "--realtime-control-border-color",
+      "--realtime-control-shadow-color",
+      "--realtime-status-color",
+      "--realtime-status-background",
+    ];
+    const realtimeTokenMap = readCustomProperties(
+      rootDeclarations,
+      realtimeTokenNames,
+    );
+    const darkRealtimeTokenMap = readCustomProperties(
+      darkBlock,
+      realtimeTokenNames,
+    );
+    const autoDarkRealtimeTokenMap = readCustomProperties(
+      autoDarkBlock,
+      realtimeTokenNames,
+    );
+    const realtimePaintScope = [
+      rootDeclarations,
+      micBlock,
+      recordingMicBlock,
+      bottomIconsBlock,
+      statusBlock,
+      darkBlock,
+      autoDarkBlock,
+      mobileRootBlock,
+      mobileMicBlock,
+      mobileBottomIconsBlock,
+    ].join("\n");
+
+    expect(realtimeChat).toContain(
+      'className={clsx(styles["realtime-chat"],',
+    );
+    expect(realtimeChat).toContain(
+      '[styles["realtime-chat-recording"]]: isRecording',
+    );
+    expect(realtimeChat).toContain(
+      '[styles["realtime-chat-connected"]]: isConnected',
+    );
+    expect(realtimeChat).toContain('role="group"');
+    expect(realtimeChat).toMatch(/const realtimeStatusText =\s*status \|\|/);
+    expect(realtimeChat).toContain(
+      "Locale.Settings.Realtime.Connecting",
+    );
+    expect(realtimeChat).toContain(
+      "Locale.Settings.Realtime.Ready",
+    );
+    expect(realtimeChat).toContain(
+      "Locale.Settings.Realtime.Listening",
+    );
+    expect(realtimeChat).toContain(
+      'aria-label={Locale.Settings.Realtime.Enable.Title}',
+    );
+    expect(realtimeChat).toContain('role="status"');
+    expect(realtimeChat).toContain('aria-live="polite"');
+    expect(realtimeChat).toContain('aria-atomic="true"');
+    expect(realtimeChat).toMatch(
+      /aria=\{[\s\S]*isRecording[\s\S]*\? Locale\.Settings\.Realtime\.Pause[\s\S]*: Locale\.Settings\.Realtime\.Start[\s\S]*\}/,
+    );
+    expect(realtimeChat).toContain("aria={Locale.UI.Close}");
+    expect(realtimeChat).toContain('className={styles["icon-left"]}');
+    expect(realtimeChat).toContain('className={styles["icon-right"]}');
+    expect(
+      realtimeChat.match(/className=\{styles\["realtime-control-button"\]\}/g)
+        ?.length ?? 0,
+    ).toBe(2);
+    expect(cnLocale).toContain('Start: "开始语音"');
+    expect(cnLocale).toContain('Pause: "暂停语音"');
+    expect(cnLocale).toContain('Ready: "语音就绪"');
+    expect(cnLocale).toContain('Listening: "正在聆听"');
+    expect(enLocale).toContain('Start: "Start voice"');
+    expect(enLocale).toContain('Pause: "Pause voice"');
+    expect(enLocale).toContain('Ready: "Voice ready"');
+    expect(enLocale).toContain('Listening: "Listening"');
+
+    for (const tokenMap of [
+      realtimeTokenMap,
+      darkRealtimeTokenMap,
+      autoDarkRealtimeTokenMap,
+    ]) {
+      expect(Object.values(tokenMap)).not.toContain("");
+    }
+    expect(autoDarkRealtimeIndex).toBeGreaterThan(-1);
+    expect(autoDarkRealtimeMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkRealtimeTokenMap).toEqual(darkRealtimeTokenMap);
+
+    expect(rootDeclarations).toMatch(
+      /--realtime-background:\s*color-mix\(\s*in srgb,\s*var\(--surface\) 94%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(rootDeclarations).toMatch(
+      /--realtime-mic-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--primary\) 8%\s*\);/,
+    );
+    expect(rootDeclarations).toMatch(
+      /--realtime-control-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--gray\)\s*\);/,
+    );
+    expect(darkBlock).toMatch(
+      /--realtime-background:\s*color-mix\(\s*in srgb,\s*var\(--surface\) 92%,\s*var\(--black\) 4%\s*\);/,
+    );
+    expect(darkBlock).toMatch(
+      /--realtime-mic-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--primary\) 12%\s*\);/,
+    );
+    expect(rootDeclarations).toMatch(/background:\s*var\(--realtime-background\);/);
+    expect(rootDeclarations).toMatch(/gap:\s*28px;/);
+    expect(rootDeclarations).toMatch(/overflow:\s*hidden;/);
+    expect(micBlock).toMatch(/width:\s*min\(176px,\s*42vw\);/);
+    expect(micBlock).toMatch(/aspect-ratio:\s*1;/);
+    expect(micBlock).toMatch(/border-radius:\s*50%;/);
+    expect(micBlock).toMatch(/background:\s*var\(--realtime-mic-background\);/);
+    expect(micBlock).toMatch(
+      /border:\s*1px solid var\(--realtime-mic-border-color\);/,
+    );
+    expect(micBlock).toMatch(
+      /box-shadow:\s*0 18px 48px var\(--realtime-mic-shadow-color\);/,
+    );
+    expect(recordingMicBlock).toMatch(
+      /box-shadow:[\s\S]*0 0 0 8px var\(--realtime-mic-active-ring-color\)/,
+    );
+    expect(bottomIconsBlock).toMatch(/width:\s*min\(520px,\s*calc\(100% - 40px\)\);/);
+    expect(bottomIconsBlock).toMatch(
+      /grid-template-columns:\s*44px minmax\(0,\s*1fr\) 44px;/,
+    );
+    expect(bottomIconsBlock).toMatch(/border-radius:\s*8px;/);
+    expect(bottomIconsBlock).toMatch(
+      /background:\s*var\(--realtime-control-background\);/,
+    );
+    expect(bottomIconsBlock).toMatch(
+      /border:\s*1px solid var\(--realtime-control-border-color\);/,
+    );
+    expect(bottomIconsBlock).toMatch(
+      /box-shadow:\s*0 14px 34px var\(--realtime-control-shadow-color\);/,
+    );
+    expect(iconSlotsBlock).toMatch(/width:\s*44px;/);
+    expect(iconSlotsBlock).toMatch(/height:\s*44px;/);
+    expect(iconSlotsBlock).toMatch(/min-width:\s*0;/);
+    expect(controlButtonBlock).toMatch(/width:\s*44px;/);
+    expect(controlButtonBlock).toMatch(/height:\s*44px;/);
+    expect(controlButtonBlock).toMatch(/min-width:\s*44px;/);
+    expect(controlButtonBlock).toMatch(/min-height:\s*44px;/);
+    expect(controlButtonBlock).toMatch(/padding:\s*0;/);
+    expect(controlButtonBlock).toMatch(/border-radius:\s*8px;/);
+    expect(statusBlock).toMatch(/min-width:\s*0;/);
+    expect(statusBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(statusBlock).toMatch(/color:\s*var\(--realtime-status-color\);/);
+    expect(statusBlock).toMatch(
+      /background:\s*var\(--realtime-status-background\);/,
+    );
+    expect(mobileRootBlock).toMatch(/padding:\s*16px;/);
+    expect(mobileMicBlock).toMatch(/width:\s*min\(156px,\s*52vw\);/);
+    expect(mobileBottomIconsBlock).toMatch(/width:\s*calc\(100% - 24px\);/);
+    expect(mobileBottomIconsBlock).toMatch(
+      /grid-template-columns:\s*44px minmax\(0,\s*1fr\) 44px;/,
+    );
+    expect(mobileControlButtonBlock).toMatch(/width:\s*44px;/);
+    expect(mobileControlButtonBlock).toMatch(/height:\s*44px;/);
+    expect(mobileControlButtonBlock).toMatch(/padding:\s*0;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.pulse,[\s\S]*\.realtime-chat-recording \.circle-mic,[\s\S]*\.realtime-control-button[\s\S]*animation:\s*none !important;[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(realtimePaintScope).not.toContain("#a0d8ef");
+    expect(realtimePaintScope).not.toContain("#f0f8ff");
+    expect(realtimePaintScope).not.toContain("var(--second)");
+  });
+
   test("keeps shared InputRange aligned with Gemini utility controls", () => {
     const inputRange = read("app/components/input-range.tsx");
     const inputRangeStyles = read("app/components/input-range.module.scss");

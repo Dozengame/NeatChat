@@ -671,6 +671,11 @@ const cn = {
         Title: "实时聊天",
         SubTitle: "开启实时聊天功能",
       },
+      Start: "开始语音",
+      Pause: "暂停语音",
+      Connecting: "正在连接",
+      Ready: "语音就绪",
+      Listening: "正在聆听",
       Provider: {
         Title: "模型服务商",
         SubTitle: "切换不同的服务商",
