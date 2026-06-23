@@ -15831,6 +15831,272 @@ describe("Gemini visual migration shell", () => {
     expect(syncPaintScope).not.toContain("max-width: 50%");
   });
 
+  test("keeps Settings access provider fields aligned with Gemini utility fields", () => {
+    const settings = read("app/components/settings.tsx");
+    const settingsStyles = read("app/components/settings.module.scss");
+    const accessSurfaceBlock = readRootCssBlock(
+      settingsStyles,
+      ".settings-access-surface",
+    );
+    const accessSurfaceRootBlock = readRootDeclarations(accessSurfaceBlock);
+    const darkAccessSurfaceBlock = readCssBlock(
+      settingsStyles,
+      ":global(.dark) .settings-access-surface",
+    );
+    const autoDarkAccessSurfaceSelector =
+      ":global(body:not(.light)) .settings-access-surface";
+    const autoDarkAccessSurfaceSelectorIndex = settingsStyles.indexOf(
+      autoDarkAccessSurfaceSelector,
+    );
+    const autoDarkAccessSurfaceMediaIndex = settingsStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkAccessSurfaceSelectorIndex,
+    );
+    const autoDarkAccessSurfaceBlock = readCssBlock(
+      settingsStyles.slice(autoDarkAccessSurfaceMediaIndex),
+      autoDarkAccessSurfaceSelector,
+    );
+    const accessSelectBlock = readCssBlock(
+      accessSurfaceBlock,
+      ".settings-access-select",
+    );
+    const accessFieldBlock = readCssBlock(
+      accessSurfaceBlock,
+      "input[type=\"text\"],\n  .settings-access-select select,\n  :global(.password-input-container)",
+    );
+    const accessTextAndSelectBlock = readCssBlock(
+      accessSurfaceBlock,
+      "input[type=\"text\"],\n  .settings-access-select select",
+    );
+    const accessSelectFieldBlock = readCssBlock(
+      accessSurfaceBlock,
+      ".settings-access-select select",
+    );
+    const accessFieldFocusBlock = readCssBlock(
+      accessSurfaceBlock,
+      "input[type=\"text\"]:focus-visible,\n  .settings-access-select select:focus-visible,\n  :global(.password-input-container):focus-within",
+    );
+    const accessDisabledFieldBlock = readCssBlock(
+      accessSurfaceBlock,
+      "input[type=\"text\"]:disabled,\n  .settings-access-select select:disabled,\n  :global(.password-input-container:has(.password-input:disabled))",
+    );
+    const accessPlaceholderBlock = readCssBlock(
+      accessSurfaceBlock,
+      "input[type=\"text\"]::placeholder,\n  :global(.password-input::placeholder)",
+    );
+    const accessSelectionBlock = readCssBlock(
+      accessSurfaceBlock,
+      "input[type=\"text\"]::selection,\n  :global(.password-input::selection)",
+    );
+    const accessPasswordContainerSelectorIndex =
+      accessSurfaceBlock.lastIndexOf(
+        "\n  :global(.password-input-container) {",
+      );
+    const accessPasswordContainerBlock = readCssBlock(
+      accessSurfaceBlock.slice(accessPasswordContainerSelectorIndex),
+      ":global(.password-input-container)",
+    );
+    const accessPasswordInputBlock = readCssBlock(
+      accessPasswordContainerBlock,
+      ":global(.password-input)",
+    );
+    const accessPasswordEyeBlock = readCssBlock(
+      accessPasswordContainerBlock,
+      ":global(.password-eye)",
+    );
+    const accessCheckboxBlock = readCssBlock(
+      accessSurfaceBlock,
+      "input[type=\"checkbox\"]",
+    );
+    const accessCheckboxDisabledBlock = readCssBlock(
+      accessSurfaceBlock,
+      "input[type=\"checkbox\"]:disabled",
+    );
+    const settingsMobileBlock = readCssBlock(
+      settingsStyles,
+      "@media (max-width: 600px)",
+    );
+    const settingsMobileRootBlock = readCssBlock(
+      settingsMobileBlock,
+      ".settings",
+    );
+    const mobileAccessSurfaceBlock = readCssBlock(
+      settingsMobileRootBlock,
+      ".settings-access-surface",
+    );
+    const mobileAccessFieldBlock = readCssBlock(
+      mobileAccessSurfaceBlock,
+      "input[type=\"text\"],\n      .settings-access-select,\n      :global(.password-input-container)",
+    );
+    const reducedMotionBlock = readCssBlock(
+      settingsStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const accessFieldTokenNames = [
+      "--settings-access-field-background",
+      "--settings-access-field-border-color",
+      "--settings-access-field-color",
+      "--settings-access-field-muted-color",
+      "--settings-access-field-placeholder-color",
+      "--settings-access-field-focus-border-color",
+      "--settings-access-field-focus-shadow-color",
+      "--settings-access-field-disabled-background",
+      "--settings-access-field-disabled-color",
+      "--settings-access-field-selection-background",
+      "--settings-access-field-inner-shadow-color",
+      "--settings-access-field-radius",
+      "--settings-access-checkbox-accent",
+    ];
+    const accessTokenMap = readCustomProperties(
+      accessSurfaceRootBlock,
+      accessFieldTokenNames,
+    );
+    const darkAccessTokenMap = readCustomProperties(
+      darkAccessSurfaceBlock,
+      accessFieldTokenNames,
+    );
+    const autoDarkAccessTokenMap = readCustomProperties(
+      autoDarkAccessSurfaceBlock,
+      accessFieldTokenNames,
+    );
+    const accessPaintScope = [
+      accessSurfaceRootBlock,
+      darkAccessSurfaceBlock,
+      autoDarkAccessSurfaceBlock,
+      accessFieldBlock,
+      accessTextAndSelectBlock,
+      accessSelectFieldBlock,
+      accessFieldFocusBlock,
+      accessDisabledFieldBlock,
+      accessPlaceholderBlock,
+      accessSelectionBlock,
+      accessPasswordContainerBlock,
+      accessPasswordInputBlock,
+      accessPasswordEyeBlock,
+      accessCheckboxBlock,
+      accessCheckboxDisabledBlock,
+    ].join("\n");
+
+    expect(settings).toContain('className={styles["settings-access-surface"]}');
+    expect(settings).toContain("<List id={SlotID.CustomModel}>");
+    expect(settings.match(/styles\["settings-access-select"\]/g)?.length ?? 0)
+      .toBeGreaterThanOrEqual(2);
+    expect(settings).toMatch(
+      /access\.accessCode = e\.currentTarget\.value;[\s\S]*access\.validatedAccessCode = "";[\s\S]*access\.accessCodeValidatedAt = 0;/,
+    );
+    expect(settings).toMatch(
+      /checked=\{accessStore\.useCustomConfig\}[\s\S]*disabled=\{accessStore\.lockedFields\?\.includes\("baseUrl"\)\}[\s\S]*if \(accessStore\.lockedFields\?\.includes\("baseUrl"\)\) return;[\s\S]*access\.useCustomConfig = e\.currentTarget\.checked/,
+    );
+    expect(settings).toMatch(
+      /value=\{accessStore\.provider\}[\s\S]*access\.provider = e\.target\s*\.value as ServiceProvider/,
+    );
+    expect(settings).toMatch(
+      /value=\{accessStore\.openaiUrl\}[\s\S]*placeholder=\{OPENAI_BASE_URL\}[\s\S]*disabled=\{accessStore\.lockedFields\?\.includes\("baseUrl"\)\}[\s\S]*if \(accessStore\.lockedFields\?\.includes\("baseUrl"\)\) return;[\s\S]*access\.openaiUrl = e\.currentTarget\.value/,
+    );
+    expect(settings).toMatch(
+      /value=\{accessStore\.openaiApiKey\}[\s\S]*disabled=\{[\s\S]*accessStore\.hideUserApiKey[\s\S]*accessStore\.lockedFields\?\.includes\("apiKey"\)[\s\S]*\}[\s\S]*if \([\s\S]*accessStore\.hideUserApiKey[\s\S]*accessStore\.lockedFields\?\.includes\("apiKey"\)[\s\S]*\) \{[\s\S]*return;[\s\S]*access\.openaiApiKey = e\.currentTarget\.value/,
+    );
+    expect(settings).toContain("{!apiResourceLocked && (");
+    expect(accessPasswordContainerSelectorIndex).toBeGreaterThan(-1);
+
+    for (const tokenMap of [
+      accessTokenMap,
+      darkAccessTokenMap,
+      autoDarkAccessTokenMap,
+    ]) {
+      expect(Object.values(tokenMap)).not.toContain("");
+    }
+    expect(darkAccessTokenMap).toEqual(autoDarkAccessTokenMap);
+    expect(autoDarkAccessSurfaceSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkAccessSurfaceMediaIndex).toBeGreaterThan(-1);
+
+    expect(accessSurfaceRootBlock).toMatch(/width:\s*100%;/);
+    expect(accessSurfaceRootBlock).toMatch(/max-width:\s*100%;/);
+    expect(accessSurfaceRootBlock).toMatch(/min-width:\s*0;/);
+    expect(accessSurfaceRootBlock).toMatch(
+      /--settings-access-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\s*\);/,
+    );
+    expect(accessSurfaceRootBlock).toMatch(
+      /--settings-access-field-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 14%,\s*transparent\s*\);/,
+    );
+    expect(darkAccessSurfaceBlock).toMatch(
+      /--settings-access-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(accessSelectBlock).toMatch(/width:\s*min\(360px, 100%\);/);
+    expect(accessSelectBlock).toMatch(/max-width:\s*100%;/);
+    expect(accessSelectBlock).toMatch(/min-width:\s*0;/);
+    expect(accessFieldBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(accessFieldBlock).toMatch(/width:\s*min\(360px, 100%\);/);
+    expect(accessFieldBlock).toMatch(/max-width:\s*100%;/);
+    expect(accessFieldBlock).toMatch(/min-height:\s*38px;/);
+    expect(accessFieldBlock).toMatch(
+      /background-color:\s*var\(--settings-access-field-background\);/,
+    );
+    expect(accessFieldBlock).toMatch(
+      /border:\s*1px solid var\(--settings-access-field-border-color\);/,
+    );
+    expect(accessFieldBlock).toMatch(
+      /border-radius:\s*var\(--settings-access-field-radius\);/,
+    );
+    expect(accessFieldBlock).toMatch(
+      /color:\s*var\(--settings-access-field-color\);/,
+    );
+    expect(accessFieldBlock).toMatch(
+      /box-shadow:\s*inset 0 1px 0 var\(--settings-access-field-inner-shadow-color\);/,
+    );
+    expect(accessFieldBlock).toMatch(
+      /transition:[\s\S]*background-color 0\.16s ease,[\s\S]*border-color 0\.16s ease,[\s\S]*box-shadow 0\.16s ease/,
+    );
+    expect(accessTextAndSelectBlock).toMatch(/font-family:\s*inherit;/);
+    expect(accessTextAndSelectBlock).toMatch(/line-height:\s*1\.4;/);
+    expect(accessSelectFieldBlock).toMatch(/padding-right:\s*32px;/);
+    expect(accessSelectFieldBlock).toMatch(/text-align:\s*left;/);
+    expect(accessSelectFieldBlock).toMatch(/cursor:\s*pointer;/);
+    expect(accessFieldFocusBlock).toMatch(/outline:\s*none;/);
+    expect(accessFieldFocusBlock).toMatch(
+      /border-color:\s*var\(--settings-access-field-focus-border-color\);/,
+    );
+    expect(accessFieldFocusBlock).toMatch(
+      /box-shadow:\s*0 0 0 3px var\(--settings-access-field-focus-shadow-color\);/,
+    );
+    expect(accessDisabledFieldBlock).toMatch(
+      /background-color:\s*var\(--settings-access-field-disabled-background\);/,
+    );
+    expect(accessDisabledFieldBlock).toMatch(
+      /color:\s*var\(--settings-access-field-disabled-color\);/,
+    );
+    expect(accessDisabledFieldBlock).toMatch(/cursor:\s*not-allowed;/);
+    expect(accessPlaceholderBlock).toMatch(
+      /color:\s*var\(--settings-access-field-placeholder-color\);/,
+    );
+    expect(accessSelectionBlock).toMatch(
+      /background:\s*var\(--settings-access-field-selection-background\);/,
+    );
+    expect(accessPasswordContainerBlock).toMatch(/display:\s*flex;/);
+    expect(accessPasswordInputBlock).toMatch(/min-width:\s*0;/);
+    expect(accessPasswordInputBlock).toMatch(/flex:\s*1 1 auto;/);
+    expect(accessPasswordInputBlock).toMatch(/border:\s*0;/);
+    expect(accessPasswordInputBlock).toMatch(/background:\s*transparent;/);
+    expect(accessPasswordEyeBlock).toMatch(
+      /color:\s*var\(--settings-access-field-muted-color\);/,
+    );
+    expect(accessCheckboxBlock).toMatch(
+      /accent-color:\s*var\(--settings-access-checkbox-accent\);/,
+    );
+    expect(accessCheckboxBlock).toMatch(/width:\s*18px;/);
+    expect(accessCheckboxBlock).toMatch(/height:\s*18px;/);
+    expect(accessCheckboxDisabledBlock).toMatch(/cursor:\s*not-allowed;/);
+    expect(accessCheckboxDisabledBlock).toMatch(/opacity:\s*0\.72;/);
+    expect(mobileAccessFieldBlock).toMatch(/width:\s*100%;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.settings-access-surface input\[type="text"\],[\s\S]*\.settings-access-select select,[\s\S]*\.settings-access-surface :global\(\.password-input-container\)[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(accessPaintScope).not.toContain("border: var(--border-in-light)");
+    expect(accessPaintScope).not.toContain("box-shadow: var(--card-shadow)");
+    expect(accessPaintScope).not.toContain("border-radius: 10px");
+    expect(accessPaintScope).not.toContain("background-color: var(--white)");
+  });
+
   test("keeps Settings danger zone clear without changing destructive semantics", () => {
     const settings = read("app/components/settings.tsx");
     const dangerItems = read("app/components/settings-danger-items.tsx");

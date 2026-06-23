@@ -262,6 +262,295 @@
   }
 }
 
+.settings-access-surface {
+  --settings-access-field-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 90%,
+    var(--gray)
+  );
+  --settings-access-field-border-color: color-mix(
+    in srgb,
+    var(--black-50) 14%,
+    transparent
+  );
+  --settings-access-field-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
+  --settings-access-field-muted-color: color-mix(
+    in srgb,
+    var(--black-50) 72%,
+    transparent
+  );
+  --settings-access-field-placeholder-color: color-mix(
+    in srgb,
+    var(--black-50) 70%,
+    transparent
+  );
+  --settings-access-field-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 58%,
+    transparent
+  );
+  --settings-access-field-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 16%,
+    transparent
+  );
+  --settings-access-field-disabled-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 76%,
+    var(--gray)
+  );
+  --settings-access-field-disabled-color: color-mix(
+    in srgb,
+    var(--black-50) 68%,
+    transparent
+  );
+  --settings-access-field-selection-background: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
+  --settings-access-field-inner-shadow-color: color-mix(
+    in srgb,
+    var(--white) 48%,
+    transparent
+  );
+  --settings-access-field-radius: 8px;
+  --settings-access-checkbox-accent: var(--primary);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+
+  .settings-access-select {
+    width: min(360px, 100%);
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .settings-access-select select {
+    padding-right: 32px;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  input[type="text"],
+  .settings-access-select select,
+  :global(.password-input-container) {
+    box-sizing: border-box;
+    width: min(360px, 100%);
+    max-width: 100%;
+    min-height: 38px;
+    background-color: var(--settings-access-field-background);
+    border: 1px solid var(--settings-access-field-border-color);
+    border-radius: var(--settings-access-field-radius);
+    color: var(--settings-access-field-color);
+    box-shadow: inset 0 1px 0 var(--settings-access-field-inner-shadow-color);
+    transition:
+      background-color 0.16s ease,
+      border-color 0.16s ease,
+      box-shadow 0.16s ease;
+  }
+
+  input[type="text"],
+  .settings-access-select select {
+    font-family: inherit;
+    line-height: 1.4;
+  }
+
+  input[type="text"] {
+    padding: 0 11px;
+  }
+
+  input[type="text"]:focus-visible,
+  .settings-access-select select:focus-visible,
+  :global(.password-input-container):focus-within {
+    outline: none;
+    border-color: var(--settings-access-field-focus-border-color);
+    box-shadow: 0 0 0 3px var(--settings-access-field-focus-shadow-color);
+  }
+
+  input[type="text"]:disabled,
+  .settings-access-select select:disabled,
+  :global(.password-input-container:has(.password-input:disabled)) {
+    background-color: var(--settings-access-field-disabled-background);
+    color: var(--settings-access-field-disabled-color);
+    cursor: not-allowed;
+  }
+
+  input[type="text"]::placeholder,
+  :global(.password-input::placeholder) {
+    color: var(--settings-access-field-placeholder-color);
+  }
+
+  input[type="text"]::selection,
+  :global(.password-input::selection) {
+    background: var(--settings-access-field-selection-background);
+  }
+
+  :global(.password-input-container) {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 0 8px;
+
+    :global(.password-input) {
+      min-width: 0;
+      flex: 1 1 auto;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      color: var(--settings-access-field-color);
+      outline: none;
+    }
+
+    :global(.password-eye) {
+      flex: 0 0 auto;
+      margin-right: 0;
+      color: var(--settings-access-field-muted-color);
+    }
+  }
+
+  input[type="checkbox"] {
+    accent-color: var(--settings-access-checkbox-accent);
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+
+  input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+    opacity: 0.72;
+  }
+}
+
+:global(.dark) .settings-access-surface {
+  --settings-access-field-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    var(--white)
+  );
+  --settings-access-field-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --settings-access-field-color: color-mix(
+    in srgb,
+    var(--black) 94%,
+    transparent
+  );
+  --settings-access-field-muted-color: color-mix(
+    in srgb,
+    var(--black-50) 78%,
+    transparent
+  );
+  --settings-access-field-placeholder-color: color-mix(
+    in srgb,
+    var(--black-50) 78%,
+    transparent
+  );
+  --settings-access-field-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 82%,
+    var(--black)
+  );
+  --settings-access-field-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 22%,
+    transparent
+  );
+  --settings-access-field-disabled-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 72%,
+    var(--white)
+  );
+  --settings-access-field-disabled-color: color-mix(
+    in srgb,
+    var(--black-50) 72%,
+    transparent
+  );
+  --settings-access-field-selection-background: color-mix(
+    in srgb,
+    var(--primary) 24%,
+    transparent
+  );
+  --settings-access-field-inner-shadow-color: color-mix(
+    in srgb,
+    var(--black) 5%,
+    transparent
+  );
+  --settings-access-field-radius: 8px;
+  --settings-access-checkbox-accent: var(--primary);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .settings-access-surface {
+    --settings-access-field-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 86%,
+      var(--white)
+    );
+    --settings-access-field-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --settings-access-field-color: color-mix(
+      in srgb,
+      var(--black) 94%,
+      transparent
+    );
+    --settings-access-field-muted-color: color-mix(
+      in srgb,
+      var(--black-50) 78%,
+      transparent
+    );
+    --settings-access-field-placeholder-color: color-mix(
+      in srgb,
+      var(--black-50) 78%,
+      transparent
+    );
+    --settings-access-field-focus-border-color: color-mix(
+      in srgb,
+      var(--primary) 82%,
+      var(--black)
+    );
+    --settings-access-field-focus-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 22%,
+      transparent
+    );
+    --settings-access-field-disabled-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 72%,
+      var(--white)
+    );
+    --settings-access-field-disabled-color: color-mix(
+      in srgb,
+      var(--black-50) 72%,
+      transparent
+    );
+    --settings-access-field-selection-background: color-mix(
+      in srgb,
+      var(--primary) 24%,
+      transparent
+    );
+    --settings-access-field-inner-shadow-color: color-mix(
+      in srgb,
+      var(--black) 5%,
+      transparent
+    );
+    --settings-access-field-radius: 8px;
+    --settings-access-checkbox-accent: var(--primary);
+  }
+}
+
 .settings-danger-surface {
   --settings-danger-surface-background: color-mix(
     in srgb,
@@ -1309,6 +1598,14 @@
       }
     }
 
+    .settings-access-surface {
+      input[type="text"],
+      .settings-access-select,
+      :global(.password-input-container) {
+        width: 100%;
+      }
+    }
+
     .user-prompt-modal {
       min-height: auto;
 
@@ -1357,6 +1654,9 @@
   .custom-instructions-input,
   .settings-danger-item,
   .settings-danger-action,
+  .settings-access-surface input[type="text"],
+  .settings-access-select select,
+  .settings-access-surface :global(.password-input-container),
   .settings-sync-action-cluster,
   .settings-sync-config-modal select,
   .settings-sync-config-modal input[type="text"],
