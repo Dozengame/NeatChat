@@ -11044,6 +11044,287 @@ describe("Gemini visual migration shell", () => {
     expect(errorPaintScope).not.toContain("border-radius: 20px");
   });
 
+  test("keeps global modal and input fallbacks aligned with Gemini utility fields", () => {
+    const globalStyles = read("app/styles/globals.scss");
+    const uiLibActions = read("app/components/ui-lib-actions.tsx");
+    const uiLibComponents = read("app/components/ui-lib-components.tsx");
+    const globalFieldSelector =
+      'input[type="number"],\ninput[type="text"],\ninput[type="password"]';
+    const darkGlobalFieldSelector =
+      '.dark input[type="number"],\n.dark input[type="text"],\n.dark input[type="password"]';
+    const autoDarkGlobalFieldSelector =
+      'body:not(.light) input[type="number"],\n  body:not(.light) input[type="text"],\n  body:not(.light) input[type="password"]';
+    const mobileGlobalFieldSelector =
+      'input[type="number"],\n  input[type="text"],\n  input[type="password"]';
+    const globalFieldBlock = readCssBlock(globalStyles, globalFieldSelector);
+    const globalFieldRootBlock = readRootDeclarations(globalFieldBlock);
+    const globalFieldFocusVisibleBlock = readCssBlock(
+      globalFieldBlock,
+      "&:focus-visible",
+    );
+    const globalFieldPlaceholderBlock = readCssBlock(
+      globalFieldBlock,
+      "&::placeholder",
+    );
+    const globalFieldSelectionBlock = readCssBlock(
+      globalFieldBlock,
+      "&::selection",
+    );
+    const darkGlobalFieldBlock = readCssBlock(
+      globalStyles,
+      darkGlobalFieldSelector,
+    );
+    const autoDarkGlobalFieldSelectorIndex = globalStyles.indexOf(
+      autoDarkGlobalFieldSelector,
+    );
+    const autoDarkGlobalFieldMediaIndex = globalStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkGlobalFieldSelectorIndex,
+    );
+    const autoDarkGlobalFieldBlock = readCssBlock(
+      globalStyles.slice(autoDarkGlobalFieldMediaIndex),
+      autoDarkGlobalFieldSelector,
+    );
+    const modalMaskBlock = readRootCssBlock(globalStyles, ".modal-mask");
+    const darkModalMaskBlock = readCssBlock(globalStyles, ".dark .modal-mask");
+    const autoDarkModalMaskSelector = "body:not(.light) .modal-mask";
+    const autoDarkModalMaskSelectorIndex = globalStyles.indexOf(
+      autoDarkModalMaskSelector,
+    );
+    const autoDarkModalMaskMediaIndex = globalStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkModalMaskSelectorIndex,
+    );
+    const autoDarkModalMaskBlock = readCssBlock(
+      globalStyles.slice(autoDarkModalMaskMediaIndex),
+      autoDarkModalMaskSelector,
+    );
+    const passwordContainerBlock = readRootCssBlock(
+      globalStyles,
+      ".password-input-container",
+    );
+    const passwordContainerRootBlock = readRootDeclarations(
+      passwordContainerBlock,
+    );
+    const passwordContainerFocusBlock = readCssBlock(
+      passwordContainerBlock,
+      "&:focus-within",
+    );
+    const darkPasswordContainerBlock = readCssBlock(
+      globalStyles,
+      ".dark .password-input-container",
+    );
+    const autoDarkPasswordContainerSelector =
+      "body:not(.light) .password-input-container";
+    const autoDarkPasswordContainerSelectorIndex = globalStyles.indexOf(
+      autoDarkPasswordContainerSelector,
+    );
+    const autoDarkPasswordContainerMediaIndex = globalStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkPasswordContainerSelectorIndex,
+    );
+    const autoDarkPasswordContainerBlock = readCssBlock(
+      globalStyles.slice(autoDarkPasswordContainerMediaIndex),
+      autoDarkPasswordContainerSelector,
+    );
+    const passwordEyeBlock = readCssBlock(
+      passwordContainerBlock,
+      ".password-eye",
+    );
+    const passwordInputBlock = readCssBlock(
+      passwordContainerBlock,
+      ".password-input",
+    );
+    const mobileFallbackMediaIndex = globalStyles.indexOf(
+      "@media screen and (max-width: 600px)",
+      globalStyles.indexOf(".modal-mask {"),
+    );
+    const mobileFallbackBlock = readCssBlock(
+      globalStyles.slice(mobileFallbackMediaIndex),
+      "@media screen and (max-width: 600px)",
+    );
+    const mobileModalMaskBlock = readCssBlock(
+      mobileFallbackBlock,
+      ".modal-mask",
+    );
+    const mobilePasswordContainerBlock = readCssBlock(
+      mobileFallbackBlock,
+      ".password-input-container",
+    );
+    const mobileInputBlock = readCssBlock(
+      mobileFallbackBlock,
+      mobileGlobalFieldSelector,
+    );
+    const reducedMotionBlock = readCssBlock(
+      globalStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const fieldTokenNames = [
+      "--global-field-background",
+      "--global-field-border-color",
+      "--global-field-color",
+      "--global-field-placeholder-color",
+      "--global-field-focus-border-color",
+      "--global-field-focus-shadow",
+      "--global-field-selection-background",
+      "--global-field-selection-color",
+      "--global-field-icon-color",
+    ];
+    const modalMaskTokenNames = [
+      "--modal-mask-background",
+      "--modal-mask-backdrop-filter",
+    ];
+    const fieldTokenMap = readCustomProperties(
+      globalFieldRootBlock,
+      fieldTokenNames,
+    );
+    const darkFieldTokenMap = readCustomProperties(
+      darkGlobalFieldBlock,
+      fieldTokenNames,
+    );
+    const autoDarkFieldTokenMap = readCustomProperties(
+      autoDarkGlobalFieldBlock,
+      fieldTokenNames,
+    );
+    const darkPasswordTokenMap = readCustomProperties(
+      darkPasswordContainerBlock,
+      fieldTokenNames,
+    );
+    const autoDarkPasswordTokenMap = readCustomProperties(
+      autoDarkPasswordContainerBlock,
+      fieldTokenNames,
+    );
+    const modalMaskTokenMap = readCustomProperties(
+      modalMaskBlock,
+      modalMaskTokenNames,
+    );
+    const darkModalMaskTokenMap = readCustomProperties(
+      darkModalMaskBlock,
+      modalMaskTokenNames,
+    );
+    const autoDarkModalMaskTokenMap = readCustomProperties(
+      autoDarkModalMaskBlock,
+      modalMaskTokenNames,
+    );
+    const globalFallbackPaintScope = [
+      globalFieldRootBlock,
+      darkGlobalFieldBlock,
+      autoDarkGlobalFieldBlock,
+      modalMaskBlock,
+      darkModalMaskBlock,
+      autoDarkModalMaskBlock,
+      passwordContainerRootBlock,
+      passwordEyeBlock,
+      passwordInputBlock,
+    ].join("\n");
+
+    expect(uiLibActions).toContain('div.className = "modal-mask";');
+    expect(uiLibComponents).toContain(
+      '<div className={"password-input-container"}>',
+    );
+    expect(uiLibComponents).toContain('className={"password-eye"}');
+    expect(uiLibComponents).toContain('className={"password-input"}');
+    expect(autoDarkGlobalFieldSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkGlobalFieldMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkPasswordContainerSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkPasswordContainerMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkModalMaskSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkModalMaskMediaIndex).toBeGreaterThan(-1);
+    expect(mobileFallbackMediaIndex).toBeGreaterThan(-1);
+
+    for (const tokenMap of [
+      fieldTokenMap,
+      darkFieldTokenMap,
+      autoDarkFieldTokenMap,
+      darkPasswordTokenMap,
+      autoDarkPasswordTokenMap,
+      modalMaskTokenMap,
+      darkModalMaskTokenMap,
+      autoDarkModalMaskTokenMap,
+    ]) {
+      expect(Object.values(tokenMap)).not.toContain("");
+    }
+    expect(darkFieldTokenMap).toEqual(autoDarkFieldTokenMap);
+    expect(darkPasswordTokenMap).toEqual(autoDarkPasswordTokenMap);
+    expect(darkModalMaskTokenMap).toEqual(autoDarkModalMaskTokenMap);
+
+    expect(globalFieldRootBlock).toMatch(/border-radius:\s*8px;/);
+    expect(globalFieldRootBlock).toMatch(
+      /border:\s*1px solid var\(--global-field-border-color\);/,
+    );
+    expect(globalFieldRootBlock).toMatch(
+      /background:\s*var\(--global-field-background\);/,
+    );
+    expect(globalFieldRootBlock).toMatch(
+      /color:\s*var\(--global-field-color\);/,
+    );
+    expect(globalFieldRootBlock).toMatch(/max-width:\s*min\(100%, 520px\);/);
+    expect(globalFieldRootBlock).toMatch(
+      /transition:[\s\S]*background-color ease 0\.18s,[\s\S]*border-color ease 0\.18s,[\s\S]*box-shadow ease 0\.18s;/,
+    );
+    expect(globalFieldFocusVisibleBlock).toMatch(
+      /border-color:\s*var\(--global-field-focus-border-color\);/,
+    );
+    expect(globalFieldFocusVisibleBlock).toMatch(
+      /box-shadow:\s*var\(--global-field-focus-shadow\);/,
+    );
+    expect(globalFieldPlaceholderBlock).toMatch(
+      /color:\s*var\(--global-field-placeholder-color\);/,
+    );
+    expect(globalFieldSelectionBlock).toMatch(
+      /background:\s*var\(--global-field-selection-background\);/,
+    );
+    expect(globalFieldSelectionBlock).toMatch(
+      /color:\s*var\(--global-field-selection-color\);/,
+    );
+
+    expect(passwordContainerRootBlock).toMatch(
+      /max-width:\s*min\(100%, 520px\);/,
+    );
+    expect(passwordContainerRootBlock).toMatch(/min-width:\s*0;/);
+    expect(passwordContainerRootBlock).toMatch(
+      /border:\s*1px solid var\(--global-field-border-color\);/,
+    );
+    expect(passwordContainerRootBlock).toMatch(
+      /background:\s*var\(--global-field-background\);/,
+    );
+    expect(passwordContainerFocusBlock).toMatch(
+      /border-color:\s*var\(--global-field-focus-border-color\);/,
+    );
+    expect(passwordContainerFocusBlock).toMatch(
+      /box-shadow:\s*var\(--global-field-focus-shadow\);/,
+    );
+    expect(passwordEyeBlock).toMatch(
+      /color:\s*var\(--global-field-icon-color\);/,
+    );
+    expect(passwordInputBlock).toMatch(/flex:\s*1 1 auto;/);
+    expect(passwordInputBlock).toMatch(/min-width:\s*0;/);
+    expect(passwordInputBlock).toMatch(/max-width:\s*100%;/);
+    expect(passwordInputBlock).toMatch(/border:\s*0;/);
+    expect(passwordInputBlock).toMatch(/background:\s*transparent;/);
+
+    expect(modalMaskBlock).toMatch(
+      /background:\s*var\(--modal-mask-background\);/,
+    );
+    expect(modalMaskBlock).toMatch(
+      /backdrop-filter:\s*var\(--modal-mask-backdrop-filter\);/,
+    );
+    expect(modalMaskBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(modalMaskBlock).toMatch(/overflow:\s*auto;/);
+    expect(modalMaskBlock).toMatch(/overscroll-behavior:\s*contain;/);
+    expect(mobileModalMaskBlock).toMatch(/align-items:\s*flex-end;/);
+    expect(mobileModalMaskBlock).not.toMatch(/padding:/);
+    expect(mobilePasswordContainerBlock).toMatch(/max-width:\s*100%;/);
+    expect(mobileInputBlock).toMatch(/max-width:\s*100%;/);
+    expect(reducedMotionBlock).toMatch(
+      /input\[type="number"\],[\s\S]*input\[type="text"\],[\s\S]*input\[type="password"\],[\s\S]*\.password-input-container,[\s\S]*\.modal-mask[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(globalFallbackPaintScope).not.toContain("max-width: 50%");
+    expect(globalFallbackPaintScope).not.toContain("border: var(--border-in-light)");
+    expect(globalFallbackPaintScope).not.toContain("background: var(--white)");
+    expect(globalFallbackPaintScope).not.toContain("rgba($color: #000000");
+  });
+
   test("keeps shared ui-lib modal selector and toast surfaces aligned with Gemini", () => {
     const uiLibComponents = read("app/components/ui-lib-components.tsx");
     const uiLibStyles = read("app/components/ui-lib.module.scss");

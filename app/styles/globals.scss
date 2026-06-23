@@ -324,16 +324,73 @@ input[type="range"]::-ms-thumb:hover {
 input[type="number"],
 input[type="text"],
 input[type="password"] {
+  --global-field-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 90%,
+    var(--gray)
+  );
+  --global-field-border-color: color-mix(
+    in srgb,
+    var(--black-50) 14%,
+    transparent
+  );
+  --global-field-color: var(--black);
+  --global-field-placeholder-color: color-mix(
+    in srgb,
+    var(--black-50) 74%,
+    transparent
+  );
+  --global-field-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 48%,
+    transparent
+  );
+  --global-field-focus-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--primary) 14%, transparent);
+  --global-field-selection-background: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
+  --global-field-selection-color: var(--black);
+  --global-field-icon-color: color-mix(
+    in srgb,
+    var(--black-50) 82%,
+    transparent
+  );
+
   appearance: none;
-  border-radius: 10px;
-  border: var(--border-in-light);
+  border-radius: 8px;
+  border: 1px solid var(--global-field-border-color);
   min-height: 36px;
   box-sizing: border-box;
-  background: var(--white);
-  color: var(--black);
+  background: var(--global-field-background);
+  color: var(--global-field-color);
   padding: 0 10px;
-  max-width: 50%;
+  max-width: min(100%, 520px);
   font-family: inherit;
+  transition:
+    background-color ease 0.18s,
+    border-color ease 0.18s,
+    box-shadow ease 0.18s;
+
+  &::placeholder {
+    color: var(--global-field-placeholder-color);
+  }
+
+  &::selection {
+    background: var(--global-field-selection-background);
+    color: var(--global-field-selection-color);
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    border-color: var(--global-field-focus-border-color);
+    box-shadow: var(--global-field-focus-shadow);
+  }
 }
 
 div.math {
@@ -341,19 +398,215 @@ div.math {
 }
 
 .modal-mask {
+  --modal-mask-background: color-mix(
+    in srgb,
+    rgb(32, 33, 36) 44%,
+    transparent
+  );
+  --modal-mask-backdrop-filter: blur(10px) saturate(112%);
+
   z-index: 9999;
   position: fixed;
   top: 0;
   left: 0;
   height: var(--full-height);
   width: 100vw;
-  background-color: rgba($color: #000000, $alpha: 0.5);
+  box-sizing: border-box;
+  background: var(--modal-mask-background);
+  backdrop-filter: var(--modal-mask-backdrop-filter);
+  -webkit-backdrop-filter: var(--modal-mask-backdrop-filter);
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
 
-  @media screen and (max-width: 600px) {
+.dark input[type="number"],
+.dark input[type="text"],
+.dark input[type="password"] {
+  --global-field-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 82%,
+    var(--surface)
+  );
+  --global-field-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --global-field-color: var(--black);
+  --global-field-placeholder-color: color-mix(
+    in srgb,
+    var(--black-50) 70%,
+    transparent
+  );
+  --global-field-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 52%,
+    var(--black) 8%
+  );
+  --global-field-focus-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--primary) 20%, transparent);
+  --global-field-selection-background: color-mix(
+    in srgb,
+    var(--primary) 24%,
+    transparent
+  );
+  --global-field-selection-color: var(--black);
+  --global-field-icon-color: color-mix(
+    in srgb,
+    var(--black-50) 86%,
+    transparent
+  );
+}
+
+.dark .password-input-container {
+  --global-field-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 82%,
+    var(--surface)
+  );
+  --global-field-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --global-field-color: var(--black);
+  --global-field-placeholder-color: color-mix(
+    in srgb,
+    var(--black-50) 70%,
+    transparent
+  );
+  --global-field-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 52%,
+    var(--black) 8%
+  );
+  --global-field-focus-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--primary) 20%, transparent);
+  --global-field-selection-background: color-mix(
+    in srgb,
+    var(--primary) 24%,
+    transparent
+  );
+  --global-field-selection-color: var(--black);
+  --global-field-icon-color: color-mix(
+    in srgb,
+    var(--black-50) 86%,
+    transparent
+  );
+}
+
+.dark .modal-mask {
+  --modal-mask-background: color-mix(
+    in srgb,
+    rgb(8, 10, 14) 56%,
+    transparent
+  );
+  --modal-mask-backdrop-filter: blur(10px) saturate(108%);
+}
+
+@media (prefers-color-scheme: dark) {
+  body:not(.light) input[type="number"],
+  body:not(.light) input[type="text"],
+  body:not(.light) input[type="password"] {
+    --global-field-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 82%,
+      var(--surface)
+    );
+    --global-field-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --global-field-color: var(--black);
+    --global-field-placeholder-color: color-mix(
+      in srgb,
+      var(--black-50) 70%,
+      transparent
+    );
+    --global-field-focus-border-color: color-mix(
+      in srgb,
+      var(--primary) 52%,
+      var(--black) 8%
+    );
+    --global-field-focus-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--primary) 20%, transparent);
+    --global-field-selection-background: color-mix(
+      in srgb,
+      var(--primary) 24%,
+      transparent
+    );
+    --global-field-selection-color: var(--black);
+    --global-field-icon-color: color-mix(
+      in srgb,
+      var(--black-50) 86%,
+      transparent
+    );
+  }
+
+  body:not(.light) .password-input-container {
+    --global-field-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 82%,
+      var(--surface)
+    );
+    --global-field-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --global-field-color: var(--black);
+    --global-field-placeholder-color: color-mix(
+      in srgb,
+      var(--black-50) 70%,
+      transparent
+    );
+    --global-field-focus-border-color: color-mix(
+      in srgb,
+      var(--primary) 52%,
+      var(--black) 8%
+    );
+    --global-field-focus-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--primary) 20%, transparent);
+    --global-field-selection-background: color-mix(
+      in srgb,
+      var(--primary) 24%,
+      transparent
+    );
+    --global-field-selection-color: var(--black);
+    --global-field-icon-color: color-mix(
+      in srgb,
+      var(--black-50) 86%,
+      transparent
+    );
+  }
+
+  body:not(.light) .modal-mask {
+    --modal-mask-background: color-mix(
+      in srgb,
+      rgb(8, 10, 14) 56%,
+      transparent
+    );
+    --modal-mask-backdrop-filter: blur(10px) saturate(108%);
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .modal-mask {
     align-items: flex-end;
+  }
+
+  input[type="number"],
+  input[type="text"],
+  input[type="password"] {
+    max-width: 100%;
+  }
+
+  .password-input-container {
+    max-width: 100%;
   }
 }
 
@@ -697,6 +950,11 @@ pre {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  input[type="number"],
+  input[type="text"],
+  input[type="password"],
+  .password-input-container,
+  .modal-mask,
   .error,
   .error-action-button {
     transition-duration: 0.01ms !important;
@@ -704,16 +962,85 @@ pre {
 }
 
 .password-input-container {
-  max-width: 50%;
+  --global-field-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 90%,
+    var(--gray)
+  );
+  --global-field-border-color: color-mix(
+    in srgb,
+    var(--black-50) 14%,
+    transparent
+  );
+  --global-field-color: var(--black);
+  --global-field-placeholder-color: color-mix(
+    in srgb,
+    var(--black-50) 74%,
+    transparent
+  );
+  --global-field-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 48%,
+    transparent
+  );
+  --global-field-focus-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--primary) 14%, transparent);
+  --global-field-selection-background: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
+  --global-field-selection-color: var(--black);
+  --global-field-icon-color: color-mix(
+    in srgb,
+    var(--black-50) 82%,
+    transparent
+  );
+
+  max-width: min(100%, 520px);
+  min-width: 0;
+  min-height: 36px;
+  box-sizing: border-box;
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 0 8px;
+  border: 1px solid var(--global-field-border-color);
+  border-radius: 8px;
+  background: var(--global-field-background);
+  color: var(--global-field-color);
+  transition:
+    background-color ease 0.18s,
+    border-color ease 0.18s,
+    box-shadow ease 0.18s;
+
+  &:focus-within {
+    border-color: var(--global-field-focus-border-color);
+    box-shadow: var(--global-field-focus-shadow);
+  }
 
   .password-eye {
-    margin-right: 4px;
+    flex: 0 0 auto;
+    margin-right: 0;
+    color: var(--global-field-icon-color);
+    border-radius: 8px;
   }
 
   .password-input {
-    min-width: 80%;
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 34px;
+    padding: 0 2px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+
+    &:focus-visible {
+      box-shadow: none;
+    }
   }
 }
 
