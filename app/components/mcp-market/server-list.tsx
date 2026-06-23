@@ -63,7 +63,7 @@ function ServerStatusDisplay({ status }: { status: ServerStatusResponse }) {
   if (status.status === "initializing") {
     return (
       <span className={clsx(styles["server-status"], styles["initializing"])}>
-        Initializing
+        {Locale.Mcp.Market.Status.Initializing}
       </span>
     );
   }
@@ -71,25 +71,33 @@ function ServerStatusDisplay({ status }: { status: ServerStatusResponse }) {
   if (status.status === "paused") {
     return (
       <span className={clsx(styles["server-status"], styles["stopped"])}>
-        Stopped
+        {Locale.Mcp.Market.Status.Paused}
       </span>
     );
   }
 
   if (status.status === "active") {
-    return <span className={styles["server-status"]}>Running</span>;
+    return (
+      <span className={styles["server-status"]}>
+        {Locale.Mcp.Market.Status.Active}
+      </span>
+    );
   }
 
   if (status.status === "error") {
     return (
       <span className={clsx(styles["server-status"], styles["error"])}>
-        Error
+        {Locale.Mcp.Market.Status.Error}
         <span className={styles["error-message"]}>: {status.errorMsg}</span>
       </span>
     );
   }
 
-  return null;
+  return (
+    <span className={clsx(styles["server-status"], styles["unknown"])}>
+      {Locale.Mcp.Market.Status.Undefined}
+    </span>
+  );
 }
 
 function getVisibleServers({
@@ -199,6 +207,8 @@ export function ServerList({
                     <span
                       className={styles["operation-status"]}
                       data-status={getOperationStatusType(loadingState)}
+                      role="status"
+                      aria-live="polite"
                     >
                       {loadingState}
                     </span>
@@ -239,6 +249,7 @@ export function ServerList({
                   <>
                     {server.configurable && (
                       <IconButton
+                        className={styles["mcp-market-action-button"]}
                         icon={<EditIcon />}
                         text={Locale.Mcp.Market.Actions.Configure}
                         onClick={() => onConfigureServer(server.id)}
@@ -247,6 +258,7 @@ export function ServerList({
                     )}
                     {status.status === "paused" ? (
                       <IconButton
+                        className={styles["mcp-market-action-button"]}
                         icon={<PlayIcon />}
                         text={Locale.Mcp.Market.Actions.Start}
                         onClick={() => onRestartServer(server.id)}
@@ -255,12 +267,14 @@ export function ServerList({
                     ) : (
                       <>
                         <IconButton
+                          className={styles["mcp-market-action-button"]}
                           icon={<EyeIcon />}
                           text={Locale.Mcp.Market.Actions.Tools}
                           onClick={() => onViewTools(server.id)}
                           disabled={isLoading || status.status === "error"}
                         />
                         <IconButton
+                          className={styles["mcp-market-action-button"]}
                           icon={<StopIcon />}
                           text={Locale.Mcp.Market.Actions.Stop}
                           onClick={() => onPauseServer(server.id)}
@@ -271,6 +285,7 @@ export function ServerList({
                   </>
                 ) : (
                   <IconButton
+                    className={styles["mcp-market-action-button"]}
                     icon={<AddIcon />}
                     text={Locale.Mcp.Market.Actions.Add}
                     onClick={() => onAddServer(server)}

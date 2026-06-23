@@ -37,6 +37,8 @@ interface MarketState {
   mcpEnabled: boolean;
   searchText: string;
   tools: ListToolsResponse | null;
+  toolsError: string | null;
+  toolsLoading: boolean;
   userConfig: Record<string, any>;
   viewingServerId?: string;
 }
@@ -69,6 +71,7 @@ type MarketAction =
       clientStatuses: Record<string, ServerStatusResponse>;
     }
   | { type: "set-tools"; tools: ListToolsResponse | null }
+  | { type: "set-tools-error"; toolsError: string }
   | { type: "set-user-config"; userConfig: Record<string, any> };
 
 const initialMarketState: MarketState = {
@@ -78,6 +81,8 @@ const initialMarketState: MarketState = {
   mcpEnabled: false,
   searchText: "",
   tools: null,
+  toolsError: null,
+  toolsLoading: false,
   userConfig: {},
 };
 
@@ -106,7 +111,11 @@ function marketReducer(state: MarketState, action: MarketAction): MarketState {
     case "close-config":
       return { ...state, editingServerId: undefined };
     case "close-tools":
-      return { ...state, viewingServerId: undefined };
+      return {
+        ...state,
+        toolsLoading: false,
+        viewingServerId: undefined,
+      };
     case "init-failed":
       return { ...state, isLoading: false, mcpEnabled: true };
     case "init-start":
@@ -129,6 +138,8 @@ function marketReducer(state: MarketState, action: MarketAction): MarketState {
       return {
         ...state,
         tools: null,
+        toolsError: null,
+        toolsLoading: true,
         viewingServerId: action.viewingServerId,
       };
     case "set-config":
@@ -147,7 +158,19 @@ function marketReducer(state: MarketState, action: MarketAction): MarketState {
     case "set-statuses":
       return { ...state, clientStatuses: action.clientStatuses };
     case "set-tools":
-      return { ...state, tools: action.tools };
+      return {
+        ...state,
+        tools: action.tools,
+        toolsError: null,
+        toolsLoading: false,
+      };
+    case "set-tools-error":
+      return {
+        ...state,
+        tools: null,
+        toolsError: action.toolsError,
+        toolsLoading: false,
+      };
     case "set-user-config":
       return { ...state, userConfig: action.userConfig };
     default:
@@ -271,7 +294,10 @@ export function useMcpMarketController() {
     } catch (error) {
       showToast(Locale.Mcp.Market.Errors.ToolsLoadFailed);
       console.error(error);
-      dispatch({ type: "set-tools", tools: null });
+      dispatch({
+        type: "set-tools-error",
+        toolsError: Locale.Mcp.Market.Errors.ToolsLoadFailed,
+      });
     }
   };
 

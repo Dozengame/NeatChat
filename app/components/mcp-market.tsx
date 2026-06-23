@@ -147,7 +147,11 @@ export function McpMarketPage() {
                 />,
               ]}
             >
-              <ToolsList isLoading={state.isLoading} tools={state.tools} />
+              <ToolsList
+                error={state.toolsError}
+                isLoading={state.toolsLoading}
+                tools={state.tools}
+              />
             </Modal>
           </div>
         )}

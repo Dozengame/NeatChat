@@ -3564,6 +3564,8 @@ describe("Gemini visual migration shell", () => {
     const mcpMarket = read("app/components/mcp-market.tsx");
     const serverList = read("app/components/mcp-market/server-list.tsx");
     const configForm = read("app/components/mcp-market/config-form.tsx");
+    const cnLocale = read("app/locales/cn.ts");
+    const enLocale = read("app/locales/en.ts");
     const mcpMarketStyles = read("app/components/mcp-market.module.scss");
     const mcpMarketPageBlock = readCssBlock(
       mcpMarketStyles,
@@ -3620,6 +3622,19 @@ describe("Gemini visual migration shell", () => {
       serverStatusBlock,
       "&.initializing",
     );
+    const serverUnknownBlock = readCssBlock(serverStatusBlock, "&.unknown");
+    const actionButtonBlock = readCssBlock(
+      mcpMarketStyles,
+      ".mcp-market-action-button",
+    );
+    const actionButtonFocusBlock = readCssBlock(
+      actionButtonBlock,
+      "&:focus-visible",
+    );
+    const actionButtonDisabledBlock = readCssBlock(
+      actionButtonBlock,
+      "&:disabled",
+    );
     const addPathButtonBlocks = Array.from(
       mcpMarketStyles.matchAll(
         /:global\(\.icon-button\.add-path-button\)\s*\{[\s\S]*?\n\s{6}\}/g,
@@ -3640,6 +3655,10 @@ describe("Gemini visual migration shell", () => {
       serverErrorBlock,
       serverStoppedBlock,
       serverInitializingBlock,
+      serverUnknownBlock,
+      actionButtonBlock,
+      actionButtonFocusBlock,
+      actionButtonDisabledBlock,
       ...addPathButtonBlocks,
     ].join("\n");
 
@@ -3652,8 +3671,20 @@ describe("Gemini visual migration shell", () => {
     expect(serverList).toContain("onPauseServer(server.id)");
     expect(serverList).toContain("onRestartServer(server.id)");
     expect(serverList).toContain("onViewTools(server.id)");
+    expect(serverList).toContain("Locale.Mcp.Market.Status.Initializing");
+    expect(serverList).toContain("Locale.Mcp.Market.Status.Paused");
+    expect(serverList).toContain("Locale.Mcp.Market.Status.Active");
+    expect(serverList).toContain("Locale.Mcp.Market.Status.Error");
+    expect(serverList).toContain("Locale.Mcp.Market.Status.Undefined");
+    expect(serverList).toContain('styles["unknown"]');
+    expect(serverList).toContain('role="status"');
+    expect(serverList).toContain('aria-live="polite"');
+    expect(serverList).toContain('className={styles["mcp-market-action-button"]}');
     expect(configForm).toContain("onUserConfigChange");
     expect(configForm).toContain("removeRowId(key, row.index)");
+    expect(cnLocale).toContain('Undefined: "未配置"');
+    expect(enLocale).toContain('Undefined: "Not configured"');
+    expect(enLocale).not.toContain('Undefined: "Undefined"');
 
     expect(mcpMarketRootBlock).toMatch(
       /--mcp-market-status-running-ink:\s*rgb\(22,\s*163,\s*74\);/,
@@ -3671,7 +3702,19 @@ describe("Gemini visual migration shell", () => {
       /--mcp-market-status-initializing-ink:\s*rgb\(245,\s*158,\s*11\);/,
     );
     expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-status-unknown-ink:\s*rgb\(100,\s*116,\s*139\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
       /--mcp-market-status-ink:\s*var\(--mcp-market-status-running-ink\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-action-focus-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 18%,\s*transparent\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-action-disabled-background:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 5%,\s*transparent\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-action-disabled-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 54%,\s*transparent\s*\);/,
     );
     expect(mcpMarketRootBlock).toMatch(
       /--mcp-market-add-path-button-color:\s*rgb\(255,\s*255,\s*255\);/,
@@ -3755,6 +3798,27 @@ describe("Gemini visual migration shell", () => {
     expect(serverInitializingBlock).toMatch(
       /--mcp-market-status-ink:\s*var\(--mcp-market-status-initializing-ink\);/,
     );
+    expect(serverUnknownBlock).toMatch(
+      /--mcp-market-status-ink:\s*var\(--mcp-market-status-unknown-ink\);/,
+    );
+    expect(actionButtonBlock).toMatch(/min-width:\s*0;/);
+    expect(actionButtonBlock).toMatch(
+      /transition:[\s\S]*background-color 0\.16s ease,[\s\S]*border-color 0\.16s ease,[\s\S]*box-shadow 0\.16s ease/,
+    );
+    expect(actionButtonFocusBlock).toMatch(/outline:\s*none;/);
+    expect(actionButtonFocusBlock).toMatch(
+      /box-shadow:\s*0 0 0 3px var\(--mcp-market-action-focus-shadow-color\);/,
+    );
+    expect(actionButtonDisabledBlock).toMatch(/opacity:\s*1;/);
+    expect(actionButtonDisabledBlock).toMatch(
+      /background-color:\s*var\(--mcp-market-action-disabled-background\);/,
+    );
+    expect(actionButtonDisabledBlock).toMatch(
+      /color:\s*var\(--mcp-market-action-disabled-color\);/,
+    );
+    expect(actionButtonDisabledBlock).toMatch(/svg,\n\s+path/);
+    expect(actionButtonDisabledBlock).toMatch(/fill:\s*currentColor !important;/);
+    expect(actionButtonDisabledBlock).toMatch(/stroke:\s*currentColor !important;/);
     expect(addPathButtonBlocks).toHaveLength(2);
     addPathButtonBlocks.forEach((block) => {
       expect(block).toMatch(
@@ -4162,6 +4226,7 @@ describe("Gemini visual migration shell", () => {
 
   test("keeps MCP market list surfaces aligned with Gemini utility cards", () => {
     const mcpMarket = read("app/components/mcp-market.tsx");
+    const controller = read("app/components/mcp-market/controller.ts");
     const serverList = read("app/components/mcp-market/server-list.tsx");
     const toolsList = read("app/components/mcp-market/tools-list.tsx");
     const mcpMarketStyles = read("app/components/mcp-market.module.scss");
@@ -4246,6 +4311,26 @@ describe("Gemini visual migration shell", () => {
     const tagBlock = readCssBlock(mcpMarketStyles, ".tag");
     const marketInfoBlock = readCssBlock(mcpMarketStyles, ".mcp-market-info");
     const listBlock = readCssBlock(mcpMarketStyles, ".list");
+    const toolsListBlock = readCssBlock(mcpMarketStyles, ".tools-list");
+    const toolsStateSurfaceBlock = readCssBlock(
+      toolsListBlock,
+      "&.tools-loading,\n    &.tools-empty,\n    &.tools-error",
+    );
+    const toolsErrorOverrideIndex = toolsListBlock.lastIndexOf(
+      "\n    &.tools-error {",
+    );
+    const toolsErrorBlock = readCssBlock(
+      toolsListBlock.slice(toolsErrorOverrideIndex),
+      "&.tools-error",
+    );
+    const toolsStateTitleBlock = readCssBlock(
+      toolsListBlock,
+      ".tools-state-title",
+    );
+    const toolsStateDescriptionBlock = readCssBlock(
+      toolsListBlock,
+      ".tools-state-description",
+    );
     const mobileMcpMarketBlock = readCssBlock(
       mcpMarketStyles,
       "@media screen and (max-width: 600px)",
@@ -4328,6 +4413,10 @@ describe("Gemini visual migration shell", () => {
       tagBlock,
       marketInfoBlock,
       listBlock,
+      toolsStateSurfaceBlock,
+      toolsErrorBlock,
+      toolsStateTitleBlock,
+      toolsStateDescriptionBlock,
       mobileMcpMarketPageBlock,
       mobilePageBodyBlock,
       mobileMarketFilterBlock,
@@ -4344,7 +4433,30 @@ describe("Gemini visual migration shell", () => {
 
     expect(mcpMarket).toContain("onInput={(event) => setSearchText");
     expect(mcpMarket).toContain("<ServerList");
+    expect(mcpMarket).toContain("error={state.toolsError}");
+    expect(mcpMarket).toContain("isLoading={state.toolsLoading}");
+    expect(mcpMarket).not.toContain("isLoading={state.isLoading}\n                tools={state.tools}");
     expect(mcpMarket).toContain('aria-controls="mcp-market-server-results"');
+    expect(controller).toContain("toolsError: string | null;");
+    expect(controller).toContain("toolsLoading: boolean;");
+    expect(controller).toContain("toolsError: null");
+    expect(controller).toContain("toolsLoading: false");
+    expect(controller).toMatch(
+      /case "close-tools":[\s\S]*toolsLoading: false,[\s\S]*viewingServerId: undefined/,
+    );
+    expect(controller).toMatch(/type: "set-tools-error";\s*toolsError: string/);
+    expect(controller).toMatch(
+      /case "open-tools":[\s\S]*tools: null,[\s\S]*toolsError: null,[\s\S]*toolsLoading: true,[\s\S]*viewingServerId: action\.viewingServerId/,
+    );
+    expect(controller).toMatch(
+      /case "set-tools":[\s\S]*tools: action\.tools,[\s\S]*toolsError: null,[\s\S]*toolsLoading: false/,
+    );
+    expect(controller).toMatch(
+      /case "set-tools-error":[\s\S]*tools: null,[\s\S]*toolsError: action\.toolsError,[\s\S]*toolsLoading: false/,
+    );
+    expect(controller).toMatch(
+      /dispatch\(\{\s*type: "set-tools-error",\s*toolsError: Locale\.Mcp\.Market\.Errors\.ToolsLoadFailed,\s*\}\);/,
+    );
     expect(serverList).toContain("function getVisibleServers");
     expect(serverList).toContain("const visibleServers = getVisibleServers");
     expect(serverList).toContain("visibleServers.length === 0");
@@ -4368,11 +4480,27 @@ describe("Gemini visual migration shell", () => {
     expect(serverList).toContain('className={styles["tag"]}');
     expect(serverList).toContain('className={clsx(styles["mcp-market-info"], "one-line")}');
     expect(toolsList).toContain('className={styles["tools-list"]}');
+    expect(toolsList).toContain('styles["tools-loading"]');
+    expect(toolsList).toContain('styles["tools-empty"]');
+    expect(toolsList).toContain('styles["tools-error"]');
+    expect(toolsList.indexOf("if (isLoading)")).toBeLessThan(
+      toolsList.indexOf("if (error)"),
+    );
+    expect(toolsList.indexOf("if (error)")).toBeLessThan(
+      toolsList.indexOf("if (toolItems.length === 0)"),
+    );
     expect(toolsList).toContain('role="status"');
     expect(toolsList).toContain('aria-live="polite"');
+    expect(toolsList).toContain('role="alert"');
+    expect(toolsList).toContain('aria-live="assertive"');
     expect(toolsList).toContain('role="list"');
     expect(toolsList).toContain("aria-label={Locale.Mcp.Market.Actions.Tools}");
     expect(toolsList).toContain('role="listitem"');
+    expect(toolsList).toContain('className={styles["tools-state-title"]}');
+    expect(toolsList).toContain("{error}");
+    expect(toolsList.indexOf("Locale.Mcp.Market.ToolsModal.NoTools")).toBeGreaterThan(
+      toolsList.indexOf("if (toolItems.length === 0)"),
+    );
 
     expect(mcpMarketRootBlock).toMatch(
       /--mcp-market-card-surface:\s*var\(--surface-elevated\);/,
@@ -4401,6 +4529,21 @@ describe("Gemini visual migration shell", () => {
     expect(mcpMarketRootBlock).toMatch(
       /--mcp-market-loading-shine-color:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 66%,\s*transparent\s*\);/,
     );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-tools-state-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--gray\)\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-tools-state-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-tools-error-background:\s*color-mix\(\s*in srgb,\s*rgb\(217,\s*48,\s*37\) 7%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-tools-error-border-color:\s*color-mix\(\s*in srgb,\s*rgb\(217,\s*48,\s*37\) 28%,\s*transparent\s*\);/,
+    );
+    expect(mcpMarketRootBlock).toMatch(
+      /--mcp-market-tools-error-color:\s*color-mix\(\s*in srgb,\s*rgb\(217,\s*48,\s*37\) 82%,\s*var\(--black\)\s*\);/,
+    );
     expect(darkMcpMarketBlock).toMatch(
       /--mcp-market-card-hover-surface:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 10%,\s*var\(--surface-elevated\)\s*\);/,
     );
@@ -4410,6 +4553,12 @@ describe("Gemini visual migration shell", () => {
     expect(darkMcpMarketBlock).toMatch(
       /--mcp-market-loading-shine-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 16%,\s*transparent\s*\);/,
     );
+    expect(darkMcpMarketBlock).toMatch(
+      /--mcp-market-tools-state-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(darkMcpMarketBlock).toMatch(
+      /--mcp-market-tools-error-background:\s*color-mix\(\s*in srgb,\s*rgb\(248,\s*113,\s*113\) 12%,\s*var\(--surface-elevated\)\s*\);/,
+    );
     expect(autoDarkMcpMarketSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkMcpMarketMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkMcpMarketBlock).toMatch(
@@ -4417,6 +4566,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(autoDarkMcpMarketBlock).toMatch(
       /--mcp-market-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 64%,\s*transparent\s*\);/,
+    );
+    expect(autoDarkMcpMarketBlock).toMatch(
+      /--mcp-market-tools-error-background:\s*color-mix\(\s*in srgb,\s*rgb\(248,\s*113,\s*113\) 12%,\s*var\(--surface-elevated\)\s*\);/,
     );
 
     [loadingEmptyBlock, marketItemBlock, listBlock].forEach((block) => {
@@ -4429,6 +4581,28 @@ describe("Gemini visual migration shell", () => {
       expect(block).toMatch(/border-radius:\s*8px;/);
     });
     expect(loadingTextBlock).toMatch(/color:\s*var\(--mcp-market-muted-color\);/);
+    expect(toolsStateSurfaceBlock).toMatch(/min-height:\s*140px;/);
+    expect(toolsStateSurfaceBlock).toMatch(
+      /background-color:\s*var\(--mcp-market-tools-state-background\);/,
+    );
+    expect(toolsStateSurfaceBlock).toMatch(
+      /border:\s*1px solid var\(--mcp-market-tools-state-border-color\);/,
+    );
+    expect(toolsStateSurfaceBlock).toMatch(/border-radius:\s*8px;/);
+    expect(toolsErrorBlock).toMatch(
+      /background-color:\s*var\(--mcp-market-tools-error-background\);/,
+    );
+    expect(toolsErrorBlock).toMatch(
+      /border-color:\s*var\(--mcp-market-tools-error-border-color\);/,
+    );
+    expect(toolsErrorBlock).toMatch(
+      /color:\s*var\(--mcp-market-tools-error-color\);/,
+    );
+    expect(toolsStateTitleBlock).toMatch(/font-weight:\s*600;/);
+    expect(toolsStateTitleBlock).toMatch(/line-height:\s*1\.35;/);
+    expect(toolsStateDescriptionBlock).toMatch(
+      /color:\s*var\(--mcp-market-form-description-color\);/,
+    );
     expect(searchBarBlock).toMatch(
       /background-color:\s*var\(--mcp-market-form-surface\);/,
     );

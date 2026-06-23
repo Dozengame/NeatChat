@@ -776,7 +776,7 @@ const en: LocaleType = {
         Paused: "Stopped",
         Error: "Error",
         Initializing: "Initializing",
-        Undefined: "Undefined",
+        Undefined: "Not configured",
       },
       Actions: {
         Add: "Add",
@@ -804,6 +804,7 @@ const en: LocaleType = {
         Close: "Close",
         NoTools: "No tools available",
         Loading: "Loading...",
+        LoadFailedHint: "Try again later, or check this MCP server status.",
       },
       Errors: {
         LoadFailed: "Failed to load preset servers",

@@ -6,7 +6,23 @@
   --mcp-market-status-stopped-ink: rgb(107, 114, 128);
   --mcp-market-status-error-ink: rgb(239, 68, 68);
   --mcp-market-status-initializing-ink: rgb(245, 158, 11);
+  --mcp-market-status-unknown-ink: rgb(100, 116, 139);
   --mcp-market-status-ink: var(--mcp-market-status-running-ink);
+  --mcp-market-action-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
+  --mcp-market-action-disabled-background: color-mix(
+    in srgb,
+    var(--black-50) 5%,
+    transparent
+  );
+  --mcp-market-action-disabled-color: color-mix(
+    in srgb,
+    var(--black-50) 54%,
+    transparent
+  );
   --mcp-market-add-path-button-background: var(--primary);
   --mcp-market-add-path-button-color: rgb(255, 255, 255);
   --mcp-market-add-path-button-hover-background: color-mix(
@@ -102,6 +118,36 @@
     in srgb,
     var(--surface-elevated) 66%,
     transparent
+  );
+  --mcp-market-tools-state-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 92%,
+    var(--gray)
+  );
+  --mcp-market-tools-state-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --mcp-market-tools-state-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 5%,
+    transparent
+  );
+  --mcp-market-tools-error-background: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 7%,
+    var(--surface-elevated)
+  );
+  --mcp-market-tools-error-border-color: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 28%,
+    transparent
+  );
+  --mcp-market-tools-error-color: color-mix(
+    in srgb,
+    rgb(217, 48, 37) 82%,
+    var(--black)
   );
 
   height: 100%;
@@ -359,6 +405,10 @@
               animation: pulse 1.5s infinite;
             }
 
+            &.unknown {
+              --mcp-market-status-ink: var(--mcp-market-status-unknown-ink);
+            }
+
             .error-message {
               min-width: 0;
               margin-left: 4px;
@@ -427,6 +477,32 @@
 
           :global(.icon-button) {
             min-width: 0;
+          }
+
+          .mcp-market-action-button {
+            min-width: 0;
+            border-radius: 8px;
+            transition:
+              background-color 0.16s ease,
+              border-color 0.16s ease,
+              box-shadow 0.16s ease;
+
+            &:focus-visible {
+              outline: none;
+              box-shadow: 0 0 0 3px var(--mcp-market-action-focus-shadow-color);
+            }
+
+            &:disabled {
+              opacity: 1;
+              background-color: var(--mcp-market-action-disabled-background);
+              color: var(--mcp-market-action-disabled-color);
+
+              svg,
+              path {
+                fill: currentColor !important;
+                stroke: currentColor !important;
+              }
+            }
           }
         }
       }
@@ -788,6 +864,42 @@
     word-break: break-word;
     box-sizing: border-box;
 
+    &.tools-loading,
+    &.tools-empty,
+    &.tools-error {
+      align-items: center;
+      justify-content: center;
+      min-height: 140px;
+      gap: 6px;
+      border: 1px solid var(--mcp-market-tools-state-border-color);
+      border-radius: 8px;
+      background-color: var(--mcp-market-tools-state-background);
+      color: var(--mcp-market-muted-color);
+      text-align: center;
+      box-shadow: 0 1px 2px var(--mcp-market-tools-state-shadow-color);
+    }
+
+    &.tools-error {
+      background-color: var(--mcp-market-tools-error-background);
+      border-color: var(--mcp-market-tools-error-border-color);
+      color: var(--mcp-market-tools-error-color);
+    }
+
+    .tools-state-title {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .tools-state-description {
+      max-width: 360px;
+      color: var(--mcp-market-form-description-color);
+      font-size: 12px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
     .tool-item {
       width: 100%;
       min-width: 0;
@@ -910,6 +1022,21 @@
   );
   --mcp-market-form-focus-shadow: 0 0 0 2px
     color-mix(in srgb, var(--primary) 22%, transparent);
+  --mcp-market-action-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 24%,
+    transparent
+  );
+  --mcp-market-action-disabled-background: color-mix(
+    in srgb,
+    var(--black) 7%,
+    transparent
+  );
+  --mcp-market-action-disabled-color: color-mix(
+    in srgb,
+    var(--black) 42%,
+    transparent
+  );
   --mcp-market-form-add-hover-background: color-mix(
     in srgb,
     var(--primary) 14%,
@@ -954,6 +1081,36 @@
     in srgb,
     var(--black) 16%,
     transparent
+  );
+  --mcp-market-tools-state-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    var(--white)
+  );
+  --mcp-market-tools-state-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --mcp-market-tools-state-shadow-color: color-mix(
+    in srgb,
+    var(--black) 12%,
+    transparent
+  );
+  --mcp-market-tools-error-background: color-mix(
+    in srgb,
+    rgb(248, 113, 113) 12%,
+    var(--surface-elevated)
+  );
+  --mcp-market-tools-error-border-color: color-mix(
+    in srgb,
+    rgb(248, 113, 113) 44%,
+    transparent
+  );
+  --mcp-market-tools-error-color: color-mix(
+    in srgb,
+    rgb(248, 113, 113) 62%,
+    var(--black)
   );
 }
 
@@ -1023,6 +1180,11 @@
       gap: 8px;
 
       :global(.icon-button) {
+        flex: 1 1 min(130px, 100%);
+        min-width: 0;
+      }
+
+      .mcp-market-action-button {
         flex: 1 1 min(130px, 100%);
         min-width: 0;
       }
@@ -1108,6 +1270,21 @@
     );
     --mcp-market-form-focus-shadow: 0 0 0 2px
       color-mix(in srgb, var(--primary) 22%, transparent);
+    --mcp-market-action-focus-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 24%,
+      transparent
+    );
+    --mcp-market-action-disabled-background: color-mix(
+      in srgb,
+      var(--black) 7%,
+      transparent
+    );
+    --mcp-market-action-disabled-color: color-mix(
+      in srgb,
+      var(--black) 42%,
+      transparent
+    );
     --mcp-market-form-add-hover-background: color-mix(
       in srgb,
       var(--primary) 14%,
@@ -1153,6 +1330,36 @@
       var(--black) 16%,
       transparent
     );
+    --mcp-market-tools-state-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 86%,
+      var(--white)
+    );
+    --mcp-market-tools-state-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --mcp-market-tools-state-shadow-color: color-mix(
+      in srgb,
+      var(--black) 12%,
+      transparent
+    );
+    --mcp-market-tools-error-background: color-mix(
+      in srgb,
+      rgb(248, 113, 113) 12%,
+      var(--surface-elevated)
+    );
+    --mcp-market-tools-error-border-color: color-mix(
+      in srgb,
+      rgb(248, 113, 113) 44%,
+      transparent
+    );
+    --mcp-market-tools-error-color: color-mix(
+      in srgb,
+      rgb(248, 113, 113) 62%,
+      var(--black)
+    );
   }
 
   :global(body:not(.light)) .mcp-market-page .mcp-market-page-body
@@ -1194,6 +1401,10 @@
   .mcp-market-page .mcp-market-page-body .mcp-market-item .operation-status,
   .mcp-market-page .mcp-market-page-body .mcp-market-item .server-status.initializing {
     animation: none;
+  }
+
+  .mcp-market-page .mcp-market-page-body .mcp-market-action-button {
+    transition-duration: 0.01ms !important;
   }
 }
 

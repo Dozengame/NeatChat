@@ -794,6 +794,7 @@ const cn = {
         Close: "关闭",
         NoTools: "没有可用的工具",
         Loading: "加载中...",
+        LoadFailedHint: "请稍后重试，或检查该 MCP 服务器状态。",
       },
       Errors: {
         LoadFailed: "加载预设服务器失败",
