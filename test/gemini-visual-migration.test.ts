@@ -14563,6 +14563,334 @@ describe("Gemini visual migration shell", () => {
     expect(editPromptPaintScope).not.toContain("border-radius: 10px");
   });
 
+  test("keeps Settings sync utilities aligned with Gemini utility surfaces", () => {
+    const settings = read("app/components/settings.tsx");
+    const syncItems = read("app/components/settings-sync-items.tsx");
+    const syncConfigModal = read(
+      "app/components/settings-sync-config-modal.tsx",
+    );
+    const settingsCheckButton = read("app/components/settings-check-button.tsx");
+    const settingsStyles = read("app/components/settings.module.scss");
+    const syncSurfaceBlock = readRootCssBlock(
+      settingsStyles,
+      ".settings-sync-surface",
+    );
+    const syncSurfaceRootBlock = readRootDeclarations(syncSurfaceBlock);
+    const darkSyncSurfaceBlock = readCssBlock(
+      settingsStyles,
+      ":global(.dark) .settings-sync-surface",
+    );
+    const autoDarkSyncSurfaceSelector =
+      ":global(body:not(.light)) .settings-sync-surface";
+    const autoDarkSyncSurfaceSelectorIndex = settingsStyles.indexOf(
+      autoDarkSyncSurfaceSelector,
+    );
+    const autoDarkSyncSurfaceMediaIndex = settingsStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkSyncSurfaceSelectorIndex,
+    );
+    const autoDarkSyncSurfaceBlock = readCssBlock(
+      settingsStyles.slice(autoDarkSyncSurfaceMediaIndex),
+      autoDarkSyncSurfaceSelector,
+    );
+    const syncActionsBlock = readCssBlock(
+      settingsStyles,
+      ".settings-sync-actions",
+    );
+    const syncActionClusterBlock = readCssBlock(
+      settingsStyles,
+      ".settings-sync-action-cluster",
+    );
+    const syncActionButtonBlock = readCssBlock(
+      settingsStyles,
+      ".settings-sync-action-button",
+    );
+    const syncConfigModalBlock = readRootCssBlock(
+      settingsStyles,
+      ".settings-sync-config-modal",
+    );
+    const syncConfigModalRootBlock =
+      readRootDeclarations(syncConfigModalBlock);
+    const darkSyncConfigModalBlock = readCssBlock(
+      settingsStyles,
+      ":global(.dark) .settings-sync-config-modal",
+    );
+    const autoDarkSyncConfigModalSelector =
+      ":global(body:not(.light)) .settings-sync-config-modal";
+    const autoDarkSyncConfigModalSelectorIndex = settingsStyles.indexOf(
+      autoDarkSyncConfigModalSelector,
+    );
+    const autoDarkSyncConfigModalMediaIndex = settingsStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkSyncConfigModalSelectorIndex,
+    );
+    const autoDarkSyncConfigModalBlock = readCssBlock(
+      settingsStyles.slice(autoDarkSyncConfigModalMediaIndex),
+      autoDarkSyncConfigModalSelector,
+    );
+    const syncFieldBlock = readCssBlock(
+      syncConfigModalBlock,
+      "select,\n  input[type=\"text\"],\n  :global(.password-input-container)",
+    );
+    const syncFieldFocusVisibleBlock = readCssBlock(
+      syncConfigModalBlock,
+      "select:focus-visible,\n  input[type=\"text\"]:focus-visible,\n  :global(.password-input-container):focus-within",
+    );
+    const syncSelectBlock = readCssBlock(syncConfigModalBlock, "select");
+    const passwordInputContainerSelectorIndex = syncConfigModalBlock.lastIndexOf(
+      "\n  :global(.password-input-container) {",
+    );
+    const passwordInputContainerBlock = readCssBlock(
+      syncConfigModalBlock.slice(passwordInputContainerSelectorIndex),
+      ":global(.password-input-container)",
+    );
+    const passwordInputBlock = readCssBlock(
+      passwordInputContainerBlock,
+      ":global(.password-input)",
+    );
+    const passwordEyeBlock = readCssBlock(
+      passwordInputContainerBlock,
+      ":global(.password-eye)",
+    );
+    const settingsMobileBlock = readCssBlock(
+      settingsStyles,
+      "@media (max-width: 600px)",
+    );
+    const settingsMobileRootBlock = readCssBlock(settingsMobileBlock, ".settings");
+    const mobileSyncActionsBlock = readCssBlock(
+      settingsMobileRootBlock,
+      ".settings-sync-actions",
+    );
+    const mobileSyncActionClusterBlock = readCssBlock(
+      settingsMobileRootBlock,
+      ".settings-sync-action-cluster",
+    );
+    const mobileSyncActionButtonBlock = readCssBlock(
+      settingsMobileRootBlock,
+      ".settings-sync-action-button",
+    );
+    const mobileSyncConfigModalBlock = readCssBlock(
+      settingsMobileRootBlock,
+      ".settings-sync-config-modal",
+    );
+    const mobileSyncFieldBlock = readCssBlock(
+      mobileSyncConfigModalBlock,
+      "select,\n      input[type=\"text\"],\n      :global(.password-input-container)",
+    );
+    const reducedMotionBlock = readCssBlock(
+      settingsStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const syncSurfaceTokenNames = [
+      "--settings-sync-actions-gap",
+      "--settings-sync-actions-background",
+      "--settings-sync-actions-border-color",
+      "--settings-sync-actions-shadow-color",
+    ];
+    const syncFieldTokenNames = [
+      "--settings-sync-field-background",
+      "--settings-sync-field-border-color",
+      "--settings-sync-field-color",
+      "--settings-sync-field-muted-color",
+      "--settings-sync-field-focus-border-color",
+      "--settings-sync-field-focus-shadow-color",
+      "--settings-sync-field-radius",
+    ];
+    const syncSurfaceTokenMap = readCustomProperties(
+      syncSurfaceRootBlock,
+      syncSurfaceTokenNames,
+    );
+    const darkSyncSurfaceTokenMap = readCustomProperties(
+      darkSyncSurfaceBlock,
+      syncSurfaceTokenNames,
+    );
+    const autoDarkSyncSurfaceTokenMap = readCustomProperties(
+      autoDarkSyncSurfaceBlock,
+      syncSurfaceTokenNames,
+    );
+    const syncFieldTokenMap = readCustomProperties(
+      syncConfigModalRootBlock,
+      syncFieldTokenNames,
+    );
+    const darkSyncFieldTokenMap = readCustomProperties(
+      darkSyncConfigModalBlock,
+      syncFieldTokenNames,
+    );
+    const autoDarkSyncFieldTokenMap = readCustomProperties(
+      autoDarkSyncConfigModalBlock,
+      syncFieldTokenNames,
+    );
+    const syncPaintScope = [
+      syncSurfaceRootBlock,
+      darkSyncSurfaceBlock,
+      autoDarkSyncSurfaceBlock,
+      syncConfigModalRootBlock,
+      darkSyncConfigModalBlock,
+      autoDarkSyncConfigModalBlock,
+      syncActionsBlock,
+      syncActionClusterBlock,
+      syncActionButtonBlock,
+      syncFieldBlock,
+      syncFieldFocusVisibleBlock,
+      passwordInputContainerBlock,
+      passwordInputBlock,
+      passwordEyeBlock,
+    ].join("\n");
+
+    expect(settings).toContain("<SyncItems />");
+    expect(syncItems).toContain('import styles from "./settings.module.scss";');
+    expect(syncItems).toContain('styles["settings-sync-surface"]');
+    expect(syncItems).toContain('styles["settings-sync-actions"]');
+    expect(syncItems).toContain('styles["settings-sync-action-cluster"]');
+    expect(syncItems).toContain('styles["settings-sync-action-button"]');
+    expect(syncItems).not.toContain('style={{ display: "flex" }}');
+    expect(syncItems).toContain("syncStore.cloudSync()");
+    expect(syncItems).toMatch(
+      /<IconButton[\s\S]*aria=\{Locale\.Settings\.Sync\.CloudState \+ Locale\.UI\.Config\}[\s\S]*className=\{styles\["settings-sync-action-button"\]\}[\s\S]*text=\{Locale\.UI\.Config\}[\s\S]*setShowSyncConfigModal\(true\);/,
+    );
+    expect(syncItems).toMatch(
+      /<IconButton[\s\S]*className=\{styles\["settings-sync-action-button"\]\}[\s\S]*icon=\{<ResetIcon \/>\}[\s\S]*text=\{Locale\.UI\.Sync\}[\s\S]*await syncStore\.sync\(\);/,
+    );
+    expect(syncItems).toMatch(
+      /<IconButton[\s\S]*aria=\{Locale\.Settings\.Sync\.LocalState \+ Locale\.UI\.Export\}[\s\S]*className=\{styles\["settings-sync-action-button"\]\}[\s\S]*text=\{Locale\.UI\.Export\}[\s\S]*syncStore\.export\(\);/,
+    );
+    expect(syncItems).toMatch(
+      /<IconButton[\s\S]*aria=\{Locale\.Settings\.Sync\.LocalState \+ Locale\.UI\.Import\}[\s\S]*className=\{styles\["settings-sync-action-button"\]\}[\s\S]*text=\{Locale\.UI\.Import\}[\s\S]*syncStore\.import\(\);/,
+    );
+    expect(syncConfigModal).toContain(
+      'import styles from "./settings.module.scss";',
+    );
+    expect(syncConfigModal).toContain(
+      'className={styles["settings-sync-config-modal"]}',
+    );
+    expect(syncConfigModal).toMatch(
+      /actions=\{\[[\s\S]*<CheckButton key="check" \/>[\s\S]*<IconButton[\s\S]*key="confirm"[\s\S]*\]\}/,
+    );
+    expect(syncConfigModal).toMatch(
+      /value=\{syncStore\.provider\}[\s\S]*config\.provider = e\.target\.value as ProviderType/,
+    );
+    expect(syncConfigModal).toMatch(
+      /checked=\{syncStore\.useProxy\}[\s\S]*config\.useProxy = e\.currentTarget\.checked/,
+    );
+    expect(syncConfigModal).toMatch(
+      /value=\{syncStore\.proxyUrl\}[\s\S]*config\.proxyUrl = e\.currentTarget\.value/,
+    );
+    expect(syncConfigModal).toMatch(
+      /syncStore\.provider === ProviderType\.WebDAV[\s\S]*value=\{syncStore\.webdav\.endpoint\}[\s\S]*config\.webdav\.endpoint = e\.currentTarget\.value[\s\S]*value=\{syncStore\.webdav\.username\}[\s\S]*config\.webdav\.username = e\.currentTarget\.value[\s\S]*value=\{syncStore\.webdav\.password\}[\s\S]*config\.webdav\.password = e\.currentTarget\.value/,
+    );
+    expect(syncConfigModal).toMatch(
+      /syncStore\.provider === ProviderType\.UpStash[\s\S]*value=\{syncStore\.upstash\.endpoint\}[\s\S]*config\.upstash\.endpoint = e\.currentTarget\.value[\s\S]*value=\{syncStore\.upstash\.username\}[\s\S]*config\.upstash\.username = e\.currentTarget\.value[\s\S]*value=\{syncStore\.upstash\.apiKey\}[\s\S]*config\.upstash\.apiKey = e\.currentTarget\.value/,
+    );
+    expect(syncConfigModal).toContain("PasswordInput");
+    expect(settingsCheckButton).toContain("syncStore.check()");
+
+    for (const tokenMap of [
+      syncSurfaceTokenMap,
+      darkSyncSurfaceTokenMap,
+      autoDarkSyncSurfaceTokenMap,
+      syncFieldTokenMap,
+      darkSyncFieldTokenMap,
+      autoDarkSyncFieldTokenMap,
+    ]) {
+      expect(Object.values(tokenMap)).not.toContain("");
+    }
+    expect(darkSyncSurfaceTokenMap).toEqual(autoDarkSyncSurfaceTokenMap);
+    expect(darkSyncFieldTokenMap).toEqual(autoDarkSyncFieldTokenMap);
+
+    expect(syncSurfaceRootBlock).toMatch(
+      /--settings-sync-actions-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\s*\);/,
+    );
+    expect(syncSurfaceRootBlock).toMatch(
+      /--settings-sync-actions-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
+    );
+    expect(darkSyncSurfaceBlock).toMatch(
+      /--settings-sync-actions-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(autoDarkSyncSurfaceSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkSyncSurfaceMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkSyncConfigModalSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkSyncConfigModalMediaIndex).toBeGreaterThan(-1);
+
+    expect(syncActionsBlock).toMatch(/display:\s*flex;/);
+    expect(syncActionsBlock).toMatch(/justify-content:\s*flex-end;/);
+    expect(syncActionsBlock).toMatch(/min-width:\s*0;/);
+    expect(syncActionsBlock).toMatch(/max-width:\s*100%;/);
+    expect(syncActionClusterBlock).toMatch(/display:\s*flex;/);
+    expect(syncActionClusterBlock).toMatch(/flex-wrap:\s*wrap;/);
+    expect(syncActionClusterBlock).toMatch(
+      /gap:\s*var\(--settings-sync-actions-gap\);/,
+    );
+    expect(syncActionClusterBlock).toMatch(
+      /background:\s*var\(--settings-sync-actions-background\);/,
+    );
+    expect(syncActionClusterBlock).toMatch(
+      /border:\s*1px solid var\(--settings-sync-actions-border-color\);/,
+    );
+    expect(syncActionClusterBlock).toMatch(/border-radius:\s*8px;/);
+    expect(syncActionClusterBlock).toMatch(
+      /box-shadow:\s*0 1px 2px var\(--settings-sync-actions-shadow-color\);/,
+    );
+    expect(syncActionClusterBlock).not.toContain(":global(.icon-button)");
+    expect(syncActionButtonBlock).toMatch(/min-width:\s*0;/);
+
+    expect(syncConfigModalRootBlock).toMatch(
+      /--settings-sync-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\s*\);/,
+    );
+    expect(syncConfigModalRootBlock).toMatch(
+      /--settings-sync-field-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 14%,\s*transparent\s*\);/,
+    );
+    expect(darkSyncConfigModalBlock).toMatch(
+      /--settings-sync-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+    );
+    expect(syncFieldBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(syncFieldBlock).toMatch(/width:\s*min\(360px, 100%\);/);
+    expect(syncFieldBlock).toMatch(/max-width:\s*100%;/);
+    expect(syncFieldBlock).toMatch(/min-height:\s*38px;/);
+    expect(syncFieldBlock).toMatch(
+      /background-color:\s*var\(--settings-sync-field-background\);/,
+    );
+    expect(syncFieldBlock).toMatch(
+      /border:\s*1px solid var\(--settings-sync-field-border-color\);/,
+    );
+    expect(syncFieldBlock).toMatch(
+      /border-radius:\s*var\(--settings-sync-field-radius\);/,
+    );
+    expect(syncFieldBlock).toMatch(/color:\s*var\(--settings-sync-field-color\);/);
+    expect(syncFieldBlock).toMatch(
+      /transition:[\s\S]*background-color 0\.16s ease,[\s\S]*border-color 0\.16s ease,[\s\S]*box-shadow 0\.16s ease/,
+    );
+    expect(syncFieldFocusVisibleBlock).toMatch(/outline:\s*none;/);
+    expect(syncFieldFocusVisibleBlock).toMatch(
+      /border-color:\s*var\(--settings-sync-field-focus-border-color\);/,
+    );
+    expect(syncFieldFocusVisibleBlock).toMatch(
+      /box-shadow:\s*0 0 0 3px var\(--settings-sync-field-focus-shadow-color\);/,
+    );
+    expect(syncSelectBlock).toMatch(/cursor:\s*pointer;/);
+    expect(syncSelectBlock).not.toMatch(/appearance:\s*none;/);
+    expect(passwordInputContainerBlock).toMatch(/display:\s*flex;/);
+    expect(passwordInputContainerBlock).toMatch(/align-items:\s*center;/);
+    expect(passwordInputBlock).toMatch(/min-width:\s*0;/);
+    expect(passwordInputBlock).toMatch(/flex:\s*1 1 auto;/);
+    expect(passwordInputBlock).toMatch(/border:\s*0;/);
+    expect(passwordInputBlock).toMatch(/background:\s*transparent;/);
+    expect(passwordEyeBlock).toMatch(
+      /color:\s*var\(--settings-sync-field-muted-color\);/,
+    );
+    expect(mobileSyncActionsBlock).toMatch(/width:\s*100%;/);
+    expect(mobileSyncActionsBlock).toMatch(/justify-content:\s*stretch;/);
+    expect(mobileSyncActionClusterBlock).toMatch(/width:\s*100%;/);
+    expect(mobileSyncActionClusterBlock).toMatch(/justify-content:\s*stretch;/);
+    expect(mobileSyncActionButtonBlock).toMatch(/flex:\s*1 1 auto;/);
+    expect(mobileSyncFieldBlock).toMatch(/width:\s*100%;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.settings-sync-action-cluster,[\s\S]*\.settings-sync-config-modal select,[\s\S]*\.settings-sync-config-modal input\[type="text"\],[\s\S]*\.settings-sync-config-modal :global\(\.password-input-container\)[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(syncPaintScope).not.toContain("border: var(--border-in-light)");
+    expect(syncPaintScope).not.toContain("box-shadow: var(--card-shadow)");
+    expect(syncPaintScope).not.toContain("max-width: 50%");
+  });
+
   test("keeps shared InputRange aligned with Gemini utility controls", () => {
     const inputRange = read("app/components/input-range.tsx");
     const inputRangeStyles = read("app/components/input-range.module.scss");

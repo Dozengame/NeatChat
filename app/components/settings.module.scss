@@ -3,6 +3,265 @@
   overflow: auto;
 }
 
+.settings-sync-surface {
+  --settings-sync-actions-gap: 6px;
+  --settings-sync-actions-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 90%,
+    var(--gray)
+  );
+  --settings-sync-actions-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --settings-sync-actions-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 4%,
+    transparent
+  );
+}
+
+.settings-sync-actions {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.settings-sync-action-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--settings-sync-actions-gap);
+  min-width: 0;
+  max-width: 100%;
+  padding: 4px;
+  background: var(--settings-sync-actions-background);
+  border: 1px solid var(--settings-sync-actions-border-color);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px var(--settings-sync-actions-shadow-color);
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.settings-sync-action-button {
+  min-width: 0;
+}
+
+.settings-sync-config-modal {
+  --settings-sync-field-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 90%,
+    var(--gray)
+  );
+  --settings-sync-field-border-color: color-mix(
+    in srgb,
+    var(--black-50) 14%,
+    transparent
+  );
+  --settings-sync-field-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
+  --settings-sync-field-muted-color: color-mix(
+    in srgb,
+    var(--black-50) 72%,
+    transparent
+  );
+  --settings-sync-field-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 58%,
+    transparent
+  );
+  --settings-sync-field-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 16%,
+    transparent
+  );
+  --settings-sync-field-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  select,
+  input[type="text"],
+  :global(.password-input-container) {
+    box-sizing: border-box;
+    width: min(360px, 100%);
+    max-width: 100%;
+    min-height: 38px;
+    background-color: var(--settings-sync-field-background);
+    border: 1px solid var(--settings-sync-field-border-color);
+    border-radius: var(--settings-sync-field-radius);
+    color: var(--settings-sync-field-color);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--white) 40%, transparent);
+    transition:
+      background-color 0.16s ease,
+      border-color 0.16s ease,
+      box-shadow 0.16s ease;
+  }
+
+  select,
+  input[type="text"] {
+    padding: 0 11px;
+  }
+
+  select {
+    cursor: pointer;
+  }
+
+  input[type="checkbox"] {
+    accent-color: var(--primary);
+  }
+
+  select:focus-visible,
+  input[type="text"]:focus-visible,
+  :global(.password-input-container):focus-within {
+    outline: none;
+    border-color: var(--settings-sync-field-focus-border-color);
+    box-shadow: 0 0 0 3px var(--settings-sync-field-focus-shadow-color);
+  }
+
+  :global(.password-input-container) {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 0 8px;
+
+    :global(.password-input) {
+      min-width: 0;
+      flex: 1 1 auto;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      color: var(--settings-sync-field-color);
+      outline: none;
+    }
+
+    :global(.password-eye) {
+      flex: 0 0 auto;
+      margin-right: 0;
+      color: var(--settings-sync-field-muted-color);
+    }
+  }
+}
+
+:global(.dark) .settings-sync-surface {
+  --settings-sync-actions-gap: 6px;
+  --settings-sync-actions-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    var(--white)
+  );
+  --settings-sync-actions-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --settings-sync-actions-shadow-color: color-mix(
+    in srgb,
+    var(--black) 16%,
+    transparent
+  );
+}
+
+:global(.dark) .settings-sync-config-modal {
+  --settings-sync-field-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    var(--white)
+  );
+  --settings-sync-field-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --settings-sync-field-color: color-mix(
+    in srgb,
+    var(--black) 94%,
+    transparent
+  );
+  --settings-sync-field-muted-color: color-mix(
+    in srgb,
+    var(--black-50) 78%,
+    transparent
+  );
+  --settings-sync-field-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 82%,
+    var(--black)
+  );
+  --settings-sync-field-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 22%,
+    transparent
+  );
+  --settings-sync-field-radius: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .settings-sync-surface {
+    --settings-sync-actions-gap: 6px;
+    --settings-sync-actions-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 86%,
+      var(--white)
+    );
+    --settings-sync-actions-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --settings-sync-actions-shadow-color: color-mix(
+      in srgb,
+      var(--black) 16%,
+      transparent
+    );
+  }
+
+  :global(body:not(.light)) .settings-sync-config-modal {
+    --settings-sync-field-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 86%,
+      var(--white)
+    );
+    --settings-sync-field-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --settings-sync-field-color: color-mix(
+      in srgb,
+      var(--black) 94%,
+      transparent
+    );
+    --settings-sync-field-muted-color: color-mix(
+      in srgb,
+      var(--black-50) 78%,
+      transparent
+    );
+    --settings-sync-field-focus-border-color: color-mix(
+      in srgb,
+      var(--primary) 82%,
+      var(--black)
+    );
+    --settings-sync-field-focus-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 22%,
+      transparent
+    );
+    --settings-sync-field-radius: 8px;
+  }
+}
+
 :global(.dark) .user-prompt-modal {
   --settings-prompt-list-background: color-mix(
     in srgb,
@@ -513,6 +772,28 @@
       padding: 8px !important;
     }
 
+    .settings-sync-actions {
+      width: 100%;
+      justify-content: stretch;
+    }
+
+    .settings-sync-action-cluster {
+      width: 100%;
+      justify-content: stretch;
+    }
+
+    .settings-sync-action-button {
+      flex: 1 1 auto;
+    }
+
+    .settings-sync-config-modal {
+      select,
+      input[type="text"],
+      :global(.password-input-container) {
+        width: 100%;
+      }
+    }
+
     .user-prompt-modal {
       min-height: auto;
 
@@ -548,5 +829,14 @@
         font-size: 12px;
       }
     }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-sync-action-cluster,
+  .settings-sync-config-modal select,
+  .settings-sync-config-modal input[type="text"],
+  .settings-sync-config-modal :global(.password-input-container) {
+    transition-duration: 0.01ms !important;
   }
 }

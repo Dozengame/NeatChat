@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import styles from "./settings.module.scss";
 import ConfigIcon from "../icons/config.svg";
 import DownloadIcon from "../icons/download.svg";
 import ResetIcon from "../icons/reload.svg";
@@ -37,7 +38,7 @@ export function SyncItems() {
   }, [chatStore.sessions, maskStore.masks, promptStore.prompts]);
 
   return (
-    <>
+    <div className={styles["settings-sync-surface"]}>
       <List>
         <ListItem
           title={Locale.Settings.Sync.CloudState}
@@ -49,30 +50,34 @@ export function SyncItems() {
               : Locale.Settings.Sync.NotSyncYet
           }
         >
-          <div style={{ display: "flex" }}>
-            <IconButton
-              aria={Locale.Settings.Sync.CloudState + Locale.UI.Config}
-              icon={<ConfigIcon />}
-              text={Locale.UI.Config}
-              onClick={() => {
-                setShowSyncConfigModal(true);
-              }}
-            />
-            {couldSync && (
+          <div className={styles["settings-sync-actions"]}>
+            <div className={styles["settings-sync-action-cluster"]}>
               <IconButton
-                icon={<ResetIcon />}
-                text={Locale.UI.Sync}
-                onClick={async () => {
-                  try {
-                    await syncStore.sync();
-                    showToast(Locale.Settings.Sync.Success);
-                  } catch (e) {
-                    showToast(Locale.Settings.Sync.Fail);
-                    console.error("[Sync]", e);
-                  }
+                aria={Locale.Settings.Sync.CloudState + Locale.UI.Config}
+                className={styles["settings-sync-action-button"]}
+                icon={<ConfigIcon />}
+                text={Locale.UI.Config}
+                onClick={() => {
+                  setShowSyncConfigModal(true);
                 }}
               />
-            )}
+              {couldSync && (
+                <IconButton
+                  className={styles["settings-sync-action-button"]}
+                  icon={<ResetIcon />}
+                  text={Locale.UI.Sync}
+                  onClick={async () => {
+                    try {
+                      await syncStore.sync();
+                      showToast(Locale.Settings.Sync.Success);
+                    } catch (e) {
+                      showToast(Locale.Settings.Sync.Fail);
+                      console.error("[Sync]", e);
+                    }
+                  }}
+                />
+              )}
+            </div>
           </div>
         </ListItem>
 
@@ -80,23 +85,27 @@ export function SyncItems() {
           title={Locale.Settings.Sync.LocalState}
           subTitle={Locale.Settings.Sync.Overview(stateOverview)}
         >
-          <div style={{ display: "flex" }}>
-            <IconButton
-              aria={Locale.Settings.Sync.LocalState + Locale.UI.Export}
-              icon={<UploadIcon />}
-              text={Locale.UI.Export}
-              onClick={() => {
-                syncStore.export();
-              }}
-            />
-            <IconButton
-              aria={Locale.Settings.Sync.LocalState + Locale.UI.Import}
-              icon={<DownloadIcon />}
-              text={Locale.UI.Import}
-              onClick={() => {
-                syncStore.import();
-              }}
-            />
+          <div className={styles["settings-sync-actions"]}>
+            <div className={styles["settings-sync-action-cluster"]}>
+              <IconButton
+                aria={Locale.Settings.Sync.LocalState + Locale.UI.Export}
+                className={styles["settings-sync-action-button"]}
+                icon={<UploadIcon />}
+                text={Locale.UI.Export}
+                onClick={() => {
+                  syncStore.export();
+                }}
+              />
+              <IconButton
+                aria={Locale.Settings.Sync.LocalState + Locale.UI.Import}
+                className={styles["settings-sync-action-button"]}
+                icon={<DownloadIcon />}
+                text={Locale.UI.Import}
+                onClick={() => {
+                  syncStore.import();
+                }}
+              />
+            </div>
           </div>
         </ListItem>
       </List>
@@ -104,6 +113,6 @@ export function SyncItems() {
       {showSyncConfigModal && (
         <SyncConfigModal onClose={() => setShowSyncConfigModal(false)} />
       )}
-    </>
+    </div>
   );
 }
