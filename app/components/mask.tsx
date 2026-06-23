@@ -479,6 +479,7 @@ export function MaskPage() {
       setSearchMasks(allMasks);
     }
   };
+  const clearSearch = () => onSearch("");
 
   const [editingMaskId, setEditingMaskId] = useState<string | undefined>();
   const editingMask =
@@ -551,13 +552,27 @@ export function MaskPage() {
 
         <div className={styles["mask-page-body"]}>
           <div className={styles["mask-filter"]}>
-            <input
-              type="text"
-              aria-label={Locale.Mask.Page.Search}
-              className={styles["search-bar"]}
-              placeholder={Locale.Mask.Page.Search}
-              onInput={(e) => onSearch(e.currentTarget.value)}
-            />
+            <div className={styles["mask-search-box"]}>
+              <input
+                type="text"
+                aria-label={Locale.Mask.Page.Search}
+                className={styles["search-bar"]}
+                placeholder={Locale.Mask.Page.Search}
+                value={searchText}
+                onChange={(e) => onSearch(e.currentTarget.value)}
+              />
+              {searchText.length > 0 && (
+                <button
+                  type="button"
+                  className={styles["mask-search-clear"]}
+                  aria-label={Locale.UI.Clear}
+                  title={Locale.UI.Clear}
+                  onClick={clearSearch}
+                >
+                  <CloseIcon />
+                </button>
+              )}
+            </div>
             <Select
               className={styles["mask-filter-lang"]}
               value={filterLang ?? Locale.Settings.Lang.All}
@@ -593,6 +608,11 @@ export function MaskPage() {
           </div>
 
           <div>
+            {masks.length === 0 && (
+              <div className={styles["mask-empty"]}>
+                {Locale.Mask.Page.NoResult}
+              </div>
+            )}
             {masks.map((m) => (
               <div className={styles["mask-item"]} key={m.id}>
                 <div className={styles["mask-header"]}>
@@ -610,6 +630,7 @@ export function MaskPage() {
                 </div>
                 <div className={styles["mask-actions"]}>
                   <IconButton
+                    className={styles["mask-action"]}
                     icon={<AddIcon />}
                     text={Locale.Mask.Item.Chat}
                     onClick={() => {
@@ -619,12 +640,14 @@ export function MaskPage() {
                   />
                   {m.builtin ? (
                     <IconButton
+                      className={styles["mask-action"]}
                       icon={<EyeIcon />}
                       text={Locale.Mask.Item.View}
                       onClick={() => setEditingMaskId(m.id)}
                     />
                   ) : (
                     <IconButton
+                      className={styles["mask-action"]}
                       icon={<EditIcon />}
                       text={Locale.Mask.Item.Edit}
                       onClick={() => setEditingMaskId(m.id)}
@@ -632,6 +655,7 @@ export function MaskPage() {
                   )}
                   {!m.builtin && (
                     <IconButton
+                      className={styles["mask-action"]}
                       icon={<DeleteIcon />}
                       text={Locale.Mask.Item.Delete}
                       onClick={async () => {

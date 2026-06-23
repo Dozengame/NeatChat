@@ -9667,10 +9667,18 @@ describe("Gemini visual migration shell", () => {
     const maskPageRootBlock = readRootDeclarations(maskPageBlock);
     const maskPageBodyBlock = readCssBlock(maskPageBlock, ".mask-page-body");
     const filterBlock = readCssBlock(maskPageBodyBlock, ".mask-filter");
+    const searchBoxBlock = readCssBlock(filterBlock, ".mask-search-box");
     const searchBarBlock = readCssBlock(filterBlock, ".search-bar");
     const searchFocusBlock = readCssBlock(searchBarBlock, "&:focus-visible");
+    const clearSearchBlock = readCssBlock(searchBoxBlock, ".mask-search-clear");
+    const clearSearchHoverBlock = readCssBlock(clearSearchBlock, "&:hover");
+    const clearSearchFocusBlock = readCssBlock(
+      clearSearchBlock,
+      "&:focus-visible",
+    );
     const langBlock = readCssBlock(filterBlock, ".mask-filter-lang");
     const createBlock = readCssBlock(filterBlock, ".mask-create");
+    const emptyBlock = readCssBlock(maskPageBodyBlock, ".mask-empty");
     const maskItemBlock = readCssBlock(maskPageBodyBlock, ".mask-item");
     const itemRootBlock = readRootDeclarations(maskItemBlock);
     const itemHoverBlock = readCssBlock(maskItemBlock, "&:hover");
@@ -9685,6 +9693,15 @@ describe("Gemini visual migration shell", () => {
     const mobileItemBlock = readCssBlock(
       maskItemBlock,
       "@media screen and (max-width: 600px)",
+    );
+    const mobileActionsBlock = readCssBlock(mobileItemBlock, ".mask-actions");
+    const mobileFilterBlock = readCssBlock(
+      readCssBlock(maskStyles, "@media only screen and (max-width: 600px)"),
+      ".mask-page .mask-page-body .mask-filter",
+    );
+    const reducedMotionBlock = readCssBlock(
+      maskStyles,
+      "@media (prefers-reduced-motion: reduce)",
     );
     const darkMaskPageBlock = readCssBlock(
       maskStyles,
@@ -9703,9 +9720,14 @@ describe("Gemini visual migration shell", () => {
     const masksPaintScope = [
       maskPageRootBlock,
       filterBlock,
+      searchBoxBlock,
       searchBarBlock,
+      clearSearchBlock,
+      clearSearchHoverBlock,
+      clearSearchFocusBlock,
       langBlock,
       createBlock,
+      emptyBlock,
       itemRootBlock,
       itemHoverBlock,
       notLastBlock,
@@ -9715,12 +9737,16 @@ describe("Gemini visual migration shell", () => {
       actionsBlock,
       actionBlock,
       mobileItemBlock,
+      mobileActionsBlock,
       darkMaskPageBlock,
       autoDarkMaskBlock,
     ].join("\n");
 
     expect(maskPage).toContain('styles["mask-page"]');
     expect(maskPage).toContain('styles["mask-filter"]');
+    expect(maskPage).toContain('styles["mask-search-box"]');
+    expect(maskPage).toContain('styles["mask-search-clear"]');
+    expect(maskPage).toContain('styles["mask-empty"]');
     expect(maskPage).toContain('styles["mask-filter-lang"]');
     expect(maskPage).toContain('styles["mask-create"]');
     expect(maskPage).toContain('styles["mask-item"]');
@@ -9738,9 +9764,24 @@ describe("Gemini visual migration shell", () => {
     );
     expect(maskPage).toContain("showConfirm(Locale.Mask.Item.DeleteConfirm)");
     expect(maskPage).toContain("maskStore.delete(m.id)");
+    expect(maskPage).toContain("const clearSearch = () => onSearch(\"\");");
+    expect(maskPage).toContain("value={searchText}");
+    expect(maskPage).toContain(
+      "onChange={(e) => onSearch(e.currentTarget.value)}",
+    );
+    expect(maskPage).toContain("aria-label={Locale.UI.Clear}");
+    expect(maskPage).toContain("onClick={clearSearch}");
+    expect(maskPage).toContain("searchText.length > 0 &&");
+    expect(maskPage).toContain("Locale.Mask.Page.NoResult");
+    expect(maskPage.match(/className=\{styles\["mask-action"\]\}/g)?.length).toBeGreaterThanOrEqual(
+      3,
+    );
 
     expect(pluginPage).toContain('styles["mask-page"]');
     expect(pluginPage).toContain('styles["mask-filter"]');
+    expect(pluginPage).toContain('styles["mask-search-box"]');
+    expect(pluginPage).toContain('styles["mask-search-clear"]');
+    expect(pluginPage).toContain('styles["mask-empty"]');
     expect(pluginPage).toContain('styles["mask-create"]');
     expect(pluginPage).toContain('styles["mask-item"]');
     expect(pluginPage).toContain('styles["mask-actions"]');
@@ -9749,6 +9790,22 @@ describe("Gemini visual migration shell", () => {
     expect(pluginPage).toContain("setEditingPluginId(m.id)");
     expect(pluginPage).toContain("showConfirm(Locale.Plugin.Item.DeleteConfirm)");
     expect(pluginPage).toContain("pluginStore.delete(m.id)");
+    expect(pluginPage).toContain("const clearSearch = () => onSearch(\"\");");
+    expect(pluginPage).toContain("value={searchText}");
+    expect(pluginPage).toContain(
+      "onChange={(e) => onSearch(e.currentTarget.value)}",
+    );
+    expect(pluginPage).toContain("aria-label={Locale.UI.Clear}");
+    expect(pluginPage).toContain("onClick={clearSearch}");
+    expect(pluginPage).toContain("searchText.length > 0 &&");
+    expect(pluginPage).toContain("Locale.Plugin.Page.NoResult");
+    expect(pluginPage).toContain("className={styles[\"mask-empty-link\"]}");
+    expect(pluginPage).toContain("href={PLUGINS_REPO_URL}");
+    expect(pluginPage).toContain('rel="noopener noreferrer"');
+    expect(pluginPage).not.toContain('style={{ marginLeft: 16 }}');
+    expect(pluginPage.match(/className=\{styles\["mask-action"\]\}/g)?.length).toBeGreaterThanOrEqual(
+      2,
+    );
 
     expect(maskPageRootBlock).toMatch(
       /--mask-list-item-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 94%,\s*var\(--white\)\s*\);/,
@@ -9762,10 +9819,23 @@ describe("Gemini visual migration shell", () => {
     expect(maskPageRootBlock).toMatch(
       /--mask-filter-control-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*transparent\s*\);/,
     );
+    expect(maskPageRootBlock).toMatch(
+      /--mask-empty-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 72%,\s*transparent\s*\);/,
+    );
+    expect(maskPageRootBlock).toMatch(
+      /--mask-clear-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 8%,\s*transparent\s*\);/,
+    );
     expect(filterBlock).toMatch(/gap:\s*10px;/);
+    expect(filterBlock).toMatch(/min-height:\s*40px;/);
+    expect(filterBlock).not.toMatch(/\n\s{6}height:\s*40px;/);
+    expect(searchBoxBlock).toMatch(/position:\s*relative;/);
+    expect(searchBoxBlock).toMatch(/flex:\s*1 1 240px;/);
+    expect(searchBoxBlock).toMatch(/min-width:\s*0;/);
     expect(searchBarBlock).toMatch(
       /border:\s*1px solid var\(--mask-filter-border-color\);/,
     );
+    expect(searchBarBlock).toMatch(/width:\s*100%;/);
+    expect(searchBarBlock).toMatch(/padding:\s*0 44px 0 16px;/);
     expect(searchBarBlock).toMatch(/border-radius:\s*8px;/);
     expect(searchBarBlock).toMatch(
       /background:\s*var\(--mask-filter-control-background\);/,
@@ -9774,8 +9844,30 @@ describe("Gemini visual migration shell", () => {
     expect(searchFocusBlock).toMatch(
       /border-color:\s*var\(--mask-filter-focus-border-color\);/,
     );
+    expect(clearSearchBlock).toMatch(/position:\s*absolute;/);
+    expect(clearSearchBlock).toMatch(/right:\s*4px;/);
+    expect(clearSearchBlock).toMatch(/width:\s*32px;/);
+    expect(clearSearchBlock).toMatch(/height:\s*32px;/);
+    expect(clearSearchBlock).toMatch(/border-radius:\s*8px;/);
+    expect(clearSearchBlock).toMatch(/color:\s*var\(--mask-list-muted-color\);/);
+    expect(clearSearchHoverBlock).toMatch(
+      /background:\s*var\(--mask-clear-hover-background\);/,
+    );
+    expect(clearSearchFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(clearSearchFocusBlock).toMatch(/box-shadow:\s*var\(--focus-ring-shadow\);/);
     expect(langBlock).toMatch(/margin-left:\s*0;/);
+    expect(langBlock).toMatch(/min-width:\s*128px;/);
     expect(createBlock).toMatch(/margin-left:\s*0;/);
+    expect(createBlock).toMatch(/min-width:\s*96px;/);
+    expect(emptyBlock).toMatch(/min-height:\s*160px;/);
+    expect(emptyBlock).toMatch(/border-radius:\s*8px;/);
+    expect(emptyBlock).toMatch(
+      /background:\s*var\(--mask-empty-background\);/,
+    );
+    expect(emptyBlock).toMatch(
+      /border:\s*1px solid var\(--mask-list-border-color\);/,
+    );
+    expect(emptyBlock).toMatch(/color:\s*var\(--mask-list-muted-color\);/);
     expect(itemRootBlock).toMatch(
       /border:\s*1px solid var\(--mask-list-border-color\);/,
     );
@@ -9794,10 +9886,12 @@ describe("Gemini visual migration shell", () => {
     expect(lastBlock).toMatch(/border-bottom-right-radius:\s*8px;/);
     expect(infoBlock).toMatch(/color:\s*var\(--mask-list-muted-color\);/);
     expect(actionsBlock).toMatch(/gap:\s*6px;/);
+    expect(actionsBlock).toMatch(/min-width:\s*0;/);
     expect(actionsBlock).toMatch(
       /transition:\s*color 0\.18s ease,\s*opacity 0\.18s ease;/,
     );
     expect(actionBlock).toMatch(/color:\s*var\(--mask-list-action-color\);/);
+    expect(actionBlock).toMatch(/min-width:\s*0;/);
     expect(mobileItemBlock).toMatch(/border-radius:\s*8px;/);
     expect(mobileItemBlock).toMatch(
       /box-shadow:\s*0 12px 30px var\(--mask-list-shadow-color\);/,
@@ -9805,6 +9899,11 @@ describe("Gemini visual migration shell", () => {
     expect(mobileItemBlock).toMatch(
       /border-bottom:\s*1px solid var\(--mask-list-border-color\);/,
     );
+    expect(mobileActionsBlock).toMatch(/flex-wrap:\s*wrap;/);
+    expect(mobileActionsBlock).toMatch(/justify-content:\s*flex-start;/);
+    expect(mobileFilterBlock).toMatch(/height:\s*auto;/);
+    expect(mobileFilterBlock).toMatch(/align-items:\s*stretch;/);
+    expect(mobileFilterBlock).toMatch(/\.mask-search-box[\s\S]*flex-basis:\s*100%;/);
     expect(darkMaskPageBlock).toMatch(
       /--mask-list-item-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
     );
@@ -9818,6 +9917,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(autoDarkMaskBlock).toMatch(
       /--mask-list-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 9%,\s*transparent\s*\);/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.mask-page \.mask-filter,[\s\S]*\.mask-page \.mask-item,[\s\S]*\.mask-page \.search-bar,[\s\S]*\.mask-page \.mask-search-clear[\s\S]*animation:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
     );
     expect(masksPaintScope).not.toContain("border: var(--border-in-light)");
     expect(masksPaintScope).not.toContain("border-bottom: var(--border-in-light)");

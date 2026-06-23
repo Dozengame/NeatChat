@@ -836,6 +836,7 @@ const cn = {
       Search: "搜索插件",
       Create: "新建",
       Find: "您可以在Github上找到优秀的插件：",
+      NoResult: "没有找到插件",
     },
     Item: {
       Info: (count: number) => `${count} 方法`,
@@ -875,6 +876,7 @@ const cn = {
       SubTitle: (count: number) => `${count} 个预设角色定义`,
       Search: "搜索角色面具",
       Create: "新建",
+      NoResult: "没有找到面具",
     },
     Item: {
       Info: (count: number) => `包含 ${count} 条预设对话`,

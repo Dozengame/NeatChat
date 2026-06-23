@@ -49,6 +49,7 @@ function usePluginPageView() {
       setSearchPlugins(allPlugins);
     }
   };
+  const clearSearch = () => onSearch("");
 
   const [editingPluginId, setEditingPluginId] = useState<string | undefined>();
   const editingPlugin = pluginStore.get(editingPluginId);
@@ -169,13 +170,27 @@ function usePluginPageView() {
 
         <div className={styles["mask-page-body"]}>
           <div className={styles["mask-filter"]}>
-            <input
-              type="text"
-              aria-label={Locale.Plugin.Page.Search}
-              className={styles["search-bar"]}
-              placeholder={Locale.Plugin.Page.Search}
-              onInput={(e) => onSearch(e.currentTarget.value)}
-            />
+            <div className={styles["mask-search-box"]}>
+              <input
+                type="text"
+                aria-label={Locale.Plugin.Page.Search}
+                className={styles["search-bar"]}
+                placeholder={Locale.Plugin.Page.Search}
+                value={searchText}
+                onChange={(e) => onSearch(e.currentTarget.value)}
+              />
+              {searchText.length > 0 && (
+                <button
+                  type="button"
+                  className={styles["mask-search-clear"]}
+                  aria-label={Locale.UI.Clear}
+                  title={Locale.UI.Clear}
+                  onClick={clearSearch}
+                >
+                  <CloseIcon />
+                </button>
+              )}
+            </div>
 
             <IconButton
               className={styles["mask-create"]}
@@ -191,20 +206,17 @@ function usePluginPageView() {
 
           <div>
             {plugins.length == 0 && (
-              <div
-                style={{
-                  display: "flex",
-                  margin: "60px auto",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {Locale.Plugin.Page.Find}
+              <div className={styles["mask-empty"]}>
+                <span>
+                  {searchText.length > 0
+                    ? Locale.Plugin.Page.NoResult
+                    : Locale.Plugin.Page.Find}
+                </span>
                 <a
                   href={PLUGINS_REPO_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ marginLeft: 16 }}
+                  className={styles["mask-empty-link"]}
                 >
                   <IconButton icon={<GithubIcon />} bordered />
                 </a>
@@ -227,12 +239,14 @@ function usePluginPageView() {
                 </div>
                 <div className={styles["mask-actions"]}>
                   <IconButton
+                    className={styles["mask-action"]}
                     icon={<EditIcon />}
                     text={Locale.Plugin.Item.Edit}
                     onClick={() => setEditingPluginId(m.id)}
                   />
                   {!m.builtin && (
                     <IconButton
+                      className={styles["mask-action"]}
                       icon={<DeleteIcon />}
                       text={Locale.Plugin.Item.Delete}
                       onClick={async () => {

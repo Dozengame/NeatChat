@@ -846,6 +846,7 @@ const en: LocaleType = {
       Search: "Search Plugin",
       Create: "Create",
       Find: "You can find awesome plugins on github: ",
+      NoResult: "No plugins found",
     },
     Item: {
       Info: (count: number) => `${count} method`,
@@ -886,6 +887,7 @@ const en: LocaleType = {
       SubTitle: (count: number) => `${count} prompt templates`,
       Search: "Search Templates",
       Create: "Create",
+      NoResult: "No templates found",
     },
     Item: {
       Info: (count: number) => `${count} prompts`,
