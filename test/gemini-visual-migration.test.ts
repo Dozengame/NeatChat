@@ -7308,7 +7308,7 @@ describe("Gemini visual migration shell", () => {
       ".markdown-body .markdown-mermaid-fallback-code",
     );
     const streamingMermaidFallbackSelector =
-      '.markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ iframe:last-child))';
+      '.markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))';
     const streamingMermaidFallbackBlock = readCssBlock(
       markdownStyles,
       streamingMermaidFallbackSelector,
@@ -15355,7 +15355,7 @@ describe("Gemini visual migration shell", () => {
       ":root",
     );
     const streamingCodeSelector =
-      '.markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ iframe:last-child))';
+      '.markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))';
     const streamingCodeBlock = readCssBlock(
       markdownStyles,
       streamingCodeSelector,
@@ -15412,7 +15412,10 @@ describe("Gemini visual migration shell", () => {
     expect(streamingCodeSelector).toContain(
       ":has(+ .markdown-mermaid-fallback:last-child)",
     );
-    expect(streamingCodeSelector).toContain(":has(+ iframe:last-child)");
+    expect(streamingCodeSelector).toContain(
+      ":has(+ .markdown-artifact-preview:last-child)",
+    );
+    expect(streamingCodeSelector).not.toContain(":has(+ iframe:last-child)");
     for (const tokenName of streamingCodeTokenNames) {
       expect(lightStreamingCodeTokens[tokenName]).toBeTruthy();
       expect(darkStreamingCodeTokens[tokenName]).toBeTruthy();
@@ -15494,6 +15497,151 @@ describe("Gemini visual migration shell", () => {
       `${streamingCodeSelector}::before {`,
     );
     expect(markdownReducedMotionBlock).toMatch(/opacity:\s*0\.72;/);
+  });
+
+  test("keeps inline markdown artifact previews aligned with Gemini message surfaces", () => {
+    const markdown = read("app/components/markdown.tsx");
+    const markdownStyles = read("app/styles/markdown.scss");
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const autoDarkRootBlock = readCssBlock(
+      readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
+      ":root",
+    );
+    const artifactPreviewBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-artifact-preview",
+    );
+    const artifactFrameBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-artifact-preview-frame",
+    );
+    const artifactIframeBlock = readCssBlock(
+      artifactFrameBlock,
+      "> iframe",
+    );
+    const artifactFrameHoverBlock = readCssBlock(
+      artifactFrameBlock,
+      "&:hover,\n  &:focus-within",
+    );
+    const markdownTouchBlock = readCssBlock(
+      markdownStyles,
+      "@media (hover: none), (pointer: coarse), (max-width: 600px)",
+    );
+    const mobileArtifactPreviewBlock = readCssBlock(
+      markdownTouchBlock,
+      ".markdown-artifact-preview",
+    );
+    const mobileArtifactFrameBlock = readCssBlock(
+      markdownTouchBlock,
+      ".markdown-artifact-preview-frame",
+    );
+    const mobileArtifactIframeBlock = readCssBlock(
+      mobileArtifactFrameBlock,
+      "> iframe",
+    );
+    const markdownReducedMotionBlock = readCssBlock(
+      markdownStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const artifactTokenNames = [
+      "--markdown-artifact-frame-border-color",
+      "--markdown-artifact-frame-background",
+      "--markdown-artifact-frame-shadow-color",
+      "--markdown-artifact-frame-hover-border-color",
+      "--markdown-artifact-frame-hover-shadow-color",
+      "--markdown-artifact-iframe-background",
+    ];
+    const lightArtifactTokens = readCustomProperties(
+      lightMixinBlock,
+      artifactTokenNames,
+    );
+    const darkArtifactTokens = readCustomProperties(
+      darkMixinBlock,
+      artifactTokenNames,
+    );
+    const artifactPaintScope = [
+      artifactPreviewBlock,
+      artifactFrameBlock,
+      artifactIframeBlock,
+      artifactFrameHoverBlock,
+      mobileArtifactPreviewBlock,
+      mobileArtifactFrameBlock,
+      mobileArtifactIframeBlock,
+    ].join("\n");
+
+    expect(markdown).toMatch(
+      /<figure className="markdown-artifact-preview">[\s\S]*<div className="markdown-artifact-preview-frame">[\s\S]*<HTMLPreview[\s\S]*code=\{htmlCode\}[\s\S]*autoHeight=\{!document\.fullscreenElement\}[\s\S]*height=\{!document\.fullscreenElement \? 600 : height\}[\s\S]*\/>[\s\S]*<\/div>[\s\S]*<\/figure>/,
+    );
+    expect(markdown).not.toMatch(
+      /htmlCode\.length > 0 && enableArtifacts && \(\s*<HTMLPreview/,
+    );
+    for (const tokenName of artifactTokenNames) {
+      expect(lightArtifactTokens[tokenName]).toBeTruthy();
+      expect(darkArtifactTokens[tokenName]).toBeTruthy();
+    }
+    expect(Object.values(lightArtifactTokens).join("\n")).not.toMatch(
+      /rgba\(|#[0-9a-fA-F]{3,8}\b/,
+    );
+    expect(Object.values(darkArtifactTokens).join("\n")).not.toMatch(
+      /rgba\(|#[0-9a-fA-F]{3,8}\b/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-artifact-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-artifact-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--surface\)\s*\);/,
+    );
+    expect(autoDarkRootBlock).toMatch(/@include dark;/);
+
+    expect(artifactPreviewBlock).toMatch(/display:\s*block;/);
+    expect(artifactPreviewBlock).toMatch(/width:\s*min\(100%, 760px\);/);
+    expect(artifactPreviewBlock).toMatch(/max-width:\s*100%;/);
+    expect(artifactPreviewBlock).toMatch(/min-width:\s*0;/);
+    expect(artifactPreviewBlock).toMatch(/margin:\s*12px 0;/);
+    expect(artifactPreviewBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(artifactFrameBlock).toMatch(/overflow:\s*hidden;/);
+    expect(artifactFrameBlock).toMatch(/border-radius:\s*8px;/);
+    expect(artifactFrameBlock).toMatch(
+      /border:\s*1px solid var\(--markdown-artifact-frame-border-color\);/,
+    );
+    expect(artifactFrameBlock).toMatch(
+      /background:\s*var\(--markdown-artifact-frame-background\);/,
+    );
+    expect(artifactFrameBlock).toMatch(
+      /box-shadow:\s*0 8px 24px var\(--markdown-artifact-frame-shadow-color\);/,
+    );
+    expect(artifactFrameBlock).toMatch(
+      /transition:[\s\S]*border-color 0\.16s ease,[\s\S]*box-shadow 0\.16s ease,[\s\S]*transform 0\.16s ease/,
+    );
+    expect(artifactFrameHoverBlock).toMatch(
+      /border-color:\s*var\(--markdown-artifact-frame-hover-border-color\);/,
+    );
+    expect(artifactFrameHoverBlock).toMatch(
+      /box-shadow:\s*0 10px 26px var\(--markdown-artifact-frame-hover-shadow-color\);/,
+    );
+    expect(artifactFrameHoverBlock).toMatch(/transform:\s*translateY\(-1px\);/);
+    expect(artifactIframeBlock).toMatch(/display:\s*block;/);
+    expect(artifactIframeBlock).toMatch(/width:\s*100%;/);
+    expect(artifactIframeBlock).toMatch(/max-width:\s*100%;/);
+    expect(artifactIframeBlock).toMatch(/border:\s*0;/);
+    expect(artifactIframeBlock).toMatch(
+      /background:\s*var\(--markdown-artifact-iframe-background\);/,
+    );
+    expect(mobileArtifactPreviewBlock).toMatch(/width:\s*100%;/);
+    expect(mobileArtifactFrameBlock).toMatch(/border-radius:\s*8px;/);
+    expect(mobileArtifactFrameBlock).toMatch(/transform:\s*none;/);
+    expect(mobileArtifactIframeBlock).toMatch(/max-height:\s*min\(64vh, 520px\);/);
+    expect(markdownReducedMotionBlock).toMatch(
+      /\.markdown-body \.markdown-artifact-preview-frame,[\s\S]*\.markdown-body \.markdown-artifact-preview-frame:hover,[\s\S]*\.markdown-body \.markdown-artifact-preview-frame:focus-within[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(artifactPaintScope).not.toMatch(
+      /(?:border:\s*var\(--border-in-light\)|background-color:\s*var\(--white\)|border-radius:\s*4px|rgba\(|#[0-9a-fA-F]{3,8}\b)/,
+    );
+    expect(markdownStyles).toContain(
+      ":has(+ .markdown-artifact-preview:last-child)",
+    );
+    expect(markdownStyles).not.toContain(":has(+ iframe:last-child)");
   });
 
   test("keeps the context prompt toast as a Gemini-style contextual chip", () => {

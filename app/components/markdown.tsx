@@ -363,11 +363,15 @@ export function PreCode(props: { children: any }) {
         <Mermaid code={mermaidCode} key={mermaidCode} />
       )}
       {htmlCode.length > 0 && enableArtifacts && (
-        <HTMLPreview
-          code={htmlCode}
-          autoHeight={!document.fullscreenElement}
-          height={!document.fullscreenElement ? 600 : height}
-        />
+        <figure className="markdown-artifact-preview">
+          <div className="markdown-artifact-preview-frame">
+            <HTMLPreview
+              code={htmlCode}
+              autoHeight={!document.fullscreenElement}
+              height={!document.fullscreenElement ? 600 : height}
+            />
+          </div>
+        </figure>
       )}
     </>
   );

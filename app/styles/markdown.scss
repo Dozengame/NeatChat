@@ -179,6 +179,36 @@ summary,
     var(--black-50) 12%,
     transparent
   );
+  --markdown-artifact-frame-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --markdown-artifact-frame-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 90%,
+    transparent
+  );
+  --markdown-artifact-frame-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 8%,
+    transparent
+  );
+  --markdown-artifact-frame-hover-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 22%,
+    transparent
+  );
+  --markdown-artifact-frame-hover-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --markdown-artifact-iframe-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 96%,
+    transparent
+  );
   --markdown-mermaid-fallback-border-color: color-mix(
     in srgb,
     var(--black-50) 14%,
@@ -736,6 +766,36 @@ summary,
     in srgb,
     var(--surface) 28%,
     transparent
+  );
+  --markdown-artifact-frame-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --markdown-artifact-frame-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 84%,
+    var(--surface)
+  );
+  --markdown-artifact-frame-shadow-color: color-mix(
+    in srgb,
+    var(--surface) 24%,
+    transparent
+  );
+  --markdown-artifact-frame-hover-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 30%,
+    transparent
+  );
+  --markdown-artifact-frame-hover-shadow-color: color-mix(
+    in srgb,
+    var(--surface) 28%,
+    transparent
+  );
+  --markdown-artifact-iframe-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    var(--white)
   );
   --markdown-mermaid-fallback-border-color: color-mix(
     in srgb,
@@ -1623,6 +1683,42 @@ summary,
   padding: 10px;
 }
 
+.markdown-body .markdown-artifact-preview {
+  display: block;
+  box-sizing: border-box;
+  width: min(100%, 760px);
+  max-width: 100%;
+  min-width: 0;
+  margin: 12px 0;
+}
+
+.markdown-body .markdown-artifact-preview-frame {
+  overflow: hidden;
+  border: 1px solid var(--markdown-artifact-frame-border-color);
+  border-radius: 8px;
+  background: var(--markdown-artifact-frame-background);
+  box-shadow: 0 8px 24px var(--markdown-artifact-frame-shadow-color);
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+
+  &:hover,
+  &:focus-within {
+    border-color: var(--markdown-artifact-frame-hover-border-color);
+    box-shadow: 0 10px 26px var(--markdown-artifact-frame-hover-shadow-color);
+    transform: translateY(-1px);
+  }
+
+  > iframe {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    border: 0;
+    background: var(--markdown-artifact-iframe-background);
+  }
+}
+
 .markdown-body img.markdown-image-preview {
   box-sizing: border-box;
   width: auto;
@@ -1798,6 +1894,25 @@ summary,
     width: 100%;
     padding: 10px;
   }
+
+  .markdown-body .markdown-artifact-preview {
+    width: 100%;
+    margin: 10px 0;
+  }
+
+  .markdown-body .markdown-artifact-preview-frame {
+    border-radius: 8px;
+    transform: none;
+
+    &:hover,
+    &:focus-within {
+      transform: none;
+    }
+
+    > iframe {
+      max-height: min(64vh, 520px);
+    }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1822,6 +1937,13 @@ summary,
   .markdown-body .mermaid:hover,
   .markdown-body .mermaid:focus-visible,
   .markdown-body .markdown-mermaid-fallback {
+    transform: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .markdown-body .markdown-artifact-preview-frame,
+  .markdown-body .markdown-artifact-preview-frame:hover,
+  .markdown-body .markdown-artifact-preview-frame:focus-within {
     transform: none !important;
     transition-duration: 0.01ms !important;
   }
@@ -2812,7 +2934,7 @@ summary,
   position: relative;
 }
 
-.markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ iframe:last-child)) {
+.markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child)) {
   border-color: var(--markdown-code-streaming-border-color);
   box-shadow:
     0 0 0 1px var(--markdown-code-streaming-border-color),
@@ -3425,7 +3547,7 @@ summary,
     vertical-align: -0.14em;
   }
 
-  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ iframe:last-child)) {
+  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child)) {
     box-shadow:
       0 0 0 1px var(--markdown-code-streaming-border-color),
       0 8px 22px var(--markdown-code-streaming-shadow-color);
@@ -3483,8 +3605,8 @@ summary,
   .markdown-body[data-streaming="true"] > :is(p, h1, h2, h3, h4, h5, h6):last-child::after,
   .markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after,
   .markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after,
-  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ iframe:last-child)),
-  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ iframe:last-child))::before,
+  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child)),
+  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))::before,
   .markdown-body-container .token-info {
     animation: none !important;
     transform: none !important;
@@ -3511,7 +3633,7 @@ summary,
     opacity: 0.72;
   }
 
-  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ iframe:last-child))::before {
+  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))::before {
     opacity: 0.72;
   }
 }
