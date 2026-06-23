@@ -3208,6 +3208,23 @@
 }
 
 .chat-message-container {
+  --chat-message-meta-color: color-mix(in srgb, var(--black-50) 72%, transparent);
+  --chat-message-date-color: color-mix(in srgb, var(--black-50) 76%, transparent);
+  --chat-message-date-background: color-mix(in srgb, var(--surface-elevated) 72%, transparent);
+  --chat-message-date-border-color: color-mix(in srgb, var(--black-50) 10%, transparent);
+  --chat-message-date-hover-color: color-mix(in srgb, var(--black) 86%, transparent);
+  --chat-message-edit-background: color-mix(in srgb, var(--surface-elevated) 86%, transparent);
+  --chat-message-edit-color: color-mix(in srgb, var(--black-50) 82%, transparent);
+  --chat-message-edit-hover-background: color-mix(in srgb, var(--primary) 10%, var(--surface-elevated));
+  --chat-message-edit-hover-color: color-mix(in srgb, var(--primary) 72%, var(--black));
+  --chat-message-edit-focus-shadow-color: color-mix(in srgb, var(--primary) 18%, transparent);
+  --chat-message-assistant-background: color-mix(in srgb, var(--surface-elevated) 94%, var(--gray));
+  --chat-message-assistant-border-color: color-mix(in srgb, var(--black-50) 12%, transparent);
+  --chat-message-assistant-shadow-color: color-mix(in srgb, var(--black-50) 5%, transparent);
+  --chat-message-user-background: color-mix(in srgb, var(--surface-soft) 92%, var(--primary) 3%);
+  --chat-message-text-color: color-mix(in srgb, var(--black) 94%, transparent);
+  --chat-message-bubble-radius: 24px;
+
   max-width: 100%;
   min-width: 0;
   display: flex;
@@ -3223,10 +3240,54 @@
     .chat-message-actions {
       opacity: 1;
     }
+
+    .chat-message-action-date {
+      color: var(--chat-message-date-hover-color);
+    }
   }
 
   &:focus-within .chat-message-actions {
     opacity: 1;
+  }
+}
+
+:global(.dark) .chat-message-container {
+  --chat-message-meta-color: color-mix(in srgb, var(--black-50) 72%, transparent);
+  --chat-message-date-color: color-mix(in srgb, var(--black-50) 78%, transparent);
+  --chat-message-date-background: color-mix(in srgb, var(--surface-elevated) 68%, transparent);
+  --chat-message-date-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+  --chat-message-date-hover-color: color-mix(in srgb, var(--black) 92%, transparent);
+  --chat-message-edit-background: color-mix(in srgb, var(--surface-soft) 76%, transparent);
+  --chat-message-edit-color: color-mix(in srgb, var(--black-50) 88%, transparent);
+  --chat-message-edit-hover-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
+  --chat-message-edit-hover-color: color-mix(in srgb, var(--primary) 76%, var(--black));
+  --chat-message-edit-focus-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
+  --chat-message-assistant-background: color-mix(in srgb, var(--surface-soft) 74%, transparent);
+  --chat-message-assistant-border-color: color-mix(in srgb, var(--black) 9%, transparent);
+  --chat-message-assistant-shadow-color: color-mix(in srgb, rgb(0, 0, 0) 20%, transparent);
+  --chat-message-user-background: color-mix(in srgb, var(--surface-elevated) 84%, var(--primary) 5%);
+  --chat-message-text-color: color-mix(in srgb, var(--black) 94%, transparent);
+  --chat-message-bubble-radius: 24px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .chat-message-container {
+    --chat-message-meta-color: color-mix(in srgb, var(--black-50) 72%, transparent);
+    --chat-message-date-color: color-mix(in srgb, var(--black-50) 78%, transparent);
+    --chat-message-date-background: color-mix(in srgb, var(--surface-elevated) 68%, transparent);
+    --chat-message-date-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+    --chat-message-date-hover-color: color-mix(in srgb, var(--black) 92%, transparent);
+    --chat-message-edit-background: color-mix(in srgb, var(--surface-soft) 76%, transparent);
+    --chat-message-edit-color: color-mix(in srgb, var(--black-50) 88%, transparent);
+    --chat-message-edit-hover-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
+    --chat-message-edit-hover-color: color-mix(in srgb, var(--primary) 76%, var(--black));
+    --chat-message-edit-focus-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
+    --chat-message-assistant-background: color-mix(in srgb, var(--surface-soft) 74%, transparent);
+    --chat-message-assistant-border-color: color-mix(in srgb, var(--black) 9%, transparent);
+    --chat-message-assistant-shadow-color: color-mix(in srgb, rgb(0, 0, 0) 20%, transparent);
+    --chat-message-user-background: color-mix(in srgb, var(--surface-elevated) 84%, var(--primary) 5%);
+    --chat-message-text-color: color-mix(in srgb, var(--black) 94%, transparent);
+    --chat-message-bubble-radius: 24px;
   }
 }
 
@@ -3247,6 +3308,7 @@
 .chat-message-avatar {
   position: relative;
   display: none;
+  min-width: 36px;
 
   .chat-message-edit {
     position: absolute;
@@ -3257,10 +3319,32 @@
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: all ease 0.3s;
+    transition: opacity 0.18s ease;
 
     button {
-      padding: 7px;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border-radius: 8px;
+      background: var(--chat-message-edit-background);
+      color: var(--chat-message-edit-color);
+      box-shadow: 0 8px 22px var(--chat-message-assistant-shadow-color);
+
+      &:hover,
+      &:focus-visible {
+        background: var(--chat-message-edit-hover-background);
+        color: var(--chat-message-edit-hover-color);
+      }
+
+      &:focus-visible {
+        box-shadow:
+          var(--focus-ring-shadow),
+          0 8px 22px var(--chat-message-edit-focus-shadow-color);
+      }
+
+      &:active {
+        transform: translateY(1px);
+      }
     }
   }
 
@@ -3276,14 +3360,14 @@
 
 .chat-message-status {
   font-size: 12px;
-  color: #aaa;
+  color: var(--chat-message-meta-color);
   line-height: 1.5;
   margin-top: 5px;
 }
 
 .chat-message-tools {
   font-size: 12px;
-  color: #aaa;
+  color: var(--chat-message-meta-color);
   line-height: 1.5;
   margin-top: 5px;
   .chat-message-tool {
@@ -3846,24 +3930,32 @@
 
 .chat-message-action-date {
   font-size: 12px;
-  opacity: 0.2;
+  opacity: 1;
   white-space: nowrap;
-  transition: all ease 0.6s;
-  color: var(--black);
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease;
+  color: var(--chat-message-date-color);
   text-align: right;
-  width: 100%;
+  width: fit-content;
+  max-width: 100%;
   box-sizing: border-box;
-  padding-right: 10px;
+  padding: 2px 8px;
+  margin-top: 4px;
+  border: 1px solid var(--chat-message-date-border-color);
+  border-radius: 999px;
+  background: var(--chat-message-date-background);
   pointer-events: none;
   z-index: 1;
 }
 .chat-message:not(.chat-message-user) > .chat-message-container > .chat-message-item {
-  background-color: var(--white);
-  border: var(--border-in-light);
-  border-radius: 24px;
+  background-color: var(--chat-message-assistant-background);
+  border: 1px solid var(--chat-message-assistant-border-color);
+  border-radius: var(--chat-message-bubble-radius);
   padding: 12px 18px;
-  color: var(--black);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  color: var(--chat-message-text-color);
+  box-shadow: 0 1px 3px var(--chat-message-assistant-shadow-color);
 
   &:hover {
     min-width: 0;
@@ -3871,10 +3963,10 @@
 }
 
 .chat-message-user > .chat-message-container > .chat-message-item {
-  background-color: var(--surface-soft);
-  border-radius: 24px;
+  background-color: var(--chat-message-user-background);
+  border-radius: var(--chat-message-bubble-radius);
   padding: 12px 18px;
-  color: var(--black);
+  color: var(--chat-message-text-color);
 
   &:hover {
     min-width: 0;
@@ -4696,6 +4788,16 @@
         width: 34px;
       }
     }
+  }
+
+  .chat-message-action-date {
+    max-width: calc(100vw - 48px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chat-message-edit {
+    transition: none;
   }
 
   .chat-empty-state {
@@ -6167,6 +6269,16 @@
   .chat-message-action-rail .chat-input-action,
   .chat-message-action-rail .chat-input-action[data-copy-state="copied"] {
     transition-duration: 0.01ms !important;
+  }
+
+  .chat-message-edit,
+  .chat-message-edit button,
+  .chat-message-action-date {
+    transition-duration: 0.01ms !important;
+  }
+
+  .chat-message-edit button:active {
+    transform: none !important;
   }
 
   .chat-message-shimmer {

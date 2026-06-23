@@ -11628,7 +11628,7 @@ describe("Gemini visual migration shell", () => {
     );
     const mobileMessageActionMediaIndex = chatStyles.indexOf(
       "@media only screen and (max-width: 600px)",
-      chatStyles.indexOf(".chat-message-action-date"),
+      chatStyles.indexOf(".chat-input-action-menu-open"),
     );
     const mobileChatStyles = readCssBlock(
       chatStyles.slice(mobileMessageActionMediaIndex),
@@ -11792,6 +11792,202 @@ describe("Gemini visual migration shell", () => {
     );
     expect(reducedMotionBlock).toMatch(
       /\.chat-message-action-rail \.chat-input-action,\s*\.chat-message-action-rail \.chat-input-action\[data-copy-state="copied"\]\s*\{[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+  });
+
+  test("keeps chat message meta and edit affordances theme-aware", () => {
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const messageContainerBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-container",
+    );
+    const messageAvatarBlock = readRootCssBlock(
+      chatStyles,
+      ".chat-message-avatar",
+    );
+    const messageEditBlock = readCssBlock(
+      messageAvatarBlock,
+      ".chat-message-edit",
+    );
+    const messageEditButtonBlock = readCssBlock(messageEditBlock, "button");
+    const messageStatusBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-status",
+    );
+    const messageToolsBlock = readCssBlock(chatStyles, ".chat-message-tools");
+    const messageDateBlock = readRootCssBlock(
+      chatStyles,
+      ".chat-message-action-date",
+    );
+    const assistantMessageBlock = readCssBlock(
+      chatStyles,
+      ".chat-message:not(.chat-message-user) > .chat-message-container > .chat-message-item",
+    );
+    const userMessageBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-user > .chat-message-container > .chat-message-item",
+    );
+    const messageMetaTokenSelector = ".chat-message-container";
+    const darkMessageMetaBlock = readCssBlock(
+      chatStyles,
+      `:global(.dark) ${messageMetaTokenSelector}`,
+    );
+    const autoDarkMessageMetaSelector =
+      ":global(body:not(.light)) .chat-message-container";
+    const autoDarkMessageMetaIndex = chatStyles.indexOf(
+      autoDarkMessageMetaSelector,
+    );
+    const autoDarkMessageMetaMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkMessageMetaIndex,
+    );
+    const autoDarkMessageMetaBlock = readCssBlock(
+      chatStyles.slice(autoDarkMessageMetaMediaIndex),
+      autoDarkMessageMetaSelector,
+    );
+    const mobileMessageMetaMediaIndex = chatStyles.indexOf(
+      "@media only screen and (max-width: 600px)",
+      chatStyles.indexOf(".chat-input-action-menu-open"),
+    );
+    const mobileMessageMetaBlock = readCssBlock(
+      chatStyles.slice(mobileMessageMetaMediaIndex),
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileMessageDateBlock = readCssBlock(
+      mobileMessageMetaBlock,
+      ".chat-message-action-date",
+    );
+    const mobileMessageEditBlock = readCssBlock(
+      mobileMessageMetaBlock,
+      ".chat-message-edit",
+    );
+    const reducedMotionBlock = readCssBlock(
+      chatStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const messageMetaTokenNames = [
+      "--chat-message-meta-color",
+      "--chat-message-date-color",
+      "--chat-message-date-background",
+      "--chat-message-date-border-color",
+      "--chat-message-date-hover-color",
+      "--chat-message-edit-background",
+      "--chat-message-edit-color",
+      "--chat-message-edit-hover-background",
+      "--chat-message-edit-hover-color",
+      "--chat-message-edit-focus-shadow-color",
+      "--chat-message-assistant-background",
+      "--chat-message-assistant-border-color",
+      "--chat-message-assistant-shadow-color",
+      "--chat-message-user-background",
+      "--chat-message-text-color",
+    ];
+    const lightMessageMetaTokens = readCustomProperties(
+      readRootDeclarations(messageContainerBlock),
+      messageMetaTokenNames,
+    );
+    const darkMessageMetaTokens = readCustomProperties(
+      darkMessageMetaBlock,
+      messageMetaTokenNames,
+    );
+    const autoDarkMessageMetaTokens = readCustomProperties(
+      autoDarkMessageMetaBlock,
+      messageMetaTokenNames,
+    );
+    const messageMetaPaintScope = [
+      messageEditBlock,
+      messageEditButtonBlock,
+      messageStatusBlock,
+      messageToolsBlock,
+      messageDateBlock,
+      assistantMessageBlock,
+      userMessageBlock,
+      darkMessageMetaBlock,
+      autoDarkMessageMetaBlock,
+    ].join("\n");
+
+    expect(chat).toContain('styles["chat-message-edit"]');
+    expect(Object.values(lightMessageMetaTokens).every(Boolean)).toBeTruthy();
+    expect(Object.values(darkMessageMetaTokens).every(Boolean)).toBeTruthy();
+    expect(Object.values(autoDarkMessageMetaTokens).every(Boolean)).toBeTruthy();
+    expect(
+      lightMessageMetaTokens["--chat-message-assistant-background"],
+    ).toContain("var(--surface-elevated)");
+    expect(
+      darkMessageMetaTokens["--chat-message-assistant-background"],
+    ).toContain("var(--surface-soft)");
+    expect(autoDarkMessageMetaTokens).toEqual(darkMessageMetaTokens);
+    expect(messageContainerBlock).toMatch(/--chat-message-bubble-radius:\s*24px;/);
+    expect(messageContainerBlock).toMatch(
+      /&:hover[\s\S]*\.chat-message-action-date[\s\S]*color:\s*var\(--chat-message-date-hover-color\);/,
+    );
+    expect(messageAvatarBlock).toMatch(/min-width:\s*36px;/);
+    expect(messageEditBlock).toMatch(/transition:\s*opacity 0\.18s ease;/);
+    expect(messageEditButtonBlock).toMatch(
+      /background:\s*var\(--chat-message-edit-background\);/,
+    );
+    expect(messageEditButtonBlock).toMatch(
+      /color:\s*var\(--chat-message-edit-color\);/,
+    );
+    expect(messageEditButtonBlock).toMatch(/border-radius:\s*8px;/);
+    expect(messageEditButtonBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*background:\s*var\(--chat-message-edit-hover-background\);/,
+    );
+    expect(messageEditButtonBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*color:\s*var\(--chat-message-edit-hover-color\);/,
+    );
+    expect(messageEditButtonBlock).toMatch(
+      /&:focus-visible[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\),\s*0 8px 22px var\(--chat-message-edit-focus-shadow-color\);/,
+    );
+    expect(messageStatusBlock).toMatch(/color:\s*var\(--chat-message-meta-color\);/);
+    expect(messageToolsBlock).toMatch(/color:\s*var\(--chat-message-meta-color\);/);
+    expect(messageDateBlock).toMatch(
+      /color:\s*var\(--chat-message-date-color\);/,
+    );
+    expect(messageDateBlock).toMatch(
+      /background:\s*var\(--chat-message-date-background\);/,
+    );
+    expect(messageDateBlock).toMatch(
+      /border:\s*1px solid var\(--chat-message-date-border-color\);/,
+    );
+    expect(messageDateBlock).toMatch(/border-radius:\s*999px;/);
+    expect(messageDateBlock).toMatch(/width:\s*fit-content;/);
+    expect(messageDateBlock).toMatch(/max-width:\s*100%;/);
+    expect(messageDateBlock).toMatch(/opacity:\s*1;/);
+    expect(assistantMessageBlock).toMatch(
+      /background-color:\s*var\(--chat-message-assistant-background\);/,
+    );
+    expect(assistantMessageBlock).toMatch(
+      /border:\s*1px solid var\(--chat-message-assistant-border-color\);/,
+    );
+    expect(assistantMessageBlock).toMatch(
+      /border-radius:\s*var\(--chat-message-bubble-radius\);/,
+    );
+    expect(assistantMessageBlock).toMatch(
+      /box-shadow:\s*0 1px 3px var\(--chat-message-assistant-shadow-color\);/,
+    );
+    expect(assistantMessageBlock).toMatch(/color:\s*var\(--chat-message-text-color\);/);
+    expect(userMessageBlock).toMatch(
+      /background-color:\s*var\(--chat-message-user-background\);/,
+    );
+    expect(userMessageBlock).toMatch(
+      /border-radius:\s*var\(--chat-message-bubble-radius\);/,
+    );
+    expect(userMessageBlock).toMatch(/color:\s*var\(--chat-message-text-color\);/);
+    expect(mobileMessageDateBlock).toMatch(/max-width:\s*calc\(100vw - 48px\);/);
+    expect(mobileMessageDateBlock).toMatch(/overflow:\s*hidden;/);
+    expect(mobileMessageDateBlock).toMatch(/text-overflow:\s*ellipsis;/);
+    expect(mobileMessageEditBlock).toMatch(/transition:\s*none;/);
+    expect(messageMetaPaintScope).not.toContain("color: #aaa");
+    expect(messageMetaPaintScope).not.toContain("background-color: var(--white)");
+    expect(messageMetaPaintScope).not.toContain("border: var(--border-in-light)");
+    expect(messageMetaPaintScope).not.toMatch(/rgba\(0,\s*0,\s*0,\s*0\.05\)/);
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-message-edit,\s*\.chat-message-edit button,\s*\.chat-message-action-date\s*\{[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-message-edit button:active\s*\{[\s\S]*transform:\s*none !important;/,
     );
   });
 
