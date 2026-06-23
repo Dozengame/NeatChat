@@ -192,6 +192,11 @@ describe("Gemini visual migration shell", () => {
     const promptHintsRootBlock = readRootDeclarations(promptHintsBlock);
     const promptHintBlock = readCssBlock(promptHintsBlock, ".prompt-hint");
     const promptHintRootBlock = readRootDeclarations(promptHintBlock);
+    const promptHintTitleBlock = readCssBlock(promptHintBlock, ".hint-title");
+    const promptHintContentBlock = readCssBlock(
+      promptHintBlock,
+      ".hint-content",
+    );
     const darkPromptHintsBlock = readCssBlock(
       chatStyles,
       ":global(.dark) .prompt-hints",
@@ -459,9 +464,36 @@ describe("Gemini visual migration shell", () => {
     const promptHintsToneScope = [
       promptHintsRootBlock,
       promptHintBlock,
+      promptHintTitleBlock,
+      promptHintContentBlock,
       darkPromptHintsBlock,
       autoDarkPromptHintsBlock,
     ].join("\n");
+    const promptHintTokenNames = [
+      "--prompt-hints-background",
+      "--prompt-hints-border-color",
+      "--prompt-hints-shadow-color",
+      "--prompt-hint-background",
+      "--prompt-hint-border-color",
+      "--prompt-hint-color",
+      "--prompt-hint-muted-color",
+      "--prompt-hint-selected-background",
+      "--prompt-hint-selected-border-color",
+      "--prompt-hint-selected-ring-color",
+      "--prompt-hint-selected-color",
+    ];
+    const lightPromptHintTokens = readCustomProperties(
+      promptHintsRootBlock,
+      promptHintTokenNames,
+    );
+    const darkPromptHintTokens = readCustomProperties(
+      darkPromptHintsBlock,
+      promptHintTokenNames,
+    );
+    const autoDarkPromptHintTokens = readCustomProperties(
+      autoDarkPromptHintsBlock,
+      promptHintTokenNames,
+    );
     const legacyPromptHintSelectedPaint =
       /rgba\(66,\s*133,\s*244,\s*(?:0\.1|0\.18|0\.22)\)/;
     const emptySuggestionToneScope = [
@@ -1281,9 +1313,22 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /className=\{styles\["chat-input"\]\}[\s\S]*aria-controls=\{\s*promptHints\.length > 0 \? "chat-prompt-hints" : undefined\s*\}[\s\S]*aria-haspopup="listbox"/,
     );
+    expect(Object.values(lightPromptHintTokens).every(Boolean)).toBeTruthy();
+    expect(Object.values(darkPromptHintTokens).every(Boolean)).toBeTruthy();
+    expect(Object.values(autoDarkPromptHintTokens).every(Boolean)).toBeTruthy();
+    expect(lightPromptHintTokens["--prompt-hints-background"]).toContain(
+      "var(--surface-elevated)",
+    );
+    expect(darkPromptHintTokens["--prompt-hints-background"]).toContain(
+      "var(--surface-elevated)",
+    );
+    expect(autoDarkPromptHintTokens).toEqual(darkPromptHintTokens);
     expect(promptHintsRootBlock).toMatch(/box-sizing:\s*border-box;/);
     expect(promptHintsRootBlock).toMatch(
-      /background:\s*var\(--surface-elevated\);/,
+      /background:\s*var\(--prompt-hints-background\);/,
+    );
+    expect(promptHintsRootBlock).toMatch(
+      /border:\s*1px solid var\(--prompt-hints-border-color\);/,
     );
     expect(promptHintsRootBlock).toMatch(
       /--prompt-hint-selected-background:\s*color-mix\(in srgb,\s*var\(--primary\) 10%,\s*transparent\);/,
@@ -1299,17 +1344,32 @@ describe("Gemini visual migration shell", () => {
     expect(promptHintsRootBlock).toMatch(/overscroll-behavior:\s*contain;/);
     expect(promptHintsRootBlock).toMatch(/scrollbar-width:\s*thin;/);
     expect(promptHintsRootBlock).toMatch(
-      /box-shadow:\s*var\(--composer-shadow\);/,
+      /box-shadow:\s*0 10px 28px var\(--prompt-hints-shadow-color\);/,
     );
     expect(promptHintRootBlock).toMatch(/appearance:\s*none;/);
     expect(promptHintRootBlock).toMatch(/width:\s*100%;/);
     expect(promptHintRootBlock).toMatch(/min-height:\s*44px;/);
     expect(promptHintRootBlock).toMatch(/box-sizing:\s*border-box;/);
     expect(promptHintRootBlock).toMatch(/text-align:\s*left;/);
-    expect(promptHintRootBlock).toMatch(/background:\s*transparent;/);
-    expect(promptHintRootBlock).toMatch(/border:\s*1px solid transparent;/);
+    expect(promptHintRootBlock).toMatch(
+      /background:\s*var\(--prompt-hint-background\);/,
+    );
+    expect(promptHintRootBlock).toMatch(
+      /border:\s*1px solid var\(--prompt-hint-border-color\);/,
+    );
+    expect(promptHintRootBlock).toMatch(/color:\s*var\(--prompt-hint-color\);/);
+    expect(promptHintTitleBlock).toMatch(
+      /color:\s*var\(--prompt-hint-color\);/,
+    );
+    expect(promptHintContentBlock).toMatch(
+      /color:\s*var\(--prompt-hint-muted-color\);/,
+    );
+    expect(promptHintContentBlock).toMatch(/opacity:\s*1;/);
     expect(promptHintBlock).toMatch(
-      /&\.prompt-hint-selected,\s*&\[aria-selected="true"\],\s*&:hover,\s*&:focus-visible\s*\{[\s\S]*background:\s*var\(--prompt-hint-selected-background\);[\s\S]*border-color:\s*var\(--prompt-hint-selected-border-color\);[\s\S]*box-shadow:\s*inset 0 0 0 1px var\(--prompt-hint-selected-ring-color\);/,
+      /&\.prompt-hint-selected,\s*&\[aria-selected="true"\],\s*&:hover,\s*&:focus-visible\s*\{[\s\S]*background:\s*var\(--prompt-hint-selected-background\);[\s\S]*border-color:\s*var\(--prompt-hint-selected-border-color\);[\s\S]*color:\s*var\(--prompt-hint-selected-color\);[\s\S]*box-shadow:\s*inset 0 0 0 1px var\(--prompt-hint-selected-ring-color\);/,
+    );
+    expect(promptHintBlock).toMatch(
+      /&\.prompt-hint-selected,\s*&\[aria-selected="true"\],\s*&:hover,\s*&:focus-visible\s*\{[\s\S]*\.hint-title,\s*\.hint-content\s*\{[\s\S]*color:\s*var\(--prompt-hint-selected-color\);/,
     );
     expect(darkPromptHintsBlock).toMatch(
       /--prompt-hint-selected-background:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*var\(--surface\)\);/,
@@ -1331,9 +1391,18 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkPromptHintsBlock).toMatch(
       /--prompt-hint-selected-ring-color:\s*color-mix\(in srgb,\s*var\(--primary\) 24%,\s*transparent\);/,
     );
+    expect(promptHintsToneScope).not.toMatch(
+      /border:\s*1px solid rgba\(60,\s*64,\s*67,\s*0\.12\)/,
+    );
+    expect(promptHintsToneScope).not.toMatch(/background:\s*transparent;/);
+    expect(promptHintsToneScope).not.toMatch(/border:\s*1px solid transparent;/);
+    expect(promptHintsToneScope).not.toMatch(/color:\s*var\(--black\);/);
     expect(promptHintsToneScope).not.toMatch(legacyPromptHintSelectedPaint);
     expect(promptHintsMobileBlock).toMatch(
       /\.prompt-hints\s*\{[\s\S]*max-height:\s*min\(46vh,\s*320px\);/,
+    );
+    expect(promptHintsMobileBlock).toMatch(
+      /\.prompt-hints\s*\{[\s\S]*max-width:\s*100%;/,
     );
     expect(promptHintsMobileBlock).toMatch(
       /\.prompt-hint\s*\{[\s\S]*min-height:\s*44px;/,

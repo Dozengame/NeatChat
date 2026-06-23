@@ -4135,9 +4135,17 @@
 }
 
 .prompt-hints {
+  --prompt-hints-background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
+  --prompt-hints-border-color: color-mix(in srgb, var(--black-50) 12%, transparent);
+  --prompt-hints-shadow-color: color-mix(in srgb, var(--black-50) 10%, transparent);
+  --prompt-hint-background: color-mix(in srgb, var(--surface-elevated) 72%, transparent);
+  --prompt-hint-border-color: color-mix(in srgb, var(--black-50) 6%, transparent);
+  --prompt-hint-color: color-mix(in srgb, var(--black) 90%, transparent);
+  --prompt-hint-muted-color: color-mix(in srgb, var(--black-50) 78%, transparent);
   --prompt-hint-selected-background: color-mix(in srgb, var(--primary) 10%, transparent);
   --prompt-hint-selected-border-color: color-mix(in srgb, var(--primary) 18%, transparent);
   --prompt-hint-selected-ring-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  --prompt-hint-selected-color: color-mix(in srgb, var(--black) 94%, transparent);
 
   min-height: 20px;
   width: 100%;
@@ -4151,23 +4159,23 @@
   overscroll-behavior: contain;
   scrollbar-width: thin;
 
-  background: var(--surface-elevated);
-  border: 1px solid rgba(60, 64, 67, 0.12);
+  background: var(--prompt-hints-background);
+  border: 1px solid var(--prompt-hints-border-color);
   border-radius: 18px;
   margin-bottom: 10px;
-  box-shadow: var(--composer-shadow);
+  box-shadow: 0 10px 28px var(--prompt-hints-shadow-color);
 
   .prompt-hint {
-    color: var(--black);
+    color: var(--prompt-hint-color);
     width: 100%;
     min-height: 44px;
     box-sizing: border-box;
     appearance: none;
-    border: 1px solid transparent;
+    border: 1px solid var(--prompt-hint-border-color);
     border-radius: 12px;
     padding: 8px 10px;
     text-align: left;
-    background: transparent;
+    background: var(--prompt-hint-background);
     animation: slide-in ease 0.24s;
     cursor: pointer;
     transition:
@@ -4180,6 +4188,8 @@
       font-size: 12px;
       line-height: 1.35;
       font-weight: 600;
+      color: var(--prompt-hint-color);
+      transition: color ease 0.16s;
 
       @include single-line();
     }
@@ -4187,7 +4197,9 @@
     .hint-content {
       font-size: 12px;
       line-height: 1.35;
-      opacity: 0.64;
+      color: var(--prompt-hint-muted-color);
+      opacity: 1;
+      transition: color ease 0.16s;
 
       @include single-line();
     }
@@ -4198,27 +4210,50 @@
     &:focus-visible {
       background: var(--prompt-hint-selected-background);
       border-color: var(--prompt-hint-selected-border-color);
+      color: var(--prompt-hint-selected-color);
       box-shadow: inset 0 0 0 1px var(--prompt-hint-selected-ring-color);
+
+      .hint-title,
+      .hint-content {
+        color: var(--prompt-hint-selected-color);
+      }
     }
   }
 }
 
 :global(.dark) .prompt-hints {
+  --prompt-hints-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--white));
+  --prompt-hints-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+  --prompt-hints-shadow-color: color-mix(in srgb, var(--gray) 40%, transparent);
+  --prompt-hint-background: color-mix(in srgb, var(--surface-soft) 38%, transparent);
+  --prompt-hint-border-color: color-mix(in srgb, var(--black) 6%, transparent);
+  --prompt-hint-color: color-mix(in srgb, var(--black) 94%, transparent);
+  --prompt-hint-muted-color: color-mix(in srgb, var(--black-50) 88%, transparent);
   --prompt-hint-selected-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
   --prompt-hint-selected-border-color: color-mix(in srgb, var(--primary) 28%, transparent);
   --prompt-hint-selected-ring-color: color-mix(in srgb, var(--primary) 24%, transparent);
+  --prompt-hint-selected-color: color-mix(in srgb, var(--black) 96%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .prompt-hints {
+    --prompt-hints-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--white));
+    --prompt-hints-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+    --prompt-hints-shadow-color: color-mix(in srgb, var(--gray) 40%, transparent);
+    --prompt-hint-background: color-mix(in srgb, var(--surface-soft) 38%, transparent);
+    --prompt-hint-border-color: color-mix(in srgb, var(--black) 6%, transparent);
+    --prompt-hint-color: color-mix(in srgb, var(--black) 94%, transparent);
+    --prompt-hint-muted-color: color-mix(in srgb, var(--black-50) 88%, transparent);
     --prompt-hint-selected-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
     --prompt-hint-selected-border-color: color-mix(in srgb, var(--primary) 28%, transparent);
     --prompt-hint-selected-ring-color: color-mix(in srgb, var(--primary) 24%, transparent);
+    --prompt-hint-selected-color: color-mix(in srgb, var(--black) 96%, transparent);
   }
 }
 
 @media (max-width: 600px) {
   .prompt-hints {
+    max-width: 100%;
     max-height: min(46vh, 320px);
   }
 
