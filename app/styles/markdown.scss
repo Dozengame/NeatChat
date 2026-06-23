@@ -3399,6 +3399,30 @@ summary,
     padding: 10px 12px;
   }
 
+  .markdown-body details.markdown-thinking {
+    padding: 8px 10px;
+    border-radius: var(--markdown-thinking-card-radius);
+  }
+
+  .markdown-body details.markdown-thinking > summary.markdown-thinking-summary {
+    max-width: 100%;
+    min-width: 0;
+    gap: 6px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    flex-wrap: wrap;
+  }
+
+  .markdown-body details.markdown-thinking > *:not(summary) {
+    padding-left: 10px;
+  }
+
+  .markdown-body details.markdown-thinking blockquote,
+  .markdown-body details.markdown-thinking > p > blockquote {
+    padding: 0 0 0 1em;
+    border-left: 3px solid var(--markdown-details-blockquote-rail-color);
+  }
+
   .markdown-body-container .token-info {
     align-self: flex-start;
     white-space: normal;

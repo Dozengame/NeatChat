@@ -8392,6 +8392,26 @@ describe("Gemini visual migration shell", () => {
     const reducedMotionBlock = markdownStyles.slice(
       markdownStyles.indexOf("@media (prefers-reduced-motion: reduce)"),
     );
+    const mobileMarkdownBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileThinkingBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body details.markdown-thinking",
+    );
+    const mobileThinkingSummaryBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body details.markdown-thinking > summary.markdown-thinking-summary",
+    );
+    const mobileThinkingContentBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body details.markdown-thinking > *:not(summary)",
+    );
+    const mobileThinkingBlockquoteBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body details.markdown-thinking blockquote,\n  .markdown-body details.markdown-thinking > p > blockquote",
+    );
     const thinkingTokenNames = [
       "--markdown-thinking-card-border-color",
       "--markdown-thinking-card-background",
@@ -8517,6 +8537,21 @@ describe("Gemini visual migration shell", () => {
       ".markdown-body details.markdown-thinking .thinking-loader",
     );
     expect(reducedMotionBlock).toMatch(/animation:\s*none !important;/);
+    expect(mobileThinkingBlock).toMatch(/padding:\s*8px 10px;/);
+    expect(mobileThinkingBlock).toMatch(
+      /border-radius:\s*var\(--markdown-thinking-card-radius\);/,
+    );
+    expect(mobileThinkingSummaryBlock).toMatch(/max-width:\s*100%;/);
+    expect(mobileThinkingSummaryBlock).toMatch(/min-width:\s*0;/);
+    expect(mobileThinkingSummaryBlock).toMatch(/white-space:\s*normal;/);
+    expect(mobileThinkingSummaryBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(mobileThinkingSummaryBlock).toMatch(/flex-wrap:\s*wrap;/);
+    expect(mobileThinkingSummaryBlock).toMatch(/gap:\s*6px;/);
+    expect(mobileThinkingContentBlock).toMatch(/padding-left:\s*10px;/);
+    expect(mobileThinkingBlockquoteBlock).toMatch(/padding:\s*0 0 0 1em;/);
+    expect(mobileThinkingBlockquoteBlock).toMatch(
+      /border-left:\s*3px solid var\(--markdown-details-blockquote-rail-color\);/,
+    );
   });
 
   test("keeps Gemini-style markdown list rhythm", () => {
