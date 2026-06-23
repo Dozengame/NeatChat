@@ -11580,6 +11580,221 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps chat message action rail theme-aware and compact", () => {
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const messageActionsBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-actions",
+    );
+    const chatInputActionsBlock = readCssBlock(
+      chatStyles,
+      ".chat-input-actions",
+    );
+    const chatInputActionMenuBlock = readCssBlock(
+      chatStyles,
+      ".chat-input-action-menu",
+    );
+    const messageActionRailBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-action-rail",
+    );
+    const messageActionRailRootBlock =
+      readRootDeclarations(messageActionRailBlock);
+    const messageActionButtonBlock = readCssBlock(
+      messageActionRailBlock,
+      ".chat-input-action",
+    );
+    const messageActionCopyBlock = readCssBlock(
+      messageActionRailBlock,
+      '.chat-input-action[data-copy-state="copied"],\n  .chat-input-action[data-copy-state="copied"]:hover,\n  .chat-input-action[data-copy-state="copied"]:focus-visible',
+    );
+    const darkMessageActionRailBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-message-action-rail",
+    );
+    const autoDarkMessageActionRailSelector =
+      ":global(body:not(.light)) .chat-message-action-rail";
+    const autoDarkMessageActionRailIndex = chatStyles.indexOf(
+      autoDarkMessageActionRailSelector,
+    );
+    const autoDarkMessageActionRailMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkMessageActionRailIndex,
+    );
+    const autoDarkMessageActionRailBlock = readCssBlock(
+      chatStyles.slice(autoDarkMessageActionRailMediaIndex),
+      autoDarkMessageActionRailSelector,
+    );
+    const mobileMessageActionMediaIndex = chatStyles.indexOf(
+      "@media only screen and (max-width: 600px)",
+      chatStyles.indexOf(".chat-message-action-date"),
+    );
+    const mobileChatStyles = readCssBlock(
+      chatStyles.slice(mobileMessageActionMediaIndex),
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileMessageActionRailBlock = readCssBlock(
+      mobileChatStyles,
+      ".chat-message-action-rail",
+    );
+    const mobileMessageActionButtonBlock = readCssBlock(
+      mobileMessageActionRailBlock,
+      ".chat-input-action",
+    );
+    const touchMessageActionMediaBlock = readCssBlock(
+      chatStyles.slice(chatStyles.indexOf(".chat-message-action-rail")),
+      "@media (hover: none), (pointer: coarse)",
+    );
+    const touchMessageActionButtonBlock = readCssBlock(
+      touchMessageActionMediaBlock,
+      ".chat-message-action-rail .chat-input-action",
+    );
+    const reducedMotionBlock = readCssBlock(
+      chatStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const messageActionTokenNames = [
+      "--message-action-rail-border-color",
+      "--message-action-rail-background",
+      "--message-action-rail-shadow-color",
+      "--message-action-button-background",
+      "--message-action-button-color",
+      "--message-action-button-hover-background",
+      "--message-action-button-hover-color",
+      "--message-action-button-hover-shadow-color",
+      "--message-action-button-active-background",
+      "--message-action-button-active-color",
+      "--message-action-button-focus-shadow-color",
+      "--message-action-copy-success-background",
+      "--message-action-copy-success-color",
+    ];
+    const lightMessageActionTokens = readCustomProperties(
+      messageActionRailRootBlock,
+      messageActionTokenNames,
+    );
+    const darkMessageActionTokens = readCustomProperties(
+      darkMessageActionRailBlock,
+      messageActionTokenNames,
+    );
+    const autoDarkMessageActionTokens = readCustomProperties(
+      autoDarkMessageActionRailBlock,
+      messageActionTokenNames,
+    );
+    const messageActionPaintScope = [
+      messageActionRailRootBlock,
+      messageActionButtonBlock,
+      darkMessageActionRailBlock,
+      autoDarkMessageActionRailBlock,
+    ].join("\n");
+
+    expect(chat).toMatch(
+      /<div\s+className=\{styles\["chat-message-actions"\]\}[\s\S]*role="group"[\s\S]*aria-label=\{messageActionLabel\}[\s\S]*className=\{styles\["chat-message-action-rail"\]\}[\s\S]*onKeyDown=\{handleMessageActionRailKeyDown\}[\s\S]*<ChatAction[\s\S]*text=\{Locale\.Chat\.Actions\.Retry\}[\s\S]*<ChatAction[\s\S]*text=\{Locale\.Chat\.Actions\.Delete\}[\s\S]*<ChatAction[\s\S]*text=\{Locale\.Chat\.Actions\.Pin\}[\s\S]*dataCopyState=\{[\s\S]*isMessageCopied \? "copied" : "idle"[\s\S]*copyMessageContent\(/,
+    );
+    expect(Object.values(lightMessageActionTokens).every(Boolean)).toBeTruthy();
+    expect(Object.values(darkMessageActionTokens).every(Boolean)).toBeTruthy();
+    expect(
+      Object.values(autoDarkMessageActionTokens).every(Boolean),
+    ).toBeTruthy();
+    expect(lightMessageActionTokens["--message-action-rail-background"]).toMatch(
+      /var\(--surface-elevated\)|var\(--surface\)/,
+    );
+    expect(darkMessageActionTokens["--message-action-rail-background"]).toMatch(
+      /var\(--surface-soft\)|var\(--surface\)/,
+    );
+    expect(autoDarkMessageActionTokens).toEqual(darkMessageActionTokens);
+    expect(messageActionsBlock).toMatch(/margin-top:\s*8px;/);
+    expect(messageActionsBlock).toMatch(/pointer-events:\s*auto\s*!important;/);
+    expect(messageActionsBlock).toMatch(/transform:\s*none\s*!important;/);
+    expect(messageActionsBlock).toMatch(/transition:\s*opacity 0\.2s ease;/);
+    expect(messageActionRailRootBlock).toMatch(/display:\s*inline-flex;/);
+    expect(messageActionRailRootBlock).toMatch(/flex-wrap:\s*wrap;/);
+    expect(messageActionRailRootBlock).toMatch(/border-radius:\s*999px;/);
+    expect(messageActionRailRootBlock).toMatch(/max-width:\s*100%;/);
+    expect(messageActionRailRootBlock).toMatch(
+      /border:\s*1px solid var\(--message-action-rail-border-color\);/,
+    );
+    expect(messageActionRailRootBlock).toMatch(
+      /background:\s*var\(--message-action-rail-background\);/,
+    );
+    expect(messageActionRailRootBlock).toMatch(
+      /box-shadow:\s*0 8px 24px var\(--message-action-rail-shadow-color\);/,
+    );
+    expect(messageActionButtonBlock).toMatch(/width:\s*34px;/);
+    expect(messageActionButtonBlock).toMatch(/height:\s*34px;/);
+    expect(messageActionButtonBlock).toMatch(
+      /background:\s*var\(--message-action-button-background\);/,
+    );
+    expect(messageActionButtonBlock).toMatch(
+      /color:\s*var\(--message-action-button-color\);/,
+    );
+    expect(messageActionButtonBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*width:\s*34px;/,
+    );
+    expect(messageActionButtonBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*background:\s*var\(--message-action-button-hover-background\);/,
+    );
+    expect(messageActionButtonBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*color:\s*var\(--message-action-button-hover-color\);/,
+    );
+    expect(messageActionButtonBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*box-shadow:\s*0 6px 18px var\(--message-action-button-hover-shadow-color\);/,
+    );
+    expect(messageActionButtonBlock).toMatch(
+      /&:active[\s\S]*background:\s*var\(--message-action-button-active-background\);/,
+    );
+    expect(messageActionButtonBlock).toMatch(
+      /&:active[\s\S]*color:\s*var\(--message-action-button-active-color\);/,
+    );
+    expect(messageActionButtonBlock).toMatch(
+      /&:focus-visible[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\),\s*0 8px 22px var\(--message-action-button-focus-shadow-color\);/,
+    );
+    expect(messageActionCopyBlock).toMatch(/min-width:\s*74px;/);
+    expect(messageActionCopyBlock).toMatch(
+      /background-color:\s*var\(--message-action-copy-success-background\)\s*!important;/,
+    );
+    expect(messageActionCopyBlock).toMatch(
+      /color:\s*var\(--message-action-copy-success-color\)\s*!important;/,
+    );
+    expect(messageActionRailBlock).toMatch(/\.text[\s\S]*display:\s*none;/);
+    expect(mobileMessageActionMediaIndex).toBeGreaterThan(-1);
+    expect(mobileMessageActionRailBlock).toMatch(/gap:\s*3px;/);
+    expect(mobileMessageActionButtonBlock).toMatch(/width:\s*34px;/);
+    expect(mobileMessageActionButtonBlock).toMatch(/height:\s*34px;/);
+    expect(mobileMessageActionButtonBlock).toMatch(
+      /&:hover,\s*&:focus-visible[\s\S]*width:\s*34px;/,
+    );
+    expect(touchMessageActionButtonBlock).toMatch(
+      /&:hover[\s\S]*background:\s*var\(--message-action-button-background\);/,
+    );
+    expect(touchMessageActionButtonBlock).toMatch(
+      /&:hover[\s\S]*color:\s*var\(--message-action-button-color\);/,
+    );
+    expect(touchMessageActionButtonBlock).toMatch(
+      /&:hover[\s\S]*box-shadow:\s*none;/,
+    );
+    expect(touchMessageActionButtonBlock).toMatch(
+      /&:active[\s\S]*background:\s*var\(--message-action-button-active-background\);/,
+    );
+    expect(touchMessageActionButtonBlock).toMatch(
+      /&:active[\s\S]*color:\s*var\(--message-action-button-active-color\);/,
+    );
+    expect(messageActionPaintScope).not.toMatch(/background:\s*transparent;/);
+    expect(messageActionPaintScope).not.toMatch(
+      /background:\s*var\(--hover-color\);/,
+    );
+    expect(messageActionPaintScope).not.toMatch(/color:\s*var\(--black-50\);/);
+    expect(messageActionPaintScope).not.toMatch(/color:\s*var\(--black\);/);
+    expect(chatInputActionsBlock).not.toMatch(/--message-action-/);
+    expect(chatInputActionMenuBlock).not.toMatch(/--message-action-/);
+    expect(chatInputActionMenuBlock).not.toMatch(
+      /var\(--message-action-(?:rail|button)-/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-message-action-rail \.chat-input-action,\s*\.chat-message-action-rail \.chat-input-action\[data-copy-state="copied"\]\s*\{[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+  });
+
   test("keeps chat message image cards theme-aware and touch-safe", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
