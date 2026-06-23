@@ -4163,6 +4163,7 @@ describe("Gemini visual migration shell", () => {
   test("keeps MCP market list surfaces aligned with Gemini utility cards", () => {
     const mcpMarket = read("app/components/mcp-market.tsx");
     const serverList = read("app/components/mcp-market/server-list.tsx");
+    const toolsList = read("app/components/mcp-market/tools-list.tsx");
     const mcpMarketStyles = read("app/components/mcp-market.module.scss");
     const mcpMarketPageBlock = readCssBlock(
       mcpMarketStyles,
@@ -4343,16 +4344,35 @@ describe("Gemini visual migration shell", () => {
 
     expect(mcpMarket).toContain("onInput={(event) => setSearchText");
     expect(mcpMarket).toContain("<ServerList");
+    expect(mcpMarket).toContain('aria-controls="mcp-market-server-results"');
     expect(serverList).toContain("function getVisibleServers");
+    expect(serverList).toContain("const visibleServers = getVisibleServers");
+    expect(serverList).toContain("visibleServers.length === 0");
     expect(serverList).toContain("server.tags.some");
     expect(serverList).toContain("onAddServer(server)");
     expect(serverList).toContain("onConfigureServer(server.id)");
     expect(serverList).toContain("onPauseServer(server.id)");
     expect(serverList).toContain("onRestartServer(server.id)");
     expect(serverList).toContain("onViewTools(server.id)");
+    expect(serverList).toContain('id="mcp-market-server-results"');
+    expect(serverList).toContain('role="status"');
+    expect(serverList).toContain('aria-live="polite"');
+    expect(serverList).toContain('role="list"');
+    expect(serverList).toContain("aria-label={Locale.Mcp.Market.Title}");
+    expect(serverList).toContain('role="listitem"');
+    expect(serverList).toContain('role="group"');
+    expect(serverList).toContain(
+      "aria-label={Locale.Mcp.Market.ActionGroup(server.name)}",
+    );
     expect(serverList).toContain('className={styles["empty-container"]}');
     expect(serverList).toContain('className={styles["tag"]}');
     expect(serverList).toContain('className={clsx(styles["mcp-market-info"], "one-line")}');
+    expect(toolsList).toContain('className={styles["tools-list"]}');
+    expect(toolsList).toContain('role="status"');
+    expect(toolsList).toContain('aria-live="polite"');
+    expect(toolsList).toContain('role="list"');
+    expect(toolsList).toContain("aria-label={Locale.Mcp.Market.Actions.Tools}");
+    expect(toolsList).toContain('role="listitem"');
 
     expect(mcpMarketRootBlock).toMatch(
       /--mcp-market-card-surface:\s*var\(--surface-elevated\);/,
@@ -9331,7 +9351,7 @@ describe("Gemini visual migration shell", () => {
     expect(searchChat).toContain("aria-label={listTitle}");
     expect(searchChat).toContain('role="listitem"');
     expect(searchChat).toMatch(
-      /aria-label=\{`\$\{item\.name\}: \$\{item\.content\.slice\(0, 120\)\} \$\{Locale\.SearchChat\.Item\.View\}`\}/,
+      /aria-label=\{`\$\{item\.name\}: \$\{item\.content\.slice\(\s*0,\s*120,?\s*\)\} \$\{Locale\.SearchChat\.Item\.View\}`\}/,
     );
 
     expect(searchRootBlock).toMatch(

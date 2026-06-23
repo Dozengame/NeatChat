@@ -13,21 +13,33 @@ export function ToolsList({
   const toolItems = Array.isArray(rawTools) ? rawTools : [];
 
   if (isLoading) {
-    return <div>{Locale.Mcp.Market.ToolsModal.Loading}</div>;
+    return (
+      <div className={styles["tools-list"]} role="status" aria-live="polite">
+        {Locale.Mcp.Market.ToolsModal.Loading}
+      </div>
+    );
   }
 
   if (toolItems.length === 0) {
-    return <div>{Locale.Mcp.Market.ToolsModal.NoTools}</div>;
+    return (
+      <div className={styles["tools-list"]} role="status" aria-live="polite">
+        {Locale.Mcp.Market.ToolsModal.NoTools}
+      </div>
+    );
   }
 
   return (
-    <>
+    <div
+      className={styles["tools-list"]}
+      role="list"
+      aria-label={Locale.Mcp.Market.Actions.Tools}
+    >
       {toolItems.map((tool) => (
-        <div key={tool.name} className={styles["tool-item"]}>
+        <div key={tool.name} className={styles["tool-item"]} role="listitem">
           <div className={styles["tool-name"]}>{tool.name}</div>
           <div className={styles["tool-description"]}>{tool.description}</div>
         </div>
       ))}
-    </>
+    </div>
   );
 }

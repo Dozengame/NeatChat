@@ -142,24 +142,43 @@ export function ServerList({
   onRestartServer,
   onViewTools,
 }: ServerListProps) {
-  if (!Array.isArray(presetServers) || presetServers.length === 0) {
-    return (
-      <div className={styles["empty-container"]}>
+  const renderEmptyState = () => (
+    <div className={styles["server-list"]} id="mcp-market-server-results">
+      <div
+        className={styles["empty-container"]}
+        role="status"
+        aria-live="polite"
+      >
         <div className={styles["empty-text"]}>
           {Locale.Mcp.Market.NoServers}
         </div>
       </div>
-    );
+    </div>
+  );
+
+  if (!Array.isArray(presetServers) || presetServers.length === 0) {
+    return renderEmptyState();
+  }
+
+  const visibleServers = getVisibleServers({
+    clientStatuses,
+    loadingStates,
+    presetServers,
+    searchText,
+  });
+
+  if (visibleServers.length === 0) {
+    return renderEmptyState();
   }
 
   return (
-    <>
-      {getVisibleServers({
-        clientStatuses,
-        loadingStates,
-        presetServers,
-        searchText,
-      }).map((server) => {
+    <div
+      className={styles["server-list"]}
+      id="mcp-market-server-results"
+      role="list"
+      aria-label={Locale.Mcp.Market.Title}
+    >
+      {visibleServers.map((server) => {
         const isAdded = server.id in (config?.mcpServers ?? {});
         const loadingState = loadingStates[server.id];
         const status = getServerStatus(clientStatuses, server.id);
@@ -170,6 +189,7 @@ export function ServerList({
               [styles["loading"]]: loadingState,
             })}
             key={server.id}
+            role="listitem"
           >
             <div className={styles["mcp-market-header"]}>
               <div className={styles["mcp-market-title"]}>
@@ -210,7 +230,11 @@ export function ServerList({
                   {server.description}
                 </div>
               </div>
-              <div className={styles["mcp-market-actions"]}>
+              <div
+                className={styles["mcp-market-actions"]}
+                role="group"
+                aria-label={Locale.Mcp.Market.ActionGroup(server.name)}
+              >
                 {isAdded ? (
                   <>
                     {server.configurable && (
@@ -258,6 +282,6 @@ export function ServerList({
           </div>
         );
       })}
-    </>
+    </div>
   );
 }

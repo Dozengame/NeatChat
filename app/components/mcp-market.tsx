@@ -79,27 +79,26 @@ export function McpMarketPage() {
             <input
               type="text"
               aria-label={Locale.Mcp.Market.SearchPlaceholder}
+              aria-controls="mcp-market-server-results"
               className={styles["search-bar"]}
               placeholder={Locale.Mcp.Market.SearchPlaceholder}
               onInput={(event) => setSearchText(event.currentTarget.value)}
             />
           </div>
 
-          <div className={styles["server-list"]}>
-            <ServerList
-              clientStatuses={state.clientStatuses}
-              config={state.config}
-              isLoading={state.isLoading}
-              loadingStates={state.loadingStates}
-              presetServers={presetServers}
-              searchText={state.searchText}
-              onAddServer={addServer}
-              onConfigureServer={openConfigModal}
-              onPauseServer={pauseServer}
-              onRestartServer={restartServer}
-              onViewTools={loadTools}
-            />
-          </div>
+          <ServerList
+            clientStatuses={state.clientStatuses}
+            config={state.config}
+            isLoading={state.isLoading}
+            loadingStates={state.loadingStates}
+            presetServers={presetServers}
+            searchText={state.searchText}
+            onAddServer={addServer}
+            onConfigureServer={openConfigModal}
+            onPauseServer={pauseServer}
+            onRestartServer={restartServer}
+            onViewTools={loadTools}
+          />
         </div>
 
         {state.editingServerId && (
@@ -148,9 +147,7 @@ export function McpMarketPage() {
                 />,
               ]}
             >
-              <div className={styles["tools-list"]}>
-                <ToolsList isLoading={state.isLoading} tools={state.tools} />
-              </div>
+              <ToolsList isLoading={state.isLoading} tools={state.tools} />
             </Modal>
           </div>
         )}

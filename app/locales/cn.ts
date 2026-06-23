@@ -760,6 +760,7 @@ const cn = {
       Loading: "加载预设服务器列表...",
       NoServers: "没有可用的服务器",
       SearchPlaceholder: "搜索 MCP 服务器",
+      ActionGroup: (name: string) => `${name} 操作`,
       Status: {
         Active: "运行中",
         Paused: "已停止",

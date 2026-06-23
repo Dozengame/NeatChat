@@ -770,6 +770,7 @@ const en: LocaleType = {
       Loading: "Loading preset server list...",
       NoServers: "No servers available",
       SearchPlaceholder: "Search MCP Server",
+      ActionGroup: (name: string) => `${name} actions`,
       Status: {
         Active: "Running",
         Paused: "Stopped",
