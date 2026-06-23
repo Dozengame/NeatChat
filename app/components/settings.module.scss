@@ -3,6 +3,383 @@
   overflow: auto;
 }
 
+.settings-preferences-surface {
+  --settings-preference-list-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 94%,
+    var(--gray)
+  );
+  --settings-preference-list-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --settings-preference-list-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 5%,
+    transparent
+  );
+  --settings-preference-item-hover-background: color-mix(
+    in srgb,
+    var(--primary) 5%,
+    var(--surface-elevated)
+  );
+  --settings-preference-item-focus-background: color-mix(
+    in srgb,
+    var(--primary) 7%,
+    var(--surface-elevated)
+  );
+  --settings-preference-item-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 48%,
+    transparent
+  );
+  --settings-preference-field-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 90%,
+    var(--gray)
+  );
+  --settings-preference-field-border-color: color-mix(
+    in srgb,
+    var(--black-50) 14%,
+    transparent
+  );
+  --settings-preference-field-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
+  --settings-preference-field-placeholder-color: color-mix(
+    in srgb,
+    var(--black-50) 68%,
+    transparent
+  );
+  --settings-preference-field-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 58%,
+    transparent
+  );
+  --settings-preference-field-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 16%,
+    transparent
+  );
+  --settings-preference-checkbox-accent: var(--primary);
+  --settings-preference-action-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 91%,
+    var(--gray)
+  );
+  --settings-preference-action-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --settings-preference-action-hover-background: color-mix(
+    in srgb,
+    var(--primary) 8%,
+    var(--surface-elevated)
+  );
+  --settings-preference-action-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 16%,
+    transparent
+  );
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+  margin-bottom: 20px;
+}
+
+.settings-preference-list {
+  background: var(--settings-preference-list-background);
+  border: 1px solid var(--settings-preference-list-border-color);
+  border-radius: 8px;
+  box-shadow: 0 10px 26px var(--settings-preference-list-shadow-color);
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+.settings-preference-item {
+  transition:
+    background-color 0.16s ease,
+    box-shadow 0.16s ease;
+
+  &:hover {
+    background: var(--settings-preference-item-hover-background);
+  }
+
+  &:focus-within {
+    background: var(--settings-preference-item-focus-background);
+    box-shadow: inset 3px 0 0 var(--settings-preference-item-focus-shadow-color);
+  }
+}
+
+.settings-preference-select {
+  width: min(260px, 100%);
+  max-width: 100%;
+  min-width: 0;
+
+  select {
+    min-height: 38px;
+    padding-right: 32px;
+    text-align: left;
+    background-color: var(--settings-preference-field-background);
+    border: 1px solid var(--settings-preference-field-border-color);
+    border-radius: 8px;
+    color: var(--settings-preference-field-color);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--white) 42%, transparent);
+    cursor: pointer;
+    transition:
+      background-color 0.16s ease,
+      border-color 0.16s ease,
+      box-shadow 0.16s ease;
+  }
+
+  &.settings-preference-select select {
+    text-align: left;
+    background-color: var(--settings-preference-field-background);
+    border: 1px solid var(--settings-preference-field-border-color);
+    border-radius: 8px;
+    color: var(--settings-preference-field-color);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--white) 42%, transparent);
+  }
+}
+
+.settings-preference-range {
+  width: min(260px, 100%);
+  max-width: 100%;
+  min-width: 0;
+}
+
+.settings-preference-item input[type="text"] {
+  box-sizing: border-box;
+  width: min(360px, 100%);
+  max-width: 100%;
+  min-height: 38px;
+  padding: 0 11px;
+  background-color: var(--settings-preference-field-background);
+  border: 1px solid var(--settings-preference-field-border-color);
+  border-radius: 8px;
+  color: var(--settings-preference-field-color);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--white) 42%, transparent);
+  font-family: inherit;
+  line-height: 1.4;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.settings-preference-item input[type="text"]:focus-visible,
+.settings-preference-select select:focus-visible {
+  outline: none;
+  border-color: var(--settings-preference-field-focus-border-color);
+  box-shadow: 0 0 0 3px var(--settings-preference-field-focus-shadow-color);
+}
+
+.settings-preference-item input[type="text"]::placeholder {
+  color: var(--settings-preference-field-placeholder-color);
+}
+
+.settings-preference-item input[type="checkbox"] {
+  accent-color: var(--settings-preference-checkbox-accent);
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.settings-preference-item .settings-preference-action {
+  min-width: 0;
+  min-height: 38px;
+  border: 1px solid var(--settings-preference-action-border-color);
+  background-color: var(--settings-preference-action-background);
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+
+  &:hover {
+    background-color: var(--settings-preference-action-hover-background);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px var(--settings-preference-action-focus-shadow-color);
+  }
+}
+
+:global(.dark) .settings-preferences-surface {
+  --settings-preference-list-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 88%,
+    var(--white)
+  );
+  --settings-preference-list-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --settings-preference-list-shadow-color: color-mix(
+    in srgb,
+    var(--black) 18%,
+    transparent
+  );
+  --settings-preference-item-hover-background: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    var(--surface-elevated)
+  );
+  --settings-preference-item-focus-background: color-mix(
+    in srgb,
+    var(--primary) 12%,
+    var(--surface-elevated)
+  );
+  --settings-preference-item-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 70%,
+    var(--black)
+  );
+  --settings-preference-field-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    var(--white)
+  );
+  --settings-preference-field-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --settings-preference-field-color: color-mix(
+    in srgb,
+    var(--black) 94%,
+    transparent
+  );
+  --settings-preference-field-placeholder-color: color-mix(
+    in srgb,
+    var(--black-50) 78%,
+    transparent
+  );
+  --settings-preference-field-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 82%,
+    var(--black)
+  );
+  --settings-preference-field-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 22%,
+    transparent
+  );
+  --settings-preference-checkbox-accent: var(--primary);
+  --settings-preference-action-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 84%,
+    var(--white)
+  );
+  --settings-preference-action-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --settings-preference-action-hover-background: color-mix(
+    in srgb,
+    var(--primary) 13%,
+    var(--surface-elevated)
+  );
+  --settings-preference-action-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 22%,
+    transparent
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .settings-preferences-surface {
+    --settings-preference-list-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 88%,
+      var(--white)
+    );
+    --settings-preference-list-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --settings-preference-list-shadow-color: color-mix(
+      in srgb,
+      var(--black) 18%,
+      transparent
+    );
+    --settings-preference-item-hover-background: color-mix(
+      in srgb,
+      var(--primary) 10%,
+      var(--surface-elevated)
+    );
+    --settings-preference-item-focus-background: color-mix(
+      in srgb,
+      var(--primary) 12%,
+      var(--surface-elevated)
+    );
+    --settings-preference-item-focus-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 70%,
+      var(--black)
+    );
+    --settings-preference-field-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 86%,
+      var(--white)
+    );
+    --settings-preference-field-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --settings-preference-field-color: color-mix(
+      in srgb,
+      var(--black) 94%,
+      transparent
+    );
+    --settings-preference-field-placeholder-color: color-mix(
+      in srgb,
+      var(--black-50) 78%,
+      transparent
+    );
+    --settings-preference-field-focus-border-color: color-mix(
+      in srgb,
+      var(--primary) 82%,
+      var(--black)
+    );
+    --settings-preference-field-focus-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 22%,
+      transparent
+    );
+    --settings-preference-checkbox-accent: var(--primary);
+    --settings-preference-action-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 84%,
+      var(--white)
+    );
+    --settings-preference-action-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --settings-preference-action-hover-background: color-mix(
+      in srgb,
+      var(--primary) 13%,
+      var(--surface-elevated)
+    );
+    --settings-preference-action-focus-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 22%,
+      transparent
+    );
+  }
+}
+
 .settings-sync-surface {
   --settings-sync-actions-gap: 6px;
   --settings-sync-actions-background: color-mix(
@@ -1293,7 +1670,7 @@
 
 .subtitle-button {
   button {
-    overflow:visible ;
+    overflow: visible;
   }
 }
 
@@ -1301,14 +1678,14 @@
   display: flex;
   width: 100%;
   gap: 10px;
-  
+
   .custom-model-input {
     flex: 1;
     max-width: unset;
     text-align: left;
     min-width: 60%;
   }
-  
+
   .custom-model-button {
     flex-shrink: 0;
   }
@@ -1549,13 +1926,13 @@
     button {
       padding: 8px !important;
     }
-    
+
     .user-prompt-button,
     .window-action-button button,
     .edit-prompt-modal button {
       padding: 8px !important;
     }
-    
+
     :global(.icon-button) {
       padding: 8px !important;
     }
@@ -1572,6 +1949,28 @@
 
     .settings-sync-action-button {
       flex: 1 1 auto;
+    }
+
+    .settings-preferences-surface {
+      gap: 10px;
+
+      .settings-preference-item {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .settings-preference-select,
+      .settings-preference-range,
+      .settings-preference-item input[type="text"] {
+        width: 100%;
+      }
+
+      .settings-preference-action {
+        width: 100%;
+        justify-content: center;
+        min-height: 38px;
+      }
     }
 
     .settings-danger-surface {
@@ -1628,14 +2027,14 @@
         }
       }
     }
-    
+
     .custom-model-container {
       gap: 5px;
-      
+
       .custom-model-input {
         min-width: 50%;
       }
-      
+
       .custom-model-button {
         padding: 6px !important;
         font-size: 12px;
@@ -1652,6 +2051,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .custom-instructions-input,
+  .settings-preference-list,
+  .settings-preference-item,
+  .settings-preference-item input[type="text"],
+  .settings-preference-select select,
+  .settings-preference-action,
   .settings-danger-item,
   .settings-danger-action,
   .settings-access-surface input[type="text"],

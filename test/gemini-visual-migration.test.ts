@@ -16847,6 +16847,290 @@ describe("Gemini visual migration shell", () => {
     expect(syncPaintScope).not.toContain("max-width: 50%");
   });
 
+  test("keeps Settings general preferences aligned with Gemini utility controls", () => {
+    const settings = read("app/components/settings.tsx");
+    const uiLibComponents = read("app/components/ui-lib-components.tsx");
+    const settingsStyles = read("app/components/settings.module.scss");
+    const preferencesSurfaceBlock = readRootCssBlock(
+      settingsStyles,
+      ".settings-preferences-surface",
+    );
+    const preferencesSurfaceRootBlock = readRootDeclarations(
+      preferencesSurfaceBlock,
+    );
+    const darkPreferencesSurfaceBlock = readCssBlock(
+      settingsStyles,
+      ":global(.dark) .settings-preferences-surface",
+    );
+    const autoDarkPreferencesSurfaceSelector =
+      ":global(body:not(.light)) .settings-preferences-surface";
+    const autoDarkPreferencesSurfaceSelectorIndex = settingsStyles.indexOf(
+      autoDarkPreferencesSurfaceSelector,
+    );
+    const autoDarkPreferencesSurfaceMediaIndex = settingsStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkPreferencesSurfaceSelectorIndex,
+    );
+    const autoDarkPreferencesSurfaceBlock = readCssBlock(
+      settingsStyles.slice(autoDarkPreferencesSurfaceMediaIndex),
+      autoDarkPreferencesSurfaceSelector,
+    );
+    const preferencesListBlock = readRootCssBlock(
+      settingsStyles,
+      ".settings-preference-list",
+    );
+    const preferenceItemBlock = readRootCssBlock(
+      settingsStyles,
+      ".settings-preference-item",
+    );
+    const preferenceItemHoverBlock = readCssBlock(
+      preferenceItemBlock,
+      "&:hover",
+    );
+    const preferenceItemFocusWithinBlock = readCssBlock(
+      preferenceItemBlock,
+      "&:focus-within",
+    );
+    const preferenceSelectBlock = readRootCssBlock(
+      settingsStyles,
+      ".settings-preference-select",
+    );
+    const preferenceSelectFieldBlock = readCssBlock(
+      preferenceSelectBlock,
+      "select",
+    );
+    const preferenceTextFieldBlock = readCssBlock(
+      settingsStyles,
+      '.settings-preference-item input[type="text"]',
+    );
+    const preferenceFieldFocusBlock = readCssBlock(
+      settingsStyles,
+      '.settings-preference-item input[type="text"]:focus-visible,\n.settings-preference-select select:focus-visible',
+    );
+    const preferenceCheckboxBlock = readCssBlock(
+      settingsStyles,
+      '.settings-preference-item input[type="checkbox"]',
+    );
+    const preferenceActionBlock = readCssBlock(
+      settingsStyles,
+      ".settings-preference-item .settings-preference-action",
+    );
+    const preferenceActionFocusBlock = readCssBlock(
+      preferenceActionBlock,
+      "&:focus-visible",
+    );
+    const settingsMobileBlock = readCssBlock(
+      settingsStyles,
+      "@media (max-width: 600px)",
+    );
+    const settingsMobileRootBlock = readCssBlock(
+      settingsMobileBlock,
+      ".settings",
+    );
+    const mobilePreferencesSurfaceBlock = readCssBlock(
+      settingsMobileRootBlock,
+      ".settings-preferences-surface",
+    );
+    const mobilePreferenceItemBlock = readCssBlock(
+      mobilePreferencesSurfaceBlock,
+      ".settings-preference-item",
+    );
+    const mobilePreferenceFieldBlock = readCssBlock(
+      mobilePreferencesSurfaceBlock,
+      '.settings-preference-select,\n      .settings-preference-range,\n      .settings-preference-item input[type="text"]',
+    );
+    const mobilePreferenceActionBlock = readCssBlock(
+      mobilePreferencesSurfaceBlock,
+      ".settings-preference-action",
+    );
+    const reducedMotionBlock = readCssBlock(
+      settingsStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const preferenceTokenNames = [
+      "--settings-preference-list-background",
+      "--settings-preference-list-border-color",
+      "--settings-preference-list-shadow-color",
+      "--settings-preference-item-hover-background",
+      "--settings-preference-item-focus-background",
+      "--settings-preference-item-focus-shadow-color",
+      "--settings-preference-field-background",
+      "--settings-preference-field-border-color",
+      "--settings-preference-field-color",
+      "--settings-preference-field-placeholder-color",
+      "--settings-preference-field-focus-border-color",
+      "--settings-preference-field-focus-shadow-color",
+      "--settings-preference-checkbox-accent",
+      "--settings-preference-action-background",
+      "--settings-preference-action-border-color",
+      "--settings-preference-action-hover-background",
+      "--settings-preference-action-focus-shadow-color",
+    ];
+    const preferenceTokenMap = readCustomProperties(
+      preferencesSurfaceRootBlock,
+      preferenceTokenNames,
+    );
+    const darkPreferenceTokenMap = readCustomProperties(
+      darkPreferencesSurfaceBlock,
+      preferenceTokenNames,
+    );
+    const autoDarkPreferenceTokenMap = readCustomProperties(
+      autoDarkPreferencesSurfaceBlock,
+      preferenceTokenNames,
+    );
+    const preferencePaintScope = [
+      preferencesSurfaceRootBlock,
+      darkPreferencesSurfaceBlock,
+      autoDarkPreferencesSurfaceBlock,
+      preferencesListBlock,
+      preferenceItemBlock,
+      preferenceItemHoverBlock,
+      preferenceItemFocusWithinBlock,
+      preferenceSelectBlock,
+      preferenceSelectFieldBlock,
+      preferenceTextFieldBlock,
+      preferenceFieldFocusBlock,
+      preferenceCheckboxBlock,
+      preferenceActionBlock,
+      preferenceActionFocusBlock,
+    ].join("\n");
+
+    expect(uiLibComponents).toMatch(
+      /export function List\(props: \{[\s\S]*children: React\.ReactNode;[\s\S]*id\?: string;[\s\S]*className\?: string;[\s\S]*\}\)/,
+    );
+    expect(uiLibComponents).toContain(
+      "className={clsx(styles.list, props.className)}",
+    );
+    expect(settings).toContain(
+      'className={styles["settings-preferences-surface"]}',
+    );
+    expect(
+      settings.match(/styles\["settings-preference-list"\]/g)?.length ?? 0,
+    ).toBeGreaterThanOrEqual(5);
+    expect(
+      settings.match(/styles\["settings-preference-item"\]/g)?.length ?? 0,
+    ).toBeGreaterThanOrEqual(20);
+    expect(
+      settings.match(/styles\["settings-preference-select"\]/g)?.length ?? 0,
+    ).toBeGreaterThanOrEqual(3);
+    expect(settings).toContain(
+      'className={styles["settings-preference-range"]}',
+    );
+    expect(settings).toContain(
+      'className={styles["settings-preference-action"]}',
+    );
+    expect(settings).toMatch(
+      /className=\{styles\["settings-preference-item"\]\}[\s\S]*title=\{Locale\.Settings\.SendKey\}[\s\S]*className=\{styles\["settings-preference-select"\]\}[\s\S]*config\.submitKey = e\.target\.value as any as SubmitKey/,
+    );
+    expect(settings).toMatch(
+      /className=\{styles\["settings-preference-item"\]\}[\s\S]*title=\{Locale\.Settings\.FontFamily\.Title\}[\s\S]*value=\{config\.fontFamily\}[\s\S]*config\.fontFamily = e\.currentTarget\.value/,
+    );
+    expect(settings).toMatch(
+      /className=\{styles\["settings-preference-item"\]\}[\s\S]*title=\{Locale\.Settings\.EnableModelSearch\}[\s\S]*checked=\{config\.enableModelSearch\}[\s\S]*config\.enableModelSearch = e\.currentTarget\.checked/,
+    );
+    expect(settings).toMatch(
+      /className=\{styles\["settings-preference-item"\]\}[\s\S]*title=\{Locale\.Settings\.Prompt\.List\}[\s\S]*className=\{styles\["settings-preference-action"\]\}[\s\S]*setShowPromptModal\(true\)/,
+    );
+
+    for (const tokenMap of [
+      preferenceTokenMap,
+      darkPreferenceTokenMap,
+      autoDarkPreferenceTokenMap,
+    ]) {
+      expect(Object.values(tokenMap)).not.toContain("");
+    }
+    expect(darkPreferenceTokenMap).toEqual(autoDarkPreferenceTokenMap);
+    expect(autoDarkPreferencesSurfaceSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkPreferencesSurfaceMediaIndex).toBeGreaterThan(-1);
+
+    expect(preferencesSurfaceRootBlock).toMatch(/display:\s*flex;/);
+    expect(preferencesSurfaceRootBlock).toMatch(/flex-direction:\s*column;/);
+    expect(preferencesSurfaceRootBlock).toMatch(/gap:\s*12px;/);
+    expect(preferencesSurfaceRootBlock).toMatch(/min-width:\s*0;/);
+    expect(preferencesListBlock).toMatch(
+      /background:\s*var\(--settings-preference-list-background\);/,
+    );
+    expect(preferencesListBlock).toMatch(
+      /border:\s*1px solid var\(--settings-preference-list-border-color\);/,
+    );
+    expect(preferencesListBlock).toMatch(/border-radius:\s*8px;/);
+    expect(preferencesListBlock).toMatch(
+      /box-shadow:\s*0 10px 26px var\(--settings-preference-list-shadow-color\);/,
+    );
+    expect(preferencesListBlock).toMatch(/margin-bottom:\s*0;/);
+    expect(preferenceItemBlock).toMatch(
+      /transition:[\s\S]*background-color 0\.16s ease,[\s\S]*box-shadow 0\.16s ease/,
+    );
+    expect(preferenceItemHoverBlock).toMatch(
+      /background:\s*var\(--settings-preference-item-hover-background\);/,
+    );
+    expect(preferenceItemFocusWithinBlock).toMatch(
+      /background:\s*var\(--settings-preference-item-focus-background\);/,
+    );
+    expect(preferenceItemFocusWithinBlock).toMatch(
+      /box-shadow:\s*inset 3px 0 0 var\(--settings-preference-item-focus-shadow-color\);/,
+    );
+    expect(preferenceSelectBlock).toMatch(/width:\s*min\(260px, 100%\);/);
+    expect(preferenceSelectBlock).toMatch(/max-width:\s*100%;/);
+    expect(preferenceSelectFieldBlock).toMatch(/text-align:\s*left;/);
+    expect(preferenceSelectFieldBlock).toMatch(
+      /background-color:\s*var\(--settings-preference-field-background\);/,
+    );
+    expect(preferenceSelectFieldBlock).toMatch(
+      /border:\s*1px solid var\(--settings-preference-field-border-color\);/,
+    );
+    expect(preferenceTextFieldBlock).toMatch(/width:\s*min\(360px, 100%\);/);
+    expect(preferenceTextFieldBlock).toMatch(
+      /background-color:\s*var\(--settings-preference-field-background\);/,
+    );
+    expect(preferenceTextFieldBlock).toMatch(
+      /color:\s*var\(--settings-preference-field-color\);/,
+    );
+    expect(preferenceFieldFocusBlock).toMatch(/outline:\s*none;/);
+    expect(preferenceFieldFocusBlock).toMatch(
+      /border-color:\s*var\(--settings-preference-field-focus-border-color\);/,
+    );
+    expect(preferenceFieldFocusBlock).toMatch(
+      /box-shadow:\s*0 0 0 3px var\(--settings-preference-field-focus-shadow-color\);/,
+    );
+    expect(preferenceCheckboxBlock).toMatch(
+      /accent-color:\s*var\(--settings-preference-checkbox-accent\);/,
+    );
+    expect(preferenceCheckboxBlock).toMatch(/width:\s*18px;/);
+    expect(preferenceCheckboxBlock).toMatch(/height:\s*18px;/);
+    expect(preferenceActionBlock).toMatch(
+      /border:\s*1px solid var\(--settings-preference-action-border-color\);/,
+    );
+    expect(preferenceActionBlock).toMatch(
+      /background-color:\s*var\(--settings-preference-action-background\);/,
+    );
+    expect(preferenceActionBlock).toMatch(
+      /&:hover[\s\S]*background-color:\s*var\(--settings-preference-action-hover-background\);/,
+    );
+    expect(preferenceActionFocusBlock).toMatch(
+      /box-shadow:\s*0 0 0 3px var\(--settings-preference-action-focus-shadow-color\);/,
+    );
+    expect(mobilePreferencesSurfaceBlock).toMatch(/gap:\s*10px;/);
+    expect(mobilePreferenceItemBlock).toMatch(/align-items:\s*stretch;/);
+    expect(mobilePreferenceItemBlock).toMatch(/flex-direction:\s*column;/);
+    expect(mobilePreferenceItemBlock).toMatch(/gap:\s*8px;/);
+    expect(mobilePreferenceFieldBlock).toMatch(/width:\s*100%;/);
+    expect(mobilePreferenceActionBlock).toMatch(/width:\s*100%;/);
+    expect(mobilePreferenceActionBlock).toMatch(/min-height:\s*38px;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.settings-preference-list,[\s\S]*\.settings-preference-item,[\s\S]*\.settings-preference-item input\[type="text"\],[\s\S]*\.settings-preference-select select,[\s\S]*\.settings-preference-action[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(preferencePaintScope).not.toContain(
+      "border: var(--border-in-light)",
+    );
+    expect(preferencePaintScope).not.toContain(
+      "box-shadow: var(--card-shadow)",
+    );
+    expect(preferencePaintScope).not.toContain(
+      "background-color: var(--white)",
+    );
+  });
+
   test("keeps Settings access provider fields aligned with Gemini utility fields", () => {
     const settings = read("app/components/settings.tsx");
     const settingsStyles = read("app/components/settings.module.scss");
@@ -17451,7 +17735,7 @@ describe("Gemini visual migration shell", () => {
       "checked={config.enableCustomInstructions}",
     );
     expect(settings).toMatch(
-      /config\.enableCustomInstructions = e\.currentTarget\.checked/,
+      /config\.enableCustomInstructions\s*=\s*e\.currentTarget\.checked/,
     );
     expect(settings).toContain(
       'className={styles["custom-instructions-input"]}',
