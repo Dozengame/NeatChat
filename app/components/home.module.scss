@@ -190,7 +190,18 @@
     0 2px 8px color-mix(in srgb, var(--black-50) 20%, transparent);
   --sidebar-avatar-feature-color: var(--primary);
   --sidebar-avatar-count-shadow: 0 1px 3px color-mix(in srgb, var(--black) 20%, transparent);
+  --sidebar-mobile-account-background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
+  --sidebar-mobile-account-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+  --sidebar-mobile-account-hover-background: color-mix(in srgb, var(--surface-elevated) 92%, var(--primary) 4%);
+  --sidebar-mobile-account-shadow-color: color-mix(in srgb, var(--black-50) 8%, transparent);
+  --sidebar-mobile-account-focus-shadow-color: color-mix(in srgb, var(--primary) 14%, transparent);
+  --sidebar-mobile-account-name-color: var(--black);
+  --sidebar-mobile-account-meta-color: color-mix(in srgb, var(--black-50) 78%, transparent);
   --sidebar-mobile-account-settings-background: color-mix(in srgb, var(--surface-elevated) 72%, transparent);
+  --sidebar-mobile-account-settings-border-color: color-mix(in srgb, var(--black-50) 12%, transparent);
+  --sidebar-mobile-account-settings-hover-background: color-mix(in srgb, var(--surface-elevated) 88%, var(--primary) 10%);
+  --sidebar-mobile-account-settings-focus-shadow-color: color-mix(in srgb, var(--primary) 18%, transparent);
+  --sidebar-mobile-account-settings-icon-color: var(--black);
   --sidebar-on-primary: rgb(255, 255, 255);
 
   top: 0;
@@ -251,6 +262,16 @@
     --sidebar-card-hover-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--primary) 14%);
     --sidebar-card-hover-shadow: none;
     --sidebar-action-active-drop-shadow: color-mix(in srgb, var(--primary) 14%, transparent);
+    --sidebar-mobile-account-background: color-mix(in srgb, var(--surface-elevated) 70%, transparent);
+    --sidebar-mobile-account-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+    --sidebar-mobile-account-hover-background: color-mix(in srgb, var(--surface-elevated) 82%, var(--primary) 12%);
+    --sidebar-mobile-account-shadow-color: color-mix(in srgb, rgb(0, 0, 0) 18%, transparent);
+    --sidebar-mobile-account-focus-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
+    --sidebar-mobile-account-meta-color: color-mix(in srgb, var(--black-50) 82%, transparent);
+    --sidebar-mobile-account-settings-background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
+    --sidebar-mobile-account-settings-border-color: color-mix(in srgb, var(--black) 12%, transparent);
+    --sidebar-mobile-account-settings-hover-background: color-mix(in srgb, var(--surface-elevated) 78%, var(--primary) 16%);
+    --sidebar-mobile-account-settings-focus-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
   }
 
   .sidebar-header-bar {
@@ -277,6 +298,21 @@
         opacity: 0.2;
       }
     }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .sidebar {
+    --sidebar-mobile-account-background: color-mix(in srgb, var(--surface-elevated) 70%, transparent);
+    --sidebar-mobile-account-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+    --sidebar-mobile-account-hover-background: color-mix(in srgb, var(--surface-elevated) 82%, var(--primary) 12%);
+    --sidebar-mobile-account-shadow-color: color-mix(in srgb, rgb(0, 0, 0) 18%, transparent);
+    --sidebar-mobile-account-focus-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
+    --sidebar-mobile-account-meta-color: color-mix(in srgb, var(--black-50) 82%, transparent);
+    --sidebar-mobile-account-settings-background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
+    --sidebar-mobile-account-settings-border-color: color-mix(in srgb, var(--black) 12%, transparent);
+    --sidebar-mobile-account-settings-hover-background: color-mix(in srgb, var(--surface-elevated) 78%, var(--primary) 16%);
+    --sidebar-mobile-account-settings-focus-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
   }
 }
 
@@ -1050,12 +1086,32 @@
 }
 
 .sidebar-mobile-account {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
   min-width: 0;
+  max-width: 100%;
   min-height: 56px;
+  padding: 6px;
+  overflow: hidden;
+  border: 1px solid var(--sidebar-mobile-account-border-color);
+  border-radius: 8px;
+  background: var(--sidebar-mobile-account-background);
+  box-shadow: 0 1px 2px var(--sidebar-mobile-account-shadow-color);
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+
+  &:hover,
+  &:focus-within {
+    background: var(--sidebar-mobile-account-hover-background);
+    box-shadow:
+      0 0 0 3px var(--sidebar-mobile-account-focus-shadow-color),
+      0 1px 2px var(--sidebar-mobile-account-shadow-color);
+  }
 }
 
 .sidebar-mobile-account-avatar {
@@ -1121,7 +1177,7 @@
 }
 
 .sidebar-mobile-account-name {
-  color: var(--black);
+  color: var(--sidebar-mobile-account-name-color);
   font-size: 15px;
   font-weight: 600;
   line-height: 1.2;
@@ -1132,22 +1188,49 @@
 
 .sidebar-mobile-account-meta {
   margin-top: 2px;
-  color: var(--black-50);
+  color: var(--sidebar-mobile-account-meta-color);
   font-size: 12px;
   line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebar-mobile-account-settings {
   flex: 0 0 auto;
   color: inherit;
   text-decoration: none;
+  border-radius: 999px;
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    box-shadow: var(--focus-ring-shadow);
+  }
 
   button {
     width: 40px;
     height: 40px;
     padding: 10px;
     border-radius: 50%;
+    border: 1px solid var(--sidebar-mobile-account-settings-border-color);
+    color: var(--sidebar-mobile-account-settings-icon-color);
     background: var(--sidebar-mobile-account-settings-background);
+    transition:
+      background-color 0.16s ease,
+      border-color 0.16s ease,
+      box-shadow 0.16s ease;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--sidebar-mobile-account-settings-hover-background);
+      box-shadow: 0 0 0 3px var(--sidebar-mobile-account-settings-focus-shadow-color);
+    }
+
+    svg,
+    path {
+      stroke: currentColor !important;
+    }
   }
 }
 
@@ -1165,6 +1248,19 @@
 .sidebar-settings-link-active {
   button {
     color: var(--primary);
+    background: var(--sidebar-action-active-background);
+    box-shadow:
+      0 0 0 1px var(--sidebar-action-active-ring-shadow),
+      0 6px 20px var(--sidebar-action-active-drop-shadow);
+  }
+}
+
+.sidebar-settings-link-active.sidebar-mobile-account-settings {
+  button,
+  button:hover,
+  button:focus-visible {
+    color: var(--primary);
+    border-color: var(--sidebar-action-active-ring-shadow);
     background: var(--sidebar-action-active-background);
     box-shadow:
       0 0 0 1px var(--sidebar-action-active-ring-shadow),
@@ -1195,7 +1291,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sidebar {
+  .sidebar,
+  .sidebar-mobile-account,
+  .sidebar-mobile-account-settings button {
     transition: none !important;
   }
 }
