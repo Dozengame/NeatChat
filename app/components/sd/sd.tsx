@@ -61,6 +61,9 @@ function getSdTaskStatus(item: any) {
       className={clsx(styles["line-1"], styles["sd-img-item-status"])}
       data-status={item.status}
       title={item.error}
+      role="status"
+      aria-live="polite"
+      aria-label={`${Locale.Sd.Status.Name}: ${s}`}
     >
       <span>
         {Locale.Sd.Status.Name}: {s}
@@ -68,7 +71,12 @@ function getSdTaskStatus(item: any) {
       {item.status === "error" && (
         <button
           type="button"
-          className={clsx("clickable", styles["sd-img-item-inline-action"])}
+          className={clsx(
+            "clickable",
+            styles["sd-img-item-inline-action"],
+            styles["sd-img-item-status-action"],
+          )}
+          aria-label={`${Locale.Sd.Detail}: ${item.error}`}
           onClick={() => {
             showModal({
               title: Locale.Sd.Detail,

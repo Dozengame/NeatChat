@@ -39,33 +39,95 @@
     var(--primary) 76%,
     var(--black)
   );
-  --sd-output-status-success-base: #168a45;
-  --sd-output-status-error-base: #b3261e;
-  --sd-output-status-wait-base: #8a6100;
   --sd-output-status-default-color: color-mix(
     in srgb,
-    var(--black) 58%,
+    var(--black) 64%,
+    transparent
+  );
+  --sd-output-status-default-background: color-mix(
+    in srgb,
+    var(--surface-soft) 68%,
+    transparent
+  );
+  --sd-output-status-default-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
     transparent
   );
   --sd-output-status-success-color: color-mix(
     in srgb,
-    var(--sd-output-status-success-base) 82%,
+    rgb(22, 128, 72) 88%,
     var(--black)
+  );
+  --sd-output-status-success-background: color-mix(
+    in srgb,
+    rgb(22, 128, 72) 10%,
+    var(--surface-elevated)
+  );
+  --sd-output-status-success-border-color: color-mix(
+    in srgb,
+    rgb(22, 128, 72) 24%,
+    transparent
   );
   --sd-output-status-error-color: color-mix(
     in srgb,
-    var(--sd-output-status-error-base) 82%,
+    rgb(179, 56, 48) 88%,
     var(--black)
+  );
+  --sd-output-status-error-background: color-mix(
+    in srgb,
+    rgb(179, 56, 48) 10%,
+    var(--surface-elevated)
+  );
+  --sd-output-status-error-border-color: color-mix(
+    in srgb,
+    rgb(179, 56, 48) 24%,
+    transparent
   );
   --sd-output-status-wait-color: color-mix(
     in srgb,
-    var(--sd-output-status-wait-base) 80%,
+    rgb(128, 88, 16) 86%,
     var(--black)
+  );
+  --sd-output-status-wait-background: color-mix(
+    in srgb,
+    rgb(128, 88, 16) 10%,
+    var(--surface-elevated)
+  );
+  --sd-output-status-wait-border-color: color-mix(
+    in srgb,
+    rgb(128, 88, 16) 24%,
+    transparent
   );
   --sd-output-status-running-color: color-mix(
     in srgb,
     var(--primary) 76%,
     var(--black)
+  );
+  --sd-output-status-running-background: color-mix(
+    in srgb,
+    var(--primary) 9%,
+    var(--surface-elevated)
+  );
+  --sd-output-status-running-border-color: color-mix(
+    in srgb,
+    var(--primary) 24%,
+    transparent
+  );
+  --sd-output-status-action-hover-background: color-mix(
+    in srgb,
+    currentColor 10%,
+    transparent
+  );
+  --sd-output-status-action-hover-border-color: color-mix(
+    in srgb,
+    currentColor 22%,
+    transparent
+  );
+  --sd-output-status-action-focus-shadow-color: color-mix(
+    in srgb,
+    currentColor 18%,
+    transparent
   );
   --sd-output-empty-background: color-mix(
     in srgb,
@@ -136,26 +198,54 @@
     }
 
     .sd-img-item-status {
-      display: flex;
-      align-items: baseline;
-      gap: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      width: fit-content;
+      max-width: 100%;
+      min-height: 24px;
+      padding: 2px 8px;
+      box-sizing: border-box;
+      border: 1px solid var(--sd-output-status-default-border-color);
+      border-radius: 999px;
       color: var(--sd-output-status-default-color);
+      background: var(--sd-output-status-default-background);
       font-size: 12px;
+      line-height: 1.35;
+      transition:
+        background 0.16s ease,
+        border-color 0.16s ease,
+        color 0.16s ease,
+        box-shadow 0.16s ease;
+
+      > span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
 
       &[data-status="success"] {
+        border-color: var(--sd-output-status-success-border-color);
         color: var(--sd-output-status-success-color);
+        background: var(--sd-output-status-success-background);
       }
 
       &[data-status="error"] {
+        border-color: var(--sd-output-status-error-border-color);
         color: var(--sd-output-status-error-color);
+        background: var(--sd-output-status-error-background);
       }
 
       &[data-status="wait"] {
+        border-color: var(--sd-output-status-wait-border-color);
         color: var(--sd-output-status-wait-color);
+        background: var(--sd-output-status-wait-background);
       }
 
       &[data-status="running"] {
+        border-color: var(--sd-output-status-running-border-color);
         color: var(--sd-output-status-running-color);
+        background: var(--sd-output-status-running-background);
       }
     }
 
@@ -181,6 +271,28 @@
       &:focus-visible {
         outline: var(--focus-ring);
         outline-offset: 2px;
+      }
+    }
+
+    .sd-img-item-status-action {
+      min-width: 0;
+      flex: 1 1 auto;
+      background: color-mix(in srgb, currentColor 0%, transparent);
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 0 4px;
+      transition:
+        background 0.16s ease,
+        border-color 0.16s ease,
+        box-shadow 0.16s ease,
+        color 0.16s ease;
+
+      &:hover,
+      &:focus-visible {
+        background: var(--sd-output-status-action-hover-background);
+        border-color: var(--sd-output-status-action-hover-border-color);
+        color: var(--sd-output-inline-hover-color);
+        box-shadow: 0 0 0 3px var(--sd-output-status-action-focus-shadow-color);
       }
     }
 
@@ -302,33 +414,95 @@
     var(--primary) 70%,
     var(--black)
   );
-  --sd-output-status-success-base: #6fbf8c;
-  --sd-output-status-error-base: #ffb4ab;
-  --sd-output-status-wait-base: #e2c16d;
   --sd-output-status-default-color: color-mix(
     in srgb,
     var(--black) 66%,
     transparent
   );
+  --sd-output-status-default-background: color-mix(
+    in srgb,
+    var(--surface-soft) 64%,
+    transparent
+  );
+  --sd-output-status-default-border-color: color-mix(
+    in srgb,
+    var(--black) 8%,
+    transparent
+  );
   --sd-output-status-success-color: color-mix(
     in srgb,
-    var(--sd-output-status-success-base) 78%,
+    rgb(129, 201, 149) 72%,
     var(--black)
+  );
+  --sd-output-status-success-background: color-mix(
+    in srgb,
+    rgb(129, 201, 149) 12%,
+    var(--surface-elevated)
+  );
+  --sd-output-status-success-border-color: color-mix(
+    in srgb,
+    rgb(129, 201, 149) 20%,
+    transparent
   );
   --sd-output-status-error-color: color-mix(
     in srgb,
-    var(--sd-output-status-error-base) 78%,
+    rgb(242, 139, 130) 74%,
     var(--black)
+  );
+  --sd-output-status-error-background: color-mix(
+    in srgb,
+    rgb(242, 139, 130) 12%,
+    var(--surface-elevated)
+  );
+  --sd-output-status-error-border-color: color-mix(
+    in srgb,
+    rgb(242, 139, 130) 20%,
+    transparent
   );
   --sd-output-status-wait-color: color-mix(
     in srgb,
-    var(--sd-output-status-wait-base) 78%,
+    rgb(232, 198, 99) 72%,
     var(--black)
+  );
+  --sd-output-status-wait-background: color-mix(
+    in srgb,
+    rgb(232, 198, 99) 12%,
+    var(--surface-elevated)
+  );
+  --sd-output-status-wait-border-color: color-mix(
+    in srgb,
+    rgb(232, 198, 99) 20%,
+    transparent
   );
   --sd-output-status-running-color: color-mix(
     in srgb,
     var(--primary) 70%,
     var(--black)
+  );
+  --sd-output-status-running-background: color-mix(
+    in srgb,
+    var(--primary) 14%,
+    var(--surface-elevated)
+  );
+  --sd-output-status-running-border-color: color-mix(
+    in srgb,
+    var(--primary) 22%,
+    transparent
+  );
+  --sd-output-status-action-hover-background: color-mix(
+    in srgb,
+    currentColor 12%,
+    transparent
+  );
+  --sd-output-status-action-hover-border-color: color-mix(
+    in srgb,
+    currentColor 24%,
+    transparent
+  );
+  --sd-output-status-action-focus-shadow-color: color-mix(
+    in srgb,
+    currentColor 20%,
+    transparent
   );
   --sd-output-empty-background: color-mix(
     in srgb,
@@ -392,33 +566,95 @@
       var(--primary) 70%,
       var(--black)
     );
-    --sd-output-status-success-base: #6fbf8c;
-    --sd-output-status-error-base: #ffb4ab;
-    --sd-output-status-wait-base: #e2c16d;
     --sd-output-status-default-color: color-mix(
       in srgb,
       var(--black) 66%,
       transparent
     );
+    --sd-output-status-default-background: color-mix(
+      in srgb,
+      var(--surface-soft) 64%,
+      transparent
+    );
+    --sd-output-status-default-border-color: color-mix(
+      in srgb,
+      var(--black) 8%,
+      transparent
+    );
     --sd-output-status-success-color: color-mix(
       in srgb,
-      var(--sd-output-status-success-base) 78%,
+      rgb(129, 201, 149) 72%,
       var(--black)
+    );
+    --sd-output-status-success-background: color-mix(
+      in srgb,
+      rgb(129, 201, 149) 12%,
+      var(--surface-elevated)
+    );
+    --sd-output-status-success-border-color: color-mix(
+      in srgb,
+      rgb(129, 201, 149) 20%,
+      transparent
     );
     --sd-output-status-error-color: color-mix(
       in srgb,
-      var(--sd-output-status-error-base) 78%,
+      rgb(242, 139, 130) 74%,
       var(--black)
+    );
+    --sd-output-status-error-background: color-mix(
+      in srgb,
+      rgb(242, 139, 130) 12%,
+      var(--surface-elevated)
+    );
+    --sd-output-status-error-border-color: color-mix(
+      in srgb,
+      rgb(242, 139, 130) 20%,
+      transparent
     );
     --sd-output-status-wait-color: color-mix(
       in srgb,
-      var(--sd-output-status-wait-base) 78%,
+      rgb(232, 198, 99) 72%,
       var(--black)
+    );
+    --sd-output-status-wait-background: color-mix(
+      in srgb,
+      rgb(232, 198, 99) 12%,
+      var(--surface-elevated)
+    );
+    --sd-output-status-wait-border-color: color-mix(
+      in srgb,
+      rgb(232, 198, 99) 20%,
+      transparent
     );
     --sd-output-status-running-color: color-mix(
       in srgb,
       var(--primary) 70%,
       var(--black)
+    );
+    --sd-output-status-running-background: color-mix(
+      in srgb,
+      var(--primary) 14%,
+      var(--surface-elevated)
+    );
+    --sd-output-status-running-border-color: color-mix(
+      in srgb,
+      var(--primary) 22%,
+      transparent
+    );
+    --sd-output-status-action-hover-background: color-mix(
+      in srgb,
+      currentColor 12%,
+      transparent
+    );
+    --sd-output-status-action-hover-border-color: color-mix(
+      in srgb,
+      currentColor 24%,
+      transparent
+    );
+    --sd-output-status-action-focus-shadow-color: color-mix(
+      in srgb,
+      currentColor 20%,
+      transparent
     );
     --sd-output-empty-background: color-mix(
       in srgb,
@@ -444,7 +680,11 @@
 }
 
 .sd-img-modal-detail {
-  --sd-output-status-error-color: color-mix(in srgb, #b3261e 82%, var(--black));
+  --sd-output-status-error-color: color-mix(
+    in srgb,
+    rgb(179, 56, 48) 88%,
+    var(--black)
+  );
 
   user-select: text;
   word-break: break-word;
@@ -482,7 +722,11 @@
 }
 
 :global(.dark) .sd-img-modal-detail {
-  --sd-output-status-error-color: color-mix(in srgb, #ffb4ab 78%, var(--black));
+  --sd-output-status-error-color: color-mix(
+    in srgb,
+    rgb(242, 139, 130) 74%,
+    var(--black)
+  );
 }
 
 :global(.dark) .sd-img-params-detail {
@@ -502,7 +746,7 @@
   :global(body:not(.light)) .sd-img-modal-detail {
     --sd-output-status-error-color: color-mix(
       in srgb,
-      #ffb4ab 78%,
+      rgb(242, 139, 130) 74%,
       var(--black)
     );
   }
@@ -518,6 +762,22 @@
       var(--black) 10%,
       transparent
     );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-img-list {
+    .sd-img-item-status,
+    .sd-img-item-status-action,
+    .sd-img-item .img,
+    .sd-img-item button.img {
+      transition-duration: 0.01ms !important;
+    }
+
+    .sd-img-item button.img:hover,
+    .sd-img-item button.img:active {
+      transform: none !important;
+    }
   }
 }
 
