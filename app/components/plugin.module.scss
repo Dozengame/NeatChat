@@ -317,6 +317,140 @@
   }
 }
 
+.plugin-tools-preview {
+  --plugin-tools-item-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 88%,
+    transparent
+  );
+  --plugin-tools-empty-background: color-mix(
+    in srgb,
+    var(--surface-soft) 72%,
+    transparent
+  );
+  --plugin-tools-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --plugin-tools-title-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
+  --plugin-tools-muted-color: color-mix(
+    in srgb,
+    var(--black-50) 86%,
+    transparent
+  );
+  --plugin-tools-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 7%,
+    transparent
+  );
+  --plugin-tools-hover-background: color-mix(
+    in srgb,
+    var(--primary) 6%,
+    transparent
+  );
+  --plugin-tools-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 22%,
+    transparent
+  );
+
+  align-items: stretch;
+  gap: 10px;
+  color: var(--black);
+
+  &.plugin-tools-preview {
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .plugin-tools-list {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    gap: 8px;
+    align-self: stretch;
+  }
+
+  .plugin-tool-item {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--plugin-tools-border-color);
+    border-radius: 8px;
+    background: var(--plugin-tools-item-background);
+    box-shadow: inset 0 1px 2px var(--plugin-tools-shadow-color);
+    transition:
+      border-color 0.16s ease,
+      background-color 0.16s ease,
+      box-shadow 0.16s ease;
+  }
+
+  .plugin-tool-item:hover {
+    border-color: var(--plugin-tools-hover-border-color);
+    background: var(--plugin-tools-hover-background);
+  }
+
+  .plugin-tool-name {
+    min-width: 0;
+    color: var(--plugin-tools-title-color);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .plugin-tool-description {
+    display: -webkit-box;
+    margin-top: 4px;
+    color: var(--plugin-tools-muted-color);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.45;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .plugin-tools-empty {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid var(--plugin-tools-border-color);
+    border-style: dashed;
+    border-radius: 8px;
+    background: var(--plugin-tools-empty-background);
+    box-shadow: inset 0 1px 2px var(--plugin-tools-shadow-color);
+    color: var(--plugin-tools-muted-color);
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    transition:
+      border-color 0.16s ease,
+      background-color 0.16s ease,
+      box-shadow 0.16s ease;
+  }
+
+  @media screen and (max-width: 600px) {
+    gap: 8px;
+
+    .plugin-tool-item,
+    .plugin-tools-empty {
+      padding: 10px;
+    }
+  }
+}
+
 .plugin-schema {
   display: flex;
   justify-content: flex-end;
@@ -374,5 +508,102 @@
       width: 100%;
       padding: 10px;
     }
+  }
+}
+
+:global(.dark) .plugin-tools-preview {
+  --plugin-tools-item-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 82%,
+    var(--white)
+  );
+  --plugin-tools-empty-background: color-mix(
+    in srgb,
+    var(--surface-soft) 76%,
+    var(--white)
+  );
+  --plugin-tools-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --plugin-tools-title-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
+  --plugin-tools-muted-color: color-mix(
+    in srgb,
+    var(--black-50) 88%,
+    transparent
+  );
+  --plugin-tools-shadow-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --plugin-tools-hover-background: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    var(--surface-soft)
+  );
+  --plugin-tools-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 28%,
+    transparent
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .plugin-tools-preview {
+    --plugin-tools-item-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 82%,
+      var(--white)
+    );
+    --plugin-tools-empty-background: color-mix(
+      in srgb,
+      var(--surface-soft) 76%,
+      var(--white)
+    );
+    --plugin-tools-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --plugin-tools-title-color: color-mix(
+      in srgb,
+      var(--black) 92%,
+      transparent
+    );
+    --plugin-tools-muted-color: color-mix(
+      in srgb,
+      var(--black-50) 88%,
+      transparent
+    );
+    --plugin-tools-shadow-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --plugin-tools-hover-background: color-mix(
+      in srgb,
+      var(--primary) 10%,
+      var(--surface-soft)
+    );
+    --plugin-tools-hover-border-color: color-mix(
+      in srgb,
+      var(--primary) 28%,
+      transparent
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plugin-tools-preview,
+  .plugin-tool-item,
+  .plugin-tools-empty {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
   }
 }

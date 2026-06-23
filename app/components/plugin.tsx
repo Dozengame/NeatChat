@@ -54,6 +54,7 @@ function usePluginPageView() {
   const [editingPluginId, setEditingPluginId] = useState<string | undefined>();
   const editingPlugin = pluginStore.get(editingPluginId);
   const editingPluginTool = FunctionToolService.get(editingPlugin?.id);
+  const editingPluginTools = editingPluginTool?.tools ?? [];
   const closePluginModal = () => setEditingPluginId(undefined);
 
   const onChangePlugin = useDebouncedCallback((editingPlugin, e) => {
@@ -383,13 +384,45 @@ function usePluginPageView() {
                   </div>
                 </ListItem>
                 <ListItem subTitle={pluginContentPreview}></ListItem>
-                {editingPluginTool?.tools.map((tool) => (
-                  <ListItem
-                    key={tool?.function?.name}
-                    title={tool?.function?.name}
-                    subTitle={tool?.function?.description}
-                  />
-                ))}
+                <ListItem
+                  className={pluginStyles["plugin-tools-preview"]}
+                  title={Locale.Plugin.EditModal.Method}
+                  subTitle={Locale.Plugin.Item.Info(editingPluginTools.length)}
+                  vertical
+                >
+                  {editingPluginTools.length > 0 ? (
+                    <div
+                      className={pluginStyles["plugin-tools-list"]}
+                      role="list"
+                      aria-label={Locale.Plugin.EditModal.Method}
+                    >
+                      {editingPluginTools.map((tool, index) => (
+                        <div
+                          className={pluginStyles["plugin-tool-item"]}
+                          key={tool?.function?.name ?? index}
+                          role="listitem"
+                        >
+                          <div className={pluginStyles["plugin-tool-name"]}>
+                            {tool?.function?.name}
+                          </div>
+                          {tool?.function?.description && (
+                            <div
+                              className={
+                                pluginStyles["plugin-tool-description"]
+                              }
+                            >
+                              {tool?.function?.description}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className={pluginStyles["plugin-tools-empty"]}>
+                      {Locale.Plugin.EditModal.NoTools}
+                    </div>
+                  )}
+                </ListItem>
               </List>
             </div>
           </Modal>

@@ -10647,6 +10647,200 @@ describe("Gemini visual migration shell", () => {
     expect(pluginAuthPaintScope).not.toContain("box-shadow: var(--card-shadow)");
   });
 
+  test("keeps Plugin edit modal tool previews readable and bounded", () => {
+    const pluginPage = read("app/components/plugin.tsx");
+    const pluginStyles = read("app/components/plugin.module.scss");
+    const cnLocale = read("app/locales/cn.ts");
+    const enLocale = read("app/locales/en.ts");
+    const normalizedPluginPage = pluginPage.replace(/\s+/g, " ");
+    const normalizedPluginStyles = pluginStyles.replace(/\s+/g, " ");
+    const toolsPreviewBlock = readCssBlock(
+      pluginStyles,
+      ".plugin-tools-preview",
+    );
+    const toolsPreviewRootBlock = readRootDeclarations(toolsPreviewBlock);
+    const toolsPreviewStrongBlock = readCssBlock(
+      toolsPreviewBlock,
+      "&.plugin-tools-preview",
+    );
+    const toolsListBlock = readCssBlock(
+      toolsPreviewBlock,
+      ".plugin-tools-list",
+    );
+    const toolItemBlock = readCssBlock(toolsPreviewBlock, ".plugin-tool-item");
+    const toolItemHoverBlock = readCssBlock(
+      toolsPreviewBlock,
+      ".plugin-tool-item:hover",
+    );
+    const toolNameBlock = readCssBlock(toolsPreviewBlock, ".plugin-tool-name");
+    const toolDescriptionBlock = readCssBlock(
+      toolsPreviewBlock,
+      ".plugin-tool-description",
+    );
+    const toolsEmptyBlock = readCssBlock(
+      toolsPreviewBlock,
+      ".plugin-tools-empty",
+    );
+    const mobileToolsBlock = readCssBlock(
+      toolsPreviewBlock,
+      "@media screen and (max-width: 600px)",
+    );
+    const darkToolsBlock = readCssBlock(
+      normalizedPluginStyles,
+      ":global(.dark) .plugin-tools-preview",
+    );
+    const autoDarkToolsSelector =
+      ":global(body:not(.light)) .plugin-tools-preview";
+    const autoDarkToolsIndex = normalizedPluginStyles.indexOf(
+      autoDarkToolsSelector,
+    );
+    const autoDarkToolsMediaIndex = normalizedPluginStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkToolsIndex,
+    );
+    const autoDarkToolsBlock = readCssBlock(
+      normalizedPluginStyles.slice(autoDarkToolsMediaIndex),
+      autoDarkToolsSelector,
+    );
+    const reducedMotionBlock = pluginStyles.slice(
+      pluginStyles.lastIndexOf("@media (prefers-reduced-motion: reduce)"),
+    );
+    const toolPreviewTokenNames = [
+      "--plugin-tools-item-background",
+      "--plugin-tools-empty-background",
+      "--plugin-tools-border-color",
+      "--plugin-tools-title-color",
+      "--plugin-tools-muted-color",
+      "--plugin-tools-shadow-color",
+      "--plugin-tools-hover-background",
+      "--plugin-tools-hover-border-color",
+    ];
+    const lightToolPreviewTokens = readCustomProperties(
+      toolsPreviewRootBlock,
+      toolPreviewTokenNames,
+    );
+    const darkToolPreviewTokens = readCustomProperties(
+      darkToolsBlock,
+      toolPreviewTokenNames,
+    );
+    const autoDarkToolPreviewTokens = readCustomProperties(
+      autoDarkToolsBlock,
+      toolPreviewTokenNames,
+    );
+    const toolPreviewPaintScope = [
+      toolsPreviewRootBlock,
+      toolsPreviewStrongBlock,
+      toolsListBlock,
+      toolItemBlock,
+      toolItemHoverBlock,
+      toolNameBlock,
+      toolDescriptionBlock,
+      toolsEmptyBlock,
+      mobileToolsBlock,
+      darkToolsBlock,
+      autoDarkToolsBlock,
+    ].join("\n");
+
+    expect(pluginPage).toContain(
+      "const editingPluginTools = editingPluginTool?.tools ?? [];",
+    );
+    const toolsPreviewClassIndex = normalizedPluginPage.indexOf(
+      'className={pluginStyles["plugin-tools-preview"]}',
+    );
+    expect(toolsPreviewClassIndex).toBeGreaterThan(-1);
+    const toolsPreviewOpenTagStart = normalizedPluginPage.lastIndexOf(
+      "<ListItem",
+      toolsPreviewClassIndex,
+    );
+    const toolsPreviewOpenTagEnd = normalizedPluginPage.indexOf(
+      ">",
+      toolsPreviewClassIndex,
+    );
+    const toolsPreviewOpenTag = normalizedPluginPage.slice(
+      toolsPreviewOpenTagStart,
+      toolsPreviewOpenTagEnd + 1,
+    );
+    expect(toolsPreviewOpenTag).toContain(
+      'className={pluginStyles["plugin-tools-preview"]}',
+    );
+    expect(toolsPreviewOpenTag).toContain(
+      "title={Locale.Plugin.EditModal.Method}",
+    );
+    expect(toolsPreviewOpenTag).toContain(
+      "subTitle={Locale.Plugin.Item.Info(editingPluginTools.length)}",
+    );
+    expect(toolsPreviewOpenTag).toMatch(/\bvertical\b/);
+    expect(pluginPage).toContain('className={pluginStyles["plugin-tools-list"]}');
+    expect(pluginPage).toContain('role="list"');
+    expect(pluginPage).toContain('role="listitem"');
+    expect(pluginPage).toContain('className={pluginStyles["plugin-tool-item"]}');
+    expect(pluginPage).toContain('className={pluginStyles["plugin-tool-name"]}');
+    expect(normalizedPluginPage).toMatch(
+      /className=\{\s*pluginStyles\["plugin-tool-description"\]\s*\}/,
+    );
+    expect(pluginPage).toContain('className={pluginStyles["plugin-tools-empty"]}');
+    expect(pluginPage).toContain("Locale.Plugin.EditModal.NoTools");
+    expect(cnLocale).toContain('NoTools: "暂无可用方法"');
+    expect(enLocale).toContain('NoTools: "No methods available"');
+
+    for (const tokenName of toolPreviewTokenNames) {
+      expect(lightToolPreviewTokens[tokenName]).toBeTruthy();
+      expect(darkToolPreviewTokens[tokenName]).toBeTruthy();
+      expect(autoDarkToolPreviewTokens[tokenName]).toBe(
+        darkToolPreviewTokens[tokenName],
+      );
+    }
+    expect(toolsPreviewRootBlock).toMatch(/align-items:\s*stretch;/);
+    expect(toolsPreviewRootBlock).toMatch(/gap:\s*10px;/);
+    expect(toolsPreviewStrongBlock).toMatch(/align-items:\s*stretch;/);
+    expect(toolsPreviewStrongBlock).toMatch(/gap:\s*10px;/);
+    expect(toolsListBlock).toMatch(/display:\s*grid;/);
+    expect(toolsListBlock).toMatch(/width:\s*100%;/);
+    expect(toolsListBlock).toMatch(/min-width:\s*0;/);
+    expect(toolsListBlock).toMatch(/gap:\s*8px;/);
+    expect(toolItemBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(toolItemBlock).toMatch(/min-width:\s*0;/);
+    expect(toolItemBlock).toMatch(/border-radius:\s*8px;/);
+    expect(toolItemBlock).toMatch(
+      /border:\s*1px solid var\(--plugin-tools-border-color\);/,
+    );
+    expect(toolItemBlock).toMatch(
+      /background:\s*var\(--plugin-tools-item-background\);/,
+    );
+    expect(toolItemBlock).toMatch(
+      /box-shadow:\s*inset 0 1px 2px var\(--plugin-tools-shadow-color\);/,
+    );
+    expect(toolItemHoverBlock).toMatch(
+      /border-color:\s*var\(--plugin-tools-hover-border-color\);/,
+    );
+    expect(toolItemHoverBlock).toMatch(
+      /background:\s*var\(--plugin-tools-hover-background\);/,
+    );
+    expect(toolNameBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(toolNameBlock).toMatch(/word-break:\s*break-word;/);
+    expect(toolNameBlock).toMatch(/color:\s*var\(--plugin-tools-title-color\);/);
+    expect(toolDescriptionBlock).toMatch(/display:\s*-webkit-box;/);
+    expect(toolDescriptionBlock).toMatch(/-webkit-line-clamp:\s*3;/);
+    expect(toolDescriptionBlock).toMatch(/overflow:\s*hidden;/);
+    expect(toolDescriptionBlock).toMatch(
+      /color:\s*var\(--plugin-tools-muted-color\);/,
+    );
+    expect(toolsEmptyBlock).toMatch(/min-height:\s*44px;/);
+    expect(toolsEmptyBlock).toMatch(/border-style:\s*dashed;/);
+    expect(toolsEmptyBlock).toMatch(
+      /background:\s*var\(--plugin-tools-empty-background\);/,
+    );
+    expect(mobileToolsBlock).toMatch(/gap:\s*8px;/);
+    expect(mobileToolsBlock).toMatch(/padding:\s*10px;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.plugin-tools-preview,[\s\S]*\.plugin-tool-item,[\s\S]*\.plugin-tools-empty[\s\S]*animation:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(toolPreviewPaintScope).not.toContain("border: var(--border-in-light)");
+    expect(toolPreviewPaintScope).not.toContain("background-color: var(--white)");
+    expect(toolPreviewPaintScope).not.toContain("box-shadow: var(--card-shadow)");
+    expect(toolPreviewPaintScope).not.toContain("border-radius: 10px");
+  });
+
   test("keeps artifacts preview shell aligned with Gemini output surfaces", () => {
     const artifacts = read("app/components/artifacts.tsx");
     const artifactsPreview = read("app/components/artifacts-preview.tsx");

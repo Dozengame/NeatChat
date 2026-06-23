@@ -879,6 +879,7 @@ const en: LocaleType = {
       Content: "OpenAPI Schema",
       Load: "Load From URL",
       Method: "Method",
+      NoTools: "No methods available",
       Error: "OpenAPI Schema Error",
     },
   },

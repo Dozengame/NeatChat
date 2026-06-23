@@ -868,6 +868,7 @@ const cn = {
       Content: "OpenAPI Schema",
       Load: "从网页加载",
       Method: "方法",
+      NoTools: "暂无可用方法",
       Error: "格式错误",
     },
   },
