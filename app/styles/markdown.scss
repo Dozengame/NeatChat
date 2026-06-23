@@ -3395,6 +3395,48 @@ summary,
 }
 
 @media only screen and (max-width: 600px) {
+  .markdown-body .markdown-loading-visual {
+    max-width: 100%;
+    min-height: 26px;
+    gap: 7px;
+    padding: 4px 9px;
+    white-space: normal;
+  }
+
+  .markdown-body .markdown-loading-dot {
+    box-shadow:
+      9px 0 0 var(--markdown-loading-dot-secondary),
+      18px 0 0 var(--markdown-loading-dot-trailing);
+  }
+
+  .markdown-body .markdown-loading-label {
+    min-width: 0;
+    margin-left: 18px;
+    overflow-wrap: anywhere;
+  }
+
+  .markdown-body[data-streaming="true"] > :is(p, h1, h2, h3, h4, h5, h6):last-child::after,
+  .markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after,
+  .markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after {
+    width: 6px;
+    max-height: 16px;
+    min-height: 12px;
+    margin-left: 3px;
+    vertical-align: -0.14em;
+  }
+
+  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ iframe:last-child)) {
+    box-shadow:
+      0 0 0 1px var(--markdown-code-streaming-border-color),
+      0 8px 22px var(--markdown-code-streaming-shadow-color);
+
+    &::before {
+      left: 5px;
+      width: 2px;
+      box-shadow: 0 0 14px var(--markdown-code-streaming-rail-shadow-color);
+    }
+  }
+
   .markdown-body .katex-display {
     padding: 10px 12px;
   }
@@ -3453,6 +3495,14 @@ summary,
     box-shadow:
       10px 0 0 var(--markdown-loading-dot-secondary),
       20px 0 0 var(--markdown-loading-dot-trailing);
+  }
+
+  @media only screen and (max-width: 600px) {
+    .markdown-loading-dot {
+      box-shadow:
+        9px 0 0 var(--markdown-loading-dot-secondary),
+        18px 0 0 var(--markdown-loading-dot-trailing);
+    }
   }
 
   .markdown-body[data-streaming="true"] > :is(p, h1, h2, h3, h4, h5, h6):last-child::after,

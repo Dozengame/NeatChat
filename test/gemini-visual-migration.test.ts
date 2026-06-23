@@ -14976,6 +14976,14 @@ describe("Gemini visual migration shell", () => {
     const markdownReducedMotionBlock = markdownStyles.slice(
       markdownStyles.lastIndexOf("@media (prefers-reduced-motion: reduce)"),
     );
+    const markdownReducedMotionMobileBlock = readCssBlock(
+      markdownReducedMotionBlock,
+      "@media only screen and (max-width: 600px)",
+    );
+    const reducedMotionMobileLoadingDotBlock = readCssBlock(
+      markdownReducedMotionMobileBlock,
+      ".markdown-loading-dot",
+    );
     const markdownLoadingStatusBlock = readCssBlock(
       markdownStyles,
       ".markdown-body .markdown-loading-status",
@@ -14997,6 +15005,11 @@ describe("Gemini visual migration shell", () => {
       '.markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after',
       '.markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after',
     ].join(",\n");
+    const mobileMarkdownStreamingCaretSelector = [
+      '.markdown-body[data-streaming="true"] > :is(p, h1, h2, h3, h4, h5, h6):last-child::after',
+      '  .markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after',
+      '  .markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after',
+    ].join(",\n");
     const markdownStreamingCaretBlock = readCssBlock(
       markdownStyles,
       markdownStreamingCaretSelector,
@@ -15004,6 +15017,41 @@ describe("Gemini visual migration shell", () => {
     const markdownBodyAfterBlock = readCssBlock(
       markdownStyles,
       ".markdown-body::after",
+    );
+    const markdownMobileBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileLoadingVisualBlock = readCssBlock(
+      markdownMobileBlock,
+      ".markdown-body .markdown-loading-visual",
+    );
+    const mobileLoadingDotBlock = readCssBlock(
+      markdownMobileBlock,
+      ".markdown-body .markdown-loading-dot",
+    );
+    const mobileLoadingLabelBlock = readCssBlock(
+      markdownMobileBlock,
+      ".markdown-body .markdown-loading-label",
+    );
+    const mobileStreamingCaretBlock = readCssBlock(
+      markdownMobileBlock,
+      mobileMarkdownStreamingCaretSelector,
+    );
+    const streamingMobileScope = chatStyles.slice(
+      chatStyles.indexOf(".chat-message-shimmer"),
+    );
+    const mobileStreamingBlock = readCssBlock(
+      streamingMobileScope,
+      "@media (max-width: 600px)",
+    );
+    const mobileShimmerBlock = readCssBlock(
+      mobileStreamingBlock,
+      ".chat-message-shimmer",
+    );
+    const mobileStreamingRevealBlock = readCssBlock(
+      mobileStreamingBlock,
+      ".chat-message-streaming-reveal",
     );
 
     expect(chat).toContain("const isStreamingReveal");
@@ -15092,6 +15140,17 @@ describe("Gemini visual migration shell", () => {
       /animation:\s*markdownLoadingPulse 1\.35s ease-in-out infinite;/,
     );
     expect(markdownLoadingLabelBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(mobileLoadingVisualBlock).toMatch(/max-width:\s*100%;/);
+    expect(mobileLoadingVisualBlock).toMatch(/min-height:\s*26px;/);
+    expect(mobileLoadingVisualBlock).toMatch(/gap:\s*7px;/);
+    expect(mobileLoadingVisualBlock).toMatch(/padding:\s*4px 9px;/);
+    expect(mobileLoadingVisualBlock).toMatch(/white-space:\s*normal;/);
+    expect(mobileLoadingDotBlock).toMatch(
+      /box-shadow:[\s\S]*9px 0 0 var\(--markdown-loading-dot-secondary\),[\s\S]*18px 0 0 var\(--markdown-loading-dot-trailing\);/,
+    );
+    expect(mobileLoadingLabelBlock).toMatch(/min-width:\s*0;/);
+    expect(mobileLoadingLabelBlock).toMatch(/margin-left:\s*18px;/);
+    expect(mobileLoadingLabelBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     for (const tokenName of markdownStreamingTokenNames) {
       expect(lightMarkdownStreamingTokens[tokenName]).toBeTruthy();
       expect(darkMarkdownStreamingTokens[tokenName]).toBeTruthy();
@@ -15136,6 +15195,11 @@ describe("Gemini visual migration shell", () => {
       /animation:\s*markdownStreamingCaretPulse 1\.08s ease-in-out infinite;/,
     );
     expect(markdownStreamingCaretBlock).toMatch(/pointer-events:\s*none;/);
+    expect(mobileStreamingCaretBlock).toMatch(/width:\s*6px;/);
+    expect(mobileStreamingCaretBlock).toMatch(/max-height:\s*16px;/);
+    expect(mobileStreamingCaretBlock).toMatch(/min-height:\s*12px;/);
+    expect(mobileStreamingCaretBlock).toMatch(/margin-left:\s*3px;/);
+    expect(mobileStreamingCaretBlock).toMatch(/vertical-align:\s*-0\.14em;/);
     expect(streamingToneScope).not.toMatch(legacyStreamingPaint);
     expect(shimmerBlock).toMatch(/min-height:\s*72px;/);
     expect(shimmerBlock).toContain("&::after");
@@ -15144,6 +15208,22 @@ describe("Gemini visual migration shell", () => {
     expect(shimmerBlock).toMatch(/display:\s*none !important;/);
     expect(shimmerBlock).toMatch(/animation:\s*shimmer 1\.6s infinite linear/);
     expect(shimmerBlock).not.toContain("* {");
+    expect(mobileShimmerBlock).toMatch(/min-height:\s*56px;/);
+    expect(mobileShimmerBlock).toMatch(
+      /:global\(\.markdown-body-container\),[\s\S]*:global\(\.markdown-body\)[\s\S]*min-height:\s*38px;/,
+    );
+    expect(mobileShimmerBlock).toMatch(
+      /&::after,[\s\S]*:global\(\.markdown-body\)::before,[\s\S]*:global\(\.markdown-body\)::after[\s\S]*height:\s*10px;/,
+    );
+    expect(mobileShimmerBlock).toMatch(
+      /:global\(\.markdown-body\)::before[\s\S]*width:\s*min\(84%,\s*100%\);[\s\S]*margin:\s*0 0 10px;/,
+    );
+    expect(mobileShimmerBlock).toMatch(
+      /:global\(\.markdown-body\)::after[\s\S]*width:\s*min\(66%,\s*100%\);/,
+    );
+    expect(mobileShimmerBlock).toMatch(
+      /&::after[\s\S]*width:\s*min\(44%,\s*132px\);[\s\S]*height:\s*9px;[\s\S]*margin-top:\s*10px;/,
+    );
     [
       "--chat-streaming-wait-border-color",
       "--chat-streaming-wait-line-base",
@@ -15225,6 +15305,13 @@ describe("Gemini visual migration shell", () => {
     expect(streamingRevealBlock).toMatch(
       /background-image:\s*linear-gradient\(\s*90deg,\s*transparent 0%,[\s\S]*var\(--chat-streaming-reveal-strip-primary\) 32%,[\s\S]*var\(--chat-streaming-reveal-strip-surface\) 50%,[\s\S]*var\(--chat-streaming-reveal-strip-secondary\) 66%,/,
     );
+    expect(mobileStreamingRevealBlock).toMatch(/overflow-anchor:\s*none;/);
+    expect(mobileStreamingRevealBlock).toMatch(
+      /&::after[\s\S]*inset:\s*0 -10%;/,
+    );
+    expect(mobileStreamingRevealBlock).toMatch(
+      /:global\(\.markdown-body-container\)[\s\S]*transform-origin:\s*top center;[\s\S]*animation:\s*streamingTextReveal 0\.2s cubic-bezier\(0\.2,\s*0,\s*0,\s*1\) both;/,
+    );
     expect(darkStreamingRevealBlock).toMatch(
       /--chat-streaming-reveal-strip-primary:\s*color-mix\(in srgb,\s*var\(--primary\) 18%,\s*transparent\);/,
     );
@@ -15250,6 +15337,9 @@ describe("Gemini visual migration shell", () => {
     expect(markdownReducedMotionBlock).toMatch(
       /\.markdown-loading-dot[\s\S]*animation:\s*none !important;[\s\S]*box-shadow:[\s\S]*var\(--markdown-loading-dot-secondary\)[\s\S]*var\(--markdown-loading-dot-trailing\);/,
     );
+    expect(reducedMotionMobileLoadingDotBlock).toMatch(
+      /box-shadow:[\s\S]*9px 0 0 var\(--markdown-loading-dot-secondary\),[\s\S]*18px 0 0 var\(--markdown-loading-dot-trailing\);/,
+    );
     expect(markdownReducedMotionBlock).toMatch(
       /\.markdown-body\[data-streaming="true"\] > :is\(p, h1, h2, h3, h4, h5, h6\):last-child::after[\s\S]*animation:\s*none !important;[\s\S]*opacity:\s*0\.72;/,
     );
@@ -15271,6 +15361,18 @@ describe("Gemini visual migration shell", () => {
       streamingCodeSelector,
     );
     const streamingCodeRailBlock = readCssBlock(streamingCodeBlock, "&::before");
+    const markdownMobileBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileStreamingCodeBlock = readCssBlock(
+      markdownMobileBlock,
+      streamingCodeSelector,
+    );
+    const mobileStreamingCodeRailBlock = readCssBlock(
+      mobileStreamingCodeBlock,
+      "&::before",
+    );
     const markdownReducedMotionBlock = markdownStyles.slice(
       markdownStyles.lastIndexOf("@media (prefers-reduced-motion: reduce)"),
     );
@@ -15370,6 +15472,14 @@ describe("Gemini visual migration shell", () => {
       /animation:\s*markdownCodeStreamingRail 1\.25s ease-in-out infinite;/,
     );
     expect(streamingCodeRailBlock).toMatch(/pointer-events:\s*none;/);
+    expect(mobileStreamingCodeBlock).toMatch(
+      /box-shadow:[\s\S]*0 0 0 1px var\(--markdown-code-streaming-border-color\),[\s\S]*0 8px 22px var\(--markdown-code-streaming-shadow-color\);/,
+    );
+    expect(mobileStreamingCodeRailBlock).toMatch(/left:\s*5px;/);
+    expect(mobileStreamingCodeRailBlock).toMatch(/width:\s*2px;/);
+    expect(mobileStreamingCodeRailBlock).toMatch(
+      /box-shadow:\s*0 0 14px var\(--markdown-code-streaming-rail-shadow-color\);/,
+    );
     expect(streamingCodePaintScope).not.toMatch(
       /rgba\(|#[0-9a-fA-F]{3,8}\b/,
     );

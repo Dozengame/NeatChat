@@ -6161,6 +6161,49 @@
 }
 
 @media (max-width: 600px) {
+  .chat-message-shimmer {
+    min-height: 56px;
+
+    :global(.markdown-body-container),
+    :global(.markdown-body) {
+      min-height: 38px;
+    }
+
+    &::after,
+    :global(.markdown-body)::before,
+    :global(.markdown-body)::after {
+      height: 10px;
+    }
+
+    :global(.markdown-body)::before {
+      width: min(84%, 100%);
+      margin: 0 0 10px;
+    }
+
+    :global(.markdown-body)::after {
+      width: min(66%, 100%);
+    }
+
+    &::after {
+      width: min(44%, 132px);
+      height: 9px;
+      margin-top: 10px;
+    }
+  }
+
+  .chat-message-streaming-reveal {
+    overflow-anchor: none;
+
+    &::after {
+      inset: 0 -10%;
+    }
+
+    :global(.markdown-body-container) {
+      transform-origin: top center;
+      animation: streamingTextReveal 0.2s cubic-bezier(0.2, 0, 0, 1) both;
+    }
+  }
+
   .chat-dropzone-content {
     width: min(360px, calc(100% - 28px));
     padding: 28px 22px;
