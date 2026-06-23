@@ -64,6 +64,41 @@ summary,
     transparent
   );
   --markdown-disclosure-hover-color: var(--primary);
+  --markdown-heading-rail-color: color-mix(
+    in srgb,
+    var(--primary) 42%,
+    transparent
+  );
+  --markdown-blockquote-border-color: color-mix(
+    in srgb,
+    var(--surface-soft) 72%,
+    transparent
+  );
+  --markdown-blockquote-rail-color: color-mix(
+    in srgb,
+    var(--primary) 52%,
+    transparent
+  );
+  --markdown-blockquote-background: color-mix(
+    in srgb,
+    var(--surface-soft) 76%,
+    transparent
+  );
+  --markdown-blockquote-ring-color: color-mix(
+    in srgb,
+    var(--surface-elevated) 48%,
+    transparent
+  );
+  --markdown-details-blockquote-rail-color: color-mix(
+    in srgb,
+    var(--primary) 42%,
+    transparent
+  );
+  --markdown-list-marker-color: color-mix(
+    in srgb,
+    var(--primary) 72%,
+    transparent
+  );
   --markdown-image-frame-border-color: color-mix(
     in srgb,
     var(--black-50) 12%,
@@ -540,6 +575,41 @@ summary,
   --markdown-disclosure-hover-color: color-mix(
     in srgb,
     var(--primary) 42%,
+    var(--black)
+  );
+  --markdown-heading-rail-color: color-mix(
+    in srgb,
+    var(--primary) 58%,
+    var(--black)
+  );
+  --markdown-blockquote-border-color: color-mix(
+    in srgb,
+    var(--surface-soft) 64%,
+    transparent
+  );
+  --markdown-blockquote-rail-color: color-mix(
+    in srgb,
+    var(--primary) 58%,
+    transparent
+  );
+  --markdown-blockquote-background: color-mix(
+    in srgb,
+    var(--surface-soft) 72%,
+    transparent
+  );
+  --markdown-blockquote-ring-color: color-mix(
+    in srgb,
+    var(--surface-elevated) 28%,
+    transparent
+  );
+  --markdown-details-blockquote-rail-color: color-mix(
+    in srgb,
+    var(--primary) 50%,
+    transparent
+  );
+  --markdown-list-marker-color: color-mix(
+    in srgb,
+    var(--primary) 58%,
     var(--black)
   );
   --markdown-image-frame-border-color: color-mix(
@@ -1941,12 +2011,12 @@ summary,
     bottom: 0.18em;
     width: 3px;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--primary) 42%, transparent);
+    background: var(--markdown-heading-rail-color);
   }
 }
 
 .dark .markdown-body h2::before {
-  background: color-mix(in srgb, var(--primary) 58%, var(--black));
+  background: var(--markdown-heading-rail-color);
 }
 
 .markdown-body h2 .anchor {
@@ -1985,23 +2055,23 @@ summary,
   color: var(--color-fg-muted);
   border-width: 1px;
   border-style: solid;
-  border-top-color: color-mix(in srgb, var(--surface-soft) 72%, transparent);
-  border-right-color: color-mix(in srgb, var(--surface-soft) 72%, transparent);
-  border-bottom-color: color-mix(in srgb, var(--surface-soft) 72%, transparent);
-  border-left: 3px solid color-mix(in srgb, var(--primary) 52%, transparent);
+  border-top-color: var(--markdown-blockquote-border-color);
+  border-right-color: var(--markdown-blockquote-border-color);
+  border-bottom-color: var(--markdown-blockquote-border-color);
+  border-left: 3px solid var(--markdown-blockquote-rail-color);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--surface-soft) 76%, transparent);
+  background: var(--markdown-blockquote-background);
   line-height: 1.65;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--surface-elevated) 48%, transparent);
+  box-shadow: inset 0 0 0 1px var(--markdown-blockquote-ring-color);
 }
 
 .dark .markdown-body blockquote {
-  background: color-mix(in srgb, var(--surface-soft) 72%, transparent);
-  border-top-color: color-mix(in srgb, var(--surface-soft) 64%, transparent);
-  border-right-color: color-mix(in srgb, var(--surface-soft) 64%, transparent);
-  border-bottom-color: color-mix(in srgb, var(--surface-soft) 64%, transparent);
-  border-left-color: color-mix(in srgb, var(--primary) 58%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--surface-elevated) 28%, transparent);
+  background: var(--markdown-blockquote-background);
+  border-top-color: var(--markdown-blockquote-border-color);
+  border-right-color: var(--markdown-blockquote-border-color);
+  border-bottom-color: var(--markdown-blockquote-border-color);
+  border-left-color: var(--markdown-blockquote-rail-color);
+  box-shadow: inset 0 0 0 1px var(--markdown-blockquote-ring-color);
 }
 
 .markdown-body details blockquote,
@@ -2009,7 +2079,7 @@ summary,
   padding: 0 0 0 1.5em;
   background: transparent;
   border: 0;
-  border-left: 3px solid color-mix(in srgb, var(--primary) 42%, transparent);
+  border-left: 3px solid var(--markdown-details-blockquote-rail-color);
   border-radius: 0;
   box-shadow: none;
   line-height: inherit;
@@ -2018,7 +2088,7 @@ summary,
 .dark .markdown-body details blockquote,
 .dark .markdown-body details > p > blockquote {
   background: transparent;
-  border-left-color: color-mix(in srgb, var(--primary) 50%, transparent);
+  border-left-color: var(--markdown-details-blockquote-rail-color);
   box-shadow: none;
 }
 
@@ -2036,12 +2106,12 @@ summary,
 }
 
 .markdown-body li::marker {
-  color: color-mix(in srgb, var(--primary) 72%, transparent);
+  color: var(--markdown-list-marker-color);
   font-weight: 600;
 }
 
 .dark .markdown-body li::marker {
-  color: color-mix(in srgb, var(--primary) 58%, var(--black));
+  color: var(--markdown-list-marker-color);
 }
 
 .markdown-body ol ol,

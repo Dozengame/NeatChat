@@ -7571,6 +7571,12 @@ describe("Gemini visual migration shell", () => {
 
   test("keeps Gemini-style markdown blockquote callouts", () => {
     const markdownStyles = read("app/styles/markdown.scss");
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const autoDarkRootBlock = readCssBlock(
+      readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
+      ":root",
+    );
     const blockquoteBlock = readCssBlock(
       markdownStyles,
       ".markdown-body blockquote",
@@ -7593,60 +7599,83 @@ describe("Gemini visual migration shell", () => {
       detailsBlockquoteBlock,
       darkDetailsBlockquoteBlock,
     ].join("\n");
+    const blockquoteTokenNames = [
+      "--markdown-blockquote-border-color",
+      "--markdown-blockquote-rail-color",
+      "--markdown-blockquote-background",
+      "--markdown-blockquote-ring-color",
+      "--markdown-details-blockquote-rail-color",
+    ];
+    const lightBlockquoteTokens = readCustomProperties(
+      lightMixinBlock,
+      blockquoteTokenNames,
+    );
+    const darkBlockquoteTokens = readCustomProperties(
+      darkMixinBlock,
+      blockquoteTokenNames,
+    );
+
+    for (const tokenName of blockquoteTokenNames) {
+      expect(lightBlockquoteTokens[tokenName]).not.toBe("");
+      expect(darkBlockquoteTokens[tokenName]).not.toBe("");
+      expect(lightBlockquoteTokens[tokenName]).toContain("var(--");
+      expect(darkBlockquoteTokens[tokenName]).toContain("var(--");
+    }
+    expect(autoDarkRootBlock).toMatch(/@include dark;/);
 
     expect(blockquoteBlock).toMatch(/padding:\s*10px 14px;/);
     expect(blockquoteBlock).toMatch(/border-width:\s*1px;/);
     expect(blockquoteBlock).toMatch(/border-style:\s*solid;/);
     expect(blockquoteBlock).toMatch(
-      /border-top-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 72%,\s*transparent\);/,
+      /border-top-color:\s*var\(--markdown-blockquote-border-color\);/,
     );
     expect(blockquoteBlock).toMatch(
-      /border-right-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 72%,\s*transparent\);/,
+      /border-right-color:\s*var\(--markdown-blockquote-border-color\);/,
     );
     expect(blockquoteBlock).toMatch(
-      /border-bottom-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 72%,\s*transparent\);/,
+      /border-bottom-color:\s*var\(--markdown-blockquote-border-color\);/,
     );
     expect(blockquoteBlock).toMatch(
-      /border-left:\s*3px solid color-mix\(in srgb,\s*var\(--primary\) 52%,\s*transparent\);/,
+      /border-left:\s*3px solid var\(--markdown-blockquote-rail-color\);/,
     );
     expect(blockquoteBlock).toMatch(/border-radius:\s*12px;/);
     expect(blockquoteBlock).toMatch(
-      /background:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 76%,\s*transparent\);/,
+      /background:\s*var\(--markdown-blockquote-background\);/,
     );
     expect(blockquoteBlock).toMatch(/line-height:\s*1\.65;/);
     expect(blockquoteBlock).toMatch(
-      /box-shadow:\s*inset 0 0 0 1px color-mix\(in srgb,\s*var\(--surface-elevated\) 48%,\s*transparent\);/,
+      /box-shadow:\s*inset 0 0 0 1px var\(--markdown-blockquote-ring-color\);/,
     );
     expect(darkBlockquoteBlock).toMatch(
-      /background:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 72%,\s*transparent\);/,
+      /background:\s*var\(--markdown-blockquote-background\);/,
     );
     expect(darkBlockquoteBlock).toMatch(
-      /border-top-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 64%,\s*transparent\);/,
+      /border-top-color:\s*var\(--markdown-blockquote-border-color\);/,
     );
     expect(darkBlockquoteBlock).toMatch(
-      /border-right-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 64%,\s*transparent\);/,
+      /border-right-color:\s*var\(--markdown-blockquote-border-color\);/,
     );
     expect(darkBlockquoteBlock).toMatch(
-      /border-bottom-color:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 64%,\s*transparent\);/,
+      /border-bottom-color:\s*var\(--markdown-blockquote-border-color\);/,
     );
     expect(darkBlockquoteBlock).toMatch(
-      /border-left-color:\s*color-mix\(in srgb,\s*var\(--primary\) 58%,\s*transparent\);/,
+      /border-left-color:\s*var\(--markdown-blockquote-rail-color\);/,
     );
     expect(detailsBlockquoteBlock).toMatch(/background:\s*transparent;/);
     expect(detailsBlockquoteBlock).toMatch(/border:\s*0;/);
     expect(detailsBlockquoteBlock).toMatch(
-      /border-left:\s*3px solid color-mix\(in srgb,\s*var\(--primary\) 42%,\s*transparent\);/,
+      /border-left:\s*3px solid var\(--markdown-details-blockquote-rail-color\);/,
     );
     expect(detailsBlockquoteBlock).toMatch(/border-radius:\s*0;/);
     expect(detailsBlockquoteBlock).toMatch(/box-shadow:\s*none;/);
     expect(detailsBlockquoteBlock).toMatch(/line-height:\s*inherit;/);
     expect(darkDetailsBlockquoteBlock).toMatch(/background:\s*transparent;/);
     expect(darkDetailsBlockquoteBlock).toMatch(
-      /border-left-color:\s*color-mix\(in srgb,\s*var\(--primary\) 50%,\s*transparent\);/,
+      /border-left-color:\s*var\(--markdown-details-blockquote-rail-color\);/,
     );
     expect(darkDetailsBlockquoteBlock).toMatch(/box-shadow:\s*none;/);
     expect(blockquoteToneScope).not.toMatch(
-      /rgba\((?:66,\s*133,\s*244|138,\s*180,\s*248|60,\s*64,\s*67|232,\s*234,\s*237)/,
+      /(?:\brgba?\(|\bhsla?\(|#[\da-fA-F]{3,8}|color-mix\()/,
     );
   });
 
@@ -7813,6 +7842,12 @@ describe("Gemini visual migration shell", () => {
 
   test("keeps Gemini-style markdown list rhythm", () => {
     const markdownStyles = read("app/styles/markdown.scss");
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const autoDarkRootBlock = readCssBlock(
+      readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
+      ":root",
+    );
     const listBlock = readCssBlock(
       markdownStyles,
       ".markdown-body ul,\n.markdown-body ol",
@@ -7835,20 +7870,33 @@ describe("Gemini visual migration shell", () => {
       ".markdown-body .task-list-item",
     );
     const listMarkerToneScope = [markerBlock, darkMarkerBlock].join("\n");
+    const listMarkerTokenName = "--markdown-list-marker-color";
+    const lightListMarkerTokens = readCustomProperties(lightMixinBlock, [
+      listMarkerTokenName,
+    ]);
+    const darkListMarkerTokens = readCustomProperties(darkMixinBlock, [
+      listMarkerTokenName,
+    ]);
+
+    expect(lightListMarkerTokens[listMarkerTokenName]).not.toBe("");
+    expect(darkListMarkerTokens[listMarkerTokenName]).not.toBe("");
+    expect(lightListMarkerTokens[listMarkerTokenName]).toContain("var(--");
+    expect(darkListMarkerTokens[listMarkerTokenName]).toContain("var(--");
+    expect(autoDarkRootBlock).toMatch(/@include dark;/);
 
     expect(listBlock).toMatch(/padding-left:\s*1\.7em;/);
     expect(listBlock).toMatch(/line-height:\s*1\.65;/);
     expect(listItemBlock).toMatch(/padding-left:\s*0\.16em;/);
     expect(listItemBlock).toMatch(/line-height:\s*inherit;/);
     expect(markerBlock).toMatch(
-      /color:\s*color-mix\(in srgb,\s*var\(--primary\) 72%,\s*transparent\);/,
+      /color:\s*var\(--markdown-list-marker-color\);/,
     );
     expect(markerBlock).toMatch(/font-weight:\s*600;/);
     expect(darkMarkerBlock).toMatch(
-      /color:\s*color-mix\(in srgb,\s*var\(--primary\) 58%,\s*var\(--black\)\);/,
+      /color:\s*var\(--markdown-list-marker-color\);/,
     );
     expect(listMarkerToneScope).not.toMatch(
-      /(?:rgba?|hsla?|oklch|oklab|lch|lab|color)\(|#[0-9a-fA-F]{3,8}\b/,
+      /(?:\brgba?\(|\bhsla?\(|#[\da-fA-F]{3,8}|color-mix\()/,
     );
     expect(siblingItemBlock).toMatch(/margin-top:\s*0\.38em;/);
     expect(taskListItemBlock).toMatch(/list-style-type:\s*none;/);
@@ -7856,6 +7904,12 @@ describe("Gemini visual migration shell", () => {
 
   test("keeps Gemini-style markdown heading hierarchy", () => {
     const markdownStyles = read("app/styles/markdown.scss");
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const autoDarkRootBlock = readCssBlock(
+      readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
+      ":root",
+    );
     const headingBlock = readCssBlock(
       markdownStyles,
       ".markdown-body h1,\n.markdown-body h2,\n.markdown-body h3,\n.markdown-body h4,\n.markdown-body h5,\n.markdown-body h6",
@@ -7884,6 +7938,19 @@ describe("Gemini visual migration shell", () => {
       ".markdown-body summary h1,\n.markdown-body summary h2",
     );
     const h2RailToneScope = [h2Block, darkH2RailBlock].join("\n");
+    const headingRailTokenName = "--markdown-heading-rail-color";
+    const lightHeadingRailTokens = readCustomProperties(lightMixinBlock, [
+      headingRailTokenName,
+    ]);
+    const darkHeadingRailTokens = readCustomProperties(darkMixinBlock, [
+      headingRailTokenName,
+    ]);
+
+    expect(lightHeadingRailTokens[headingRailTokenName]).not.toBe("");
+    expect(darkHeadingRailTokens[headingRailTokenName]).not.toBe("");
+    expect(lightHeadingRailTokens[headingRailTokenName]).toContain("var(--");
+    expect(darkHeadingRailTokens[headingRailTokenName]).toContain("var(--");
+    expect(autoDarkRootBlock).toMatch(/@include dark;/);
 
     expect(headingBlock).toMatch(/margin-top:\s*22px;/);
     expect(headingBlock).toMatch(/margin-bottom:\s*10px;/);
@@ -7899,13 +7966,13 @@ describe("Gemini visual migration shell", () => {
     expect(h2Block).toMatch(/border-bottom:\s*0;/);
     expect(h2Block).toMatch(/&::before[\s\S]*width:\s*3px;/);
     expect(h2Block).toMatch(
-      /&::before[\s\S]*background:\s*color-mix\(in srgb,\s*var\(--primary\) 42%,\s*transparent\);/,
+      /&::before[\s\S]*background:\s*var\(--markdown-heading-rail-color\);/,
     );
     expect(darkH2RailBlock).toMatch(
-      /background:\s*color-mix\(in srgb,\s*var\(--primary\) 58%,\s*var\(--black\)\);/,
+      /background:\s*var\(--markdown-heading-rail-color\);/,
     );
     expect(h2RailToneScope).not.toMatch(
-      /(?:rgba?|hsla?|hwb|oklch|oklab|lch|lab|color|device-cmyk)\(|#[0-9a-fA-F]{3,8}\b/,
+      /(?:\brgba?\(|\bhsla?\(|#[\da-fA-F]{3,8}|color-mix\()/,
     );
     expect(h2AnchorBlock).toMatch(/margin-left:\s*-32px;/);
     expect(h3Block).toMatch(/font-size:\s*1\.12em;/);
