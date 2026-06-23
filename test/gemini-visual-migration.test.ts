@@ -3739,6 +3739,182 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps composer multimodal trigger scoped across theme, state, and mobile width", () => {
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const menuButtonBlock = readRootCssBlock(
+      chatStyles,
+      ".chat-input-menu-button",
+    );
+    const menuButtonRootBlock = readRootDeclarations(menuButtonBlock);
+    const hoverBlock = readCssBlock(menuButtonBlock, "&:hover");
+    const pressBlock = readCssBlock(menuButtonBlock, "&:active");
+    const focusBlock = readCssBlock(menuButtonBlock, "&:focus-visible");
+    const reinforcedActiveBlock = readCssBlock(
+      chatStyles,
+      ".chat-input-menu-button.chat-input-menu-button-active",
+    );
+    const activeBlock = readRootCssBlock(
+      chatStyles,
+      ".chat-input-menu-button-active",
+    );
+    const activeIconBlock = readCssBlock(
+      chatStyles,
+      ".chat-input-menu-button-active svg",
+    );
+    const activePressIconBlock = readCssBlock(
+      chatStyles,
+      ".chat-input-menu-button-active:active svg",
+    );
+    const darkBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-input-menu-button",
+    );
+    const autoDarkSelector = ":global(body:not(.light)) .chat-input-menu-button";
+    const autoDarkSelectorIndex = chatStyles.indexOf(autoDarkSelector);
+    const autoDarkMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkSelectorIndex,
+    );
+    const autoDarkBlock = readCssBlock(
+      chatStyles.slice(autoDarkMediaIndex),
+      autoDarkSelector,
+    );
+    const mobileStyles = chatStyles.slice(
+      chatStyles.lastIndexOf("@media only screen and (max-width: 600px)"),
+    );
+    const mobileButtonBlock = readCssBlock(
+      mobileStyles,
+      ".chat-input-menu-button",
+    );
+    const mobileEmptyPanelBlock = readCssBlock(
+      mobileStyles,
+      ".chat-input-panel.chat-input-panel-empty",
+    );
+    const mobileEmptyButtonBlock = readCssBlock(
+      mobileEmptyPanelBlock,
+      ".chat-input-menu-button",
+    );
+    const reducedMotionBlock = readCssBlock(
+      chatStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const tokenNames = [
+      "--chat-input-menu-button-border-color",
+      "--chat-input-menu-button-background",
+      "--chat-input-menu-button-color",
+      "--chat-input-menu-button-shadow-color",
+      "--chat-input-menu-button-hover-background",
+      "--chat-input-menu-button-hover-border-color",
+      "--chat-input-menu-button-focus-shadow-color",
+      "--chat-input-menu-button-press-background",
+      "--chat-input-menu-button-active-background",
+      "--chat-input-menu-button-active-border-color",
+      "--chat-input-menu-button-active-color",
+      "--chat-input-menu-button-active-shadow-color",
+    ];
+    const rootTokens = readCustomProperties(menuButtonRootBlock, tokenNames);
+    const darkTokens = readCustomProperties(darkBlock, tokenNames);
+    const autoDarkTokens = readCustomProperties(autoDarkBlock, tokenNames);
+
+    expect(chat).toMatch(
+      /className=\{clsx\(styles\["chat-input-menu-button"\], \{[\s\S]*styles\["chat-input-menu-button-active"\]\]: showChatActionMenu,/,
+    );
+    expect(chat).toMatch(
+      /aria-label=\{\s*showChatActionMenu\s*\?\s*"关闭对话工具"\s*:\s*"打开对话工具"\s*\}/,
+    );
+    expect(chat).toMatch(
+      /ref=\{chatInputMenuButtonRef\}[\s\S]*aria-controls="chat-input-action-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showChatActionMenu\}/,
+    );
+    expect(chat).toMatch(
+      /className=\{clsx\(styles\["chat-input-menu-button"\][\s\S]*onClick=\{\(\) => \{[\s\S]*expandInput\(\);[\s\S]*setShowChatActionMenu\(\(open\) => !open\);[\s\S]*\}\}/,
+    );
+    for (const tokenName of tokenNames) {
+      expect(rootTokens[tokenName]).not.toBe("");
+      expect(darkTokens[tokenName]).not.toBe("");
+      expect(autoDarkTokens[tokenName]).not.toBe("");
+    }
+    expect(autoDarkSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkTokens).toEqual(darkTokens);
+    expect(menuButtonRootBlock).toMatch(
+      /border:\s*1px solid var\(--chat-input-menu-button-border-color\);/,
+    );
+    expect(menuButtonRootBlock).toMatch(
+      /background:\s*var\(--chat-input-menu-button-background\);/,
+    );
+    expect(menuButtonRootBlock).toMatch(
+      /color:\s*var\(--chat-input-menu-button-color\);/,
+    );
+    expect(menuButtonRootBlock).toMatch(
+      /box-shadow:\s*0 10px 24px var\(--chat-input-menu-button-shadow-color\);/,
+    );
+    expect(hoverBlock).toMatch(
+      /border-color:\s*var\(--chat-input-menu-button-hover-border-color\);/,
+    );
+    expect(hoverBlock).toMatch(
+      /background:\s*var\(--chat-input-menu-button-hover-background\);/,
+    );
+    expect(pressBlock).toMatch(
+      /background:\s*var\(--chat-input-menu-button-press-background\);/,
+    );
+    expect(focusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(focusBlock).toMatch(
+      /box-shadow:[\s\S]*0 10px 24px var\(--chat-input-menu-button-shadow-color\),[\s\S]*0 0 0 3px var\(--chat-input-menu-button-focus-shadow-color\);/,
+    );
+    expect(reinforcedActiveBlock).toMatch(
+      /border-color:\s*var\(--chat-input-menu-button-active-border-color\);/,
+    );
+    expect(reinforcedActiveBlock).toMatch(
+      /background:\s*var\(--chat-input-menu-button-active-background\);/,
+    );
+    expect(reinforcedActiveBlock).toMatch(
+      /box-shadow:[\s\S]*0 12px 28px var\(--chat-input-menu-button-active-shadow-color\),[\s\S]*0 0 0 3px var\(--chat-input-menu-button-focus-shadow-color\);/,
+    );
+    expect(activeBlock).toMatch(
+      /border-color:\s*var\(--chat-input-menu-button-active-border-color\);/,
+    );
+    expect(activeBlock).toMatch(
+      /background:\s*var\(--chat-input-menu-button-active-background\);/,
+    );
+    expect(activeBlock).toMatch(
+      /color:\s*var\(--chat-input-menu-button-active-color\);/,
+    );
+    expect(activeBlock).toMatch(
+      /box-shadow:\s*0 12px 28px var\(--chat-input-menu-button-active-shadow-color\);/,
+    );
+    expect(activeIconBlock).toMatch(/transform:\s*rotate\(45deg\);/);
+    expect(activePressIconBlock).toMatch(
+      /transform:\s*rotate\(45deg\) scale\(0\.97\);/,
+    );
+    expect(mobileButtonBlock).toMatch(/flex-basis:\s*44px;/);
+    expect(mobileButtonBlock).toMatch(/width:\s*44px;/);
+    expect(mobileButtonBlock).toMatch(/height:\s*44px;/);
+    expect(mobileButtonBlock).toMatch(
+      /border:\s*1px solid transparent;/,
+    );
+    expect(mobileButtonBlock).toMatch(
+      /background:\s*var\(--chat-input-menu-button-mobile-background\);/,
+    );
+    expect(mobileButtonBlock).toMatch(/box-shadow:\s*none;/);
+    expect(mobileEmptyButtonBlock).toMatch(/flex-basis:\s*44px;/);
+    expect(mobileEmptyButtonBlock).toMatch(/width:\s*44px;/);
+    expect(mobileEmptyButtonBlock).toMatch(/height:\s*44px;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-input-menu-button,\s*\.chat-input-menu-button-active[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-input-menu-button svg[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(
+      [menuButtonRootBlock, hoverBlock, focusBlock, activeBlock, darkBlock].join(
+        "\n",
+      ),
+    ).not.toMatch(
+      /border:\s*var\(--border-in-light\)|background:\s*var\(--surface\)|background:\s*var\(--hover-color\)|box-shadow:\s*var\(--composer-shadow\);/,
+    );
+  });
+
   test("keeps MCP market status controls aligned with Gemini utility tones", () => {
     const mcpMarket = read("app/components/mcp-market.tsx");
     const serverList = read("app/components/mcp-market/server-list.tsx");
