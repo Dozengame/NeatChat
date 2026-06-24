@@ -5085,6 +5085,10 @@ describe("Gemini visual migration shell", () => {
         /border:\s*1px solid var\(--mcp-market-form-border-color\);/,
       );
       expect(block).toMatch(/border-radius:\s*8px;/);
+      expect(block).toMatch(
+        /transition:[\s\S]*background-color 0\.18s ease,[\s\S]*border-color 0\.18s ease,[\s\S]*box-shadow 0\.18s ease;/,
+      );
+      expect(block).not.toContain("transition: all");
     });
 
     [arrayInputHoverBlock, configArrayInputHoverBlock].forEach((block) => {
@@ -5180,6 +5184,10 @@ describe("Gemini visual migration shell", () => {
         /background-color:\s*var\(--mcp-market-add-path-button-background\);/,
       );
       expect(block).toMatch(/color:\s*var\(--mcp-market-add-path-button-color\);/);
+      expect(block).toMatch(
+        /transition:[\s\S]*background-color 0\.16s ease,[\s\S]*color 0\.16s ease,[\s\S]*box-shadow 0\.16s ease;/,
+      );
+      expect(block).not.toContain("transition: all");
     });
     [browseButtonBlock, deleteButtonBlock, addButtonBlock].forEach((block) => {
       expect(block).toMatch(
@@ -5565,6 +5573,10 @@ describe("Gemini visual migration shell", () => {
       );
       expect(block).toMatch(/border-radius:\s*8px;/);
     });
+    expect(marketItemBlock).toMatch(
+      /transition:[\s\S]*background-color 0\.22s ease,[\s\S]*border-color 0\.22s ease,[\s\S]*box-shadow 0\.22s ease,[\s\S]*opacity 0\.18s ease;/,
+    );
+    expect(marketItemBlock).not.toContain("transition: all");
     expect(loadingTextBlock).toMatch(/color:\s*var\(--mcp-market-muted-color\);/);
     expect(toolsStateSurfaceBlock).toMatch(/min-height:\s*140px;/);
     expect(toolsStateSurfaceBlock).toMatch(

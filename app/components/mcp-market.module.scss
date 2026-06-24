@@ -243,7 +243,11 @@
       border-radius: 8px;
       animation: slide-in ease 0.3s;
       background-color: var(--mcp-market-card-surface);
-      transition: all 0.3s ease;
+      transition:
+        background-color 0.22s ease,
+        border-color 0.22s ease,
+        box-shadow 0.22s ease,
+        opacity 0.18s ease;
 
       &.disabled {
         opacity: 0.7;
@@ -536,7 +540,10 @@
         padding: 8px 12px;
         background-color: var(--mcp-market-form-soft-surface);
         border-radius: 8px;
-        transition: all 0.3s ease;
+        transition:
+          background-color 0.18s ease,
+          border-color 0.18s ease,
+          box-shadow 0.18s ease;
         font-size: 13px;
         border: 1px solid var(--mcp-market-form-border-color);
 
@@ -564,7 +571,10 @@
       color: var(--mcp-market-add-path-button-color);
       padding: 8px 12px;
       border-radius: 8px;
-      transition: all 0.3s ease;
+      transition:
+        background-color 0.16s ease,
+        color 0.16s ease,
+        box-shadow 0.16s ease;
       margin-top: 8px;
       display: flex;
       align-items: center;
@@ -744,7 +754,10 @@
           padding: 8px 12px;
           background-color: var(--mcp-market-form-soft-surface);
           border-radius: 8px;
-          transition: all 0.3s ease;
+          transition:
+            background-color 0.18s ease,
+            border-color 0.18s ease,
+            box-shadow 0.18s ease;
           font-size: 13px;
           border: 1px solid var(--mcp-market-form-border-color);
 
@@ -796,7 +809,10 @@
         color: var(--mcp-market-add-path-button-color);
         padding: 8px 12px;
         border-radius: 8px;
-        transition: all 0.3s ease;
+        transition:
+          background-color 0.16s ease,
+          color 0.16s ease,
+          box-shadow 0.16s ease;
         margin-top: 8px;
         display: flex;
         align-items: center;
