@@ -326,13 +326,14 @@
   width: $width;
   background-color: var(--sidebar-drag-background);
   cursor: ew-resize;
-  transition: all ease 0.3s;
+  transition: background-color 0.3s ease;
   display: flex;
   align-items: center;
 
   svg {
     opacity: 0;
     margin-left: -2px;
+    transition: opacity 0.3s ease;
   }
 }
 
@@ -912,7 +913,9 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: all ease 0.3s;
+    transition:
+      background-color 0.16s ease,
+      color 0.16s ease;
     overflow: hidden;
 
     &:hover {
@@ -936,7 +939,7 @@
     width: 36px;
     height: 36px;
     margin: 0 auto;
-    transition: all ease 0.3s;
+    transition: transform 0.3s ease;
 
     .chat-item-avatar {
       display: flex;
@@ -1292,6 +1295,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .sidebar,
+  .sidebar-drag,
+  .sidebar-drag svg,
+  .narrow-sidebar .chat-item,
+  .narrow-sidebar .chat-item-narrow,
   .sidebar-mobile-account,
   .sidebar-mobile-account-settings button {
     transition: none !important;

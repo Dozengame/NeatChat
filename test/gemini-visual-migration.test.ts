@@ -1260,7 +1260,27 @@ describe("Gemini visual migration shell", () => {
       homeStyles,
       ".sidebar-show .chat-item-delete",
     );
+    const sidebarDragBlock = readCssBlock(
+      homeStyles.slice(homeStyles.indexOf("\n.sidebar-drag {")),
+      ".sidebar-drag",
+    );
+    const sidebarDragIconBlock = readCssBlock(sidebarDragBlock, "svg");
     const narrowSidebarBlock = readCssBlock(homeStyles, ".narrow-sidebar");
+    const narrowChatItemBlock = readCssBlock(narrowSidebarBlock, ".chat-item");
+    const narrowChatItemHoverBlock = readCssBlock(
+      narrowChatItemBlock,
+      "&:hover",
+    );
+    const narrowChatItemAvatarBlock = readCssBlock(
+      narrowSidebarBlock.slice(
+        narrowSidebarBlock.indexOf("\n  .chat-item-narrow {"),
+      ),
+      ".chat-item-narrow",
+    );
+    const homeReducedMotionBlock = readCssBlock(
+      homeStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
     const onInputBlock = readFunctionBlock(
       chat,
       "const onInput = (text: string) =>",
@@ -3472,6 +3492,18 @@ describe("Gemini visual migration shell", () => {
     expect(sidebarTokens["--sidebar-drag-hover-background"]).toContain(
       "var(--black)",
     );
+    expect(sidebarDragBlock).toMatch(
+      /transition:\s*background-color 0\.3s ease;/,
+    );
+    expect(sidebarDragBlock).not.toContain("transition: all");
+    expect(sidebarDragBlock).toMatch(
+      /background-color:\s*var\(--sidebar-drag-background\);/,
+    );
+    expect(sidebarDragBlock).toMatch(/cursor:\s*ew-resize;/);
+    expect(sidebarDragIconBlock).toMatch(/opacity:\s*0;/);
+    expect(sidebarDragIconBlock).toMatch(
+      /transition:\s*opacity 0\.3s ease;/,
+    );
     expect(sidebarTokens["--sidebar-mobile-shadow"]).toContain(
       "var(--black-50)",
     );
@@ -3637,6 +3669,15 @@ describe("Gemini visual migration shell", () => {
     expect(narrowSidebarBlock).toMatch(
       /\.sidebar-content-card-active\s*\{[\s\S]*background-color:\s*var\(--sidebar-item-active-soft-background\);[\s\S]*color:\s*var\(--primary\);/,
     );
+    expect(narrowChatItemBlock).toMatch(
+      /transition:\s*background-color 0\.16s ease,\s*color 0\.16s ease;/,
+    );
+    expect(narrowChatItemBlock).not.toContain("transition: all");
+    expect(narrowChatItemBlock).toMatch(/min-height:\s*50px;/);
+    expect(narrowChatItemBlock).toMatch(/overflow:\s*hidden;/);
+    expect(narrowChatItemHoverBlock).toMatch(
+      /\.chat-item-narrow[\s\S]*transform:\s*scale\(0\.7\) translateX\(-50%\);/,
+    );
     expect(sidebarSettingsLinkActiveBlock).toMatch(
       /button\s*\{[\s\S]*background:\s*var\(--sidebar-action-active-background\);/,
     );
@@ -3681,6 +3722,12 @@ describe("Gemini visual migration shell", () => {
     expect(narrowSidebarBlock).toMatch(
       /\.chat-item-delete[\s\S]*width:\s*34px;[\s\S]*height:\s*34px;/,
     );
+    expect(narrowChatItemAvatarBlock).toMatch(
+      /transition:\s*transform 0\.3s ease;/,
+    );
+    expect(narrowChatItemAvatarBlock).not.toContain("transition: all");
+    expect(narrowChatItemAvatarBlock).toMatch(/width:\s*36px;/);
+    expect(narrowChatItemAvatarBlock).toMatch(/height:\s*36px;/);
     expect(narrowSidebarBlock).toMatch(
       /\.sidebar-nav-item-active\s*\{[\s\S]*background-color:\s*var\(--sidebar-item-active-soft-background\);/,
     );
@@ -3776,6 +3823,12 @@ describe("Gemini visual migration shell", () => {
     );
     expect(homeStyles).toMatch(
       /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.sidebar-mobile-account,[\s\S]*\.sidebar-mobile-account-settings button[\s\S]*transition:\s*none !important;/,
+    );
+    expect(homeReducedMotionBlock).toMatch(/\.sidebar-drag,/);
+    expect(homeReducedMotionBlock).toMatch(/\.sidebar-drag svg,/);
+    expect(homeReducedMotionBlock).toMatch(/\.narrow-sidebar \.chat-item,/);
+    expect(homeReducedMotionBlock).toMatch(
+      /\.narrow-sidebar \.chat-item-narrow/,
     );
     expect(cnLocale).toContain('EmptyTitle: "你好！想聊点什么？"');
     expect(cnLocale).toContain("EmptySuggestions:");
