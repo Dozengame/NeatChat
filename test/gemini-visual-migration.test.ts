@@ -13643,6 +13643,100 @@ describe("Gemini visual migration shell", () => {
       mobileFallbackBlock,
       mobileGlobalFieldSelector,
     );
+    const globalSelectBlock = readRootCssBlock(globalStyles, "select");
+    const globalSelectHoverBlock = readCssBlock(globalStyles, "select:hover");
+    const globalSelectFocusBlock = readCssBlock(
+      globalStyles,
+      "select:focus-visible",
+    );
+    const globalSelectDisabledBlock = readCssBlock(
+      globalStyles,
+      "select:disabled",
+    );
+    const darkGlobalSelectBlock = readCssBlock(globalStyles, ".dark select");
+    const autoDarkGlobalSelectSelector = 'body:not(.light) select';
+    const autoDarkGlobalSelectSelectorIndex = globalStyles.indexOf(
+      autoDarkGlobalSelectSelector,
+    );
+    const autoDarkGlobalSelectMediaIndex = globalStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkGlobalSelectSelectorIndex,
+    );
+    const autoDarkGlobalSelectBlock = readCssBlock(
+      globalStyles.slice(autoDarkGlobalSelectMediaIndex),
+      autoDarkGlobalSelectSelector,
+    );
+    const globalCheckboxBlock = readRootCssBlock(
+      globalStyles,
+      'input[type="checkbox"]',
+    );
+    const globalCheckboxHoverBlock = readCssBlock(
+      globalStyles,
+      'input[type="checkbox"]:hover',
+    );
+    const globalCheckboxFocusBlock = readCssBlock(
+      globalStyles,
+      'input[type="checkbox"]:focus-visible',
+    );
+    const globalCheckboxDisabledBlock = readCssBlock(
+      globalStyles,
+      'input[type="checkbox"]:disabled',
+    );
+    const globalCheckboxCheckedBlock = readCssBlock(
+      globalStyles,
+      'input[type="checkbox"]:checked::after',
+    );
+    const darkGlobalCheckboxBlock = readCssBlock(
+      globalStyles,
+      '.dark input[type="checkbox"]',
+    );
+    const autoDarkGlobalCheckboxSelector =
+      'body:not(.light) input[type="checkbox"]';
+    const autoDarkGlobalCheckboxSelectorIndex = globalStyles.indexOf(
+      autoDarkGlobalCheckboxSelector,
+    );
+    const autoDarkGlobalCheckboxMediaIndex = globalStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkGlobalCheckboxSelectorIndex,
+    );
+    const autoDarkGlobalCheckboxBlock = readCssBlock(
+      globalStyles.slice(autoDarkGlobalCheckboxMediaIndex),
+      autoDarkGlobalCheckboxSelector,
+    );
+    const globalRangeBlock = readRootCssBlock(
+      globalStyles,
+      'input[type="range"]',
+    );
+    const globalRangeFocusBlock = readCssBlock(
+      globalStyles,
+      'input[type="range"]:focus-visible',
+    );
+    const globalRangeDisabledBlock = readCssBlock(
+      globalStyles,
+      'input[type="range"]:disabled',
+    );
+    const globalThumbMixinBlock = readCssBlock(globalStyles, "@mixin thumb()");
+    const globalThumbHoverMixinBlock = readCssBlock(
+      globalStyles,
+      "@mixin thumbHover()",
+    );
+    const darkGlobalRangeBlock = readCssBlock(
+      globalStyles,
+      '.dark input[type="range"]',
+    );
+    const autoDarkGlobalRangeSelector =
+      'body:not(.light) input[type="range"]';
+    const autoDarkGlobalRangeSelectorIndex = globalStyles.indexOf(
+      autoDarkGlobalRangeSelector,
+    );
+    const autoDarkGlobalRangeMediaIndex = globalStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkGlobalRangeSelectorIndex,
+    );
+    const autoDarkGlobalRangeBlock = readCssBlock(
+      globalStyles.slice(autoDarkGlobalRangeMediaIndex),
+      autoDarkGlobalRangeSelector,
+    );
     const reducedMotionBlock = readCssBlock(
       globalStyles,
       "@media (prefers-reduced-motion: reduce)",
@@ -13661,6 +13755,33 @@ describe("Gemini visual migration shell", () => {
     const modalMaskTokenNames = [
       "--modal-mask-background",
       "--modal-mask-backdrop-filter",
+    ];
+    const globalSelectTokenNames = [
+      "--global-select-background",
+      "--global-select-border-color",
+      "--global-select-color",
+      "--global-select-hover-background",
+      "--global-select-hover-border-color",
+      "--global-select-focus-border-color",
+      "--global-select-focus-shadow",
+      "--global-select-disabled-background",
+      "--global-select-disabled-color",
+    ];
+    const globalCheckboxTokenNames = [
+      "--global-checkbox-background",
+      "--global-checkbox-border-color",
+      "--global-checkbox-color",
+      "--global-checkbox-hover-background",
+      "--global-checkbox-hover-border-color",
+      "--global-checkbox-focus-shadow",
+      "--global-checkbox-check-background",
+      "--global-checkbox-disabled-background",
+    ];
+    const globalRangeTokenNames = [
+      "--global-range-track-background",
+      "--global-range-thumb-background",
+      "--global-range-thumb-shadow-color",
+      "--global-range-focus-shadow",
     ];
     const fieldTokenMap = readCustomProperties(
       globalFieldRootBlock,
@@ -13694,6 +13815,42 @@ describe("Gemini visual migration shell", () => {
       autoDarkModalMaskBlock,
       modalMaskTokenNames,
     );
+    const selectTokenMap = readCustomProperties(
+      globalSelectBlock,
+      globalSelectTokenNames,
+    );
+    const darkSelectTokenMap = readCustomProperties(
+      darkGlobalSelectBlock,
+      globalSelectTokenNames,
+    );
+    const autoDarkSelectTokenMap = readCustomProperties(
+      autoDarkGlobalSelectBlock,
+      globalSelectTokenNames,
+    );
+    const checkboxTokenMap = readCustomProperties(
+      globalCheckboxBlock,
+      globalCheckboxTokenNames,
+    );
+    const darkCheckboxTokenMap = readCustomProperties(
+      darkGlobalCheckboxBlock,
+      globalCheckboxTokenNames,
+    );
+    const autoDarkCheckboxTokenMap = readCustomProperties(
+      autoDarkGlobalCheckboxBlock,
+      globalCheckboxTokenNames,
+    );
+    const rangeTokenMap = readCustomProperties(
+      globalRangeBlock,
+      globalRangeTokenNames,
+    );
+    const darkRangeTokenMap = readCustomProperties(
+      darkGlobalRangeBlock,
+      globalRangeTokenNames,
+    );
+    const autoDarkRangeTokenMap = readCustomProperties(
+      autoDarkGlobalRangeBlock,
+      globalRangeTokenNames,
+    );
     const globalFallbackPaintScope = [
       globalFieldRootBlock,
       darkGlobalFieldBlock,
@@ -13704,6 +13861,26 @@ describe("Gemini visual migration shell", () => {
       passwordContainerRootBlock,
       passwordEyeBlock,
       passwordInputBlock,
+      globalSelectBlock,
+      globalSelectHoverBlock,
+      globalSelectFocusBlock,
+      globalSelectDisabledBlock,
+      darkGlobalSelectBlock,
+      autoDarkGlobalSelectBlock,
+      globalCheckboxBlock,
+      globalCheckboxHoverBlock,
+      globalCheckboxFocusBlock,
+      globalCheckboxDisabledBlock,
+      globalCheckboxCheckedBlock,
+      darkGlobalCheckboxBlock,
+      autoDarkGlobalCheckboxBlock,
+      globalRangeBlock,
+      globalRangeFocusBlock,
+      globalRangeDisabledBlock,
+      globalThumbMixinBlock,
+      globalThumbHoverMixinBlock,
+      darkGlobalRangeBlock,
+      autoDarkGlobalRangeBlock,
     ].join("\n");
 
     expect(uiLibActions).toContain('div.className = "modal-mask";');
@@ -13718,6 +13895,12 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkPasswordContainerMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkModalMaskSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkModalMaskMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkGlobalSelectSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkGlobalSelectMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkGlobalCheckboxSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkGlobalCheckboxMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkGlobalRangeSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkGlobalRangeMediaIndex).toBeGreaterThan(-1);
     expect(mobileFallbackMediaIndex).toBeGreaterThan(-1);
 
     for (const tokenMap of [
@@ -13729,12 +13912,24 @@ describe("Gemini visual migration shell", () => {
       modalMaskTokenMap,
       darkModalMaskTokenMap,
       autoDarkModalMaskTokenMap,
+      selectTokenMap,
+      darkSelectTokenMap,
+      autoDarkSelectTokenMap,
+      checkboxTokenMap,
+      darkCheckboxTokenMap,
+      autoDarkCheckboxTokenMap,
+      rangeTokenMap,
+      darkRangeTokenMap,
+      autoDarkRangeTokenMap,
     ]) {
       expect(Object.values(tokenMap)).not.toContain("");
     }
     expect(darkFieldTokenMap).toEqual(autoDarkFieldTokenMap);
     expect(darkPasswordTokenMap).toEqual(autoDarkPasswordTokenMap);
     expect(darkModalMaskTokenMap).toEqual(autoDarkModalMaskTokenMap);
+    expect(darkSelectTokenMap).toEqual(autoDarkSelectTokenMap);
+    expect(darkCheckboxTokenMap).toEqual(autoDarkCheckboxTokenMap);
+    expect(darkRangeTokenMap).toEqual(autoDarkRangeTokenMap);
 
     expect(globalFieldRootBlock).toMatch(/border-radius:\s*8px;/);
     expect(globalFieldRootBlock).toMatch(
@@ -13791,6 +13986,93 @@ describe("Gemini visual migration shell", () => {
     expect(passwordInputBlock).toMatch(/border:\s*0;/);
     expect(passwordInputBlock).toMatch(/background:\s*transparent;/);
 
+    expect(globalSelectBlock).toMatch(/min-height:\s*36px;/);
+    expect(globalSelectBlock).toMatch(/border-radius:\s*8px;/);
+    expect(globalSelectBlock).toMatch(
+      /border:\s*1px solid var\(--global-select-border-color\);/,
+    );
+    expect(globalSelectBlock).toMatch(
+      /background:\s*var\(--global-select-background\);/,
+    );
+    expect(globalSelectBlock).toMatch(
+      /color:\s*var\(--global-select-color\);/,
+    );
+    expect(globalSelectBlock).toMatch(/max-width:\s*100%;/);
+    expect(globalSelectHoverBlock).toMatch(
+      /background:\s*var\(--global-select-hover-background\);/,
+    );
+    expect(globalSelectHoverBlock).toMatch(
+      /border-color:\s*var\(--global-select-hover-border-color\);/,
+    );
+    expect(globalSelectFocusBlock).toMatch(/outline:\s*none;/);
+    expect(globalSelectFocusBlock).toMatch(
+      /border-color:\s*var\(--global-select-focus-border-color\);/,
+    );
+    expect(globalSelectFocusBlock).toMatch(
+      /box-shadow:\s*var\(--global-select-focus-shadow\);/,
+    );
+    expect(globalSelectDisabledBlock).toMatch(/cursor:\s*not-allowed;/);
+    expect(globalSelectDisabledBlock).toMatch(
+      /background:\s*var\(--global-select-disabled-background\);/,
+    );
+    expect(globalSelectDisabledBlock).toMatch(
+      /color:\s*var\(--global-select-disabled-color\);/,
+    );
+
+    expect(globalCheckboxBlock).toMatch(/height:\s*16px;/);
+    expect(globalCheckboxBlock).toMatch(/width:\s*16px;/);
+    expect(globalCheckboxBlock).toMatch(/border-radius:\s*5px;/);
+    expect(globalCheckboxBlock).toMatch(
+      /border:\s*1px solid var\(--global-checkbox-border-color\);/,
+    );
+    expect(globalCheckboxBlock).toMatch(
+      /background:\s*var\(--global-checkbox-background\);/,
+    );
+    expect(globalCheckboxBlock).toMatch(
+      /color:\s*var\(--global-checkbox-color\);/,
+    );
+    expect(globalCheckboxHoverBlock).toMatch(
+      /background:\s*var\(--global-checkbox-hover-background\);/,
+    );
+    expect(globalCheckboxHoverBlock).toMatch(
+      /border-color:\s*var\(--global-checkbox-hover-border-color\);/,
+    );
+    expect(globalCheckboxFocusBlock).toMatch(/outline:\s*none;/);
+    expect(globalCheckboxFocusBlock).toMatch(
+      /box-shadow:\s*var\(--global-checkbox-focus-shadow\);/,
+    );
+    expect(globalCheckboxDisabledBlock).toMatch(/cursor:\s*not-allowed;/);
+    expect(globalCheckboxDisabledBlock).toMatch(
+      /background:\s*var\(--global-checkbox-disabled-background\);/,
+    );
+    expect(globalCheckboxCheckedBlock).toMatch(
+      /background-color:\s*var\(--global-checkbox-check-background\);/,
+    );
+
+    expect(globalRangeBlock).toMatch(/appearance:\s*none;/);
+    expect(globalRangeBlock).toMatch(/height:\s*4px;/);
+    expect(globalRangeBlock).toMatch(/border-radius:\s*999px;/);
+    expect(globalRangeBlock).toMatch(
+      /background-color:\s*var\(--global-range-track-background\);/,
+    );
+    expect(globalRangeBlock).toMatch(/accent-color:\s*var\(--primary\);/);
+    expect(globalRangeBlock).toMatch(/outline:\s*none;/);
+    expect(globalRangeFocusBlock).toMatch(
+      /box-shadow:\s*var\(--global-range-focus-shadow\);/,
+    );
+    expect(globalRangeDisabledBlock).toMatch(/cursor:\s*not-allowed;/);
+    expect(globalThumbMixinBlock).toMatch(
+      /background-color:\s*var\(--global-range-thumb-background\);/,
+    );
+    expect(globalThumbMixinBlock).toMatch(/border-radius:\s*999px;/);
+    expect(globalThumbMixinBlock).toMatch(
+      /box-shadow:\s*0 2px 6px var\(--global-range-thumb-shadow-color\);/,
+    );
+    expect(globalThumbMixinBlock).toMatch(
+      /transition:[\s\S]*transform ease 0\.16s,[\s\S]*width ease 0\.16s;/,
+    );
+    expect(globalThumbHoverMixinBlock).toMatch(/transform:\s*scaleY\(1\.2\);/);
+
     expect(modalMaskBlock).toMatch(
       /background:\s*var\(--modal-mask-background\);/,
     );
@@ -13807,9 +14089,14 @@ describe("Gemini visual migration shell", () => {
     expect(reducedMotionBlock).toMatch(
       /input\[type="number"\],[\s\S]*input\[type="text"\],[\s\S]*input\[type="password"\],[\s\S]*\.password-input-container,[\s\S]*\.modal-mask[\s\S]*transition-duration:\s*0\.01ms !important;/,
     );
+    expect(reducedMotionBlock).toMatch(
+      /select,[\s\S]*input\[type="checkbox"\],[\s\S]*input\[type="range"\],[\s\S]*input\[type="range"\]::-webkit-slider-thumb,[\s\S]*input\[type="range"\]::-moz-range-thumb,[\s\S]*input\[type="range"\]::-ms-thumb[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
     expect(globalFallbackPaintScope).not.toContain("max-width: 50%");
     expect(globalFallbackPaintScope).not.toContain("border: var(--border-in-light)");
     expect(globalFallbackPaintScope).not.toContain("background: var(--white)");
+    expect(globalFallbackPaintScope).not.toContain("background-color: var(--white)");
+    expect(globalFallbackPaintScope).not.toContain("transition: all");
     expect(globalFallbackPaintScope).not.toContain("rgba($color: #000000");
   });
 

@@ -232,14 +232,79 @@ body {
 }
 
 select {
-  border: var(--border-in-light);
-  padding: 10px;
-  border-radius: 10px;
+  --global-select-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 90%,
+    var(--gray)
+  );
+  --global-select-border-color: color-mix(
+    in srgb,
+    var(--black-50) 14%,
+    transparent
+  );
+  --global-select-color: var(--black);
+  --global-select-hover-background: color-mix(
+    in srgb,
+    var(--primary) 6%,
+    var(--surface-elevated)
+  );
+  --global-select-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 30%,
+    transparent
+  );
+  --global-select-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 48%,
+    transparent
+  );
+  --global-select-focus-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--primary) 14%, transparent);
+  --global-select-disabled-background: color-mix(
+    in srgb,
+    var(--surface-soft) 72%,
+    var(--surface-elevated)
+  );
+  --global-select-disabled-color: color-mix(
+    in srgb,
+    var(--black-50) 68%,
+    transparent
+  );
+
   appearance: none;
+  box-sizing: border-box;
+  min-height: 36px;
+  max-width: 100%;
+  padding: 0 12px;
+  border: 1px solid var(--global-select-border-color);
+  border-radius: 8px;
   cursor: pointer;
-  background-color: var(--white);
-  color: var(--black);
+  background: var(--global-select-background);
+  color: var(--global-select-color);
+  font-family: inherit;
   text-align: center;
+  transition:
+    background-color ease 0.18s,
+    border-color ease 0.18s,
+    box-shadow ease 0.18s,
+    color ease 0.18s;
+}
+
+select:hover {
+  border-color: var(--global-select-hover-border-color);
+  background: var(--global-select-hover-background);
+}
+
+select:focus-visible {
+  outline: none;
+  border-color: var(--global-select-focus-border-color);
+  box-shadow: var(--global-select-focus-shadow);
+}
+
+select:disabled {
+  cursor: not-allowed;
+  background: var(--global-select-disabled-background);
+  color: var(--global-select-disabled-color);
 }
 
 label {
@@ -252,44 +317,129 @@ input {
 }
 
 input[type="checkbox"] {
+  --global-checkbox-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 88%,
+    var(--gray)
+  );
+  --global-checkbox-border-color: color-mix(
+    in srgb,
+    var(--black-50) 22%,
+    transparent
+  );
+  --global-checkbox-color: var(--black);
+  --global-checkbox-hover-background: color-mix(
+    in srgb,
+    var(--primary) 7%,
+    var(--surface-elevated)
+  );
+  --global-checkbox-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 34%,
+    transparent
+  );
+  --global-checkbox-focus-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--primary) 18%, transparent);
+  --global-checkbox-check-background: color-mix(
+    in srgb,
+    var(--primary) 82%,
+    transparent
+  );
+  --global-checkbox-disabled-background: color-mix(
+    in srgb,
+    var(--surface-soft) 58%,
+    transparent
+  );
+
   cursor: pointer;
-  background-color: var(--white);
-  color: var(--black);
+  background: var(--global-checkbox-background);
+  color: var(--global-checkbox-color);
   appearance: none;
-  border: var(--border-in-light);
+  border: 1px solid var(--global-checkbox-border-color);
   border-radius: 5px;
   height: 16px;
   width: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition:
+    background-color ease 0.16s,
+    border-color ease 0.16s,
+    box-shadow ease 0.16s;
+}
+
+input[type="checkbox"]:hover {
+  border-color: var(--global-checkbox-hover-border-color);
+  background: var(--global-checkbox-hover-background);
+}
+
+input[type="checkbox"]:focus-visible {
+  outline: none;
+  box-shadow: var(--global-checkbox-focus-shadow);
+}
+
+input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  background: var(--global-checkbox-disabled-background);
+  opacity: 0.72;
 }
 
 input[type="checkbox"]:checked::after {
   display: inline-block;
   width: 8px;
   height: 8px;
-  background-color: var(--primary);
+  background-color: var(--global-checkbox-check-background);
   content: " ";
   border-radius: 2px;
 }
 
 input[type="range"] {
+  --global-range-track-background: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    var(--surface-elevated)
+  );
+  --global-range-thumb-background: var(--primary);
+  --global-range-thumb-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 24%,
+    transparent
+  );
+  --global-range-focus-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--primary) 16%, transparent);
+
   appearance: none;
-  background-color: var(--white);
+  height: 4px;
+  border-radius: 999px;
+  background-color: var(--global-range-track-background);
+  accent-color: var(--primary);
   color: var(--black);
+  cursor: pointer;
+  outline: none;
+  transition: background-color ease 0.16s;
+}
+
+input[type="range"]:focus-visible {
+  box-shadow: var(--global-range-focus-shadow);
+}
+
+input[type="range"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
 }
 
 @mixin thumb() {
   appearance: none;
   height: 8px;
   width: 20px;
-  background-color: var(--primary);
-  border-radius: 10px;
+  background-color: var(--global-range-thumb-background);
+  border-radius: 999px;
+  box-shadow: 0 2px 6px var(--global-range-thumb-shadow-color);
   cursor: pointer;
-  transition: all ease 0.3s;
-  margin-left: 5px;
   border: none;
+  transition:
+    transform ease 0.16s,
+    width ease 0.16s;
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -319,6 +469,99 @@ input[type="range"]::-moz-range-thumb:hover {
 
 input[type="range"]::-ms-thumb:hover {
   @include thumbHover();
+}
+
+.dark select {
+  --global-select-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 82%,
+    var(--surface)
+  );
+  --global-select-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --global-select-color: var(--black);
+  --global-select-hover-background: color-mix(
+    in srgb,
+    var(--primary) 12%,
+    var(--surface-soft)
+  );
+  --global-select-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 34%,
+    transparent
+  );
+  --global-select-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 52%,
+    var(--black) 8%
+  );
+  --global-select-focus-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--primary) 20%, transparent);
+  --global-select-disabled-background: color-mix(
+    in srgb,
+    var(--surface-soft) 64%,
+    var(--surface)
+  );
+  --global-select-disabled-color: color-mix(
+    in srgb,
+    var(--black-50) 68%,
+    transparent
+  );
+}
+
+.dark input[type="checkbox"] {
+  --global-checkbox-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 78%,
+    var(--surface)
+  );
+  --global-checkbox-border-color: color-mix(
+    in srgb,
+    var(--black) 16%,
+    transparent
+  );
+  --global-checkbox-color: var(--black);
+  --global-checkbox-hover-background: color-mix(
+    in srgb,
+    var(--primary) 12%,
+    var(--surface-soft)
+  );
+  --global-checkbox-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 34%,
+    transparent
+  );
+  --global-checkbox-focus-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--primary) 22%, transparent);
+  --global-checkbox-check-background: color-mix(
+    in srgb,
+    var(--primary) 54%,
+    var(--black)
+  );
+  --global-checkbox-disabled-background: color-mix(
+    in srgb,
+    var(--surface-soft) 62%,
+    transparent
+  );
+}
+
+.dark input[type="range"] {
+  --global-range-track-background: color-mix(
+    in srgb,
+    var(--black) 16%,
+    var(--surface-elevated)
+  );
+  --global-range-thumb-background: var(--primary);
+  --global-range-thumb-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 30%,
+    transparent
+  );
+  --global-range-focus-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
 input[type="number"],
@@ -508,6 +751,99 @@ div.math {
 }
 
 @media (prefers-color-scheme: dark) {
+  body:not(.light) select {
+    --global-select-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 82%,
+      var(--surface)
+    );
+    --global-select-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --global-select-color: var(--black);
+    --global-select-hover-background: color-mix(
+      in srgb,
+      var(--primary) 12%,
+      var(--surface-soft)
+    );
+    --global-select-hover-border-color: color-mix(
+      in srgb,
+      var(--primary) 34%,
+      transparent
+    );
+    --global-select-focus-border-color: color-mix(
+      in srgb,
+      var(--primary) 52%,
+      var(--black) 8%
+    );
+    --global-select-focus-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--primary) 20%, transparent);
+    --global-select-disabled-background: color-mix(
+      in srgb,
+      var(--surface-soft) 64%,
+      var(--surface)
+    );
+    --global-select-disabled-color: color-mix(
+      in srgb,
+      var(--black-50) 68%,
+      transparent
+    );
+  }
+
+  body:not(.light) input[type="checkbox"] {
+    --global-checkbox-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 78%,
+      var(--surface)
+    );
+    --global-checkbox-border-color: color-mix(
+      in srgb,
+      var(--black) 16%,
+      transparent
+    );
+    --global-checkbox-color: var(--black);
+    --global-checkbox-hover-background: color-mix(
+      in srgb,
+      var(--primary) 12%,
+      var(--surface-soft)
+    );
+    --global-checkbox-hover-border-color: color-mix(
+      in srgb,
+      var(--primary) 34%,
+      transparent
+    );
+    --global-checkbox-focus-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--primary) 22%, transparent);
+    --global-checkbox-check-background: color-mix(
+      in srgb,
+      var(--primary) 54%,
+      var(--black)
+    );
+    --global-checkbox-disabled-background: color-mix(
+      in srgb,
+      var(--surface-soft) 62%,
+      transparent
+    );
+  }
+
+  body:not(.light) input[type="range"] {
+    --global-range-track-background: color-mix(
+      in srgb,
+      var(--black) 16%,
+      var(--surface-elevated)
+    );
+    --global-range-thumb-background: var(--primary);
+    --global-range-thumb-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 30%,
+      transparent
+    );
+    --global-range-focus-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--primary) 20%, transparent);
+  }
+
   body:not(.light) input[type="number"],
   body:not(.light) input[type="text"],
   body:not(.light) input[type="password"] {
@@ -913,6 +1249,12 @@ pre {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  select,
+  input[type="checkbox"],
+  input[type="range"],
+  input[type="range"]::-webkit-slider-thumb,
+  input[type="range"]::-moz-range-thumb,
+  input[type="range"]::-ms-thumb,
   input[type="number"],
   input[type="text"],
   input[type="password"],
