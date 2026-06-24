@@ -3,7 +3,7 @@
   --mask-list-item-background: color-mix(
     in srgb,
     var(--surface-elevated) 94%,
-    var(--white)
+    var(--surface-soft)
   );
   --mask-list-border-color: color-mix(
     in srgb,
@@ -33,12 +33,12 @@
   --mask-filter-control-background: color-mix(
     in srgb,
     var(--surface-elevated) 92%,
-    transparent
+    var(--surface-soft)
   );
   --mask-empty-background: color-mix(
     in srgb,
     var(--surface-soft) 72%,
-    transparent
+    var(--surface)
   );
   --mask-clear-hover-background: color-mix(
     in srgb,
@@ -305,7 +305,7 @@
   --mask-list-item-background: color-mix(
     in srgb,
     var(--surface-elevated) 88%,
-    var(--white)
+    var(--surface)
   );
   --mask-list-border-color: color-mix(
     in srgb,
@@ -335,12 +335,12 @@
   --mask-filter-control-background: color-mix(
     in srgb,
     var(--surface-elevated) 88%,
-    var(--white)
+    var(--surface)
   );
   --mask-empty-background: color-mix(
     in srgb,
-    var(--surface-soft) 78%,
-    transparent
+    var(--surface-soft) 62%,
+    var(--surface)
   );
   --mask-clear-hover-background: color-mix(
     in srgb,
@@ -364,7 +364,7 @@
     --mask-list-item-background: color-mix(
       in srgb,
       var(--surface-elevated) 88%,
-      var(--white)
+      var(--surface)
     );
     --mask-list-border-color: color-mix(
       in srgb,
@@ -394,12 +394,12 @@
     --mask-filter-control-background: color-mix(
       in srgb,
       var(--surface-elevated) 88%,
-      var(--white)
+      var(--surface)
     );
     --mask-empty-background: color-mix(
       in srgb,
-      var(--surface-soft) 78%,
-      transparent
+      var(--surface-soft) 62%,
+      var(--surface)
     );
     --mask-clear-hover-background: color-mix(
       in srgb,

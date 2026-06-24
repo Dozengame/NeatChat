@@ -11665,6 +11665,24 @@ describe("Gemini visual migration shell", () => {
       darkMaskPageBlock,
       autoDarkMaskBlock,
     ].join("\n");
+    const maskSurfaceTokenNames = [
+      "--mask-list-item-background",
+      "--mask-filter-control-background",
+      "--mask-empty-background",
+      "--mask-list-action-color",
+    ];
+    const lightMaskSurfaceTokens = readCustomProperties(
+      maskPageRootBlock,
+      maskSurfaceTokenNames,
+    );
+    const darkMaskSurfaceTokens = readCustomProperties(
+      darkMaskPageBlock,
+      maskSurfaceTokenNames,
+    );
+    const autoDarkMaskSurfaceTokens = readCustomProperties(
+      autoDarkMaskBlock,
+      maskSurfaceTokenNames,
+    );
 
     expect(maskPage).toContain('styles["mask-page"]');
     expect(maskPage).toContain('styles["mask-filter"]');
@@ -11731,20 +11749,21 @@ describe("Gemini visual migration shell", () => {
       2,
     );
 
-    expect(maskPageRootBlock).toMatch(
-      /--mask-list-item-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 94%,\s*var\(--white\)\s*\);/,
-    );
+    expect(lightMaskSurfaceTokens).toMatchObject({
+      "--mask-list-item-background":
+        "color-mix( in srgb, var(--surface-elevated) 94%, var(--surface-soft) )",
+      "--mask-filter-control-background":
+        "color-mix( in srgb, var(--surface-elevated) 92%, var(--surface-soft) )",
+      "--mask-empty-background":
+        "color-mix( in srgb, var(--surface-soft) 72%, var(--surface) )",
+      "--mask-list-action-color":
+        "color-mix( in srgb, var(--black-50) 90%, transparent )",
+    });
     expect(maskPageRootBlock).toMatch(
       /--mask-list-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
     );
     expect(maskPageRootBlock).toMatch(
       /--mask-list-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 5%,\s*transparent\s*\);/,
-    );
-    expect(maskPageRootBlock).toMatch(
-      /--mask-filter-control-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*transparent\s*\);/,
-    );
-    expect(maskPageRootBlock).toMatch(
-      /--mask-empty-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 72%,\s*transparent\s*\);/,
     );
     expect(maskPageRootBlock).toMatch(
       /--mask-clear-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 8%,\s*transparent\s*\);/,
@@ -11828,17 +11847,22 @@ describe("Gemini visual migration shell", () => {
     expect(mobileFilterBlock).toMatch(/height:\s*auto;/);
     expect(mobileFilterBlock).toMatch(/align-items:\s*stretch;/);
     expect(mobileFilterBlock).toMatch(/\.mask-search-box[\s\S]*flex-basis:\s*100%;/);
-    expect(darkMaskPageBlock).toMatch(
-      /--mask-list-item-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
-    );
+    expect(darkMaskSurfaceTokens).toMatchObject({
+      "--mask-list-item-background":
+        "color-mix( in srgb, var(--surface-elevated) 88%, var(--surface) )",
+      "--mask-filter-control-background":
+        "color-mix( in srgb, var(--surface-elevated) 88%, var(--surface) )",
+      "--mask-empty-background":
+        "color-mix( in srgb, var(--surface-soft) 62%, var(--surface) )",
+      "--mask-list-action-color":
+        "color-mix( in srgb, var(--black-50) 88%, transparent )",
+    });
     expect(darkMaskPageBlock).toMatch(
       /--mask-list-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 9%,\s*transparent\s*\);/,
     );
     expect(autoDarkMaskIndex).toBeGreaterThan(-1);
     expect(autoDarkMaskMediaIndex).toBeGreaterThan(-1);
-    expect(autoDarkMaskBlock).toMatch(
-      /--mask-list-item-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
-    );
+    expect(autoDarkMaskSurfaceTokens).toEqual(darkMaskSurfaceTokens);
     expect(autoDarkMaskBlock).toMatch(
       /--mask-list-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 9%,\s*transparent\s*\);/,
     );
@@ -11847,6 +11871,10 @@ describe("Gemini visual migration shell", () => {
     );
     expect(masksPaintScope).not.toContain("border: var(--border-in-light)");
     expect(masksPaintScope).not.toContain("border-bottom: var(--border-in-light)");
+    expect(maskPageRootBlock).not.toContain("var(--white)");
+    expect(darkMaskPageBlock).not.toContain("var(--white)");
+    expect(autoDarkMaskBlock).not.toContain("var(--white)");
+    expect(masksPaintScope).not.toContain("var(--white)");
     expect(masksPaintScope).not.toContain("background-color: var(--white)");
     expect(masksPaintScope).not.toContain("border-radius: 10px");
     expect(masksPaintScope).not.toContain("box-shadow: var(--card-shadow)");
