@@ -14236,6 +14236,8 @@ describe("Gemini visual migration shell", () => {
       mobileSelectorBlock,
       "&-content",
     );
+    const toastShowBlock = readCssBlock(uiLibStyles, ".show");
+    const toastHideBlock = readCssBlock(uiLibStyles, ".hide");
     const reducedMotionBlock = readCssBlock(
       uiLibStyles,
       "@media (prefers-reduced-motion: reduce)",
@@ -14267,6 +14269,8 @@ describe("Gemini visual migration shell", () => {
       selectorListItemBlock,
       selectorSelectedBlock,
       mobileSelectorContentBlock,
+      toastShowBlock,
+      toastHideBlock,
     ].join("\n");
 
     expect(uiLibComponents).toContain("export function Modal");
@@ -14462,6 +14466,18 @@ describe("Gemini visual migration shell", () => {
     expect(toastActionFocusBlock).toMatch(
       /box-shadow:\s*var\(--focus-ring-shadow\);/,
     );
+    [toastShowBlock, toastHideBlock].forEach((block) => {
+      expect(block).toMatch(
+        /transition:\s*opacity 0\.3s ease,\s*transform 0\.3s ease;/,
+      );
+      expect(block).not.toContain("transition: all");
+    });
+    expect(toastShowBlock).toMatch(/opacity:\s*1;/);
+    expect(toastShowBlock).toMatch(/transform:\s*translateY\(0\);/);
+    expect(toastShowBlock).toMatch(/position:\s*fixed;/);
+    expect(toastShowBlock).toMatch(/z-index:\s*99999;/);
+    expect(toastHideBlock).toMatch(/opacity:\s*0;/);
+    expect(toastHideBlock).toMatch(/transform:\s*translateY\(20px\);/);
     expect(inputBlock).toMatch(/background-color:\s*var\(--ui-lib-surface\);/);
     expect(inputBlock).toMatch(/border:\s*1px solid var\(--ui-lib-border-color\);/);
     expect(inputBlock).toMatch(/border-radius:\s*var\(--ui-lib-control-radius\);/);
