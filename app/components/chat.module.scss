@@ -77,6 +77,16 @@
   --attachment-item-hover-shadow-color: color-mix(in srgb, var(--primary) 10%, transparent);
   --attachment-file-icon-background: color-mix(in srgb, var(--primary) 10%, var(--surface-elevated));
   --attachment-file-icon-color: color-mix(in srgb, var(--primary) 82%, var(--black));
+  --attachment-file-icon-word-color: color-mix(in srgb, rgb(43, 87, 154) 76%, var(--black));
+  --attachment-file-icon-powerpoint-color: color-mix(in srgb, rgb(210, 71, 38) 72%, var(--black));
+  --attachment-file-icon-pdf-color: color-mix(in srgb, rgb(217, 48, 37) 74%, var(--black));
+  --attachment-file-icon-archive-color: color-mix(in srgb, rgb(245, 158, 11) 76%, var(--black));
+  --attachment-file-icon-security-color: color-mix(in srgb, rgb(22, 128, 72) 78%, var(--black));
+  --attachment-file-icon-excel-color: color-mix(in srgb, rgb(33, 115, 70) 78%, var(--black));
+  --attachment-file-icon-rdp-color: color-mix(in srgb, rgb(0, 120, 215) 74%, var(--black));
+  --attachment-file-icon-svg-color: color-mix(in srgb, rgb(234, 88, 12) 74%, var(--black));
+  --attachment-file-icon-docker-color: color-mix(in srgb, rgb(36, 150, 237) 72%, var(--black));
+  --attachment-file-icon-game-code-color: color-mix(in srgb, rgb(124, 58, 237) 74%, var(--black));
   --attachment-file-name-color: color-mix(in srgb, var(--black) 92%, transparent);
   --attachment-file-size-color: color-mix(in srgb, var(--black-50) 88%, transparent);
   --attachment-touch-mask-strong-color: color-mix(in srgb, var(--black-50) 16%, transparent);
@@ -112,6 +122,16 @@
   --attachment-item-hover-shadow-color: color-mix(in srgb, var(--primary) 10%, transparent);
   --attachment-file-icon-background: color-mix(in srgb, var(--primary) 16%, var(--surface-soft));
   --attachment-file-icon-color: color-mix(in srgb, var(--primary) 42%, var(--black));
+  --attachment-file-icon-word-color: color-mix(in srgb, rgb(138, 180, 248) 68%, var(--black));
+  --attachment-file-icon-powerpoint-color: color-mix(in srgb, rgb(248, 180, 124) 68%, var(--black));
+  --attachment-file-icon-pdf-color: color-mix(in srgb, rgb(242, 139, 130) 68%, var(--black));
+  --attachment-file-icon-archive-color: color-mix(in srgb, rgb(232, 198, 99) 70%, var(--black));
+  --attachment-file-icon-security-color: color-mix(in srgb, rgb(129, 201, 149) 70%, var(--black));
+  --attachment-file-icon-excel-color: color-mix(in srgb, rgb(129, 201, 149) 66%, var(--black));
+  --attachment-file-icon-rdp-color: color-mix(in srgb, rgb(138, 180, 248) 68%, var(--black));
+  --attachment-file-icon-svg-color: color-mix(in srgb, rgb(251, 188, 130) 68%, var(--black));
+  --attachment-file-icon-docker-color: color-mix(in srgb, rgb(125, 211, 252) 68%, var(--black));
+  --attachment-file-icon-game-code-color: color-mix(in srgb, rgb(196, 181, 253) 70%, var(--black));
   --attachment-file-name-color: color-mix(in srgb, var(--black) 88%, transparent);
   --attachment-file-size-color: color-mix(in srgb, var(--black) 66%, transparent);
   --attachment-touch-mask-strong-color: color-mix(in srgb, var(--black) 18%, transparent);
@@ -453,6 +473,16 @@
     --attachment-item-hover-shadow-color: color-mix(in srgb, var(--primary) 10%, transparent);
     --attachment-file-icon-background: color-mix(in srgb, var(--primary) 16%, var(--surface-soft));
     --attachment-file-icon-color: color-mix(in srgb, var(--primary) 42%, var(--black));
+    --attachment-file-icon-word-color: color-mix(in srgb, rgb(138, 180, 248) 68%, var(--black));
+    --attachment-file-icon-powerpoint-color: color-mix(in srgb, rgb(248, 180, 124) 68%, var(--black));
+    --attachment-file-icon-pdf-color: color-mix(in srgb, rgb(242, 139, 130) 68%, var(--black));
+    --attachment-file-icon-archive-color: color-mix(in srgb, rgb(232, 198, 99) 70%, var(--black));
+    --attachment-file-icon-security-color: color-mix(in srgb, rgb(129, 201, 149) 70%, var(--black));
+    --attachment-file-icon-excel-color: color-mix(in srgb, rgb(129, 201, 149) 66%, var(--black));
+    --attachment-file-icon-rdp-color: color-mix(in srgb, rgb(138, 180, 248) 68%, var(--black));
+    --attachment-file-icon-svg-color: color-mix(in srgb, rgb(251, 188, 130) 68%, var(--black));
+    --attachment-file-icon-docker-color: color-mix(in srgb, rgb(125, 211, 252) 68%, var(--black));
+    --attachment-file-icon-game-code-color: color-mix(in srgb, rgb(196, 181, 253) 70%, var(--black));
     --attachment-file-name-color: color-mix(in srgb, var(--black) 88%, transparent);
     --attachment-file-size-color: color-mix(in srgb, var(--black) 66%, transparent);
     --attachment-touch-mask-strong-color: color-mix(in srgb, var(--black) 18%, transparent);
@@ -5925,55 +5955,46 @@
   --attachment-file-icon-color: var(--primary);
 }
 
-// 添加 Word 文件图标样式
 .attach-file-icon:global(.file-word) {
-  --attachment-file-icon-color: #2b579a; // Word 蓝色
+  --attachment-file-icon-color: var(--attachment-file-icon-word-color);
 }
 
-// 添加 PowerPoint 文件图标样式
 .attach-file-icon:global(.file-powerpoint) {
-  --attachment-file-icon-color: #d24726; // PowerPoint 橙色
+  --attachment-file-icon-color: var(--attachment-file-icon-powerpoint-color);
 }
 
-// 添加 PDF 文件图标样式
 .attach-file-icon:global(.file-pdf) {
-  --attachment-file-icon-color: #f40f02; // PDF 红色
+  --attachment-file-icon-color: var(--attachment-file-icon-pdf-color);
 }
 
-// 添加 ZIP 文件图标样式
 .attach-file-icon:global(.file-zip) {
-  --attachment-file-icon-color: #ffc107; // ZIP 黄色
+  --attachment-file-icon-color: var(--attachment-file-icon-archive-color);
 }
 
-// 添加证书和密钥文件图标样式
 .attach-file-icon:global(.file-csr),
 .attach-file-icon:global(.file-key),
 .attach-file-icon:global(.file-cert) {
-  --attachment-file-icon-color: #28a745; // 安全绿色
+  --attachment-file-icon-color: var(--attachment-file-icon-security-color);
 }
 
-// 添加 Excel 文件图标样式
 .attach-file-icon:global(.file-excel) {
-  --attachment-file-icon-color: #217346; // Excel 绿色
+  --attachment-file-icon-color: var(--attachment-file-icon-excel-color);
 }
 
-// 添加 RDP 文件图标样式
 .attach-file-icon:global(.file-rdp) {
-  --attachment-file-icon-color: #0078d7; // 微软蓝色
+  --attachment-file-icon-color: var(--attachment-file-icon-rdp-color);
 }
 
-// 添加 SVG 文件图标样式
 .attach-file-icon:global(.file-svg) {
-  --attachment-file-icon-color: #ff9800; // 橙色
+  --attachment-file-icon-color: var(--attachment-file-icon-svg-color);
 }
 
-// 添加 Dockerfile 图标样式
 .attach-file-icon:global(.file-dockerfile) {
-  --attachment-file-icon-color: #2496ed; // Docker 蓝色
+  --attachment-file-icon-color: var(--attachment-file-icon-docker-color);
 }
 
 .attach-file-icon:global(.file-game-code) {
-  --attachment-file-icon-color: #8b5cf6;
+  --attachment-file-icon-color: var(--attachment-file-icon-game-code-color);
 }
 
 @media screen and (max-width: 600px) {

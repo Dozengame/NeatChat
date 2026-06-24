@@ -29,6 +29,31 @@ function readCssBlock(source: string, selector: string) {
   return "";
 }
 
+function readCssBlockContainingSelector(source: string, selector: string) {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const selectorMatch = new RegExp(
+    `(?:^|\\n)[^{}]*${escapedSelector}[^{}]*\\s*\\{`,
+  ).exec(source);
+  if (!selectorMatch) return "";
+
+  const openIndex = source.indexOf("{", selectorMatch.index);
+  if (openIndex < 0) return "";
+
+  let depth = 0;
+  for (let i = openIndex; i < source.length; i += 1) {
+    if (source[i] === "{") {
+      depth += 1;
+    } else if (source[i] === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return source.slice(openIndex + 1, i);
+      }
+    }
+  }
+
+  return "";
+}
+
 function readRootCssBlock(source: string, selector: string) {
   const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const selectorMatch = new RegExp(`(?:^|\\n)${escapedSelector}\\s*\\{`).exec(
@@ -5255,9 +5280,42 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".attach-file-icon:global(.file-word)",
     );
+    const filePowerpointBlock = readCssBlock(
+      chatStyles,
+      ".attach-file-icon:global(.file-powerpoint)",
+    );
     const filePdfBlock = readCssBlock(
       chatStyles,
       ".attach-file-icon:global(.file-pdf)",
+    );
+    const fileZipBlock = readCssBlock(
+      chatStyles,
+      ".attach-file-icon:global(.file-zip)",
+    );
+    const fileSecurityBlocks = [
+      ".attach-file-icon:global(.file-csr)",
+      ".attach-file-icon:global(.file-key)",
+      ".attach-file-icon:global(.file-cert)",
+    ].map((selector) => readCssBlockContainingSelector(chatStyles, selector));
+    const fileExcelBlock = readCssBlock(
+      chatStyles,
+      ".attach-file-icon:global(.file-excel)",
+    );
+    const fileRdpBlock = readCssBlock(
+      chatStyles,
+      ".attach-file-icon:global(.file-rdp)",
+    );
+    const fileSvgBlock = readCssBlock(
+      chatStyles,
+      ".attach-file-icon:global(.file-svg)",
+    );
+    const fileDockerBlock = readCssBlock(
+      chatStyles,
+      ".attach-file-icon:global(.file-dockerfile)",
+    );
+    const fileGameCodeBlock = readCssBlock(
+      chatStyles,
+      ".attach-file-icon:global(.file-game-code)",
     );
     const deleteImageBlock = readCssBlock(chatStyles, ".delete-image");
     const darkAttachItemBlock = readCssBlock(
@@ -5308,6 +5366,30 @@ describe("Gemini visual migration shell", () => {
       autoDarkAttachItemBlock,
       autoDarkDeleteImageBlock,
     ].join("\n");
+    const attachmentFileIconToneTokenNames = [
+      "--attachment-file-icon-word-color",
+      "--attachment-file-icon-powerpoint-color",
+      "--attachment-file-icon-pdf-color",
+      "--attachment-file-icon-archive-color",
+      "--attachment-file-icon-security-color",
+      "--attachment-file-icon-excel-color",
+      "--attachment-file-icon-rdp-color",
+      "--attachment-file-icon-svg-color",
+      "--attachment-file-icon-docker-color",
+      "--attachment-file-icon-game-code-color",
+    ];
+    const attachmentFileIconLightTokens = readCustomProperties(
+      attachItemBlock,
+      attachmentFileIconToneTokenNames,
+    );
+    const attachmentFileIconDarkTokens = readCustomProperties(
+      darkAttachItemBlock,
+      attachmentFileIconToneTokenNames,
+    );
+    const attachmentFileIconAutoDarkTokens = readCustomProperties(
+      autoDarkAttachItemBlock,
+      attachmentFileIconToneTokenNames,
+    );
 
     expect(chat).toContain('styles["attach-image-item"]');
     expect(chat).toContain('styles["attach-file-item"]');
@@ -5374,9 +5456,81 @@ describe("Gemini visual migration shell", () => {
       /color:\s*var\(--attachment-file-icon-color\);/,
     );
     expect(fileWordBlock).toMatch(
-      /--attachment-file-icon-color:\s*#2b579a;/,
+      /--attachment-file-icon-color:\s*var\(--attachment-file-icon-word-color\);/,
     );
-    expect(filePdfBlock).toMatch(/--attachment-file-icon-color:\s*#f40f02;/);
+    expect(filePowerpointBlock).toMatch(
+      /--attachment-file-icon-color:\s*var\(--attachment-file-icon-powerpoint-color\);/,
+    );
+    expect(filePdfBlock).toMatch(
+      /--attachment-file-icon-color:\s*var\(--attachment-file-icon-pdf-color\);/,
+    );
+    expect(fileZipBlock).toMatch(
+      /--attachment-file-icon-color:\s*var\(--attachment-file-icon-archive-color\);/,
+    );
+    for (const fileSecurityBlock of fileSecurityBlocks) {
+      expect(fileSecurityBlock).toMatch(
+        /--attachment-file-icon-color:\s*var\(--attachment-file-icon-security-color\);/,
+      );
+    }
+    expect(fileExcelBlock).toMatch(
+      /--attachment-file-icon-color:\s*var\(--attachment-file-icon-excel-color\);/,
+    );
+    expect(fileRdpBlock).toMatch(
+      /--attachment-file-icon-color:\s*var\(--attachment-file-icon-rdp-color\);/,
+    );
+    expect(fileSvgBlock).toMatch(
+      /--attachment-file-icon-color:\s*var\(--attachment-file-icon-svg-color\);/,
+    );
+    expect(fileDockerBlock).toMatch(
+      /--attachment-file-icon-color:\s*var\(--attachment-file-icon-docker-color\);/,
+    );
+    expect(fileGameCodeBlock).toMatch(
+      /--attachment-file-icon-color:\s*var\(--attachment-file-icon-game-code-color\);/,
+    );
+    expect(attachItemBlock).toMatch(
+      /--attachment-file-icon-word-color:\s*color-mix\(in srgb,\s*rgb\(43,\s*87,\s*154\) 76%,\s*var\(--black\)\);/,
+    );
+    expect(attachItemBlock).toMatch(
+      /--attachment-file-icon-powerpoint-color:\s*color-mix\(in srgb,\s*rgb\(210,\s*71,\s*38\) 72%,\s*var\(--black\)\);/,
+    );
+    expect(attachItemBlock).toMatch(
+      /--attachment-file-icon-pdf-color:\s*color-mix\(in srgb,\s*rgb\(217,\s*48,\s*37\) 74%,\s*var\(--black\)\);/,
+    );
+    for (const tokenName of attachmentFileIconToneTokenNames) {
+      expect(attachmentFileIconLightTokens[tokenName]).toContain("color-mix");
+      expect(attachmentFileIconDarkTokens[tokenName]).toContain("color-mix");
+      expect(attachmentFileIconAutoDarkTokens[tokenName]).toBe(
+        attachmentFileIconDarkTokens[tokenName],
+      );
+    }
+    expect(darkAttachItemBlock).toMatch(
+      /--attachment-file-icon-word-color:\s*color-mix\(in srgb,\s*rgb\(138,\s*180,\s*248\) 68%,\s*var\(--black\)\);/,
+    );
+    expect(darkAttachItemBlock).toMatch(
+      /--attachment-file-icon-pdf-color:\s*color-mix\(in srgb,\s*rgb\(242,\s*139,\s*130\) 68%,\s*var\(--black\)\);/,
+    );
+    expect(autoDarkAttachItemBlock).toMatch(
+      /--attachment-file-icon-word-color:\s*color-mix\(in srgb,\s*rgb\(138,\s*180,\s*248\) 68%,\s*var\(--black\)\);/,
+    );
+    expect(autoDarkAttachItemBlock).toMatch(
+      /--attachment-file-icon-pdf-color:\s*color-mix\(in srgb,\s*rgb\(242,\s*139,\s*130\) 68%,\s*var\(--black\)\);/,
+    );
+    expect(
+      [
+        fileWordBlock,
+        filePowerpointBlock,
+        filePdfBlock,
+        fileZipBlock,
+        ...fileSecurityBlocks,
+        fileExcelBlock,
+        fileRdpBlock,
+        fileSvgBlock,
+        fileDockerBlock,
+        fileGameCodeBlock,
+      ].join("\n"),
+    ).not.toMatch(
+      /#(?:2b579a|d24726|f40f02|ffc107|28a745|217346|0078d7|ff9800|2496ed|8b5cf6)/i,
+    );
     expect(attachFileNameBlock).toMatch(
       /color:\s*var\(--attachment-file-name-color\);/,
     );
