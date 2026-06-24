@@ -10,7 +10,7 @@
   --plugin-modal-field-background: color-mix(
     in srgb,
     var(--surface-elevated) 92%,
-    transparent
+    var(--surface-soft)
   );
   --plugin-modal-border-color: color-mix(
     in srgb,
@@ -132,12 +132,12 @@
   --plugin-modal-field-background: color-mix(
     in srgb,
     var(--surface-elevated) 92%,
-    transparent
+    var(--surface-soft)
   );
   --plugin-modal-code-background: color-mix(
     in srgb,
     var(--surface-soft) 78%,
-    transparent
+    var(--surface)
   );
   --plugin-modal-border-color: color-mix(
     in srgb,
@@ -161,7 +161,7 @@
   --plugin-modal-field-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
-    var(--white)
+    var(--surface)
   );
   --plugin-modal-border-color: color-mix(
     in srgb,
@@ -190,12 +190,12 @@
   --plugin-modal-field-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
-    var(--white)
+    var(--surface)
   );
   --plugin-modal-code-background: color-mix(
     in srgb,
-    var(--surface-soft) 84%,
-    var(--white)
+    var(--surface-soft) 62%,
+    var(--surface)
   );
   --plugin-modal-border-color: color-mix(
     in srgb,
@@ -219,7 +219,7 @@
     --plugin-modal-field-background: color-mix(
       in srgb,
       var(--surface-elevated) 86%,
-      var(--white)
+      var(--surface)
     );
     --plugin-modal-border-color: color-mix(
       in srgb,
@@ -248,12 +248,12 @@
     --plugin-modal-field-background: color-mix(
       in srgb,
       var(--surface-elevated) 86%,
-      var(--white)
+      var(--surface)
     );
     --plugin-modal-code-background: color-mix(
       in srgb,
-      var(--surface-soft) 84%,
-      var(--white)
+      var(--surface-soft) 62%,
+      var(--surface)
     );
     --plugin-modal-border-color: color-mix(
       in srgb,
@@ -321,12 +321,12 @@
   --plugin-tools-item-background: color-mix(
     in srgb,
     var(--surface-elevated) 88%,
-    transparent
+    var(--surface-soft)
   );
   --plugin-tools-empty-background: color-mix(
     in srgb,
     var(--surface-soft) 72%,
-    transparent
+    var(--surface)
   );
   --plugin-tools-border-color: color-mix(
     in srgb,
@@ -351,7 +351,7 @@
   --plugin-tools-hover-background: color-mix(
     in srgb,
     var(--primary) 6%,
-    transparent
+    var(--surface-soft)
   );
   --plugin-tools-hover-border-color: color-mix(
     in srgb,
@@ -515,12 +515,12 @@
   --plugin-tools-item-background: color-mix(
     in srgb,
     var(--surface-elevated) 82%,
-    var(--white)
+    var(--surface)
   );
   --plugin-tools-empty-background: color-mix(
     in srgb,
-    var(--surface-soft) 76%,
-    var(--white)
+    var(--surface-soft) 62%,
+    var(--surface)
   );
   --plugin-tools-border-color: color-mix(
     in srgb,
@@ -559,12 +559,12 @@
     --plugin-tools-item-background: color-mix(
       in srgb,
       var(--surface-elevated) 82%,
-      var(--white)
+      var(--surface)
     );
     --plugin-tools-empty-background: color-mix(
       in srgb,
-      var(--surface-soft) 76%,
-      var(--white)
+      var(--surface-soft) 62%,
+      var(--surface)
     );
     --plugin-tools-border-color: color-mix(
       in srgb,

@@ -11932,6 +11932,22 @@ describe("Gemini visual migration shell", () => {
       darkPluginContentBlock,
       autoDarkPluginBlock,
     ].join("\n");
+    const pluginContentSurfaceTokenNames = [
+      "--plugin-modal-field-background",
+      "--plugin-modal-code-background",
+    ];
+    const lightPluginContentSurfaceTokens = readCustomProperties(
+      sharedSurfaceBlock,
+      pluginContentSurfaceTokenNames,
+    );
+    const darkPluginContentSurfaceTokens = readCustomProperties(
+      darkPluginContentBlock,
+      pluginContentSurfaceTokenNames,
+    );
+    const autoDarkPluginContentSurfaceTokens = readCustomProperties(
+      autoDarkPluginBlock,
+      pluginContentSurfaceTokenNames,
+    );
 
     expect(pluginPage).toContain('pluginStyles["plugin-content"]');
     expect(pluginPage).toContain('pluginStyles["plugin-schema"]');
@@ -11953,10 +11969,10 @@ describe("Gemini visual migration shell", () => {
 
     expect(sharedSurfaceBlock).toMatch(/--plugin-modal-control-radius:\s*8px;/);
     expect(sharedSurfaceBlock).toMatch(
-      /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*transparent\s*\);/,
+      /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--surface-soft\)\s*\);/,
     );
     expect(sharedSurfaceBlock).toMatch(
-      /--plugin-modal-code-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 78%,\s*transparent\s*\);/,
+      /--plugin-modal-code-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 78%,\s*var\(--surface\)\s*\);/,
     );
     expect(sharedSurfaceBlock).toMatch(
       /--plugin-modal-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
@@ -12015,19 +12031,36 @@ describe("Gemini visual migration shell", () => {
     expect(mobileInputBlock).toMatch(/min-width:\s*0 !important;/);
     expect(mobileButtonBlock).toMatch(/width:\s*100%;/);
     expect(darkPluginContentBlock).toMatch(
-      /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
     expect(darkPluginContentBlock).toMatch(
-      /--plugin-modal-code-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 84%,\s*var\(--white\)\s*\);/,
+      /--plugin-modal-code-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 62%,\s*var\(--surface\)\s*\);/,
     );
     expect(autoDarkPluginIndex).toBeGreaterThan(-1);
     expect(autoDarkPluginMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkPluginBlock).toMatch(
-      /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
     expect(autoDarkPluginBlock).toMatch(
-      /--plugin-modal-code-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 84%,\s*var\(--white\)\s*\);/,
+      /--plugin-modal-code-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 62%,\s*var\(--surface\)\s*\);/,
     );
+    for (const tokenName of pluginContentSurfaceTokenNames) {
+      expect(lightPluginContentSurfaceTokens[tokenName]).not.toContain(
+        "transparent",
+      );
+      expect(lightPluginContentSurfaceTokens[tokenName]).not.toContain(
+        "var(--white)",
+      );
+      expect(darkPluginContentSurfaceTokens[tokenName]).not.toContain(
+        "transparent",
+      );
+      expect(darkPluginContentSurfaceTokens[tokenName]).not.toContain(
+        "var(--white)",
+      );
+      expect(autoDarkPluginContentSurfaceTokens[tokenName]).toBe(
+        darkPluginContentSurfaceTokens[tokenName],
+      );
+    }
     expect(pluginModalPaintScope).not.toContain("margin-right: 20px");
     expect(pluginModalPaintScope).not.toContain("min-width: 280px");
     expect(pluginModalPaintScope).not.toContain("max-height: 240px");
@@ -12118,6 +12151,19 @@ describe("Gemini visual migration shell", () => {
       darkPluginEditModalBlock,
       autoDarkPluginEditModalBlock,
     ].join("\n");
+    const authSurfaceTokenNames = ["--plugin-modal-field-background"];
+    const lightAuthSurfaceTokens = readCustomProperties(
+      pluginEditModalRootBlock,
+      authSurfaceTokenNames,
+    );
+    const darkAuthSurfaceTokens = readCustomProperties(
+      darkPluginEditModalBlock,
+      authSurfaceTokenNames,
+    );
+    const autoDarkAuthSurfaceTokens = readCustomProperties(
+      autoDarkPluginEditModalBlock,
+      authSurfaceTokenNames,
+    );
 
     expect(pluginPage).toContain('pluginStyles["plugin-edit-modal"]');
     expect(pluginPage).toContain('pluginStyles["plugin-auth-row"]');
@@ -12146,7 +12192,7 @@ describe("Gemini visual migration shell", () => {
       /--plugin-modal-auth-field-width:\s*min\(240px,\s*100%\);/,
     );
     expect(pluginEditModalRootBlock).toMatch(
-      /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*transparent\s*\);/,
+      /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--surface-soft\)\s*\);/,
     );
     expect(pluginEditModalRootBlock).toMatch(
       /--plugin-modal-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 84%,\s*transparent\s*\);/,
@@ -12190,7 +12236,7 @@ describe("Gemini visual migration shell", () => {
     expect(mobileAuthControlsBlock).toMatch(/width:\s*100%;/);
     expect(mobileAuthControlsBlock).toMatch(/min-width:\s*0;/);
     expect(darkPluginEditModalBlock).toMatch(
-      /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
     expect(darkPluginEditModalBlock).toMatch(
       /--plugin-modal-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 90%,\s*transparent\s*\);/,
@@ -12198,11 +12244,20 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkPluginEditModalIndex).toBeGreaterThan(-1);
     expect(autoDarkPluginEditModalMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkPluginEditModalBlock).toMatch(
-      /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--plugin-modal-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
     expect(autoDarkPluginEditModalBlock).toMatch(
       /--plugin-modal-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 90%,\s*transparent\s*\);/,
     );
+    for (const tokenName of authSurfaceTokenNames) {
+      expect(lightAuthSurfaceTokens[tokenName]).not.toContain("transparent");
+      expect(lightAuthSurfaceTokens[tokenName]).not.toContain("var(--white)");
+      expect(darkAuthSurfaceTokens[tokenName]).not.toContain("transparent");
+      expect(darkAuthSurfaceTokens[tokenName]).not.toContain("var(--white)");
+      expect(autoDarkAuthSurfaceTokens[tokenName]).toBe(
+        darkAuthSurfaceTokens[tokenName],
+      );
+    }
     expect(pluginAuthPaintScope).not.toContain("border: var(--border-in-light)");
     expect(pluginAuthPaintScope).not.toContain("border-radius: 10px");
     expect(pluginAuthPaintScope).not.toContain("background: var(--white)");
@@ -12353,6 +12408,31 @@ describe("Gemini visual migration shell", () => {
       expect(autoDarkToolPreviewTokens[tokenName]).toBe(
         darkToolPreviewTokens[tokenName],
       );
+    }
+    expect(lightToolPreviewTokens["--plugin-tools-item-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 88%, var(--surface-soft) )",
+    );
+    expect(lightToolPreviewTokens["--plugin-tools-empty-background"]).toBe(
+      "color-mix( in srgb, var(--surface-soft) 72%, var(--surface) )",
+    );
+    expect(lightToolPreviewTokens["--plugin-tools-hover-background"]).toBe(
+      "color-mix( in srgb, var(--primary) 6%, var(--surface-soft) )",
+    );
+    expect(darkToolPreviewTokens["--plugin-tools-item-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 82%, var(--surface) )",
+    );
+    expect(darkToolPreviewTokens["--plugin-tools-empty-background"]).toBe(
+      "color-mix( in srgb, var(--surface-soft) 62%, var(--surface) )",
+    );
+    for (const tokenName of [
+      "--plugin-tools-item-background",
+      "--plugin-tools-empty-background",
+      "--plugin-tools-hover-background",
+    ]) {
+      expect(lightToolPreviewTokens[tokenName]).not.toContain("transparent");
+      expect(lightToolPreviewTokens[tokenName]).not.toContain("var(--white)");
+      expect(darkToolPreviewTokens[tokenName]).not.toContain("transparent");
+      expect(darkToolPreviewTokens[tokenName]).not.toContain("var(--white)");
     }
     expect(toolsPreviewRootBlock).toMatch(/align-items:\s*stretch;/);
     expect(toolsPreviewRootBlock).toMatch(/gap:\s*10px;/);
