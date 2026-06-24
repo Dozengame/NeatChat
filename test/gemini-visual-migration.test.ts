@@ -18471,7 +18471,7 @@ describe("Gemini visual migration shell", () => {
     expect(userPromptModal).toContain("copyToClipboard(v.content)");
 
     expect(userPromptModalRootBlock).toMatch(
-      /--settings-prompt-search-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--gray\)\s*\);/,
+      /--settings-prompt-search-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--surface-soft\)\s*\);/,
     );
     expect(userPromptModalRootBlock).toMatch(
       /--settings-prompt-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 14%,\s*transparent\s*\);/,
@@ -18512,7 +18512,7 @@ describe("Gemini visual migration shell", () => {
       expect(Object.values(tokenMap)).not.toContain("");
     }
     expect(darkSettingsPromptBlock).toMatch(
-      /--settings-prompt-search-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--settings-prompt-search-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
     expect(darkSettingsPromptBlock).toMatch(
       /--settings-prompt-title-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 94%,\s*transparent\s*\);/,
@@ -18523,7 +18523,7 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkSettingsPromptSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkSettingsPromptMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkSettingsPromptBlock).toMatch(
-      /--settings-prompt-search-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--settings-prompt-search-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
     expect(autoDarkSettingsPromptBlock).toMatch(
       /--settings-prompt-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 12%,\s*var\(--surface-elevated\)\s*\);/,
@@ -18532,6 +18532,33 @@ describe("Gemini visual migration shell", () => {
       /--settings-prompt-active-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 16%,\s*var\(--surface-elevated\)\s*\);/,
     );
     expect(autoDarkSettingsPromptTokenMap).toEqual(darkSettingsPromptTokenMap);
+    expect(settingsPromptTokenMap["--settings-prompt-search-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 88%, var(--surface-soft) )",
+    );
+    expect(
+      darkSettingsPromptTokenMap["--settings-prompt-list-background"],
+    ).toBe("color-mix( in srgb, var(--surface-elevated) 86%, var(--surface) )");
+    expect(
+      darkSettingsPromptTokenMap["--settings-prompt-item-background"],
+    ).toBe("color-mix( in srgb, var(--surface-elevated) 86%, var(--surface) )");
+    expect(
+      darkSettingsPromptTokenMap["--settings-prompt-search-background"],
+    ).toBe("color-mix( in srgb, var(--surface-elevated) 86%, var(--surface) )");
+    expect(
+      darkSettingsPromptTokenMap["--settings-prompt-search-shadow-color"],
+    ).toBe("color-mix( in srgb, var(--surface) 18%, transparent )");
+    for (const tokenValue of [
+      settingsPromptTokenMap["--settings-prompt-list-background"],
+      settingsPromptTokenMap["--settings-prompt-item-background"],
+      settingsPromptTokenMap["--settings-prompt-search-background"],
+      darkSettingsPromptTokenMap["--settings-prompt-list-background"],
+      darkSettingsPromptTokenMap["--settings-prompt-item-background"],
+      darkSettingsPromptTokenMap["--settings-prompt-search-background"],
+    ]) {
+      expect(tokenValue).not.toContain("transparent");
+      expect(tokenValue).not.toContain("var(--white)");
+      expect(tokenValue).not.toContain("var(--gray)");
+    }
 
     expect(promptSearchBlock).toMatch(
       /background-color:\s*var\(--settings-prompt-search-background\);/,
@@ -18614,6 +18641,8 @@ describe("Gemini visual migration shell", () => {
     expect(settingsPromptPaintScope).not.toContain("border-radius: 10px");
     expect(settingsPromptPaintScope).not.toContain("font-weight: bold");
     expect(settingsPromptPaintScope).not.toMatch(/line-height:\s*2;/);
+    expect(settingsPromptPaintScope).not.toContain("var(--white)");
+    expect(settingsPromptPaintScope).not.toContain("var(--gray)");
   });
 
   test("keeps Settings prompt editor aligned with Gemini utility fields", () => {
@@ -18727,13 +18756,13 @@ describe("Gemini visual migration shell", () => {
     );
 
     expect(editPromptModalRootBlock).toMatch(
-      /--settings-edit-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\s*\);/,
+      /--settings-edit-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--surface-soft\)\s*\);/,
     );
     expect(editPromptModalRootBlock).toMatch(
       /--settings-edit-field-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 14%,\s*transparent\s*\);/,
     );
     expect(editPromptModalRootBlock).toMatch(
-      /--settings-edit-field-muted-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 78%,\s*var\(--gray\)\s*\);/,
+      /--settings-edit-field-muted-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 78%,\s*var\(--surface-soft\)\s*\);/,
     );
     expect(editPromptModalRootBlock).toMatch(
       /--settings-edit-field-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 92%,\s*transparent\s*\);/,
@@ -18753,10 +18782,10 @@ describe("Gemini visual migration shell", () => {
       expect(Object.values(tokenMap)).not.toContain("");
     }
     expect(darkEditPromptModalBlock).toMatch(
-      /--settings-edit-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--settings-edit-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
     expect(darkEditPromptModalBlock).toMatch(
-      /--settings-edit-field-muted-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 82%,\s*var\(--white\)\s*\);/,
+      /--settings-edit-field-muted-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 82%,\s*var\(--surface\)\s*\);/,
     );
     expect(darkEditPromptModalBlock).toMatch(
       /--settings-edit-field-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 11%,\s*transparent\s*\);/,
@@ -18770,18 +18799,40 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkEditPromptModalSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkEditPromptModalMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkEditPromptModalBlock).toMatch(
-      /--settings-edit-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--settings-edit-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
     expect(autoDarkEditPromptModalBlock).toMatch(
       /--settings-edit-field-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 11%,\s*transparent\s*\);/,
     );
     expect(autoDarkEditPromptModalBlock).toMatch(
-      /--settings-edit-field-muted-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 82%,\s*var\(--white\)\s*\);/,
+      /--settings-edit-field-muted-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 82%,\s*var\(--surface\)\s*\);/,
     );
     expect(autoDarkEditPromptModalBlock).toMatch(
       /--settings-edit-field-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 58%,\s*transparent\s*\);/,
     );
     expect(autoDarkSettingsEditTokenMap).toEqual(darkSettingsEditTokenMap);
+    expect(settingsEditTokenMap["--settings-edit-field-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 90%, var(--surface-soft) )",
+    );
+    expect(settingsEditTokenMap["--settings-edit-field-muted-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 78%, var(--surface-soft) )",
+    );
+    expect(darkSettingsEditTokenMap["--settings-edit-field-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 86%, var(--surface) )",
+    );
+    expect(
+      darkSettingsEditTokenMap["--settings-edit-field-muted-background"],
+    ).toBe("color-mix( in srgb, var(--surface-elevated) 82%, var(--surface) )");
+    for (const tokenValue of [
+      settingsEditTokenMap["--settings-edit-field-background"],
+      settingsEditTokenMap["--settings-edit-field-muted-background"],
+      darkSettingsEditTokenMap["--settings-edit-field-background"],
+      darkSettingsEditTokenMap["--settings-edit-field-muted-background"],
+    ]) {
+      expect(tokenValue).not.toContain("transparent");
+      expect(tokenValue).not.toContain("var(--white)");
+      expect(tokenValue).not.toContain("var(--gray)");
+    }
 
     [editPromptTitleBlock, editPromptContentBlock].forEach((block) => {
       expect(block).toMatch(
@@ -18831,6 +18882,8 @@ describe("Gemini visual migration shell", () => {
       "background-color: var(--gray)",
     );
     expect(editPromptPaintScope).not.toContain("border-radius: 10px");
+    expect(editPromptPaintScope).not.toContain("var(--white)");
+    expect(editPromptPaintScope).not.toContain("var(--gray)");
   });
 
   test("keeps Settings sync utilities aligned with Gemini utility surfaces", () => {
@@ -19693,14 +19746,42 @@ describe("Gemini visual migration shell", () => {
     expect(accessSurfaceRootBlock).toMatch(/max-width:\s*100%;/);
     expect(accessSurfaceRootBlock).toMatch(/min-width:\s*0;/);
     expect(accessSurfaceRootBlock).toMatch(
-      /--settings-access-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\s*\);/,
+      /--settings-access-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--surface-soft\)\s*\);/,
     );
     expect(accessSurfaceRootBlock).toMatch(
       /--settings-access-field-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 14%,\s*transparent\s*\);/,
     );
     expect(darkAccessSurfaceBlock).toMatch(
-      /--settings-access-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--settings-access-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
+    expect(accessTokenMap["--settings-access-field-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 90%, var(--surface-soft) )",
+    );
+    expect(accessTokenMap["--settings-access-field-disabled-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 76%, var(--surface-soft) )",
+    );
+    expect(accessTokenMap["--settings-access-field-inner-shadow-color"]).toBe(
+      "color-mix( in srgb, var(--surface) 60%, transparent )",
+    );
+    expect(darkAccessTokenMap["--settings-access-field-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 86%, var(--surface) )",
+    );
+    expect(
+      darkAccessTokenMap["--settings-access-field-disabled-background"],
+    ).toBe("color-mix( in srgb, var(--surface-elevated) 72%, var(--surface) )");
+    expect(
+      darkAccessTokenMap["--settings-access-field-inner-shadow-color"],
+    ).toBe("color-mix( in srgb, var(--surface) 18%, transparent )");
+    for (const tokenValue of [
+      accessTokenMap["--settings-access-field-background"],
+      accessTokenMap["--settings-access-field-disabled-background"],
+      darkAccessTokenMap["--settings-access-field-background"],
+      darkAccessTokenMap["--settings-access-field-disabled-background"],
+    ]) {
+      expect(tokenValue).not.toContain("transparent");
+      expect(tokenValue).not.toContain("var(--white)");
+      expect(tokenValue).not.toContain("var(--gray)");
+    }
     expect(accessSelectBlock).toMatch(/width:\s*min\(360px, 100%\);/);
     expect(accessSelectBlock).toMatch(/max-width:\s*100%;/);
     expect(accessSelectBlock).toMatch(/min-width:\s*0;/);
@@ -19774,6 +19855,8 @@ describe("Gemini visual migration shell", () => {
     expect(accessPaintScope).not.toContain("box-shadow: var(--card-shadow)");
     expect(accessPaintScope).not.toContain("border-radius: 10px");
     expect(accessPaintScope).not.toContain("background-color: var(--white)");
+    expect(accessPaintScope).not.toContain("var(--white)");
+    expect(accessPaintScope).not.toContain("var(--gray)");
   });
 
   test("keeps Settings danger zone clear without changing destructive semantics", () => {
@@ -20155,14 +20238,58 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkCustomInputMediaIndex).toBeGreaterThan(-1);
 
     expect(customInputRootBlock).toMatch(
-      /--settings-custom-instructions-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\s*\);/,
+      /--settings-custom-instructions-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--surface-soft\)\s*\);/,
     );
     expect(customInputRootBlock).toMatch(
       /--settings-custom-instructions-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 14%,\s*transparent\s*\);/,
     );
     expect(darkCustomInputBlock).toMatch(
-      /--settings-custom-instructions-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--white\)\s*\);/,
+      /--settings-custom-instructions-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--surface\)\s*\);/,
     );
+    expect(
+      customInstructionTokenMap["--settings-custom-instructions-background"],
+    ).toBe("color-mix( in srgb, var(--surface-elevated) 90%, var(--surface-soft) )");
+    expect(
+      customInstructionTokenMap[
+        "--settings-custom-instructions-disabled-background"
+      ],
+    ).toBe("color-mix( in srgb, var(--surface-elevated) 76%, var(--surface-soft) )");
+    expect(
+      customInstructionTokenMap[
+        "--settings-custom-instructions-inner-shadow-color"
+      ],
+    ).toBe("color-mix( in srgb, var(--surface) 62%, transparent )");
+    expect(
+      darkCustomInstructionTokenMap[
+        "--settings-custom-instructions-background"
+      ],
+    ).toBe("color-mix( in srgb, var(--surface-elevated) 84%, var(--surface) )");
+    expect(
+      darkCustomInstructionTokenMap[
+        "--settings-custom-instructions-disabled-background"
+      ],
+    ).toBe("color-mix( in srgb, var(--surface-elevated) 72%, var(--surface) )");
+    expect(
+      darkCustomInstructionTokenMap[
+        "--settings-custom-instructions-inner-shadow-color"
+      ],
+    ).toBe("color-mix( in srgb, var(--surface) 18%, transparent )");
+    for (const tokenValue of [
+      customInstructionTokenMap["--settings-custom-instructions-background"],
+      customInstructionTokenMap[
+        "--settings-custom-instructions-disabled-background"
+      ],
+      darkCustomInstructionTokenMap[
+        "--settings-custom-instructions-background"
+      ],
+      darkCustomInstructionTokenMap[
+        "--settings-custom-instructions-disabled-background"
+      ],
+    ]) {
+      expect(tokenValue).not.toContain("transparent");
+      expect(tokenValue).not.toContain("var(--white)");
+      expect(tokenValue).not.toContain("var(--gray)");
+    }
     expect(customInputRootBlock).toMatch(/width:\s*100%;/);
     expect(customInputRootBlock).toMatch(/max-width:\s*100%;/);
     expect(customInputRootBlock).toMatch(/min-width:\s*0;/);
@@ -20225,6 +20352,8 @@ describe("Gemini visual migration shell", () => {
     expect(customInstructionsPaintScope).not.toContain(
       "background-color: var(--white)",
     );
+    expect(customInstructionsPaintScope).not.toContain("var(--white)");
+    expect(customInstructionsPaintScope).not.toContain("var(--gray)");
   });
 
   test("keeps Realtime side panel shell aligned with Gemini surfaces", () => {

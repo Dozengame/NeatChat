@@ -673,7 +673,7 @@
   --settings-access-field-background: color-mix(
     in srgb,
     var(--surface-elevated) 90%,
-    var(--gray)
+    var(--surface-soft)
   );
   --settings-access-field-border-color: color-mix(
     in srgb,
@@ -708,7 +708,7 @@
   --settings-access-field-disabled-background: color-mix(
     in srgb,
     var(--surface-elevated) 76%,
-    var(--gray)
+    var(--surface-soft)
   );
   --settings-access-field-disabled-color: color-mix(
     in srgb,
@@ -722,7 +722,7 @@
   );
   --settings-access-field-inner-shadow-color: color-mix(
     in srgb,
-    var(--white) 48%,
+    var(--surface) 60%,
     transparent
   );
   --settings-access-field-radius: 8px;
@@ -840,7 +840,7 @@
   --settings-access-field-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
-    var(--white)
+    var(--surface)
   );
   --settings-access-field-border-color: color-mix(
     in srgb,
@@ -875,7 +875,7 @@
   --settings-access-field-disabled-background: color-mix(
     in srgb,
     var(--surface-elevated) 72%,
-    var(--white)
+    var(--surface)
   );
   --settings-access-field-disabled-color: color-mix(
     in srgb,
@@ -889,7 +889,7 @@
   );
   --settings-access-field-inner-shadow-color: color-mix(
     in srgb,
-    var(--black) 5%,
+    var(--surface) 18%,
     transparent
   );
   --settings-access-field-radius: 8px;
@@ -901,7 +901,7 @@
     --settings-access-field-background: color-mix(
       in srgb,
       var(--surface-elevated) 86%,
-      var(--white)
+      var(--surface)
     );
     --settings-access-field-border-color: color-mix(
       in srgb,
@@ -936,7 +936,7 @@
     --settings-access-field-disabled-background: color-mix(
       in srgb,
       var(--surface-elevated) 72%,
-      var(--white)
+      var(--surface)
     );
     --settings-access-field-disabled-color: color-mix(
       in srgb,
@@ -950,7 +950,7 @@
     );
     --settings-access-field-inner-shadow-color: color-mix(
       in srgb,
-      var(--black) 5%,
+      var(--surface) 18%,
       transparent
     );
     --settings-access-field-radius: 8px;
@@ -1239,17 +1239,17 @@
   --settings-prompt-list-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
-    var(--white)
+    var(--surface)
   );
   --settings-prompt-item-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
-    var(--white)
+    var(--surface)
   );
   --settings-prompt-search-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
-    var(--white)
+    var(--surface)
   );
   --settings-prompt-border-color: color-mix(
     in srgb,
@@ -1263,7 +1263,7 @@
   );
   --settings-prompt-search-shadow-color: color-mix(
     in srgb,
-    var(--gray) 20%,
+    var(--surface) 18%,
     transparent
   );
   --settings-prompt-title-color: color-mix(
@@ -1306,17 +1306,17 @@
     --settings-prompt-list-background: color-mix(
       in srgb,
       var(--surface-elevated) 86%,
-      var(--white)
+      var(--surface)
     );
     --settings-prompt-item-background: color-mix(
       in srgb,
       var(--surface-elevated) 86%,
-      var(--white)
+      var(--surface)
     );
     --settings-prompt-search-background: color-mix(
       in srgb,
       var(--surface-elevated) 86%,
-      var(--white)
+      var(--surface)
     );
     --settings-prompt-border-color: color-mix(
       in srgb,
@@ -1330,7 +1330,7 @@
     );
     --settings-prompt-search-shadow-color: color-mix(
       in srgb,
-      var(--gray) 20%,
+      var(--surface) 18%,
       transparent
     );
     --settings-prompt-title-color: color-mix(
@@ -1373,7 +1373,7 @@
   --settings-edit-field-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
-    var(--white)
+    var(--surface)
   );
   --settings-edit-field-border-color: color-mix(
     in srgb,
@@ -1383,7 +1383,7 @@
   --settings-edit-field-muted-background: color-mix(
     in srgb,
     var(--surface-elevated) 82%,
-    var(--white)
+    var(--surface)
   );
   --settings-edit-field-muted-color: color-mix(
     in srgb,
@@ -1413,7 +1413,7 @@
     --settings-edit-field-background: color-mix(
       in srgb,
       var(--surface-elevated) 86%,
-      var(--white)
+      var(--surface)
     );
     --settings-edit-field-border-color: color-mix(
       in srgb,
@@ -1423,7 +1423,7 @@
     --settings-edit-field-muted-background: color-mix(
       in srgb,
       var(--surface-elevated) 82%,
-      var(--white)
+      var(--surface)
     );
     --settings-edit-field-muted-color: color-mix(
       in srgb,
@@ -1459,7 +1459,7 @@
   --settings-edit-field-background: color-mix(
     in srgb,
     var(--surface-elevated) 90%,
-    var(--gray)
+    var(--surface-soft)
   );
   --settings-edit-field-border-color: color-mix(
     in srgb,
@@ -1469,7 +1469,7 @@
   --settings-edit-field-muted-background: color-mix(
     in srgb,
     var(--surface-elevated) 78%,
-    var(--gray)
+    var(--surface-soft)
   );
   --settings-edit-field-muted-color: color-mix(
     in srgb,
@@ -1558,7 +1558,7 @@
   --settings-prompt-search-background: color-mix(
     in srgb,
     var(--surface-elevated) 88%,
-    var(--gray)
+    var(--surface-soft)
   );
   --settings-prompt-border-color: color-mix(
     in srgb,
@@ -1725,7 +1725,7 @@
   --settings-custom-instructions-background: color-mix(
     in srgb,
     var(--surface-elevated) 90%,
-    var(--gray)
+    var(--surface-soft)
   );
   --settings-custom-instructions-border-color: color-mix(
     in srgb,
@@ -1749,7 +1749,7 @@
   );
   --settings-custom-instructions-inner-shadow-color: color-mix(
     in srgb,
-    var(--white) 52%,
+    var(--surface) 62%,
     transparent
   );
   --settings-custom-instructions-focus-border-color: color-mix(
@@ -1765,7 +1765,7 @@
   --settings-custom-instructions-disabled-background: color-mix(
     in srgb,
     var(--surface-elevated) 76%,
-    var(--gray)
+    var(--surface-soft)
   );
   --settings-custom-instructions-disabled-color: color-mix(
     in srgb,
@@ -1837,7 +1837,7 @@
   --settings-custom-instructions-background: color-mix(
     in srgb,
     var(--surface-elevated) 84%,
-    var(--white)
+    var(--surface)
   );
   --settings-custom-instructions-border-color: color-mix(
     in srgb,
@@ -1861,7 +1861,7 @@
   );
   --settings-custom-instructions-inner-shadow-color: color-mix(
     in srgb,
-    var(--black) 5%,
+    var(--surface) 18%,
     transparent
   );
   --settings-custom-instructions-focus-border-color: color-mix(
@@ -1877,7 +1877,7 @@
   --settings-custom-instructions-disabled-background: color-mix(
     in srgb,
     var(--surface-elevated) 72%,
-    var(--white)
+    var(--surface)
   );
   --settings-custom-instructions-disabled-color: color-mix(
     in srgb,
@@ -1896,7 +1896,7 @@
     --settings-custom-instructions-background: color-mix(
       in srgb,
       var(--surface-elevated) 84%,
-      var(--white)
+      var(--surface)
     );
     --settings-custom-instructions-border-color: color-mix(
       in srgb,
@@ -1920,7 +1920,7 @@
     );
     --settings-custom-instructions-inner-shadow-color: color-mix(
       in srgb,
-      var(--black) 5%,
+      var(--surface) 18%,
       transparent
     );
     --settings-custom-instructions-focus-border-color: color-mix(
@@ -1936,7 +1936,7 @@
     --settings-custom-instructions-disabled-background: color-mix(
       in srgb,
       var(--surface-elevated) 72%,
-      var(--white)
+      var(--surface)
     );
     --settings-custom-instructions-disabled-color: color-mix(
       in srgb,
