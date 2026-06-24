@@ -19304,6 +19304,134 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps Realtime side panel shell aligned with Gemini surfaces", () => {
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const chatMainBlock = readCssBlock(chatStyles, ".chat-main");
+    const sidePanelBlock = readCssBlock(chatMainBlock, ".chat-side-panel");
+    const sidePanelRootBlock = readRootDeclarations(sidePanelBlock);
+    const sidePanelShowBlock = readCssBlock(sidePanelBlock, "&-show");
+    const chatMainIndex = chatStyles.indexOf(".chat-main");
+    const sidePanelBaseIndex = chatStyles.indexOf(
+      ".chat-side-panel {",
+      chatMainIndex,
+    );
+    const darkSidePanelBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-main .chat-side-panel",
+    );
+    const autoDarkSidePanelSelector =
+      ":global(body:not(.light)) .chat-main .chat-side-panel";
+    const autoDarkSidePanelIndex = chatStyles.indexOf(
+      autoDarkSidePanelSelector,
+    );
+    const autoDarkSidePanelMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkSidePanelIndex,
+    );
+    const autoDarkSidePanelBlock = readCssBlock(
+      chatStyles.slice(autoDarkSidePanelMediaIndex),
+      autoDarkSidePanelSelector,
+    );
+    const mobileSidePanelSelector = ".chat-main .chat-side-panel";
+    const mobileSidePanelMediaIndex = chatStyles.indexOf(
+      "@media screen and (max-width: 600px)",
+      sidePanelBaseIndex,
+    );
+    const mobileSidePanelIndex = chatStyles.indexOf(
+      mobileSidePanelSelector,
+      mobileSidePanelMediaIndex,
+    );
+    const mobileSidePanelBlock = readCssBlock(
+      chatStyles.slice(mobileSidePanelMediaIndex),
+      mobileSidePanelSelector,
+    );
+    const reducedMotionBlock = readCssBlock(
+      chatStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const sidePanelTokenNames = [
+      "--chat-side-panel-background",
+      "--chat-side-panel-border-color",
+      "--chat-side-panel-shadow-color",
+    ];
+    const sidePanelTokens = readCustomProperties(
+      sidePanelRootBlock,
+      sidePanelTokenNames,
+    );
+    const darkSidePanelTokens = readCustomProperties(
+      darkSidePanelBlock,
+      sidePanelTokenNames,
+    );
+    const autoDarkSidePanelTokens = readCustomProperties(
+      autoDarkSidePanelBlock,
+      sidePanelTokenNames,
+    );
+    const sidePanelPaintScope = [
+      sidePanelRootBlock,
+      sidePanelShowBlock,
+      darkSidePanelBlock,
+      autoDarkSidePanelBlock,
+      mobileSidePanelBlock,
+    ].join("\n");
+
+    expect(chat).toContain(
+      'className={clsx(styles["chat-side-panel"], {',
+    );
+    expect(chat).toContain(
+      '[styles["mobile"]]: isCompactScreen',
+    );
+    expect(chat).toContain(
+      '[styles["chat-side-panel-show"]]: showChatSidePanel',
+    );
+    expect(chat).toContain(
+      "ENABLE_REALTIME_CHAT && showChatSidePanel &&",
+    );
+    expect(chat).toMatch(
+      /!isCompactScreen &&[\s\S]*ENABLE_REALTIME_CHAT &&[\s\S]*config\.realtimeConfig\.enable &&[\s\S]*setShowChatSidePanel\(true\)/,
+    );
+    expect(chat).toContain("<RealtimeChat");
+    expect(chat).toContain("setShowChatSidePanel(false)");
+    expect(chatMainIndex).toBeGreaterThan(-1);
+    expect(sidePanelBaseIndex).toBeGreaterThan(chatMainIndex);
+    expect(mobileSidePanelIndex).toBeGreaterThan(-1);
+    expect(mobileSidePanelMediaIndex).toBeGreaterThan(sidePanelBaseIndex);
+    expect(mobileSidePanelIndex).toBeGreaterThan(sidePanelBaseIndex);
+
+    for (const tokenName of sidePanelTokenNames) {
+      expect(sidePanelTokens[tokenName]).not.toBe("");
+      expect(darkSidePanelTokens[tokenName]).not.toBe("");
+      expect(autoDarkSidePanelTokens[tokenName]).toBe(
+        darkSidePanelTokens[tokenName],
+      );
+      expect(sidePanelTokens[tokenName]).toContain("var(--");
+      expect(darkSidePanelTokens[tokenName]).toContain("var(--");
+    }
+
+    expect(sidePanelRootBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(sidePanelRootBlock).toMatch(/background:\s*var\(--chat-side-panel-background\);/);
+    expect(sidePanelRootBlock).toMatch(
+      /border:\s*1px solid var\(--chat-side-panel-border-color\);/,
+    );
+    expect(sidePanelRootBlock).toMatch(
+      /box-shadow:\s*0 12px 36px var\(--chat-side-panel-shadow-color\);/,
+    );
+    expect(sidePanelRootBlock).toMatch(/min-width:\s*0;/);
+    expect(sidePanelRootBlock).toMatch(/will-change:\s*transform;/);
+    expect(sidePanelRootBlock).toMatch(
+      /transition:[\s\S]*transform 0\.24s cubic-bezier\(0\.2,\s*0,\s*0,\s*1\),[\s\S]*background-color 0\.18s ease,[\s\S]*border-color 0\.18s ease,[\s\S]*box-shadow 0\.18s ease/,
+    );
+    expect(sidePanelShowBlock).toMatch(/transform:\s*translateX\(0\);/);
+    expect(mobileSidePanelBlock).toMatch(/border-width:\s*0;/);
+    expect(mobileSidePanelBlock).toMatch(/box-shadow:\s*none;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-side-panel,[\s\S]*\.chat-side-panel-show[\s\S]*transition-duration:\s*0\.01ms !important;[\s\S]*will-change:\s*auto;/,
+    );
+    expect(sidePanelPaintScope).not.toContain("background: var(--white)");
+    expect(sidePanelPaintScope).not.toContain("transition: all");
+    expect(sidePanelPaintScope).not.toContain("var(--border-in-light)");
+  });
+
   test("keeps Realtime voice overlay aligned with Gemini voice surfaces", () => {
     const realtimeChat = read("app/components/realtime-chat/realtime-chat.tsx");
     const realtimeStyles = read(

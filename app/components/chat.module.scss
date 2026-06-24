@@ -6226,16 +6226,50 @@
     position: relative;
   }
   .chat-side-panel {
+    --chat-side-panel-background: color-mix(in srgb, var(--surface) 94%, var(--surface-elevated));
+    --chat-side-panel-border-color: color-mix(in srgb, var(--black-50) 10%, transparent);
+    --chat-side-panel-shadow-color: color-mix(in srgb, var(--black-50) 9%, transparent);
+
     position: absolute;
     inset: 0;
-    background: var(--white);
+    box-sizing: border-box;
+    min-width: 0;
+    background: var(--chat-side-panel-background);
+    border: 1px solid var(--chat-side-panel-border-color);
+    box-shadow: 0 12px 36px var(--chat-side-panel-shadow-color);
     overflow: hidden;
     z-index: 10;
     transform: translateX(100%);
-    transition: all ease 0.3s;
+    will-change: transform;
+    transition:
+      transform 0.24s cubic-bezier(0.2, 0, 0, 1),
+      background-color 0.18s ease,
+      border-color 0.18s ease,
+      box-shadow 0.18s ease;
     &-show {
       transform: translateX(0);
     }
+  }
+}
+
+:global(.dark) .chat-main .chat-side-panel {
+  --chat-side-panel-background: color-mix(in srgb, var(--surface) 92%, var(--black) 4%);
+  --chat-side-panel-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+  --chat-side-panel-shadow-color: color-mix(in srgb, var(--black) 18%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .chat-main .chat-side-panel {
+    --chat-side-panel-background: color-mix(in srgb, var(--surface) 92%, var(--black) 4%);
+    --chat-side-panel-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+    --chat-side-panel-shadow-color: color-mix(in srgb, var(--black) 18%, transparent);
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .chat-main .chat-side-panel {
+    border-width: 0;
+    box-shadow: none;
   }
 }
 
@@ -7262,5 +7296,11 @@
     @starting-style {
       transform: none !important;
     }
+  }
+
+  .chat-side-panel,
+  .chat-side-panel-show {
+    transition-duration: 0.01ms !important;
+    will-change: auto;
   }
 }
