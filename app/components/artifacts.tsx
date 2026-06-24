@@ -39,22 +39,41 @@ export function Artifacts() {
   return (
     <div className={styles["artifacts"]}>
       <div className={styles["artifacts-header"]}>
-        <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
-          <IconButton bordered icon={<GithubIcon />} shadow />
-        </a>
-        <IconButton
-          bordered
-          style={{ marginLeft: 20 }}
-          icon={<ReloadButtonIcon />}
-          shadow
-          onClick={() => previewRef.current?.reload()}
-        />
+        <div className={styles["artifacts-header-actions"]}>
+          <a
+            className={styles["artifacts-header-link"]}
+            href={REPO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={Locale.Export.Artifacts.GitHubTitle}
+            title={Locale.Export.Artifacts.GitHubTitle}
+          >
+            <IconButton
+              bordered
+              icon={<GithubIcon />}
+              shadow
+              title={Locale.Export.Artifacts.GitHubTitle}
+              aria={Locale.Export.Artifacts.GitHubTitle}
+            />
+          </a>
+          <IconButton
+            bordered
+            className={styles["artifacts-action-button"]}
+            icon={<ReloadButtonIcon />}
+            shadow
+            title={Locale.Export.Artifacts.ReloadTitle}
+            aria={Locale.Export.Artifacts.ReloadTitle}
+            onClick={() => previewRef.current?.reload()}
+          />
+        </div>
         <div className={styles["artifacts-title"]}>NeatChat Artifacts</div>
-        <ArtifactsShareButton
-          id={id}
-          getCode={() => code}
-          fileName={fileName}
-        />
+        <div className={styles["artifacts-header-actions"]}>
+          <ArtifactsShareButton
+            id={id}
+            getCode={() => code}
+            fileName={fileName}
+          />
+        </div>
       </div>
       <div className={styles["artifacts-content"]}>
         {loading && <Loading />}

@@ -140,6 +140,8 @@ const en: LocaleType = {
     Artifacts: {
       Title: "Share Artifacts",
       Error: "Share Error",
+      GitHubTitle: "Open GitHub repository",
+      ReloadTitle: "Reload preview",
     },
   },
   Select: {

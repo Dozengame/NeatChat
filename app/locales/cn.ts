@@ -139,6 +139,8 @@ const cn = {
     Artifacts: {
       Title: "分享页面",
       Error: "分享失败",
+      GitHubTitle: "打开 GitHub 仓库",
+      ReloadTitle: "重新加载预览",
     },
   },
   Select: {

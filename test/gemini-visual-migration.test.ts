@@ -11561,13 +11561,47 @@ describe("Gemini visual migration shell", () => {
     const artifactsShareButton = read(
       "app/components/artifacts-share-button.tsx",
     );
+    const enLocale = read("app/locales/en.ts");
+    const cnLocale = read("app/locales/cn.ts");
     const artifactsStyles = read("app/components/artifacts.module.scss");
     const rootBlock = readCssBlock(artifactsStyles, ".artifacts");
     const rootDeclarations = readRootDeclarations(rootBlock);
     const headerBlock = readCssBlock(rootBlock, "&-header");
+    const headerActionsBlock = readCssBlock(rootBlock, "&-header-actions");
+    const headerLinkBlock = readCssBlock(rootBlock, "&-header-link");
+    const actionButtonBlock = readCssBlock(rootBlock, "&-action-button");
     const titleBlock = readCssBlock(rootBlock, "&-title");
     const contentBlock = readCssBlock(rootBlock, "&-content");
     const iframeBlock = readCssBlock(artifactsStyles, ".artifacts-iframe");
+    const mobileArtifactsBlock = readCssBlock(
+      artifactsStyles,
+      "@media (max-width: 600px)",
+    );
+    const mobileRootBlock = readCssBlock(mobileArtifactsBlock, ".artifacts");
+    const mobileHeaderBlock = readCssBlock(
+      mobileArtifactsBlock,
+      ".artifacts-header",
+    );
+    const mobileHeaderActionsBlock = readCssBlock(
+      mobileArtifactsBlock,
+      ".artifacts-header-actions",
+    );
+    const mobileTitleBlock = readCssBlock(
+      mobileArtifactsBlock,
+      ".artifacts-title",
+    );
+    const mobileContentBlock = readCssBlock(
+      mobileArtifactsBlock,
+      ".artifacts-content",
+    );
+    const mobileIframeBlock = readCssBlock(
+      mobileArtifactsBlock,
+      ".artifacts-iframe",
+    );
+    const reducedMotionBlock = readCssBlock(
+      artifactsStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
     const darkRootBlock = readCssBlock(
       artifactsStyles,
       ":global(.dark) .artifacts",
@@ -11587,9 +11621,18 @@ describe("Gemini visual migration shell", () => {
     const artifactsPaintScope = [
       rootDeclarations,
       headerBlock,
+      headerActionsBlock,
+      headerLinkBlock,
+      actionButtonBlock,
       titleBlock,
       contentBlock,
       iframeBlock,
+      mobileRootBlock,
+      mobileHeaderBlock,
+      mobileHeaderActionsBlock,
+      mobileTitleBlock,
+      mobileContentBlock,
+      mobileIframeBlock,
       darkRootBlock,
       autoDarkRootBlock,
     ].join("\n");
@@ -11600,6 +11643,20 @@ describe("Gemini visual migration shell", () => {
     expect(artifacts).toContain("previewRef.current?.reload()");
     expect(artifacts).toContain("<ArtifactsShareButton");
     expect(artifacts).toContain("getCode={() => code}");
+    expect(artifacts).not.toContain("style={{ marginLeft: 20 }}");
+    expect(artifacts).toContain('className={styles["artifacts-header-actions"]}');
+    expect(artifacts).toContain('className={styles["artifacts-header-link"]}');
+    expect(artifacts).toContain('className={styles["artifacts-action-button"]}');
+    expect(artifacts).toContain(
+      "aria-label={Locale.Export.Artifacts.GitHubTitle}",
+    );
+    expect(artifacts).toContain("title={Locale.Export.Artifacts.GitHubTitle}");
+    expect(artifacts).toContain("title={Locale.Export.Artifacts.ReloadTitle}");
+    expect(artifacts).toContain("aria={Locale.Export.Artifacts.ReloadTitle}");
+    expect(enLocale).toContain('GitHubTitle: "Open GitHub repository"');
+    expect(enLocale).toContain('ReloadTitle: "Reload preview"');
+    expect(cnLocale).toContain('GitHubTitle: "打开 GitHub 仓库"');
+    expect(cnLocale).toContain('ReloadTitle: "重新加载预览"');
     expect(artifactsPreview).toContain("new ResizeObserver");
     expect(artifactsPreview).toContain("parent.postMessage");
     expect(artifactsPreview).toContain('sandbox="allow-forms allow-modals allow-scripts"');
@@ -11625,6 +11682,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(rootDeclarations).toMatch(/background:\s*var\(--artifacts-background\);/);
     expect(rootDeclarations).toMatch(/color:\s*var\(--black\);/);
+    expect(rootDeclarations).toMatch(/box-sizing:\s*border-box;/);
+    expect(rootDeclarations).toMatch(/min-width:\s*0;/);
+    expect(rootDeclarations).toMatch(/overflow:\s*hidden;/);
     expect(headerBlock).toMatch(
       /background:\s*var\(--artifacts-header-background\);/,
     );
@@ -11633,16 +11693,41 @@ describe("Gemini visual migration shell", () => {
     );
     expect(headerBlock).toMatch(/min-height:\s*64px;/);
     expect(headerBlock).toMatch(/box-sizing:\s*border-box;/);
-    expect(headerBlock).toMatch(/gap:\s*14px;/);
+    expect(headerBlock).toMatch(
+      /grid-template-columns:\s*auto minmax\(0,\s*1fr\) auto;/,
+    );
+    expect(headerBlock).toMatch(/gap:\s*12px;/);
+    expect(headerBlock).toMatch(/width:\s*100%;/);
+    expect(headerBlock).toMatch(/min-width:\s*0;/);
+    expect(headerBlock).toMatch(/max-width:\s*100%;/);
     expect(headerBlock).toMatch(/backdrop-filter:\s*blur\(12px\);/);
+    expect(headerActionsBlock).toMatch(/display:\s*flex;/);
+    expect(headerActionsBlock).toMatch(/align-items:\s*center;/);
+    expect(headerActionsBlock).toMatch(/gap:\s*8px;/);
+    expect(headerActionsBlock).toMatch(/min-width:\s*0;/);
+    expect(headerActionsBlock).toMatch(/max-width:\s*100%;/);
+    expect(headerLinkBlock).toMatch(/display:\s*inline-flex;/);
+    expect(headerLinkBlock).toMatch(/text-decoration:\s*none;/);
+    expect(actionButtonBlock).toMatch(/flex:\s*0 0 auto;/);
     expect(titleBlock).toMatch(/font-size:\s*20px;/);
     expect(titleBlock).toMatch(/font-weight:\s*600;/);
     expect(titleBlock).toMatch(/letter-spacing:\s*0;/);
+    expect(titleBlock).toMatch(/min-width:\s*0;/);
+    expect(titleBlock).toMatch(/overflow:\s*hidden;/);
+    expect(titleBlock).toMatch(/text-overflow:\s*ellipsis;/);
+    expect(titleBlock).toMatch(/white-space:\s*nowrap;/);
     expect(contentBlock).toMatch(/padding:\s*16px 20px 20px;/);
     expect(contentBlock).toMatch(/background:\s*var\(--artifacts-background\);/);
+    expect(contentBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(contentBlock).toMatch(/min-width:\s*0;/);
+    expect(contentBlock).toMatch(/max-width:\s*100%;/);
+    expect(contentBlock).toMatch(/overflow:\s*auto;/);
+    expect(iframeBlock).toMatch(/display:\s*block;/);
+    expect(iframeBlock).toMatch(/box-sizing:\s*border-box;/);
     expect(iframeBlock).toMatch(
       /border:\s*1px solid var\(--artifacts-iframe-border-color\);/,
     );
+    expect(iframeBlock).toMatch(/max-width:\s*100%;/);
     expect(iframeBlock).toMatch(/border-radius:\s*8px;/);
     expect(iframeBlock).toMatch(
       /background-color:\s*var\(--artifacts-iframe-background\);/,
@@ -11663,6 +11748,25 @@ describe("Gemini visual migration shell", () => {
     );
     expect(autoDarkRootBlock).toMatch(
       /--artifacts-iframe-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 12%,\s*transparent\s*\);/,
+    );
+    expect(mobileRootBlock).toMatch(/min-width:\s*0;/);
+    expect(mobileHeaderBlock).toMatch(
+      /grid-template-columns:\s*minmax\(0,\s*1fr\) auto;/,
+    );
+    expect(mobileHeaderBlock).toMatch(
+      /grid-template-areas:\s*"title share"\s*"actions actions";/,
+    );
+    expect(mobileHeaderBlock).toMatch(/padding:\s*10px 12px;/);
+    expect(mobileHeaderActionsBlock).toMatch(/flex-wrap:\s*wrap;/);
+    expect(mobileHeaderActionsBlock).toMatch(/gap:\s*8px;/);
+    expect(mobileTitleBlock).toMatch(/font-size:\s*16px;/);
+    expect(mobileTitleBlock).toMatch(/text-align:\s*left;/);
+    expect(mobileContentBlock).toMatch(/padding:\s*10px;/);
+    expect(mobileContentBlock).toMatch(/min-width:\s*0;/);
+    expect(mobileIframeBlock).toMatch(/border-radius:\s*6px;/);
+    expect(mobileIframeBlock).toMatch(/max-width:\s*100%;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.artifacts-header-actions :global\(\.clickable\),[\s\S]*\.artifacts-iframe[\s\S]*animation:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
     );
     expect(artifactsPaintScope).not.toContain("var(--second)");
     expect(artifactsPaintScope).not.toContain("border: var(--border-in-light)");
