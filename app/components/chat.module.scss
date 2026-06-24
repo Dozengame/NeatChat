@@ -4135,21 +4135,111 @@
 }
 
 .chat-message-audio {
+  --chat-message-audio-border-color: color-mix(in srgb, var(--black-50) 12%, transparent);
+  --chat-message-audio-background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
+  --chat-message-audio-shadow-color: color-mix(in srgb, var(--black-50) 8%, transparent);
+  --chat-message-audio-color: color-mix(in srgb, var(--black-50) 88%, transparent);
+  --chat-message-audio-hover-border-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  --chat-message-audio-hover-shadow-color: color-mix(in srgb, var(--primary) 9%, transparent);
+  --chat-message-audio-control-background: color-mix(in srgb, var(--surface-elevated) 96%, var(--white));
+  --chat-message-audio-control-scheme: light;
+  --chat-message-audio-focus-shadow-color: color-mix(in srgb, var(--primary) 12%, transparent);
+
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-radius: 10px;
-  background-color: rgba(0, 0, 0, 0.05);
-  border: var(--border-in-light);
+  gap: 10px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--chat-message-audio-background);
+  border: 1px solid var(--chat-message-audio-border-color);
+  box-shadow: 0 8px 24px var(--chat-message-audio-shadow-color);
   position: relative;
-  transition: all ease 0.3s;
+  transition: background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
   margin-top: 10px;
   font-size: 14px;
+  color: var(--chat-message-audio-color);
   user-select: text;
   word-break: break-word;
   box-sizing: border-box;
+  overflow: hidden;
+
+  &:hover {
+    border-color: var(--chat-message-audio-hover-border-color);
+    box-shadow: 0 10px 26px var(--chat-message-audio-hover-shadow-color);
+  }
+
+  &:focus-within {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    border-color: var(--chat-message-audio-hover-border-color);
+    box-shadow: var(--focus-ring-shadow), 0 10px 26px var(--chat-message-audio-focus-shadow-color);
+  }
+
   audio {
-    height: 30px; /* 调整高度 */
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 360px;
+    height: 32px;
+    border-radius: 6px;
+    background: var(--chat-message-audio-control-background);
+    accent-color: var(--primary);
+    color-scheme: var(--chat-message-audio-control-scheme);
+  }
+}
+
+:global(.dark) .chat-message-audio {
+  --chat-message-audio-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --chat-message-audio-background: color-mix(in srgb, var(--surface-elevated) 80%, transparent);
+  --chat-message-audio-shadow-color: color-mix(in srgb, var(--surface) 38%, transparent);
+  --chat-message-audio-color: color-mix(in srgb, var(--black) 86%, transparent);
+  --chat-message-audio-hover-border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  --chat-message-audio-hover-shadow-color: color-mix(in srgb, var(--primary) 8%, transparent);
+  --chat-message-audio-control-background: color-mix(in srgb, var(--surface-elevated) 82%, var(--surface));
+  --chat-message-audio-control-scheme: dark;
+  --chat-message-audio-focus-shadow-color: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .chat-message-audio {
+    --chat-message-audio-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+    --chat-message-audio-background: color-mix(in srgb, var(--surface-elevated) 80%, transparent);
+    --chat-message-audio-shadow-color: color-mix(in srgb, var(--surface) 38%, transparent);
+    --chat-message-audio-color: color-mix(in srgb, var(--black) 86%, transparent);
+    --chat-message-audio-hover-border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+    --chat-message-audio-hover-shadow-color: color-mix(in srgb, var(--primary) 8%, transparent);
+    --chat-message-audio-control-background: color-mix(in srgb, var(--surface-elevated) 82%, var(--surface));
+    --chat-message-audio-control-scheme: dark;
+    --chat-message-audio-focus-shadow-color: color-mix(in srgb, var(--primary) 12%, transparent);
+  }
+}
+
+@media only screen and (max-width: 600px) {
+  .chat-message-audio {
+    width: 100%;
+    padding: 8px;
+
+    audio {
+      max-width: 100%;
+    }
+  }
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 600px) {
+  .chat-message-audio {
+    box-shadow: 0 6px 18px var(--chat-message-audio-shadow-color);
+
+    &:hover {
+      border-color: var(--chat-message-audio-border-color);
+      box-shadow: 0 6px 18px var(--chat-message-audio-shadow-color);
+    }
+
+    &:focus-within {
+      box-shadow: var(--focus-ring-shadow), 0 6px 18px var(--chat-message-audio-focus-shadow-color);
+    }
   }
 }
 
@@ -7149,6 +7239,12 @@
   .chat-dropzone-icon,
   .chat-dropzone-summary {
     transform: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .chat-message-audio,
+  .chat-message-audio:hover,
+  .chat-message-audio:focus-within {
     transition-duration: 0.01ms !important;
   }
 

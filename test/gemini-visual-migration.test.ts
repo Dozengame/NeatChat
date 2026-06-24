@@ -14933,6 +14933,175 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps chat message audio card surface theme-aware and bounded", () => {
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const messageAudioBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-audio",
+    );
+    const messageAudioRootBlock = readRootDeclarations(messageAudioBlock);
+    const messageAudioPlayerBlock = readCssBlock(messageAudioBlock, "audio");
+    const messageAudioHoverBlock = readCssBlock(messageAudioBlock, "&:hover");
+    const messageAudioFocusBlock = readCssBlock(
+      messageAudioBlock,
+      "&:focus-within",
+    );
+    const darkMessageAudioBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-message-audio",
+    );
+    const autoDarkMessageAudioSelector =
+      ":global(body:not(.light)) .chat-message-audio";
+    const autoDarkMessageAudioIndex = chatStyles.indexOf(
+      autoDarkMessageAudioSelector,
+    );
+    const autoDarkMessageAudioMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkMessageAudioIndex,
+    );
+    const autoDarkMessageAudioBlock = readCssBlock(
+      chatStyles.slice(autoDarkMessageAudioMediaIndex),
+      autoDarkMessageAudioSelector,
+    );
+    const messageAudioResponsiveStyles = chatStyles.slice(
+      chatStyles.indexOf("\n.chat-message-audio {"),
+    );
+    const mobileMessageAudioMediaBlock = readCssBlock(
+      messageAudioResponsiveStyles,
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileMessageAudioBlock = readCssBlock(
+      mobileMessageAudioMediaBlock,
+      ".chat-message-audio",
+    );
+    const mobileMessageAudioPlayerBlock = readCssBlock(
+      mobileMessageAudioBlock,
+      "audio",
+    );
+    const touchMessageAudioMediaBlock = readCssBlock(
+      messageAudioResponsiveStyles,
+      "@media (hover: none), (pointer: coarse), (max-width: 600px)",
+    );
+    const touchMessageAudioBlock = readCssBlock(
+      touchMessageAudioMediaBlock,
+      ".chat-message-audio",
+    );
+    const reducedMotionBlock = readCssBlock(
+      chatStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const messageAudioTokenNames = [
+      "--chat-message-audio-border-color",
+      "--chat-message-audio-background",
+      "--chat-message-audio-shadow-color",
+      "--chat-message-audio-color",
+      "--chat-message-audio-hover-border-color",
+      "--chat-message-audio-hover-shadow-color",
+      "--chat-message-audio-control-background",
+      "--chat-message-audio-control-scheme",
+      "--chat-message-audio-focus-shadow-color",
+    ];
+    const lightMessageAudioTokens = readCustomProperties(
+      messageAudioRootBlock,
+      messageAudioTokenNames,
+    );
+    const darkMessageAudioTokens = readCustomProperties(
+      darkMessageAudioBlock,
+      messageAudioTokenNames,
+    );
+    const autoDarkMessageAudioTokens = readCustomProperties(
+      autoDarkMessageAudioBlock,
+      messageAudioTokenNames,
+    );
+    const messageAudioPaintScope = [
+      messageAudioRootBlock,
+      messageAudioPlayerBlock,
+      darkMessageAudioBlock,
+      autoDarkMessageAudioBlock,
+    ].join("\n");
+
+    expect(chat).not.toContain('styles["chat-message-audio"]');
+    expect(chat).not.toContain("message.audio_url");
+    expect(messageAudioBlock).not.toBe("");
+    expect(Object.values(lightMessageAudioTokens).every(Boolean)).toBeTruthy();
+    expect(Object.values(darkMessageAudioTokens).every(Boolean)).toBeTruthy();
+    expect(
+      Object.values(autoDarkMessageAudioTokens).every(Boolean),
+    ).toBeTruthy();
+    expect(
+      lightMessageAudioTokens["--chat-message-audio-border-color"],
+    ).toContain("var(--black-50)");
+    expect(
+      darkMessageAudioTokens["--chat-message-audio-border-color"],
+    ).toContain("var(--black)");
+    expect(autoDarkMessageAudioTokens).toEqual(darkMessageAudioTokens);
+    expect(messageAudioRootBlock).toMatch(/display:\s*flex;/);
+    expect(messageAudioRootBlock).toMatch(/align-items:\s*center;/);
+    expect(messageAudioRootBlock).toMatch(/gap:\s*10px;/);
+    expect(messageAudioRootBlock).toMatch(/max-width:\s*100%;/);
+    expect(messageAudioRootBlock).toMatch(/min-width:\s*0;/);
+    expect(messageAudioRootBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(messageAudioRootBlock).toMatch(/overflow:\s*hidden;/);
+    expect(messageAudioRootBlock).toMatch(/border-radius:\s*8px;/);
+    expect(messageAudioRootBlock).toMatch(
+      /border:\s*1px solid var\(--chat-message-audio-border-color\);/,
+    );
+    expect(messageAudioRootBlock).toMatch(
+      /background:\s*var\(--chat-message-audio-background\);/,
+    );
+    expect(messageAudioRootBlock).toMatch(
+      /box-shadow:\s*0 8px 24px var\(--chat-message-audio-shadow-color\);/,
+    );
+    expect(messageAudioRootBlock).toMatch(
+      /color:\s*var\(--chat-message-audio-color\);/,
+    );
+    expect(messageAudioRootBlock).toMatch(
+      /transition:\s*background-color 0\.16s ease,\s*border-color 0\.16s ease,\s*box-shadow 0\.16s ease;/,
+    );
+    expect(messageAudioHoverBlock).toMatch(
+      /border-color:\s*var\(--chat-message-audio-hover-border-color\);/,
+    );
+    expect(messageAudioHoverBlock).toMatch(
+      /box-shadow:\s*0 10px 26px var\(--chat-message-audio-hover-shadow-color\);/,
+    );
+    expect(messageAudioFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(messageAudioFocusBlock).toMatch(
+      /box-shadow:\s*var\(--focus-ring-shadow\),\s*0 10px 26px var\(--chat-message-audio-focus-shadow-color\);/,
+    );
+    expect(messageAudioPlayerBlock).toMatch(/display:\s*block;/);
+    expect(messageAudioPlayerBlock).toMatch(/width:\s*100%;/);
+    expect(messageAudioPlayerBlock).toMatch(/min-width:\s*0;/);
+    expect(messageAudioPlayerBlock).toMatch(/max-width:\s*360px;/);
+    expect(messageAudioPlayerBlock).toMatch(/height:\s*32px;/);
+    expect(messageAudioPlayerBlock).toMatch(
+      /background:\s*var\(--chat-message-audio-control-background\);/,
+    );
+    expect(messageAudioPlayerBlock).toMatch(/accent-color:\s*var\(--primary\);/);
+    expect(messageAudioPlayerBlock).toMatch(
+      /color-scheme:\s*var\(--chat-message-audio-control-scheme\);/,
+    );
+    expect(mobileMessageAudioBlock).toMatch(/width:\s*100%;/);
+    expect(mobileMessageAudioBlock).toMatch(/padding:\s*8px;/);
+    expect(mobileMessageAudioPlayerBlock).toMatch(/max-width:\s*100%;/);
+    expect(touchMessageAudioBlock).toMatch(
+      /box-shadow:\s*0 6px 18px var\(--chat-message-audio-shadow-color\);/,
+    );
+    expect(touchMessageAudioBlock).toMatch(
+      /&:hover\s*\{[\s\S]*box-shadow:\s*0 6px 18px var\(--chat-message-audio-shadow-color\);/,
+    );
+    expect(touchMessageAudioBlock).toMatch(
+      /&:focus-within\s*\{[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\),\s*0 6px 18px var\(--chat-message-audio-focus-shadow-color\);/,
+    );
+    expect(messageAudioPaintScope).not.toMatch(/rgba\(/);
+    expect(messageAudioPaintScope).not.toContain("var(--border-in-light)");
+    expect(messageAudioPaintScope).not.toMatch(/transition:\s*all/);
+    expect(messageAudioPaintScope).not.toMatch(/#[0-9a-fA-F]{3,6}/);
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-message-audio,\s*\.chat-message-audio:hover,\s*\.chat-message-audio:focus-within[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+  });
+
   test("keeps chat message image cards theme-aware and touch-safe", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
