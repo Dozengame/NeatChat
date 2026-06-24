@@ -20020,11 +20020,87 @@ describe("Gemini visual migration shell", () => {
       /--settings-danger-surface-background:\s*color-mix\(\s*in srgb,\s*rgb\(217,\s*48,\s*37\) 3%,\s*transparent\s*\);/,
     );
     expect(dangerSurfaceRootBlock).toMatch(
+      /--settings-danger-list-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--surface-soft\)\s*\);/,
+    );
+    expect(dangerSurfaceRootBlock).toMatch(
       /--settings-danger-border-color:\s*color-mix\(\s*in srgb,\s*rgb\(217,\s*48,\s*37\) 18%,\s*transparent\s*\);/,
     );
     expect(darkDangerSurfaceBlock).toMatch(
       /--settings-danger-surface-background:\s*color-mix\(\s*in srgb,\s*rgb\(217,\s*48,\s*37\) 8%,\s*transparent\s*\);/,
     );
+    expect(darkDangerSurfaceBlock).toMatch(
+      /--settings-danger-list-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
+    );
+    expect(dangerTokenMap["--settings-danger-list-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 92%, var(--surface-soft) )",
+    );
+    expect(dangerTokenMap["--settings-danger-item-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 94%, var(--surface-soft) )",
+    );
+    expect(darkDangerTokenMap["--settings-danger-list-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 86%, var(--surface) )",
+    );
+    expect(darkDangerTokenMap["--settings-danger-item-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 88%, var(--surface) )",
+    );
+    expect(autoDarkDangerTokenMap["--settings-danger-list-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 86%, var(--surface) )",
+    );
+    expect(autoDarkDangerTokenMap["--settings-danger-item-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 88%, var(--surface) )",
+    );
+    for (const tokenValue of [
+      dangerTokenMap["--settings-danger-list-background"],
+      dangerTokenMap["--settings-danger-item-background"],
+      darkDangerTokenMap["--settings-danger-list-background"],
+      darkDangerTokenMap["--settings-danger-item-background"],
+      autoDarkDangerTokenMap["--settings-danger-list-background"],
+      autoDarkDangerTokenMap["--settings-danger-item-background"],
+    ]) {
+      expect(tokenValue).not.toContain("transparent");
+      expect(tokenValue).not.toContain("var(--white)");
+      expect(tokenValue).not.toContain("var(--gray)");
+    }
+    for (const [tokenMap, redTokens] of [
+      [
+        dangerTokenMap,
+        [
+          "--settings-danger-border-color",
+          "--settings-danger-divider-color",
+          "--settings-danger-item-hover-background",
+          "--settings-danger-item-active-background",
+          "--settings-danger-action-shadow-color",
+          "--settings-danger-action-hover-shadow-color",
+          "--settings-danger-focus-shadow-color",
+        ],
+      ],
+      [
+        darkDangerTokenMap,
+        [
+          "--settings-danger-border-color",
+          "--settings-danger-divider-color",
+          "--settings-danger-item-hover-background",
+          "--settings-danger-item-active-background",
+          "--settings-danger-action-hover-shadow-color",
+          "--settings-danger-focus-shadow-color",
+        ],
+      ],
+      [
+        autoDarkDangerTokenMap,
+        [
+          "--settings-danger-border-color",
+          "--settings-danger-divider-color",
+          "--settings-danger-item-hover-background",
+          "--settings-danger-item-active-background",
+          "--settings-danger-action-hover-shadow-color",
+          "--settings-danger-focus-shadow-color",
+        ],
+      ],
+    ] as const) {
+      for (const tokenName of redTokens) {
+        expect(tokenMap[tokenName]).toContain("rgb(217, 48, 37)");
+      }
+    }
     expect(dangerSurfaceRootBlock).toMatch(/width:\s*100%;/);
     expect(dangerSurfaceRootBlock).toMatch(/max-width:\s*100%;/);
     expect(dangerSurfaceRootBlock).toMatch(/min-width:\s*0;/);
@@ -20092,6 +20168,8 @@ describe("Gemini visual migration shell", () => {
     expect(dangerPaintScope).not.toContain("box-shadow: var(--card-shadow)");
     expect(dangerPaintScope).not.toContain("border-radius: 10px");
     expect(dangerPaintScope).not.toContain("background-color: var(--white)");
+    expect(dangerPaintScope).not.toContain("var(--white)");
+    expect(dangerPaintScope).not.toContain("var(--gray)");
   });
 
   test("keeps Settings custom instructions aligned with Gemini utility fields", () => {

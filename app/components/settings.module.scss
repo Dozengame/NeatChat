@@ -967,7 +967,7 @@
   --settings-danger-list-background: color-mix(
     in srgb,
     var(--surface-elevated) 92%,
-    var(--gray)
+    var(--surface-soft)
   );
   --settings-danger-border-color: color-mix(
     in srgb,
@@ -987,7 +987,7 @@
   --settings-danger-item-background: color-mix(
     in srgb,
     var(--surface-elevated) 94%,
-    transparent
+    var(--surface-soft)
   );
   --settings-danger-item-hover-background: color-mix(
     in srgb,
@@ -1106,7 +1106,7 @@
   --settings-danger-list-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
-    var(--white)
+    var(--surface)
   );
   --settings-danger-border-color: color-mix(
     in srgb,
@@ -1126,7 +1126,7 @@
   --settings-danger-item-background: color-mix(
     in srgb,
     var(--surface-elevated) 88%,
-    transparent
+    var(--surface)
   );
   --settings-danger-item-hover-background: color-mix(
     in srgb,
@@ -1175,7 +1175,7 @@
     --settings-danger-list-background: color-mix(
       in srgb,
       var(--surface-elevated) 86%,
-      var(--white)
+      var(--surface)
     );
     --settings-danger-border-color: color-mix(
       in srgb,
@@ -1195,7 +1195,7 @@
     --settings-danger-item-background: color-mix(
       in srgb,
       var(--surface-elevated) 88%,
-      transparent
+      var(--surface)
     );
     --settings-danger-item-hover-background: color-mix(
       in srgb,
