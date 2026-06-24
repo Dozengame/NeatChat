@@ -4055,7 +4055,8 @@ function useChatInnerView() {
             type="button"
             ref={modelSelectorButtonRef}
             className={styles["chat-mobile-model-title"]}
-            aria-label="选择模型"
+            aria-label={`选择模型：${headerCurrentModelName}`}
+            title={headerCurrentModelName}
             onKeyDown={handleModelMenuKeyDown}
             onClick={() => {
               setShowChatActionMenu(false);
@@ -4066,7 +4067,9 @@ function useChatInnerView() {
             aria-haspopup="dialog"
             aria-expanded={showMobileModelSelector}
           >
-            <span>{headerCurrentModelName}</span>
+            <span className={styles["chat-mobile-model-title-text"]}>
+              {headerCurrentModelName}
+            </span>
             <span className={styles["chat-mobile-model-title-arrow"]}>⌄</span>
           </button>
           <IconButton
@@ -4084,7 +4087,10 @@ function useChatInnerView() {
           {promptToast}
         </div>
       ) : (
-        <div className="window-header" data-tauri-drag-region>
+        <div
+          className={clsx("window-header", styles["chat-desktop-header"])}
+          data-tauri-drag-region
+        >
           <div
             className={clsx(
               "window-header-title",
