@@ -4001,13 +4001,25 @@ describe("Gemini visual migration shell", () => {
       composerActionsBlock,
       ".chat-input-action",
     );
+    const composerActionTextBlock = readCssBlock(
+      composerActionBlock,
+      ".text",
+    );
     const composerActionHoverBlock = readCssBlock(
       composerActionBlock,
       "&:not(:disabled):hover",
     );
+    const composerActionHoverTextBlock = readCssBlock(
+      composerActionHoverBlock,
+      ".text",
+    );
     const composerActionFocusBlock = readCssBlock(
       composerActionBlock,
       "&:not(:disabled):focus-visible",
+    );
+    const composerActionFocusTextBlock = readCssBlock(
+      composerActionFocusBlock,
+      ".text",
     );
     const composerActionDisabledBlock = readCssBlock(
       composerActionBlock,
@@ -4016,6 +4028,18 @@ describe("Gemini visual migration shell", () => {
     const composerActionActiveBlock = readCssBlock(
       composerActionBlock,
       "&-active",
+    );
+    const composerActionActiveTextBlock = readCssBlock(
+      composerActionActiveBlock,
+      ".text",
+    );
+    const composerActionMobileMediaBlock = readCssBlock(
+      composerActionBlock,
+      "@media screen and (max-width: 600px)",
+    );
+    const composerActionMobileTextBlock = readCssBlock(
+      composerActionMobileMediaBlock,
+      ".text",
     );
     const darkComposerActionsBlock = readCssBlock(
       chatStyles,
@@ -4204,6 +4228,13 @@ describe("Gemini visual migration shell", () => {
     expect(composerActionBlock).toMatch(
       /transition:[\s\S]*box-shadow 0\.18s ease/,
     );
+    expect(composerActionTextBlock).toMatch(/white-space:\s*nowrap;/);
+    expect(composerActionTextBlock).toMatch(/opacity:\s*0;/);
+    expect(composerActionTextBlock).toMatch(/transform:\s*translateX\(-5px\);/);
+    expect(composerActionTextBlock).toMatch(
+      /transition:\s*opacity 0\.2s ease,\s*transform 0\.2s ease;/,
+    );
+    expect(composerActionTextBlock).toMatch(/pointer-events:\s*none;/);
     expect(composerActionHoverBlock).toMatch(
       /background-color:\s*var\(--chat-composer-action-hover-background\);/,
     );
@@ -4213,11 +4244,21 @@ describe("Gemini visual migration shell", () => {
     expect(composerActionHoverBlock).toMatch(
       /box-shadow:\s*0 8px 20px var\(--chat-composer-action-hover-shadow-color\);/,
     );
+    expect(composerActionHoverTextBlock).toMatch(
+      /transition-delay:\s*var\(--delay\);/,
+    );
+    expect(composerActionHoverTextBlock).toMatch(/opacity:\s*1;/);
+    expect(composerActionHoverTextBlock).toMatch(/transform:\s*translateX\(0\);/);
     expect(composerActionFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
     expect(composerActionFocusBlock).toMatch(/outline-offset:\s*2px;/);
     expect(composerActionFocusBlock).toMatch(
       /box-shadow:\s*var\(--focus-ring-shadow\),\s*0 8px 20px var\(--chat-composer-action-focus-shadow-color\);/,
     );
+    expect(composerActionFocusTextBlock).toMatch(
+      /transition-delay:\s*var\(--delay\);/,
+    );
+    expect(composerActionFocusTextBlock).toMatch(/opacity:\s*1;/);
+    expect(composerActionFocusTextBlock).toMatch(/transform:\s*translateX\(0\);/);
     expect(composerActionActiveBlock).toMatch(
       /border-color:\s*var\(--chat-composer-action-active-border-color\);/,
     );
@@ -4227,6 +4268,11 @@ describe("Gemini visual migration shell", () => {
     expect(composerActionActiveBlock).toMatch(
       /color:\s*var\(--chat-composer-action-active-color\);/,
     );
+    expect(composerActionActiveTextBlock).toMatch(/opacity:\s*1;/);
+    expect(composerActionActiveTextBlock).toMatch(/transform:\s*translateX\(0\);/);
+    expect(composerActionMobileTextBlock).toMatch(/display:\s*none;/);
+    expect(composerActionMobileTextBlock).toMatch(/transition:\s*none;/);
+    expect(composerActionMobileTextBlock).toMatch(/transform:\s*none;/);
     expect(composerActionDisabledBlock).toMatch(
       /background-color:\s*var\(--chat-composer-action-disabled-background\);/,
     );
@@ -4240,6 +4286,7 @@ describe("Gemini visual migration shell", () => {
     expect(composerActionPaintScope).not.toContain("background-color: var(--white)");
     expect(composerActionPaintScope).not.toContain("color: var(--black)");
     expect(composerActionPaintScope).not.toContain("rgba(49, 94, 248");
+    expect(composerActionPaintScope).not.toMatch(/transition:\s*all/);
     expect(Object.values(lightActionMenuHoverTokens).every(Boolean)).toBeTruthy();
     expect(Object.values(darkActionMenuHoverTokens).every(Boolean)).toBeTruthy();
     expect(Object.values(autoDarkActionMenuHoverTokens).every(Boolean)).toBeTruthy();
@@ -4257,6 +4304,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(reducedMotionBlock).toMatch(
       /\.chat-input-actions \.chat-input-action,\s*\.chat-input-actions \.chat-input-action-active\s*\{[\s\S]*animation:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-input-actions \.chat-input-action \.text\s*\{[\s\S]*transition-duration:\s*0\.01ms !important;[\s\S]*transform:\s*none !important;/,
     );
     expect(sectionMetaBlock).toMatch(/border-radius:\s*999px;/);
     expect(sectionMetaBlock).toMatch(
