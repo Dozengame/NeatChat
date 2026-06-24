@@ -374,6 +374,25 @@ describe("Gemini visual migration shell", () => {
       scrollToBottomTokenNames,
     );
     const emptyStateBlock = readCssBlock(chatStyles, ".chat-empty-state");
+    const emptyTitleBlock = readCssBlock(chatStyles, ".chat-empty-title");
+    const emptyTitleRootBlock = readRootDeclarations(emptyTitleBlock);
+    const darkEmptyTitleBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-empty-title",
+    );
+    const autoDarkEmptyTitleSelector =
+      ":global(body:not(.light)) .chat-empty-title";
+    const autoDarkEmptyTitleSelectorIndex = chatStyles.indexOf(
+      autoDarkEmptyTitleSelector,
+    );
+    const autoDarkEmptyTitleMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkEmptyTitleSelectorIndex,
+    );
+    const autoDarkEmptyTitleBlock = readCssBlock(
+      chatStyles.slice(autoDarkEmptyTitleMediaIndex),
+      autoDarkEmptyTitleSelector,
+    );
     const emptySuggestionsBlock = readCssBlock(
       chatStyles,
       ".chat-empty-suggestions",
@@ -534,6 +553,27 @@ describe("Gemini visual migration shell", () => {
       darkEmptySuggestionAffordanceBlock,
       autoDarkEmptySuggestionBlock,
     ].join("\n");
+    const emptyTitleTokenNames = [
+      "--chat-empty-title-gradient",
+      "--chat-empty-title-gradient-start",
+      "--chat-empty-title-gradient-mid",
+      "--chat-empty-title-gradient-end",
+    ];
+    const emptyTitleStopTokenNames = emptyTitleTokenNames.filter(
+      (tokenName) => tokenName !== "--chat-empty-title-gradient",
+    );
+    const lightEmptyTitleTokens = readCustomProperties(
+      emptyTitleRootBlock,
+      emptyTitleTokenNames,
+    );
+    const darkEmptyTitleTokens = readCustomProperties(
+      darkEmptyTitleBlock,
+      emptyTitleTokenNames,
+    );
+    const autoDarkEmptyTitleTokens = readCustomProperties(
+      autoDarkEmptyTitleBlock,
+      emptyTitleTokenNames,
+    );
     const legacyEmptySuggestionPaint =
       /(?:rgba\((?:255,\s*255,\s*255|60,\s*64,\s*67|49,\s*94,\s*248|138,\s*180,\s*248)|#[0-9a-fA-F]{3,6})/;
     const mobileActionMenuBlock = readCssBlock(
@@ -568,6 +608,10 @@ describe("Gemini visual migration shell", () => {
       mobileStyles,
       ".chat-empty-suggestion",
     );
+    const mobileEmptyTitleBlock = readCssBlock(
+      mobileStyles,
+      ".chat-empty-title",
+    );
     const narrowEmptyContainerBlock = readCssBlock(
       chatStyles,
       "@container chat-container (max-width: 480px)",
@@ -595,6 +639,10 @@ describe("Gemini visual migration shell", () => {
     const desktopHeaderBlock = readCssBlock(
       chatStyles,
       ".chat-desktop-header",
+    );
+    const desktopEmptyTitleBlock = readCssBlock(
+      desktopStyles,
+      ".chat-empty-title",
     );
     const desktopHeaderRootBlock = readRootDeclarations(desktopHeaderBlock);
     const mobileHeaderBlock = readCssBlock(chatStyles, ".chat-mobile-header");
@@ -2088,6 +2136,62 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain(".chat-empty-title");
     expect(chatStyles).not.toContain(".chat-empty-halo");
     expect(emptyStateBlock).toMatch(/pointer-events:\s*none;/);
+    expect(emptyTitleRootBlock).toMatch(
+      /--chat-empty-title-gradient-start:\s*color-mix\(in srgb,\s*var\(--primary\) 64%,\s*var\(--black\)\);/,
+    );
+    expect(emptyTitleRootBlock).toMatch(
+      /--chat-empty-title-gradient-mid:\s*color-mix\(in srgb,\s*var\(--black\) 72%,\s*var\(--primary\)\);/,
+    );
+    expect(emptyTitleRootBlock).toMatch(
+      /--chat-empty-title-gradient-end:\s*color-mix\(in srgb,\s*var\(--copy-success-color\) 58%,\s*var\(--black\)\);/,
+    );
+    expect(emptyTitleRootBlock).toMatch(
+      /--chat-empty-title-gradient:\s*linear-gradient\(\s*92deg,\s*var\(--chat-empty-title-gradient-start\) 0%,\s*var\(--chat-empty-title-gradient-mid\) 48%,\s*var\(--chat-empty-title-gradient-end\) 100%\s*\);/,
+    );
+    expect(emptyTitleRootBlock).toMatch(/font-size:\s*40px;/);
+    expect(emptyTitleRootBlock).toMatch(/letter-spacing:\s*0;/);
+    expect(emptyTitleRootBlock).toMatch(
+      /background:\s*var\(--chat-empty-title-gradient\);/,
+    );
+    expect(emptyTitleRootBlock).toMatch(
+      /animation:\s*chat-empty-title-shimmer 9s ease-in-out infinite;/,
+    );
+    expect(emptyTitleRootBlock).not.toMatch(
+      /#4285f4|#9b51e0|#e040fb|#f48fb1|letter-spacing:\s*-|font-size:\s*clamp\([^;]*vw/,
+    );
+    expect(darkEmptyTitleBlock).toMatch(
+      /--chat-empty-title-gradient-start:\s*color-mix\(in srgb,\s*var\(--primary\) 42%,\s*var\(--black\)\);/,
+    );
+    expect(darkEmptyTitleBlock).toMatch(
+      /--chat-empty-title-gradient-mid:\s*color-mix\(in srgb,\s*var\(--black\) 78%,\s*var\(--primary\)\);/,
+    );
+    expect(darkEmptyTitleBlock).toMatch(
+      /--chat-empty-title-gradient-end:\s*color-mix\(in srgb,\s*var\(--copy-success-color\) 52%,\s*var\(--black\)\);/,
+    );
+    expect(autoDarkEmptyTitleSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkEmptyTitleMediaIndex).toBeGreaterThan(-1);
+    for (const tokenName of emptyTitleTokenNames) {
+      expect(lightEmptyTitleTokens[tokenName]).toBeTruthy();
+      expect(darkEmptyTitleTokens[tokenName]).toBeTruthy();
+      expect(autoDarkEmptyTitleTokens[tokenName]).toBe(
+        darkEmptyTitleTokens[tokenName],
+      );
+    }
+    for (const tokenMap of [
+      lightEmptyTitleTokens,
+      darkEmptyTitleTokens,
+      autoDarkEmptyTitleTokens,
+    ]) {
+      for (const tokenName of emptyTitleStopTokenNames) {
+        expect(tokenMap[tokenName]).toContain("var(--");
+        expect(tokenMap[tokenName]).not.toMatch(/\brgba?\(|#[0-9a-fA-F]{3,8}/);
+      }
+    }
+    expect(desktopEmptyTitleBlock).toMatch(/font-size:\s*40px;/);
+    expect(desktopEmptyTitleBlock).not.toMatch(/vw|clamp\(/);
+    expect(mobileEmptyTitleBlock).toMatch(/font-size:\s*28px;/);
+    expect(chatStyles).toContain("@keyframes chat-empty-title-shimmer");
+    expect(chatStyles).not.toContain("@keyframes textShine");
     expect(chatStyles).toContain(".chat-empty-suggestions");
     expect(emptySuggestionsBlock).toMatch(/display:\s*grid;/);
     expect(emptySuggestionsBlock).not.toMatch(/display:\s*none/);
@@ -2207,6 +2311,9 @@ describe("Gemini visual migration shell", () => {
     expect(emptySuggestionToneScope).not.toMatch(legacyEmptySuggestionPaint);
     expect(reducedMotionBlock).toMatch(
       /\.prompt-hints,\s*\.prompt-hint\s*\{[\s\S]*animation:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-empty-title\s*\{[\s\S]*animation:\s*none !important;[\s\S]*background-size:\s*100% auto;/,
     );
     expect(reducedMotionBlock).toMatch(
       /\.chat-empty-suggestion,\s*\.chat-empty-suggestion-affordance\s*\{[\s\S]*transition-duration:\s*0\.01ms !important;/,

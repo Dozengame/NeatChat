@@ -2116,29 +2116,32 @@
 }
 
 .chat-empty-title {
+  --chat-empty-title-gradient-start: color-mix(in srgb, var(--primary) 64%, var(--black));
+  --chat-empty-title-gradient-mid: color-mix(in srgb, var(--black) 72%, var(--primary));
+  --chat-empty-title-gradient-end: color-mix(in srgb, var(--copy-success-color) 58%, var(--black));
+  --chat-empty-title-gradient: linear-gradient(
+    92deg,
+    var(--chat-empty-title-gradient-start) 0%,
+    var(--chat-empty-title-gradient-mid) 48%,
+    var(--chat-empty-title-gradient-end) 100%
+  );
   position: relative;
   z-index: 1;
   margin: 0;
   font-family: "Outfit", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(32px, 4vw, 42px);
+  font-size: 40px;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   line-height: 1.15;
   text-align: center;
-  background: linear-gradient(
-    74deg,
-    #4285f4 0%,
-    #9b51e0 25%,
-    #e040fb 65%,
-    #f48fb1 100%
-  );
+  background: var(--chat-empty-title-gradient);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: textShine 6s linear infinite;
+  animation: chat-empty-title-shimmer 9s ease-in-out infinite;
 }
 
-@keyframes textShine {
+@keyframes chat-empty-title-shimmer {
   0% {
     background-position: 0% 50%;
   }
@@ -2320,6 +2323,15 @@
 }
 
 :global(.dark) .chat-empty-title {
+  --chat-empty-title-gradient-start: color-mix(in srgb, var(--primary) 42%, var(--black));
+  --chat-empty-title-gradient-mid: color-mix(in srgb, var(--black) 78%, var(--primary));
+  --chat-empty-title-gradient-end: color-mix(in srgb, var(--copy-success-color) 52%, var(--black));
+  --chat-empty-title-gradient: linear-gradient(
+    92deg,
+    var(--chat-empty-title-gradient-start) 0%,
+    var(--chat-empty-title-gradient-mid) 48%,
+    var(--chat-empty-title-gradient-end) 100%
+  );
   -webkit-text-fill-color: transparent;
   color: transparent;
 }
@@ -2387,6 +2399,18 @@
 }
 
 @media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .chat-empty-title {
+    --chat-empty-title-gradient-start: color-mix(in srgb, var(--primary) 42%, var(--black));
+    --chat-empty-title-gradient-mid: color-mix(in srgb, var(--black) 78%, var(--primary));
+    --chat-empty-title-gradient-end: color-mix(in srgb, var(--copy-success-color) 52%, var(--black));
+    --chat-empty-title-gradient: linear-gradient(
+      92deg,
+      var(--chat-empty-title-gradient-start) 0%,
+      var(--chat-empty-title-gradient-mid) 48%,
+      var(--chat-empty-title-gradient-end) 100%
+    );
+  }
+
   :global(body:not(.light)) .chat-empty-suggestion {
     --chat-empty-suggestion-background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
     --chat-empty-suggestion-color: color-mix(in srgb, var(--black) 86%, transparent);
@@ -5511,7 +5535,7 @@
   }
 
   .chat-empty-title {
-    font-size: clamp(32px, 3vw, 42px);
+    font-size: 40px;
   }
 
   .chat-input-panel {
@@ -6706,6 +6730,11 @@
   .prompt-hint {
     animation: none !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .chat-empty-title {
+    animation: none !important;
+    background-size: 100% auto;
   }
 
   .chat-empty-suggestion,
