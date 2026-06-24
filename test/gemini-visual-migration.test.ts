@@ -8229,6 +8229,18 @@ describe("Gemini visual migration shell", () => {
       fileAttachmentStyles,
       ":global(.dark) .file-attachment-interactive:hover .file-attachment-card,\n:global(.dark) .file-attachment-interactive:focus-visible .file-attachment-card",
     );
+    const darkInteractiveActiveSelector =
+      ":global(.dark) .file-attachment-interactive:active .file-attachment-card";
+    const darkInteractiveActiveBlock = readCssBlock(
+      fileAttachmentStyles,
+      darkInteractiveActiveSelector,
+    );
+    const darkInteractiveHoverIndex = fileAttachmentStyles.indexOf(
+      ":global(.dark) .file-attachment-interactive:hover .file-attachment-card",
+    );
+    const darkInteractiveActiveIndex = fileAttachmentStyles.indexOf(
+      darkInteractiveActiveSelector,
+    );
     const autoDarkAttachmentSelector = ":global(body:not(.light)) .file-attachment";
     const autoDarkAttachmentSelectorIndex = fileAttachmentStyles.indexOf(
       autoDarkAttachmentSelector,
@@ -8253,7 +8265,26 @@ describe("Gemini visual migration shell", () => {
       darkIconBlock,
       darkMetaChipBlock,
       darkInteractiveHoverBlock,
+      darkInteractiveActiveBlock,
     ].join("\n");
+    const attachmentStateTokenNames = [
+      "--file-attachment-focus-shadow",
+      "--file-attachment-active-background",
+      "--file-attachment-active-border-color",
+      "--file-attachment-active-shadow",
+    ];
+    const lightAttachmentStateTokens = readCustomProperties(
+      rootDeclarations,
+      attachmentStateTokenNames,
+    );
+    const darkAttachmentStateTokens = readCustomProperties(
+      darkRootBlock,
+      attachmentStateTokenNames,
+    );
+    const autoDarkAttachmentStateTokens = readCustomProperties(
+      autoDarkRootBlock,
+      attachmentStateTokenNames,
+    );
     const legacyAttachmentPaint =
       /rgba\((?:66,\s*133,\s*244|138,\s*180,\s*248|52,\s*168,\s*83|129,\s*201,\s*149)/;
     const touchBlock = readCssBlock(
@@ -8316,6 +8347,19 @@ describe("Gemini visual migration shell", () => {
     );
     expect(rootDeclarations).toMatch(
       /--file-attachment-hover-shadow:\s*0 14px 36px\s*color-mix\(in srgb,\s*var\(--primary\) 12%,\s*transparent\);/,
+    );
+    for (const tokenName of attachmentStateTokenNames) {
+      expect(lightAttachmentStateTokens[tokenName]).toBeTruthy();
+      expect(darkAttachmentStateTokens[tokenName]).toBeTruthy();
+      expect(autoDarkAttachmentStateTokens[tokenName]).toBe(
+        darkAttachmentStateTokens[tokenName],
+      );
+    }
+    expect(Object.values(lightAttachmentStateTokens).join("\n")).not.toContain(
+      "var(--card-shadow)",
+    );
+    expect(Object.values(darkAttachmentStateTokens).join("\n")).not.toContain(
+      "var(--composer-shadow)",
     );
     expect(interactiveBlock).toMatch(/cursor:\s*pointer;/);
     expect(interactiveBlock).toMatch(
@@ -8383,10 +8427,19 @@ describe("Gemini visual migration shell", () => {
       /transform:\s*translateY\(0\) scale\(0\.985\);/,
     );
     expect(interactiveActiveBlock).toMatch(
+      /border-color:\s*var\(--file-attachment-active-border-color\);/,
+    );
+    expect(interactiveActiveBlock).toMatch(
+      /background:\s*var\(--file-attachment-active-background\);/,
+    );
+    expect(interactiveActiveBlock).toMatch(
       /box-shadow:\s*var\(--file-attachment-active-shadow\);/,
     );
     expect(interactiveFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
     expect(interactiveFocusBlock).toMatch(/outline-offset:\s*3px;/);
+    expect(interactiveFocusBlock).toMatch(
+      /box-shadow:\s*var\(--file-attachment-focus-shadow\);/,
+    );
     expect(darkRootBlock).toMatch(
       /--file-attachment-card-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
     );
@@ -8414,6 +8467,17 @@ describe("Gemini visual migration shell", () => {
     expect(darkInteractiveHoverBlock).toMatch(
       /box-shadow:\s*var\(--file-attachment-hover-shadow\);/,
     );
+    expect(darkInteractiveHoverIndex).toBeGreaterThan(-1);
+    expect(darkInteractiveActiveIndex).toBeGreaterThan(darkInteractiveHoverIndex);
+    expect(darkInteractiveActiveBlock).toMatch(
+      /border-color:\s*var\(--file-attachment-active-border-color\);/,
+    );
+    expect(darkInteractiveActiveBlock).toMatch(
+      /background:\s*var\(--file-attachment-active-background\);/,
+    );
+    expect(darkInteractiveActiveBlock).toMatch(
+      /box-shadow:\s*var\(--file-attachment-active-shadow\);/,
+    );
     expect(autoDarkAttachmentSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkAttachmentMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkRootBlock).toMatch(
@@ -8424,6 +8488,8 @@ describe("Gemini visual migration shell", () => {
     );
     expect(attachmentToneScope).not.toMatch(legacyAttachmentPaint);
     expect(attachmentToneScope).not.toContain("border: var(--border-in-light)");
+    expect(attachmentToneScope).not.toContain("var(--card-shadow)");
+    expect(attachmentToneScope).not.toContain("var(--composer-shadow)");
     expect(touchRootBlock).toMatch(/width:\s*100%;/);
     expect(touchRootBlock).toMatch(/max-width:\s*100%;/);
     expect(touchCardBlock).toMatch(/width:\s*100%;/);
