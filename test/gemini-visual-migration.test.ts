@@ -21082,6 +21082,28 @@ describe("Gemini visual migration shell", () => {
       inputRangeStyles,
       "@media (prefers-reduced-motion: reduce)",
     );
+    const inputRangeTokenNames = [
+      "--input-range-background",
+      "--input-range-border-color",
+      "--input-range-disabled-background",
+      "--input-range-track-background",
+      "--input-range-thumb-background",
+      "--input-range-thumb-shadow-color",
+      "--input-range-focus-border-color",
+      "--input-range-focus-shadow-color",
+    ];
+    const inputRangeTokenMap = readCustomProperties(
+      inputRangeRootBlock,
+      inputRangeTokenNames,
+    );
+    const darkInputRangeTokenMap = readCustomProperties(
+      darkInputRangeBlock,
+      inputRangeTokenNames,
+    );
+    const autoDarkInputRangeTokenMap = readCustomProperties(
+      autoDarkInputRangeBlock,
+      inputRangeTokenNames,
+    );
     const rangePaintScope = [
       inputRangeRootBlock,
       darkInputRangeBlock,
@@ -21107,11 +21129,29 @@ describe("Gemini visual migration shell", () => {
     expect(inputRange).toContain("disabled={disabled}");
     expect(inputRange).toContain("onChange={onChange}");
 
+    expect(Object.values(inputRangeTokenMap)).not.toContain("");
+    for (const tokenName of [
+      "--input-range-background",
+      "--input-range-border-color",
+      "--input-range-disabled-background",
+      "--input-range-track-background",
+      "--input-range-thumb-shadow-color",
+    ]) {
+      expect(darkInputRangeTokenMap[tokenName]).not.toBe("");
+      expect(autoDarkInputRangeTokenMap[tokenName]).not.toBe("");
+    }
+    expect(autoDarkInputRangeSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkInputRangeMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkInputRangeTokenMap).toEqual(darkInputRangeTokenMap);
+
     expect(inputRangeRootBlock).toMatch(
-      /--input-range-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\s*\);/,
+      /--input-range-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--surface-soft\)\s*\);/,
     );
     expect(inputRangeRootBlock).toMatch(
       /--input-range-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 14%,\s*transparent\s*\);/,
+    );
+    expect(inputRangeRootBlock).toMatch(
+      /--input-range-disabled-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 78%,\s*var\(--surface-soft\)\s*\);/,
     );
     expect(inputRangeRootBlock).toMatch(
       /--input-range-track-background:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*var\(--surface-elevated\)\s*\);/,
@@ -21120,15 +21160,43 @@ describe("Gemini visual migration shell", () => {
       /--input-range-focus-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 16%,\s*transparent\s*\);/,
     );
     expect(darkInputRangeBlock).toMatch(
-      /--input-range-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--input-range-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
+    );
+    expect(darkInputRangeBlock).toMatch(
+      /--input-range-disabled-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 82%,\s*var\(--surface\)\s*\);/,
     );
     expect(darkInputRangeBlock).toMatch(
       /--input-range-track-background:\s*color-mix\(\s*in srgb,\s*var\(--black\) 16%,\s*var\(--surface-elevated\)\s*\);/,
     );
-    expect(autoDarkInputRangeSelectorIndex).toBeGreaterThan(-1);
-    expect(autoDarkInputRangeMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkInputRangeBlock).toMatch(
-      /--input-range-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--input-range-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
+    );
+    expect(inputRangeTokenMap["--input-range-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 90%, var(--surface-soft) )",
+    );
+    expect(inputRangeTokenMap["--input-range-disabled-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 78%, var(--surface-soft) )",
+    );
+    expect(darkInputRangeTokenMap["--input-range-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 86%, var(--surface) )",
+    );
+    expect(
+      darkInputRangeTokenMap["--input-range-disabled-background"],
+    ).toBe("color-mix( in srgb, var(--surface-elevated) 82%, var(--surface) )");
+    for (const tokenValue of [
+      inputRangeTokenMap["--input-range-background"],
+      inputRangeTokenMap["--input-range-disabled-background"],
+      darkInputRangeTokenMap["--input-range-background"],
+      darkInputRangeTokenMap["--input-range-disabled-background"],
+      autoDarkInputRangeTokenMap["--input-range-background"],
+      autoDarkInputRangeTokenMap["--input-range-disabled-background"],
+    ]) {
+      expect(tokenValue).not.toContain("transparent");
+      expect(tokenValue).not.toContain("var(--white)");
+      expect(tokenValue).not.toContain("var(--gray)");
+    }
+    expect(autoDarkInputRangeBlock).toMatch(
+      /--input-range-disabled-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 82%,\s*var\(--surface\)\s*\);/,
     );
     expect(autoDarkInputRangeBlock).toMatch(
       /--input-range-track-background:\s*color-mix\(\s*in srgb,\s*var\(--black\) 16%,\s*var\(--surface-elevated\)\s*\);/,
@@ -21195,6 +21263,8 @@ describe("Gemini visual migration shell", () => {
     expect(rangePaintScope).not.toContain("border: var(--border-in-light)");
     expect(rangePaintScope).not.toContain("border-radius: 10px");
     expect(rangePaintScope).not.toContain("background-color: var(--white)");
+    expect(rangePaintScope).not.toContain("var(--white)");
+    expect(rangePaintScope).not.toContain("var(--gray)");
   });
 
 });
