@@ -20434,6 +20434,142 @@ describe("Gemini visual migration shell", () => {
     expect(customInstructionsPaintScope).not.toContain("var(--gray)");
   });
 
+  test("keeps ModelConfigList compress model select aligned with Gemini fields", () => {
+    const modelConfig = read("app/components/model-config.tsx");
+    const modelConfigStyles = read("app/components/model-config.module.scss");
+    const compressSelectBlock = readRootCssBlock(
+      modelConfigStyles,
+      ".select-compress-model",
+    );
+    const compressSelectRootBlock = readRootDeclarations(compressSelectBlock);
+    const compressSelectControlBlock = readCssBlock(
+      compressSelectBlock,
+      "&.select-compress-model select",
+    );
+    const compressSelectFocusBlock = readCssBlock(
+      compressSelectBlock,
+      "&.select-compress-model select:focus-visible",
+    );
+    const darkCompressSelectBlock = readCssBlock(
+      modelConfigStyles,
+      ":global(.dark) .select-compress-model",
+    );
+    const autoDarkCompressSelector =
+      ":global(body:not(.light)) .select-compress-model";
+    const autoDarkCompressSelectorIndex =
+      modelConfigStyles.indexOf(autoDarkCompressSelector);
+    const autoDarkCompressMediaIndex = modelConfigStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkCompressSelectorIndex,
+    );
+    const autoDarkCompressSelectBlock = readCssBlock(
+      modelConfigStyles.slice(autoDarkCompressMediaIndex),
+      autoDarkCompressSelector,
+    );
+    const compressTokenNames = [
+      "--model-config-field-background",
+      "--model-config-field-border-color",
+      "--model-config-field-inner-shadow-color",
+      "--model-config-field-focus-border-color",
+      "--model-config-field-focus-shadow-color",
+    ];
+    const compressTokenMap = readCustomProperties(
+      compressSelectRootBlock,
+      compressTokenNames,
+    );
+    const darkCompressTokenMap = readCustomProperties(
+      darkCompressSelectBlock,
+      compressTokenNames,
+    );
+    const autoDarkCompressTokenMap = readCustomProperties(
+      autoDarkCompressSelectBlock,
+      compressTokenNames,
+    );
+    const compressPaintScope = [
+      compressSelectRootBlock,
+      compressSelectControlBlock,
+      compressSelectFocusBlock,
+      darkCompressSelectBlock,
+      autoDarkCompressSelectBlock,
+    ].join("\n");
+
+    expect(modelConfig).toContain('import styles from "./model-config.module.scss";');
+    expect(modelConfig).toContain('className={styles["select-compress-model"]}');
+    expect(modelConfig).toContain("value={compressModelValue}");
+    expect(modelConfig).toContain("ModalConfigValidator.model(model)");
+    expect(modelConfig).toContain(
+      "config.compressProviderName = providerName as ServiceProvider;",
+    );
+    expect(modelConfig).toContain(
+      'props.markOverride?.(["compressModel", "compressProviderName"]);',
+    );
+
+    for (const tokenMap of [
+      compressTokenMap,
+      darkCompressTokenMap,
+      autoDarkCompressTokenMap,
+    ]) {
+      expect(Object.values(tokenMap)).not.toContain("");
+    }
+    expect(autoDarkCompressSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkCompressMediaIndex).toBeGreaterThan(-1);
+    expect(darkCompressTokenMap).toEqual(autoDarkCompressTokenMap);
+
+    expect(compressSelectRootBlock).toMatch(/width:\s*60%;/);
+    expect(compressSelectRootBlock).toMatch(
+      /--model-config-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--surface-soft\)\s*\);/,
+    );
+    expect(compressSelectRootBlock).toMatch(
+      /--model-config-field-inner-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--surface\) 58%,\s*transparent\s*\);/,
+    );
+    expect(darkCompressSelectBlock).toMatch(
+      /--model-config-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
+    );
+    expect(darkCompressSelectBlock).toMatch(
+      /--model-config-field-inner-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--surface\) 18%,\s*transparent\s*\);/,
+    );
+    expect(compressTokenMap["--model-config-field-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 92%, var(--surface-soft) )",
+    );
+    expect(darkCompressTokenMap["--model-config-field-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 86%, var(--surface) )",
+    );
+    for (const tokenValue of [
+      compressTokenMap["--model-config-field-background"],
+      darkCompressTokenMap["--model-config-field-background"],
+      autoDarkCompressTokenMap["--model-config-field-background"],
+    ]) {
+      expect(tokenValue).not.toContain("transparent");
+      expect(tokenValue).not.toContain("var(--white)");
+      expect(tokenValue).not.toContain("var(--gray)");
+    }
+
+    expect(compressSelectControlBlock).toMatch(/max-width:\s*100%;/);
+    expect(compressSelectControlBlock).toMatch(/white-space:\s*normal;/);
+    expect(compressSelectControlBlock).toMatch(
+      /background-color:\s*var\(--model-config-field-background\);/,
+    );
+    expect(compressSelectControlBlock).toMatch(
+      /border-color:\s*var\(--model-config-field-border-color\);/,
+    );
+    expect(compressSelectControlBlock).toMatch(
+      /box-shadow:\s*inset 0 1px 0 var\(--model-config-field-inner-shadow-color\);/,
+    );
+    expect(compressSelectControlBlock).toMatch(
+      /transition:[\s\S]*background-color 0\.16s ease,[\s\S]*border-color 0\.16s ease,[\s\S]*box-shadow 0\.16s ease/,
+    );
+    expect(compressSelectFocusBlock).toMatch(/outline:\s*none;/);
+    expect(compressSelectFocusBlock).toMatch(
+      /border-color:\s*var\(--model-config-field-focus-border-color\);/,
+    );
+    expect(compressSelectFocusBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--model-config-field-focus-shadow-color\)[\s\S]*var\(--model-config-field-inner-shadow-color\)/,
+    );
+    expect(compressPaintScope).not.toContain("var(--white)");
+    expect(compressPaintScope).not.toContain("var(--gray)");
+    expect(compressPaintScope).not.toContain("background-color: var(--white)");
+  });
+
   test("keeps Realtime side panel shell aligned with Gemini surfaces", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");

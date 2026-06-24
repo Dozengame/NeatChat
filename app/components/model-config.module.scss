@@ -1,7 +1,111 @@
 .select-compress-model {
+  --model-config-field-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 92%,
+    var(--surface-soft)
+  );
+  --model-config-field-border-color: color-mix(
+    in srgb,
+    var(--black-50) 14%,
+    transparent
+  );
+  --model-config-field-inner-shadow-color: color-mix(
+    in srgb,
+    var(--surface) 58%,
+    transparent
+  );
+  --model-config-field-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 48%,
+    transparent
+  );
+  --model-config-field-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 14%,
+    transparent
+  );
+
   width: 60%;
-  select {
+
+  &.select-compress-model select {
+    background-color: var(--model-config-field-background);
+    border-color: var(--model-config-field-border-color);
+    box-shadow: inset 0 1px 0 var(--model-config-field-inner-shadow-color);
     max-width: 100%;
+    transition:
+      background-color 0.16s ease,
+      border-color 0.16s ease,
+      box-shadow 0.16s ease;
     white-space: normal;
+  }
+
+  &.select-compress-model select:focus-visible {
+    border-color: var(--model-config-field-focus-border-color);
+    box-shadow:
+      0 0 0 3px var(--model-config-field-focus-shadow-color),
+      inset 0 1px 0 var(--model-config-field-inner-shadow-color);
+    outline: none;
+  }
+
+  select {
+    white-space: normal;
+  }
+}
+
+:global(.dark) .select-compress-model {
+  --model-config-field-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    var(--surface)
+  );
+  --model-config-field-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --model-config-field-inner-shadow-color: color-mix(
+    in srgb,
+    var(--surface) 18%,
+    transparent
+  );
+  --model-config-field-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 52%,
+    var(--black) 8%
+  );
+  --model-config-field-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 20%,
+    transparent
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .select-compress-model {
+    --model-config-field-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 86%,
+      var(--surface)
+    );
+    --model-config-field-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --model-config-field-inner-shadow-color: color-mix(
+      in srgb,
+      var(--surface) 18%,
+      transparent
+    );
+    --model-config-field-focus-border-color: color-mix(
+      in srgb,
+      var(--primary) 52%,
+      var(--black) 8%
+    );
+    --model-config-field-focus-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 20%,
+      transparent
+    );
   }
 }
