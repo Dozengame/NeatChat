@@ -7,7 +7,7 @@
   --settings-preference-list-background: color-mix(
     in srgb,
     var(--surface-elevated) 94%,
-    var(--gray)
+    var(--surface-soft)
   );
   --settings-preference-list-border-color: color-mix(
     in srgb,
@@ -37,7 +37,7 @@
   --settings-preference-field-background: color-mix(
     in srgb,
     var(--surface-elevated) 90%,
-    var(--gray)
+    var(--surface-soft)
   );
   --settings-preference-field-border-color: color-mix(
     in srgb,
@@ -64,11 +64,16 @@
     var(--primary) 16%,
     transparent
   );
+  --settings-preference-field-inner-shadow-color: color-mix(
+    in srgb,
+    var(--surface) 62%,
+    transparent
+  );
   --settings-preference-checkbox-accent: var(--primary);
   --settings-preference-action-background: color-mix(
     in srgb,
     var(--surface-elevated) 91%,
-    var(--gray)
+    var(--surface-soft)
   );
   --settings-preference-action-border-color: color-mix(
     in srgb,
@@ -130,7 +135,7 @@
     border: 1px solid var(--settings-preference-field-border-color);
     border-radius: 8px;
     color: var(--settings-preference-field-color);
-    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--white) 42%, transparent);
+    box-shadow: inset 0 1px 0 var(--settings-preference-field-inner-shadow-color);
     cursor: pointer;
     transition:
       background-color 0.16s ease,
@@ -144,7 +149,7 @@
     border: 1px solid var(--settings-preference-field-border-color);
     border-radius: 8px;
     color: var(--settings-preference-field-color);
-    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--white) 42%, transparent);
+    box-shadow: inset 0 1px 0 var(--settings-preference-field-inner-shadow-color);
   }
 }
 
@@ -164,7 +169,7 @@
   border: 1px solid var(--settings-preference-field-border-color);
   border-radius: 8px;
   color: var(--settings-preference-field-color);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--white) 42%, transparent);
+  box-shadow: inset 0 1px 0 var(--settings-preference-field-inner-shadow-color);
   font-family: inherit;
   line-height: 1.4;
   transition:
@@ -214,7 +219,7 @@
   --settings-preference-list-background: color-mix(
     in srgb,
     var(--surface-elevated) 88%,
-    var(--white)
+    var(--surface)
   );
   --settings-preference-list-border-color: color-mix(
     in srgb,
@@ -244,7 +249,7 @@
   --settings-preference-field-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
-    var(--white)
+    var(--surface)
   );
   --settings-preference-field-border-color: color-mix(
     in srgb,
@@ -271,11 +276,16 @@
     var(--primary) 22%,
     transparent
   );
+  --settings-preference-field-inner-shadow-color: color-mix(
+    in srgb,
+    var(--surface) 18%,
+    transparent
+  );
   --settings-preference-checkbox-accent: var(--primary);
   --settings-preference-action-background: color-mix(
     in srgb,
     var(--surface-elevated) 84%,
-    var(--white)
+    var(--surface)
   );
   --settings-preference-action-border-color: color-mix(
     in srgb,
@@ -299,7 +309,7 @@
     --settings-preference-list-background: color-mix(
       in srgb,
       var(--surface-elevated) 88%,
-      var(--white)
+      var(--surface)
     );
     --settings-preference-list-border-color: color-mix(
       in srgb,
@@ -329,7 +339,7 @@
     --settings-preference-field-background: color-mix(
       in srgb,
       var(--surface-elevated) 86%,
-      var(--white)
+      var(--surface)
     );
     --settings-preference-field-border-color: color-mix(
       in srgb,
@@ -356,11 +366,16 @@
       var(--primary) 22%,
       transparent
     );
+    --settings-preference-field-inner-shadow-color: color-mix(
+      in srgb,
+      var(--surface) 18%,
+      transparent
+    );
     --settings-preference-checkbox-accent: var(--primary);
     --settings-preference-action-background: color-mix(
       in srgb,
       var(--surface-elevated) 84%,
-      var(--white)
+      var(--surface)
     );
     --settings-preference-action-border-color: color-mix(
       in srgb,
@@ -385,7 +400,7 @@
   --settings-sync-actions-background: color-mix(
     in srgb,
     var(--surface-elevated) 90%,
-    var(--gray)
+    var(--surface-soft)
   );
   --settings-sync-actions-border-color: color-mix(
     in srgb,
@@ -433,7 +448,7 @@
   --settings-sync-field-background: color-mix(
     in srgb,
     var(--surface-elevated) 90%,
-    var(--gray)
+    var(--surface-soft)
   );
   --settings-sync-field-border-color: color-mix(
     in srgb,
@@ -460,6 +475,11 @@
     var(--primary) 16%,
     transparent
   );
+  --settings-sync-field-inner-shadow-color: color-mix(
+    in srgb,
+    var(--surface) 60%,
+    transparent
+  );
   --settings-sync-field-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -476,7 +496,7 @@
     border: 1px solid var(--settings-sync-field-border-color);
     border-radius: var(--settings-sync-field-radius);
     color: var(--settings-sync-field-color);
-    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--white) 40%, transparent);
+    box-shadow: inset 0 1px 0 var(--settings-sync-field-inner-shadow-color);
     transition:
       background-color 0.16s ease,
       border-color 0.16s ease,
@@ -536,7 +556,7 @@
   --settings-sync-actions-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
-    var(--white)
+    var(--surface)
   );
   --settings-sync-actions-border-color: color-mix(
     in srgb,
@@ -554,7 +574,7 @@
   --settings-sync-field-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
-    var(--white)
+    var(--surface)
   );
   --settings-sync-field-border-color: color-mix(
     in srgb,
@@ -581,6 +601,11 @@
     var(--primary) 22%,
     transparent
   );
+  --settings-sync-field-inner-shadow-color: color-mix(
+    in srgb,
+    var(--surface) 18%,
+    transparent
+  );
   --settings-sync-field-radius: 8px;
 }
 
@@ -590,7 +615,7 @@
     --settings-sync-actions-background: color-mix(
       in srgb,
       var(--surface-elevated) 86%,
-      var(--white)
+      var(--surface)
     );
     --settings-sync-actions-border-color: color-mix(
       in srgb,
@@ -608,7 +633,7 @@
     --settings-sync-field-background: color-mix(
       in srgb,
       var(--surface-elevated) 86%,
-      var(--white)
+      var(--surface)
     );
     --settings-sync-field-border-color: color-mix(
       in srgb,
@@ -633,6 +658,11 @@
     --settings-sync-field-focus-shadow-color: color-mix(
       in srgb,
       var(--primary) 22%,
+      transparent
+    );
+    --settings-sync-field-inner-shadow-color: color-mix(
+      in srgb,
+      var(--surface) 18%,
       transparent
     );
     --settings-sync-field-radius: 8px;

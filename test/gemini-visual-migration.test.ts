@@ -18964,6 +18964,7 @@ describe("Gemini visual migration shell", () => {
       "--settings-sync-field-muted-color",
       "--settings-sync-field-focus-border-color",
       "--settings-sync-field-focus-shadow-color",
+      "--settings-sync-field-inner-shadow-color",
       "--settings-sync-field-radius",
     ];
     const syncSurfaceTokenMap = readCustomProperties(
@@ -19068,13 +19069,13 @@ describe("Gemini visual migration shell", () => {
     expect(darkSyncFieldTokenMap).toEqual(autoDarkSyncFieldTokenMap);
 
     expect(syncSurfaceRootBlock).toMatch(
-      /--settings-sync-actions-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\s*\);/,
+      /--settings-sync-actions-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--surface-soft\)\s*\);/,
     );
     expect(syncSurfaceRootBlock).toMatch(
       /--settings-sync-actions-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
     );
     expect(darkSyncSurfaceBlock).toMatch(
-      /--settings-sync-actions-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--settings-sync-actions-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
     expect(autoDarkSyncSurfaceSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkSyncSurfaceMediaIndex).toBeGreaterThan(-1);
@@ -19104,14 +19105,30 @@ describe("Gemini visual migration shell", () => {
     expect(syncActionButtonBlock).toMatch(/min-width:\s*0;/);
 
     expect(syncConfigModalRootBlock).toMatch(
-      /--settings-sync-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\s*\);/,
+      /--settings-sync-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--surface-soft\)\s*\);/,
     );
     expect(syncConfigModalRootBlock).toMatch(
       /--settings-sync-field-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 14%,\s*transparent\s*\);/,
     );
     expect(darkSyncConfigModalBlock).toMatch(
-      /--settings-sync-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--settings-sync-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
+    expect(syncFieldTokenMap["--settings-sync-field-inner-shadow-color"]).toBe(
+      "color-mix( in srgb, var(--surface) 60%, transparent )",
+    );
+    expect(darkSyncFieldTokenMap["--settings-sync-field-inner-shadow-color"]).toBe(
+      "color-mix( in srgb, var(--surface) 18%, transparent )",
+    );
+    for (const tokenValue of [
+      syncSurfaceTokenMap["--settings-sync-actions-background"],
+      syncFieldTokenMap["--settings-sync-field-background"],
+      darkSyncSurfaceTokenMap["--settings-sync-actions-background"],
+      darkSyncFieldTokenMap["--settings-sync-field-background"],
+    ]) {
+      expect(tokenValue).not.toContain("transparent");
+      expect(tokenValue).not.toContain("var(--white)");
+      expect(tokenValue).not.toContain("var(--gray)");
+    }
     expect(syncFieldBlock).toMatch(/box-sizing:\s*border-box;/);
     expect(syncFieldBlock).toMatch(/width:\s*min\(360px, 100%\);/);
     expect(syncFieldBlock).toMatch(/max-width:\s*100%;/);
@@ -19126,6 +19143,9 @@ describe("Gemini visual migration shell", () => {
       /border-radius:\s*var\(--settings-sync-field-radius\);/,
     );
     expect(syncFieldBlock).toMatch(/color:\s*var\(--settings-sync-field-color\);/);
+    expect(syncFieldBlock).toMatch(
+      /box-shadow:\s*inset 0 1px 0 var\(--settings-sync-field-inner-shadow-color\);/,
+    );
     expect(syncFieldBlock).toMatch(
       /transition:[\s\S]*background-color 0\.16s ease,[\s\S]*border-color 0\.16s ease,[\s\S]*box-shadow 0\.16s ease/,
     );
@@ -19158,6 +19178,7 @@ describe("Gemini visual migration shell", () => {
     );
     expect(syncPaintScope).not.toContain("border: var(--border-in-light)");
     expect(syncPaintScope).not.toContain("box-shadow: var(--card-shadow)");
+    expect(syncPaintScope).not.toContain("var(--white)");
     expect(syncPaintScope).not.toContain("max-width: 50%");
   });
 
@@ -19274,6 +19295,7 @@ describe("Gemini visual migration shell", () => {
       "--settings-preference-field-placeholder-color",
       "--settings-preference-field-focus-border-color",
       "--settings-preference-field-focus-shadow-color",
+      "--settings-preference-field-inner-shadow-color",
       "--settings-preference-checkbox-accent",
       "--settings-preference-action-background",
       "--settings-preference-action-border-color",
@@ -19356,6 +19378,42 @@ describe("Gemini visual migration shell", () => {
     expect(darkPreferenceTokenMap).toEqual(autoDarkPreferenceTokenMap);
     expect(autoDarkPreferencesSurfaceSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkPreferencesSurfaceMediaIndex).toBeGreaterThan(-1);
+    expect(preferenceTokenMap["--settings-preference-list-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 94%, var(--surface-soft) )",
+    );
+    expect(preferenceTokenMap["--settings-preference-field-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 90%, var(--surface-soft) )",
+    );
+    expect(preferenceTokenMap["--settings-preference-action-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 91%, var(--surface-soft) )",
+    );
+    expect(
+      preferenceTokenMap["--settings-preference-field-inner-shadow-color"],
+    ).toBe("color-mix( in srgb, var(--surface) 62%, transparent )");
+    expect(
+      darkPreferenceTokenMap["--settings-preference-list-background"],
+    ).toBe("color-mix( in srgb, var(--surface-elevated) 88%, var(--surface) )");
+    expect(
+      darkPreferenceTokenMap["--settings-preference-field-background"],
+    ).toBe("color-mix( in srgb, var(--surface-elevated) 86%, var(--surface) )");
+    expect(
+      darkPreferenceTokenMap["--settings-preference-action-background"],
+    ).toBe("color-mix( in srgb, var(--surface-elevated) 84%, var(--surface) )");
+    expect(
+      darkPreferenceTokenMap["--settings-preference-field-inner-shadow-color"],
+    ).toBe("color-mix( in srgb, var(--surface) 18%, transparent )");
+    for (const tokenValue of [
+      preferenceTokenMap["--settings-preference-list-background"],
+      preferenceTokenMap["--settings-preference-field-background"],
+      preferenceTokenMap["--settings-preference-action-background"],
+      darkPreferenceTokenMap["--settings-preference-list-background"],
+      darkPreferenceTokenMap["--settings-preference-field-background"],
+      darkPreferenceTokenMap["--settings-preference-action-background"],
+    ]) {
+      expect(tokenValue).not.toContain("transparent");
+      expect(tokenValue).not.toContain("var(--white)");
+      expect(tokenValue).not.toContain("var(--gray)");
+    }
 
     expect(preferencesSurfaceRootBlock).toMatch(/display:\s*flex;/);
     expect(preferencesSurfaceRootBlock).toMatch(/flex-direction:\s*column;/);
@@ -19391,6 +19449,9 @@ describe("Gemini visual migration shell", () => {
       /background-color:\s*var\(--settings-preference-field-background\);/,
     );
     expect(preferenceSelectFieldBlock).toMatch(
+      /box-shadow:\s*inset 0 1px 0 var\(--settings-preference-field-inner-shadow-color\);/,
+    );
+    expect(preferenceSelectFieldBlock).toMatch(
       /border:\s*1px solid var\(--settings-preference-field-border-color\);/,
     );
     expect(preferenceTextFieldBlock).toMatch(/width:\s*min\(360px, 100%\);/);
@@ -19399,6 +19460,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(preferenceTextFieldBlock).toMatch(
       /color:\s*var\(--settings-preference-field-color\);/,
+    );
+    expect(preferenceTextFieldBlock).toMatch(
+      /box-shadow:\s*inset 0 1px 0 var\(--settings-preference-field-inner-shadow-color\);/,
     );
     expect(preferenceFieldFocusBlock).toMatch(/outline:\s*none;/);
     expect(preferenceFieldFocusBlock).toMatch(
@@ -19440,6 +19504,7 @@ describe("Gemini visual migration shell", () => {
     expect(preferencePaintScope).not.toContain(
       "box-shadow: var(--card-shadow)",
     );
+    expect(preferencePaintScope).not.toContain("var(--white)");
     expect(preferencePaintScope).not.toContain(
       "background-color: var(--white)",
     );
