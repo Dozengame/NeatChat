@@ -7706,6 +7706,13 @@ describe("Gemini visual migration shell", () => {
     expect(darkShowHideButtonBlock).toMatch(
       /&:hover,\s*&:focus-visible[\s\S]*0 10px 24px var\(--markdown-code-fold-hover-shadow-color\);/,
     );
+    expect(globalStyles.indexOf("pre {\n  .show-hide-button")).toBe(-1);
+    expect(globalStyles).not.toMatch(
+      /pre\s*\{[\s\S]*\.show-hide-button\s*\{[\s\S]*background:\s*#464e4e[\s\S]*\}\s*\}/,
+    );
+    expect(globalStyles).not.toMatch(
+      /pre\s*\{[\s\S]*\.collapsed\s*\{[\s\S]*background-image:\s*linear-gradient\([\s\S]*rgba\(0,\s*0,\s*0,\s*0\.8\)[\s\S]*rgba\(0,\s*0,\s*0,\s*0\.06\)/,
+    );
     expect(codeFoldToneScope).not.toMatch(
       /rgba\((?:66,\s*133,\s*244|138,\s*180,\s*248)|#(?:4285f4|8ab4f8)\b/,
     );
