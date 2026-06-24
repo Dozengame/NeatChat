@@ -4711,6 +4711,12 @@
 }
 
 .chat-input-panel {
+  --chat-input-panel-border-color: color-mix(in srgb, var(--black-50) 14%, transparent);
+  --chat-input-panel-background: var(--surface);
+  --chat-input-panel-shadow-color: color-mix(in srgb, var(--black-50) 8%, transparent);
+  --chat-input-panel-elevated-border-color: color-mix(in srgb, var(--black-50) 14%, transparent);
+  --chat-input-panel-elevated-background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
+  --chat-input-panel-elevated-shadow-color: color-mix(in srgb, var(--black-50) 10%, transparent);
   --chat-input-focus-border-color: color-mix(in srgb, var(--primary) 38%, transparent);
   --chat-input-focus-ring-color: color-mix(in srgb, var(--primary) 12%, transparent);
   --chat-input-menu-focus-border-color: color-mix(in srgb, var(--primary) 28%, transparent);
@@ -4748,6 +4754,12 @@
 }
 
 :global(.dark) .chat-input-panel {
+  --chat-input-panel-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+  --chat-input-panel-background: color-mix(in srgb, var(--surface-elevated) 82%, var(--surface));
+  --chat-input-panel-shadow-color: color-mix(in srgb, var(--gray) 34%, transparent);
+  --chat-input-panel-elevated-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+  --chat-input-panel-elevated-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--white));
+  --chat-input-panel-elevated-shadow-color: color-mix(in srgb, var(--gray) 40%, transparent);
   --chat-input-focus-border-color: color-mix(in srgb, var(--primary) 46%, var(--black));
   --chat-input-focus-ring-color: color-mix(in srgb, var(--primary) 16%, transparent);
   --chat-input-menu-focus-border-color: color-mix(in srgb, var(--primary) 34%, transparent);
@@ -4765,6 +4777,12 @@
 
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .chat-input-panel {
+    --chat-input-panel-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+    --chat-input-panel-background: color-mix(in srgb, var(--surface-elevated) 82%, var(--surface));
+    --chat-input-panel-shadow-color: color-mix(in srgb, var(--gray) 34%, transparent);
+    --chat-input-panel-elevated-border-color: color-mix(in srgb, var(--black) 8%, transparent);
+    --chat-input-panel-elevated-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--white));
+    --chat-input-panel-elevated-shadow-color: color-mix(in srgb, var(--gray) 40%, transparent);
     --chat-input-focus-border-color: color-mix(in srgb, var(--primary) 46%, var(--black));
     --chat-input-focus-ring-color: color-mix(in srgb, var(--primary) 16%, transparent);
     --chat-input-menu-focus-border-color: color-mix(in srgb, var(--primary) 34%, transparent);
@@ -4808,7 +4826,7 @@
     min-height: 62px;
     padding: 15px 112px 15px 18px;
     border-radius: 999px;
-    box-shadow: var(--composer-shadow);
+    box-shadow: 0 8px 24px var(--chat-input-panel-shadow-color);
 
     .chat-input {
       height: auto;
@@ -5009,10 +5027,10 @@
   min-height: 58px;
   padding: 14px 112px 14px 18px;
   border-radius: 28px;
-  border: var(--border-in-light);
+  border: 1px solid var(--chat-input-panel-border-color);
   position: relative;
-  background-color: var(--surface);
-  box-shadow: var(--composer-shadow);
+  background-color: var(--chat-input-panel-background);
+  box-shadow: 0 8px 24px var(--chat-input-panel-shadow-color);
   transition:
     border-color ease 0.2s,
     box-shadow ease 0.2s,
@@ -5040,7 +5058,7 @@
 .chat-input-panel-inner:has(.chat-input:focus) {
   border-color: var(--chat-input-focus-border-color) !important;
   box-shadow:
-    var(--composer-shadow),
+    0 8px 24px var(--chat-input-panel-shadow-color),
     0 0 0 4px var(--chat-input-focus-ring-color);
 }
 
@@ -5048,7 +5066,7 @@
   border-color: var(--chat-input-drag-border-color) !important;
   background-color: var(--chat-input-drag-background);
   box-shadow:
-    var(--composer-shadow),
+    0 8px 24px var(--chat-input-panel-shadow-color),
     0 0 0 4px var(--chat-input-drag-ring-color);
 }
 
@@ -5057,7 +5075,7 @@
   gap: 0;
   padding: 10px 142px 10px 16px;
   border-radius: 24px;
-  box-shadow: var(--composer-shadow);
+  box-shadow: 0 8px 24px var(--chat-input-panel-shadow-color);
 
   .chat-input {
     height: 26px;
@@ -5689,17 +5707,17 @@
     gap: 0;
     min-height: 58px;
     padding: 0 8px;
-    border: var(--border-in-light);
+    border: 1px solid var(--chat-input-panel-elevated-border-color);
     border-radius: 999px;
-    background: var(--surface-elevated);
-    box-shadow: var(--composer-shadow);
+    background: var(--chat-input-panel-elevated-background);
+    box-shadow: 0 8px 22px var(--chat-input-panel-elevated-shadow-color);
     backdrop-filter: blur(16px);
   }
 
   .chat-input-row:has(.chat-input:focus) {
     border-color: var(--chat-input-focus-border-color);
     box-shadow:
-      var(--composer-shadow),
+      0 8px 22px var(--chat-input-panel-elevated-shadow-color),
       0 0 0 3px var(--chat-input-focus-ring-color);
   }
 
@@ -5965,17 +5983,17 @@
     gap: 0;
     min-height: 58px;
     padding: 0 8px;
-    border: var(--border-in-light);
+    border: 1px solid var(--chat-input-panel-elevated-border-color);
     border-radius: 999px;
-    background: var(--surface-elevated);
-    box-shadow: var(--composer-shadow);
+    background: var(--chat-input-panel-elevated-background);
+    box-shadow: 0 8px 22px var(--chat-input-panel-elevated-shadow-color);
     backdrop-filter: blur(16px);
   }
 
   .chat-input-row:has(.chat-input:focus) {
     border-color: var(--chat-input-focus-border-color);
     box-shadow:
-      var(--composer-shadow),
+      0 8px 22px var(--chat-input-panel-elevated-shadow-color),
       0 0 0 3px var(--chat-input-focus-ring-color);
   }
 
@@ -6042,34 +6060,34 @@
 
 .chat-input-panel:focus-within .chat-input-menu-button {
   border-color: var(--chat-input-menu-focus-border-color);
-  background: var(--surface-elevated);
+  background: var(--chat-input-panel-elevated-background);
   box-shadow:
-    var(--composer-shadow),
+    0 8px 22px var(--chat-input-panel-elevated-shadow-color),
     0 0 0 3px var(--chat-input-menu-focus-ring-color);
 }
 
 .chat-input-panel.chat-input-panel-empty:focus-within .chat-input-menu-button {
   border-color: var(--chat-input-menu-focus-border-color);
-  background: var(--surface-elevated);
+  background: var(--chat-input-panel-elevated-background);
   box-shadow:
-    var(--composer-shadow),
+    0 8px 22px var(--chat-input-panel-elevated-shadow-color),
     0 0 0 3px var(--chat-input-menu-focus-ring-color);
 }
 
 .chat-input-panel.chat-input-panel-collapsed:focus-within
   .chat-input-menu-button {
   border-color: var(--chat-input-menu-focus-border-color);
-  background: var(--surface-elevated);
+  background: var(--chat-input-panel-elevated-background);
   box-shadow:
-    var(--composer-shadow),
+    0 8px 22px var(--chat-input-panel-elevated-shadow-color),
     0 0 0 3px var(--chat-input-menu-focus-ring-color);
 }
 
 :global(.dark) .chat-input-panel:focus-within .chat-input-menu-button {
   border-color: var(--chat-input-menu-focus-border-color);
-  background: var(--surface-elevated);
+  background: var(--chat-input-panel-elevated-background);
   box-shadow:
-    var(--composer-shadow),
+    0 8px 22px var(--chat-input-panel-elevated-shadow-color),
     0 0 0 3px var(--chat-input-menu-focus-ring-color);
 }
 
@@ -6080,9 +6098,9 @@
   .chat-input-panel.chat-input-panel-collapsed:focus-within
   .chat-input-menu-button {
   border-color: var(--chat-input-menu-focus-border-color);
-  background: var(--surface-elevated);
+  background: var(--chat-input-panel-elevated-background);
   box-shadow:
-    var(--composer-shadow),
+    0 8px 22px var(--chat-input-panel-elevated-shadow-color),
     0 0 0 3px var(--chat-input-menu-focus-ring-color);
 }
 
