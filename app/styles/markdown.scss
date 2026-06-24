@@ -591,6 +591,101 @@ summary,
     var(--primary) 7%,
     var(--surface-elevated)
   );
+  --markdown-csv-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --markdown-csv-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 70%,
+    transparent
+  );
+  --markdown-csv-header-background: color-mix(
+    in srgb,
+    var(--surface-soft) 72%,
+    transparent
+  );
+  --markdown-csv-row-number-background: color-mix(
+    in srgb,
+    var(--surface-soft) 58%,
+    transparent
+  );
+  --markdown-csv-row-number-color: color-mix(
+    in srgb,
+    var(--black-50) 62%,
+    transparent
+  );
+  --markdown-footnotes-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --markdown-footnotes-background: color-mix(
+    in srgb,
+    var(--surface-soft) 54%,
+    transparent
+  );
+  --markdown-footnotes-color: color-mix(
+    in srgb,
+    var(--black-50) 76%,
+    transparent
+  );
+  --markdown-footnotes-target-background: color-mix(
+    in srgb,
+    var(--primary) 7%,
+    var(--surface-elevated)
+  );
+  --markdown-footnotes-target-ring-color: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
+  --markdown-task-checkbox-border-color: color-mix(
+    in srgb,
+    var(--black-50) 22%,
+    transparent
+  );
+  --markdown-task-checkbox-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    transparent
+  );
+  --markdown-task-checkbox-checked-background: color-mix(
+    in srgb,
+    var(--primary) 74%,
+    transparent
+  );
+  --markdown-task-checkbox-check-color: color-mix(
+    in srgb,
+    var(--white) 92%,
+    transparent
+  );
+  --markdown-task-checkbox-focus-ring-color: color-mix(
+    in srgb,
+    var(--primary) 32%,
+    transparent
+  );
+  --markdown-task-checkbox-disabled-border-color: color-mix(
+    in srgb,
+    var(--black-50) 14%,
+    transparent
+  );
+  --markdown-task-checkbox-disabled-background: color-mix(
+    in srgb,
+    var(--surface-soft) 58%,
+    transparent
+  );
+  --markdown-task-checkbox-disabled-checked-background: color-mix(
+    in srgb,
+    var(--primary) 38%,
+    var(--surface-elevated)
+  );
+  --markdown-task-checkbox-disabled-check-color: color-mix(
+    in srgb,
+    var(--white) 84%,
+    transparent
+  );
 }
 
 @mixin dark {
@@ -1178,6 +1273,101 @@ summary,
     in srgb,
     var(--markdown-link-color) 12%,
     var(--surface-soft)
+  );
+  --markdown-csv-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --markdown-csv-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 58%,
+    transparent
+  );
+  --markdown-csv-header-background: color-mix(
+    in srgb,
+    var(--surface-soft) 62%,
+    transparent
+  );
+  --markdown-csv-row-number-background: color-mix(
+    in srgb,
+    var(--surface-soft) 50%,
+    transparent
+  );
+  --markdown-csv-row-number-color: color-mix(
+    in srgb,
+    var(--black) 58%,
+    transparent
+  );
+  --markdown-footnotes-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --markdown-footnotes-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 46%,
+    transparent
+  );
+  --markdown-footnotes-color: color-mix(
+    in srgb,
+    var(--black) 66%,
+    transparent
+  );
+  --markdown-footnotes-target-background: color-mix(
+    in srgb,
+    var(--markdown-link-color) 12%,
+    var(--surface-soft)
+  );
+  --markdown-footnotes-target-ring-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 22%,
+    transparent
+  );
+  --markdown-task-checkbox-border-color: color-mix(
+    in srgb,
+    var(--black) 20%,
+    transparent
+  );
+  --markdown-task-checkbox-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 72%,
+    transparent
+  );
+  --markdown-task-checkbox-checked-background: color-mix(
+    in srgb,
+    var(--markdown-link-color) 76%,
+    transparent
+  );
+  --markdown-task-checkbox-check-color: color-mix(
+    in srgb,
+    var(--surface-elevated) 92%,
+    transparent
+  );
+  --markdown-task-checkbox-focus-ring-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 34%,
+    transparent
+  );
+  --markdown-task-checkbox-disabled-border-color: color-mix(
+    in srgb,
+    var(--black) 14%,
+    transparent
+  );
+  --markdown-task-checkbox-disabled-background: color-mix(
+    in srgb,
+    var(--surface-soft) 42%,
+    transparent
+  );
+  --markdown-task-checkbox-disabled-checked-background: color-mix(
+    in srgb,
+    var(--markdown-link-color) 38%,
+    var(--surface-soft)
+  );
+  --markdown-task-checkbox-disabled-check-color: color-mix(
+    in srgb,
+    var(--surface-elevated) 84%,
+    transparent
   );
 }
 
@@ -1945,6 +2135,10 @@ summary,
   .markdown-body .markdown-artifact-preview-frame:hover,
   .markdown-body .markdown-artifact-preview-frame:focus-within {
     transform: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .markdown-body .task-list-item .task-list-item-checkbox::before {
     transition-duration: 0.01ms !important;
   }
 }
@@ -3153,30 +3347,45 @@ summary,
   box-shadow: none;
 }
 
+.markdown-body .csv-data {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  background: var(--markdown-csv-background);
+  border: 1px solid var(--markdown-csv-border-color);
+  border-radius: 8px;
+}
+
+.markdown-body .csv-data th {
+  font-weight: var(--base-text-weight-semibold, 600);
+  background: var(--markdown-csv-header-background);
+  border-top: 0;
+}
+
 .markdown-body .csv-data td,
 .markdown-body .csv-data th {
-  padding: 5px;
+  padding: 7px 9px;
   overflow: hidden;
   font-size: 12px;
-  line-height: 1;
+  line-height: 1.35;
   text-align: left;
   white-space: nowrap;
+  border-bottom: 1px solid var(--markdown-csv-border-color);
 }
 
 .markdown-body .csv-data .blob-num {
   padding: 10px 8px 9px;
   text-align: right;
-  background: var(--color-canvas-default);
+  color: var(--markdown-csv-row-number-color);
+  background: var(--markdown-csv-row-number-background);
   border: 0;
+  border-right: 1px solid var(--markdown-csv-border-color);
 }
 
 .markdown-body .csv-data tr {
-  border-top: 0;
-}
-
-.markdown-body .csv-data th {
-  font-weight: var(--base-text-weight-semibold, 600);
-  background: var(--color-canvas-subtle);
   border-top: 0;
 }
 
@@ -3189,9 +3398,13 @@ summary,
 }
 
 .markdown-body .footnotes {
+  margin-top: 22px;
+  padding: 12px 14px;
   font-size: 12px;
-  color: var(--color-fg-muted);
-  border-top: 1px solid var(--color-border-default);
+  color: var(--markdown-footnotes-color);
+  background: var(--markdown-footnotes-background);
+  border-top: 1px solid var(--markdown-footnotes-border-color);
+  border-radius: 10px;
 }
 
 .markdown-body .footnotes ol {
@@ -3216,12 +3429,14 @@ summary,
   left: -24px;
   pointer-events: none;
   content: "";
-  border: 2px solid var(--color-accent-emphasis);
+  border: 1px solid var(--markdown-footnotes-target-ring-color);
   border-radius: 6px;
 }
 
 .markdown-body .footnotes li:target {
-  color: var(--color-fg-default);
+  color: inherit;
+  background: var(--markdown-footnotes-target-background);
+  box-shadow: 0 0 0 4px var(--markdown-footnotes-target-ring-color);
 }
 
 .markdown-body .footnotes .data-footnote-backref g-emoji {
@@ -3385,8 +3600,59 @@ summary,
 }
 
 .markdown-body .task-list-item-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-grid;
+  inline-size: 0.95em;
+  block-size: 0.95em;
+  place-content: center;
   margin: 0 0.2em 0.25em -1.4em;
+  color: var(--markdown-task-checkbox-check-color);
   vertical-align: middle;
+  accent-color: var(--markdown-task-checkbox-checked-background);
+  background: var(--markdown-task-checkbox-background);
+  border: 1px solid var(--markdown-task-checkbox-border-color);
+  border-radius: 0.28em;
+}
+
+.markdown-body .task-list-item-checkbox::before {
+  inline-size: 0.55em;
+  block-size: 0.55em;
+  content: "";
+  clip-path: polygon(14% 44%, 0 58%, 38% 96%, 100% 20%, 86% 6%, 36% 66%);
+  box-shadow: inset 1em 1em var(--markdown-task-checkbox-check-color);
+  transform: scale(0);
+  transform-origin: center;
+  transition: transform 0.16s ease;
+}
+
+.markdown-body .task-list-item-checkbox:checked {
+  background: var(--markdown-task-checkbox-checked-background);
+}
+
+.markdown-body .task-list-item-checkbox:checked::before {
+  transform: scale(1);
+}
+
+.markdown-body .task-list-item-checkbox:disabled {
+  cursor: default;
+  opacity: 1;
+  background: var(--markdown-task-checkbox-disabled-background);
+  border-color: var(--markdown-task-checkbox-disabled-border-color);
+}
+
+.markdown-body .task-list-item-checkbox:disabled::before {
+  box-shadow: inset 1em 1em
+    var(--markdown-task-checkbox-disabled-check-color);
+}
+
+.markdown-body .task-list-item-checkbox:checked:disabled {
+  background: var(--markdown-task-checkbox-disabled-checked-background);
+}
+
+.markdown-body .task-list-item-checkbox:focus-visible {
+  outline: 2px solid var(--markdown-task-checkbox-focus-ring-color);
+  outline-offset: 2px;
 }
 
 .markdown-body .contains-task-list:dir(rtl) .task-list-item-checkbox {

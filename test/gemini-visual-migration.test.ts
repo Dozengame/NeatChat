@@ -9508,6 +9508,242 @@ describe("Gemini visual migration shell", () => {
     expect(taskListItemBlock).toMatch(/list-style-type:\s*none;/);
   });
 
+  test("keeps Gemini-style markdown utility surfaces low-glare across themes", () => {
+    const markdownStyles = read("app/styles/markdown.scss");
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const autoDarkRootBlock = readCssBlock(
+      readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
+      ":root",
+    );
+    const csvBlock = readCssBlock(markdownStyles, ".markdown-body .csv-data");
+    const csvCellBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .csv-data td,\n.markdown-body .csv-data th",
+    );
+    const csvBlobNumBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .csv-data .blob-num",
+    );
+    const csvHeaderBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .csv-data th",
+    );
+    const footnotesBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .footnotes",
+    );
+    const footnotesTargetBeforeBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .footnotes li:target::before",
+    );
+    const footnotesTargetBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .footnotes li:target",
+    );
+    const taskCheckboxBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .task-list-item-checkbox",
+    );
+    const taskCheckboxBeforeBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .task-list-item-checkbox::before",
+    );
+    const taskCheckboxCheckedBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .task-list-item-checkbox:checked",
+    );
+    const taskCheckboxCheckedBeforeBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .task-list-item-checkbox:checked::before",
+    );
+    const taskCheckboxFocusBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .task-list-item-checkbox:focus-visible",
+    );
+    const taskCheckboxDisabledBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .task-list-item-checkbox:disabled",
+    );
+    const taskCheckboxDisabledBeforeBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .task-list-item-checkbox:disabled::before",
+    );
+    const taskCheckboxCheckedDisabledBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .task-list-item-checkbox:checked:disabled",
+    );
+    const taskCheckboxRtlBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .contains-task-list:dir(rtl) .task-list-item-checkbox",
+    );
+    const reducedMotionBlock = readCssBlock(
+      markdownStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const reducedMotionTaskCheckboxBeforeBlock = readCssBlock(
+      reducedMotionBlock,
+      ".markdown-body .task-list-item .task-list-item-checkbox::before",
+    );
+    const utilityToneScope = [
+      csvBlock,
+      csvCellBlock,
+      csvBlobNumBlock,
+      csvHeaderBlock,
+      footnotesBlock,
+      footnotesTargetBeforeBlock,
+      footnotesTargetBlock,
+      taskCheckboxBlock,
+      taskCheckboxBeforeBlock,
+      taskCheckboxCheckedBlock,
+      taskCheckboxCheckedBeforeBlock,
+      taskCheckboxFocusBlock,
+      taskCheckboxDisabledBlock,
+      taskCheckboxDisabledBeforeBlock,
+      taskCheckboxCheckedDisabledBlock,
+      taskCheckboxRtlBlock,
+      reducedMotionTaskCheckboxBeforeBlock,
+    ].join("\n");
+    const utilityTokenNames = [
+      "--markdown-csv-border-color",
+      "--markdown-csv-background",
+      "--markdown-csv-header-background",
+      "--markdown-csv-row-number-background",
+      "--markdown-csv-row-number-color",
+      "--markdown-footnotes-border-color",
+      "--markdown-footnotes-background",
+      "--markdown-footnotes-color",
+      "--markdown-footnotes-target-background",
+      "--markdown-footnotes-target-ring-color",
+      "--markdown-task-checkbox-border-color",
+      "--markdown-task-checkbox-background",
+      "--markdown-task-checkbox-checked-background",
+      "--markdown-task-checkbox-check-color",
+      "--markdown-task-checkbox-focus-ring-color",
+      "--markdown-task-checkbox-disabled-border-color",
+      "--markdown-task-checkbox-disabled-background",
+      "--markdown-task-checkbox-disabled-checked-background",
+      "--markdown-task-checkbox-disabled-check-color",
+    ];
+    const lightUtilityTokens = readCustomProperties(
+      lightMixinBlock,
+      utilityTokenNames,
+    );
+    const darkUtilityTokens = readCustomProperties(
+      darkMixinBlock,
+      utilityTokenNames,
+    );
+
+    for (const tokenName of utilityTokenNames) {
+      expect(lightUtilityTokens[tokenName]).not.toBe("");
+      expect(darkUtilityTokens[tokenName]).not.toBe("");
+      expect(lightUtilityTokens[tokenName]).toContain("var(--");
+      expect(darkUtilityTokens[tokenName]).toContain("var(--");
+    }
+    expect(autoDarkRootBlock).toMatch(/@include dark;/);
+
+    expect(csvBlock).toMatch(/display:\s*block;/);
+    expect(csvBlock).toMatch(/max-width:\s*100%;/);
+    expect(csvBlock).toMatch(/overflow-x:\s*auto;/);
+    expect(csvBlock).toMatch(/overscroll-behavior-x:\s*contain;/);
+    expect(csvBlock).toMatch(/scrollbar-width:\s*thin;/);
+    expect(csvBlock).toMatch(/-webkit-overflow-scrolling:\s*touch;/);
+    expect(csvBlock).toMatch(
+      /background:\s*var\(--markdown-csv-background\);/,
+    );
+    expect(csvBlock).toMatch(
+      /border:\s*1px solid var\(--markdown-csv-border-color\);/,
+    );
+    expect(csvBlock).toMatch(/border-radius:\s*8px;/);
+    expect(csvCellBlock).toMatch(/line-height:\s*1\.35;/);
+    expect(csvCellBlock).toMatch(
+      /border-bottom:\s*1px solid var\(--markdown-csv-border-color\);/,
+    );
+    expect(csvBlobNumBlock).toMatch(
+      /background:\s*var\(--markdown-csv-row-number-background\);/,
+    );
+    expect(csvBlobNumBlock).toMatch(
+      /color:\s*var\(--markdown-csv-row-number-color\);/,
+    );
+    expect(csvBlobNumBlock).toMatch(
+      /border-right:\s*1px solid var\(--markdown-csv-border-color\);/,
+    );
+    expect(csvHeaderBlock).toMatch(
+      /background:\s*var\(--markdown-csv-header-background\);/,
+    );
+
+    expect(footnotesBlock).toMatch(
+      /color:\s*var\(--markdown-footnotes-color\);/,
+    );
+    expect(footnotesBlock).toMatch(
+      /border-top:\s*1px solid var\(--markdown-footnotes-border-color\);/,
+    );
+    expect(footnotesBlock).toMatch(
+      /background:\s*var\(--markdown-footnotes-background\);/,
+    );
+    expect(footnotesBlock).toMatch(/border-radius:\s*10px;/);
+    expect(footnotesTargetBeforeBlock).toMatch(
+      /border:\s*1px solid var\(--markdown-footnotes-target-ring-color\);/,
+    );
+    expect(footnotesTargetBlock).toMatch(
+      /background:\s*var\(--markdown-footnotes-target-background\);/,
+    );
+    expect(footnotesTargetBlock).toMatch(
+      /box-shadow:\s*0 0 0 4px var\(--markdown-footnotes-target-ring-color\);/,
+    );
+
+    expect(taskCheckboxBlock).toMatch(/appearance:\s*none;/);
+    expect(taskCheckboxBlock).toMatch(/inline-size:\s*0\.95em;/);
+    expect(taskCheckboxBlock).toMatch(
+      /border:\s*1px solid var\(--markdown-task-checkbox-border-color\);/,
+    );
+    expect(taskCheckboxBlock).toMatch(
+      /background:\s*var\(--markdown-task-checkbox-background\);/,
+    );
+    expect(taskCheckboxBlock).toMatch(
+      /accent-color:\s*var\(--markdown-task-checkbox-checked-background\);/,
+    );
+    expect(taskCheckboxBeforeBlock).toMatch(/clip-path:\s*polygon\(/);
+    expect(taskCheckboxBeforeBlock).toMatch(
+      /box-shadow:\s*inset 1em 1em var\(--markdown-task-checkbox-check-color\);/,
+    );
+    expect(taskCheckboxCheckedBlock).toMatch(
+      /background:\s*var\(--markdown-task-checkbox-checked-background\);/,
+    );
+    expect(taskCheckboxCheckedBeforeBlock).toMatch(/transform:\s*scale\(1\);/);
+    expect(taskCheckboxFocusBlock).toMatch(
+      /outline:\s*2px solid var\(--markdown-task-checkbox-focus-ring-color\);/,
+    );
+    expect(taskCheckboxFocusBlock).toMatch(/outline-offset:\s*2px;/);
+    expect(taskCheckboxDisabledBlock).toMatch(/cursor:\s*default;/);
+    expect(taskCheckboxDisabledBlock).toMatch(/opacity:\s*1;/);
+    expect(taskCheckboxDisabledBlock).toMatch(
+      /border-color:\s*var\(--markdown-task-checkbox-disabled-border-color\);/,
+    );
+    expect(taskCheckboxDisabledBlock).toMatch(
+      /background:\s*var\(--markdown-task-checkbox-disabled-background\);/,
+    );
+    expect(taskCheckboxDisabledBeforeBlock).toMatch(
+      /box-shadow:\s*inset 1em 1em\s*var\(--markdown-task-checkbox-disabled-check-color\);/,
+    );
+    expect(taskCheckboxCheckedDisabledBlock).toMatch(
+      /background:\s*var\(--markdown-task-checkbox-disabled-checked-background\);/,
+    );
+    expect(taskCheckboxRtlBlock).toMatch(/margin:\s*0 -1\.6em 0\.25em 0\.2em;/);
+    expect(reducedMotionTaskCheckboxBeforeBlock).toMatch(
+      /transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(reducedMotionTaskCheckboxBeforeBlock).not.toMatch(
+      /transform:\s*none !important;/,
+    );
+    expect(utilityToneScope).not.toMatch(
+      /var\(--color-(?:canvas|border|accent|fg)-/,
+    );
+    expect(utilityToneScope).not.toMatch(
+      /(?:\brgba?\(|\bhsla?\(|#[\da-fA-F]{3,8})/,
+    );
+  });
+
   test("keeps Gemini-style markdown heading hierarchy", () => {
     const markdownStyles = read("app/styles/markdown.scss");
     const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
