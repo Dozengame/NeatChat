@@ -3935,7 +3935,77 @@ describe("Gemini visual migration shell", () => {
   test("keeps composer multimodal menu states accessible and compact", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
+    const composerActionsBlock = readCssBlock(chatStyles, ".chat-input-actions");
+    const composerActionsRootBlock =
+      readRootDeclarations(composerActionsBlock);
+    const composerActionBlock = readCssBlock(
+      composerActionsBlock,
+      ".chat-input-action",
+    );
+    const composerActionHoverBlock = readCssBlock(
+      composerActionBlock,
+      "&:not(:disabled):hover",
+    );
+    const composerActionFocusBlock = readCssBlock(
+      composerActionBlock,
+      "&:not(:disabled):focus-visible",
+    );
+    const composerActionDisabledBlock = readCssBlock(
+      composerActionBlock,
+      "&:disabled",
+    );
+    const composerActionActiveBlock = readCssBlock(
+      composerActionBlock,
+      "&-active",
+    );
+    const darkComposerActionsBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-input-actions",
+    );
+    const autoDarkComposerActionsSelector =
+      ":global(body:not(.light)) .chat-input-actions";
+    const autoDarkComposerActionsIndex = chatStyles.indexOf(
+      autoDarkComposerActionsSelector,
+    );
+    const autoDarkComposerActionsMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkComposerActionsIndex,
+    );
+    const autoDarkComposerActionsBlock = readCssBlock(
+      chatStyles.slice(autoDarkComposerActionsMediaIndex),
+      autoDarkComposerActionsSelector,
+    );
     const actionMenuBlock = readCssBlock(chatStyles, ".chat-input-action-menu");
+    const actionMenuRootBlock = readRootDeclarations(actionMenuBlock);
+    const actionMenuActionBlock = readCssBlock(
+      actionMenuBlock,
+      ".chat-input-action",
+    );
+    const actionMenuActionHoverBlock = readCssBlockContainingSelector(
+      actionMenuActionBlock,
+      "&:not(:disabled):hover",
+    );
+    const actionMenuActionFocusBlock = readCssBlockContainingSelector(
+      actionMenuActionBlock,
+      "&:not(:disabled):focus-visible",
+    );
+    const darkActionMenuBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-input-action-menu",
+    );
+    const autoDarkActionMenuSelector =
+      ":global(body:not(.light)) .chat-input-action-menu";
+    const autoDarkActionMenuIndex = chatStyles.indexOf(
+      autoDarkActionMenuSelector,
+    );
+    const autoDarkActionMenuMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkActionMenuIndex,
+    );
+    const autoDarkActionMenuBlock = readCssBlock(
+      chatStyles.slice(autoDarkActionMenuMediaIndex),
+      autoDarkActionMenuSelector,
+    );
     const actionMenuBackdropBlock = readCssBlock(
       chatStyles,
       ".chat-input-action-menu-backdrop",
@@ -3979,6 +4049,60 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ":global(.dark) .chat-dropzone",
     );
+    const composerActionTokenNames = [
+      "--chat-composer-action-background",
+      "--chat-composer-action-border-color",
+      "--chat-composer-action-color",
+      "--chat-composer-action-hover-background",
+      "--chat-composer-action-hover-border-color",
+      "--chat-composer-action-hover-shadow-color",
+      "--chat-composer-action-focus-shadow-color",
+      "--chat-composer-action-active-background",
+      "--chat-composer-action-active-border-color",
+      "--chat-composer-action-active-color",
+      "--chat-composer-action-disabled-background",
+      "--chat-composer-action-disabled-border-color",
+      "--chat-composer-action-disabled-color",
+    ];
+    const lightComposerActionTokens = readCustomProperties(
+      composerActionsRootBlock,
+      composerActionTokenNames,
+    );
+    const darkComposerActionTokens = readCustomProperties(
+      darkComposerActionsBlock,
+      composerActionTokenNames,
+    );
+    const autoDarkComposerActionTokens = readCustomProperties(
+      autoDarkComposerActionsBlock,
+      composerActionTokenNames,
+    );
+    const composerActionPaintScope = [
+      composerActionsRootBlock,
+      composerActionBlock,
+      composerActionHoverBlock,
+      composerActionFocusBlock,
+      composerActionDisabledBlock,
+      composerActionActiveBlock,
+      darkComposerActionsBlock,
+      autoDarkComposerActionsBlock,
+    ].join("\n");
+    const actionMenuHoverTokenNames = [
+      "--chat-input-action-hover-background",
+      "--chat-input-action-hover-color",
+      "--chat-input-action-hover-shadow-color",
+    ];
+    const lightActionMenuHoverTokens = readCustomProperties(
+      actionMenuRootBlock,
+      actionMenuHoverTokenNames,
+    );
+    const darkActionMenuHoverTokens = readCustomProperties(
+      darkActionMenuBlock,
+      actionMenuHoverTokenNames,
+    );
+    const autoDarkActionMenuHoverTokens = readCustomProperties(
+      autoDarkActionMenuBlock,
+      actionMenuHoverTokenNames,
+    );
 
     expect(chat).toMatch(
       /className=\{clsx\(styles\["chat-input-action"\], "clickable", \{[\s\S]*styles\["chat-input-action-active"\][\s\S]*styles\["chat-input-action-disabled"\]\]: props\.disabled,/,
@@ -3995,6 +4119,72 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /text=\{"上传附件"\}[\s\S]*ariaDescribedBy="chat-multimodal-upload-state"[\s\S]*disabled=\{props\.attachmentSlotsFull\}/,
     );
+    expect(Object.values(lightComposerActionTokens).every(Boolean)).toBeTruthy();
+    expect(Object.values(darkComposerActionTokens).every(Boolean)).toBeTruthy();
+    expect(
+      Object.values(autoDarkComposerActionTokens).every(Boolean),
+    ).toBeTruthy();
+    expect(autoDarkComposerActionTokens).toEqual(darkComposerActionTokens);
+    expect(composerActionBlock).toMatch(
+      /background-color:\s*var\(--chat-composer-action-background\);/,
+    );
+    expect(composerActionBlock).toMatch(
+      /color:\s*var\(--chat-composer-action-color\);/,
+    );
+    expect(composerActionBlock).toMatch(
+      /border:\s*1px solid var\(--chat-composer-action-border-color\);/,
+    );
+    expect(composerActionBlock).toMatch(/transition:[\s\S]*width ease 0\.3s/);
+    expect(composerActionBlock).toMatch(
+      /transition:[\s\S]*border-color 0\.18s ease/,
+    );
+    expect(composerActionBlock).toMatch(
+      /transition:[\s\S]*background-color 0\.18s ease/,
+    );
+    expect(composerActionBlock).toMatch(/transition:[\s\S]*color 0\.18s ease/);
+    expect(composerActionBlock).toMatch(
+      /transition:[\s\S]*box-shadow 0\.18s ease/,
+    );
+    expect(composerActionHoverBlock).toMatch(
+      /background-color:\s*var\(--chat-composer-action-hover-background\);/,
+    );
+    expect(composerActionHoverBlock).toMatch(
+      /border-color:\s*var\(--chat-composer-action-hover-border-color\);/,
+    );
+    expect(composerActionHoverBlock).toMatch(
+      /box-shadow:\s*0 8px 20px var\(--chat-composer-action-hover-shadow-color\);/,
+    );
+    expect(composerActionFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(composerActionFocusBlock).toMatch(/outline-offset:\s*2px;/);
+    expect(composerActionFocusBlock).toMatch(
+      /box-shadow:\s*var\(--focus-ring-shadow\),\s*0 8px 20px var\(--chat-composer-action-focus-shadow-color\);/,
+    );
+    expect(composerActionActiveBlock).toMatch(
+      /border-color:\s*var\(--chat-composer-action-active-border-color\);/,
+    );
+    expect(composerActionActiveBlock).toMatch(
+      /background-color:\s*var\(--chat-composer-action-active-background\);/,
+    );
+    expect(composerActionActiveBlock).toMatch(
+      /color:\s*var\(--chat-composer-action-active-color\);/,
+    );
+    expect(composerActionDisabledBlock).toMatch(
+      /background-color:\s*var\(--chat-composer-action-disabled-background\);/,
+    );
+    expect(composerActionDisabledBlock).toMatch(
+      /border-color:\s*var\(--chat-composer-action-disabled-border-color\);/,
+    );
+    expect(composerActionDisabledBlock).toMatch(
+      /color:\s*var\(--chat-composer-action-disabled-color\);/,
+    );
+    expect(composerActionPaintScope).not.toContain("var(--border-in-light)");
+    expect(composerActionPaintScope).not.toContain("background-color: var(--white)");
+    expect(composerActionPaintScope).not.toContain("color: var(--black)");
+    expect(composerActionPaintScope).not.toContain("rgba(49, 94, 248");
+    expect(Object.values(lightActionMenuHoverTokens).every(Boolean)).toBeTruthy();
+    expect(Object.values(darkActionMenuHoverTokens).every(Boolean)).toBeTruthy();
+    expect(Object.values(autoDarkActionMenuHoverTokens).every(Boolean)).toBeTruthy();
+    expect(autoDarkActionMenuHoverTokens).toEqual(darkActionMenuHoverTokens);
     expect(actionMenuBlock).toMatch(/overscroll-behavior:\s*contain;/);
     expect(actionMenuBlock).toMatch(/scrollbar-width:\s*thin;/);
     expect(actionMenuBackdropBlock).toMatch(
@@ -4005,6 +4195,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(reducedMotionBlock).toMatch(
       /\.chat-input-action-menu-backdrop,\s*\.chat-input-action-menu-backdrop-open[\s\S]*backdrop-filter:\s*none !important;[\s\S]*-webkit-backdrop-filter:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-input-actions \.chat-input-action,\s*\.chat-input-actions \.chat-input-action-active\s*\{[\s\S]*animation:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
     );
     expect(sectionMetaBlock).toMatch(/border-radius:\s*999px;/);
     expect(sectionMetaBlock).toMatch(
@@ -4028,6 +4221,23 @@ describe("Gemini visual migration shell", () => {
     expect(actionMenuDisabledActionBlock).toMatch(
       /box-shadow:\s*inset 0 0 0 1px var\(--chat-input-action-disabled-ring-color\);/,
     );
+    expect(actionMenuActionHoverBlock).toMatch(
+      /background:\s*var\(--chat-input-action-hover-background\);/,
+    );
+    expect(actionMenuActionHoverBlock).toMatch(
+      /color:\s*var\(--chat-input-action-hover-color\);/,
+    );
+    expect(actionMenuActionHoverBlock).toMatch(
+      /box-shadow:\s*0 6px 18px var\(--chat-input-action-hover-shadow-color\);/,
+    );
+    expect(actionMenuActionHoverBlock).not.toContain("var(--hover-color)");
+    expect(actionMenuActionFocusBlock).toMatch(
+      /background:\s*var\(--chat-input-action-hover-background\);/,
+    );
+    expect(actionMenuActionFocusBlock).toMatch(
+      /color:\s*var\(--chat-input-action-hover-color\);/,
+    );
+    expect(actionMenuActionFocusBlock).not.toContain("var(--hover-color)");
     expect(mobileActionMenuBlock).toMatch(/overscroll-behavior:\s*contain;/);
     expect(mobileActionMenuBlock).toMatch(
       /max-height:\s*min\(380px,\s*calc\(100dvh - 140px\)\);/,

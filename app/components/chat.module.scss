@@ -578,6 +578,72 @@
 }
 
 .chat-input-actions {
+  --chat-composer-action-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 92%,
+    var(--white)
+  );
+  --chat-composer-action-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --chat-composer-action-color: color-mix(
+    in srgb,
+    var(--black) 82%,
+    transparent
+  );
+  --chat-composer-action-hover-background: color-mix(
+    in srgb,
+    var(--primary) 7%,
+    var(--surface-elevated)
+  );
+  --chat-composer-action-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 20%,
+    transparent
+  );
+  --chat-composer-action-hover-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    transparent
+  );
+  --chat-composer-action-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 14%,
+    transparent
+  );
+  --chat-composer-action-active-background: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    var(--surface-elevated)
+  );
+  --chat-composer-action-active-border-color: color-mix(
+    in srgb,
+    var(--primary) 26%,
+    transparent
+  );
+  --chat-composer-action-active-color: color-mix(
+    in srgb,
+    var(--primary) 78%,
+    var(--black)
+  );
+  --chat-composer-action-disabled-background: color-mix(
+    in srgb,
+    var(--surface-soft) 62%,
+    transparent
+  );
+  --chat-composer-action-disabled-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --chat-composer-action-disabled-color: color-mix(
+    in srgb,
+    var(--black-50) 64%,
+    transparent
+  );
+
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -597,14 +663,15 @@
     font-size: 12px;
     font-family: inherit;
     line-height: 1;
-    background-color: var(--white);
-    color: var(--black);
-    border: var(--border-in-light);
+    background-color: var(--chat-composer-action-background);
+    color: var(--chat-composer-action-color);
+    border: 1px solid var(--chat-composer-action-border-color);
     padding: 4px 10px;
     margin: 0;
     text-align: left;
     animation: slide-in ease 0.3s;
-    transition: width ease 0.3s;
+    transition: width ease 0.3s, border-color 0.18s ease,
+      background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
     align-items: center;
     justify-content: flex-start;
     height: 16px;
@@ -624,6 +691,27 @@
       --delay: 0.5s;
       width: var(--full-width);
       transition-delay: var(--delay);
+      background-color: var(--chat-composer-action-hover-background);
+      border-color: var(--chat-composer-action-hover-border-color);
+      box-shadow: 0 8px 20px var(--chat-composer-action-hover-shadow-color);
+
+      .text {
+        transition-delay: var(--delay);
+        opacity: 1;
+        transform: translate(0);
+      }
+    }
+
+    &:not(:disabled):focus-visible {
+      --delay: 0.5s;
+      width: var(--full-width);
+      outline: var(--focus-ring);
+      outline-offset: 2px;
+      background-color: var(--chat-composer-action-hover-background);
+      border-color: var(--chat-composer-action-hover-border-color);
+      box-shadow:
+        var(--focus-ring-shadow),
+        0 8px 20px var(--chat-composer-action-focus-shadow-color);
 
       .text {
         transition-delay: var(--delay);
@@ -634,14 +722,17 @@
 
     &:disabled {
       cursor: not-allowed;
-      opacity: 0.58;
+      opacity: 1;
+      background-color: var(--chat-composer-action-disabled-background);
+      border-color: var(--chat-composer-action-disabled-border-color);
+      color: var(--chat-composer-action-disabled-color);
     }
 
     &-active {
       width: var(--full-width);
-      border-color: rgba(49, 94, 248, 0.52);
-      background-color: rgba(49, 94, 248, 0.16);
-      color: var(--primary);
+      border-color: var(--chat-composer-action-active-border-color);
+      background-color: var(--chat-composer-action-active-background);
+      color: var(--chat-composer-action-active-color);
 
       .text {
         opacity: 1;
@@ -663,10 +754,152 @@
         width: var(--icon-width);
       }
 
+      &:not(:disabled):focus-visible {
+        width: var(--icon-width);
+      }
+
       .text {
         display: none;
       }
     }
+  }
+}
+
+:global(.dark) .chat-input-actions {
+  --chat-composer-action-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    var(--white)
+  );
+  --chat-composer-action-border-color: color-mix(
+    in srgb,
+    var(--black) 8%,
+    transparent
+  );
+  --chat-composer-action-color: color-mix(
+    in srgb,
+    var(--black) 84%,
+    transparent
+  );
+  --chat-composer-action-hover-background: color-mix(
+    in srgb,
+    var(--primary) 12%,
+    var(--surface)
+  );
+  --chat-composer-action-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 26%,
+    transparent
+  );
+  --chat-composer-action-hover-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 8%,
+    var(--surface)
+  );
+  --chat-composer-action-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    var(--surface)
+  );
+  --chat-composer-action-active-background: color-mix(
+    in srgb,
+    var(--primary) 16%,
+    var(--surface)
+  );
+  --chat-composer-action-active-border-color: color-mix(
+    in srgb,
+    var(--primary) 32%,
+    transparent
+  );
+  --chat-composer-action-active-color: color-mix(
+    in srgb,
+    var(--primary) 72%,
+    var(--black)
+  );
+  --chat-composer-action-disabled-background: color-mix(
+    in srgb,
+    var(--black) 6%,
+    transparent
+  );
+  --chat-composer-action-disabled-border-color: color-mix(
+    in srgb,
+    var(--black) 8%,
+    transparent
+  );
+  --chat-composer-action-disabled-color: color-mix(
+    in srgb,
+    var(--black-50) 76%,
+    transparent
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .chat-input-actions {
+    --chat-composer-action-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 86%,
+      var(--white)
+    );
+    --chat-composer-action-border-color: color-mix(
+      in srgb,
+      var(--black) 8%,
+      transparent
+    );
+    --chat-composer-action-color: color-mix(
+      in srgb,
+      var(--black) 84%,
+      transparent
+    );
+    --chat-composer-action-hover-background: color-mix(
+      in srgb,
+      var(--primary) 12%,
+      var(--surface)
+    );
+    --chat-composer-action-hover-border-color: color-mix(
+      in srgb,
+      var(--primary) 26%,
+      transparent
+    );
+    --chat-composer-action-hover-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 8%,
+      var(--surface)
+    );
+    --chat-composer-action-focus-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 18%,
+      var(--surface)
+    );
+    --chat-composer-action-active-background: color-mix(
+      in srgb,
+      var(--primary) 16%,
+      var(--surface)
+    );
+    --chat-composer-action-active-border-color: color-mix(
+      in srgb,
+      var(--primary) 32%,
+      transparent
+    );
+    --chat-composer-action-active-color: color-mix(
+      in srgb,
+      var(--primary) 72%,
+      var(--black)
+    );
+    --chat-composer-action-disabled-background: color-mix(
+      in srgb,
+      var(--black) 6%,
+      transparent
+    );
+    --chat-composer-action-disabled-border-color: color-mix(
+      in srgb,
+      var(--black) 8%,
+      transparent
+    );
+    --chat-composer-action-disabled-color: color-mix(
+      in srgb,
+      var(--black-50) 76%,
+      transparent
+    );
   }
 }
 
@@ -5036,6 +5269,9 @@
   --chat-multimodal-section-meta-warning-color: color-mix(in srgb, rgb(133, 77, 14) 82%, var(--black));
   --chat-input-action-active-background: color-mix(in srgb, var(--primary) 10%, transparent);
   --chat-input-action-active-color: var(--primary);
+  --chat-input-action-hover-background: color-mix(in srgb, var(--primary) 7%, transparent);
+  --chat-input-action-hover-color: color-mix(in srgb, var(--black) 86%, transparent);
+  --chat-input-action-hover-shadow-color: color-mix(in srgb, var(--primary) 8%, transparent);
   --chat-input-action-disabled-background: color-mix(in srgb, var(--surface-soft) 46%, transparent);
   --chat-input-action-disabled-color: color-mix(in srgb, var(--black-50) 74%, transparent);
   --chat-input-action-disabled-ring-color: color-mix(in srgb, var(--black-50) 10%, transparent);
@@ -5139,7 +5375,9 @@
     &:not(:disabled):hover,
     &:not(:disabled):focus-visible {
       width: 100%;
-      background: var(--hover-color);
+      background: var(--chat-input-action-hover-background);
+      color: var(--chat-input-action-hover-color);
+      box-shadow: 0 6px 18px var(--chat-input-action-hover-shadow-color);
     }
 
     &:focus-visible {
@@ -5184,6 +5422,9 @@
 :global(.dark) .chat-input-action-menu {
   --chat-input-action-active-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
   --chat-input-action-active-color: color-mix(in srgb, var(--primary) 78%, var(--black));
+  --chat-input-action-hover-background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  --chat-input-action-hover-color: color-mix(in srgb, var(--black) 90%, transparent);
+  --chat-input-action-hover-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
   --chat-input-action-disabled-background: color-mix(in srgb, var(--black) 7%, transparent);
   --chat-input-action-disabled-color: color-mix(in srgb, var(--black-50) 88%, transparent);
   --chat-input-action-disabled-ring-color: color-mix(in srgb, var(--black) 8%, transparent);
@@ -5208,6 +5449,9 @@
   :global(body:not(.light)) .chat-input-action-menu {
     --chat-input-action-active-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
     --chat-input-action-active-color: color-mix(in srgb, var(--primary) 78%, var(--black));
+    --chat-input-action-hover-background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+    --chat-input-action-hover-color: color-mix(in srgb, var(--black) 90%, transparent);
+    --chat-input-action-hover-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
     --chat-input-action-disabled-background: color-mix(in srgb, var(--black) 7%, transparent);
     --chat-input-action-disabled-color: color-mix(in srgb, var(--black-50) 88%, transparent);
     --chat-input-action-disabled-ring-color: color-mix(in srgb, var(--black) 8%, transparent);
@@ -6702,6 +6946,12 @@
   }
 
   .chat-input-menu-button svg {
+    transition-duration: 0.01ms !important;
+  }
+
+  .chat-input-actions .chat-input-action,
+  .chat-input-actions .chat-input-action-active {
+    animation: none !important;
     transition-duration: 0.01ms !important;
   }
 
