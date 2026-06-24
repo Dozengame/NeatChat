@@ -18095,10 +18095,42 @@ describe("Gemini visual migration shell", () => {
     const realtimeStyles = read(
       "app/components/realtime-chat/realtime-chat.module.scss",
     );
+    const voicePrint = read("app/components/voice-print/voice-print.tsx");
+    const voicePrintStyles = read(
+      "app/components/voice-print/voice-print.module.scss",
+    );
     const cnLocale = read("app/locales/cn.ts");
     const enLocale = read("app/locales/en.ts");
     const rootBlock = readRootCssBlock(realtimeStyles, ".realtime-chat");
     const rootDeclarations = readRootDeclarations(rootBlock);
+    const voicePrintBlock = readRootCssBlock(voicePrintStyles, ".voice-print");
+    const voicePrintRootDeclarations = readRootDeclarations(voicePrintBlock);
+    const voicePrintCanvasBlock = readCssBlock(voicePrintBlock, "canvas");
+    const darkVoicePrintBlock = readCssBlock(
+      voicePrintStyles,
+      ":global(.dark) .voice-print",
+    );
+    const autoDarkVoicePrintSelector =
+      ":global(body:not(.light)) .voice-print";
+    const autoDarkVoicePrintIndex = voicePrintStyles.indexOf(
+      autoDarkVoicePrintSelector,
+    );
+    const autoDarkVoicePrintMediaIndex = voicePrintStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkVoicePrintIndex,
+    );
+    const autoDarkVoicePrintBlock = readCssBlock(
+      voicePrintStyles.slice(autoDarkVoicePrintMediaIndex),
+      autoDarkVoicePrintSelector,
+    );
+    const mobileVoicePrintBlock = readCssBlock(
+      readCssBlock(voicePrintStyles, "@media screen and (max-width: 600px)"),
+      ".voice-print",
+    );
+    const reducedMotionVoicePrintBlock = readCssBlock(
+      readCssBlock(voicePrintStyles, "@media (prefers-reduced-motion: reduce)"),
+      ".voice-print",
+    );
     const micBlock = readCssBlock(rootBlock, ".circle-mic");
     const recordingMicBlock = readCssBlock(
       realtimeStyles,
@@ -18158,6 +18190,14 @@ describe("Gemini visual migration shell", () => {
       "--realtime-status-color",
       "--realtime-status-background",
     ];
+    const voicePrintTokenNames = [
+      "--voice-print-background",
+      "--voice-print-border-color",
+      "--voice-print-shadow-color",
+      "--voice-print-wave-start",
+      "--voice-print-wave-middle",
+      "--voice-print-wave-end",
+    ];
     const realtimeTokenMap = readCustomProperties(
       rootDeclarations,
       realtimeTokenNames,
@@ -18170,6 +18210,18 @@ describe("Gemini visual migration shell", () => {
       autoDarkBlock,
       realtimeTokenNames,
     );
+    const voicePrintTokenMap = readCustomProperties(
+      voicePrintRootDeclarations,
+      voicePrintTokenNames,
+    );
+    const darkVoicePrintTokenMap = readCustomProperties(
+      darkVoicePrintBlock,
+      voicePrintTokenNames,
+    );
+    const autoDarkVoicePrintTokenMap = readCustomProperties(
+      autoDarkVoicePrintBlock,
+      voicePrintTokenNames,
+    );
     const realtimePaintScope = [
       rootDeclarations,
       micBlock,
@@ -18181,6 +18233,11 @@ describe("Gemini visual migration shell", () => {
       mobileRootBlock,
       mobileMicBlock,
       mobileBottomIconsBlock,
+      voicePrintRootDeclarations,
+      voicePrintCanvasBlock,
+      darkVoicePrintBlock,
+      autoDarkVoicePrintBlock,
+      mobileVoicePrintBlock,
     ].join("\n");
 
     expect(realtimeChat).toContain(
@@ -18215,6 +18272,17 @@ describe("Gemini visual migration shell", () => {
     expect(realtimeChat).toContain("aria={Locale.UI.Close}");
     expect(realtimeChat).toContain('className={styles["icon-left"]}');
     expect(realtimeChat).toContain('className={styles["icon-right"]}');
+    expect(realtimeChat).toContain("<VoicePrint");
+    expect(voicePrint).toContain('data-active={isActive ? "true" : "false"}');
+    expect(voicePrint).toContain('aria-hidden="true"');
+    expect(voicePrint).toContain("getComputedStyle(canvas)");
+    expect(voicePrint).toContain("computedStyle.borderTopColor");
+    expect(voicePrint).toContain("computedStyle.borderRightColor");
+    expect(voicePrint).toContain("computedStyle.borderBottomColor");
+    expect(voicePrint).toContain("--voice-print-wave-start");
+    expect(voicePrint).toContain("--voice-print-wave-middle");
+    expect(voicePrint).toContain("--voice-print-wave-end");
+    expect(voicePrint).toContain("prefers-reduced-motion: reduce");
     expect(
       realtimeChat.match(/className=\{styles\["realtime-control-button"\]\}/g)
         ?.length ?? 0,
@@ -18232,12 +18300,18 @@ describe("Gemini visual migration shell", () => {
       realtimeTokenMap,
       darkRealtimeTokenMap,
       autoDarkRealtimeTokenMap,
+      voicePrintTokenMap,
+      darkVoicePrintTokenMap,
+      autoDarkVoicePrintTokenMap,
     ]) {
       expect(Object.values(tokenMap)).not.toContain("");
     }
     expect(autoDarkRealtimeIndex).toBeGreaterThan(-1);
     expect(autoDarkRealtimeMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkRealtimeTokenMap).toEqual(darkRealtimeTokenMap);
+    expect(autoDarkVoicePrintIndex).toBeGreaterThan(-1);
+    expect(autoDarkVoicePrintMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkVoicePrintTokenMap).toEqual(darkVoicePrintTokenMap);
 
     expect(rootDeclarations).toMatch(
       /--realtime-background:\s*color-mix\(\s*in srgb,\s*var\(--surface\) 94%,\s*var\(--surface-elevated\)\s*\);/,
@@ -18308,12 +18382,52 @@ describe("Gemini visual migration shell", () => {
     expect(mobileControlButtonBlock).toMatch(/width:\s*44px;/);
     expect(mobileControlButtonBlock).toMatch(/height:\s*44px;/);
     expect(mobileControlButtonBlock).toMatch(/padding:\s*0;/);
+    expect(voicePrintRootDeclarations).toMatch(
+      /--voice-print-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 82%,\s*transparent\s*\);/,
+    );
+    expect(voicePrintRootDeclarations).toMatch(
+      /--voice-print-wave-start:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 72%,\s*transparent\s*\);/,
+    );
+    expect(voicePrintRootDeclarations).toMatch(
+      /background:\s*var\(--voice-print-background\);/,
+    );
+    expect(voicePrintRootDeclarations).toMatch(
+      /border:\s*1px solid var\(--voice-print-border-color\);/,
+    );
+    expect(voicePrintRootDeclarations).toMatch(
+      /border-radius:\s*8px;/,
+    );
+    expect(voicePrintRootDeclarations).toMatch(
+      /box-shadow:\s*inset 0 0 0 1px var\(--voice-print-shadow-color\);/,
+    );
+    expect(voicePrintCanvasBlock).toMatch(/display:\s*block;/);
+    expect(voicePrintCanvasBlock).toMatch(/border:\s*0 solid transparent;/);
+    expect(voicePrintCanvasBlock).toMatch(
+      /border-top-color:\s*var\(--voice-print-wave-start\);/,
+    );
+    expect(voicePrintCanvasBlock).toMatch(
+      /border-right-color:\s*var\(--voice-print-wave-middle\);/,
+    );
+    expect(voicePrintCanvasBlock).toMatch(
+      /border-bottom-color:\s*var\(--voice-print-wave-end\);/,
+    );
+    expect(voicePrintCanvasBlock).toMatch(
+      /filter:\s*saturate\(0\.96\) brightness\(1\.04\);/,
+    );
+    expect(mobileVoicePrintBlock).toMatch(/height:\s*52px;/);
+    expect(mobileVoicePrintBlock).toMatch(/margin:\s*14px 0;/);
+    expect(reducedMotionVoicePrintBlock).toMatch(
+      /canvas[\s\S]*filter:\s*saturate\(0\.9\) brightness\(1\);/,
+    );
     expect(reducedMotionBlock).toMatch(
       /\.pulse,[\s\S]*\.realtime-chat-recording \.circle-mic,[\s\S]*\.realtime-control-button[\s\S]*animation:\s*none !important;[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
     );
     expect(realtimePaintScope).not.toContain("#a0d8ef");
     expect(realtimePaintScope).not.toContain("#f0f8ff");
     expect(realtimePaintScope).not.toContain("var(--second)");
+    expect(realtimePaintScope).not.toContain("rgba(100, 180, 255");
+    expect(realtimePaintScope).not.toContain("rgba(140, 200, 255");
+    expect(realtimePaintScope).not.toContain("rgba(180, 220, 255");
   });
 
   test("keeps shared InputRange aligned with Gemini utility controls", () => {

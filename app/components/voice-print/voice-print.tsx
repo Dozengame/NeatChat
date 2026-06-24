@@ -6,6 +6,36 @@ interface VoicePrintProps {
   isActive?: boolean;
 }
 
+const WAVE_COLOR_FALLBACKS = {
+  start: "rgba(49, 94, 248, 0.72)",
+  middle: "rgba(96, 132, 255, 0.62)",
+  end: "rgba(49, 94, 248, 0.72)",
+};
+
+function readCanvasColor(
+  computedStyle: CSSStyleDeclaration,
+  property: string,
+  resolvedColor: string,
+  fallback: string,
+) {
+  return (
+    resolvedColor || computedStyle.getPropertyValue(property).trim() || fallback
+  );
+}
+
+function addGradientStop(
+  gradient: CanvasGradient,
+  offset: number,
+  color: string,
+  fallback: string,
+) {
+  try {
+    gradient.addColorStop(offset, color);
+  } catch {
+    gradient.addColorStop(offset, fallback);
+  }
+}
+
 export function VoicePrint({ frequencies, isActive }: VoicePrintProps) {
   // Canvas引用，用于获取绘图上下文
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -31,6 +61,8 @@ export function VoicePrint({ frequencies, isActive }: VoicePrintProps) {
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    const prefersReducedMotion =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
     /**
      * 处理高DPI屏幕显示
@@ -143,20 +175,48 @@ export function VoicePrint({ frequencies, isActive }: VoicePrintProps) {
 
       ctx.closePath();
 
-      /**
-       * 渐变效果：
-       * 从左到右应用三色渐变，带透明度
-       * 使用蓝色系配色提升视觉效果
-       */
+      const computedStyle = getComputedStyle(canvas);
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-      gradient.addColorStop(0, "rgba(100, 180, 255, 0.95)");
-      gradient.addColorStop(0.5, "rgba(140, 200, 255, 0.9)");
-      gradient.addColorStop(1, "rgba(180, 220, 255, 0.95)");
+      addGradientStop(
+        gradient,
+        0,
+        readCanvasColor(
+          computedStyle,
+          "--voice-print-wave-start",
+          computedStyle.borderTopColor,
+          WAVE_COLOR_FALLBACKS.start,
+        ),
+        WAVE_COLOR_FALLBACKS.start,
+      );
+      addGradientStop(
+        gradient,
+        0.5,
+        readCanvasColor(
+          computedStyle,
+          "--voice-print-wave-middle",
+          computedStyle.borderRightColor,
+          WAVE_COLOR_FALLBACKS.middle,
+        ),
+        WAVE_COLOR_FALLBACKS.middle,
+      );
+      addGradientStop(
+        gradient,
+        1,
+        readCanvasColor(
+          computedStyle,
+          "--voice-print-wave-end",
+          computedStyle.borderBottomColor,
+          WAVE_COLOR_FALLBACKS.end,
+        ),
+        WAVE_COLOR_FALLBACKS.end,
+      );
 
       ctx.fillStyle = gradient;
       ctx.fill();
 
-      animationFrameId = requestAnimationFrame(draw);
+      if (!prefersReducedMotion) {
+        animationFrameId = requestAnimationFrame(draw);
+      }
     };
 
     // 启动动画循环
@@ -171,8 +231,12 @@ export function VoicePrint({ frequencies, isActive }: VoicePrintProps) {
   }, [frequencies, isActive, updateHistory]);
 
   return (
-    <div className={styles["voice-print"]}>
-      <canvas ref={canvasRef} />
+    <div
+      className={styles["voice-print"]}
+      data-active={isActive ? "true" : "false"}
+      aria-hidden="true"
+    >
+      <canvas ref={canvasRef} aria-hidden="true" />
     </div>
   );
 }
