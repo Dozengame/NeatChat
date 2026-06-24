@@ -1082,79 +1082,203 @@
 }
 
 .context-prompt {
+  --context-prompt-row-background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
+  --context-prompt-row-border-color: color-mix(in srgb, var(--black-50) 12%, transparent);
+  --context-prompt-row-hover-background: color-mix(in srgb, var(--surface-elevated) 94%, transparent);
+  --context-prompt-row-hover-border-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  --context-prompt-row-shadow-color: color-mix(in srgb, var(--black-50) 7%, transparent);
+  --context-prompt-row-focus-shadow-color: color-mix(in srgb, var(--primary) 12%, transparent);
+  --context-prompt-insert-color: color-mix(in srgb, var(--black-50) 62%, transparent);
+  --context-prompt-insert-hover-background: color-mix(in srgb, var(--primary) 7%, var(--surface-elevated));
+  --context-prompt-insert-hover-border-color: color-mix(in srgb, var(--primary) 18%, transparent);
+  --context-prompt-drag-color: color-mix(in srgb, var(--black-50) 62%, transparent);
+
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+
   .context-prompt-insert {
     appearance: none;
-    border: 0;
+    border: 1px solid transparent;
     box-sizing: border-box;
     display: flex;
     justify-content: center;
     padding: 4px;
-    opacity: 0.2;
-    transition: all ease 0.3s;
-    background-color: rgba(0, 0, 0, 0);
-    color: var(--black);
+    opacity: 0.56;
+    transition:
+      opacity 0.16s ease,
+      background-color 0.16s ease,
+      border-color 0.16s ease,
+      color 0.16s ease;
+    background-color: transparent;
+    color: var(--context-prompt-insert-color);
     font-family: inherit;
     line-height: 1;
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 8px;
     margin-top: 4px;
     margin-bottom: 4px;
 
-    &:hover {
+    &:focus-visible {
+      outline: var(--focus-ring);
+      outline-offset: 2px;
+    }
+
+    &:hover,
+    &:focus-visible {
       opacity: 1;
-      background-color: rgba(0, 0, 0, 0.05);
+      background-color: var(--context-prompt-insert-hover-background);
+      border-color: var(--context-prompt-insert-hover-border-color);
     }
   }
 
   .context-prompt-row {
+    box-sizing: border-box;
     display: flex;
+    align-items: center;
     justify-content: center;
+    gap: 8px;
     width: 100%;
-
-    &:hover {
-      .context-drag {
-        opacity: 1;
-      }
-    }
+    max-width: 100%;
+    min-width: 0;
+    padding: 8px;
+    background: var(--context-prompt-row-background);
+    border: 1px solid var(--context-prompt-row-border-color);
+    border-radius: 8px;
+    box-shadow: 0 8px 22px var(--context-prompt-row-shadow-color);
+    transition:
+      background-color 0.16s ease,
+      border-color 0.16s ease,
+      box-shadow 0.16s ease;
 
     .context-drag {
       display: flex;
       align-items: center;
       opacity: 0.5;
-      transition: all ease 0.3s;
+      color: var(--context-prompt-drag-color);
+      transition:
+        color 0.16s ease,
+        opacity 0.16s ease;
     }
 
     .context-role {
-      margin-right: 10px;
+      flex: 0 0 auto;
+      margin-right: 0;
     }
 
     .context-content {
       flex: 1;
+      min-width: 0;
       max-width: 100%;
       text-align: left;
+      overflow-wrap: anywhere;
     }
 
     .context-delete-button {
-      margin-left: 10px;
+      flex: 0 0 auto;
+      margin-left: 0;
+    }
+
+    &:hover,
+    &:focus-within {
+      background: var(--context-prompt-row-hover-background);
+      border-color: var(--context-prompt-row-hover-border-color);
+      box-shadow:
+        0 0 0 1px var(--context-prompt-row-focus-shadow-color),
+        0 10px 24px var(--context-prompt-row-shadow-color);
+
+      .context-drag {
+        opacity: 1;
+      }
     }
   }
 
   .context-prompt-button {
     flex: 1;
+    width: 100%;
   }
 }
 
 .memory-prompt {
   margin: 20px 0;
+  max-width: 100%;
+  --memory-prompt-content-background: color-mix(in srgb, var(--surface-elevated) 82%, transparent);
+  --memory-prompt-content-color: color-mix(in srgb, var(--black) 86%, transparent);
+  --memory-prompt-content-border-color: color-mix(in srgb, var(--black-50) 12%, transparent);
+  --memory-prompt-content-shadow-color: color-mix(in srgb, var(--black-50) 7%, transparent);
 
   .memory-prompt-content {
-    background-color: var(--white);
-    color: var(--black);
-    border: var(--border-in-light);
-    border-radius: 10px;
+    box-sizing: border-box;
+    max-width: 100%;
+    background: var(--memory-prompt-content-background);
+    color: var(--memory-prompt-content-color);
+    border: 1px solid var(--memory-prompt-content-border-color);
+    border-radius: 8px;
     padding: 10px;
+    box-shadow: 0 8px 22px var(--memory-prompt-content-shadow-color);
     font-size: 12px;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
     user-select: text;
+  }
+}
+
+:global(.dark) .context-prompt {
+  --context-prompt-row-background: color-mix(in srgb, var(--surface-elevated) 62%, transparent);
+  --context-prompt-row-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --context-prompt-row-hover-background: color-mix(in srgb, var(--surface-elevated) 78%, var(--surface));
+  --context-prompt-row-hover-border-color: color-mix(in srgb, var(--primary) 26%, transparent);
+  --context-prompt-row-shadow-color: color-mix(in srgb, var(--surface) 34%, transparent);
+  --context-prompt-row-focus-shadow-color: color-mix(in srgb, var(--primary) 12%, transparent);
+  --context-prompt-insert-color: color-mix(in srgb, var(--black) 66%, transparent);
+  --context-prompt-insert-hover-background: color-mix(in srgb, var(--primary) 12%, var(--surface-soft));
+  --context-prompt-insert-hover-border-color: color-mix(in srgb, var(--primary) 26%, transparent);
+  --context-prompt-drag-color: color-mix(in srgb, var(--black) 62%, transparent);
+}
+
+:global(.dark) .memory-prompt {
+  --memory-prompt-content-background: color-mix(in srgb, var(--surface-elevated) 58%, transparent);
+  --memory-prompt-content-color: color-mix(in srgb, var(--black) 84%, transparent);
+  --memory-prompt-content-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --memory-prompt-content-shadow-color: color-mix(in srgb, var(--surface) 34%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .context-prompt {
+    --context-prompt-row-background: color-mix(in srgb, var(--surface-elevated) 62%, transparent);
+    --context-prompt-row-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+    --context-prompt-row-hover-background: color-mix(in srgb, var(--surface-elevated) 78%, var(--surface));
+    --context-prompt-row-hover-border-color: color-mix(in srgb, var(--primary) 26%, transparent);
+    --context-prompt-row-shadow-color: color-mix(in srgb, var(--surface) 34%, transparent);
+    --context-prompt-row-focus-shadow-color: color-mix(in srgb, var(--primary) 12%, transparent);
+    --context-prompt-insert-color: color-mix(in srgb, var(--black) 66%, transparent);
+    --context-prompt-insert-hover-background: color-mix(in srgb, var(--primary) 12%, var(--surface-soft));
+    --context-prompt-insert-hover-border-color: color-mix(in srgb, var(--primary) 26%, transparent);
+    --context-prompt-drag-color: color-mix(in srgb, var(--black) 62%, transparent);
+  }
+
+  :global(body:not(.light)) .memory-prompt {
+    --memory-prompt-content-background: color-mix(in srgb, var(--surface-elevated) 58%, transparent);
+    --memory-prompt-content-color: color-mix(in srgb, var(--black) 84%, transparent);
+    --memory-prompt-content-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+    --memory-prompt-content-shadow-color: color-mix(in srgb, var(--surface) 34%, transparent);
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .context-prompt {
+    overflow-x: hidden;
+
+    .context-prompt-row {
+      gap: 6px;
+      padding: 7px;
+    }
+  }
+
+  .memory-prompt .memory-prompt-content {
+    padding: 9px 10px;
   }
 }
 
@@ -7020,6 +7144,12 @@
   .prompt-toast-inner:active {
     animation: none !important;
     transform: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .context-prompt-insert,
+  .context-prompt-row,
+  .memory-prompt-content {
     transition-duration: 0.01ms !important;
   }
 

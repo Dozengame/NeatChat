@@ -17114,6 +17114,284 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
+  test("keeps context prompt rows and memory prompts as Gemini-style utility surfaces", () => {
+    const chat = read("app/components/chat.tsx");
+    const mask = read("app/components/mask.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const contextPromptBlock = readCssBlock(chatStyles, ".context-prompt");
+    const contextPromptRootBlock = readRootDeclarations(contextPromptBlock);
+    const contextPromptInsertBlock = readCssBlock(
+      contextPromptBlock,
+      ".context-prompt-insert",
+    );
+    const contextPromptInsertHoverBlock = readCssBlock(
+      contextPromptInsertBlock,
+      "&:hover,\n    &:focus-visible",
+    );
+    const contextPromptInsertFocusBlock = readCssBlock(
+      contextPromptInsertBlock,
+      "&:focus-visible",
+    );
+    const contextPromptRowBlock = readCssBlock(
+      contextPromptBlock,
+      ".context-prompt-row",
+    );
+    const contextPromptRowHoverBlock = readCssBlock(
+      contextPromptRowBlock,
+      "&:hover,\n    &:focus-within",
+    );
+    const contextDragBlock = readCssBlock(
+      contextPromptRowBlock,
+      ".context-drag",
+    );
+    const contextRoleBlock = readCssBlock(
+      contextPromptRowBlock,
+      ".context-role",
+    );
+    const contextContentBlock = readCssBlock(
+      contextPromptRowBlock,
+      ".context-content",
+    );
+    const contextDeleteButtonBlock = readCssBlock(
+      contextPromptRowBlock,
+      ".context-delete-button",
+    );
+    const contextPromptButtonBlock = readCssBlock(
+      contextPromptBlock,
+      ".context-prompt-button",
+    );
+    const memoryPromptBlock = readCssBlock(chatStyles, ".memory-prompt");
+    const memoryPromptContentBlock = readCssBlock(
+      memoryPromptBlock,
+      ".memory-prompt-content",
+    );
+    const darkContextPromptBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .context-prompt",
+    );
+    const darkMemoryPromptBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .memory-prompt",
+    );
+    const autoDarkContextPromptSelector =
+      ":global(body:not(.light)) .context-prompt";
+    const autoDarkContextPromptSelectorIndex = chatStyles.indexOf(
+      autoDarkContextPromptSelector,
+    );
+    const autoDarkContextPromptMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkContextPromptSelectorIndex,
+    );
+    const autoDarkContextPromptBlock = readCssBlock(
+      chatStyles.slice(autoDarkContextPromptMediaIndex),
+      autoDarkContextPromptSelector,
+    );
+    const autoDarkMemoryPromptSelector =
+      ":global(body:not(.light)) .memory-prompt";
+    const autoDarkMemoryPromptSelectorIndex = chatStyles.indexOf(
+      autoDarkMemoryPromptSelector,
+    );
+    const autoDarkMemoryPromptMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkMemoryPromptSelectorIndex,
+    );
+    const autoDarkMemoryPromptBlock = readCssBlock(
+      chatStyles.slice(autoDarkMemoryPromptMediaIndex),
+      autoDarkMemoryPromptSelector,
+    );
+    const contextPromptMobileMediaIndex = chatStyles.indexOf(
+      "@media screen and (max-width: 600px) {\n  .context-prompt",
+    );
+    const mobileBlock = readCssBlock(
+      chatStyles.slice(contextPromptMobileMediaIndex),
+      "@media screen and (max-width: 600px)",
+    );
+    const mobileContextPromptBlock = readCssBlock(
+      mobileBlock,
+      ".context-prompt",
+    );
+    const mobileContextPromptRowBlock = readCssBlock(
+      mobileContextPromptBlock,
+      ".context-prompt-row",
+    );
+    const mobileMemoryPromptContentBlock = readCssBlock(
+      mobileBlock,
+      ".memory-prompt .memory-prompt-content",
+    );
+    const reducedMotionBlock = readCssBlock(
+      chatStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
+    const contextPromptPaintScope = [
+      contextPromptRootBlock,
+      contextPromptInsertBlock,
+      contextPromptInsertHoverBlock,
+      contextPromptRowBlock,
+      contextPromptRowHoverBlock,
+      contextDragBlock,
+      memoryPromptContentBlock,
+      darkContextPromptBlock,
+      darkMemoryPromptBlock,
+      autoDarkContextPromptBlock,
+      autoDarkMemoryPromptBlock,
+    ].join("\n");
+    const contextPromptTokenNames = [
+      "--context-prompt-row-background",
+      "--context-prompt-row-border-color",
+      "--context-prompt-row-hover-background",
+      "--context-prompt-row-hover-border-color",
+      "--context-prompt-row-shadow-color",
+      "--context-prompt-row-focus-shadow-color",
+      "--context-prompt-insert-color",
+      "--context-prompt-insert-hover-background",
+      "--context-prompt-insert-hover-border-color",
+      "--context-prompt-drag-color",
+    ];
+    const memoryPromptTokenNames = [
+      "--memory-prompt-content-background",
+      "--memory-prompt-content-color",
+      "--memory-prompt-content-border-color",
+      "--memory-prompt-content-shadow-color",
+    ];
+    const contextPromptTokens = readCustomProperties(
+      contextPromptRootBlock,
+      contextPromptTokenNames,
+    );
+    const darkContextPromptTokens = readCustomProperties(
+      darkContextPromptBlock,
+      contextPromptTokenNames,
+    );
+    const autoDarkContextPromptTokens = readCustomProperties(
+      autoDarkContextPromptBlock,
+      contextPromptTokenNames,
+    );
+    const memoryPromptTokens = readCustomProperties(
+      readRootDeclarations(memoryPromptBlock),
+      memoryPromptTokenNames,
+    );
+    const darkMemoryPromptTokens = readCustomProperties(
+      darkMemoryPromptBlock,
+      memoryPromptTokenNames,
+    );
+    const autoDarkMemoryPromptTokens = readCustomProperties(
+      autoDarkMemoryPromptBlock,
+      memoryPromptTokenNames,
+    );
+
+    expect(mask).toContain("function ContextPromptItem");
+    expect(mask).toContain("export function ContextPrompts");
+    expect(mask).toContain('className={chatStyle["context-prompt-row"]}');
+    expect(mask).toContain('className={chatStyle["context-prompt-insert"]}');
+    expect(mask).toContain("<DragDropContext onDragEnd={onDragEnd}>");
+    expect(mask).toContain("props.updateContext((context) => context.splice");
+
+    for (const tokenName of contextPromptTokenNames) {
+      expect(contextPromptTokens[tokenName]).not.toBe("");
+      expect(darkContextPromptTokens[tokenName]).not.toBe("");
+      expect(autoDarkContextPromptTokens[tokenName]).toBe(
+        darkContextPromptTokens[tokenName],
+      );
+      expect(contextPromptTokens[tokenName]).toContain("var(--");
+      expect(darkContextPromptTokens[tokenName]).toContain("var(--");
+    }
+    for (const tokenName of memoryPromptTokenNames) {
+      expect(memoryPromptTokens[tokenName]).not.toBe("");
+      expect(darkMemoryPromptTokens[tokenName]).not.toBe("");
+      expect(autoDarkMemoryPromptTokens[tokenName]).toBe(
+        darkMemoryPromptTokens[tokenName],
+      );
+      expect(memoryPromptTokens[tokenName]).toContain("var(--");
+      expect(darkMemoryPromptTokens[tokenName]).toContain("var(--");
+    }
+
+    expect(contextPromptRootBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(contextPromptRootBlock).toMatch(/width:\s*100%;/);
+    expect(contextPromptRootBlock).toMatch(/max-width:\s*100%;/);
+    expect(contextPromptRootBlock).toMatch(/min-width:\s*0;/);
+    expect(contextPromptRootBlock).toMatch(/overflow-x:\s*clip;/);
+    expect(contextPromptInsertBlock).toMatch(/appearance:\s*none;/);
+    expect(contextPromptInsertBlock).toMatch(
+      /color:\s*var\(--context-prompt-insert-color\);/,
+    );
+    expect(contextPromptInsertBlock).toMatch(/border:\s*1px solid transparent;/);
+    expect(contextPromptInsertBlock).toMatch(/border-radius:\s*8px;/);
+    expect(contextPromptInsertBlock).toMatch(
+      /transition:[\s\S]*opacity 0\.16s ease,[\s\S]*background-color 0\.16s ease,[\s\S]*border-color 0\.16s ease,[\s\S]*color 0\.16s ease/,
+    );
+    expect(contextPromptInsertHoverBlock).toMatch(/opacity:\s*1;/);
+    expect(contextPromptInsertHoverBlock).toMatch(
+      /background-color:\s*var\(--context-prompt-insert-hover-background\);/,
+    );
+    expect(contextPromptInsertHoverBlock).toMatch(
+      /border-color:\s*var\(--context-prompt-insert-hover-border-color\);/,
+    );
+    expect(contextPromptInsertFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(contextPromptInsertFocusBlock).toMatch(/outline-offset:\s*2px;/);
+
+    expect(contextPromptRowBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(contextPromptRowBlock).toMatch(/align-items:\s*center;/);
+    expect(contextPromptRowBlock).toMatch(/gap:\s*8px;/);
+    expect(contextPromptRowBlock).toMatch(/max-width:\s*100%;/);
+    expect(contextPromptRowBlock).toMatch(/min-width:\s*0;/);
+    expect(contextPromptRowBlock).toMatch(/padding:\s*8px;/);
+    expect(contextPromptRowBlock).toMatch(
+      /background:\s*var\(--context-prompt-row-background\);/,
+    );
+    expect(contextPromptRowBlock).toMatch(
+      /border:\s*1px solid var\(--context-prompt-row-border-color\);/,
+    );
+    expect(contextPromptRowBlock).toMatch(/border-radius:\s*8px;/);
+    expect(contextPromptRowBlock).toMatch(
+      /box-shadow:\s*0 8px 22px var\(--context-prompt-row-shadow-color\);/,
+    );
+    expect(contextPromptRowHoverBlock).toMatch(
+      /background:\s*var\(--context-prompt-row-hover-background\);/,
+    );
+    expect(contextPromptRowHoverBlock).toMatch(
+      /border-color:\s*var\(--context-prompt-row-hover-border-color\);/,
+    );
+    expect(contextPromptRowHoverBlock).toMatch(
+      /box-shadow:[\s\S]*0 0 0 1px var\(--context-prompt-row-focus-shadow-color\),[\s\S]*0 10px 24px var\(--context-prompt-row-shadow-color\);/,
+    );
+    expect(contextDragBlock).toMatch(
+      /color:\s*var\(--context-prompt-drag-color\);/,
+    );
+    expect(contextRoleBlock).toMatch(/flex:\s*0 0 auto;/);
+    expect(contextContentBlock).toMatch(/min-width:\s*0;/);
+    expect(contextContentBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(contextDeleteButtonBlock).toMatch(/flex:\s*0 0 auto;/);
+    expect(contextPromptButtonBlock).toMatch(/width:\s*100%;/);
+
+    expect(memoryPromptBlock).toMatch(/max-width:\s*100%;/);
+    expect(memoryPromptContentBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(memoryPromptContentBlock).toMatch(/max-width:\s*100%;/);
+    expect(memoryPromptContentBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(memoryPromptContentBlock).toMatch(
+      /background:\s*var\(--memory-prompt-content-background\);/,
+    );
+    expect(memoryPromptContentBlock).toMatch(
+      /color:\s*var\(--memory-prompt-content-color\);/,
+    );
+    expect(memoryPromptContentBlock).toMatch(
+      /border:\s*1px solid var\(--memory-prompt-content-border-color\);/,
+    );
+    expect(memoryPromptContentBlock).toMatch(/border-radius:\s*8px;/);
+    expect(memoryPromptContentBlock).toMatch(
+      /box-shadow:\s*0 8px 22px var\(--memory-prompt-content-shadow-color\);/,
+    );
+
+    expect(mobileContextPromptBlock).toMatch(/overflow-x:\s*hidden;/);
+    expect(mobileContextPromptRowBlock).toMatch(/gap:\s*6px;/);
+    expect(mobileContextPromptRowBlock).toMatch(/padding:\s*7px;/);
+    expect(mobileMemoryPromptContentBlock).toMatch(/padding:\s*9px 10px;/);
+    expect(reducedMotionBlock).toMatch(
+      /\.context-prompt-insert,[\s\S]*\.context-prompt-row,[\s\S]*\.memory-prompt-content[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(contextPromptPaintScope).not.toMatch(
+      /(?:rgba?\(|#[0-9a-fA-F]{3,8}\b|var\(--white\)|var\(--border-in-light\)|border-radius:\s*10px)/,
+    );
+  });
+
   test("keeps Settings prompt management aligned with Gemini utility surfaces", () => {
     const settings = read("app/components/settings.tsx");
     const userPromptModal = read("app/components/settings-user-prompt-modal.tsx");
