@@ -5,7 +5,7 @@
   --search-panel-background: color-mix(
     in srgb,
     var(--surface-elevated) 94%,
-    var(--white)
+    var(--surface-soft)
   );
   --search-panel-border-color: color-mix(
     in srgb,
@@ -20,7 +20,7 @@
   --search-field-background: color-mix(
     in srgb,
     var(--surface-elevated) 92%,
-    transparent
+    var(--surface-soft)
   );
   --search-field-border-color: color-mix(
     in srgb,
@@ -49,8 +49,8 @@
   );
   --search-empty-background: color-mix(
     in srgb,
-    var(--surface) 82%,
-    transparent
+    var(--surface-soft) 72%,
+    var(--surface)
   );
 
   position: relative;
@@ -337,14 +337,14 @@
   --search-panel-background: color-mix(
     in srgb,
     var(--surface-elevated) 88%,
-    var(--white)
+    var(--surface)
   );
   --search-panel-border-color: color-mix(in srgb, var(--black) 9%, transparent);
   --search-panel-shadow-color: color-mix(in srgb, var(--black) 12%, transparent);
   --search-field-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
-    var(--white)
+    var(--surface)
   );
   --search-field-border-color: color-mix(in srgb, var(--black) 9%, transparent);
   --search-field-focus-border-color: color-mix(
@@ -359,8 +359,8 @@
   );
   --search-action-color: color-mix(
     in srgb,
-    var(--primary) 92%,
-    var(--white)
+    var(--primary) 76%,
+    var(--black)
   );
   --search-item-hover-background: color-mix(
     in srgb,
@@ -369,8 +369,8 @@
   );
   --search-empty-background: color-mix(
     in srgb,
-    var(--surface-elevated) 72%,
-    transparent
+    var(--surface-soft) 62%,
+    var(--surface)
   );
 }
 
@@ -379,14 +379,14 @@
     --search-panel-background: color-mix(
       in srgb,
       var(--surface-elevated) 88%,
-      var(--white)
+      var(--surface)
     );
     --search-panel-border-color: color-mix(in srgb, var(--black) 9%, transparent);
     --search-panel-shadow-color: color-mix(in srgb, var(--black) 12%, transparent);
     --search-field-background: color-mix(
       in srgb,
       var(--surface-elevated) 86%,
-      var(--white)
+      var(--surface)
     );
     --search-field-border-color: color-mix(in srgb, var(--black) 9%, transparent);
     --search-field-focus-border-color: color-mix(
@@ -401,8 +401,8 @@
     );
     --search-action-color: color-mix(
       in srgb,
-      var(--primary) 92%,
-      var(--white)
+      var(--primary) 76%,
+      var(--black)
     );
     --search-item-hover-background: color-mix(
       in srgb,
@@ -411,8 +411,8 @@
     );
     --search-empty-background: color-mix(
       in srgb,
-      var(--surface-elevated) 72%,
-      transparent
+      var(--surface-soft) 62%,
+      var(--surface)
     );
   }
 }

@@ -103,6 +103,70 @@ function readCustomProperties(block: string, propertyNames: string[]) {
   );
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function readRgbCustomProperty(block: string, propertyName: string) {
+  const match = block.match(
+    new RegExp(
+      `${escapeRegExp(propertyName)}\\s*:\\s*rgba?\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*(\\d+)`,
+    ),
+  );
+
+  if (!match) {
+    throw new Error(`Missing RGB custom property: ${propertyName}`);
+  }
+
+  return [Number(match[1]), Number(match[2]), Number(match[3])];
+}
+
+function mixRgb(first: number[], firstPercent: number, second: number[]) {
+  return first.map((channel, index) =>
+    channel * firstPercent + second[index] * (1 - firstPercent),
+  );
+}
+
+function resolveColorMixToken(
+  value: string,
+  tokenRgbMap: Record<string, number[]>,
+) {
+  const match = value.match(
+    /color-mix\(\s*in srgb,\s*var\((--[\w-]+)\)\s+(\d+)%,\s*var\((--[\w-]+)\)\s*\)/,
+  );
+
+  if (!match) {
+    throw new Error(`Unsupported color-mix token: ${value}`);
+  }
+
+  return mixRgb(
+    tokenRgbMap[match[1]],
+    Number(match[2]) / 100,
+    tokenRgbMap[match[3]],
+  );
+}
+
+function relativeLuminance(rgb: number[]) {
+  const [red, green, blue] = rgb.map((channel) => {
+    const value = channel / 255;
+    return value <= 0.03928
+      ? value / 12.92
+      : Math.pow((value + 0.055) / 1.055, 2.4);
+  });
+
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+}
+
+function contrastRatio(first: number[], second: number[]) {
+  const firstLuminance = relativeLuminance(first);
+  const secondLuminance = relativeLuminance(second);
+
+  return (
+    (Math.max(firstLuminance, secondLuminance) + 0.05) /
+    (Math.min(firstLuminance, secondLuminance) + 0.05)
+  );
+}
+
 function readFunctionBlock(source: string, signature: string) {
   const signatureIndex = source.indexOf(signature);
   if (signatureIndex < 0) return "";
@@ -11011,6 +11075,8 @@ describe("Gemini visual migration shell", () => {
   test("keeps Search Chat aligned with Gemini command surfaces", () => {
     const searchChat = read("app/components/search-chat.tsx");
     const searchChatStyles = read("app/components/search-chat.module.scss");
+    const globalStyles = read("app/styles/globals.scss");
+    const globalDarkMixinBlock = readCssBlock(globalStyles, "@mixin dark");
     const searchRootBlock = readRootDeclarations(
       readCssBlock(searchChatStyles, ".search-page"),
     );
@@ -11093,6 +11159,49 @@ describe("Gemini visual migration shell", () => {
       mobileResultItemBlock,
       mobileResultActionBlock,
     ].join("\n");
+    const searchSurfaceTokenNames = [
+      "--search-panel-background",
+      "--search-field-background",
+      "--search-action-color",
+      "--search-empty-background",
+    ];
+    const lightSearchSurfaceTokens = readCustomProperties(
+      searchRootBlock,
+      searchSurfaceTokenNames,
+    );
+    const darkSearchSurfaceTokens = readCustomProperties(
+      darkSearchBlock,
+      searchSurfaceTokenNames,
+    );
+    const autoDarkSearchSurfaceTokens = readCustomProperties(
+      autoDarkSearchBlock,
+      searchSurfaceTokenNames,
+    );
+    const darkSearchTokenRgbMap = {
+      "--black": readRgbCustomProperty(globalDarkMixinBlock, "--black"),
+      "--primary": readRgbCustomProperty(globalDarkMixinBlock, "--primary"),
+      "--surface": readRgbCustomProperty(globalDarkMixinBlock, "--surface"),
+      "--surface-soft": readRgbCustomProperty(
+        globalDarkMixinBlock,
+        "--surface-soft",
+      ),
+      "--surface-elevated": readRgbCustomProperty(
+        globalDarkMixinBlock,
+        "--surface-elevated",
+      ),
+    };
+    const darkSearchActionColor = resolveColorMixToken(
+      darkSearchSurfaceTokens["--search-action-color"],
+      darkSearchTokenRgbMap,
+    );
+    const darkSearchPanelBackground = resolveColorMixToken(
+      darkSearchSurfaceTokens["--search-panel-background"],
+      darkSearchTokenRgbMap,
+    );
+    const darkSearchEmptyBackground = resolveColorMixToken(
+      darkSearchSurfaceTokens["--search-empty-background"],
+      darkSearchTokenRgbMap,
+    );
 
     expect(searchChat).toContain("selectSession(item.id)");
     expect(searchChat).toContain("to={Path.Chat}");
@@ -11117,12 +11226,16 @@ describe("Gemini visual migration shell", () => {
     expect(searchRootBlock).toMatch(
       /--search-page-background:\s*var\(--surface\);/,
     );
-    expect(searchRootBlock).toMatch(
-      /--search-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 94%,\s*var\(--white\)\s*\);/,
-    );
-    expect(searchRootBlock).toMatch(
-      /--search-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*transparent\s*\);/,
-    );
+    expect(lightSearchSurfaceTokens).toMatchObject({
+      "--search-panel-background":
+        "color-mix( in srgb, var(--surface-elevated) 94%, var(--surface-soft) )",
+      "--search-field-background":
+        "color-mix( in srgb, var(--surface-elevated) 92%, var(--surface-soft) )",
+      "--search-action-color":
+        "color-mix( in srgb, var(--primary) 88%, var(--black) )",
+      "--search-empty-background":
+        "color-mix( in srgb, var(--surface-soft) 72%, var(--surface) )",
+    });
     expect(searchRootBlock).toMatch(
       /--search-item-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 5%,\s*transparent\s*\);/,
     );
@@ -11182,14 +11295,25 @@ describe("Gemini visual migration shell", () => {
     expect(actionBlock).toMatch(/white-space:\s*nowrap;/);
     expect(emptyStateBlock).toMatch(/border-radius:\s*8px;/);
     expect(emptyStateBlock).toMatch(/background:\s*var\(--search-empty-background\);/);
-    expect(darkSearchBlock).toMatch(
-      /--search-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
-    );
+    expect(darkSearchSurfaceTokens).toMatchObject({
+      "--search-panel-background":
+        "color-mix( in srgb, var(--surface-elevated) 88%, var(--surface) )",
+      "--search-field-background":
+        "color-mix( in srgb, var(--surface-elevated) 86%, var(--surface) )",
+      "--search-action-color":
+        "color-mix( in srgb, var(--primary) 76%, var(--black) )",
+      "--search-empty-background":
+        "color-mix( in srgb, var(--surface-soft) 62%, var(--surface) )",
+    });
+    expect(
+      contrastRatio(darkSearchActionColor, darkSearchPanelBackground),
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrastRatio(darkSearchActionColor, darkSearchEmptyBackground),
+    ).toBeGreaterThanOrEqual(4.5);
     expect(autoDarkSearchIndex).toBeGreaterThan(-1);
     expect(autoDarkSearchMediaIndex).toBeGreaterThan(-1);
-    expect(autoDarkSearchBlock).toMatch(
-      /--search-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
-    );
+    expect(autoDarkSearchSurfaceTokens).toEqual(darkSearchSurfaceTokens);
     expect(mobileSearchInputBlock).toMatch(/height:\s*52px;/);
     expect(mobileSearchInputBlock).toMatch(/border-radius:\s*8px;/);
     expect(mobileResultPanelBlock).toMatch(/border-radius:\s*8px;/);
@@ -11203,6 +11327,11 @@ describe("Gemini visual migration shell", () => {
     );
     expect(searchPaintScope).not.toContain("border: var(--border-in-light)");
     expect(searchPaintScope).not.toContain("box-shadow: var(--composer-shadow)");
+    expect(searchRootBlock).not.toContain("var(--white)");
+    expect(darkSearchBlock).not.toContain("var(--white)");
+    expect(autoDarkSearchBlock).not.toContain("var(--white)");
+    expect(searchPaintScope).not.toContain("background: var(--white)");
+    expect(searchPaintScope).not.toContain("background-color: var(--white)");
     expect(searchPaintScope).not.toContain("border-radius: 28px");
     expect(searchPaintScope).not.toContain("border-radius: 22px");
     expect(searchPaintScope).not.toContain("border-radius: 14px");
