@@ -790,7 +790,7 @@ summary,
   --markdown-image-frame-background: color-mix(
     in srgb,
     var(--surface-elevated) 88%,
-    var(--white)
+    var(--surface)
   );
   --markdown-image-frame-shadow-color: color-mix(
     in srgb,
@@ -815,7 +815,7 @@ summary,
   --markdown-media-frame-background: color-mix(
     in srgb,
     var(--surface-elevated) 84%,
-    var(--white)
+    var(--surface)
   );
   --markdown-media-frame-shadow-color: color-mix(
     in srgb,

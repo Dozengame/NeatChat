@@ -8298,7 +8298,10 @@ describe("Gemini visual migration shell", () => {
       /--markdown-image-frame-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
     );
     expect(darkMixinBlock).toMatch(
-      /--markdown-image-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+      /--markdown-image-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--surface\)\s*\);/,
+    );
+    expect(darkImageTokens["--markdown-image-frame-background"]).not.toMatch(
+      /var\(--(?:white|gray)\)/,
     );
     expect(darkMixinBlock).toMatch(
       /--markdown-image-frame-shadow-color:\s*color-mix\(\s*in srgb,\s*rgb\(0,\s*0,\s*0\) 26%,\s*transparent\s*\);/,
@@ -8530,7 +8533,13 @@ describe("Gemini visual migration shell", () => {
       /--markdown-media-frame-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
     );
     expect(darkMixinBlock).toMatch(
-      /--markdown-media-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--white\)\s*\);/,
+      /--markdown-media-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--surface\)\s*\);/,
+    );
+    expect(darkMediaTokens["--markdown-media-frame-background"]).not.toMatch(
+      /var\(--(?:white|gray)\)/,
+    );
+    expect(darkMediaTokens["--markdown-media-control-background"]).not.toMatch(
+      /var\(--(?:white|gray)\)/,
     );
     expect(darkMixinBlock).toMatch(
       /--markdown-media-frame-shadow-color:\s*color-mix\(\s*in srgb,\s*rgb\(0,\s*0,\s*0\) 24%,\s*transparent\s*\);/,
