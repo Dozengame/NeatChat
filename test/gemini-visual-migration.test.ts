@@ -7830,6 +7830,24 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-code-scroll-fade-end",
     );
+    const mobileMarkdownBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileCodeBlock = readCssBlock(mobileMarkdownBlock, ".markdown-body pre");
+    const mobileLabeledCodeBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body pre.markdown-code-block-labeled",
+    );
+    const mobileLanguageLabelBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-code-language",
+    );
+    const narrowMarkdownBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 360px)",
+    );
+    const narrowCodeBlock = readCssBlock(narrowMarkdownBlock, ".markdown-body pre");
     const darkPreBlock = readCssBlock(
       markdownStyles,
       ".dark .markdown-body .highlight pre,\n.dark .markdown-body pre",
@@ -8080,6 +8098,48 @@ describe("Gemini visual migration shell", () => {
     expect(labeledCodeBlock).toMatch(
       /scroll-padding-top:\s*var\(--markdown-code-labeled-padding-top\);/,
     );
+    expect(mobileCodeBlock).toMatch(/--markdown-code-block-padding-y:\s*12px;/);
+    expect(mobileCodeBlock).toMatch(
+      /--markdown-code-block-padding-start:\s*12px;/,
+    );
+    expect(mobileCodeBlock).toMatch(
+      /--markdown-code-action-rail-width:\s*44px;/,
+    );
+    expect(mobileCodeBlock).toMatch(/--markdown-code-action-inset:\s*8px;/);
+    expect(mobileCodeBlock).toMatch(/--markdown-code-action-size:\s*30px;/);
+    expect(mobileCodeBlock).toMatch(
+      /--markdown-code-labeled-padding-top:\s*42px;/,
+    );
+    expect(mobileCodeBlock).toMatch(
+      /--markdown-code-fold-overlay-offset:\s*58px;/,
+    );
+    expect(mobileCodeBlock).toMatch(/font-size:\s*0\.88em;/);
+    expect(mobileCodeBlock).toMatch(/line-height:\s*1\.58;/);
+    expect(mobileCodeBlock).not.toMatch(
+      /--markdown-code-action-rail-width:\s*64px;/,
+    );
+    expect(mobileLabeledCodeBlock).toMatch(
+      /padding-top:\s*var\(--markdown-code-labeled-padding-top\);/,
+    );
+    expect(mobileLanguageLabelBlock).toMatch(
+      /left:\s*var\(--markdown-code-block-padding-start\);/,
+    );
+    expect(mobileLanguageLabelBlock).toMatch(
+      /right:\s*calc\(\s*var\(--markdown-code-action-inset\)\s*\+\s*var\(--markdown-code-action-size\)\s*\+\s*8px\s*\);/,
+    );
+    expect(mobileLanguageLabelBlock).toMatch(
+      /max-width:\s*calc\(\s*100%\s*-\s*var\(--markdown-code-action-rail-width\)\s*-\s*var\(--markdown-code-block-padding-start\)\s*-\s*8px\s*\);/,
+    );
+    expect(mobileLanguageLabelBlock).toMatch(
+      /line-height:\s*var\(--markdown-code-action-size\);/,
+    );
+    expect(narrowCodeBlock).toMatch(
+      /--markdown-code-block-padding-start:\s*10px;/,
+    );
+    expect(narrowCodeBlock).toMatch(
+      /--markdown-code-action-rail-width:\s*40px;/,
+    );
+    expect(narrowCodeBlock).toMatch(/--markdown-code-action-size:\s*28px;/);
     expect(languageLabelBlock).toMatch(/position:\s*absolute;/);
     expect(languageLabelBlock).toMatch(
       /max-width:\s*calc\(\s*100%\s*-\s*var\(--markdown-code-action-rail-width\)\s*-\s*var\(--markdown-code-block-padding-start\)\s*\);/,
@@ -9580,6 +9640,26 @@ describe("Gemini visual migration shell", () => {
       readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
       ":root",
     );
+    const mobileMarkdownBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileTableShellBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-table-scroll-shell",
+    );
+    const mobileTableViewportBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-table-scroll-viewport",
+    );
+    const mobileTableFadeBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-table-scroll-fade",
+    );
+    const mobileTableCellBlock = readCssBlockContainingSelector(
+      mobileMarkdownBlock,
+      ".markdown-body table td",
+    );
     const tableToneScope = [
       tableShellBlock,
       tableFadeStartBlock,
@@ -9687,6 +9767,15 @@ describe("Gemini visual migration shell", () => {
     expect(tableFadeBlock).toMatch(/width:\s*28px;/);
     expect(tableFadeStartBlock).toMatch(/linear-gradient\(\s*90deg/);
     expect(tableFadeEndBlock).toMatch(/linear-gradient\(\s*270deg/);
+    expect(mobileTableShellBlock).toMatch(
+      /--markdown-table-shell-radius:\s*7px;/,
+    );
+    expect(mobileTableViewportBlock).toMatch(/scroll-padding-inline:\s*10px;/);
+    expect(mobileTableFadeBlock).toMatch(/width:\s*22px;/);
+    expect(mobileTableFadeBlock).toMatch(/min-width:\s*22px;/);
+    expect(mobileTableCellBlock).toMatch(/padding:\s*7px 10px;/);
+    expect(mobileTableCellBlock).toMatch(/font-size:\s*0\.95em;/);
+    expect(mobileTableCellBlock).toMatch(/line-height:\s*1\.45;/);
     expect(tableBlock).toMatch(/width:\s*max-content;/);
     expect(tableBlock).toMatch(/min-width:\s*100%;/);
     expect(tableBlock).toMatch(/background:\s*transparent;/);
