@@ -13082,6 +13082,22 @@ describe("Gemini visual migration shell", () => {
       autoDarkRootBlock,
       messageSelectorTokenNames,
     );
+    const messageSelectorSurfaceTokenNames = [
+      "--message-selector-panel-background",
+      "--message-selector-control-background",
+    ];
+    const messageSelectorSurfaceTokenMap = readCustomProperties(
+      rootDeclarations,
+      messageSelectorSurfaceTokenNames,
+    );
+    const darkMessageSelectorSurfaceTokenMap = readCustomProperties(
+      darkRootBlock,
+      messageSelectorSurfaceTokenNames,
+    );
+    const autoDarkMessageSelectorSurfaceTokenMap = readCustomProperties(
+      autoDarkRootBlock,
+      messageSelectorSurfaceTokenNames,
+    );
     const messageSelectorPaintScope = [
       rootDeclarations,
       filterItemBlock,
@@ -13126,8 +13142,14 @@ describe("Gemini visual migration shell", () => {
     expect(messageSelector).toContain("selection.add(id)");
 
     expect(rootDeclarations).toMatch(
-      /--message-selector-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\s*\);/,
+      /--message-selector-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--surface-soft\)\s*\);/,
     );
+    expect(messageSelectorSurfaceTokenMap).toEqual({
+      "--message-selector-panel-background":
+        "color-mix( in srgb, var(--surface-elevated) 90%, var(--surface-soft) )",
+      "--message-selector-control-background":
+        "color-mix( in srgb, var(--surface-elevated) 92%, transparent )",
+    });
     expect(rootDeclarations).toMatch(
       /--message-selector-panel-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
     );
@@ -13240,20 +13262,36 @@ describe("Gemini visual migration shell", () => {
     expect(mobileMessageBodyBlock).toMatch(/min-width:\s*0;/);
     expect(mobileCheckboxBlock).toMatch(/flex:\s*0 0 44px;/);
     expect(darkRootBlock).toMatch(
-      /--message-selector-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--message-selector-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
+    expect(darkMessageSelectorSurfaceTokenMap).toEqual({
+      "--message-selector-panel-background":
+        "color-mix( in srgb, var(--surface-elevated) 86%, var(--surface) )",
+      "--message-selector-control-background":
+        "color-mix( in srgb, var(--surface-elevated) 88%, var(--surface) )",
+    });
     expect(darkRootBlock).toMatch(
       /--message-selector-selected-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 14%,\s*transparent\s*\);/,
     );
     expect(autoDarkMessageSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkMessageSelectorMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkRootBlock).toMatch(
-      /--message-selector-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--message-selector-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
     expect(autoDarkRootBlock).toMatch(
       /--message-selector-selected-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 14%,\s*transparent\s*\);/,
     );
     expect(autoDarkMessageSelectorTokenMap).toEqual(darkMessageSelectorTokenMap);
+    expect(autoDarkMessageSelectorSurfaceTokenMap).toEqual(
+      darkMessageSelectorSurfaceTokenMap,
+    );
+    for (const tokenValue of [
+      ...Object.values(messageSelectorSurfaceTokenMap),
+      ...Object.values(darkMessageSelectorSurfaceTokenMap),
+      ...Object.values(autoDarkMessageSelectorSurfaceTokenMap),
+    ]) {
+      expect(tokenValue).not.toMatch(/var\(--(?:white|gray)\)/);
+    }
     expect(messageSelectorPaintScope).not.toContain("border: var(--border-in-light)");
     expect(messageSelectorPaintScope).not.toContain("border-bottom: var(--border-in-light)");
     expect(messageSelectorPaintScope).not.toContain("border-radius: 10px");
@@ -13330,6 +13368,23 @@ describe("Gemini visual migration shell", () => {
       autoDarkStepsBlock,
       exportStepperTokenNames,
     );
+    const exportStepperSurfaceTokenNames = [
+      "--export-stepper-background",
+      "--export-stepper-progress-background",
+      "--export-stepper-index-background",
+    ];
+    const exportStepperSurfaceTokenMap = readCustomProperties(
+      stepsRootBlock,
+      exportStepperSurfaceTokenNames,
+    );
+    const darkExportStepperSurfaceTokenMap = readCustomProperties(
+      darkStepsBlock,
+      exportStepperSurfaceTokenNames,
+    );
+    const autoDarkExportStepperSurfaceTokenMap = readCustomProperties(
+      autoDarkStepsBlock,
+      exportStepperSurfaceTokenNames,
+    );
     const stepperPaintScope = [
       stepsRootBlock,
       progressInnerBlock,
@@ -13365,14 +13420,22 @@ describe("Gemini visual migration shell", () => {
     );
 
     expect(stepsRootBlock).toMatch(
-      /--export-stepper-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\s*\);/,
+      /--export-stepper-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--surface-soft\)\s*\);/,
     );
     expect(stepsRootBlock).toMatch(
       /--export-stepper-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
     );
     expect(stepsRootBlock).toMatch(
-      /--export-stepper-progress-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 96%,\s*var\(--white\)\s*\);/,
+      /--export-stepper-progress-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 96%,\s*var\(--surface\)\s*\);/,
     );
+    expect(exportStepperSurfaceTokenMap).toEqual({
+      "--export-stepper-background":
+        "color-mix( in srgb, var(--surface-elevated) 90%, var(--surface-soft) )",
+      "--export-stepper-progress-background":
+        "color-mix( in srgb, var(--surface-elevated) 96%, var(--surface) )",
+      "--export-stepper-index-background":
+        "color-mix( in srgb, var(--surface-elevated) 86%, transparent )",
+    });
     expect(stepsRootBlock).toMatch(
       /--export-stepper-current-index-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 11%,\s*transparent\s*\);/,
     );
@@ -13428,20 +13491,38 @@ describe("Gemini visual migration shell", () => {
     );
     expect(stepNameBlock).toMatch(/line-height:\s*1\.4;/);
     expect(darkStepsBlock).toMatch(
-      /--export-stepper-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--export-stepper-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
+    expect(darkExportStepperSurfaceTokenMap).toEqual({
+      "--export-stepper-background":
+        "color-mix( in srgb, var(--surface-elevated) 86%, var(--surface) )",
+      "--export-stepper-progress-background":
+        "color-mix( in srgb, var(--surface-elevated) 90%, var(--surface) )",
+      "--export-stepper-index-background":
+        "color-mix( in srgb, var(--surface-elevated) 82%, var(--surface) )",
+    });
     expect(darkStepsBlock).toMatch(
       /--export-stepper-current-index-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 16%,\s*transparent\s*\);/,
     );
     expect(autoDarkStepsIndex).toBeGreaterThan(-1);
     expect(autoDarkStepsMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkStepsBlock).toMatch(
-      /--export-stepper-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--export-stepper-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
     expect(autoDarkStepsBlock).toMatch(
       /--export-stepper-current-index-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 16%,\s*transparent\s*\);/,
     );
     expect(autoDarkExportStepperTokenMap).toEqual(darkExportStepperTokenMap);
+    expect(autoDarkExportStepperSurfaceTokenMap).toEqual(
+      darkExportStepperSurfaceTokenMap,
+    );
+    for (const tokenValue of [
+      ...Object.values(exportStepperSurfaceTokenMap),
+      ...Object.values(darkExportStepperSurfaceTokenMap),
+      ...Object.values(autoDarkExportStepperSurfaceTokenMap),
+    ]) {
+      expect(tokenValue).not.toMatch(/var\(--(?:white|gray)\)/);
+    }
     expect(previewActionsRootBlock).toMatch(
       /--export-preview-actions-gap:\s*8px;/,
     );
@@ -13512,6 +13593,24 @@ describe("Gemini visual migration shell", () => {
       exporterStyles.slice(autoDarkPreviewerMediaIndex),
       autoDarkPreviewerSelector,
     );
+    const exportPreviewTokenNames = [
+      "--export-preview-background",
+      "--export-preview-info-background",
+      "--export-preview-item-background",
+      "--export-preview-message-background",
+    ];
+    const exportPreviewTokenMap = readCustomProperties(
+      previewerRootBlock,
+      exportPreviewTokenNames,
+    );
+    const darkExportPreviewTokenMap = readCustomProperties(
+      darkPreviewerBlock,
+      exportPreviewTokenNames,
+    );
+    const autoDarkExportPreviewTokenMap = readCustomProperties(
+      autoDarkPreviewerBlock,
+      exportPreviewTokenNames,
+    );
     const exportPreviewPaintScope = [
       previewerRootBlock,
       previewBodyBlock,
@@ -13552,11 +13651,21 @@ describe("Gemini visual migration shell", () => {
       /--export-preview-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 88%,\s*transparent\s*\);/,
     );
     expect(previewerRootBlock).toMatch(
-      /--export-preview-info-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\s*\);/,
+      /--export-preview-info-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--surface-soft\)\s*\);/,
     );
     expect(previewerRootBlock).toMatch(
-      /--export-preview-item-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 96%,\s*var\(--white\)\s*\);/,
+      /--export-preview-item-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 96%,\s*var\(--surface\)\s*\);/,
     );
+    expect(exportPreviewTokenMap).toEqual({
+      "--export-preview-background":
+        "color-mix( in srgb, var(--surface-soft) 88%, transparent )",
+      "--export-preview-info-background":
+        "color-mix( in srgb, var(--surface-elevated) 90%, var(--surface-soft) )",
+      "--export-preview-item-background":
+        "color-mix( in srgb, var(--surface-elevated) 96%, var(--surface) )",
+      "--export-preview-message-background":
+        "color-mix( in srgb, var(--surface-elevated) 94%, transparent )",
+    });
     expect(previewerRootBlock).toMatch(
       /--export-preview-message-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
     );
@@ -13606,37 +13715,55 @@ describe("Gemini visual migration shell", () => {
       /background:\s*var\(--export-preview-message-background\);/,
     );
     expect(darkPreviewerBlock).toMatch(
-      /--export-preview-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 84%,\s*var\(--white\)\s*\);/,
+      /--export-preview-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 84%,\s*var\(--surface\)\s*\);/,
     );
     expect(darkPreviewerBlock).toMatch(
-      /--export-preview-info-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--export-preview-info-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
     expect(darkPreviewerBlock).toMatch(
-      /--export-preview-item-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+      /--export-preview-item-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--surface\)\s*\);/,
     );
     expect(darkPreviewerBlock).toMatch(
-      /--export-preview-message-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+      /--export-preview-message-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--surface\)\s*\);/,
     );
+    expect(darkExportPreviewTokenMap).toEqual({
+      "--export-preview-background":
+        "color-mix( in srgb, var(--surface-soft) 84%, var(--surface) )",
+      "--export-preview-info-background":
+        "color-mix( in srgb, var(--surface-elevated) 86%, var(--surface) )",
+      "--export-preview-item-background":
+        "color-mix( in srgb, var(--surface-elevated) 88%, var(--surface) )",
+      "--export-preview-message-background":
+        "color-mix( in srgb, var(--surface-elevated) 88%, var(--surface) )",
+    });
     expect(darkPreviewerBlock).toMatch(
       /--export-preview-image-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 14%,\s*transparent\s*\);/,
     );
     expect(autoDarkPreviewerIndex).toBeGreaterThan(-1);
     expect(autoDarkPreviewerMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkPreviewerBlock).toMatch(
-      /--export-preview-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 84%,\s*var\(--white\)\s*\);/,
+      /--export-preview-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 84%,\s*var\(--surface\)\s*\);/,
     );
     expect(autoDarkPreviewerBlock).toMatch(
-      /--export-preview-info-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--export-preview-info-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
     expect(autoDarkPreviewerBlock).toMatch(
-      /--export-preview-item-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+      /--export-preview-item-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--surface\)\s*\);/,
     );
     expect(autoDarkPreviewerBlock).toMatch(
-      /--export-preview-message-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+      /--export-preview-message-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--surface\)\s*\);/,
     );
     expect(autoDarkPreviewerBlock).toMatch(
       /--export-preview-image-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 14%,\s*transparent\s*\);/,
     );
+    expect(autoDarkExportPreviewTokenMap).toEqual(darkExportPreviewTokenMap);
+    for (const tokenValue of [
+      ...Object.values(exportPreviewTokenMap),
+      ...Object.values(darkExportPreviewTokenMap),
+      ...Object.values(autoDarkExportPreviewTokenMap),
+    ]) {
+      expect(tokenValue).not.toMatch(/var\(--(?:white|gray)\)/);
+    }
     expect(exportPreviewPaintScope).not.toContain("background-color: var(--gray)");
     expect(exportPreviewPaintScope).not.toContain("background-color: var(--second)");
     expect(exportPreviewPaintScope).not.toContain("background-color: var(--white)");

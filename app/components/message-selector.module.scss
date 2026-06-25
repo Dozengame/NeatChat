@@ -2,7 +2,7 @@
   --message-selector-panel-background: color-mix(
     in srgb,
     var(--surface-elevated) 90%,
-    var(--gray)
+    var(--surface-soft)
   );
   --message-selector-panel-border-color: color-mix(
     in srgb,
@@ -226,7 +226,7 @@
   --message-selector-panel-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
-    var(--white)
+    var(--surface)
   );
   --message-selector-panel-border-color: color-mix(
     in srgb,
@@ -241,7 +241,7 @@
   --message-selector-control-background: color-mix(
     in srgb,
     var(--surface-elevated) 88%,
-    var(--white)
+    var(--surface)
   );
   --message-selector-control-border-color: color-mix(
     in srgb,
@@ -297,7 +297,7 @@
     --message-selector-panel-background: color-mix(
       in srgb,
       var(--surface-elevated) 86%,
-      var(--white)
+      var(--surface)
     );
     --message-selector-panel-border-color: color-mix(
       in srgb,
@@ -312,7 +312,7 @@
     --message-selector-control-background: color-mix(
       in srgb,
       var(--surface-elevated) 88%,
-      var(--white)
+      var(--surface)
     );
     --message-selector-control-border-color: color-mix(
       in srgb,

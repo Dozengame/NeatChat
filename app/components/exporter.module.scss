@@ -13,7 +13,7 @@
   --export-stepper-background: color-mix(
     in srgb,
     var(--surface-elevated) 90%,
-    var(--gray)
+    var(--surface-soft)
   );
   --export-stepper-border-color: color-mix(
     in srgb,
@@ -28,7 +28,7 @@
   --export-stepper-progress-background: color-mix(
     in srgb,
     var(--surface-elevated) 96%,
-    var(--white)
+    var(--surface)
   );
   --export-stepper-progress-shadow-color: color-mix(
     in srgb,
@@ -167,7 +167,7 @@
   --export-stepper-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
-    var(--white)
+    var(--surface)
   );
   --export-stepper-border-color: color-mix(
     in srgb,
@@ -182,7 +182,7 @@
   --export-stepper-progress-background: color-mix(
     in srgb,
     var(--surface-elevated) 90%,
-    var(--white)
+    var(--surface)
   );
   --export-stepper-progress-shadow-color: color-mix(
     in srgb,
@@ -208,7 +208,7 @@
   --export-stepper-index-background: color-mix(
     in srgb,
     var(--surface-elevated) 82%,
-    var(--white)
+    var(--surface)
   );
   --export-stepper-index-border-color: color-mix(
     in srgb,
@@ -232,7 +232,7 @@
     --export-stepper-background: color-mix(
       in srgb,
       var(--surface-elevated) 86%,
-      var(--white)
+      var(--surface)
     );
     --export-stepper-border-color: color-mix(
       in srgb,
@@ -247,7 +247,7 @@
     --export-stepper-progress-background: color-mix(
       in srgb,
       var(--surface-elevated) 90%,
-      var(--white)
+      var(--surface)
     );
     --export-stepper-progress-shadow-color: color-mix(
       in srgb,
@@ -273,7 +273,7 @@
     --export-stepper-index-background: color-mix(
       in srgb,
       var(--surface-elevated) 82%,
-      var(--white)
+      var(--surface)
     );
     --export-stepper-index-border-color: color-mix(
       in srgb,
@@ -343,7 +343,7 @@
   --export-preview-info-background: color-mix(
     in srgb,
     var(--surface-elevated) 90%,
-    var(--gray)
+    var(--surface-soft)
   );
   --export-preview-info-border-color: color-mix(
     in srgb,
@@ -358,7 +358,7 @@
   --export-preview-item-background: color-mix(
     in srgb,
     var(--surface-elevated) 96%,
-    var(--white)
+    var(--surface)
   );
   --export-preview-item-border-color: color-mix(
     in srgb,
@@ -563,7 +563,7 @@
   --export-preview-background: color-mix(
     in srgb,
     var(--surface-soft) 84%,
-    var(--white)
+    var(--surface)
   );
   --export-preview-shadow-color: color-mix(
     in srgb,
@@ -573,7 +573,7 @@
   --export-preview-info-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
-    var(--white)
+    var(--surface)
   );
   --export-preview-info-border-color: color-mix(
     in srgb,
@@ -588,7 +588,7 @@
   --export-preview-item-background: color-mix(
     in srgb,
     var(--surface-elevated) 88%,
-    var(--white)
+    var(--surface)
   );
   --export-preview-item-border-color: color-mix(
     in srgb,
@@ -608,7 +608,7 @@
   --export-preview-message-background: color-mix(
     in srgb,
     var(--surface-elevated) 88%,
-    var(--white)
+    var(--surface)
   );
   --export-preview-message-shadow-color: color-mix(
     in srgb,
@@ -627,7 +627,7 @@
     --export-preview-background: color-mix(
       in srgb,
       var(--surface-soft) 84%,
-      var(--white)
+      var(--surface)
     );
     --export-preview-shadow-color: color-mix(
       in srgb,
@@ -637,7 +637,7 @@
     --export-preview-info-background: color-mix(
       in srgb,
       var(--surface-elevated) 86%,
-      var(--white)
+      var(--surface)
     );
     --export-preview-info-border-color: color-mix(
       in srgb,
@@ -652,7 +652,7 @@
     --export-preview-item-background: color-mix(
       in srgb,
       var(--surface-elevated) 88%,
-      var(--white)
+      var(--surface)
     );
     --export-preview-item-border-color: color-mix(
       in srgb,
@@ -672,7 +672,7 @@
     --export-preview-message-background: color-mix(
       in srgb,
       var(--surface-elevated) 88%,
-      var(--white)
+      var(--surface)
     );
     --export-preview-message-shadow-color: color-mix(
       in srgb,
