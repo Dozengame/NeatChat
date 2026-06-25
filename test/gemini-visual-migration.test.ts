@@ -1023,6 +1023,19 @@ describe("Gemini visual migration shell", () => {
       chatStyles.slice(autoDarkDesktopModelMenuMediaIndex),
       autoDarkDesktopModelMenuSelector,
     );
+    const autoDarkDesktopHeaderActionsSelector =
+      ":global(body:not(.light)) .chat-desktop-header-actions";
+    const autoDarkDesktopHeaderActionsSelectorIndex = chatStyles.indexOf(
+      autoDarkDesktopHeaderActionsSelector,
+    );
+    const autoDarkDesktopHeaderActionsMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkDesktopHeaderActionsSelectorIndex,
+    );
+    const autoDarkDesktopHeaderActionsBlock = readCssBlock(
+      chatStyles.slice(autoDarkDesktopHeaderActionsMediaIndex),
+      autoDarkDesktopHeaderActionsSelector,
+    );
     const mobileDesktopHeaderActionsBlock = readCssBlock(
       mobileStyles,
       ".chat-desktop-header-actions",
@@ -1065,6 +1078,7 @@ describe("Gemini visual migration shell", () => {
       "--chat-header-control-shadow-color",
       "--chat-header-control-focus-shadow-color",
     ];
+    const headerActionsTokenNames = ["--chat-header-actions-shadow"];
     const desktopHeaderShellTokens = readCustomProperties(
       desktopHeaderRootBlock,
       headerShellTokenNames,
@@ -1112,6 +1126,14 @@ describe("Gemini visual migration shell", () => {
     const autoDarkDesktopModelMenuTokenMap = readCustomProperties(
       autoDarkDesktopModelMenuBlock,
       modelMenuTokenNames,
+    );
+    const darkDesktopHeaderActionsTokens = readCustomProperties(
+      darkDesktopHeaderActionsBlock,
+      headerActionsTokenNames,
+    );
+    const autoDarkDesktopHeaderActionsTokens = readCustomProperties(
+      autoDarkDesktopHeaderActionsBlock,
+      headerActionsTokenNames,
     );
     const messageCopyStatusBlock = readCssBlock(
       chatStyles,
@@ -2894,6 +2916,11 @@ describe("Gemini visual migration shell", () => {
       darkDesktopHeaderShellTokens,
     );
     expect(autoDarkMobileHeaderShellTokens).toEqual(darkMobileHeaderShellTokens);
+    expect(autoDarkDesktopHeaderActionsSelectorIndex).toBeGreaterThan(-1);
+    expect(autoDarkDesktopHeaderActionsMediaIndex).toBeGreaterThan(-1);
+    expect(autoDarkDesktopHeaderActionsTokens).toEqual(
+      darkDesktopHeaderActionsTokens,
+    );
     for (const darkHeaderBlock of [
       darkDesktopHeaderBlock,
       darkMobileHeaderBlock,
@@ -2909,6 +2936,49 @@ describe("Gemini visual migration shell", () => {
       expect(darkHeaderBlock).toMatch(
         /--chat-header-control-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 52%,\s*var\(--surface\)\s*\);/,
       );
+    }
+    for (const darkHeaderTokenMap of [
+      darkDesktopHeaderShellTokens,
+      darkMobileHeaderShellTokens,
+      autoDarkDesktopHeaderShellTokens,
+      autoDarkMobileHeaderShellTokens,
+    ]) {
+      expect(darkHeaderTokenMap["--chat-header-shadow-color"]).toBe(
+        "color-mix( in srgb, var(--surface) 30%, transparent )",
+      );
+      expect(darkHeaderTokenMap["--chat-header-control-shadow-color"]).toBe(
+        "color-mix( in srgb, var(--surface) 30%, transparent )",
+      );
+      expect(darkHeaderTokenMap["--chat-header-shadow-color"]).not.toContain(
+        "var(--gray)",
+      );
+      expect(
+        darkHeaderTokenMap["--chat-header-control-shadow-color"],
+      ).not.toContain("var(--gray)");
+    }
+    for (const darkModelMenuTokenMap of [
+      darkMobileModelMenuTokenMap,
+      darkDesktopModelMenuTokenMap,
+      autoDarkMobileModelMenuTokenMap,
+      autoDarkDesktopModelMenuTokenMap,
+    ]) {
+      expect(darkModelMenuTokenMap["--chat-model-menu-shadow"]).toBe(
+        "0 22px 60px color-mix(in srgb, var(--surface) 42%, transparent), 0 4px 16px color-mix(in srgb, var(--surface) 30%, transparent)",
+      );
+      expect(darkModelMenuTokenMap["--chat-model-menu-shadow"]).not.toContain(
+        "var(--gray)",
+      );
+    }
+    for (const darkHeaderActionsTokenMap of [
+      darkDesktopHeaderActionsTokens,
+      autoDarkDesktopHeaderActionsTokens,
+    ]) {
+      expect(darkHeaderActionsTokenMap["--chat-header-actions-shadow"]).toBe(
+        "0 10px 28px color-mix(in srgb, var(--surface) 30%, transparent)",
+      );
+      expect(
+        darkHeaderActionsTokenMap["--chat-header-actions-shadow"],
+      ).not.toContain("var(--gray)");
     }
     expect(desktopHeaderRootBlock).toMatch(/min-width:\s*0;/);
     expect(desktopHeaderRootBlock).toMatch(/gap:\s*12px;/);

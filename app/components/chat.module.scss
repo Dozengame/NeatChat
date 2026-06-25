@@ -2084,8 +2084,8 @@
     transparent
   );
   --chat-model-menu-shadow: 0 22px 60px
-      color-mix(in srgb, var(--gray) 46%, transparent),
-    0 4px 16px color-mix(in srgb, var(--gray) 36%, transparent);
+      color-mix(in srgb, var(--surface) 42%, transparent),
+    0 4px 16px color-mix(in srgb, var(--surface) 30%, transparent);
   --chat-model-option-hover-background: color-mix(
     in srgb,
     var(--black) 8%,
@@ -3086,7 +3086,7 @@
   );
   --chat-header-shadow-color: color-mix(
     in srgb,
-    var(--gray) 28%,
+    var(--surface) 30%,
     transparent
   );
   --chat-header-title-color: color-mix(
@@ -3126,7 +3126,7 @@
   );
   --chat-header-control-shadow-color: color-mix(
     in srgb,
-    var(--gray) 34%,
+    var(--surface) 30%,
     transparent
   );
   --chat-header-control-focus-shadow-color: color-mix(
@@ -3145,7 +3145,7 @@
   );
   --chat-header-shadow-color: color-mix(
     in srgb,
-    var(--gray) 28%,
+    var(--surface) 30%,
     transparent
   );
   --chat-header-title-color: color-mix(
@@ -3185,7 +3185,7 @@
   );
   --chat-header-control-shadow-color: color-mix(
     in srgb,
-    var(--gray) 34%,
+    var(--surface) 30%,
     transparent
   );
   --chat-header-control-focus-shadow-color: color-mix(
@@ -3251,8 +3251,8 @@
     transparent
   );
   --chat-model-menu-shadow: 0 22px 60px
-      color-mix(in srgb, var(--gray) 46%, transparent),
-    0 4px 16px color-mix(in srgb, var(--gray) 36%, transparent);
+      color-mix(in srgb, var(--surface) 42%, transparent),
+    0 4px 16px color-mix(in srgb, var(--surface) 30%, transparent);
   --chat-model-option-hover-background: color-mix(
     in srgb,
     var(--black) 8%,
@@ -3369,7 +3369,7 @@
     transparent
   );
   --chat-header-actions-shadow: 0 10px 28px
-    color-mix(in srgb, var(--gray) 34%, transparent);
+    color-mix(in srgb, var(--surface) 30%, transparent);
   --chat-header-action-hover-border-color: color-mix(
     in srgb,
     var(--primary) 28%,
@@ -3390,8 +3390,8 @@
       transparent
     );
     --chat-model-menu-shadow: 0 22px 60px
-        color-mix(in srgb, var(--gray) 46%, transparent),
-      0 4px 16px color-mix(in srgb, var(--gray) 36%, transparent);
+        color-mix(in srgb, var(--surface) 42%, transparent),
+      0 4px 16px color-mix(in srgb, var(--surface) 30%, transparent);
     --chat-model-option-hover-background: color-mix(
       in srgb,
       var(--black) 8%,
@@ -3453,8 +3453,8 @@
       transparent
     );
     --chat-model-menu-shadow: 0 22px 60px
-        color-mix(in srgb, var(--gray) 46%, transparent),
-      0 4px 16px color-mix(in srgb, var(--gray) 36%, transparent);
+        color-mix(in srgb, var(--surface) 42%, transparent),
+      0 4px 16px color-mix(in srgb, var(--surface) 30%, transparent);
     --chat-model-option-hover-background: color-mix(
       in srgb,
       var(--black) 8%,
@@ -3513,7 +3513,7 @@
     );
     --chat-header-shadow-color: color-mix(
       in srgb,
-      var(--gray) 28%,
+      var(--surface) 30%,
       transparent
     );
     --chat-header-title-color: color-mix(
@@ -3553,7 +3553,7 @@
     );
     --chat-header-control-shadow-color: color-mix(
       in srgb,
-      var(--gray) 34%,
+      var(--surface) 30%,
       transparent
     );
     --chat-header-control-focus-shadow-color: color-mix(
@@ -3572,7 +3572,7 @@
     );
     --chat-header-shadow-color: color-mix(
       in srgb,
-      var(--gray) 28%,
+      var(--surface) 30%,
       transparent
     );
     --chat-header-title-color: color-mix(
@@ -3612,7 +3612,7 @@
     );
     --chat-header-control-shadow-color: color-mix(
       in srgb,
-      var(--gray) 34%,
+      var(--surface) 30%,
       transparent
     );
     --chat-header-control-focus-shadow-color: color-mix(
@@ -3666,7 +3666,7 @@
       transparent
     );
     --chat-header-actions-shadow: 0 10px 28px
-      color-mix(in srgb, var(--gray) 34%, transparent);
+      color-mix(in srgb, var(--surface) 30%, transparent);
     --chat-header-action-hover-border-color: color-mix(
       in srgb,
       var(--primary) 28%,
