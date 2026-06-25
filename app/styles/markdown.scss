@@ -1788,7 +1788,15 @@ summary,
   text-decoration: underline;
   text-decoration-color: var(--markdown-link-decoration-color);
   text-decoration-thickness: 1px;
+  text-decoration-skip-ink: auto;
   text-underline-offset: 3px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  transition:
+    color 0.16s ease,
+    text-decoration-color 0.16s ease,
+    text-decoration-thickness 0.16s ease;
 }
 
 .markdown-body abbr[title] {
@@ -2268,6 +2276,12 @@ summary,
     transition-duration: 0.01ms !important;
   }
 
+  .markdown-body a,
+  .markdown-body a:hover,
+  .markdown-body a:active {
+    transition-duration: 0.01ms !important;
+  }
+
   .markdown-body .task-list-item .task-list-item-checkbox::before {
     transition-duration: 0.01ms !important;
   }
@@ -2338,6 +2352,11 @@ summary,
 }
 
 .markdown-body a:hover {
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 1.5px;
+}
+
+.markdown-body a:active {
   text-decoration-color: currentColor;
   text-decoration-thickness: 1.5px;
 }
@@ -2696,6 +2715,21 @@ summary,
 .markdown-body p {
   margin-top: 0;
   margin-bottom: 10px;
+}
+
+.markdown-body p,
+.markdown-body li,
+.markdown-body blockquote,
+.markdown-body td,
+.markdown-body th,
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .markdown-body blockquote {
@@ -3944,6 +3978,8 @@ summary,
     margin-top: 18px;
     margin-bottom: 8px;
     line-height: 1.28;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .markdown-body h1 {
@@ -4009,6 +4045,12 @@ summary,
   .markdown-body kbd {
     padding: 2px 4px;
     line-height: 1.1;
+  }
+
+  .markdown-body a {
+    text-underline-offset: 2px;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .markdown-body .markdown-loading-visual {

@@ -9948,6 +9948,14 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body a:hover",
     );
+    const linkInteractionSource = markdownStyles.slice(
+      markdownStyles.indexOf("\n.markdown-body a:hover {"),
+      markdownStyles.indexOf("\n.markdown-body ::placeholder"),
+    );
+    const linkActiveBlock = readCssBlock(
+      linkInteractionSource,
+      ".markdown-body a:active",
+    );
     const linkFocusVisibleBlock = readCssBlock(
       markdownStyles,
       '.markdown-body a:focus-visible,\n.markdown-body [role="button"]:focus-visible,\n.markdown-body input[type="radio"]:focus-visible,\n.markdown-body input[type="checkbox"]:focus-visible',
@@ -9963,6 +9971,18 @@ describe("Gemini visual migration shell", () => {
     const headingAnchorHoverBlock = readCssBlock(
       markdownStyles,
       ".markdown-body h1:hover .anchor,\n.markdown-body h2:hover .anchor,\n.markdown-body h3:hover .anchor,\n.markdown-body h4:hover .anchor,\n.markdown-body h5:hover .anchor,\n.markdown-body h6:hover .anchor",
+    );
+    const mobileMarkdownBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileLinkBlock = readCssBlock(mobileMarkdownBlock, ".markdown-body a");
+    const reducedMotionBlock = markdownStyles.slice(
+      markdownStyles.indexOf("@media (prefers-reduced-motion: reduce)"),
+    );
+    const reducedMotionLinkBlock = readCssBlock(
+      reducedMotionBlock,
+      ".markdown-body a,\n  .markdown-body a:hover,\n  .markdown-body a:active",
     );
 
     const lightLinkTokenScope =
@@ -10001,11 +10021,26 @@ describe("Gemini visual migration shell", () => {
     );
     expect(linkBlock).toMatch(/text-underline-offset:\s*3px;/);
     expect(linkBlock).toMatch(/text-decoration-thickness:\s*1px;/);
+    expect(linkBlock).toMatch(/text-decoration-skip-ink:\s*auto;/);
+    expect(linkBlock).toMatch(/border-radius:\s*4px;/);
+    expect(linkBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(linkBlock).toMatch(/word-break:\s*break-word;/);
+    expect(linkBlock).toMatch(
+      /transition:[\s\S]*color 0\.16s ease,[\s\S]*text-decoration-color 0\.16s ease,[\s\S]*text-decoration-thickness 0\.16s ease;/,
+    );
     expect(linkToneScope).not.toMatch(
       /(?:rgba?|hsla?|hwb|oklch|oklab|lch|lab|color|device-cmyk)\(|#[0-9a-fA-F]{3,8}\b/,
     );
     expect(linkHoverBlock).toMatch(/text-decoration-color:\s*currentColor;/);
     expect(linkHoverBlock).toMatch(/text-decoration-thickness:\s*1\.5px;/);
+    expect(linkActiveBlock).toMatch(/text-decoration-color:\s*currentColor;/);
+    expect(linkActiveBlock).toMatch(/text-decoration-thickness:\s*1\.5px;/);
+    expect(mobileLinkBlock).toMatch(/text-underline-offset:\s*2px;/);
+    expect(mobileLinkBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(mobileLinkBlock).toMatch(/word-break:\s*break-word;/);
+    expect(reducedMotionLinkBlock).toMatch(
+      /transition-duration:\s*0\.01ms !important;/,
+    );
     expect(linkFocusVisibleBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
     expect(linkFocusVisibleBlock).toMatch(/outline-offset:\s*2px;/);
     expect(focusOffsetResetBlock).toMatch(/outline-offset:\s*0;/);
@@ -10882,6 +10917,10 @@ describe("Gemini visual migration shell", () => {
       ".markdown-body summary h1,\n.markdown-body summary h2",
     );
     const paragraphBlock = readCssBlock(markdownStyles, ".markdown-body p");
+    const longTextWrapBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body p,\n.markdown-body li,\n.markdown-body blockquote,\n.markdown-body td,\n.markdown-body th,\n.markdown-body h1,\n.markdown-body h2,\n.markdown-body h3,\n.markdown-body h4,\n.markdown-body h5,\n.markdown-body h6",
+    );
     const mobileMarkdownBlock = readCssBlock(
       markdownStyles,
       "@media only screen and (max-width: 600px)",
@@ -10925,6 +10964,8 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkRootBlock).toMatch(/@include dark;/);
 
     expect(paragraphBlock).toMatch(/margin-bottom:\s*10px;/);
+    expect(longTextWrapBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(longTextWrapBlock).toMatch(/word-break:\s*break-word;/);
     expect(headingBlock).toMatch(/margin-top:\s*22px;/);
     expect(headingBlock).toMatch(/margin-bottom:\s*10px;/);
     expect(headingBlock).toMatch(/line-height:\s*1\.32;/);
@@ -10961,6 +11002,7 @@ describe("Gemini visual migration shell", () => {
     expect(mobileHeadingBlock).toMatch(/margin-top:\s*18px;/);
     expect(mobileHeadingBlock).toMatch(/margin-bottom:\s*8px;/);
     expect(mobileHeadingBlock).toMatch(/line-height:\s*1\.28;/);
+    expect(mobileHeadingBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(mobileH1Block).toMatch(/font-size:\s*1\.42em;/);
     expect(mobileH2Block).toMatch(/padding-left:\s*10px;/);
     expect(mobileH2Block).toMatch(/font-size:\s*1\.18em;/);
