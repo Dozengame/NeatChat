@@ -219,6 +219,42 @@ describe("Gemini visual migration shell", () => {
     const chatRootDeclarations = readRootDeclarations(
       readCssBlock(chatStyles, ".chat"),
     );
+    const chatBodyBlock = readCssBlock(chatStyles, ".chat-body");
+    const chatBodyRootBlock = readRootDeclarations(chatBodyBlock);
+    const chatBodyTokenNames = ["--chat-body-background"];
+    const chatBodyTokens = readCustomProperties(
+      chatBodyRootBlock,
+      chatBodyTokenNames,
+    );
+    const darkChatBodyBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-body",
+    );
+    const darkChatBodyTokens = readCustomProperties(
+      darkChatBodyBlock,
+      chatBodyTokenNames,
+    );
+    const autoDarkChatBodySelector =
+      ":global(body:not(.light)) .chat-body";
+    const autoDarkChatBodySelectorIndex = chatStyles.indexOf(
+      autoDarkChatBodySelector,
+    );
+    const autoDarkChatBodyMediaIndex = chatStyles.lastIndexOf(
+      "@media (prefers-color-scheme: dark)",
+      autoDarkChatBodySelectorIndex,
+    );
+    const autoDarkChatBodyMediaBlock = readCssBlock(
+      chatStyles.slice(autoDarkChatBodyMediaIndex),
+      "@media (prefers-color-scheme: dark)",
+    );
+    const autoDarkChatBodyBlock = readCssBlock(
+      autoDarkChatBodyMediaBlock,
+      autoDarkChatBodySelector,
+    );
+    const autoDarkChatBodyTokens = readCustomProperties(
+      autoDarkChatBodyBlock,
+      chatBodyTokenNames,
+    );
     const emptyInputPanelBlock = readCssBlock(
       chatStyles,
       ".chat-input-panel.chat-input-panel-empty",
@@ -1936,6 +1972,27 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /<section[\s\S]*id="chat-scroll-body"[\s\S]*className=\{clsx\(styles\["chat-body"\][\s\S]*ref=\{scrollRef\}[\s\S]*aria-label="聊天消息"[\s\S]*onScroll=\{\(e\) => onChatBodyScroll\(e\.currentTarget\)\}/,
     );
+    expect(chatBodyRootBlock).toMatch(
+      /--conversation-max-width:\s*min\(920px,\s*100%\);/,
+    );
+    expect(chatBodyRootBlock).toMatch(
+      /--assistant-message-max-width:\s*min\(760px,\s*100%\);/,
+    );
+    expect(chatBodyRootBlock).toMatch(
+      /--user-message-max-width:\s*min\(660px,\s*100%\);/,
+    );
+    expect(chatBodyRootBlock).toMatch(/overflow-x:\s*hidden;/);
+    expect(chatBodyRootBlock).toMatch(
+      /background-color:\s*var\(--chat-body-background\);/,
+    );
+    expect(chatBodyTokens["--chat-body-background"]).toBe(
+      "color-mix(in srgb, var(--surface) 68%, var(--surface-soft))",
+    );
+    expect(darkChatBodyTokens["--chat-body-background"]).toBe(
+      "color-mix(in srgb, var(--surface) 68%, var(--surface-soft))",
+    );
+    expect(autoDarkChatBodyTokens).toEqual(darkChatBodyTokens);
+    expect(chatBodyRootBlock).not.toContain("background-color: var(--gray)");
     expect(chat).toMatch(
       /className=\{clsx\(styles\["chat-input-panel"\][\s\S]*\)\}[\s\S]*\{!showEmptyState && !hitBottom && !showChatActionMenu && \([\s\S]*className=\{styles\["chat-scroll-to-bottom"\]\}[\s\S]*aria-label=\{Locale\.Chat\.InputActions\.ToBottom\}[\s\S]*aria-controls="chat-scroll-body"[\s\S]*onClick=\{scrollToBottom\}[\s\S]*<BottomIcon \/>[\s\S]*\)\}[\s\S]*<PromptHints/,
     );
@@ -16597,6 +16654,19 @@ describe("Gemini visual migration shell", () => {
     expect(
       lightMessageAudioTokens["--chat-message-audio-border-color"],
     ).toContain("var(--black-50)");
+    expect(
+      lightMessageAudioTokens["--chat-message-audio-control-background"],
+    ).toBe(
+      "color-mix(in srgb, var(--surface-elevated) 92%, var(--surface-soft))",
+    );
+    expect(
+      lightMessageAudioTokens["--chat-message-audio-control-background"],
+    ).not.toContain("var(--white)");
+    expect(
+      darkMessageAudioTokens["--chat-message-audio-control-background"],
+    ).toBe(
+      "color-mix(in srgb, var(--surface-elevated) 82%, var(--surface))",
+    );
     expect(
       darkMessageAudioTokens["--chat-message-audio-border-color"],
     ).toContain("var(--black)");

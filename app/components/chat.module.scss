@@ -2169,6 +2169,7 @@
 }
 
 .chat-body {
+  --chat-body-background: color-mix(in srgb, var(--surface) 68%, var(--surface-soft));
   --conversation-max-width: min(920px, 100%);
   --assistant-message-max-width: min(760px, 100%);
   --user-message-max-width: min(660px, 100%);
@@ -2179,10 +2180,20 @@
   padding: 28px 24px 132px;
   position: relative;
   overscroll-behavior: none;
-  background-color: var(--gray);
+  background-color: var(--chat-body-background);
 
   container-type: inline-size;
   container-name: chat-container;
+}
+
+:global(.dark) .chat-body {
+  --chat-body-background: color-mix(in srgb, var(--surface) 68%, var(--surface-soft));
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .chat-body {
+    --chat-body-background: color-mix(in srgb, var(--surface) 68%, var(--surface-soft));
+  }
 }
 
 .chat-body-empty {
@@ -4143,7 +4154,7 @@
   --chat-message-audio-color: color-mix(in srgb, var(--black-50) 88%, transparent);
   --chat-message-audio-hover-border-color: color-mix(in srgb, var(--primary) 22%, transparent);
   --chat-message-audio-hover-shadow-color: color-mix(in srgb, var(--primary) 9%, transparent);
-  --chat-message-audio-control-background: color-mix(in srgb, var(--surface-elevated) 96%, var(--white));
+  --chat-message-audio-control-background: color-mix(in srgb, var(--surface-elevated) 92%, var(--surface-soft));
   --chat-message-audio-control-scheme: light;
   --chat-message-audio-focus-shadow-color: color-mix(in srgb, var(--primary) 12%, transparent);
 
