@@ -12883,6 +12883,19 @@ describe("Gemini visual migration shell", () => {
       artifactsStyles.slice(autoDarkArtifactsMediaIndex),
       autoDarkArtifactsSelector,
     );
+    const artifactsSurfaceTokenNames = ["--artifacts-background"];
+    const lightArtifactsSurfaceTokens = readCustomProperties(
+      rootDeclarations,
+      artifactsSurfaceTokenNames,
+    );
+    const darkArtifactsSurfaceTokens = readCustomProperties(
+      darkRootBlock,
+      artifactsSurfaceTokenNames,
+    );
+    const autoDarkArtifactsSurfaceTokens = readCustomProperties(
+      autoDarkRootBlock,
+      artifactsSurfaceTokenNames,
+    );
     const artifactsPaintScope = [
       rootDeclarations,
       headerBlock,
@@ -12933,8 +12946,8 @@ describe("Gemini visual migration shell", () => {
     expect(artifactsShareButton).toContain("downloadAs(getCode()");
     expect(artifactsShareButton).toContain("copyToClipboard(shareUrl)");
 
-    expect(rootDeclarations).toMatch(
-      /--artifacts-background:\s*color-mix\(\s*in srgb,\s*var\(--surface\) 92%,\s*var\(--gray\)\s*\);/,
+    expect(lightArtifactsSurfaceTokens["--artifacts-background"]).toBe(
+      "color-mix( in srgb, var(--surface) 92%, var(--surface-soft) )",
     );
     expect(rootDeclarations).toMatch(
       /--artifacts-header-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\s*\);/,
@@ -13000,16 +13013,16 @@ describe("Gemini visual migration shell", () => {
     expect(iframeBlock).toMatch(
       /box-shadow:\s*0 14px 40px var\(--artifacts-iframe-shadow-color\);/,
     );
-    expect(darkRootBlock).toMatch(
-      /--artifacts-background:\s*color-mix\(\s*in srgb,\s*var\(--gray\) 82%,\s*var\(--black\)\s*\);/,
+    expect(darkArtifactsSurfaceTokens["--artifacts-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 84%, var(--surface) )",
     );
     expect(darkRootBlock).toMatch(
       /--artifacts-iframe-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 12%,\s*transparent\s*\);/,
     );
     expect(autoDarkArtifactsSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkArtifactsMediaIndex).toBeGreaterThan(-1);
-    expect(autoDarkRootBlock).toMatch(
-      /--artifacts-background:\s*color-mix\(\s*in srgb,\s*var\(--gray\) 82%,\s*var\(--black\)\s*\);/,
+    expect(autoDarkArtifactsSurfaceTokens["--artifacts-background"]).toBe(
+      darkArtifactsSurfaceTokens["--artifacts-background"],
     );
     expect(autoDarkRootBlock).toMatch(
       /--artifacts-iframe-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 12%,\s*transparent\s*\);/,
@@ -13036,6 +13049,13 @@ describe("Gemini visual migration shell", () => {
     expect(artifactsPaintScope).not.toContain("var(--second)");
     expect(artifactsPaintScope).not.toContain("border: var(--border-in-light)");
     expect(artifactsPaintScope).not.toContain("background-color: var(--gray)");
+    expect(
+      [
+        lightArtifactsSurfaceTokens["--artifacts-background"],
+        darkArtifactsSurfaceTokens["--artifacts-background"],
+        autoDarkArtifactsSurfaceTokens["--artifacts-background"],
+      ].join("\n"),
+    ).not.toMatch(/var\(--(?:white|gray)\)/);
   });
 
   test("keeps export message selector aligned with Gemini utility surfaces", () => {
@@ -18416,6 +18436,17 @@ describe("Gemini visual migration shell", () => {
       darkMixinBlock,
       artifactTokenNames,
     );
+    const autoDarkArtifactOverrideTokens = readCustomProperties(
+      autoDarkRootBlock,
+      artifactTokenNames,
+    );
+    const autoDarkArtifactTokens = Object.fromEntries(
+      artifactTokenNames.map((tokenName) => [
+        tokenName,
+        autoDarkArtifactOverrideTokens[tokenName] ||
+          darkArtifactTokens[tokenName],
+      ]),
+    );
     const artifactPaintScope = [
       artifactPreviewBlock,
       artifactFrameBlock,
@@ -18448,7 +18479,26 @@ describe("Gemini visual migration shell", () => {
     expect(darkMixinBlock).toMatch(
       /--markdown-artifact-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--surface\)\s*\);/,
     );
+    expect(lightArtifactTokens["--markdown-artifact-iframe-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 96%, transparent )",
+    );
+    expect(darkArtifactTokens["--markdown-artifact-iframe-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 86%, var(--surface) )",
+    );
+    expect(
+      autoDarkArtifactTokens["--markdown-artifact-iframe-background"],
+    ).toBe(darkArtifactTokens["--markdown-artifact-iframe-background"]);
+    expect(
+      [
+        lightArtifactTokens["--markdown-artifact-iframe-background"],
+        darkArtifactTokens["--markdown-artifact-iframe-background"],
+        autoDarkArtifactTokens["--markdown-artifact-iframe-background"],
+      ].join("\n"),
+    ).not.toMatch(/var\(--(?:white|gray)\)/);
     expect(autoDarkRootBlock).toMatch(/@include dark;/);
+    expect(autoDarkRootBlock).not.toMatch(
+      /--markdown-artifact-iframe-background\s*:/,
+    );
 
     expect(artifactPreviewBlock).toMatch(/display:\s*block;/);
     expect(artifactPreviewBlock).toMatch(/width:\s*min\(100%, 760px\);/);

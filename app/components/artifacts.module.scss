@@ -2,7 +2,7 @@
   --artifacts-background: color-mix(
     in srgb,
     var(--surface) 92%,
-    var(--gray)
+    var(--surface-soft)
   );
   --artifacts-header-background: color-mix(
     in srgb,
@@ -128,8 +128,8 @@
 :global(.dark) .artifacts {
   --artifacts-background: color-mix(
     in srgb,
-    var(--gray) 82%,
-    var(--black)
+    var(--surface-elevated) 84%,
+    var(--surface)
   );
   --artifacts-header-background: color-mix(
     in srgb,
@@ -162,8 +162,8 @@
   :global(body:not(.light)) .artifacts {
     --artifacts-background: color-mix(
       in srgb,
-      var(--gray) 82%,
-      var(--black)
+      var(--surface-elevated) 84%,
+      var(--surface)
     );
     --artifacts-header-background: color-mix(
       in srgb,
