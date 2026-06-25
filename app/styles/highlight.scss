@@ -9,9 +9,11 @@
   }
 
   pre code {
-    display: block;
-    overflow-x: auto;
-    padding: 1em;
+    display: inline-block;
+    max-width: none;
+    min-width: max-content;
+    overflow-x: visible;
+    padding: 0;
   }
 
   code {

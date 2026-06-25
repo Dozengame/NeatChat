@@ -199,6 +199,44 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  color: currentColor;
+
+  svg {
+    filter: none !important;
+    color: currentColor;
+  }
+
+  svg [style*="stroke"] {
+    stroke: currentColor !important;
+  }
+
+  svg [style*="fill"] {
+    fill: currentColor !important;
+  }
+
+  svg [stroke="#333"],
+  svg [stroke="#333333"],
+  svg [stroke="black"] {
+    stroke: currentColor !important;
+  }
+
+  svg[stroke="#333"],
+  svg[stroke="#333333"],
+  svg[stroke="black"] {
+    stroke: currentColor !important;
+  }
+
+  svg [fill="#333"],
+  svg [fill="#333333"],
+  svg [fill="black"] {
+    fill: currentColor !important;
+  }
+
+  svg[fill="#333"],
+  svg[fill="#333333"],
+  svg[fill="black"] {
+    fill: currentColor !important;
+  }
 }
 
 @media only screen and (max-width: 600px) {

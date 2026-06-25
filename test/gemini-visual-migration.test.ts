@@ -1304,6 +1304,10 @@ describe("Gemini visual migration shell", () => {
       homeStyles.slice(homeStyles.lastIndexOf("\n.sidebar-body {")),
       ".sidebar-body",
     );
+    const sidebarToggleButtonBlock = readCssBlock(
+      homeStyles,
+      ".sidebar-toggle-button",
+    );
     const sidebarNavItemBlock = readCssBlock(homeStyles, ".sidebar-nav-item");
     const sidebarNavItemActiveBlock = readCssBlock(
       homeStyles,
@@ -3983,8 +3987,44 @@ describe("Gemini visual migration shell", () => {
     expect(sidebarBodyBlock).toMatch(
       /&::-webkit-scrollbar-thumb[\s\S]*background-color:\s*transparent;/,
     );
+    expect(sidebarToggleButtonBlock).toMatch(
+      /svg\s*\{[\s\S]*filter:\s*none !important;[\s\S]*color:\s*currentColor;/,
+    );
+    expect(sidebarToggleButtonBlock).toMatch(
+      /svg \[style\*="stroke"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(sidebarToggleButtonBlock).toMatch(
+      /svg \[stroke="#333"\],\s*svg \[stroke="#333333"\],\s*svg \[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(sidebarToggleButtonBlock).toMatch(
+      /svg \[fill="#333"\],\s*svg \[fill="#333333"\],\s*svg \[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
+    );
+    expect(sidebarToggleButtonBlock).toMatch(
+      /svg\[stroke="#333"\],\s*svg\[stroke="#333333"\],\s*svg\[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(sidebarToggleButtonBlock).toMatch(
+      /svg\[fill="#333"\],\s*svg\[fill="#333333"\],\s*svg\[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
+    );
     expect(sidebarNavItemBlock).toMatch(/position:\s*relative;/);
     expect(sidebarNavItemBlock).toMatch(/overflow:\s*hidden;/);
+    expect(sidebarNavItemBlock).toMatch(
+      /svg\s*\{[\s\S]*filter:\s*none !important;[\s\S]*color:\s*currentColor;/,
+    );
+    expect(sidebarNavItemBlock).toMatch(
+      /svg \[style\*="stroke"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(sidebarNavItemBlock).toMatch(
+      /svg \[stroke="#333"\],\s*svg \[stroke="#333333"\],\s*svg \[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(sidebarNavItemBlock).toMatch(
+      /svg \[fill="#333"\],\s*svg \[fill="#333333"\],\s*svg \[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
+    );
+    expect(sidebarNavItemBlock).toMatch(
+      /svg\[stroke="#333"\],\s*svg\[stroke="#333333"\],\s*svg\[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(sidebarNavItemBlock).toMatch(
+      /svg\[fill="#333"\],\s*svg\[fill="#333333"\],\s*svg\[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
+    );
     expect(sidebarNavItemActiveBlock).toMatch(/color:\s*var\(--primary\);/);
     expect(sidebarNavItemActiveBlock).toMatch(/font-weight:\s*600;/);
     expect(sidebarContentCardActiveBlock).toMatch(
@@ -4044,6 +4084,24 @@ describe("Gemini visual migration shell", () => {
     expect(chatItemDeleteBlock).toMatch(/display:\s*inline-flex;/);
     expect(chatItemDeleteBlock).toMatch(/align-items:\s*center;/);
     expect(chatItemDeleteBlock).toMatch(/justify-content:\s*center;/);
+    expect(chatItemDeleteBlock).toMatch(
+      /svg\s*\{[\s\S]*filter:\s*none !important;[\s\S]*color:\s*currentColor;/,
+    );
+    expect(chatItemDeleteBlock).toMatch(
+      /svg \[style\*="stroke"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(chatItemDeleteBlock).toMatch(
+      /svg \[stroke="#333"\],\s*svg \[stroke="#333333"\],\s*svg \[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(chatItemDeleteBlock).toMatch(
+      /svg \[fill="#333"\],\s*svg \[fill="#333333"\],\s*svg \[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
+    );
+    expect(chatItemDeleteBlock).toMatch(
+      /svg\[stroke="#333"\],\s*svg\[stroke="#333333"\],\s*svg\[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(chatItemDeleteBlock).toMatch(
+      /svg\[fill="#333"\],\s*svg\[fill="#333333"\],\s*svg\[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
+    );
     expect(chatItemDeleteBlock).toMatch(/pointer-events:\s*none;/);
     expect(chatItemDeleteBlock).toMatch(/&:focus-visible[\s\S]*opacity:\s*1;/);
     expect(chatItemDeleteBlock).toMatch(
@@ -4135,7 +4193,22 @@ describe("Gemini visual migration shell", () => {
       /color:\s*var\(--sidebar-mobile-account-settings-icon-color\);/,
     );
     expect(sidebarMobileAccountSettingsButtonBlock).toMatch(
-      /svg,\s*path\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+      /svg\s*\{[\s\S]*filter:\s*none !important;[\s\S]*color:\s*currentColor;/,
+    );
+    expect(sidebarMobileAccountSettingsButtonBlock).toMatch(
+      /svg \[style\*="stroke"\],\s*svg path\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(sidebarMobileAccountSettingsButtonBlock).toMatch(
+      /svg \[stroke="#333"\],\s*svg \[stroke="#333333"\],\s*svg \[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(sidebarMobileAccountSettingsButtonBlock).toMatch(
+      /svg \[fill="#333"\],\s*svg \[fill="#333333"\],\s*svg \[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
+    );
+    expect(sidebarMobileAccountSettingsButtonBlock).toMatch(
+      /svg\[stroke="#333"\],\s*svg\[stroke="#333333"\],\s*svg\[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(sidebarMobileAccountSettingsButtonBlock).toMatch(
+      /svg\[fill="#333"\],\s*svg\[fill="#333333"\],\s*svg\[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
     );
     expect(sidebarMobileAccountSettingsButtonHoverBlock).toMatch(
       /background:\s*var\(--sidebar-mobile-account-settings-hover-background\);/,
@@ -4197,6 +4270,10 @@ describe("Gemini visual migration shell", () => {
     );
     const focusBlock = readCssBlock(iconButtonBlock, "&:focus-visible");
     const borderBlock = readCssBlock(buttonStyles, ".border");
+    const iconButtonIconBlock = readCssBlock(
+      buttonStyles,
+      ".icon-button-icon",
+    );
     const darkIconButtonBlock = readCssBlock(
       buttonStyles,
       ":global(.dark) .icon-button",
@@ -4396,6 +4473,27 @@ describe("Gemini visual migration shell", () => {
     expect(focusBlock).toMatch(/box-shadow:\s*var\(--focus-ring-shadow\);/);
     expect(borderBlock).toMatch(
       /border:\s*1px solid var\(--icon-button-border-color\);/,
+    );
+    expect(iconButtonIconBlock).toMatch(
+      /svg\s*\{[\s\S]*filter:\s*none !important;[\s\S]*color:\s*currentColor;/,
+    );
+    expect(iconButtonIconBlock).toMatch(
+      /svg \[style\*="stroke"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(iconButtonIconBlock).toMatch(
+      /svg \[style\*="fill"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
+    );
+    expect(iconButtonIconBlock).toMatch(
+      /svg \[stroke="#333"\],\s*svg \[stroke="#333333"\],\s*svg \[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(iconButtonIconBlock).toMatch(
+      /svg \[fill="#333"\],\s*svg \[fill="#333333"\],\s*svg \[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
+    );
+    expect(iconButtonIconBlock).toMatch(
+      /svg\[stroke="#333"\],\s*svg\[stroke="#333333"\],\s*svg\[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(iconButtonIconBlock).toMatch(
+      /svg\[fill="#333"\],\s*svg\[fill="#333333"\],\s*svg\[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
     );
     expect(sharedButtonPaintScope).not.toMatch(/rgba\(\$color:\s*red/);
     expect(sharedButtonPaintScope).not.toContain("border-color: red");
@@ -7694,6 +7792,7 @@ describe("Gemini visual migration shell", () => {
   test("keeps Gemini-style markdown code block chrome", () => {
     const markdown = read("app/components/markdown.tsx");
     const markdownStyles = read("app/styles/markdown.scss");
+    const highlightStyles = read("app/styles/highlight.scss");
     const globalStyles = read("app/styles/globals.scss");
     const globalLightMixinBlock = readCssBlock(globalStyles, "@mixin light");
     const globalDarkMixinBlock = readCssBlock(globalStyles, "@mixin dark");
@@ -7754,6 +7853,15 @@ describe("Gemini visual migration shell", () => {
       ),
     );
     const preBlock = readCssBlock(refinedCodeStyles, ".markdown-body pre");
+    const preCodeBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body pre code,\n.markdown-body pre tt",
+    );
+    const wrapCodeBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body pre.markdown-code-block-wrap code,\n.markdown-body pre.markdown-code-block-wrap tt",
+    );
+    const highlightPreCodeBlock = readCssBlock(highlightStyles, "pre code");
     const globalPreBlock = readCssBlock(globalStyles, "pre");
     const desktopHoverBlock = readCssBlock(
       globalPreBlock,
@@ -7914,12 +8022,17 @@ describe("Gemini visual migration shell", () => {
 
     expect(markdown).toContain("function getCodeLanguage");
     expect(markdown).toContain("formatCodeLanguage");
+    expect(markdown).toContain("function getRawCodeLanguage");
+    expect(markdown).toContain("function shouldWrapCodeLanguage");
     expect(markdown).toContain("const [codeScrollHint, setCodeScrollHint]");
     expect(markdown).toMatch(
-      /const getCodeScrollElement = useCallback\([\s\S]*\(\) => ref\.current\?\.querySelector\("code"\) as HTMLElement \| null/,
+      /const getCodeScrollElement = useCallback\([\s\S]*\(\) => ref\.current/,
+    );
+    expect(markdown).not.toMatch(
+      /const getCodeScrollElement = useCallback\([\s\S]*querySelector\("code"\)[\s\S]*,\s*\[\],\s*\);/,
     );
     expect(markdown).toMatch(
-      /const syncCodeScrollHint = useCallback\(\(\) => \{[\s\S]*const codeScroller = getCodeScrollElement\(\) \?\? ref\.current;[\s\S]*const maxScrollLeft = Math\.max\([\s\S]*codeScroller\.scrollWidth - codeScroller\.clientWidth[\s\S]*start: codeScroller\.scrollLeft > 1,[\s\S]*end: maxScrollLeft - codeScroller\.scrollLeft > 1,/,
+      /const syncCodeScrollHint = useCallback\(\(\) => \{[\s\S]*const codeScroller = getCodeScrollElement\(\);[\s\S]*const maxScrollLeft = Math\.max\([\s\S]*codeScroller\.scrollWidth - codeScroller\.clientWidth[\s\S]*start: codeScroller\.scrollLeft > 1,[\s\S]*end: maxScrollLeft - codeScroller\.scrollLeft > 1,/,
     );
     expect(markdown).toMatch(
       /let codeResizeObserver: ResizeObserver \| null = null;[\s\S]*typeof ResizeObserver !== "undefined"[\s\S]*codeResizeObserver = new ResizeObserver\(\(\) => \{[\s\S]*syncCodeScrollHint\(\);[\s\S]*codeResizeObserver\.observe\(codeScroller\)/,
@@ -7929,6 +8042,7 @@ describe("Gemini visual migration shell", () => {
     );
     expect(markdown).toContain("const codeBlockId = useId()");
     expect(markdown).toContain("markdown-code-block-labeled");
+    expect(markdown).toContain("markdown-code-block-wrap");
     expect(markdown).toContain('className="markdown-code-language"');
     expect(markdown).toContain("{codeLanguage}");
     expect(markdown).toContain("CopyIcon");
@@ -8081,8 +8195,26 @@ describe("Gemini visual migration shell", () => {
     expect(preBlock).toMatch(
       /padding:\s*var\(--markdown-code-block-padding-y\)\s*var\(--markdown-code-action-rail-width\)\s*var\(--markdown-code-block-padding-y\)\s*var\(--markdown-code-block-padding-start\);/,
     );
+    expect(preBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(preBlock).toMatch(/max-width:\s*100%;/);
+    expect(preBlock).toMatch(/min-width:\s*0;/);
     expect(preBlock).toMatch(/overscroll-behavior-x:\s*contain;/);
     expect(preBlock).toMatch(/scrollbar-width:\s*thin;/);
+    expect(preCodeBlock).toMatch(/max-width:\s*none;/);
+    expect(preCodeBlock).toMatch(/min-width:\s*max-content;/);
+    expect(preCodeBlock).toMatch(/overflow-x:\s*visible;/);
+    expect(preCodeBlock).not.toMatch(/overflow-x:\s*scroll;/);
+    expect(wrapCodeBlock).toMatch(/max-width:\s*100%;/);
+    expect(wrapCodeBlock).toMatch(/min-width:\s*0;/);
+    expect(wrapCodeBlock).toMatch(/white-space:\s*pre-wrap;/);
+    expect(wrapCodeBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(wrapCodeBlock).toMatch(/word-break:\s*break-word;/);
+    expect(highlightPreCodeBlock).toMatch(/display:\s*inline-block;/);
+    expect(highlightPreCodeBlock).toMatch(/max-width:\s*none;/);
+    expect(highlightPreCodeBlock).toMatch(/min-width:\s*max-content;/);
+    expect(highlightPreCodeBlock).toMatch(/padding:\s*0;/);
+    expect(highlightPreCodeBlock).toMatch(/overflow-x:\s*visible;/);
+    expect(highlightPreCodeBlock).not.toMatch(/overflow-x:\s*(?:auto|scroll);/);
     expect(preBlock).toMatch(
       /border-radius:\s*var\(--markdown-code-block-radius\);/,
     );
@@ -10218,7 +10350,7 @@ describe("Gemini visual migration shell", () => {
     expect(blockquoteBlock).toMatch(
       /border-left:\s*3px solid var\(--markdown-blockquote-rail-color\);/,
     );
-    expect(blockquoteBlock).toMatch(/border-radius:\s*12px;/);
+    expect(blockquoteBlock).toMatch(/border-radius:\s*8px;/);
     expect(blockquoteBlock).toMatch(
       /background:\s*var\(--markdown-blockquote-background\);/,
     );
@@ -10557,6 +10689,7 @@ describe("Gemini visual migration shell", () => {
 
     expect(listBlock).toMatch(/padding-left:\s*1\.7em;/);
     expect(listBlock).toMatch(/line-height:\s*1\.65;/);
+    expect(listBlock).toMatch(/margin-bottom:\s*12px;/);
     expect(listItemBlock).toMatch(/padding-left:\s*0\.16em;/);
     expect(listItemBlock).toMatch(/line-height:\s*inherit;/);
     expect(markerBlock).toMatch(
@@ -10889,6 +11022,7 @@ describe("Gemini visual migration shell", () => {
       readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
       ":root",
     );
+    const markdownBodyBlock = readCssBlock(markdownStyles, ".markdown-body");
     const headingBlock = readCssBlock(
       markdownStyles,
       ".markdown-body h1,\n.markdown-body h2,\n.markdown-body h3,\n.markdown-body h4,\n.markdown-body h5,\n.markdown-body h6",
@@ -10963,7 +11097,11 @@ describe("Gemini visual migration shell", () => {
     expect(darkHeadingRailTokens[headingRailTokenName]).toContain("var(--");
     expect(autoDarkRootBlock).toMatch(/@include dark;/);
 
-    expect(paragraphBlock).toMatch(/margin-bottom:\s*10px;/);
+    expect(markdownBodyBlock).toMatch(/font-size:\s*inherit;/);
+    expect(markdownBodyBlock).toMatch(/line-height:\s*1\.62;/);
+    expect(markdownBodyBlock).toMatch(/min-width:\s*0;/);
+    expect(markdownBodyBlock).toMatch(/max-width:\s*100%;/);
+    expect(paragraphBlock).toMatch(/margin-bottom:\s*12px;/);
     expect(longTextWrapBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(longTextWrapBlock).toMatch(/word-break:\s*break-word;/);
     expect(headingBlock).toMatch(/margin-top:\s*22px;/);
@@ -16794,6 +16932,24 @@ describe("Gemini visual migration shell", () => {
       /color:\s*var\(--message-action-copy-success-color\)\s*!important;/,
     );
     expect(messageActionRailBlock).toMatch(/\.text[\s\S]*display:\s*none;/);
+    expect(messageActionRailBlock).toMatch(
+      /\.icon[\s\S]*color:\s*currentColor;/,
+    );
+    expect(messageActionRailBlock).toMatch(
+      /\.icon[\s\S]*svg\s*\{[\s\S]*filter:\s*none !important;[\s\S]*color:\s*currentColor;/,
+    );
+    expect(messageActionRailBlock).toMatch(
+      /svg \[style\*="stroke"\],\s*svg \[stroke="#333"\],\s*svg \[stroke="#333333"\],\s*svg \[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(messageActionRailBlock).toMatch(
+      /svg \[style\*="fill"\],\s*svg \[fill="#333"\],\s*svg \[fill="#333333"\],\s*svg \[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
+    );
+    expect(messageActionRailBlock).toMatch(
+      /svg\[stroke="#333"\],\s*svg\[stroke="#333333"\],\s*svg\[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(messageActionRailBlock).toMatch(
+      /svg\[fill="#333"\],\s*svg\[fill="#333333"\],\s*svg\[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
+    );
     expect(mobileMessageActionMediaIndex).toBeGreaterThan(-1);
     expect(mobileMessageActionRailBlock).toMatch(/gap:\s*3px;/);
     expect(mobileMessageActionButtonBlock).toMatch(/width:\s*34px;/);

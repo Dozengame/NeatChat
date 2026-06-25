@@ -133,6 +133,12 @@ function formatCodeLanguage(language: string) {
 }
 
 function getCodeLanguage(children: React.ReactNode) {
+  const rawLanguage = getRawCodeLanguage(children);
+
+  return rawLanguage ? formatCodeLanguage(rawLanguage) : "";
+}
+
+function getRawCodeLanguage(children: React.ReactNode) {
   const codeElement = React.Children.toArray(children).find(
     (child): child is React.ReactElement<{ className?: string }> =>
       React.isValidElement<{ className?: string }>(child) &&
@@ -143,7 +149,22 @@ function getCodeLanguage(children: React.ReactNode) {
     /(?:^|\s)language-([^\s]+)/,
   )?.[1];
 
-  return rawLanguage ? formatCodeLanguage(rawLanguage) : "";
+  return rawLanguage ?? "";
+}
+
+function shouldWrapCodeLanguage(language: string) {
+  const normalizedLanguage = language.split(":")[0].toLowerCase();
+
+  return [
+    "",
+    "md",
+    "markdown",
+    "text",
+    "txt",
+    "plaintext",
+    "tex",
+    "latex",
+  ].includes(normalizedLanguage);
 }
 
 export function PreCode(props: { children: any }) {
@@ -158,13 +179,10 @@ export function PreCode(props: { children: any }) {
   const copyResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { height } = useWindowSize();
 
-  const getCodeScrollElement = useCallback(
-    () => ref.current?.querySelector("code") as HTMLElement | null,
-    [],
-  );
+  const getCodeScrollElement = useCallback(() => ref.current, []);
 
   const syncCodeScrollHint = useCallback(() => {
-    const codeScroller = getCodeScrollElement() ?? ref.current;
+    const codeScroller = getCodeScrollElement();
     if (!codeScroller) {
       setCodeScrollHint((current) =>
         current.start || current.end ? { start: false, end: false } : current,
@@ -210,7 +228,9 @@ export function PreCode(props: { children: any }) {
   const config = useAppConfig();
   const features = useContext(MarkdownFeatureContext);
   const enableArtifacts = features.enableArtifacts && config.enableArtifacts;
+  const rawCodeLanguage = getRawCodeLanguage(props.children);
   const codeLanguage = getCodeLanguage(props.children);
+  const shouldWrapCodeBlock = shouldWrapCodeLanguage(rawCodeLanguage);
 
   //Wrap the paragraph for plain-text
   useEffect(() => {
@@ -218,22 +238,12 @@ export function PreCode(props: { children: any }) {
       const codeElements = ref.current.querySelectorAll(
         "code",
       ) as NodeListOf<HTMLElement>;
-      const wrapLanguages = [
-        "",
-        "md",
-        "markdown",
-        "text",
-        "txt",
-        "plaintext",
-        "tex",
-        "latex",
-      ];
       codeElements.forEach((codeElement) => {
         let languageClass = codeElement.className.match(
           /(?:^|\s)language-([^\s]+)/,
         );
         let name = languageClass ? languageClass[1].split(":")[0] : "";
-        if (wrapLanguages.includes(name)) {
+        if (shouldWrapCodeLanguage(name)) {
           codeElement.style.whiteSpace = "pre-wrap";
         }
       });
@@ -299,6 +309,7 @@ export function PreCode(props: { children: any }) {
         className={clsx(
           "markdown-code-block",
           codeLanguage && "markdown-code-block-labeled",
+          shouldWrapCodeBlock && "markdown-code-block-wrap",
         )}
         data-overflow-start={codeScrollHint.start ? "true" : "false"}
         data-overflow-end={codeScrollHint.end ? "true" : "false"}

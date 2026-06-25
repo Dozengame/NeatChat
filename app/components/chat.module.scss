@@ -3887,6 +3887,41 @@
   .icon {
     width: 16px;
     height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: currentColor;
+
+    svg {
+      filter: none !important;
+      color: currentColor;
+    }
+
+    svg [style*="stroke"],
+    svg [stroke="#333"],
+    svg [stroke="#333333"],
+    svg [stroke="black"] {
+      stroke: currentColor !important;
+    }
+
+    svg[stroke="#333"],
+    svg[stroke="#333333"],
+    svg[stroke="black"] {
+      stroke: currentColor !important;
+    }
+
+    svg [style*="fill"],
+    svg [fill="#333"],
+    svg [fill="#333333"],
+    svg [fill="black"] {
+      fill: currentColor !important;
+    }
+
+    svg[fill="#333"],
+    svg[fill="#333333"],
+    svg[fill="black"] {
+      fill: currentColor !important;
+    }
   }
 
   .text {

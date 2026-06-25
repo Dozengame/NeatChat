@@ -90,6 +90,22 @@ describe("PreCode language labels", () => {
     expect(screen.queryByText(/clientId/i)).not.toBeInTheDocument();
   });
 
+  test("marks plain text-like code blocks as wrapping blocks", () => {
+    renderCodeBlock("language-text");
+
+    expect(document.querySelector("pre")).toHaveClass(
+      "markdown-code-block-wrap",
+    );
+  });
+
+  test("keeps programming code blocks scrollable instead of wrapping", () => {
+    renderCodeBlock("language-javascript");
+
+    expect(document.querySelector("pre")).not.toHaveClass(
+      "markdown-code-block-wrap",
+    );
+  });
+
   test("exposes copy feedback through a polite live button label", () => {
     renderCodeBlock("language-typescript");
 

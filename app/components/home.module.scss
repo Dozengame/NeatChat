@@ -447,6 +447,40 @@
   svg {
     width: 18px;
     height: 18px;
+    filter: none !important;
+    color: currentColor;
+  }
+
+  svg [style*="stroke"] {
+    stroke: currentColor !important;
+  }
+
+  svg [style*="fill"] {
+    fill: currentColor !important;
+  }
+
+  svg [stroke="#333"],
+  svg [stroke="#333333"],
+  svg [stroke="black"] {
+    stroke: currentColor !important;
+  }
+
+  svg[stroke="#333"],
+  svg[stroke="#333333"],
+  svg[stroke="black"] {
+    stroke: currentColor !important;
+  }
+
+  svg [fill="#333"],
+  svg [fill="#333333"],
+  svg [fill="black"] {
+    fill: currentColor !important;
+  }
+
+  svg[fill="#333"],
+  svg[fill="#333333"],
+  svg[fill="black"] {
+    fill: currentColor !important;
   }
 }
 
@@ -596,6 +630,40 @@
   svg {
     width: 16px;
     height: 16px;
+    filter: none !important;
+    color: currentColor;
+  }
+
+  svg [style*="stroke"] {
+    stroke: currentColor !important;
+  }
+
+  svg [style*="fill"] {
+    fill: currentColor !important;
+  }
+
+  svg [stroke="#333"],
+  svg [stroke="#333333"],
+  svg [stroke="black"] {
+    stroke: currentColor !important;
+  }
+
+  svg[stroke="#333"],
+  svg[stroke="#333333"],
+  svg[stroke="black"] {
+    stroke: currentColor !important;
+  }
+
+  svg [fill="#333"],
+  svg [fill="#333333"],
+  svg [fill="black"] {
+    fill: currentColor !important;
+  }
+
+  svg[fill="#333"],
+  svg[fill="#333333"],
+  svg[fill="black"] {
+    fill: currentColor !important;
   }
 
   &:hover {
@@ -683,6 +751,40 @@
     width: 18px;
     height: 18px;
     flex: 0 0 18px;
+    filter: none !important;
+    color: currentColor;
+  }
+
+  svg [style*="stroke"] {
+    stroke: currentColor !important;
+  }
+
+  svg [style*="fill"] {
+    fill: currentColor !important;
+  }
+
+  svg [stroke="#333"],
+  svg [stroke="#333333"],
+  svg [stroke="black"] {
+    stroke: currentColor !important;
+  }
+
+  svg[stroke="#333"],
+  svg[stroke="#333333"],
+  svg[stroke="black"] {
+    stroke: currentColor !important;
+  }
+
+  svg [fill="#333"],
+  svg [fill="#333333"],
+  svg [fill="black"] {
+    fill: currentColor !important;
+  }
+
+  svg[fill="#333"],
+  svg[fill="#333333"],
+  svg[fill="black"] {
+    fill: currentColor !important;
   }
 }
 
@@ -1230,9 +1332,42 @@
       box-shadow: 0 0 0 3px var(--sidebar-mobile-account-settings-focus-shadow-color);
     }
 
-    svg,
-    path {
+    svg {
+      filter: none !important;
+      color: currentColor;
+    }
+
+    svg [style*="stroke"],
+    svg path {
       stroke: currentColor !important;
+    }
+
+    svg [style*="fill"] {
+      fill: currentColor !important;
+    }
+
+    svg [stroke="#333"],
+    svg [stroke="#333333"],
+    svg [stroke="black"] {
+      stroke: currentColor !important;
+    }
+
+    svg[stroke="#333"],
+    svg[stroke="#333333"],
+    svg[stroke="black"] {
+      stroke: currentColor !important;
+    }
+
+    svg [fill="#333"],
+    svg [fill="#333333"],
+    svg [fill="black"] {
+      fill: currentColor !important;
+    }
+
+    svg[fill="#333"],
+    svg[fill="#333333"],
+    svg[fill="black"] {
+      fill: currentColor !important;
     }
   }
 }
