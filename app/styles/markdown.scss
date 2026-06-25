@@ -64,6 +64,46 @@ summary,
     transparent
   );
   --markdown-disclosure-hover-color: var(--primary);
+  --markdown-inline-code-background: color-mix(
+    in srgb,
+    var(--surface-soft) 78%,
+    var(--primary) 6%
+  );
+  --markdown-inline-code-border-color: color-mix(
+    in srgb,
+    var(--primary) 14%,
+    transparent
+  );
+  --markdown-inline-code-color: color-mix(
+    in srgb,
+    var(--black) 88%,
+    var(--primary) 12%
+  );
+  --markdown-kbd-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 84%,
+    var(--surface-soft)
+  );
+  --markdown-kbd-border-color: color-mix(
+    in srgb,
+    var(--black-50) 13%,
+    transparent
+  );
+  --markdown-kbd-bottom-border-color: color-mix(
+    in srgb,
+    var(--black-50) 22%,
+    transparent
+  );
+  --markdown-kbd-color: color-mix(
+    in srgb,
+    var(--black) 86%,
+    transparent
+  );
+  --markdown-kbd-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 16%,
+    transparent
+  );
   --markdown-heading-rail-color: color-mix(
     in srgb,
     var(--primary) 42%,
@@ -746,6 +786,46 @@ summary,
     in srgb,
     var(--primary) 42%,
     var(--black)
+  );
+  --markdown-inline-code-background: color-mix(
+    in srgb,
+    var(--surface-soft) 76%,
+    var(--markdown-link-color) 10%
+  );
+  --markdown-inline-code-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 24%,
+    transparent
+  );
+  --markdown-inline-code-color: color-mix(
+    in srgb,
+    var(--black) 88%,
+    var(--markdown-link-color) 14%
+  );
+  --markdown-kbd-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 72%,
+    var(--surface-soft)
+  );
+  --markdown-kbd-border-color: color-mix(
+    in srgb,
+    var(--black) 12%,
+    transparent
+  );
+  --markdown-kbd-bottom-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 20%,
+    transparent
+  );
+  --markdown-kbd-color: color-mix(
+    in srgb,
+    var(--black) 84%,
+    transparent
+  );
+  --markdown-kbd-shadow-color: color-mix(
+    in srgb,
+    var(--black) 16%,
+    transparent
   );
   --markdown-heading-rail-color: color-mix(
     in srgb,
@@ -2493,13 +2573,13 @@ summary,
     Liberation Mono,
     monospace;
   line-height: 10px;
-  color: var(--color-fg-default);
+  color: var(--markdown-kbd-color);
   vertical-align: middle;
-  background-color: var(--color-canvas-subtle);
-  border: solid 1px var(--color-neutral-muted);
-  border-bottom-color: var(--color-neutral-muted);
+  background-color: var(--markdown-kbd-background);
+  border: solid 1px var(--markdown-kbd-border-color);
+  border-bottom-color: var(--markdown-kbd-bottom-border-color);
   border-radius: 6px;
-  box-shadow: inset 0 -1px 0 var(--color-neutral-muted);
+  box-shadow: inset 0 -1px 0 var(--markdown-kbd-shadow-color);
 }
 
 .markdown-body h1,
@@ -2796,6 +2876,7 @@ summary,
   padding: 0 0.2em;
   font-size: inherit;
   line-height: inherit;
+  color: inherit;
   background: transparent;
   border: 0;
 }
@@ -3037,8 +3118,9 @@ summary,
   font-size: 85%;
   line-height: 1.55;
   white-space: break-spaces;
-  background: color-mix(in srgb, var(--primary) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--markdown-inline-code-color);
+  background: var(--markdown-inline-code-background);
+  border: 1px solid var(--markdown-inline-code-border-color);
   border-radius: 6px;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
@@ -3046,8 +3128,9 @@ summary,
 
 .dark .markdown-body code,
 .dark .markdown-body tt {
-  background: color-mix(in srgb, var(--primary) 16%, transparent);
-  border-color: color-mix(in srgb, var(--primary) 28%, transparent);
+  color: var(--markdown-inline-code-color);
+  background: var(--markdown-inline-code-background);
+  border-color: var(--markdown-inline-code-border-color);
 }
 
 .dark .markdown-body h1 tt,
@@ -3062,6 +3145,7 @@ summary,
 .dark .markdown-body h5 code,
 .dark .markdown-body h6 tt,
 .dark .markdown-body h6 code {
+  color: inherit;
   background: transparent;
   border: 0;
 }
@@ -3074,11 +3158,13 @@ summary,
 .markdown-body del code {
   text-decoration: inherit;
   line-height: inherit;
+  color: inherit;
   background: transparent;
   border: 0;
 }
 
 .dark .markdown-body del code {
+  color: inherit;
   background: transparent;
   border: 0;
 }
@@ -3096,6 +3182,7 @@ summary,
   margin: 0;
   word-break: normal;
   white-space: pre;
+  color: inherit;
   background: transparent;
   border: 0;
   box-shadow: none;
@@ -3346,12 +3433,14 @@ summary,
   overflow-x: scroll;
   line-height: inherit;
   word-wrap: normal;
+  color: inherit;
   background-color: transparent;
   border: 0;
 }
 
 .dark .markdown-body pre code,
 .dark .markdown-body pre tt {
+  color: inherit;
   background: transparent;
   border: 0;
   box-shadow: none;

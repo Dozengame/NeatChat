@@ -8105,6 +8105,12 @@ describe("Gemini visual migration shell", () => {
 
   test("keeps Gemini-style markdown inline code pills", () => {
     const markdownStyles = read("app/styles/markdown.scss");
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const autoDarkRootBlock = readCssBlock(
+      readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
+      ":root",
+    );
     const inlineCodeStyles = markdownStyles.slice(
       markdownStyles.lastIndexOf(".markdown-body code,\n.markdown-body tt"),
     );
@@ -8116,6 +8122,7 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".dark .markdown-body code,\n.dark .markdown-body tt",
     );
+    const kbdBlock = readCssBlock(markdownStyles, ".markdown-body kbd");
     const preCodeBlock = readCssBlock(
       markdownStyles,
       ".markdown-body pre > code",
@@ -8123,6 +8130,14 @@ describe("Gemini visual migration shell", () => {
     const darkPreCodeBlock = readCssBlock(
       markdownStyles,
       ".dark .markdown-body pre code,\n.dark .markdown-body pre tt",
+    );
+    const headingCodeBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body h1 tt,\n.markdown-body h1 code,\n.markdown-body h2 tt,\n.markdown-body h2 code,\n.markdown-body h3 tt,\n.markdown-body h3 code,\n.markdown-body h4 tt,\n.markdown-body h4 code,\n.markdown-body h5 tt,\n.markdown-body h5 code,\n.markdown-body h6 tt,\n.markdown-body h6 code",
+    );
+    const darkHeadingCodeBlock = readCssBlock(
+      markdownStyles,
+      ".dark .markdown-body h1 tt,\n.dark .markdown-body h1 code,\n.dark .markdown-body h2 tt,\n.dark .markdown-body h2 code,\n.dark .markdown-body h3 tt,\n.dark .markdown-body h3 code,\n.dark .markdown-body h4 tt,\n.dark .markdown-body h4 code,\n.dark .markdown-body h5 tt,\n.dark .markdown-body h5 code,\n.dark .markdown-body h6 tt,\n.dark .markdown-body h6 code",
     );
     const delCodeBlock = readCssBlock(
       markdownStyles,
@@ -8135,25 +8150,87 @@ describe("Gemini visual migration shell", () => {
     const inlineCodeToneScope = [
       inlineCodeBlock,
       darkInlineCodeBlock,
+      kbdBlock,
     ].join("\n");
+    const inlineCodeTokenNames = [
+      "--markdown-inline-code-background",
+      "--markdown-inline-code-border-color",
+      "--markdown-inline-code-color",
+      "--markdown-kbd-background",
+      "--markdown-kbd-border-color",
+      "--markdown-kbd-bottom-border-color",
+      "--markdown-kbd-color",
+      "--markdown-kbd-shadow-color",
+    ];
+    const lightInlineCodeTokens = readCustomProperties(
+      lightMixinBlock,
+      inlineCodeTokenNames,
+    );
+    const darkInlineCodeTokens = readCustomProperties(
+      darkMixinBlock,
+      inlineCodeTokenNames,
+    );
 
+    for (const tokenName of inlineCodeTokenNames) {
+      expect(lightInlineCodeTokens[tokenName]).not.toBe("");
+      expect(darkInlineCodeTokens[tokenName]).not.toBe("");
+      expect(lightMixinBlock).toContain(tokenName);
+      expect(darkMixinBlock).toContain(tokenName);
+    }
+    expect(lightInlineCodeTokens["--markdown-inline-code-background"]).toMatch(
+      /var\(--surface-soft\)/,
+    );
+    expect(lightInlineCodeTokens["--markdown-inline-code-border-color"]).toMatch(
+      /var\(--primary\)/,
+    );
+    expect(darkInlineCodeTokens["--markdown-inline-code-background"]).toMatch(
+      /var\(--surface-soft\)/,
+    );
+    expect(darkInlineCodeTokens["--markdown-inline-code-border-color"]).toMatch(
+      /var\(--markdown-link-color\)/,
+    );
+    expect(autoDarkRootBlock).toMatch(/@include dark;/);
     expect(inlineCodeBlock).toMatch(/padding:\s*0\.12em 0\.36em;/);
     expect(inlineCodeBlock).toMatch(/line-height:\s*1\.55;/);
     expect(inlineCodeBlock).toMatch(/white-space:\s*break-spaces;/);
     expect(inlineCodeBlock).toMatch(
-      /background:\s*color-mix\(in srgb,\s*var\(--primary\) 8%,\s*transparent\);/,
+      /background:\s*var\(--markdown-inline-code-background\);/,
     );
     expect(inlineCodeBlock).toMatch(
-      /border:\s*1px solid color-mix\(in srgb,\s*var\(--primary\) 12%,\s*transparent\);/,
+      /border:\s*1px solid var\(--markdown-inline-code-border-color\);/,
+    );
+    expect(inlineCodeBlock).toMatch(
+      /color:\s*var\(--markdown-inline-code-color\);/,
     );
     expect(inlineCodeBlock).toMatch(/border-radius:\s*6px;/);
     expect(inlineCodeBlock).toMatch(/box-decoration-break:\s*clone;/);
     expect(inlineCodeBlock).toMatch(/-webkit-box-decoration-break:\s*clone;/);
     expect(darkInlineCodeBlock).toMatch(
-      /background:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*transparent\);/,
+      /background:\s*var\(--markdown-inline-code-background\);/,
     );
     expect(darkInlineCodeBlock).toMatch(
-      /border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 28%,\s*transparent\);/,
+      /border-color:\s*var\(--markdown-inline-code-border-color\);/,
+    );
+    expect(darkInlineCodeBlock).toMatch(
+      /color:\s*var\(--markdown-inline-code-color\);/,
+    );
+    expect(kbdBlock).toMatch(/display:\s*inline-block;/);
+    expect(kbdBlock).toMatch(/padding:\s*3px 5px;/);
+    expect(kbdBlock).toMatch(/border-radius:\s*6px;/);
+    expect(kbdBlock).toMatch(
+      /color:\s*var\(--markdown-kbd-color\);/,
+    );
+    expect(kbdBlock).toMatch(
+      /background-color:\s*var\(--markdown-kbd-background\);/,
+    );
+    expect(kbdBlock).toMatch(
+      /border:\s*solid 1px var\(--markdown-kbd-border-color\);/,
+    );
+    expect(kbdBlock).toMatch(
+      /border-bottom-color:\s*var\(--markdown-kbd-bottom-border-color\);/,
+    );
+    expect(kbdBlock).toMatch(
+      /box-shadow:\s*inset 0 -1px 0 var\(--markdown-kbd-shadow-color\);/,
     );
     expect(inlineCodeToneScope).not.toMatch(
       /(?:rgba?|hsla?|hwb|oklch|oklab|lch|lab|color|device-cmyk)\(|#[0-9a-fA-F]{3,8}\b/,
@@ -8162,15 +8239,25 @@ describe("Gemini visual migration shell", () => {
     expect(preCodeBlock).toMatch(/background:\s*transparent;/);
     expect(preCodeBlock).toMatch(/border:\s*0;/);
     expect(preCodeBlock).toMatch(/box-shadow:\s*none;/);
+    expect(preCodeBlock).toMatch(/color:\s*inherit;/);
     expect(darkPreCodeBlock).toMatch(/background:\s*transparent;/);
     expect(darkPreCodeBlock).toMatch(/border:\s*0;/);
     expect(darkPreCodeBlock).toMatch(/box-shadow:\s*none;/);
+    expect(darkPreCodeBlock).toMatch(/color:\s*inherit;/);
+    expect(headingCodeBlock).toMatch(/color:\s*inherit;/);
+    expect(headingCodeBlock).toMatch(/background:\s*transparent;/);
+    expect(headingCodeBlock).toMatch(/border:\s*0;/);
+    expect(darkHeadingCodeBlock).toMatch(/color:\s*inherit;/);
+    expect(darkHeadingCodeBlock).toMatch(/background:\s*transparent;/);
+    expect(darkHeadingCodeBlock).toMatch(/border:\s*0;/);
     expect(delCodeBlock).toMatch(/text-decoration:\s*inherit;/);
     expect(delCodeBlock).toMatch(/background:\s*transparent;/);
     expect(delCodeBlock).toMatch(/border:\s*0;/);
     expect(delCodeBlock).toMatch(/line-height:\s*inherit;/);
+    expect(delCodeBlock).toMatch(/color:\s*inherit;/);
     expect(darkDelCodeBlock).toMatch(/background:\s*transparent;/);
     expect(darkDelCodeBlock).toMatch(/border:\s*0;/);
+    expect(darkDelCodeBlock).toMatch(/color:\s*inherit;/);
   });
 
   test("keeps Gemini-style markdown image media cards", () => {
