@@ -10205,6 +10205,8 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body .footnotes li:target",
     );
+    const markBlock = readCssBlock(markdownStyles, ".markdown-body mark");
+    const hrBlock = readCssBlock(markdownStyles, ".markdown-body hr");
     const taskCheckboxBlock = readCssBlock(
       markdownStyles,
       ".markdown-body .task-list-item-checkbox",
@@ -10257,6 +10259,8 @@ describe("Gemini visual migration shell", () => {
       footnotesBlock,
       footnotesTargetBeforeBlock,
       footnotesTargetBlock,
+      markBlock,
+      hrBlock,
       taskCheckboxBlock,
       taskCheckboxBeforeBlock,
       taskCheckboxCheckedBlock,
@@ -10279,6 +10283,9 @@ describe("Gemini visual migration shell", () => {
       "--markdown-footnotes-color",
       "--markdown-footnotes-target-background",
       "--markdown-footnotes-target-ring-color",
+      "--markdown-mark-background",
+      "--markdown-mark-color",
+      "--markdown-hr-background",
       "--markdown-task-checkbox-border-color",
       "--markdown-task-checkbox-background",
       "--markdown-task-checkbox-checked-background",
@@ -10304,6 +10311,33 @@ describe("Gemini visual migration shell", () => {
       expect(lightUtilityTokens[tokenName]).toContain("var(--");
       expect(darkUtilityTokens[tokenName]).toContain("var(--");
     }
+    expect(lightUtilityTokens["--markdown-mark-background"]).toBe(
+      "color-mix( in srgb, var(--primary) 10%, var(--surface-soft) )",
+    );
+    expect(lightUtilityTokens["--markdown-mark-color"]).toBe(
+      "color-mix( in srgb, var(--black) 90%, var(--primary) 10% )",
+    );
+    expect(lightUtilityTokens["--markdown-hr-background"]).toBe(
+      "color-mix( in srgb, var(--black-50) 14%, transparent )",
+    );
+    expect(darkUtilityTokens["--markdown-mark-background"]).toBe(
+      "color-mix( in srgb, var(--markdown-link-color) 18%, var(--surface-soft) )",
+    );
+    expect(darkUtilityTokens["--markdown-mark-color"]).toBe(
+      "color-mix( in srgb, var(--black) 92%, transparent )",
+    );
+    expect(darkUtilityTokens["--markdown-hr-background"]).toBe(
+      "color-mix( in srgb, var(--black) 12%, transparent )",
+    );
+    const baseUtilityTokenScope = [
+      lightUtilityTokens["--markdown-mark-background"],
+      lightUtilityTokens["--markdown-mark-color"],
+      lightUtilityTokens["--markdown-hr-background"],
+      darkUtilityTokens["--markdown-mark-background"],
+      darkUtilityTokens["--markdown-mark-color"],
+      darkUtilityTokens["--markdown-hr-background"],
+    ].join("\n");
+    expect(baseUtilityTokenScope).not.toMatch(/var\(--(?:white|gray)\)/);
     expect(
       lightUtilityTokens["--markdown-task-checkbox-check-color"],
     ).toBe("color-mix( in srgb, var(--surface-elevated) 92%, transparent )");
@@ -10375,6 +10409,16 @@ describe("Gemini visual migration shell", () => {
       /box-shadow:\s*0 0 0 4px var\(--markdown-footnotes-target-ring-color\);/,
     );
 
+    expect(markBlock).toMatch(
+      /background:\s*var\(--markdown-mark-background\);/,
+    );
+    expect(markBlock).toMatch(/color:\s*var\(--markdown-mark-color\);/);
+    expect(hrBlock).toMatch(/height:\s*1px;/);
+    expect(hrBlock).toMatch(/background:\s*var\(--markdown-hr-background\);/);
+    expect(hrBlock).toMatch(/border:\s*0;/);
+    expect(hrBlock).not.toMatch(/border-bottom/);
+    expect(hrBlock).not.toMatch(/background-color/);
+
     expect(taskCheckboxBlock).toMatch(/appearance:\s*none;/);
     expect(taskCheckboxBlock).toMatch(/inline-size:\s*0\.95em;/);
     expect(taskCheckboxBlock).toMatch(
@@ -10420,7 +10464,7 @@ describe("Gemini visual migration shell", () => {
       /transform:\s*none !important;/,
     );
     expect(utilityToneScope).not.toMatch(
-      /var\(--color-(?:canvas|border|accent|fg)-/,
+      /var\(--color-(?:attention|canvas|border|accent|fg)-/,
     );
     expect(utilityToneScope).not.toMatch(
       /(?:\brgba?\(|\bhsla?\(|#[\da-fA-F]{3,8})/,

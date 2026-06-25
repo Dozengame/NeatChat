@@ -691,6 +691,21 @@ summary,
     var(--primary) 18%,
     transparent
   );
+  --markdown-mark-background: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    var(--surface-soft)
+  );
+  --markdown-mark-color: color-mix(
+    in srgb,
+    var(--black) 90%,
+    var(--primary) 10%
+  );
+  --markdown-hr-background: color-mix(
+    in srgb,
+    var(--black-50) 14%,
+    transparent
+  );
   --markdown-task-checkbox-border-color: color-mix(
     in srgb,
     var(--black-50) 22%,
@@ -1424,6 +1439,21 @@ summary,
     var(--markdown-link-color) 22%,
     transparent
   );
+  --markdown-mark-background: color-mix(
+    in srgb,
+    var(--markdown-link-color) 18%,
+    var(--surface-soft)
+  );
+  --markdown-mark-color: color-mix(
+    in srgb,
+    var(--black) 92%,
+    transparent
+  );
+  --markdown-hr-background: color-mix(
+    in srgb,
+    var(--black) 12%,
+    transparent
+  );
   --markdown-task-checkbox-border-color: color-mix(
     in srgb,
     var(--black) 20%,
@@ -1784,8 +1814,8 @@ summary,
 }
 
 .markdown-body mark {
-  background-color: var(--color-attention-subtle);
-  color: var(--color-fg-default);
+  background: var(--markdown-mark-background);
+  color: var(--markdown-mark-color);
 }
 
 .markdown-body small {
@@ -2258,13 +2288,12 @@ summary,
 .markdown-body hr {
   box-sizing: content-box;
   overflow: hidden;
-  background: transparent;
-  border-bottom: 1px solid var(--color-border-muted);
-  height: 0.25em;
+  height: 1px;
   padding: 0;
   margin: 24px 0;
-  background-color: var(--color-border-default);
+  background: var(--markdown-hr-background);
   border: 0;
+  border-radius: 999px;
 }
 
 .markdown-body input {
