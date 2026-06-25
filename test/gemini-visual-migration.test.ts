@@ -10304,6 +10304,25 @@ describe("Gemini visual migration shell", () => {
       expect(lightUtilityTokens[tokenName]).toContain("var(--");
       expect(darkUtilityTokens[tokenName]).toContain("var(--");
     }
+    expect(
+      lightUtilityTokens["--markdown-task-checkbox-check-color"],
+    ).toBe("color-mix( in srgb, var(--surface-elevated) 92%, transparent )");
+    expect(
+      lightUtilityTokens["--markdown-task-checkbox-disabled-check-color"],
+    ).toBe("color-mix( in srgb, var(--surface-elevated) 84%, transparent )");
+    expect(darkUtilityTokens["--markdown-task-checkbox-check-color"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 92%, transparent )",
+    );
+    expect(
+      darkUtilityTokens["--markdown-task-checkbox-disabled-check-color"],
+    ).toBe("color-mix( in srgb, var(--surface-elevated) 84%, transparent )");
+    const taskCheckboxCheckTokenScope = [
+      lightUtilityTokens["--markdown-task-checkbox-check-color"],
+      lightUtilityTokens["--markdown-task-checkbox-disabled-check-color"],
+      darkUtilityTokens["--markdown-task-checkbox-check-color"],
+      darkUtilityTokens["--markdown-task-checkbox-disabled-check-color"],
+    ].join("\n");
+    expect(taskCheckboxCheckTokenScope).not.toMatch(/var\(--(?:white|gray)\)/);
     expect(autoDarkRootBlock).toMatch(/@include dark;/);
 
     expect(csvBlock).toMatch(/display:\s*block;/);

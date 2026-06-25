@@ -708,7 +708,7 @@ summary,
   );
   --markdown-task-checkbox-check-color: color-mix(
     in srgb,
-    var(--white) 92%,
+    var(--surface-elevated) 92%,
     transparent
   );
   --markdown-task-checkbox-focus-ring-color: color-mix(
@@ -733,7 +733,7 @@ summary,
   );
   --markdown-task-checkbox-disabled-check-color: color-mix(
     in srgb,
-    var(--white) 84%,
+    var(--surface-elevated) 84%,
     transparent
   );
 }
