@@ -8413,6 +8413,15 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".dark .markdown-body del code",
     );
+    const mobileMarkdownBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileInlineCodeBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body p > code,\n  .markdown-body li > code,\n  .markdown-body td > code,\n  .markdown-body p > tt,\n  .markdown-body li > tt,\n  .markdown-body td > tt",
+    );
+    const mobileKbdBlock = readCssBlock(mobileMarkdownBlock, ".markdown-body kbd");
     const inlineCodeToneScope = [
       inlineCodeBlock,
       darkInlineCodeBlock,
@@ -8498,6 +8507,15 @@ describe("Gemini visual migration shell", () => {
     expect(kbdBlock).toMatch(
       /box-shadow:\s*inset 0 -1px 0 var\(--markdown-kbd-shadow-color\);/,
     );
+    expect(mobileInlineCodeBlock).toMatch(/padding:\s*0\.1em 0\.3em;/);
+    expect(mobileInlineCodeBlock).toMatch(/line-height:\s*1\.5;/);
+    expect(mobileInlineCodeBlock).toMatch(/border-radius:\s*5px;/);
+    expect(mobileInlineCodeBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(mobileMarkdownBlock).not.toContain(".markdown-body pre > code");
+    expect(mobileMarkdownBlock).not.toContain(".markdown-body h1 code");
+    expect(mobileMarkdownBlock).not.toContain(".markdown-body del code");
+    expect(mobileKbdBlock).toMatch(/padding:\s*2px 4px;/);
+    expect(mobileKbdBlock).toMatch(/line-height:\s*1\.1;/);
     expect(inlineCodeToneScope).not.toMatch(
       /(?:rgba?|hsla?|hwb|oklch|oklab|lch|lab|color|device-cmyk)\(|#[0-9a-fA-F]{3,8}\b/,
     );
@@ -10104,6 +10122,22 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".dark .markdown-body details blockquote,\n.dark .markdown-body details > p > blockquote",
     );
+    const mobileMarkdownBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileBlockquoteBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body blockquote",
+    );
+    const narrowMarkdownBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 360px)",
+    );
+    const narrowBlockquoteBlock = readCssBlock(
+      narrowMarkdownBlock,
+      ".markdown-body blockquote",
+    );
     const blockquoteToneScope = [
       blockquoteBlock,
       darkBlockquoteBlock,
@@ -10185,6 +10219,11 @@ describe("Gemini visual migration shell", () => {
       /border-left-color:\s*var\(--markdown-details-blockquote-rail-color\);/,
     );
     expect(darkDetailsBlockquoteBlock).toMatch(/box-shadow:\s*none;/);
+    expect(mobileBlockquoteBlock).toMatch(/padding:\s*8px 10px;/);
+    expect(mobileBlockquoteBlock).toMatch(/border-radius:\s*8px;/);
+    expect(mobileBlockquoteBlock).toMatch(/line-height:\s*1\.62;/);
+    expect(mobileBlockquoteBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(narrowBlockquoteBlock).toMatch(/padding:\s*8px 9px;/);
     expect(blockquoteToneScope).not.toMatch(
       /(?:\brgba?\(|\bhsla?\(|#[\da-fA-F]{3,8}|color-mix\()/,
     );
@@ -10434,6 +10473,38 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body .task-list-item",
     );
+    const listItemParagraphBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body li > p",
+    );
+    const mobileMarkdownBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileListBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body ul,\n  .markdown-body ol",
+    );
+    const mobileListItemBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body li",
+    );
+    const mobileListItemParagraphBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body li > p",
+    );
+    const mobileSiblingItemBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body li + li",
+    );
+    const narrowMarkdownBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 360px)",
+    );
+    const narrowListBlock = readCssBlock(
+      narrowMarkdownBlock,
+      ".markdown-body ul,\n  .markdown-body ol",
+    );
     const listMarkerToneScope = [markerBlock, darkMarkerBlock].join("\n");
     const listMarkerTokenName = "--markdown-list-marker-color";
     const lightListMarkerTokens = readCustomProperties(lightMixinBlock, [
@@ -10463,8 +10534,17 @@ describe("Gemini visual migration shell", () => {
     expect(listMarkerToneScope).not.toMatch(
       /(?:\brgba?\(|\bhsla?\(|#[\da-fA-F]{3,8}|color-mix\()/,
     );
+    expect(listItemParagraphBlock).toMatch(/margin-top:\s*16px;/);
     expect(siblingItemBlock).toMatch(/margin-top:\s*0\.38em;/);
     expect(taskListItemBlock).toMatch(/list-style-type:\s*none;/);
+    expect(mobileListBlock).toMatch(/padding-left:\s*1\.45em;/);
+    expect(mobileListBlock).toMatch(/line-height:\s*1\.62;/);
+    expect(mobileListBlock).toMatch(/margin-bottom:\s*14px;/);
+    expect(mobileListItemBlock).toMatch(/padding-left:\s*0\.08em;/);
+    expect(mobileListItemBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(mobileListItemParagraphBlock).toMatch(/margin-top:\s*8px;/);
+    expect(mobileSiblingItemBlock).toMatch(/margin-top:\s*0\.32em;/);
+    expect(narrowListBlock).toMatch(/padding-left:\s*1\.28em;/);
   });
 
   test("keeps Gemini-style markdown utility surfaces low-glare across themes", () => {
@@ -10801,6 +10881,34 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body summary h1,\n.markdown-body summary h2",
     );
+    const paragraphBlock = readCssBlock(markdownStyles, ".markdown-body p");
+    const mobileMarkdownBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileMarkdownBodyBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body",
+    );
+    const mobileParagraphBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body p",
+    );
+    const mobileHeadingBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body h1,\n  .markdown-body h2,\n  .markdown-body h3,\n  .markdown-body h4,\n  .markdown-body h5,\n  .markdown-body h6",
+    );
+    const mobileH1Block = readCssBlock(mobileMarkdownBlock, ".markdown-body h1");
+    const mobileH2Block = readCssBlock(mobileMarkdownBlock, ".markdown-body h2");
+    const mobileH3Block = readCssBlock(mobileMarkdownBlock, ".markdown-body h3");
+    const narrowMarkdownBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 360px)",
+    );
+    const narrowMarkdownBodyBlock = readCssBlock(
+      narrowMarkdownBlock,
+      ".markdown-body",
+    );
     const h2RailToneScope = [h2Block, darkH2RailBlock].join("\n");
     const headingRailTokenName = "--markdown-heading-rail-color";
     const lightHeadingRailTokens = readCustomProperties(lightMixinBlock, [
@@ -10816,6 +10924,7 @@ describe("Gemini visual migration shell", () => {
     expect(darkHeadingRailTokens[headingRailTokenName]).toContain("var(--");
     expect(autoDarkRootBlock).toMatch(/@include dark;/);
 
+    expect(paragraphBlock).toMatch(/margin-bottom:\s*10px;/);
     expect(headingBlock).toMatch(/margin-top:\s*22px;/);
     expect(headingBlock).toMatch(/margin-bottom:\s*10px;/);
     expect(headingBlock).toMatch(/line-height:\s*1\.32;/);
@@ -10847,6 +10956,17 @@ describe("Gemini visual migration shell", () => {
     expect(darkHeadingCodeBlock).toMatch(/border:\s*0;/);
     expect(summaryHeadingBlock).toMatch(/padding-left:\s*0;/);
     expect(summaryHeadingBlock).toMatch(/&::before[\s\S]*display:\s*none;/);
+    expect(mobileMarkdownBodyBlock).toMatch(/line-height:\s*1\.62;/);
+    expect(mobileParagraphBlock).toMatch(/margin-bottom:\s*12px;/);
+    expect(mobileHeadingBlock).toMatch(/margin-top:\s*18px;/);
+    expect(mobileHeadingBlock).toMatch(/margin-bottom:\s*8px;/);
+    expect(mobileHeadingBlock).toMatch(/line-height:\s*1\.28;/);
+    expect(mobileH1Block).toMatch(/font-size:\s*1\.42em;/);
+    expect(mobileH2Block).toMatch(/padding-left:\s*10px;/);
+    expect(mobileH2Block).toMatch(/font-size:\s*1\.18em;/);
+    expect(mobileH2Block).toMatch(/&::before[\s\S]*width:\s*3px;/);
+    expect(mobileH3Block).toMatch(/font-size:\s*1\.06em;/);
+    expect(narrowMarkdownBodyBlock).toMatch(/line-height:\s*1\.6;/);
   });
 
   test("keeps image editor controls aligned with Gemini surfaces", () => {
