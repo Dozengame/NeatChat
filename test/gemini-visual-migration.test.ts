@@ -272,6 +272,23 @@ describe("Gemini visual migration shell", () => {
       autoDarkChatInputPanelBlock,
       chatInputPanelTokenNames,
     );
+    const chatInputPanelSurfaceTokenNames = [
+      "--chat-input-panel-shadow-color",
+      "--chat-input-panel-elevated-background",
+      "--chat-input-panel-elevated-shadow-color",
+    ];
+    const chatInputPanelSurfaceTokens = readCustomProperties(
+      chatInputPanelRootBlock,
+      chatInputPanelSurfaceTokenNames,
+    );
+    const darkChatInputPanelSurfaceTokens = readCustomProperties(
+      readCssBlock(chatStyles, ":global(.dark) .chat-input-panel"),
+      chatInputPanelSurfaceTokenNames,
+    );
+    const autoDarkChatInputPanelSurfaceTokens = readCustomProperties(
+      autoDarkChatInputPanelBlock,
+      chatInputPanelSurfaceTokenNames,
+    );
     const inputPanelInnerFocusBlock = readCssBlock(
       chatStyles,
       ".chat-input-panel-inner:has(.chat-input:focus)",
@@ -607,6 +624,22 @@ describe("Gemini visual migration shell", () => {
     const autoDarkPromptHintTokens = readCustomProperties(
       autoDarkPromptHintsBlock,
       promptHintTokenNames,
+    );
+    const promptHintsSurfaceTokenNames = [
+      "--prompt-hints-background",
+      "--prompt-hints-shadow-color",
+    ];
+    const lightPromptHintsSurfaceTokens = readCustomProperties(
+      promptHintsRootBlock,
+      promptHintsSurfaceTokenNames,
+    );
+    const darkPromptHintsSurfaceTokens = readCustomProperties(
+      darkPromptHintsBlock,
+      promptHintsSurfaceTokenNames,
+    );
+    const autoDarkPromptHintsSurfaceTokens = readCustomProperties(
+      autoDarkPromptHintsBlock,
+      promptHintsSurfaceTokenNames,
     );
     const legacyPromptHintSelectedPaint =
       /rgba\(66,\s*133,\s*244,\s*(?:0\.1|0\.18|0\.22)\)/;
@@ -1642,6 +1675,28 @@ describe("Gemini visual migration shell", () => {
       "var(--surface-elevated)",
     );
     expect(autoDarkPromptHintTokens).toEqual(darkPromptHintTokens);
+    expect(lightPromptHintsSurfaceTokens).toEqual({
+      "--prompt-hints-background":
+        "color-mix(in srgb, var(--surface-elevated) 92%, transparent)",
+      "--prompt-hints-shadow-color":
+        "color-mix(in srgb, var(--black-50) 10%, transparent)",
+    });
+    expect(darkPromptHintsSurfaceTokens).toEqual({
+      "--prompt-hints-background":
+        "color-mix(in srgb, var(--surface-elevated) 86%, var(--surface))",
+      "--prompt-hints-shadow-color":
+        "color-mix(in srgb, var(--surface) 28%, transparent)",
+    });
+    expect(autoDarkPromptHintsSurfaceTokens).toEqual(
+      darkPromptHintsSurfaceTokens,
+    );
+    for (const tokenValue of [
+      ...Object.values(lightPromptHintsSurfaceTokens),
+      ...Object.values(darkPromptHintsSurfaceTokens),
+      ...Object.values(autoDarkPromptHintsSurfaceTokens),
+    ]) {
+      expect(tokenValue).not.toMatch(/var\(--(?:white|gray)\)/);
+    }
     expect(promptHintsRootBlock).toMatch(/box-sizing:\s*border-box;/);
     expect(promptHintsRootBlock).toMatch(
       /background:\s*var\(--prompt-hints-background\);/,
@@ -3106,15 +3161,38 @@ describe("Gemini visual migration shell", () => {
     expect(chatInputPanelBlock).toMatch(
       /--chat-input-panel-shadow-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 8%,\s*transparent\);/,
     );
+    expect(chatInputPanelSurfaceTokens).toEqual({
+      "--chat-input-panel-shadow-color":
+        "color-mix(in srgb, var(--black-50) 8%, transparent)",
+      "--chat-input-panel-elevated-background":
+        "color-mix(in srgb, var(--surface-elevated) 92%, transparent)",
+      "--chat-input-panel-elevated-shadow-color":
+        "color-mix(in srgb, var(--black-50) 10%, transparent)",
+    });
     expect(darkChatInputPanelTokens["--chat-input-panel-background"]).toContain(
       "var(--surface-elevated)",
     );
     expect(
       darkChatInputPanelTokens["--chat-input-panel-elevated-background"],
     ).toContain("var(--surface-elevated)");
-    expect(
-      darkChatInputPanelTokens["--chat-input-panel-elevated-shadow-color"],
-    ).toContain("var(--gray)");
+    expect(darkChatInputPanelSurfaceTokens).toEqual({
+      "--chat-input-panel-shadow-color":
+        "color-mix(in srgb, var(--surface) 28%, transparent)",
+      "--chat-input-panel-elevated-background":
+        "color-mix(in srgb, var(--surface-elevated) 86%, var(--surface))",
+      "--chat-input-panel-elevated-shadow-color":
+        "color-mix(in srgb, var(--surface) 30%, transparent)",
+    });
+    expect(autoDarkChatInputPanelSurfaceTokens).toEqual(
+      darkChatInputPanelSurfaceTokens,
+    );
+    for (const tokenValue of [
+      ...Object.values(chatInputPanelSurfaceTokens),
+      ...Object.values(darkChatInputPanelSurfaceTokens),
+      ...Object.values(autoDarkChatInputPanelSurfaceTokens),
+    ]) {
+      expect(tokenValue).not.toMatch(/var\(--(?:white|gray)\)/);
+    }
     expect(chatInputPanelBlock).not.toMatch(/var\(--composer-shadow\)/);
     expect(inputPanelInnerFocusBlock).toMatch(
       /border-color:\s*var\(--chat-input-focus-border-color\) !important;/,
@@ -3259,7 +3337,7 @@ describe("Gemini visual migration shell", () => {
       /--chat-input-action-menu-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\);/,
     );
     expect(darkActionMenuBlock).toMatch(
-      /--chat-input-action-menu-shadow-color:\s*color-mix\(in srgb,\s*var\(--gray\) 42%,\s*transparent\);/,
+      /--chat-input-action-menu-shadow-color:\s*color-mix\(in srgb,\s*var\(--surface\) 32%,\s*transparent\);/,
     );
     expect(darkActionMenuBlock).toMatch(
       /--chat-input-action-menu-accent-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 8%,\s*var\(--surface\)\);/,
@@ -3287,7 +3365,7 @@ describe("Gemini visual migration shell", () => {
       /--chat-input-action-menu-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\);/,
     );
     expect(autoDarkActionMenuBlock).toMatch(
-      /--chat-input-action-menu-shadow-color:\s*color-mix\(in srgb,\s*var\(--gray\) 42%,\s*transparent\);/,
+      /--chat-input-action-menu-shadow-color:\s*color-mix\(in srgb,\s*var\(--surface\) 32%,\s*transparent\);/,
     );
     expect(autoDarkActionMenuBlock).toMatch(
       /--chat-input-action-menu-accent-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 8%,\s*var\(--surface\)\);/,
@@ -4305,6 +4383,21 @@ describe("Gemini visual migration shell", () => {
       autoDarkComposerActionsBlock,
       composerActionTokenNames,
     );
+    const composerActionSurfaceTokenNames = [
+      "--chat-composer-action-background",
+    ];
+    const lightComposerActionSurfaceTokens = readCustomProperties(
+      composerActionsRootBlock,
+      composerActionSurfaceTokenNames,
+    );
+    const darkComposerActionSurfaceTokens = readCustomProperties(
+      darkComposerActionsBlock,
+      composerActionSurfaceTokenNames,
+    );
+    const autoDarkComposerActionSurfaceTokens = readCustomProperties(
+      autoDarkComposerActionsBlock,
+      composerActionSurfaceTokenNames,
+    );
     const composerActionPaintScope = [
       composerActionsRootBlock,
       composerActionBlock,
@@ -4332,6 +4425,21 @@ describe("Gemini visual migration shell", () => {
       autoDarkActionMenuBlock,
       actionMenuHoverTokenNames,
     );
+    const actionMenuSurfaceTokenNames = [
+      "--chat-input-action-menu-shadow-color",
+    ];
+    const lightActionMenuSurfaceTokens = readCustomProperties(
+      actionMenuRootBlock,
+      actionMenuSurfaceTokenNames,
+    );
+    const darkActionMenuSurfaceTokens = readCustomProperties(
+      darkActionMenuBlock,
+      actionMenuSurfaceTokenNames,
+    );
+    const autoDarkActionMenuSurfaceTokens = readCustomProperties(
+      autoDarkActionMenuBlock,
+      actionMenuSurfaceTokenNames,
+    );
 
     expect(chat).toMatch(
       /className=\{clsx\(styles\["chat-input-action"\], "clickable", \{[\s\S]*styles\["chat-input-action-active"\][\s\S]*styles\["chat-input-action-disabled"\]\]: props\.disabled,/,
@@ -4354,6 +4462,24 @@ describe("Gemini visual migration shell", () => {
       Object.values(autoDarkComposerActionTokens).every(Boolean),
     ).toBeTruthy();
     expect(autoDarkComposerActionTokens).toEqual(darkComposerActionTokens);
+    expect(lightComposerActionSurfaceTokens).toEqual({
+      "--chat-composer-action-background":
+        "color-mix( in srgb, var(--surface-elevated) 92%, var(--surface-soft) )",
+    });
+    expect(darkComposerActionSurfaceTokens).toEqual({
+      "--chat-composer-action-background":
+        "color-mix( in srgb, var(--surface-elevated) 86%, var(--surface) )",
+    });
+    expect(autoDarkComposerActionSurfaceTokens).toEqual(
+      darkComposerActionSurfaceTokens,
+    );
+    for (const tokenValue of [
+      ...Object.values(lightComposerActionSurfaceTokens),
+      ...Object.values(darkComposerActionSurfaceTokens),
+      ...Object.values(autoDarkComposerActionSurfaceTokens),
+    ]) {
+      expect(tokenValue).not.toMatch(/var\(--(?:white|gray)\)/);
+    }
     expect(composerActionBlock).toMatch(
       /background-color:\s*var\(--chat-composer-action-background\);/,
     );
@@ -4437,6 +4563,24 @@ describe("Gemini visual migration shell", () => {
     expect(Object.values(darkActionMenuHoverTokens).every(Boolean)).toBeTruthy();
     expect(Object.values(autoDarkActionMenuHoverTokens).every(Boolean)).toBeTruthy();
     expect(autoDarkActionMenuHoverTokens).toEqual(darkActionMenuHoverTokens);
+    expect(lightActionMenuSurfaceTokens).toEqual({
+      "--chat-input-action-menu-shadow-color":
+        "color-mix(in srgb, var(--black-50) 18%, transparent)",
+    });
+    expect(darkActionMenuSurfaceTokens).toEqual({
+      "--chat-input-action-menu-shadow-color":
+        "color-mix(in srgb, var(--surface) 32%, transparent)",
+    });
+    expect(autoDarkActionMenuSurfaceTokens).toEqual(
+      darkActionMenuSurfaceTokens,
+    );
+    for (const tokenValue of [
+      ...Object.values(lightActionMenuSurfaceTokens),
+      ...Object.values(darkActionMenuSurfaceTokens),
+      ...Object.values(autoDarkActionMenuSurfaceTokens),
+    ]) {
+      expect(tokenValue).not.toMatch(/var\(--(?:white|gray)\)/);
+    }
     expect(actionMenuBlock).toMatch(/overscroll-behavior:\s*contain;/);
     expect(actionMenuBlock).toMatch(/scrollbar-width:\s*thin;/);
     expect(actionMenuBackdropBlock).toMatch(
@@ -4592,6 +4736,22 @@ describe("Gemini visual migration shell", () => {
     const rootTokens = readCustomProperties(menuButtonRootBlock, tokenNames);
     const darkTokens = readCustomProperties(darkBlock, tokenNames);
     const autoDarkTokens = readCustomProperties(autoDarkBlock, tokenNames);
+    const menuButtonSurfaceTokenNames = [
+      "--chat-input-menu-button-background",
+      "--chat-input-menu-button-shadow-color",
+    ];
+    const rootSurfaceTokens = readCustomProperties(
+      menuButtonRootBlock,
+      menuButtonSurfaceTokenNames,
+    );
+    const darkSurfaceTokens = readCustomProperties(
+      darkBlock,
+      menuButtonSurfaceTokenNames,
+    );
+    const autoDarkSurfaceTokens = readCustomProperties(
+      autoDarkBlock,
+      menuButtonSurfaceTokenNames,
+    );
 
     expect(chat).toMatch(
       /className=\{clsx\(styles\["chat-input-menu-button"\], \{[\s\S]*styles\["chat-input-menu-button-active"\]\]: showChatActionMenu,/,
@@ -4613,6 +4773,26 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkTokens).toEqual(darkTokens);
+    expect(rootSurfaceTokens).toEqual({
+      "--chat-input-menu-button-background":
+        "color-mix(in srgb, var(--surface-elevated) 92%, transparent)",
+      "--chat-input-menu-button-shadow-color":
+        "color-mix(in srgb, var(--black-50) 12%, transparent)",
+    });
+    expect(darkSurfaceTokens).toEqual({
+      "--chat-input-menu-button-background":
+        "color-mix(in srgb, var(--surface-elevated) 76%, var(--surface))",
+      "--chat-input-menu-button-shadow-color":
+        "color-mix(in srgb, var(--surface) 24%, transparent)",
+    });
+    expect(autoDarkSurfaceTokens).toEqual(darkSurfaceTokens);
+    for (const tokenValue of [
+      ...Object.values(rootSurfaceTokens),
+      ...Object.values(darkSurfaceTokens),
+      ...Object.values(autoDarkSurfaceTokens),
+    ]) {
+      expect(tokenValue).not.toMatch(/var\(--(?:white|gray)\)/);
+    }
     expect(menuButtonRootBlock).toMatch(
       /border:\s*1px solid var\(--chat-input-menu-button-border-color\);/,
     );
@@ -16604,6 +16784,22 @@ describe("Gemini visual migration shell", () => {
       chatStyles.slice(autoDarkDropzoneMediaIndex),
       autoDarkDropzoneSelector,
     );
+    const dropzoneSurfaceTokenNames = [
+      "--chat-dropzone-active-background",
+      "--chat-dropzone-content-shadow-color",
+    ];
+    const lightDropzoneSurfaceTokens = readCustomProperties(
+      dropzoneBlock,
+      dropzoneSurfaceTokenNames,
+    );
+    const darkDropzoneSurfaceTokens = readCustomProperties(
+      darkDropzoneBlock,
+      dropzoneSurfaceTokenNames,
+    );
+    const autoDarkDropzoneSurfaceTokens = readCustomProperties(
+      autoDarkDropzoneBlock,
+      dropzoneSurfaceTokenNames,
+    );
     const autoDarkBlockedDropzoneSelector =
       ':global(body:not(.light)) .chat-dropzone[data-drop-accepted="false"]';
     const autoDarkBlockedDropzoneSelectorIndex = chatStyles.indexOf(
@@ -16842,7 +17038,7 @@ describe("Gemini visual migration shell", () => {
       /--chat-dropzone-blocked-icon-color:\s*color-mix\(in srgb,\s*rgb\(217,\s*48,\s*37\) 82%,\s*var\(--black\)\);/,
     );
     expect(darkDropzoneBlock).toMatch(
-      /--chat-dropzone-active-background:\s*color-mix\(in srgb,\s*var\(--gray\) 66%,\s*transparent\);/,
+      /--chat-dropzone-active-background:\s*color-mix\(in srgb,\s*var\(--surface\) 66%,\s*transparent\);/,
     );
     expect(darkDropzoneBlock).toMatch(
       /--chat-dropzone-inactive-background:\s*transparent;/,
@@ -16865,7 +17061,7 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkDropzoneSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkDropzoneMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkDropzoneBlock).toMatch(
-      /--chat-dropzone-active-background:\s*color-mix\(in srgb,\s*var\(--gray\) 66%,\s*transparent\);/,
+      /--chat-dropzone-active-background:\s*color-mix\(in srgb,\s*var\(--surface\) 66%,\s*transparent\);/,
     );
     expect(autoDarkDropzoneBlock).toMatch(
       /--chat-dropzone-inactive-background:\s*transparent;/,
@@ -16885,6 +17081,26 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkDropzoneBlock).toMatch(
       /--chat-dropzone-icon-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 8%,\s*var\(--surface\)\);/,
     );
+    expect(lightDropzoneSurfaceTokens).toEqual({
+      "--chat-dropzone-active-background":
+        "color-mix(in srgb, var(--surface) 58%, transparent)",
+      "--chat-dropzone-content-shadow-color":
+        "color-mix(in srgb, var(--surface-soft) 36%, transparent)",
+    });
+    expect(darkDropzoneSurfaceTokens).toEqual({
+      "--chat-dropzone-active-background":
+        "color-mix(in srgb, var(--surface) 66%, transparent)",
+      "--chat-dropzone-content-shadow-color":
+        "color-mix(in srgb, var(--surface) 36%, transparent)",
+    });
+    expect(autoDarkDropzoneSurfaceTokens).toEqual(darkDropzoneSurfaceTokens);
+    for (const tokenValue of [
+      ...Object.values(lightDropzoneSurfaceTokens),
+      ...Object.values(darkDropzoneSurfaceTokens),
+      ...Object.values(autoDarkDropzoneSurfaceTokens),
+    ]) {
+      expect(tokenValue).not.toMatch(/var\(--(?:white|gray)\)/);
+    }
     expect(darkDropzoneBlock).toMatch(
       /--chat-dropzone-blocked-border-color:\s*color-mix\(in srgb,\s*rgb\(242,\s*139,\s*130\) 34%,\s*transparent\);/,
     );

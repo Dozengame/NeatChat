@@ -581,7 +581,7 @@
   --chat-composer-action-background: color-mix(
     in srgb,
     var(--surface-elevated) 92%,
-    var(--white)
+    var(--surface-soft)
   );
   --chat-composer-action-border-color: color-mix(
     in srgb,
@@ -771,7 +771,7 @@
   --chat-composer-action-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
-    var(--white)
+    var(--surface)
   );
   --chat-composer-action-border-color: color-mix(
     in srgb,
@@ -840,7 +840,7 @@
     --chat-composer-action-background: color-mix(
       in srgb,
       var(--surface-elevated) 86%,
-      var(--white)
+      var(--surface)
     );
     --chat-composer-action-border-color: color-mix(
       in srgb,
@@ -4848,10 +4848,10 @@
 :global(.dark) .chat-input-panel {
   --chat-input-panel-border-color: color-mix(in srgb, var(--black) 8%, transparent);
   --chat-input-panel-background: color-mix(in srgb, var(--surface-elevated) 82%, var(--surface));
-  --chat-input-panel-shadow-color: color-mix(in srgb, var(--gray) 34%, transparent);
+  --chat-input-panel-shadow-color: color-mix(in srgb, var(--surface) 28%, transparent);
   --chat-input-panel-elevated-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-  --chat-input-panel-elevated-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--white));
-  --chat-input-panel-elevated-shadow-color: color-mix(in srgb, var(--gray) 40%, transparent);
+  --chat-input-panel-elevated-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--surface));
+  --chat-input-panel-elevated-shadow-color: color-mix(in srgb, var(--surface) 30%, transparent);
   --chat-input-focus-border-color: color-mix(in srgb, var(--primary) 46%, var(--black));
   --chat-input-focus-ring-color: color-mix(in srgb, var(--primary) 16%, transparent);
   --chat-input-menu-focus-border-color: color-mix(in srgb, var(--primary) 34%, transparent);
@@ -4871,10 +4871,10 @@
   :global(body:not(.light)) .chat-input-panel {
     --chat-input-panel-border-color: color-mix(in srgb, var(--black) 8%, transparent);
     --chat-input-panel-background: color-mix(in srgb, var(--surface-elevated) 82%, var(--surface));
-    --chat-input-panel-shadow-color: color-mix(in srgb, var(--gray) 34%, transparent);
+    --chat-input-panel-shadow-color: color-mix(in srgb, var(--surface) 28%, transparent);
     --chat-input-panel-elevated-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-    --chat-input-panel-elevated-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--white));
-    --chat-input-panel-elevated-shadow-color: color-mix(in srgb, var(--gray) 40%, transparent);
+    --chat-input-panel-elevated-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--surface));
+    --chat-input-panel-elevated-shadow-color: color-mix(in srgb, var(--surface) 30%, transparent);
     --chat-input-focus-border-color: color-mix(in srgb, var(--primary) 46%, var(--black));
     --chat-input-focus-ring-color: color-mix(in srgb, var(--primary) 16%, transparent);
     --chat-input-menu-focus-border-color: color-mix(in srgb, var(--primary) 34%, transparent);
@@ -5069,9 +5069,9 @@
 }
 
 :global(.dark) .prompt-hints {
-  --prompt-hints-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--white));
+  --prompt-hints-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--surface));
   --prompt-hints-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-  --prompt-hints-shadow-color: color-mix(in srgb, var(--gray) 40%, transparent);
+  --prompt-hints-shadow-color: color-mix(in srgb, var(--surface) 28%, transparent);
   --prompt-hint-background: color-mix(in srgb, var(--surface-soft) 38%, transparent);
   --prompt-hint-border-color: color-mix(in srgb, var(--black) 6%, transparent);
   --prompt-hint-color: color-mix(in srgb, var(--black) 94%, transparent);
@@ -5084,9 +5084,9 @@
 
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .prompt-hints {
-    --prompt-hints-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--white));
+    --prompt-hints-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--surface));
     --prompt-hints-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-    --prompt-hints-shadow-color: color-mix(in srgb, var(--gray) 40%, transparent);
+    --prompt-hints-shadow-color: color-mix(in srgb, var(--surface) 28%, transparent);
     --prompt-hint-background: color-mix(in srgb, var(--surface-soft) 38%, transparent);
     --prompt-hint-border-color: color-mix(in srgb, var(--black) 6%, transparent);
     --prompt-hint-color: color-mix(in srgb, var(--black) 94%, transparent);
@@ -5433,9 +5433,9 @@
 
 :global(.dark) .chat-input-menu-button {
   --chat-input-menu-button-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-  --chat-input-menu-button-background: color-mix(in srgb, var(--surface-elevated) 76%, var(--white));
+  --chat-input-menu-button-background: color-mix(in srgb, var(--surface-elevated) 76%, var(--surface));
   --chat-input-menu-button-color: color-mix(in srgb, var(--black) 90%, transparent);
-  --chat-input-menu-button-shadow-color: color-mix(in srgb, var(--gray) 34%, transparent);
+  --chat-input-menu-button-shadow-color: color-mix(in srgb, var(--surface) 24%, transparent);
   --chat-input-menu-button-hover-background: color-mix(in srgb, var(--primary) 14%, var(--surface));
   --chat-input-menu-button-hover-border-color: color-mix(in srgb, var(--primary) 24%, transparent);
   --chat-input-menu-button-focus-shadow-color: color-mix(in srgb, var(--primary) 28%, transparent);
@@ -5450,9 +5450,9 @@
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .chat-input-menu-button {
     --chat-input-menu-button-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-    --chat-input-menu-button-background: color-mix(in srgb, var(--surface-elevated) 76%, var(--white));
+    --chat-input-menu-button-background: color-mix(in srgb, var(--surface-elevated) 76%, var(--surface));
     --chat-input-menu-button-color: color-mix(in srgb, var(--black) 90%, transparent);
-    --chat-input-menu-button-shadow-color: color-mix(in srgb, var(--gray) 34%, transparent);
+    --chat-input-menu-button-shadow-color: color-mix(in srgb, var(--surface) 24%, transparent);
     --chat-input-menu-button-hover-background: color-mix(in srgb, var(--primary) 14%, var(--surface));
     --chat-input-menu-button-hover-border-color: color-mix(in srgb, var(--primary) 24%, transparent);
     --chat-input-menu-button-focus-shadow-color: color-mix(in srgb, var(--primary) 28%, transparent);
@@ -5664,7 +5664,7 @@
   --chat-input-action-disabled-ring-color: color-mix(in srgb, var(--black) 8%, transparent);
   --chat-input-action-menu-border-color: color-mix(in srgb, var(--black) 8%, transparent);
   --chat-input-action-menu-background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
-  --chat-input-action-menu-shadow-color: color-mix(in srgb, var(--gray) 42%, transparent);
+  --chat-input-action-menu-shadow-color: color-mix(in srgb, var(--surface) 32%, transparent);
   --chat-input-action-menu-accent-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
 }
 
@@ -5691,7 +5691,7 @@
     --chat-input-action-disabled-ring-color: color-mix(in srgb, var(--black) 8%, transparent);
     --chat-input-action-menu-border-color: color-mix(in srgb, var(--black) 8%, transparent);
     --chat-input-action-menu-background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
-    --chat-input-action-menu-shadow-color: color-mix(in srgb, var(--gray) 42%, transparent);
+    --chat-input-action-menu-shadow-color: color-mix(in srgb, var(--surface) 32%, transparent);
     --chat-input-action-menu-accent-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
   }
 }
@@ -6900,13 +6900,13 @@
 }
 
 :global(.dark) .chat-dropzone {
-  --chat-dropzone-active-background: color-mix(in srgb, var(--gray) 66%, transparent);
+  --chat-dropzone-active-background: color-mix(in srgb, var(--surface) 66%, transparent);
   --chat-dropzone-inactive-background: transparent;
   --chat-dropzone-scrim-background: color-mix(in srgb, var(--surface-elevated) 24%, transparent);
   --chat-dropzone-scrim-border-color: color-mix(in srgb, var(--black) 8%, transparent);
   --chat-dropzone-content-border-color: color-mix(in srgb, var(--black) 25%, transparent);
   --chat-dropzone-content-active-border-color: color-mix(in srgb, var(--primary) 46%, transparent);
-  --chat-dropzone-content-shadow-color: color-mix(in srgb, var(--gray) 42%, transparent);
+  --chat-dropzone-content-shadow-color: color-mix(in srgb, var(--surface) 36%, transparent);
   --chat-dropzone-content-active-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
   --chat-dropzone-content-inner-border-color: color-mix(in srgb, var(--black) 8%, transparent);
   --chat-dropzone-content-highlight-color: color-mix(in srgb, var(--black) 10%, transparent);
@@ -6929,13 +6929,13 @@
 
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .chat-dropzone {
-    --chat-dropzone-active-background: color-mix(in srgb, var(--gray) 66%, transparent);
+    --chat-dropzone-active-background: color-mix(in srgb, var(--surface) 66%, transparent);
     --chat-dropzone-inactive-background: transparent;
     --chat-dropzone-scrim-background: color-mix(in srgb, var(--surface-elevated) 24%, transparent);
     --chat-dropzone-scrim-border-color: color-mix(in srgb, var(--black) 8%, transparent);
     --chat-dropzone-content-border-color: color-mix(in srgb, var(--black) 25%, transparent);
     --chat-dropzone-content-active-border-color: color-mix(in srgb, var(--primary) 46%, transparent);
-    --chat-dropzone-content-shadow-color: color-mix(in srgb, var(--gray) 42%, transparent);
+    --chat-dropzone-content-shadow-color: color-mix(in srgb, var(--surface) 36%, transparent);
     --chat-dropzone-content-active-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
     --chat-dropzone-content-inner-border-color: color-mix(in srgb, var(--black) 8%, transparent);
     --chat-dropzone-content-highlight-color: color-mix(in srgb, var(--black) 10%, transparent);
