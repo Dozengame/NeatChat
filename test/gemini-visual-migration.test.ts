@@ -193,6 +193,7 @@ describe("Gemini visual migration shell", () => {
   test("keeps the Gemini-style empty state hooks and the existing tool menu entry points", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
+    const sendIconSvg = read("app/icons/send-white.svg");
     const home = read("app/components/home.tsx");
     const newChat = read("app/components/new-chat.tsx");
     const newChatStyles = read("app/components/new-chat.module.scss");
@@ -275,6 +276,7 @@ describe("Gemini visual migration shell", () => {
       "--chat-input-mode-chip-border-color",
       "--chat-input-mode-chip-background",
       "--chat-input-mode-chip-color",
+      "--chat-input-send-foreground-color",
       "--chat-input-send-shadow-color",
       "--chat-input-send-disabled-background",
       "--chat-input-send-disabled-icon-color",
@@ -420,6 +422,14 @@ describe("Gemini visual migration shell", () => {
       "&:focus-visible",
     );
     const sendButtonBlock = readRootCssBlock(chatStyles, ".chat-input-send");
+    const sendButtonIconCascadeBlock = readRootCssBlock(
+      chatStyles,
+      ".chat-input-send:global(.clickable) svg path",
+    );
+    const sendButtonEnabledBlock = readRootCssBlock(
+      chatStyles,
+      ".chat-input-send:not(:disabled)",
+    );
     const sendButtonDisabledBlock = readCssBlock(
       sendButtonBlock,
       "&:disabled,\n  &:disabled:hover,\n  &:disabled:active",
@@ -2788,16 +2798,65 @@ describe("Gemini visual migration shell", () => {
       /background:\s*var\(--chat-input-send-disabled-background\);/,
     );
     expect(sendButtonDisabledBlock).toMatch(
-      /svg path[\s\S]*fill:\s*var\(--chat-input-send-disabled-icon-color\) !important;/,
+      /color:\s*var\(--chat-input-send-disabled-icon-color\) !important;/,
+    );
+    expect(sendButtonDisabledBlock).toMatch(
+      /--icon-button-primary-color:\s*var\(--chat-input-send-disabled-icon-color\);/,
+    );
+    expect(sendButtonDisabledBlock).toMatch(
+      /svg path[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(sendButtonDisabledBlock).toMatch(
+      /svg path[\s\S]*fill:\s*currentColor !important;/,
+    );
+    expect(sendButtonBlock).toMatch(
+      /color:\s*var\(--chat-input-send-foreground-color\) !important;/,
+    );
+    expect(sendButtonBlock).toMatch(
+      /--icon-button-primary-color:\s*var\(--chat-input-send-foreground-color\);/,
+    );
+    expect(sendButtonBlock).toMatch(/svg[\s\S]*color:\s*currentColor;/);
+    expect(sendButtonBlock).toMatch(
+      /svg path[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(sendButtonBlock).toMatch(
+      /svg path[\s\S]*fill:\s*currentColor !important;/,
     );
     expect(sendButtonBlock).toMatch(
       /box-shadow:\s*0 12px 26px var\(--chat-input-send-shadow-color\);/,
+    );
+    expect(readRootDeclarations(sendButtonBlock)).not.toContain("color: white");
+    expect(sendButtonIconCascadeBlock).toMatch(
+      /stroke:\s*currentColor !important;/,
+    );
+    expect(sendButtonIconCascadeBlock).toMatch(
+      /fill:\s*currentColor !important;/,
+    );
+    expect(sendButtonEnabledBlock).toMatch(
+      /--icon-button-primary-color:\s*var\(--chat-input-send-foreground-color\);/,
+    );
+    expect(sendButtonEnabledBlock).toMatch(
+      /color:\s*var\(--chat-input-send-foreground-color\) !important;/,
+    );
+    expect(sendIconSvg).toContain("currentColor");
+    expect(sendIconSvg).not.toMatch(/#fff|#ffffff|white/i);
+    expect(sendIconSvg).toContain(
+      'd="M0,4.71L6.67,6L8.34,12.67L12.67,0L0,4.71Z"',
+    );
+    expect(sendIconSvg).toContain(
+      'transform="translate(1.3333333333333333 2) rotate(0 6.333333333333333 6.333333333333333)"',
     );
     expect(darkSendButtonDisabledBlock).toMatch(
       /background:\s*var\(--chat-input-send-disabled-background\);/,
     );
     expect(darkSendButtonDisabledBlock).toMatch(
-      /svg path[\s\S]*fill:\s*var\(--chat-input-send-disabled-icon-color\) !important;/,
+      /color:\s*var\(--chat-input-send-disabled-icon-color\) !important;/,
+    );
+    expect(darkSendButtonDisabledBlock).toMatch(
+      /svg path[\s\S]*stroke:\s*currentColor !important;/,
+    );
+    expect(darkSendButtonDisabledBlock).toMatch(
+      /svg path[\s\S]*fill:\s*currentColor !important;/,
     );
     expect(
       chatStyles.indexOf(".chat-reading-surface > .chat-message-row-user"),
@@ -3160,6 +3219,9 @@ describe("Gemini visual migration shell", () => {
       "var(--primary)",
     );
     expect(
+      chatInputPanelTokens["--chat-input-send-foreground-color"],
+    ).toContain("var(--surface)");
+    expect(
       chatInputPanelTokens["--chat-input-send-disabled-background"],
     ).toContain("var(--black)");
     expect(
@@ -3199,6 +3261,9 @@ describe("Gemini visual migration shell", () => {
     ).toContain("var(--primary)");
     expect(
       darkChatInputPanelTokens["--chat-input-send-disabled-background"],
+    ).toContain("var(--black)");
+    expect(
+      darkChatInputPanelTokens["--chat-input-send-foreground-color"],
     ).toContain("var(--black)");
     expect(autoDarkChatInputPanelSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkChatInputPanelMediaIndex).toBeGreaterThan(-1);

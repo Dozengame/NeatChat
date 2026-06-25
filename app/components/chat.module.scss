@@ -4830,6 +4830,7 @@
   --chat-input-mode-chip-border-color: color-mix(in srgb, var(--primary) 28%, transparent);
   --chat-input-mode-chip-background: color-mix(in srgb, var(--primary) 12%, transparent);
   --chat-input-mode-chip-color: color-mix(in srgb, var(--primary) 92%, var(--black));
+  --chat-input-send-foreground-color: var(--surface);
   --chat-input-send-shadow-color: color-mix(in srgb, var(--primary) 28%, transparent);
   --chat-input-send-disabled-background: color-mix(in srgb, var(--black) 12%, transparent);
   --chat-input-send-disabled-icon-color: color-mix(in srgb, var(--black-50) 72%, transparent);
@@ -4873,6 +4874,7 @@
   --chat-input-mode-chip-border-color: color-mix(in srgb, var(--primary) 38%, transparent);
   --chat-input-mode-chip-background: color-mix(in srgb, var(--primary) 20%, var(--surface));
   --chat-input-mode-chip-color: color-mix(in srgb, var(--primary) 54%, var(--black));
+  --chat-input-send-foreground-color: var(--black);
   --chat-input-send-shadow-color: color-mix(in srgb, var(--primary) 20%, transparent);
   --chat-input-send-disabled-background: color-mix(in srgb, var(--black) 12%, transparent);
   --chat-input-send-disabled-icon-color: color-mix(in srgb, var(--black-50) 70%, transparent);
@@ -4896,6 +4898,7 @@
     --chat-input-mode-chip-border-color: color-mix(in srgb, var(--primary) 38%, transparent);
     --chat-input-mode-chip-background: color-mix(in srgb, var(--primary) 20%, var(--surface));
     --chat-input-mode-chip-color: color-mix(in srgb, var(--primary) 54%, var(--black));
+    --chat-input-send-foreground-color: var(--black);
     --chat-input-send-shadow-color: color-mix(in srgb, var(--primary) 20%, transparent);
     --chat-input-send-disabled-background: color-mix(in srgb, var(--black) 12%, transparent);
     --chat-input-send-disabled-icon-color: color-mix(in srgb, var(--black-50) 70%, transparent);
@@ -5321,8 +5324,10 @@
 }
 
 .chat-input-send {
+  --icon-button-primary-color: var(--chat-input-send-foreground-color);
+
   background-color: var(--primary);
-  color: white;
+  color: var(--chat-input-send-foreground-color) !important;
   position: absolute;
   right: 16px;
   bottom: 8px;
@@ -5334,26 +5339,52 @@
   border-radius: 50%;
   box-shadow: 0 12px 26px var(--chat-input-send-shadow-color);
 
+  svg {
+    color: currentColor;
+  }
+
+  svg path {
+    stroke: currentColor !important;
+    fill: currentColor !important;
+  }
+
   &:disabled,
   &:disabled:hover,
   &:disabled:active {
+    --icon-button-primary-color: var(--chat-input-send-disabled-icon-color);
+
     cursor: default;
+    color: var(--chat-input-send-disabled-icon-color) !important;
     opacity: 1;
     background: var(--chat-input-send-disabled-background);
     box-shadow: none;
     transform: none;
 
     svg path {
-      fill: var(--chat-input-send-disabled-icon-color) !important;
+      stroke: currentColor !important;
+      fill: currentColor !important;
     }
   }
 }
 
+.chat-input-send:global(.clickable) svg path {
+  stroke: currentColor !important;
+  fill: currentColor !important;
+}
+
+.chat-input-send:not(:disabled) {
+  --icon-button-primary-color: var(--chat-input-send-foreground-color);
+
+  color: var(--chat-input-send-foreground-color) !important;
+}
+
 :global(.dark) .chat-input-send:disabled {
+  color: var(--chat-input-send-disabled-icon-color) !important;
   background: var(--chat-input-send-disabled-background);
 
   svg path {
-    fill: var(--chat-input-send-disabled-icon-color) !important;
+    stroke: currentColor !important;
+    fill: currentColor !important;
   }
 }
 
