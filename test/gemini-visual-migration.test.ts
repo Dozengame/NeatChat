@@ -10643,6 +10643,10 @@ describe("Gemini visual migration shell", () => {
       imageEditorStyles,
       "@media (prefers-color-scheme: dark)",
     );
+    const autoDarkImageEditorContainerBlock = readCssBlock(
+      imageEditorAutoDarkMediaBlock,
+      ":global(body:not(.light)) .image-editor-container",
+    );
     const toolAndSizeOptionBlock = readCssBlock(
       imageEditorStyles,
       ".tool-option,\n.size-option",
@@ -10664,6 +10668,28 @@ describe("Gemini visual migration shell", () => {
       imageEditorStyles,
       "@media (prefers-reduced-motion: reduce)",
     );
+    const imageEditorCanvasBackgroundToken = [
+      "--image-editor-canvas-background",
+    ];
+    const imageEditorCanvasBackgroundTokens = readCustomProperties(
+      imageEditorContainerBlock,
+      imageEditorCanvasBackgroundToken,
+    );
+    const darkImageEditorCanvasBackgroundTokens = readCustomProperties(
+      darkImageEditorContainerBlock,
+      imageEditorCanvasBackgroundToken,
+    );
+    const autoDarkImageEditorCanvasBackgroundTokens = readCustomProperties(
+      autoDarkImageEditorContainerBlock,
+      imageEditorCanvasBackgroundToken,
+    );
+    const imageEditorCanvasBackgroundValues = [
+      imageEditorCanvasBackgroundTokens["--image-editor-canvas-background"],
+      darkImageEditorCanvasBackgroundTokens["--image-editor-canvas-background"],
+      autoDarkImageEditorCanvasBackgroundTokens[
+        "--image-editor-canvas-background"
+      ],
+    ];
 
     expect(imageEditor).toContain('role="toolbar"');
     expect(imageEditor).toContain('aria-label="图片编辑工具"');
@@ -10724,7 +10750,12 @@ describe("Gemini visual migration shell", () => {
       /--image-editor-canvas-grid-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 9%,\s*transparent\s*\);/,
     );
     expect(imageEditorContainerBlock).toMatch(
-      /--image-editor-canvas-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 96%,\s*var\(--gray\)\s*\);/,
+      /--image-editor-canvas-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--surface-soft\)\s*\);/,
+    );
+    expect(
+      imageEditorCanvasBackgroundTokens["--image-editor-canvas-background"],
+    ).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 92%, var(--surface-soft) )",
     );
     expect(imageEditorContainerBlock).toMatch(
       /--image-editor-canvas-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 12%,\s*transparent\s*\);/,
@@ -10761,7 +10792,14 @@ describe("Gemini visual migration shell", () => {
       /--image-editor-canvas-grid-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 7%,\s*transparent\s*\);/,
     );
     expect(darkImageEditorContainerBlock).toMatch(
-      /--image-editor-canvas-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+      /--image-editor-canvas-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--surface\)\s*\);/,
+    );
+    expect(
+      darkImageEditorCanvasBackgroundTokens[
+        "--image-editor-canvas-background"
+      ],
+    ).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 88%, var(--surface) )",
     );
     expect(darkImageEditorContainerBlock).toMatch(
       /--image-editor-canvas-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
@@ -10776,7 +10814,16 @@ describe("Gemini visual migration shell", () => {
       /--image-editor-panel-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 12%,\s*transparent\s*\);/,
     );
     expect(imageEditorAutoDarkMediaBlock).toMatch(
-      /--image-editor-canvas-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+      /--image-editor-canvas-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--surface\)\s*\);/,
+    );
+    expect(autoDarkImageEditorCanvasBackgroundTokens).toEqual(
+      darkImageEditorCanvasBackgroundTokens,
+    );
+    expect(imageEditorCanvasBackgroundValues.join("\n")).not.toContain(
+      "var(--gray)",
+    );
+    expect(imageEditorCanvasBackgroundValues.join("\n")).not.toContain(
+      "var(--white)",
     );
     expect(toolsContainerBlock).toMatch(/background:\s*var\(--surface-elevated\);/);
     expect(toolsContainerBlock).toMatch(

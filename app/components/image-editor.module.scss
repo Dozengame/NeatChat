@@ -70,8 +70,8 @@
   );
   --image-editor-canvas-background: color-mix(
     in srgb,
-    var(--surface-elevated) 96%,
-    var(--gray)
+    var(--surface-elevated) 92%,
+    var(--surface-soft)
   );
   --image-editor-canvas-border-color: color-mix(
     in srgb,
@@ -355,7 +355,7 @@
   --image-editor-canvas-background: color-mix(
     in srgb,
     var(--surface-elevated) 88%,
-    var(--white)
+    var(--surface)
   );
   --image-editor-canvas-border-color: color-mix(
     in srgb,
@@ -449,7 +449,7 @@
     --image-editor-canvas-background: color-mix(
       in srgb,
       var(--surface-elevated) 88%,
-      var(--white)
+      var(--surface)
     );
     --image-editor-canvas-border-color: color-mix(
       in srgb,
