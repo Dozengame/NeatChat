@@ -14089,6 +14089,10 @@ describe("Gemini visual migration shell", () => {
       globalFieldRootBlock,
       fieldTokenNames,
     );
+    const passwordTokenMap = readCustomProperties(
+      passwordContainerRootBlock,
+      fieldTokenNames,
+    );
     const darkFieldTokenMap = readCustomProperties(
       darkGlobalFieldBlock,
       fieldTokenNames,
@@ -14207,6 +14211,7 @@ describe("Gemini visual migration shell", () => {
 
     for (const tokenMap of [
       fieldTokenMap,
+      passwordTokenMap,
       darkFieldTokenMap,
       autoDarkFieldTokenMap,
       darkPasswordTokenMap,
@@ -14232,6 +14237,46 @@ describe("Gemini visual migration shell", () => {
     expect(darkSelectTokenMap).toEqual(autoDarkSelectTokenMap);
     expect(darkCheckboxTokenMap).toEqual(autoDarkCheckboxTokenMap);
     expect(darkRangeTokenMap).toEqual(autoDarkRangeTokenMap);
+    expect(fieldTokenMap["--global-field-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 90%, var(--surface-soft) )",
+    );
+    expect(passwordTokenMap["--global-field-background"]).toBe(
+      fieldTokenMap["--global-field-background"],
+    );
+    expect(selectTokenMap["--global-select-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 90%, var(--surface-soft) )",
+    );
+    expect(checkboxTokenMap["--global-checkbox-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 88%, var(--surface-soft) )",
+    );
+    expect(darkFieldTokenMap["--global-field-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 82%, var(--surface) )",
+    );
+    expect(darkPasswordTokenMap["--global-field-background"]).toBe(
+      darkFieldTokenMap["--global-field-background"],
+    );
+    expect(darkSelectTokenMap["--global-select-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 82%, var(--surface) )",
+    );
+    expect(darkCheckboxTokenMap["--global-checkbox-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 78%, var(--surface) )",
+    );
+    for (const surfaceTokenValue of [
+      fieldTokenMap["--global-field-background"],
+      passwordTokenMap["--global-field-background"],
+      selectTokenMap["--global-select-background"],
+      checkboxTokenMap["--global-checkbox-background"],
+      darkFieldTokenMap["--global-field-background"],
+      darkPasswordTokenMap["--global-field-background"],
+      darkSelectTokenMap["--global-select-background"],
+      darkCheckboxTokenMap["--global-checkbox-background"],
+      autoDarkFieldTokenMap["--global-field-background"],
+      autoDarkPasswordTokenMap["--global-field-background"],
+      autoDarkSelectTokenMap["--global-select-background"],
+      autoDarkCheckboxTokenMap["--global-checkbox-background"],
+    ]) {
+      expect(surfaceTokenValue).not.toMatch(/var\(--(?:gray|white)\)/);
+    }
 
     expect(globalFieldRootBlock).toMatch(/border-radius:\s*8px;/);
     expect(globalFieldRootBlock).toMatch(

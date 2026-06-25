@@ -235,7 +235,7 @@ select {
   --global-select-background: color-mix(
     in srgb,
     var(--surface-elevated) 90%,
-    var(--gray)
+    var(--surface-soft)
   );
   --global-select-border-color: color-mix(
     in srgb,
@@ -320,7 +320,7 @@ input[type="checkbox"] {
   --global-checkbox-background: color-mix(
     in srgb,
     var(--surface-elevated) 88%,
-    var(--gray)
+    var(--surface-soft)
   );
   --global-checkbox-border-color: color-mix(
     in srgb,
@@ -570,7 +570,7 @@ input[type="password"] {
   --global-field-background: color-mix(
     in srgb,
     var(--surface-elevated) 90%,
-    var(--gray)
+    var(--surface-soft)
   );
   --global-field-border-color: color-mix(
     in srgb,
@@ -1270,7 +1270,7 @@ pre {
   --global-field-background: color-mix(
     in srgb,
     var(--surface-elevated) 90%,
-    var(--gray)
+    var(--surface-soft)
   );
   --global-field-border-color: color-mix(
     in srgb,
