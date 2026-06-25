@@ -26,8 +26,18 @@
   );
   --realtime-control-background: color-mix(
     in srgb,
-    var(--surface-elevated) 92%,
-    var(--gray)
+    var(--surface-elevated) 90%,
+    var(--surface-soft)
+  );
+  --realtime-control-hover-background: color-mix(
+    in srgb,
+    var(--surface-soft) 82%,
+    var(--surface-elevated)
+  );
+  --realtime-control-active-background: color-mix(
+    in srgb,
+    var(--primary) 8%,
+    var(--surface-soft)
   );
   --realtime-control-border-color: color-mix(
     in srgb,
@@ -39,6 +49,11 @@
     var(--black-50) 8%,
     transparent
   );
+  --realtime-control-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 20%,
+    transparent
+  );
   --realtime-status-color: color-mix(
     in srgb,
     var(--black) 82%,
@@ -46,8 +61,8 @@
   );
   --realtime-status-background: color-mix(
     in srgb,
-    var(--surface-elevated) 86%,
-    transparent
+    var(--surface-elevated) 82%,
+    var(--surface-soft)
   );
 
   width: 100%;
@@ -135,6 +150,11 @@
   }
 
   .realtime-control-button {
+    --icon-button-color: var(--realtime-status-color);
+    --icon-button-hover-background: var(--realtime-control-hover-background);
+    --icon-button-border-color: var(--realtime-control-border-color);
+    --icon-button-hover-border-color: var(--realtime-control-border-color);
+
     width: 44px;
     height: 44px;
     min-width: 44px;
@@ -153,8 +173,25 @@
       box-shadow 0.16s ease,
       opacity 0.16s ease;
 
-    &:hover {
-      opacity: 0.82;
+    &:not(:disabled):hover {
+      background: var(--realtime-control-hover-background);
+      border-color: var(--realtime-control-border-color);
+      opacity: 1;
+    }
+
+    &:not(:disabled):active {
+      background: var(--realtime-control-active-background);
+      box-shadow: inset 0 0 0 1px var(--realtime-control-focus-shadow-color);
+    }
+
+    &:not(:disabled):focus-visible {
+      outline: var(--focus-ring);
+      outline-offset: 2px;
+      background: var(--realtime-control-hover-background);
+      border-color: var(--realtime-control-border-color);
+      box-shadow:
+        var(--focus-ring-shadow),
+        0 0 0 4px var(--realtime-control-focus-shadow-color);
     }
   }
 
@@ -202,8 +239,18 @@
   );
   --realtime-control-background: color-mix(
     in srgb,
-    var(--surface-elevated) 86%,
-    var(--white)
+    var(--surface-elevated) 84%,
+    var(--surface)
+  );
+  --realtime-control-hover-background: color-mix(
+    in srgb,
+    var(--surface-soft) 72%,
+    var(--surface)
+  );
+  --realtime-control-active-background: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    var(--surface)
   );
   --realtime-control-border-color: color-mix(
     in srgb,
@@ -215,6 +262,11 @@
     var(--black) 14%,
     transparent
   );
+  --realtime-control-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 24%,
+    transparent
+  );
   --realtime-status-color: color-mix(
     in srgb,
     var(--black) 88%,
@@ -222,8 +274,8 @@
   );
   --realtime-status-background: color-mix(
     in srgb,
-    var(--surface-elevated) 78%,
-    var(--white)
+    var(--surface-elevated) 74%,
+    var(--surface)
   );
 }
 
@@ -256,8 +308,18 @@
     );
     --realtime-control-background: color-mix(
       in srgb,
-      var(--surface-elevated) 86%,
-      var(--white)
+      var(--surface-elevated) 84%,
+      var(--surface)
+    );
+    --realtime-control-hover-background: color-mix(
+      in srgb,
+      var(--surface-soft) 72%,
+      var(--surface)
+    );
+    --realtime-control-active-background: color-mix(
+      in srgb,
+      var(--primary) 10%,
+      var(--surface)
     );
     --realtime-control-border-color: color-mix(
       in srgb,
@@ -269,6 +331,11 @@
       var(--black) 14%,
       transparent
     );
+    --realtime-control-focus-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 24%,
+      transparent
+    );
     --realtime-status-color: color-mix(
       in srgb,
       var(--black) 88%,
@@ -276,8 +343,8 @@
     );
     --realtime-status-background: color-mix(
       in srgb,
-      var(--surface-elevated) 78%,
-      var(--white)
+      var(--surface-elevated) 74%,
+      var(--surface)
     );
   }
 }

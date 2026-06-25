@@ -21901,6 +21901,18 @@ describe("Gemini visual migration shell", () => {
       rootBlock,
       ".realtime-control-button",
     );
+    const controlButtonHoverBlock = readCssBlock(
+      controlButtonBlock,
+      "&:not(:disabled):hover",
+    );
+    const controlButtonActiveBlock = readCssBlock(
+      controlButtonBlock,
+      "&:not(:disabled):active",
+    );
+    const controlButtonFocusBlock = readCssBlock(
+      controlButtonBlock,
+      "&:not(:disabled):focus-visible",
+    );
     const statusBlock = readCssBlock(rootBlock, ".icon-center");
     const darkBlock = readCssBlock(
       realtimeStyles,
@@ -21944,8 +21956,11 @@ describe("Gemini visual migration shell", () => {
       "--realtime-mic-shadow-color",
       "--realtime-mic-active-ring-color",
       "--realtime-control-background",
+      "--realtime-control-hover-background",
+      "--realtime-control-active-background",
       "--realtime-control-border-color",
       "--realtime-control-shadow-color",
+      "--realtime-control-focus-shadow-color",
       "--realtime-status-color",
       "--realtime-status-background",
     ];
@@ -21997,6 +22012,17 @@ describe("Gemini visual migration shell", () => {
       darkVoicePrintBlock,
       autoDarkVoicePrintBlock,
       mobileVoicePrintBlock,
+    ].join("\n");
+    const realtimeControlPaintScope = [
+      rootDeclarations,
+      controlButtonBlock,
+      controlButtonHoverBlock,
+      controlButtonActiveBlock,
+      controlButtonFocusBlock,
+      bottomIconsBlock,
+      statusBlock,
+      darkBlock,
+      autoDarkBlock,
     ].join("\n");
 
     expect(realtimeChat).toContain(
@@ -22079,13 +22105,34 @@ describe("Gemini visual migration shell", () => {
       /--realtime-mic-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--primary\) 8%\s*\);/,
     );
     expect(rootDeclarations).toMatch(
-      /--realtime-control-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--gray\)\s*\);/,
+      /--realtime-control-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--surface-soft\)\s*\);/,
+    );
+    expect(rootDeclarations).toMatch(
+      /--realtime-control-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 82%,\s*var\(--surface-elevated\)\s*\);/,
+    );
+    expect(rootDeclarations).toMatch(
+      /--realtime-control-active-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 8%,\s*var\(--surface-soft\)\s*\);/,
+    );
+    expect(rootDeclarations).toMatch(
+      /--realtime-status-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 82%,\s*var\(--surface-soft\)\s*\);/,
     );
     expect(darkBlock).toMatch(
       /--realtime-background:\s*color-mix\(\s*in srgb,\s*var\(--surface\) 92%,\s*var\(--black\) 4%\s*\);/,
     );
     expect(darkBlock).toMatch(
       /--realtime-mic-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--primary\) 12%\s*\);/,
+    );
+    expect(darkBlock).toMatch(
+      /--realtime-control-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--surface\)\s*\);/,
+    );
+    expect(darkBlock).toMatch(
+      /--realtime-control-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 72%,\s*var\(--surface\)\s*\);/,
+    );
+    expect(darkBlock).toMatch(
+      /--realtime-control-active-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 10%,\s*var\(--surface\)\s*\);/,
+    );
+    expect(darkBlock).toMatch(
+      /--realtime-status-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 74%,\s*var\(--surface\)\s*\);/,
     );
     expect(rootDeclarations).toMatch(/background:\s*var\(--realtime-background\);/);
     expect(rootDeclarations).toMatch(/gap:\s*28px;/);
@@ -22126,6 +22173,35 @@ describe("Gemini visual migration shell", () => {
     expect(controlButtonBlock).toMatch(/min-height:\s*44px;/);
     expect(controlButtonBlock).toMatch(/padding:\s*0;/);
     expect(controlButtonBlock).toMatch(/border-radius:\s*8px;/);
+    expect(controlButtonBlock).toMatch(
+      /--icon-button-color:\s*var\(--realtime-status-color\);/,
+    );
+    expect(controlButtonBlock).toMatch(
+      /--icon-button-hover-background:\s*var\(--realtime-control-hover-background\);/,
+    );
+    expect(controlButtonBlock).toMatch(
+      /--icon-button-border-color:\s*var\(--realtime-control-border-color\);/,
+    );
+    expect(controlButtonBlock).toContain("&:not(:disabled):hover");
+    expect(controlButtonBlock).toContain("&:not(:disabled):active");
+    expect(controlButtonBlock).toContain("&:not(:disabled):focus-visible");
+    expect(controlButtonBlock).not.toContain("&:hover");
+    expect(controlButtonBlock).not.toContain("&:active");
+    expect(controlButtonBlock).not.toContain("&:focus-visible");
+    expect(controlButtonHoverBlock).toMatch(
+      /background:\s*var\(--realtime-control-hover-background\);/,
+    );
+    expect(controlButtonHoverBlock).toMatch(/opacity:\s*1;/);
+    expect(controlButtonActiveBlock).toMatch(
+      /background:\s*var\(--realtime-control-active-background\);/,
+    );
+    expect(controlButtonActiveBlock).toMatch(
+      /box-shadow:\s*inset 0 0 0 1px var\(--realtime-control-focus-shadow-color\);/,
+    );
+    expect(controlButtonFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(controlButtonFocusBlock).toMatch(
+      /box-shadow:\s*var\(--focus-ring-shadow\),\s*0 0 0 4px var\(--realtime-control-focus-shadow-color\);/,
+    );
     expect(statusBlock).toMatch(/min-width:\s*0;/);
     expect(statusBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(statusBlock).toMatch(/color:\s*var\(--realtime-status-color\);/);
@@ -22187,6 +22263,8 @@ describe("Gemini visual migration shell", () => {
     expect(realtimePaintScope).not.toContain("rgba(100, 180, 255");
     expect(realtimePaintScope).not.toContain("rgba(140, 200, 255");
     expect(realtimePaintScope).not.toContain("rgba(180, 220, 255");
+    expect(realtimeControlPaintScope).not.toContain("var(--gray)");
+    expect(realtimeControlPaintScope).not.toContain("var(--white)");
   });
 
   test("keeps shared InputRange aligned with Gemini utility controls", () => {
