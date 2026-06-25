@@ -16659,7 +16659,18 @@ describe("Gemini visual migration shell", () => {
     expect(Object.values(autoDarkMessageMetaTokens).every(Boolean)).toBeTruthy();
     expect(
       lightMessageMetaTokens["--chat-message-assistant-background"],
-    ).toContain("var(--surface-elevated)");
+    ).toBe(
+      "color-mix(in srgb, var(--surface-elevated) 94%, var(--surface-soft))",
+    );
+    [
+      lightMessageMetaTokens,
+      darkMessageMetaTokens,
+      autoDarkMessageMetaTokens,
+    ].forEach((messageMetaTokens) => {
+      expect(
+        messageMetaTokens["--chat-message-assistant-background"],
+      ).not.toMatch(/var\(--(?:gray|white)\)/);
+    });
     expect(
       darkMessageMetaTokens["--chat-message-assistant-background"],
     ).toContain("var(--surface-soft)");
