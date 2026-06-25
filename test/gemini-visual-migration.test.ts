@@ -11319,6 +11319,10 @@ describe("Gemini visual migration shell", () => {
       "--sd-output-status-action-hover-border-color",
       "--sd-output-status-action-focus-shadow-color",
     ];
+    const shadowTokenNames = [
+      "--sd-output-thumb-shadow-color",
+      "--sd-output-card-shadow-color",
+    ];
     const lightStatusTokens = readCustomProperties(
       listRootDeclarations,
       statusTokenNames,
@@ -11330,6 +11334,18 @@ describe("Gemini visual migration shell", () => {
     const autoDarkStatusTokens = readCustomProperties(
       autoDarkListBlock,
       statusTokenNames,
+    );
+    const lightShadowTokens = readCustomProperties(
+      listRootDeclarations,
+      shadowTokenNames,
+    );
+    const darkShadowTokens = readCustomProperties(
+      darkListBlock,
+      shadowTokenNames,
+    );
+    const autoDarkShadowTokens = readCustomProperties(
+      autoDarkListBlock,
+      shadowTokenNames,
     );
     const mobileListBlock = readCssBlock(
       readCssBlock(sdStyles, "@media only screen and (max-width: 600px)"),
@@ -11407,6 +11423,30 @@ describe("Gemini visual migration shell", () => {
     expect(Object.values(darkStatusTokens).every(Boolean)).toBeTruthy();
     expect(Object.values(autoDarkStatusTokens).every(Boolean)).toBeTruthy();
     expect(autoDarkStatusTokens).toEqual(darkStatusTokens);
+    expect(Object.values(lightShadowTokens).every(Boolean)).toBeTruthy();
+    expect(Object.values(darkShadowTokens).every(Boolean)).toBeTruthy();
+    expect(Object.values(autoDarkShadowTokens).every(Boolean)).toBeTruthy();
+    expect(autoDarkShadowTokens).toEqual(darkShadowTokens);
+    expect(darkShadowTokens["--sd-output-thumb-shadow-color"]).toContain(
+      "var(--surface)",
+    );
+    expect(darkShadowTokens["--sd-output-card-shadow-color"]).toContain(
+      "var(--surface)",
+    );
+    expect(autoDarkShadowTokens["--sd-output-thumb-shadow-color"]).toContain(
+      "var(--surface)",
+    );
+    expect(autoDarkShadowTokens["--sd-output-card-shadow-color"]).toContain(
+      "var(--surface)",
+    );
+    expect(
+      [
+        darkShadowTokens["--sd-output-thumb-shadow-color"],
+        darkShadowTokens["--sd-output-card-shadow-color"],
+        autoDarkShadowTokens["--sd-output-thumb-shadow-color"],
+        autoDarkShadowTokens["--sd-output-card-shadow-color"],
+      ].join("\n"),
+    ).not.toContain("var(--gray)");
     expect(lightStatusTokens["--sd-output-status-success-color"]).toMatch(
       /color-mix\(\s*in srgb,\s*rgb\(22,\s*128,\s*72\)/,
     );

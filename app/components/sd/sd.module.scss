@@ -389,7 +389,7 @@
   --sd-output-thumb-color: color-mix(in srgb, var(--black) 72%, transparent);
   --sd-output-thumb-shadow-color: color-mix(
     in srgb,
-    var(--gray) 28%,
+    var(--surface) 32%,
     transparent
   );
   --sd-output-card-background: color-mix(
@@ -404,7 +404,7 @@
   );
   --sd-output-card-shadow-color: color-mix(
     in srgb,
-    var(--gray) 18%,
+    var(--surface) 22%,
     transparent
   );
   --sd-output-title-color: var(--black);
@@ -541,7 +541,7 @@
     --sd-output-thumb-color: color-mix(in srgb, var(--black) 72%, transparent);
     --sd-output-thumb-shadow-color: color-mix(
       in srgb,
-      var(--gray) 28%,
+      var(--surface) 32%,
       transparent
     );
     --sd-output-card-background: color-mix(
@@ -556,7 +556,7 @@
     );
     --sd-output-card-shadow-color: color-mix(
       in srgb,
-      var(--gray) 18%,
+      var(--surface) 22%,
       transparent
     );
     --sd-output-title-color: var(--black);
