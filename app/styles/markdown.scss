@@ -626,6 +626,16 @@ summary,
     var(--black-50) 12%,
     transparent
   );
+  --markdown-table-row-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 58%,
+    var(--surface)
+  );
+  --markdown-table-row-alt-background: color-mix(
+    in srgb,
+    var(--surface-soft) 54%,
+    var(--surface)
+  );
   --markdown-table-row-hover-background: color-mix(
     in srgb,
     var(--primary) 7%,
@@ -1348,6 +1358,16 @@ summary,
     in srgb,
     var(--black) 10%,
     transparent
+  );
+  --markdown-table-row-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 52%,
+    var(--surface)
+  );
+  --markdown-table-row-alt-background: color-mix(
+    in srgb,
+    var(--surface-soft) 46%,
+    var(--surface)
   );
   --markdown-table-row-hover-background: color-mix(
     in srgb,
@@ -2993,7 +3013,7 @@ summary,
 }
 
 .markdown-body table tr {
-  background-color: var(--color-canvas-default);
+  background-color: var(--markdown-table-row-background);
   border-top: none;
 }
 
@@ -3002,7 +3022,7 @@ summary,
 }
 
 .markdown-body table tr:nth-child(2n):not(:hover) {
-  background-color: transparent;
+  background-color: var(--markdown-table-row-alt-background);
 }
 
 .markdown-body table img {

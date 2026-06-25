@@ -9361,6 +9361,7 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body table th,\n.markdown-body table td",
     );
+    const tableRowBlock = readCssBlock(markdownStyles, ".markdown-body table tr");
     const tableRowHoverBlock = readCssBlock(
       markdownStyles,
       ".markdown-body table tr:hover",
@@ -9379,7 +9380,9 @@ describe("Gemini visual migration shell", () => {
       tableFadeEndBlock,
       tableHeaderBlock,
       tableCellBlock,
+      tableRowBlock,
       tableRowHoverBlock,
+      tableZebraBlock,
     ].join("\n");
 
     const tableTokenNames = [
@@ -9388,6 +9391,8 @@ describe("Gemini visual migration shell", () => {
       "--markdown-table-edge-surface",
       "--markdown-table-header-background",
       "--markdown-table-cell-border-color",
+      "--markdown-table-row-background",
+      "--markdown-table-row-alt-background",
       "--markdown-table-row-hover-background",
     ];
 
@@ -9403,6 +9408,12 @@ describe("Gemini visual migration shell", () => {
       /--markdown-table-cell-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
     );
     expect(lightMixinBlock).toMatch(
+      /--markdown-table-row-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 58%,\s*var\(--surface\)\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
+      /--markdown-table-row-alt-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 54%,\s*var\(--surface\)\s*\);/,
+    );
+    expect(lightMixinBlock).toMatch(
       /--markdown-table-row-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 7%,\s*var\(--surface-elevated\)\s*\);/,
     );
     expect(darkMixinBlock).toMatch(
@@ -9410,6 +9421,12 @@ describe("Gemini visual migration shell", () => {
     );
     expect(darkMixinBlock).toMatch(
       /--markdown-table-cell-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-table-row-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 52%,\s*var\(--surface\)\s*\);/,
+    );
+    expect(darkMixinBlock).toMatch(
+      /--markdown-table-row-alt-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-soft\) 46%,\s*var\(--surface\)\s*\);/,
     );
     expect(darkMixinBlock).toMatch(
       /--markdown-table-row-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 12%,\s*var\(--surface-soft\)\s*\);/,
@@ -9475,16 +9492,34 @@ describe("Gemini visual migration shell", () => {
     expect(tableCellBlock).toMatch(
       /border-bottom:\s*1px solid var\(--markdown-table-cell-border-color\);/,
     );
+    expect(tableRowBlock).toMatch(
+      /background-color:\s*var\(--markdown-table-row-background\);/,
+    );
+    expect(tableRowBlock).not.toContain("var(--color-canvas-default)");
     expect(tableRowHoverBlock).toMatch(
       /background-color:\s*var\(--markdown-table-row-hover-background\);/,
     );
-    expect(tableZebraBlock).toMatch(/background-color:\s*transparent;/);
+    expect(tableZebraBlock).toMatch(
+      /background-color:\s*var\(--markdown-table-row-alt-background\);/,
+    );
+    expect(tableZebraBlock).not.toMatch(/background-color:\s*transparent;/);
     expect(markdownStyles).not.toMatch(
       /\.markdown-body table tr:nth-child\(2n\)\s*\{/,
     );
     expect(tableToneScope).not.toMatch(
-      /rgba\(60,\s*64,\s*67|rgba\(255,\s*255,\s*255|var\(--color-border-muted\)/,
+      /rgba\(60,\s*64,\s*67|rgba\(255,\s*255,\s*255|var\(--color-border-muted\)|var\(--color-canvas-default\)/,
     );
+    expect(
+      [
+        lightMixinBlock,
+        darkMixinBlock,
+      ]
+        .join("\n")
+        .match(
+          /--markdown-table-row(?:-alt)?-background:[\s\S]*?;/g,
+        )
+        ?.join("\n"),
+    ).not.toContain("transparent");
   });
 
   test("keeps Gemini-style LaTeX display math bounded", () => {
