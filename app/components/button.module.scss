@@ -110,7 +110,7 @@
 :global(.dark) .icon-button {
   --icon-button-border-color: color-mix(
     in srgb,
-    var(--white) 12%,
+    var(--black) 10%,
     transparent
   );
   --icon-button-hover-border-color: color-mix(
@@ -149,7 +149,7 @@
   :global(body:not(.light)) .icon-button {
     --icon-button-border-color: color-mix(
       in srgb,
-      var(--white) 12%,
+      var(--black) 10%,
       transparent
     );
     --icon-button-hover-border-color: color-mix(

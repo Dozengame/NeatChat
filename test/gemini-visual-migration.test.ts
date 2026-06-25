@@ -3944,6 +3944,19 @@ describe("Gemini visual migration shell", () => {
       buttonStyles.slice(autoDarkIconButtonMediaIndex),
       autoDarkIconButtonSelector,
     );
+    const iconButtonBorderTokenNames = ["--icon-button-border-color"];
+    const iconButtonBorderTokenMap = readCustomProperties(
+      iconButtonRootBlock,
+      iconButtonBorderTokenNames,
+    );
+    const darkIconButtonBorderTokenMap = readCustomProperties(
+      darkIconButtonBlock,
+      iconButtonBorderTokenNames,
+    );
+    const autoDarkIconButtonBorderTokenMap = readCustomProperties(
+      autoDarkIconButtonBlock,
+      iconButtonBorderTokenNames,
+    );
     const sharedButtonPaintScope = [
       iconButtonRootBlock,
       primaryBlock,
@@ -4008,7 +4021,23 @@ describe("Gemini visual migration shell", () => {
     expect(iconButtonRootBlock).toMatch(
       /--icon-button-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
     );
+    expect(iconButtonBorderTokenMap["--icon-button-border-color"]).toBe(
+      "color-mix( in srgb, var(--black) 10%, transparent )",
+    );
     expect(iconButtonRootBlock).toMatch(/--icon-button-radius:\s*8px;/);
+    expect(darkIconButtonBorderTokenMap).toEqual(
+      autoDarkIconButtonBorderTokenMap,
+    );
+    expect(darkIconButtonBorderTokenMap["--icon-button-border-color"]).toBe(
+      "color-mix( in srgb, var(--black) 10%, transparent )",
+    );
+    for (const tokenValue of [
+      iconButtonBorderTokenMap["--icon-button-border-color"],
+      darkIconButtonBorderTokenMap["--icon-button-border-color"],
+      autoDarkIconButtonBorderTokenMap["--icon-button-border-color"],
+    ]) {
+      expect(tokenValue).not.toMatch(/var\(--(?:white|gray)\)/);
+    }
     expect(darkIconButtonBlock).toMatch(
       /--icon-button-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 30%,\s*transparent\s*\);/,
     );
@@ -4028,7 +4057,7 @@ describe("Gemini visual migration shell", () => {
       /--icon-button-danger-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--icon-button-danger-ink\) 60%,\s*transparent\s*\);/,
     );
     expect(darkIconButtonBlock).toMatch(
-      /--icon-button-border-color:\s*color-mix\(\s*in srgb,\s*var\(--white\) 12%,\s*transparent\s*\);/,
+      /--icon-button-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
     );
     expect(autoDarkIconButtonSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkIconButtonMediaIndex).toBeGreaterThan(-1);
@@ -4051,7 +4080,7 @@ describe("Gemini visual migration shell", () => {
       /--icon-button-danger-hover-border-color:\s*color-mix\(\s*in srgb,\s*var\(--icon-button-danger-ink\) 60%,\s*transparent\s*\);/,
     );
     expect(autoDarkIconButtonBlock).toMatch(
-      /--icon-button-border-color:\s*color-mix\(\s*in srgb,\s*var\(--white\) 12%,\s*transparent\s*\);/,
+      /--icon-button-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
     );
 
     expect(iconButtonRootBlock).toMatch(/color:\s*var\(--icon-button-color\);/);
