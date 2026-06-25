@@ -14562,6 +14562,29 @@ describe("Gemini visual migration shell", () => {
       toastShowBlock,
       toastHideBlock,
     ].join("\n");
+    const uiLibModalInputTokenNames = [
+      "--ui-lib-modal-input-background",
+      "--ui-lib-modal-input-border-color",
+      "--ui-lib-modal-input-color",
+      "--ui-lib-modal-input-placeholder-color",
+      "--ui-lib-modal-input-shadow-color",
+      "--ui-lib-modal-input-inner-shadow-color",
+      "--ui-lib-modal-input-focus-border-color",
+      "--ui-lib-modal-input-focus-shadow-color",
+      "--ui-lib-modal-input-selection-background",
+    ];
+    const uiLibModalInputTokenMap = readCustomProperties(
+      sharedSurfaceBlock,
+      uiLibModalInputTokenNames,
+    );
+    const darkUiLibModalInputTokenMap = readCustomProperties(
+      darkSharedSurfaceBlock,
+      uiLibModalInputTokenNames,
+    );
+    const autoDarkUiLibModalInputTokenMap = readCustomProperties(
+      autoDarkSharedSurfaceBlock,
+      uiLibModalInputTokenNames,
+    );
 
     expect(uiLibComponents).toContain("export function Modal");
     expect(sharedSurfaceSelector).toContain(".list-item");
@@ -14612,7 +14635,7 @@ describe("Gemini visual migration shell", () => {
       /--ui-lib-selected-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 18%,\s*transparent\);/,
     );
     expect(sharedSurfaceBlock).toMatch(
-      /--ui-lib-modal-input-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--gray\)\);/,
+      /--ui-lib-modal-input-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--surface-soft\)\);/,
     );
     expect(sharedSurfaceBlock).toMatch(
       /--ui-lib-modal-input-border-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 14%,\s*transparent\);/,
@@ -14625,6 +14648,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(sharedSurfaceBlock).toMatch(
       /--ui-lib-modal-input-focus-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*transparent\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-input-inner-shadow-color:\s*color-mix\(in srgb,\s*var\(--surface\) 58%,\s*transparent\);/,
     );
     expect(darkSharedSurfaceBlock).toMatch(
       /--ui-lib-overlay-background:\s*color-mix\(in srgb,\s*var\(--ui-lib-shadow-ink\) 54%,\s*transparent\);/,
@@ -14642,13 +14668,16 @@ describe("Gemini visual migration shell", () => {
       /--ui-lib-list-hover-background:\s*color-mix\(in srgb,\s*var\(--black\) 8%,\s*transparent\);/,
     );
     expect(darkSharedSurfaceBlock).toMatch(
-      /--ui-lib-modal-input-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\);/,
+      /--ui-lib-modal-input-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\);/,
     );
     expect(darkSharedSurfaceBlock).toMatch(
       /--ui-lib-modal-input-placeholder-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 78%,\s*transparent\);/,
     );
     expect(darkSharedSurfaceBlock).toMatch(
       /--ui-lib-modal-input-focus-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 22%,\s*transparent\);/,
+    );
+    expect(darkSharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-input-inner-shadow-color:\s*color-mix\(in srgb,\s*var\(--surface\) 18%,\s*transparent\);/,
     );
     expect(autoDarkSharedSurfaceSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkSharedSurfaceMediaIndex).toBeGreaterThan(-1);
@@ -14662,11 +14691,47 @@ describe("Gemini visual migration shell", () => {
       /--ui-lib-divider-color:\s*color-mix\(in srgb,\s*var\(--black\) 12%,\s*transparent\);/,
     );
     expect(autoDarkSharedSurfaceBlock).toMatch(
-      /--ui-lib-modal-input-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\);/,
+      /--ui-lib-modal-input-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\);/,
     );
     expect(autoDarkSharedSurfaceBlock).toMatch(
       /--ui-lib-modal-input-focus-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 22%,\s*transparent\);/,
     );
+    expect(autoDarkSharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-input-inner-shadow-color:\s*color-mix\(in srgb,\s*var\(--surface\) 18%,\s*transparent\);/,
+    );
+    expect(Object.values(uiLibModalInputTokenMap)).not.toContain("");
+    expect(Object.values(darkUiLibModalInputTokenMap)).not.toContain("");
+    expect(Object.values(autoDarkUiLibModalInputTokenMap)).not.toContain("");
+    expect(autoDarkUiLibModalInputTokenMap).toEqual(
+      darkUiLibModalInputTokenMap,
+    );
+    expect(uiLibModalInputTokenMap["--ui-lib-modal-input-background"]).toBe(
+      "color-mix(in srgb, var(--surface-elevated) 88%, var(--surface-soft))",
+    );
+    expect(
+      uiLibModalInputTokenMap["--ui-lib-modal-input-inner-shadow-color"],
+    ).toBe("color-mix(in srgb, var(--surface) 58%, transparent)");
+    expect(
+      darkUiLibModalInputTokenMap["--ui-lib-modal-input-background"],
+    ).toBe("color-mix(in srgb, var(--surface-elevated) 86%, var(--surface))");
+    expect(
+      darkUiLibModalInputTokenMap[
+        "--ui-lib-modal-input-inner-shadow-color"
+      ],
+    ).toBe("color-mix(in srgb, var(--surface) 18%, transparent)");
+    for (const tokenValue of [
+      uiLibModalInputTokenMap["--ui-lib-modal-input-background"],
+      uiLibModalInputTokenMap["--ui-lib-modal-input-inner-shadow-color"],
+      darkUiLibModalInputTokenMap["--ui-lib-modal-input-background"],
+      darkUiLibModalInputTokenMap["--ui-lib-modal-input-inner-shadow-color"],
+      autoDarkUiLibModalInputTokenMap["--ui-lib-modal-input-background"],
+      autoDarkUiLibModalInputTokenMap[
+        "--ui-lib-modal-input-inner-shadow-color"
+      ],
+    ]) {
+      expect(tokenValue).not.toContain("var(--white)");
+      expect(tokenValue).not.toContain("var(--gray)");
+    }
 
     expect(cardBlock).toMatch(/background-color:\s*var\(--ui-lib-surface\);/);
     expect(cardBlock).toMatch(/border:\s*1px solid var\(--ui-lib-border-color\);/);
