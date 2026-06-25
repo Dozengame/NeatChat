@@ -109,12 +109,12 @@
   --copy-success-color: color-mix(in srgb, rgb(129, 201, 149) 96%, transparent);
   --copy-success-shadow-color: color-mix(in srgb, var(--surface) 24%, transparent);
   --copy-success-accent-shadow-color: color-mix(in srgb, rgb(129, 201, 149) 12%, transparent);
-  --markdown-code-copy-button-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-  --markdown-code-copy-button-background: color-mix(in srgb, var(--black) 10%, transparent);
-  --markdown-code-copy-button-color: color-mix(in srgb, var(--black) 78%, transparent);
-  --markdown-code-copy-button-hover-border-color: color-mix(in srgb, var(--black) 12%, transparent);
-  --markdown-code-copy-button-hover-background: color-mix(in srgb, var(--black) 16%, transparent);
-  --markdown-code-copy-button-hover-color: color-mix(in srgb, var(--black) 96%, transparent);
+  --markdown-code-copy-button-border-color: color-mix(in srgb, var(--black) 14%, transparent);
+  --markdown-code-copy-button-background: color-mix(in srgb, var(--black) 16%, transparent);
+  --markdown-code-copy-button-color: color-mix(in srgb, var(--black) 88%, transparent);
+  --markdown-code-copy-button-hover-border-color: color-mix(in srgb, var(--black) 20%, transparent);
+  --markdown-code-copy-button-hover-background: color-mix(in srgb, var(--black) 22%, transparent);
+  --markdown-code-copy-button-hover-color: color-mix(in srgb, var(--black) 98%, transparent);
   --markdown-code-copy-success-border-color: var(--copy-success-border-color);
   --markdown-code-copy-success-background: var(--copy-success-background);
   --markdown-code-copy-success-color: var(--copy-success-color);
@@ -125,7 +125,7 @@
   --focus-ring-shadow: 0 0 0 4px rgba(138, 180, 248, 0.18);
 
   div:not(.no-dark) > svg {
-    filter: invert(0.5);
+    filter: invert(0.72);
   }
 }
 

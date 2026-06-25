@@ -2635,6 +2635,9 @@ describe("Gemini visual migration shell", () => {
     expect(globalDarkMixinBlock).toMatch(
       /--copy-success-color:\s*color-mix\(\s*in srgb,\s*rgb\(129,\s*201,\s*149\) 96%,\s*transparent\s*\);/,
     );
+    expect(globalDarkMixinBlock).toMatch(
+      /div:not\(\.no-dark\)\s*>\s*svg\s*\{[\s\S]*filter:\s*invert\(0\.72\);/,
+    );
     expect(messageActionRailBlock).toMatch(
       /--message-action-copy-success-background:\s*var\(--copy-success-background\);/,
     );
@@ -8219,6 +8222,24 @@ describe("Gemini visual migration shell", () => {
     expect(globalDarkMixinBlock).toMatch(
       /--markdown-code-copy-success-accent-shadow-color:\s*var\(--copy-success-accent-shadow-color\);/,
     );
+    expect(globalDarkMixinBlock).toMatch(
+      /--markdown-code-copy-button-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 14%,\s*transparent\);/,
+    );
+    expect(globalDarkMixinBlock).toMatch(
+      /--markdown-code-copy-button-background:\s*color-mix\(in srgb,\s*var\(--black\) 16%,\s*transparent\);/,
+    );
+    expect(globalDarkMixinBlock).toMatch(
+      /--markdown-code-copy-button-color:\s*color-mix\(in srgb,\s*var\(--black\) 88%,\s*transparent\);/,
+    );
+    expect(globalDarkMixinBlock).toMatch(
+      /--markdown-code-copy-button-hover-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 20%,\s*transparent\);/,
+    );
+    expect(globalDarkMixinBlock).toMatch(
+      /--markdown-code-copy-button-hover-background:\s*color-mix\(in srgb,\s*var\(--black\) 22%,\s*transparent\);/,
+    );
+    expect(globalDarkMixinBlock).toMatch(
+      /--markdown-code-copy-button-hover-color:\s*color-mix\(in srgb,\s*var\(--black\) 98%,\s*transparent\);/,
+    );
     expect(globalAutoDarkRootBlock).toMatch(/@include dark;/);
     for (const tokenName of codeCopyButtonTokenNames) {
       expect(lightCodeCopyButtonTokens[tokenName]).not.toBe("");
@@ -8268,7 +8289,9 @@ describe("Gemini visual migration shell", () => {
       /padding:\s*var\(--markdown-code-block-padding-y\)\s*var\(--markdown-code-action-rail-width\)\s*var\(--markdown-code-block-padding-y\)\s*var\(--markdown-code-block-padding-start\);/,
     );
     expect(preBlock).toMatch(/box-sizing:\s*border-box;/);
-    expect(preBlock).toMatch(/max-width:\s*100%;/);
+    expect(preBlock).toMatch(
+      /max-width:\s*var\(--markdown-code-block-max-width\);/,
+    );
     expect(preBlock).toMatch(/min-width:\s*0;/);
     expect(preBlock).toMatch(/overscroll-behavior-x:\s*contain;/);
     expect(preBlock).toMatch(/scrollbar-width:\s*thin;/);
@@ -8895,7 +8918,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(autoDarkRootBlock).toMatch(/@include dark;/);
     expect(imageFrameBlock).toMatch(/display:\s*inline-flex;/);
-    expect(imageFrameBlock).toMatch(/max-width:\s*min\(100%, 760px\);/);
+    expect(imageFrameBlock).toMatch(
+      /max-width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+    );
     expect(imageFrameBlock).toMatch(/min-width:\s*0;/);
     expect(imageFrameBlock).toMatch(/box-sizing:\s*border-box;/);
     expect(imageFrameBlock).toMatch(/overflow:\s*hidden;/);
@@ -9133,7 +9158,9 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkRootBlock).toMatch(/@include dark;/);
 
     expect(mediaFrameBlock).toMatch(/display:\s*block;/);
-    expect(mediaFrameBlock).toMatch(/width:\s*min\(100%, 720px\);/);
+    expect(mediaFrameBlock).toMatch(
+      /width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+    );
     expect(mediaFrameBlock).toMatch(/min-width:\s*0;/);
     expect(mediaFrameBlock).toMatch(/max-width:\s*100%;/);
     expect(mediaFrameBlock).toMatch(/box-sizing:\s*border-box;/);
@@ -9162,7 +9189,9 @@ describe("Gemini visual migration shell", () => {
     expect(mediaFrameBlock).toMatch(
       /&:focus-within[\s\S]*box-shadow:[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 10px 26px var\(--markdown-media-frame-hover-shadow-color\);/,
     );
-    expect(mediaAudioBlock).toMatch(/width:\s*min\(100%, 560px\);/);
+    expect(mediaAudioBlock).toMatch(
+      /width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+    );
     expect(mediaPlayerBlock).toMatch(/display:\s*block;/);
     expect(mediaPlayerBlock).toMatch(/width:\s*100%;/);
     expect(mediaPlayerBlock).toMatch(/min-width:\s*0;/);
@@ -9330,7 +9359,9 @@ describe("Gemini visual migration shell", () => {
     expect(mermaidResetBlock).toMatch(/appearance:\s*none;/);
     expect(mermaidResetBlock).toMatch(/font:\s*inherit;/);
     expect(mermaidFrameBlock).toMatch(/display:\s*block;/);
-    expect(mermaidFrameBlock).toMatch(/width:\s*min\(100%, 760px\);/);
+    expect(mermaidFrameBlock).toMatch(
+      /width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+    );
     expect(mermaidFrameBlock).toMatch(/max-width:\s*100%;/);
     expect(mermaidFrameBlock).toMatch(/min-width:\s*0;/);
     expect(mermaidFrameBlock).toMatch(/box-sizing:\s*border-box;/);
@@ -9368,7 +9399,9 @@ describe("Gemini visual migration shell", () => {
     );
 
     expect(mermaidFallbackBlock).toMatch(/display:\s*flex;/);
-    expect(mermaidFallbackBlock).toMatch(/width:\s*min\(100%, 760px\);/);
+    expect(mermaidFallbackBlock).toMatch(
+      /width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+    );
     expect(mermaidFallbackBlock).toMatch(/max-width:\s*100%;/);
     expect(mermaidFallbackBlock).toMatch(/min-width:\s*0;/);
     expect(mermaidFallbackBlock).toMatch(/box-sizing:\s*border-box;/);
@@ -9987,8 +10020,12 @@ describe("Gemini visual migration shell", () => {
       /background:\s*var\(--markdown-table-shell-background\);/,
     );
     expect(tableShellBlock).toMatch(/overflow:\s*hidden;/);
-    expect(tableShellSpacingBlock).toMatch(/margin-top:\s*0;/);
-    expect(tableShellSpacingBlock).toMatch(/margin-bottom:\s*16px;/);
+    expect(tableShellBlock).toMatch(
+      /max-width:\s*var\(--markdown-table-shell-max-width\);/,
+    );
+    expect(tableShellSpacingBlock).toMatch(
+      /margin:\s*0 0 var\(--markdown-block-gap\);/,
+    );
     expect(tableViewportBlock).toMatch(/overflow-x:\s*auto;/);
     expect(tableViewportBlock).toMatch(/overflow-y:\s*hidden;/);
     expect(tableViewportBlock).toMatch(/overscroll-behavior-x:\s*contain;/);
@@ -10500,7 +10537,9 @@ describe("Gemini visual migration shell", () => {
     expect(darkDetailsBlockquoteBlock).toMatch(/box-shadow:\s*none;/);
     expect(mobileBlockquoteBlock).toMatch(/padding:\s*8px 10px;/);
     expect(mobileBlockquoteBlock).toMatch(/border-radius:\s*8px;/);
-    expect(mobileBlockquoteBlock).toMatch(/line-height:\s*1\.62;/);
+    expect(mobileBlockquoteBlock).toMatch(
+      /line-height:\s*var\(--markdown-prose-line-height\);/,
+    );
     expect(mobileBlockquoteBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(narrowBlockquoteBlock).toMatch(/padding:\s*8px 9px;/);
     expect(blockquoteToneScope).not.toMatch(
@@ -10799,9 +10838,15 @@ describe("Gemini visual migration shell", () => {
     expect(darkListMarkerTokens[listMarkerTokenName]).toContain("var(--");
     expect(autoDarkRootBlock).toMatch(/@include dark;/);
 
-    expect(listBlock).toMatch(/padding-left:\s*1\.7em;/);
-    expect(listBlock).toMatch(/line-height:\s*1\.65;/);
-    expect(listBlock).toMatch(/margin-bottom:\s*12px;/);
+    expect(listBlock).toMatch(
+      /padding-left:\s*var\(--markdown-list-indent\);/,
+    );
+    expect(listBlock).toMatch(
+      /line-height:\s*var\(--markdown-prose-line-height\);/,
+    );
+    expect(listBlock).toMatch(
+      /margin-bottom:\s*var\(--markdown-block-gap\);/,
+    );
     expect(listItemBlock).toMatch(/padding-left:\s*0\.16em;/);
     expect(listItemBlock).toMatch(/line-height:\s*inherit;/);
     expect(markerBlock).toMatch(
@@ -10815,16 +10860,28 @@ describe("Gemini visual migration shell", () => {
       /(?:\brgba?\(|\bhsla?\(|#[\da-fA-F]{3,8}|color-mix\()/,
     );
     expect(listItemParagraphBlock).toMatch(/margin-top:\s*16px;/);
-    expect(siblingItemBlock).toMatch(/margin-top:\s*0\.38em;/);
+    expect(siblingItemBlock).toMatch(
+      /margin-top:\s*var\(--markdown-list-item-gap\);/,
+    );
     expect(taskListItemBlock).toMatch(/list-style-type:\s*none;/);
-    expect(mobileListBlock).toMatch(/padding-left:\s*1\.45em;/);
-    expect(mobileListBlock).toMatch(/line-height:\s*1\.62;/);
-    expect(mobileListBlock).toMatch(/margin-bottom:\s*14px;/);
+    expect(mobileListBlock).toMatch(
+      /padding-left:\s*var\(--markdown-list-indent\);/,
+    );
+    expect(mobileListBlock).toMatch(
+      /line-height:\s*var\(--markdown-prose-line-height\);/,
+    );
+    expect(mobileListBlock).toMatch(
+      /margin-bottom:\s*var\(--markdown-block-gap\);/,
+    );
     expect(mobileListItemBlock).toMatch(/padding-left:\s*0\.08em;/);
     expect(mobileListItemBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(mobileListItemParagraphBlock).toMatch(/margin-top:\s*8px;/);
-    expect(mobileSiblingItemBlock).toMatch(/margin-top:\s*0\.32em;/);
-    expect(narrowListBlock).toMatch(/padding-left:\s*1\.28em;/);
+    expect(mobileSiblingItemBlock).toMatch(
+      /margin-top:\s*var\(--markdown-list-item-gap\);/,
+    );
+    expect(narrowListBlock).toMatch(
+      /padding-left:\s*var\(--markdown-list-indent\);/,
+    );
   });
 
   test("keeps Gemini-style markdown utility surfaces low-glare across themes", () => {
@@ -11215,14 +11272,25 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkRootBlock).toMatch(/@include dark;/);
 
     expect(markdownBodyBlock).toMatch(/font-size:\s*inherit;/);
-    expect(markdownBodyBlock).toMatch(/line-height:\s*1\.62;/);
+    expect(markdownBodyBlock).toMatch(
+      /--markdown-prose-line-height:\s*1\.62;/,
+    );
+    expect(markdownBodyBlock).toMatch(
+      /line-height:\s*var\(--markdown-prose-line-height\);/,
+    );
     expect(markdownBodyBlock).toMatch(/min-width:\s*0;/);
     expect(markdownBodyBlock).toMatch(/max-width:\s*100%;/);
-    expect(paragraphBlock).toMatch(/margin-bottom:\s*12px;/);
+    expect(paragraphBlock).toMatch(
+      /margin-bottom:\s*var\(--markdown-paragraph-gap\);/,
+    );
     expect(longTextWrapBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(longTextWrapBlock).toMatch(/word-break:\s*break-word;/);
-    expect(headingBlock).toMatch(/margin-top:\s*22px;/);
-    expect(headingBlock).toMatch(/margin-bottom:\s*10px;/);
+    expect(headingBlock).toMatch(
+      /margin-top:\s*var\(--markdown-heading-gap\);/,
+    );
+    expect(headingBlock).toMatch(
+      /margin-bottom:\s*var\(--markdown-heading-tight-gap\);/,
+    );
     expect(headingBlock).toMatch(/line-height:\s*1\.32;/);
     expect(headingBlock).toMatch(/letter-spacing:\s*0;/);
     expect(h1Block).toMatch(/font-size:\s*1\.55em;/);
@@ -11252,10 +11320,21 @@ describe("Gemini visual migration shell", () => {
     expect(darkHeadingCodeBlock).toMatch(/border:\s*0;/);
     expect(summaryHeadingBlock).toMatch(/padding-left:\s*0;/);
     expect(summaryHeadingBlock).toMatch(/&::before[\s\S]*display:\s*none;/);
-    expect(mobileMarkdownBodyBlock).toMatch(/line-height:\s*1\.62;/);
-    expect(mobileParagraphBlock).toMatch(/margin-bottom:\s*12px;/);
-    expect(mobileHeadingBlock).toMatch(/margin-top:\s*18px;/);
-    expect(mobileHeadingBlock).toMatch(/margin-bottom:\s*8px;/);
+    expect(mobileMarkdownBodyBlock).toMatch(
+      /--markdown-prose-line-height:\s*1\.62;/,
+    );
+    expect(mobileMarkdownBodyBlock).toMatch(
+      /line-height:\s*var\(--markdown-prose-line-height\);/,
+    );
+    expect(mobileParagraphBlock).toMatch(
+      /margin-bottom:\s*var\(--markdown-paragraph-gap\);/,
+    );
+    expect(mobileHeadingBlock).toMatch(
+      /margin-top:\s*var\(--markdown-heading-gap\);/,
+    );
+    expect(mobileHeadingBlock).toMatch(
+      /margin-bottom:\s*var\(--markdown-heading-tight-gap\);/,
+    );
     expect(mobileHeadingBlock).toMatch(/line-height:\s*1\.28;/);
     expect(mobileHeadingBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(mobileH1Block).toMatch(/font-size:\s*1\.42em;/);
@@ -11263,7 +11342,252 @@ describe("Gemini visual migration shell", () => {
     expect(mobileH2Block).toMatch(/font-size:\s*1\.18em;/);
     expect(mobileH2Block).toMatch(/&::before[\s\S]*width:\s*3px;/);
     expect(mobileH3Block).toMatch(/font-size:\s*1\.06em;/);
-    expect(narrowMarkdownBodyBlock).toMatch(/line-height:\s*1\.6;/);
+    expect(narrowMarkdownBodyBlock).toMatch(
+      /--markdown-prose-line-height:\s*1\.6;/,
+    );
+    expect(narrowMarkdownBodyBlock).toMatch(
+      /line-height:\s*var\(--markdown-prose-line-height\);/,
+    );
+  });
+
+  test("keeps Gemini-style markdown prose surfaces bounded across desktop and mobile", () => {
+    const markdownStyles = read("app/styles/markdown.scss");
+    const markdownBodyBlock = readCssBlock(markdownStyles, ".markdown-body");
+    const markdownBodyDeclarations = readRootDeclarations(markdownBodyBlock);
+    const paragraphBlock = readCssBlock(markdownStyles, ".markdown-body p");
+    const blockStackBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body p,\n.markdown-body blockquote,\n.markdown-body ul,\n.markdown-body ol,\n.markdown-body dl,\n.markdown-body table,\n.markdown-body pre,\n.markdown-body details",
+    );
+    const headingBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body h1,\n.markdown-body h2,\n.markdown-body h3,\n.markdown-body h4,\n.markdown-body h5,\n.markdown-body h6",
+    );
+    const listBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body ul,\n.markdown-body ol",
+    );
+    const siblingItemBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body li + li",
+    );
+    const codeBlockStyles = markdownStyles.slice(
+      Math.max(
+        0,
+        markdownStyles.indexOf(
+          "/* R4: Gemini-style refined code block card */",
+        ) - 120,
+      ),
+    );
+    const preBlock = readCssBlock(codeBlockStyles, ".markdown-body pre");
+    const tableShellBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-table-scroll-shell",
+    );
+    const bodyTableShellBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-table-scroll-shell",
+    );
+    const imageFrameBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-image-frame",
+    );
+    const mediaFrameBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-media-frame",
+    );
+    const mermaidBlock = readCssBlock(markdownStyles, ".markdown-body .mermaid");
+    const mermaidFallbackBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-mermaid-fallback",
+    );
+    const artifactPreviewBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-artifact-preview",
+    );
+    const detailsBlockquoteBeforeBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body details blockquote::before,\n.markdown-body details > p > blockquote::before",
+    );
+    const detailsThinkingBlockquoteBeforeBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body details.markdown-thinking blockquote::before,\n.markdown-body details.markdown-thinking > p > blockquote::before",
+    );
+    const mobileMarkdownBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileMarkdownBodyBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body",
+    );
+    const mobileHeadingBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body h1,\n  .markdown-body h2,\n  .markdown-body h3,\n  .markdown-body h4,\n  .markdown-body h5,\n  .markdown-body h6",
+    );
+    const mobileListBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body ul,\n  .markdown-body ol",
+    );
+    const mobileSiblingItemBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body li + li",
+    );
+    const mobileThinkingBlockquoteBeforeBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body details.markdown-thinking blockquote::before,\n  .markdown-body details.markdown-thinking > p > blockquote::before",
+    );
+    const narrowMarkdownBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 360px)",
+    );
+    const narrowMarkdownBodyBlock = readCssBlock(
+      narrowMarkdownBlock,
+      ".markdown-body",
+    );
+    const narrowListBlock = readCssBlock(
+      narrowMarkdownBlock,
+      ".markdown-body ul,\n  .markdown-body ol",
+    );
+
+    expect(markdownBodyDeclarations).toMatch(
+      /--markdown-reading-max-width:\s*760px;/,
+    );
+    expect(markdownBodyDeclarations).toMatch(
+      /--markdown-reading-surface-max-width:\s*var\(--markdown-reading-max-width\);/,
+    );
+    expect(markdownBodyDeclarations).toMatch(
+      /--markdown-prose-line-height:\s*1\.62;/,
+    );
+    expect(markdownBodyDeclarations).toMatch(
+      /--markdown-block-gap:\s*16px;/,
+    );
+    expect(markdownBodyDeclarations).toMatch(
+      /--markdown-heading-gap:\s*22px;/,
+    );
+    expect(markdownBodyDeclarations).toMatch(
+      /--markdown-heading-tight-gap:\s*10px;/,
+    );
+    expect(markdownBodyDeclarations).toMatch(
+      /--markdown-paragraph-gap:\s*12px;/,
+    );
+    expect(markdownBodyDeclarations).toMatch(
+      /--markdown-list-indent:\s*1\.7em;/,
+    );
+    expect(markdownBodyDeclarations).toMatch(
+      /--markdown-list-item-gap:\s*0\.38em;/,
+    );
+    expect(markdownBodyDeclarations).toMatch(
+      /--markdown-code-block-max-width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+    );
+    expect(markdownBodyDeclarations).toMatch(
+      /--markdown-table-shell-max-width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+    );
+    expect(markdownBodyBlock).toMatch(
+      /line-height:\s*var\(--markdown-prose-line-height\);/,
+    );
+    expect(blockStackBlock).toMatch(
+      /margin-bottom:\s*var\(--markdown-block-gap\);/,
+    );
+    expect(paragraphBlock).toMatch(
+      /margin-bottom:\s*var\(--markdown-paragraph-gap\);/,
+    );
+    expect(headingBlock).toMatch(
+      /margin-top:\s*var\(--markdown-heading-gap\);/,
+    );
+    expect(headingBlock).toMatch(
+      /margin-bottom:\s*var\(--markdown-heading-tight-gap\);/,
+    );
+    expect(listBlock).toMatch(
+      /padding-left:\s*var\(--markdown-list-indent\);/,
+    );
+    expect(listBlock).toMatch(
+      /margin-bottom:\s*var\(--markdown-block-gap\);/,
+    );
+    expect(listBlock).toMatch(
+      /line-height:\s*var\(--markdown-prose-line-height\);/,
+    );
+    expect(siblingItemBlock).toMatch(
+      /margin-top:\s*var\(--markdown-list-item-gap\);/,
+    );
+    expect(preBlock).toMatch(
+      /max-width:\s*var\(--markdown-code-block-max-width\);/,
+    );
+    expect(tableShellBlock).toMatch(
+      /max-width:\s*var\(--markdown-table-shell-max-width\);/,
+    );
+    expect(bodyTableShellBlock).toMatch(
+      /margin:\s*0 0 var\(--markdown-block-gap\);/,
+    );
+    expect(imageFrameBlock).toMatch(
+      /max-width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+    );
+    expect(mediaFrameBlock).toMatch(
+      /width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+    );
+    expect(mermaidBlock).toMatch(
+      /width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+    );
+    expect(mermaidFallbackBlock).toMatch(
+      /width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+    );
+    expect(artifactPreviewBlock).toMatch(
+      /width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+    );
+    expect(detailsBlockquoteBeforeBlock).toMatch(/content:\s*none;/);
+    expect(detailsBlockquoteBeforeBlock).toMatch(/display:\s*none;/);
+    expect(detailsThinkingBlockquoteBeforeBlock).toMatch(/content:\s*none;/);
+    expect(detailsThinkingBlockquoteBeforeBlock).toMatch(/display:\s*none;/);
+    expect(mobileMarkdownBodyBlock).toMatch(
+      /--markdown-reading-surface-max-width:\s*100%;/,
+    );
+    expect(mobileMarkdownBodyBlock).toMatch(
+      /--markdown-prose-line-height:\s*1\.62;/,
+    );
+    expect(mobileMarkdownBodyBlock).toMatch(
+      /--markdown-block-gap:\s*14px;/,
+    );
+    expect(mobileMarkdownBodyBlock).toMatch(
+      /--markdown-heading-gap:\s*18px;/,
+    );
+    expect(mobileMarkdownBodyBlock).toMatch(
+      /--markdown-heading-tight-gap:\s*8px;/,
+    );
+    expect(mobileMarkdownBodyBlock).toMatch(
+      /--markdown-list-indent:\s*1\.45em;/,
+    );
+    expect(mobileMarkdownBodyBlock).toMatch(
+      /--markdown-list-item-gap:\s*0\.32em;/,
+    );
+    expect(mobileHeadingBlock).toMatch(
+      /margin-top:\s*var\(--markdown-heading-gap\);/,
+    );
+    expect(mobileHeadingBlock).toMatch(
+      /margin-bottom:\s*var\(--markdown-heading-tight-gap\);/,
+    );
+    expect(mobileListBlock).toMatch(
+      /padding-left:\s*var\(--markdown-list-indent\);/,
+    );
+    expect(mobileListBlock).toMatch(
+      /margin-bottom:\s*var\(--markdown-block-gap\);/,
+    );
+    expect(mobileSiblingItemBlock).toMatch(
+      /margin-top:\s*var\(--markdown-list-item-gap\);/,
+    );
+    expect(mobileThinkingBlockquoteBeforeBlock).toMatch(/content:\s*none;/);
+    expect(mobileThinkingBlockquoteBeforeBlock).toMatch(/display:\s*none;/);
+    expect(narrowMarkdownBodyBlock).toMatch(
+      /--markdown-prose-line-height:\s*1\.6;/,
+    );
+    expect(narrowMarkdownBodyBlock).toMatch(
+      /--markdown-block-gap:\s*12px;/,
+    );
+    expect(narrowMarkdownBodyBlock).toMatch(
+      /--markdown-list-indent:\s*1\.28em;/,
+    );
+    expect(narrowListBlock).toMatch(
+      /padding-left:\s*var\(--markdown-list-indent\);/,
+    );
   });
 
   test("keeps image editor controls aligned with Gemini surfaces", () => {
@@ -19603,7 +19927,9 @@ describe("Gemini visual migration shell", () => {
     );
 
     expect(artifactPreviewBlock).toMatch(/display:\s*block;/);
-    expect(artifactPreviewBlock).toMatch(/width:\s*min\(100%, 760px\);/);
+    expect(artifactPreviewBlock).toMatch(
+      /width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+    );
     expect(artifactPreviewBlock).toMatch(/max-width:\s*100%;/);
     expect(artifactPreviewBlock).toMatch(/min-width:\s*0;/);
     expect(artifactPreviewBlock).toMatch(/margin:\s*12px 0;/);

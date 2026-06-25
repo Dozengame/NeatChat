@@ -1502,13 +1502,24 @@ summary,
 }
 
 .markdown-body {
+  --markdown-reading-max-width: 760px;
+  --markdown-reading-surface-max-width: var(--markdown-reading-max-width);
+  --markdown-prose-line-height: 1.62;
+  --markdown-block-gap: 16px;
+  --markdown-heading-gap: 22px;
+  --markdown-heading-tight-gap: 10px;
+  --markdown-paragraph-gap: 12px;
+  --markdown-list-indent: 1.7em;
+  --markdown-list-item-gap: 0.38em;
+  --markdown-code-block-max-width: min(100%, var(--markdown-reading-surface-max-width));
+  --markdown-table-shell-max-width: min(100%, var(--markdown-reading-surface-max-width));
   -ms-text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
   margin: 0;
   color: var(--color-fg-default);
   background-color: var(--color-canvas-default);
   font-size: inherit;
-  line-height: 1.62;
+  line-height: var(--markdown-prose-line-height);
   min-width: 0;
   max-width: 100%;
   word-wrap: break-word;
@@ -1862,7 +1873,7 @@ summary,
 .markdown-body .markdown-image-frame {
   position: relative;
   display: inline-flex;
-  max-width: min(100%, 760px);
+  max-width: min(100%, var(--markdown-reading-surface-max-width));
   min-width: 0;
   box-sizing: border-box;
   padding: 4px;
@@ -1939,7 +1950,7 @@ summary,
 .markdown-body .mermaid {
   display: block;
   box-sizing: border-box;
-  width: min(100%, 760px);
+  width: min(100%, var(--markdown-reading-surface-max-width));
   max-width: 100%;
   min-width: 0;
   margin: 12px 0;
@@ -1985,7 +1996,7 @@ summary,
   display: flex;
   box-sizing: border-box;
   flex-direction: column;
-  width: min(100%, 760px);
+  width: min(100%, var(--markdown-reading-surface-max-width));
   max-width: 100%;
   min-width: 0;
   gap: 8px;
@@ -2019,7 +2030,7 @@ summary,
 .markdown-body .markdown-artifact-preview {
   display: block;
   box-sizing: border-box;
-  width: min(100%, 760px);
+  width: min(100%, var(--markdown-reading-surface-max-width));
   max-width: 100%;
   min-width: 0;
   margin: 12px 0;
@@ -2119,7 +2130,7 @@ summary,
 .markdown-body .markdown-media-frame {
   position: relative;
   display: block;
-  width: min(100%, 720px);
+  width: min(100%, var(--markdown-reading-surface-max-width));
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
@@ -2151,7 +2162,7 @@ summary,
 }
 
 .markdown-body .markdown-media-audio {
-  width: min(100%, 560px);
+  width: min(100%, var(--markdown-reading-surface-max-width));
 }
 
 .markdown-body .markdown-audio-player,
@@ -2386,7 +2397,8 @@ summary,
   --markdown-table-shell-radius: 8px;
   position: relative;
   width: 100%;
-  max-width: 100%;
+  max-width: var(--markdown-table-shell-max-width);
+  box-sizing: border-box;
   overflow: hidden;
   background: var(--markdown-table-shell-background);
   border: 1px solid var(--markdown-table-shell-border-color);
@@ -2410,8 +2422,7 @@ summary,
 }
 
 .markdown-body .markdown-table-scroll-shell {
-  margin-top: 0;
-  margin-bottom: 16px;
+  margin: 0 0 var(--markdown-block-gap);
 }
 
 .markdown-body .katex-display {
@@ -2667,8 +2678,8 @@ summary,
 .markdown-body h4,
 .markdown-body h5,
 .markdown-body h6 {
-  margin-top: 22px;
-  margin-bottom: 10px;
+  margin-top: var(--markdown-heading-gap);
+  margin-bottom: var(--markdown-heading-tight-gap);
   font-weight: var(--base-text-weight-semibold, 600);
   line-height: 1.32;
   letter-spacing: 0;
@@ -2725,7 +2736,7 @@ summary,
 
 .markdown-body p {
   margin-top: 0;
-  margin-bottom: 12px;
+  margin-bottom: var(--markdown-paragraph-gap);
 }
 
 .markdown-body p,
@@ -2779,6 +2790,18 @@ summary,
   line-height: inherit;
 }
 
+.markdown-body details blockquote::before,
+.markdown-body details > p > blockquote::before {
+  content: none;
+  display: none;
+}
+
+.markdown-body details.markdown-thinking blockquote::before,
+.markdown-body details.markdown-thinking > p > blockquote::before {
+  content: none;
+  display: none;
+}
+
 .markdown-body blockquote blockquote {
   margin: 8px 0 0;
   padding: 0 0 0 1em;
@@ -2800,9 +2823,9 @@ summary,
 .markdown-body ul,
 .markdown-body ol {
   margin-top: 0;
-  margin-bottom: 12px;
-  padding-left: 1.7em;
-  line-height: 1.65;
+  margin-bottom: var(--markdown-block-gap);
+  padding-left: var(--markdown-list-indent);
+  line-height: var(--markdown-prose-line-height);
 }
 
 .markdown-body li {
@@ -2926,7 +2949,11 @@ summary,
 .markdown-body pre,
 .markdown-body details {
   margin-top: 0;
-  margin-bottom: 16px;
+  margin-bottom: var(--markdown-block-gap);
+}
+
+.markdown-body p {
+  margin-bottom: var(--markdown-paragraph-gap);
 }
 
 .markdown-body blockquote > :first-child {
@@ -3062,7 +3089,7 @@ summary,
 }
 
 .markdown-body li + li {
-  margin-top: 0.38em;
+  margin-top: var(--markdown-list-item-gap);
 }
 
 .markdown-body dl {
@@ -3318,7 +3345,7 @@ summary,
     var(--markdown-code-block-padding-y)
     var(--markdown-code-block-padding-start);
   box-sizing: border-box;
-  max-width: 100%;
+  max-width: var(--markdown-code-block-max-width);
   min-width: 0;
   overflow: auto;
   overscroll-behavior-x: contain;
@@ -4001,7 +4028,14 @@ summary,
 
 @media only screen and (max-width: 600px) {
   .markdown-body {
-    line-height: 1.62;
+    --markdown-reading-surface-max-width: 100%;
+    --markdown-prose-line-height: 1.62;
+    --markdown-block-gap: 14px;
+    --markdown-heading-gap: 18px;
+    --markdown-heading-tight-gap: 8px;
+    --markdown-list-indent: 1.45em;
+    --markdown-list-item-gap: 0.32em;
+    line-height: var(--markdown-prose-line-height);
   }
 
   .markdown-body h1,
@@ -4010,8 +4044,8 @@ summary,
   .markdown-body h4,
   .markdown-body h5,
   .markdown-body h6 {
-    margin-top: 18px;
-    margin-bottom: 8px;
+    margin-top: var(--markdown-heading-gap);
+    margin-bottom: var(--markdown-heading-tight-gap);
     line-height: 1.28;
     overflow-wrap: anywhere;
     word-break: break-word;
@@ -4035,21 +4069,21 @@ summary,
   }
 
   .markdown-body p {
-    margin-bottom: 12px;
+    margin-bottom: var(--markdown-paragraph-gap);
   }
 
   .markdown-body blockquote {
     padding: 8px 10px;
     border-radius: 8px;
-    line-height: 1.62;
+    line-height: var(--markdown-prose-line-height);
     overflow-wrap: anywhere;
   }
 
   .markdown-body ul,
   .markdown-body ol {
-    margin-bottom: 14px;
-    padding-left: 1.45em;
-    line-height: 1.62;
+    margin-bottom: var(--markdown-block-gap);
+    padding-left: var(--markdown-list-indent);
+    line-height: var(--markdown-prose-line-height);
   }
 
   .markdown-body li {
@@ -4062,7 +4096,7 @@ summary,
   }
 
   .markdown-body li + li {
-    margin-top: 0.32em;
+    margin-top: var(--markdown-list-item-gap);
   }
 
   .markdown-body :where(p, li, td, blockquote) code:not(del code),
@@ -4217,6 +4251,12 @@ summary,
     border-left: 3px solid var(--markdown-details-blockquote-rail-color);
   }
 
+  .markdown-body details.markdown-thinking blockquote::before,
+  .markdown-body details.markdown-thinking > p > blockquote::before {
+    content: none;
+    display: none;
+  }
+
   .markdown-body-container .token-info {
     align-self: flex-start;
     white-space: normal;
@@ -4227,7 +4267,10 @@ summary,
 
 @media only screen and (max-width: 360px) {
   .markdown-body {
-    line-height: 1.6;
+    --markdown-prose-line-height: 1.6;
+    --markdown-block-gap: 12px;
+    --markdown-list-indent: 1.28em;
+    line-height: var(--markdown-prose-line-height);
   }
 
   .markdown-body blockquote {
@@ -4236,7 +4279,7 @@ summary,
 
   .markdown-body ul,
   .markdown-body ol {
-    padding-left: 1.28em;
+    padding-left: var(--markdown-list-indent);
   }
 
   .markdown-body pre {
