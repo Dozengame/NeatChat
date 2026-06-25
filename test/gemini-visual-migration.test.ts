@@ -5849,7 +5849,7 @@ describe("Gemini visual migration shell", () => {
       /--mcp-market-loading-shine-color:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 66%,\s*transparent\s*\);/,
     );
     expect(mcpMarketRootBlock).toMatch(
-      /--mcp-market-tools-state-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--gray\)\s*\);/,
+      /--mcp-market-tools-state-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--surface-soft\)\s*\);/,
     );
     expect(mcpMarketRootBlock).toMatch(
       /--mcp-market-tools-state-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
@@ -5873,7 +5873,7 @@ describe("Gemini visual migration shell", () => {
       /--mcp-market-loading-shine-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 16%,\s*transparent\s*\);/,
     );
     expect(darkMcpMarketBlock).toMatch(
-      /--mcp-market-tools-state-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--mcp-market-tools-state-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface-soft\)\s*\);/,
     );
     expect(darkMcpMarketBlock).toMatch(
       /--mcp-market-tools-error-background:\s*color-mix\(\s*in srgb,\s*rgb\(248,\s*113,\s*113\) 12%,\s*var\(--surface-elevated\)\s*\);/,
@@ -5887,8 +5887,22 @@ describe("Gemini visual migration shell", () => {
       /--mcp-market-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 64%,\s*transparent\s*\);/,
     );
     expect(autoDarkMcpMarketBlock).toMatch(
+      /--mcp-market-tools-state-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface-soft\)\s*\);/,
+    );
+    expect(autoDarkMcpMarketBlock).toMatch(
       /--mcp-market-tools-error-background:\s*color-mix\(\s*in srgb,\s*rgb\(248,\s*113,\s*113\) 12%,\s*var\(--surface-elevated\)\s*\);/,
     );
+    [
+      mcpMarketRootBlock,
+      darkMcpMarketBlock,
+      autoDarkMcpMarketBlock,
+    ].forEach((block) => {
+      const toolsStateBackground = block.match(
+        /--mcp-market-tools-state-background:[\s\S]*?\);/,
+      )?.[0];
+      expect(toolsStateBackground).toBeTruthy();
+      expect(toolsStateBackground).not.toMatch(/var\(--(?:gray|white)\)/);
+    });
 
     [loadingEmptyBlock, marketItemBlock, listBlock].forEach((block) => {
       expect(block).toMatch(
