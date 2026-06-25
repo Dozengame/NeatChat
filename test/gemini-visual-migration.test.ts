@@ -6192,6 +6192,22 @@ describe("Gemini visual migration shell", () => {
       chatStyles.slice(autoDarkFileEditTextareaMediaIndex),
       autoDarkFileEditTextareaSelector,
     );
+    const fileEditTextareaSurfaceTokenNames = [
+      "--file-edit-textarea-background",
+      "--file-edit-textarea-inner-shadow-color",
+    ];
+    const fileEditTextareaSurfaceTokenMap = readCustomProperties(
+      fileEditTextareaBlock,
+      fileEditTextareaSurfaceTokenNames,
+    );
+    const darkFileEditTextareaSurfaceTokenMap = readCustomProperties(
+      darkFileEditTextareaBlock,
+      fileEditTextareaSurfaceTokenNames,
+    );
+    const autoDarkFileEditTextareaSurfaceTokenMap = readCustomProperties(
+      autoDarkFileEditTextareaBlock,
+      fileEditTextareaSurfaceTokenNames,
+    );
     const mobileFileEditIndex = chatStyles.indexOf("\n  .file-edit-scroll {");
     const mobileFileEditMediaIndex = chatStyles.lastIndexOf(
       "@media only screen and (max-width: 600px)",
@@ -6231,8 +6247,14 @@ describe("Gemini visual migration shell", () => {
     expect(fileEditScrollBlock).toMatch(/min-width:\s*0;/);
     expect(fileEditScrollBlock).toMatch(/padding:\s*4px;/);
     expect(fileEditTextareaBlock).toMatch(
-      /--file-edit-textarea-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--gray\)\);/,
+      /--file-edit-textarea-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--surface-soft\)\);/,
     );
+    expect(fileEditTextareaSurfaceTokenMap).toEqual({
+      "--file-edit-textarea-background":
+        "color-mix(in srgb, var(--surface-elevated) 90%, var(--surface-soft))",
+      "--file-edit-textarea-inner-shadow-color":
+        "color-mix(in srgb, var(--surface) 56%, transparent)",
+    });
     expect(fileEditTextareaBlock).toMatch(
       /--file-edit-textarea-border-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 14%,\s*transparent\);/,
     );
@@ -6270,16 +6292,32 @@ describe("Gemini visual migration shell", () => {
       /box-shadow:\s*0 0 0 3px var\(--file-edit-textarea-focus-shadow-color\),\s*inset 0 1px 0 var\(--file-edit-textarea-inner-shadow-color\);/,
     );
     expect(darkFileEditTextareaBlock).toMatch(
-      /--file-edit-textarea-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--white\)\);/,
+      /--file-edit-textarea-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--surface\)\);/,
     );
+    expect(darkFileEditTextareaSurfaceTokenMap).toEqual({
+      "--file-edit-textarea-background":
+        "color-mix(in srgb, var(--surface-elevated) 84%, var(--surface))",
+      "--file-edit-textarea-inner-shadow-color":
+        "color-mix(in srgb, var(--black) 5%, transparent)",
+    });
     expect(darkFileEditTextareaBlock).toMatch(
       /--file-edit-textarea-focus-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 22%,\s*transparent\);/,
     );
     expect(autoDarkFileEditTextareaSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkFileEditTextareaMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkFileEditTextareaBlock).toMatch(
-      /--file-edit-textarea-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--white\)\);/,
+      /--file-edit-textarea-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--surface\)\);/,
     );
+    expect(autoDarkFileEditTextareaSurfaceTokenMap).toEqual(
+      darkFileEditTextareaSurfaceTokenMap,
+    );
+    for (const tokenValue of [
+      ...Object.values(fileEditTextareaSurfaceTokenMap),
+      ...Object.values(darkFileEditTextareaSurfaceTokenMap),
+      ...Object.values(autoDarkFileEditTextareaSurfaceTokenMap),
+    ]) {
+      expect(tokenValue).not.toMatch(/var\(--(?:white|gray)\)/);
+    }
     expect(autoDarkFileEditTextareaBlock).toMatch(
       /--file-edit-textarea-focus-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 22%,\s*transparent\);/,
     );

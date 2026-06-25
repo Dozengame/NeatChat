@@ -531,7 +531,7 @@
   }
 
   :global(body:not(.light)) .file-edit-textarea {
-    --file-edit-textarea-background: color-mix(in srgb, var(--surface-elevated) 84%, var(--white));
+    --file-edit-textarea-background: color-mix(in srgb, var(--surface-elevated) 84%, var(--surface));
     --file-edit-textarea-border-color: color-mix(in srgb, var(--black) 10%, transparent);
     --file-edit-textarea-color: color-mix(in srgb, var(--black) 94%, transparent);
     --file-edit-textarea-placeholder-color: color-mix(in srgb, var(--black-50) 78%, transparent);
@@ -4602,12 +4602,12 @@
 }
 
 .file-edit-textarea {
-  --file-edit-textarea-background: color-mix(in srgb, var(--surface-elevated) 90%, var(--gray));
+  --file-edit-textarea-background: color-mix(in srgb, var(--surface-elevated) 90%, var(--surface-soft));
   --file-edit-textarea-border-color: color-mix(in srgb, var(--black-50) 14%, transparent);
   --file-edit-textarea-color: color-mix(in srgb, var(--black) 92%, transparent);
   --file-edit-textarea-placeholder-color: color-mix(in srgb, var(--black-50) 74%, transparent);
   --file-edit-textarea-shadow-color: color-mix(in srgb, var(--black-50) 6%, transparent);
-  --file-edit-textarea-inner-shadow-color: color-mix(in srgb, var(--white) 56%, transparent);
+  --file-edit-textarea-inner-shadow-color: color-mix(in srgb, var(--surface) 56%, transparent);
   --file-edit-textarea-focus-border-color: var(--primary);
   --file-edit-textarea-focus-shadow-color: color-mix(in srgb, var(--primary) 16%, transparent);
   --file-edit-textarea-selection-background: color-mix(in srgb, var(--primary) 18%, transparent);
@@ -4656,7 +4656,7 @@
 }
 
 :global(.dark) .file-edit-textarea {
-  --file-edit-textarea-background: color-mix(in srgb, var(--surface-elevated) 84%, var(--white));
+  --file-edit-textarea-background: color-mix(in srgb, var(--surface-elevated) 84%, var(--surface));
   --file-edit-textarea-border-color: color-mix(in srgb, var(--black) 10%, transparent);
   --file-edit-textarea-color: color-mix(in srgb, var(--black) 94%, transparent);
   --file-edit-textarea-placeholder-color: color-mix(in srgb, var(--black-50) 78%, transparent);
