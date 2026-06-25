@@ -4521,21 +4521,22 @@
 }
 
 .image-preview-mask {
-  --image-preview-mask-background: color-mix(in srgb, var(--black) 84%, transparent);
+  --image-preview-overlay-ink: var(--black);
+  --image-preview-mask-background: color-mix(in srgb, var(--image-preview-overlay-ink) 84%, transparent);
   --image-preview-toolbar-border-color: color-mix(in srgb, var(--surface) 18%, transparent);
   --image-preview-toolbar-background: color-mix(in srgb, var(--black) 50%, transparent);
-  --image-preview-toolbar-shadow-color: color-mix(in srgb, var(--black) 34%, transparent);
+  --image-preview-toolbar-shadow-color: color-mix(in srgb, var(--image-preview-overlay-ink) 34%, transparent);
   --image-preview-button-border-color: color-mix(in srgb, var(--surface) 18%, transparent);
   --image-preview-button-background: color-mix(in srgb, var(--surface) 8%, transparent);
   --image-preview-button-color: color-mix(in srgb, var(--surface) 96%, transparent);
-  --image-preview-button-shadow-color: color-mix(in srgb, var(--black) 24%, transparent);
+  --image-preview-button-shadow-color: color-mix(in srgb, var(--image-preview-overlay-ink) 24%, transparent);
   --image-preview-button-hover-border-color: color-mix(in srgb, var(--surface) 30%, transparent);
   --image-preview-button-hover-background: color-mix(in srgb, var(--surface) 16%, transparent);
-  --image-preview-button-hover-shadow-color: color-mix(in srgb, var(--black) 30%, transparent);
+  --image-preview-button-hover-shadow-color: color-mix(in srgb, var(--image-preview-overlay-ink) 30%, transparent);
   --image-preview-button-active-background: color-mix(in srgb, var(--surface) 12%, transparent);
-  --image-preview-button-active-shadow-color: color-mix(in srgb, var(--black) 26%, transparent);
-  --image-preview-button-focus-shadow-color: color-mix(in srgb, var(--black) 32%, transparent);
-  --image-preview-image-shadow-color: color-mix(in srgb, var(--black) 42%, transparent);
+  --image-preview-button-active-shadow-color: color-mix(in srgb, var(--image-preview-overlay-ink) 26%, transparent);
+  --image-preview-button-focus-shadow-color: color-mix(in srgb, var(--image-preview-overlay-ink) 32%, transparent);
+  --image-preview-image-shadow-color: color-mix(in srgb, var(--image-preview-overlay-ink) 42%, transparent);
 
   border: 0;
   position: fixed;
@@ -4555,40 +4556,42 @@
 }
 
 :global(.dark) .image-preview-mask {
-  --image-preview-mask-background: color-mix(in srgb, var(--gray) 86%, transparent);
+  --image-preview-overlay-ink: var(--white);
+  --image-preview-mask-background: color-mix(in srgb, var(--image-preview-overlay-ink) 86%, transparent);
   --image-preview-toolbar-border-color: color-mix(in srgb, var(--primary) 18%, transparent);
   --image-preview-toolbar-background: color-mix(in srgb, var(--surface-soft) 62%, transparent);
-  --image-preview-toolbar-shadow-color: color-mix(in srgb, var(--gray) 44%, transparent);
+  --image-preview-toolbar-shadow-color: color-mix(in srgb, var(--image-preview-overlay-ink) 44%, transparent);
   --image-preview-button-border-color: color-mix(in srgb, var(--primary) 16%, transparent);
   --image-preview-button-background: color-mix(in srgb, var(--black) 8%, transparent);
   --image-preview-button-color: color-mix(in srgb, var(--black) 94%, transparent);
-  --image-preview-button-shadow-color: color-mix(in srgb, var(--gray) 34%, transparent);
+  --image-preview-button-shadow-color: color-mix(in srgb, var(--image-preview-overlay-ink) 34%, transparent);
   --image-preview-button-hover-border-color: color-mix(in srgb, var(--primary) 30%, transparent);
   --image-preview-button-hover-background: color-mix(in srgb, var(--black) 16%, transparent);
-  --image-preview-button-hover-shadow-color: color-mix(in srgb, var(--gray) 38%, transparent);
+  --image-preview-button-hover-shadow-color: color-mix(in srgb, var(--image-preview-overlay-ink) 38%, transparent);
   --image-preview-button-active-background: color-mix(in srgb, var(--black) 12%, transparent);
-  --image-preview-button-active-shadow-color: color-mix(in srgb, var(--gray) 36%, transparent);
-  --image-preview-button-focus-shadow-color: color-mix(in srgb, var(--gray) 40%, transparent);
-  --image-preview-image-shadow-color: color-mix(in srgb, var(--gray) 48%, transparent);
+  --image-preview-button-active-shadow-color: color-mix(in srgb, var(--image-preview-overlay-ink) 36%, transparent);
+  --image-preview-button-focus-shadow-color: color-mix(in srgb, var(--image-preview-overlay-ink) 40%, transparent);
+  --image-preview-image-shadow-color: color-mix(in srgb, var(--image-preview-overlay-ink) 48%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .image-preview-mask {
-    --image-preview-mask-background: color-mix(in srgb, var(--gray) 86%, transparent);
+    --image-preview-overlay-ink: var(--white);
+    --image-preview-mask-background: color-mix(in srgb, var(--image-preview-overlay-ink) 86%, transparent);
     --image-preview-toolbar-border-color: color-mix(in srgb, var(--primary) 18%, transparent);
     --image-preview-toolbar-background: color-mix(in srgb, var(--surface-soft) 62%, transparent);
-    --image-preview-toolbar-shadow-color: color-mix(in srgb, var(--gray) 44%, transparent);
+    --image-preview-toolbar-shadow-color: color-mix(in srgb, var(--image-preview-overlay-ink) 44%, transparent);
     --image-preview-button-border-color: color-mix(in srgb, var(--primary) 16%, transparent);
     --image-preview-button-background: color-mix(in srgb, var(--black) 8%, transparent);
     --image-preview-button-color: color-mix(in srgb, var(--black) 94%, transparent);
-    --image-preview-button-shadow-color: color-mix(in srgb, var(--gray) 34%, transparent);
+    --image-preview-button-shadow-color: color-mix(in srgb, var(--image-preview-overlay-ink) 34%, transparent);
     --image-preview-button-hover-border-color: color-mix(in srgb, var(--primary) 30%, transparent);
     --image-preview-button-hover-background: color-mix(in srgb, var(--black) 16%, transparent);
-    --image-preview-button-hover-shadow-color: color-mix(in srgb, var(--gray) 38%, transparent);
+    --image-preview-button-hover-shadow-color: color-mix(in srgb, var(--image-preview-overlay-ink) 38%, transparent);
     --image-preview-button-active-background: color-mix(in srgb, var(--black) 12%, transparent);
-    --image-preview-button-active-shadow-color: color-mix(in srgb, var(--gray) 36%, transparent);
-    --image-preview-button-focus-shadow-color: color-mix(in srgb, var(--gray) 40%, transparent);
-    --image-preview-image-shadow-color: color-mix(in srgb, var(--gray) 48%, transparent);
+    --image-preview-button-active-shadow-color: color-mix(in srgb, var(--image-preview-overlay-ink) 36%, transparent);
+    --image-preview-button-focus-shadow-color: color-mix(in srgb, var(--image-preview-overlay-ink) 40%, transparent);
+    --image-preview-image-shadow-color: color-mix(in srgb, var(--image-preview-overlay-ink) 48%, transparent);
   }
 }
 

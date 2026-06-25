@@ -15822,6 +15822,7 @@ describe("Gemini visual migration shell", () => {
       ".image-preview-button",
     );
     const imagePreviewTokenNames = [
+      "--image-preview-overlay-ink",
       "--image-preview-mask-background",
       "--image-preview-toolbar-border-color",
       "--image-preview-toolbar-background",
@@ -15940,8 +15941,16 @@ describe("Gemini visual migration shell", () => {
     expect(
       Object.values(imagePreviewAutoDarkTokens).every(Boolean),
     ).toBeTruthy();
+    expect(imagePreviewLightTokens["--image-preview-overlay-ink"]).toBe(
+      "var(--black)",
+    );
     expect(imagePreviewLightTokens["--image-preview-mask-background"]).toMatch(
-      /color-mix\(in srgb,\s*var\(--black\) 84%,\s*transparent\)/,
+      /color-mix\(in srgb,\s*var\(--image-preview-overlay-ink\) 84%,\s*transparent\)/,
+    );
+    expect(
+      imagePreviewLightTokens["--image-preview-toolbar-shadow-color"],
+    ).toMatch(
+      /color-mix\(in srgb,\s*var\(--image-preview-overlay-ink\) 34%,\s*transparent\)/,
     );
     expect(
       imagePreviewLightTokens["--image-preview-toolbar-background"],
@@ -16011,12 +16020,51 @@ describe("Gemini visual migration shell", () => {
     expect(imagePreviewImageBlock).toMatch(
       /box-shadow:\s*0 24px 72px var\(--image-preview-image-shadow-color\);/,
     );
-    expect(darkImagePreviewMaskBlock).toMatch(
-      /--image-preview-mask-background:\s*color-mix\(in srgb,\s*var\(--gray\) 86%,\s*transparent\);/,
+    expect(imagePreviewDarkTokens["--image-preview-overlay-ink"]).toBe(
+      "var(--white)",
+    );
+    expect(imagePreviewDarkTokens["--image-preview-mask-background"]).toMatch(
+      /color-mix\(in srgb,\s*var\(--image-preview-overlay-ink\) 86%,\s*transparent\)/,
+    );
+    expect(
+      imagePreviewDarkTokens["--image-preview-toolbar-shadow-color"],
+    ).toMatch(
+      /color-mix\(in srgb,\s*var\(--image-preview-overlay-ink\) 44%,\s*transparent\)/,
+    );
+    expect(
+      imagePreviewDarkTokens["--image-preview-button-shadow-color"],
+    ).toMatch(
+      /color-mix\(in srgb,\s*var\(--image-preview-overlay-ink\) 34%,\s*transparent\)/,
+    );
+    expect(
+      imagePreviewDarkTokens["--image-preview-button-hover-shadow-color"],
+    ).toMatch(
+      /color-mix\(in srgb,\s*var\(--image-preview-overlay-ink\) 38%,\s*transparent\)/,
+    );
+    expect(
+      imagePreviewDarkTokens["--image-preview-button-active-shadow-color"],
+    ).toMatch(
+      /color-mix\(in srgb,\s*var\(--image-preview-overlay-ink\) 36%,\s*transparent\)/,
+    );
+    expect(
+      imagePreviewDarkTokens["--image-preview-button-focus-shadow-color"],
+    ).toMatch(
+      /color-mix\(in srgb,\s*var\(--image-preview-overlay-ink\) 40%,\s*transparent\)/,
+    );
+    expect(
+      imagePreviewDarkTokens["--image-preview-image-shadow-color"],
+    ).toMatch(
+      /color-mix\(in srgb,\s*var\(--image-preview-overlay-ink\) 48%,\s*transparent\)/,
     );
     expect(darkImagePreviewMaskBlock).toMatch(
       /--image-preview-toolbar-background:\s*color-mix\(in srgb,\s*var\(--surface-soft\) 62%,\s*transparent\);/,
     );
+    Object.values(imagePreviewDarkTokens).forEach((tokenValue) => {
+      expect(tokenValue).not.toContain("var(--gray)");
+    });
+    Object.values(imagePreviewAutoDarkTokens).forEach((tokenValue) => {
+      expect(tokenValue).not.toContain("var(--gray)");
+    });
     expect(autoDarkImagePreviewMaskIndex).toBeGreaterThan(-1);
     expect(autoDarkImagePreviewMediaIndex).toBeGreaterThan(-1);
     expect(imagePreviewAutoDarkTokens).toEqual(imagePreviewDarkTokens);
