@@ -5,7 +5,7 @@
   --new-chat-control-background: color-mix(
     in srgb,
     var(--surface-elevated) 94%,
-    var(--white)
+    var(--surface-soft)
   );
   --new-chat-control-border-color: color-mix(
     in srgb,
@@ -275,7 +275,7 @@
   --new-chat-control-background: color-mix(
     in srgb,
     var(--surface-elevated) 88%,
-    var(--white)
+    var(--surface)
   );
   --new-chat-control-border-color: color-mix(
     in srgb,
@@ -299,8 +299,8 @@
   );
   --new-chat-action-background: color-mix(
     in srgb,
-    var(--primary) 92%,
-    var(--white)
+    var(--primary) 90%,
+    var(--black)
   );
   --new-chat-mask-hover-background: color-mix(
     in srgb,
@@ -314,7 +314,7 @@
     --new-chat-control-background: color-mix(
       in srgb,
       var(--surface-elevated) 88%,
-      var(--white)
+      var(--surface)
     );
     --new-chat-control-border-color: color-mix(
       in srgb,
@@ -338,8 +338,8 @@
     );
     --new-chat-action-background: color-mix(
       in srgb,
-      var(--primary) 92%,
-      var(--white)
+      var(--primary) 90%,
+      var(--black)
     );
     --new-chat-mask-hover-background: color-mix(
       in srgb,

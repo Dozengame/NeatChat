@@ -11138,6 +11138,17 @@ describe("Gemini visual migration shell", () => {
       newChatStyles.slice(autoDarkNewChatMediaIndex),
       autoDarkNewChatSelector,
     );
+    const rootComfortTokens = readCustomProperties(newChatRootBlock, [
+      "--new-chat-control-background",
+    ]);
+    const darkComfortTokens = readCustomProperties(darkNewChatBlock, [
+      "--new-chat-control-background",
+      "--new-chat-action-background",
+    ]);
+    const autoDarkComfortTokens = readCustomProperties(autoDarkNewChatBlock, [
+      "--new-chat-control-background",
+      "--new-chat-action-background",
+    ]);
     const mobileBlock = readCssBlock(
       newChatStyles,
       "@media screen and (max-width: 520px)",
@@ -11181,8 +11192,8 @@ describe("Gemini visual migration shell", () => {
     expect(newChatRootBlock).toMatch(
       /--new-chat-page-background:\s*var\(--surface\);/,
     );
-    expect(newChatRootBlock).toMatch(
-      /--new-chat-control-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 94%,\s*var\(--white\)\s*\);/,
+    expect(rootComfortTokens["--new-chat-control-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 94%, var(--surface-soft) )",
     );
     expect(newChatRootBlock).toMatch(
       /--new-chat-mask-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 5%,\s*transparent\s*\);/,
@@ -11252,8 +11263,8 @@ describe("Gemini visual migration shell", () => {
     expect(maskActiveBlock).toMatch(
       /background:\s*var\(--new-chat-mask-hover-background\);/,
     );
-    expect(darkNewChatBlock).toMatch(
-      /--new-chat-control-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+    expect(darkComfortTokens["--new-chat-control-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 88%, var(--surface) )",
     );
     expect(darkNewChatBlock).toMatch(
       /--new-chat-control-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 9%,\s*transparent\s*\);/,
@@ -11267,16 +11278,16 @@ describe("Gemini visual migration shell", () => {
     expect(darkNewChatBlock).toMatch(
       /--new-chat-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 84%,\s*transparent\s*\);/,
     );
-    expect(darkNewChatBlock).toMatch(
-      /--new-chat-action-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 92%,\s*var\(--white\)\s*\);/,
+    expect(darkComfortTokens["--new-chat-action-background"]).toBe(
+      "color-mix( in srgb, var(--primary) 90%, var(--black) )",
     );
     expect(darkNewChatBlock).toMatch(
       /--new-chat-mask-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 9%,\s*transparent\s*\);/,
     );
     expect(autoDarkNewChatIndex).toBeGreaterThan(-1);
     expect(autoDarkNewChatMediaIndex).toBeGreaterThan(-1);
-    expect(autoDarkNewChatBlock).toMatch(
-      /--new-chat-control-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 88%,\s*var\(--white\)\s*\);/,
+    expect(autoDarkComfortTokens["--new-chat-control-background"]).toBe(
+      darkComfortTokens["--new-chat-control-background"],
     );
     expect(autoDarkNewChatBlock).toMatch(
       /--new-chat-control-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 9%,\s*transparent\s*\);/,
@@ -11290,8 +11301,8 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkNewChatBlock).toMatch(
       /--new-chat-muted-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 84%,\s*transparent\s*\);/,
     );
-    expect(autoDarkNewChatBlock).toMatch(
-      /--new-chat-action-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 92%,\s*var\(--white\)\s*\);/,
+    expect(autoDarkComfortTokens["--new-chat-action-background"]).toBe(
+      darkComfortTokens["--new-chat-action-background"],
     );
     expect(autoDarkNewChatBlock).toMatch(
       /--new-chat-mask-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 9%,\s*transparent\s*\);/,
@@ -11317,6 +11328,15 @@ describe("Gemini visual migration shell", () => {
     expect(newChatPaintScope).not.toContain("border-radius: 24px");
     expect(newChatPaintScope).not.toContain("border-radius: 14px");
     expect(newChatStyles).not.toContain("fill: white !important");
+    expect(
+      [
+        rootComfortTokens["--new-chat-control-background"],
+        darkComfortTokens["--new-chat-control-background"],
+        darkComfortTokens["--new-chat-action-background"],
+        autoDarkComfortTokens["--new-chat-control-background"],
+        autoDarkComfortTokens["--new-chat-action-background"],
+      ].join("\n"),
+    ).not.toMatch(/var\(--(?:white|gray)\)/);
   });
 
   test("keeps Search Chat aligned with Gemini command surfaces", () => {
