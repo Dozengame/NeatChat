@@ -1090,7 +1090,7 @@ pre {
   --error-panel-background: color-mix(
     in srgb,
     var(--surface-elevated) 94%,
-    var(--gray)
+    var(--surface-soft)
   );
   --error-panel-border-color: color-mix(
     in srgb,
@@ -1172,7 +1172,7 @@ pre {
   --error-panel-background: color-mix(
     in srgb,
     var(--surface-elevated) 88%,
-    var(--white)
+    var(--surface)
   );
   --error-panel-border-color: color-mix(
     in srgb,
@@ -1188,7 +1188,7 @@ pre {
   --error-details-background: color-mix(
     in srgb,
     var(--surface-soft) 74%,
-    var(--white)
+    var(--surface)
   );
   --error-details-border-color: color-mix(
     in srgb,
@@ -1204,7 +1204,7 @@ pre {
     --error-panel-background: color-mix(
       in srgb,
       var(--surface-elevated) 88%,
-      var(--white)
+      var(--surface)
     );
     --error-panel-border-color: color-mix(
       in srgb,
@@ -1220,7 +1220,7 @@ pre {
     --error-details-background: color-mix(
       in srgb,
       var(--surface-soft) 74%,
-      var(--white)
+      var(--surface)
     );
     --error-details-border-color: color-mix(
       in srgb,

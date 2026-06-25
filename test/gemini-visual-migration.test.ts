@@ -13808,6 +13808,22 @@ describe("Gemini visual migration shell", () => {
       autoDarkErrorBlock,
       errorTokenNames,
     );
+    const errorSurfaceTokenNames = [
+      "--error-panel-background",
+      "--error-details-background",
+    ];
+    const errorSurfaceTokenMap = readCustomProperties(
+      errorRootBlock,
+      errorSurfaceTokenNames,
+    );
+    const darkErrorSurfaceTokenMap = readCustomProperties(
+      darkErrorBlock,
+      errorSurfaceTokenNames,
+    );
+    const autoDarkErrorSurfaceTokenMap = readCustomProperties(
+      autoDarkErrorBlock,
+      errorSurfaceTokenNames,
+    );
     const errorPaintScope = [
       errorRootBlock,
       darkErrorBlock,
@@ -13848,6 +13864,26 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkErrorSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkErrorMediaIndex).toBeGreaterThan(-1);
     expect(errorMobileMediaIndex).toBeGreaterThan(-1);
+    expect(errorSurfaceTokenMap).toEqual({
+      "--error-panel-background":
+        "color-mix( in srgb, var(--surface-elevated) 94%, var(--surface-soft) )",
+      "--error-details-background":
+        "color-mix( in srgb, var(--surface-soft) 78%, var(--surface-elevated) )",
+    });
+    expect(darkErrorSurfaceTokenMap).toEqual({
+      "--error-panel-background":
+        "color-mix( in srgb, var(--surface-elevated) 88%, var(--surface) )",
+      "--error-details-background":
+        "color-mix( in srgb, var(--surface-soft) 74%, var(--surface) )",
+    });
+    expect(autoDarkErrorSurfaceTokenMap).toEqual(darkErrorSurfaceTokenMap);
+    for (const tokenValue of [
+      ...Object.values(errorSurfaceTokenMap),
+      ...Object.values(darkErrorSurfaceTokenMap),
+      ...Object.values(autoDarkErrorSurfaceTokenMap),
+    ]) {
+      expect(tokenValue).not.toMatch(/var\(--(?:white|gray)\)/);
+    }
 
     expect(errorRootBlock).toMatch(
       /width:\s*min\(720px, calc\(100vw - 32px\)\);/,
