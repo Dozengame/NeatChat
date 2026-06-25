@@ -11495,6 +11495,24 @@ describe("Gemini visual migration shell", () => {
       autoDarkAuthBlock,
       authThemeTokenNames,
     );
+    const authSurfaceTokenNames = [
+      "--auth-panel-background",
+      "--auth-panel-shadow-color",
+      "--auth-field-background",
+      "--auth-field-shadow",
+    ];
+    const authSurfaceTokenMap = readCustomProperties(
+      authRootBlock,
+      authSurfaceTokenNames,
+    );
+    const darkAuthSurfaceTokenMap = readCustomProperties(
+      darkAuthBlock,
+      authSurfaceTokenNames,
+    );
+    const autoDarkAuthSurfaceTokenMap = readCustomProperties(
+      autoDarkAuthBlock,
+      authSurfaceTokenNames,
+    );
     const authPaintScope = [
       authRootBlock,
       panelBlock,
@@ -11526,14 +11544,24 @@ describe("Gemini visual migration shell", () => {
     expect(authPage).not.toContain('marginBottom: "3vh"');
 
     expect(authRootBlock).toMatch(
-      /--auth-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--white\)\s*\);/,
+      /--auth-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--surface-soft\)\s*\);/,
     );
     expect(authRootBlock).toMatch(
       /--auth-panel-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
     );
     expect(authRootBlock).toMatch(
-      /--auth-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface\) 72%,\s*var\(--white\)\s*\);/,
+      /--auth-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface\) 72%,\s*var\(--surface-soft\)\s*\);/,
     );
+    expect(authSurfaceTokenMap).toEqual({
+      "--auth-panel-background":
+        "color-mix( in srgb, var(--surface-elevated) 92%, var(--surface-soft) )",
+      "--auth-panel-shadow-color":
+        "color-mix( in srgb, var(--black-50) 10%, transparent )",
+      "--auth-field-background":
+        "color-mix( in srgb, var(--surface) 72%, var(--surface-soft) )",
+      "--auth-field-shadow":
+        "inset 0 1px 2px color-mix(in srgb, var(--black-50) 6%, transparent)",
+    });
     for (const tokenMap of [
       authThemeTokenMap,
       darkAuthThemeTokenMap,
@@ -11608,26 +11636,44 @@ describe("Gemini visual migration shell", () => {
       /color:\s*var\(--auth-action-disabled-color\);/,
     );
     expect(darkAuthBlock).toMatch(
-      /--auth-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--auth-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
     expect(darkAuthBlock).toMatch(
-      /--auth-panel-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--gray\) 48%,\s*transparent\s*\);/,
+      /--auth-panel-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--surface\) 48%,\s*transparent\s*\);/,
     );
     expect(darkAuthBlock).toMatch(
-      /--auth-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 78%,\s*var\(--white\)\s*\);/,
+      /--auth-field-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 78%,\s*var\(--surface\)\s*\);/,
     );
+    expect(darkAuthSurfaceTokenMap).toEqual({
+      "--auth-panel-background":
+        "color-mix( in srgb, var(--surface-elevated) 86%, var(--surface) )",
+      "--auth-panel-shadow-color":
+        "color-mix(in srgb, var(--surface) 48%, transparent)",
+      "--auth-field-background":
+        "color-mix( in srgb, var(--surface-elevated) 78%, var(--surface) )",
+      "--auth-field-shadow":
+        "inset 0 1px 2px color-mix(in srgb, var(--surface) 22%, transparent)",
+    });
     expect(darkAuthBlock).not.toMatch(
       /--auth-panel-shadow-color:[^;]*var\(--black\)/,
     );
     expect(autoDarkAuthIndex).toBeGreaterThan(-1);
     expect(autoDarkAuthMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkAuthBlock).toMatch(
-      /--auth-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--white\)\s*\);/,
+      /--auth-panel-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 86%,\s*var\(--surface\)\s*\);/,
     );
     expect(autoDarkAuthBlock).toMatch(
-      /--auth-panel-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--gray\) 48%,\s*transparent\s*\);/,
+      /--auth-panel-shadow-color:\s*color-mix\(\s*in srgb,\s*var\(--surface\) 48%,\s*transparent\s*\);/,
     );
     expect(autoDarkAuthThemeTokenMap).toEqual(darkAuthThemeTokenMap);
+    expect(autoDarkAuthSurfaceTokenMap).toEqual(darkAuthSurfaceTokenMap);
+    for (const tokenValue of [
+      ...Object.values(authSurfaceTokenMap),
+      ...Object.values(darkAuthSurfaceTokenMap),
+      ...Object.values(autoDarkAuthSurfaceTokenMap),
+    ]) {
+      expect(tokenValue).not.toMatch(/var\(--(?:white|gray)\)/);
+    }
     expect(mobileAuthBlock).toMatch(/padding:\s*28px 16px;/);
     expect(mobilePanelBlock).toMatch(
       /border-radius:\s*var\(--auth-panel-radius\);/,
