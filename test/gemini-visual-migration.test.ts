@@ -8551,7 +8551,7 @@ describe("Gemini visual migration shell", () => {
     );
     const mobileInlineCodeBlock = readCssBlock(
       mobileMarkdownBlock,
-      ".markdown-body p > code,\n  .markdown-body li > code,\n  .markdown-body td > code,\n  .markdown-body p > tt,\n  .markdown-body li > tt,\n  .markdown-body td > tt",
+      ".markdown-body :where(p, li, td, blockquote) code:not(del code),\n  .markdown-body :where(p, li, td, blockquote) tt:not(del tt)",
     );
     const mobileKbdBlock = readCssBlock(mobileMarkdownBlock, ".markdown-body kbd");
     const inlineCodeToneScope = [
@@ -8990,9 +8990,17 @@ describe("Gemini visual migration shell", () => {
       mediaVideoBlock,
     ].join("\n");
 
-    expect(markdown).toMatch(/if \(\/\\\.\(aac\|mp3\|opus\|wav\)\$\/\.test\(href\)\)/);
+    expect(markdown).toContain("function getMediaHrefExtension");
+    expect(markdown).toContain("const audioMediaExtensions = new Set");
+    expect(markdown).toContain("const videoMediaExtensions = new Set");
+    expect(markdown).toContain(
+      "const mediaHrefExtension = getMediaHrefExtension(href);",
+    );
+    expect(markdown).toContain(
+      "if (audioMediaExtensions.has(mediaHrefExtension))",
+    );
     expect(markdown).toMatch(
-      /if \(\/\\\.\(3gp\|3g2\|webm\|ogv\|mpeg\|mp4\|avi\)\$\/\.test\(href\)\)/,
+      /if \(videoMediaExtensions\.has\(mediaHrefExtension\)\)/,
     );
     expect(markdown).toContain('aria-label="音频附件"');
     expect(markdown).toContain('aria-label="视频附件"');
@@ -9752,6 +9760,10 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-table-scroll-viewport",
     );
+    const tableViewportFocusVisibleBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-table-scroll-viewport:focus-visible",
+    );
     const tableFadeBlock = readCssBlock(
       markdownStyles,
       ".markdown-table-scroll-fade",
@@ -9878,7 +9890,7 @@ describe("Gemini visual migration shell", () => {
       /const syncTableScrollHint = useCallback\(\(\) => \{[\s\S]*const tableShell = tableScrollRef\.current;[\s\S]*const maxScrollLeft = Math\.max\([\s\S]*tableShell\.scrollWidth - tableShell\.clientWidth[\s\S]*start: tableShell\.scrollLeft > 1,[\s\S]*end: maxScrollLeft - tableShell\.scrollLeft > 1,/,
     );
     expect(markdown).toMatch(
-      /className="markdown-table-scroll-shell"[\s\S]*data-overflow-start=\{tableScrollHint\.start \? "true" : "false"\}[\s\S]*data-overflow-end=\{tableScrollHint\.end \? "true" : "false"\}[\s\S]*className="markdown-table-scroll-viewport"[\s\S]*onScroll=\{syncTableScrollHint\}/,
+      /className="markdown-table-scroll-shell"[\s\S]*data-overflow-start=\{tableScrollHint\.start \? "true" : "false"\}[\s\S]*data-overflow-end=\{tableScrollHint\.end \? "true" : "false"\}[\s\S]*className="markdown-table-scroll-viewport"[\s\S]*tabIndex=\{0\}[\s\S]*role="region"[\s\S]*aria-label="Markdown 表格，可横向滚动"[\s\S]*onScroll=\{syncTableScrollHint\}/,
     );
     expect(markdown).toMatch(
       /typeof ResizeObserver === "undefined"[\s\S]*const tableResizeObserver = new ResizeObserver\(\(\) => \{[\s\S]*syncTableScrollHint\(\);[\s\S]*tableResizeObserver\.observe\(tableShell\)/,
@@ -9910,6 +9922,13 @@ describe("Gemini visual migration shell", () => {
     expect(tableViewportBlock).toMatch(/overscroll-behavior-x:\s*contain;/);
     expect(tableViewportBlock).toMatch(/-webkit-overflow-scrolling:\s*touch;/);
     expect(tableViewportBlock).toMatch(/scrollbar-width:\s*thin;/);
+    expect(tableViewportFocusVisibleBlock).toMatch(
+      /outline:\s*var\(--focus-ring\);/,
+    );
+    expect(tableViewportFocusVisibleBlock).toMatch(/outline-offset:\s*-3px;/);
+    expect(tableViewportFocusVisibleBlock).toMatch(
+      /box-shadow:\s*var\(--focus-ring-shadow\);/,
+    );
     expect(tableFadeBlock).toMatch(/position:\s*absolute;/);
     expect(tableFadeBlock).toMatch(/top:\s*0;/);
     expect(tableFadeBlock).toMatch(/bottom:\s*0;/);
@@ -10258,7 +10277,14 @@ describe("Gemini visual migration shell", () => {
     );
     expect(detailsOpenBeforeBlock).toMatch(/transform:\s*rotate\(90deg\);/);
     expect(detailsSummaryFocusBlock).toMatch(/outline:\s*none;/);
-    expect(detailsSummaryFocusVisibleBlock).toMatch(/outline:\s*none;/);
+    expect(detailsSummaryFocusVisibleBlock).toMatch(
+      /outline:\s*var\(--focus-ring\);/,
+    );
+    expect(detailsSummaryFocusVisibleBlock).toMatch(/outline-offset:\s*3px;/);
+    expect(detailsSummaryFocusVisibleBlock).toMatch(/border-radius:\s*6px;/);
+    expect(detailsSummaryFocusVisibleBlock).toMatch(
+      /box-shadow:\s*var\(--focus-ring-shadow\);/,
+    );
     expect(detailsSummaryActiveBlock).toMatch(/background:\s*none;/);
     expect(detailsDisclosureToneScope).not.toMatch(
       /(?:rgba?|hsla?|hwb|oklch|oklab|lch|lab|color|device-cmyk)\(|#[0-9a-fA-F]{3,8}\b|rgb\(49,\s*94,\s*248\)/,
@@ -10284,6 +10310,10 @@ describe("Gemini visual migration shell", () => {
     const detailsBlockquoteBlock = readCssBlock(
       markdownStyles,
       ".markdown-body details blockquote,\n.markdown-body details > p > blockquote",
+    );
+    const nestedBlockquoteBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body blockquote blockquote",
     );
     const darkDetailsBlockquoteBlock = readCssBlock(
       markdownStyles,
@@ -10381,6 +10411,16 @@ describe("Gemini visual migration shell", () => {
     expect(detailsBlockquoteBlock).toMatch(/border-radius:\s*0;/);
     expect(detailsBlockquoteBlock).toMatch(/box-shadow:\s*none;/);
     expect(detailsBlockquoteBlock).toMatch(/line-height:\s*inherit;/);
+    expect(nestedBlockquoteBlock).toMatch(/margin:\s*8px 0 0;/);
+    expect(nestedBlockquoteBlock).toMatch(/padding:\s*0 0 0 1em;/);
+    expect(nestedBlockquoteBlock).toMatch(/background:\s*transparent;/);
+    expect(nestedBlockquoteBlock).toMatch(/border:\s*0;/);
+    expect(nestedBlockquoteBlock).toMatch(
+      /border-left:\s*3px solid var\(--markdown-details-blockquote-rail-color\);/,
+    );
+    expect(nestedBlockquoteBlock).toMatch(/border-radius:\s*0;/);
+    expect(nestedBlockquoteBlock).toMatch(/box-shadow:\s*none;/);
+    expect(nestedBlockquoteBlock).toMatch(/line-height:\s*inherit;/);
     expect(darkDetailsBlockquoteBlock).toMatch(/background:\s*transparent;/);
     expect(darkDetailsBlockquoteBlock).toMatch(
       /border-left-color:\s*var\(--markdown-details-blockquote-rail-color\);/,
@@ -10750,41 +10790,46 @@ describe("Gemini visual migration shell", () => {
     );
     const markBlock = readCssBlock(markdownStyles, ".markdown-body mark");
     const hrBlock = readCssBlock(markdownStyles, ".markdown-body hr");
+    const taskCheckboxSource = markdownStyles.slice(
+      markdownStyles.indexOf(
+        '\n.markdown-body .task-list-item > input[type="checkbox"] {',
+      ),
+    );
     const taskCheckboxBlock = readCssBlock(
-      markdownStyles,
-      ".markdown-body .task-list-item-checkbox",
+      taskCheckboxSource,
+      '.markdown-body .task-list-item > input[type="checkbox"]',
     );
     const taskCheckboxBeforeBlock = readCssBlock(
-      markdownStyles,
-      ".markdown-body .task-list-item-checkbox::before",
+      taskCheckboxSource,
+      '.markdown-body .task-list-item > input[type="checkbox"]::before',
     );
     const taskCheckboxCheckedBlock = readCssBlock(
-      markdownStyles,
-      ".markdown-body .task-list-item-checkbox:checked",
+      taskCheckboxSource,
+      '.markdown-body .task-list-item > input[type="checkbox"]:checked',
     );
     const taskCheckboxCheckedBeforeBlock = readCssBlock(
-      markdownStyles,
-      ".markdown-body .task-list-item-checkbox:checked::before",
+      taskCheckboxSource,
+      '.markdown-body .task-list-item > input[type="checkbox"]:checked::before',
     );
     const taskCheckboxFocusBlock = readCssBlock(
-      markdownStyles,
-      ".markdown-body .task-list-item-checkbox:focus-visible",
+      taskCheckboxSource,
+      '.markdown-body .task-list-item > input[type="checkbox"]:focus-visible',
     );
     const taskCheckboxDisabledBlock = readCssBlock(
-      markdownStyles,
-      ".markdown-body .task-list-item-checkbox:disabled",
+      taskCheckboxSource,
+      '.markdown-body .task-list-item > input[type="checkbox"]:disabled',
     );
     const taskCheckboxDisabledBeforeBlock = readCssBlock(
-      markdownStyles,
-      ".markdown-body .task-list-item-checkbox:disabled::before",
+      taskCheckboxSource,
+      '.markdown-body .task-list-item > input[type="checkbox"]:disabled::before',
     );
     const taskCheckboxCheckedDisabledBlock = readCssBlock(
-      markdownStyles,
-      ".markdown-body .task-list-item-checkbox:checked:disabled",
+      taskCheckboxSource,
+      '.markdown-body .task-list-item > input[type="checkbox"]:checked:disabled',
     );
     const taskCheckboxRtlBlock = readCssBlock(
-      markdownStyles,
-      ".markdown-body .contains-task-list:dir(rtl) .task-list-item-checkbox",
+      taskCheckboxSource,
+      '.markdown-body .contains-task-list:dir(rtl) .task-list-item > input[type="checkbox"]',
     );
     const reducedMotionBlock = readCssBlock(
       markdownStyles,
@@ -10792,7 +10837,7 @@ describe("Gemini visual migration shell", () => {
     );
     const reducedMotionTaskCheckboxBeforeBlock = readCssBlock(
       reducedMotionBlock,
-      ".markdown-body .task-list-item .task-list-item-checkbox::before",
+      '.markdown-body .task-list-item > input[type="checkbox"]::before',
     );
     const utilityToneScope = [
       csvBlock,

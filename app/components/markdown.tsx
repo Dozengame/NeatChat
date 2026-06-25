@@ -514,6 +514,9 @@ function MarkdownTable({
       <div
         ref={tableScrollRef}
         className="markdown-table-scroll-viewport"
+        tabIndex={0}
+        role="region"
+        aria-label="Markdown 表格，可横向滚动"
         onScroll={syncTableScrollHint}
       >
         <table {...tableProps} />
@@ -733,6 +736,16 @@ type DetectedFileAttachment = {
 };
 
 const fileAttachmentHrefPrefix = "#neatchat-file-attachment?";
+const audioMediaExtensions = new Set(["aac", "mp3", "opus", "wav"]);
+const videoMediaExtensions = new Set([
+  "3gp",
+  "3g2",
+  "webm",
+  "ogv",
+  "mpeg",
+  "mp4",
+  "avi",
+]);
 
 const createFileAttachmentHref = (file: DetectedFileAttachment) => {
   const params = new URLSearchParams();
@@ -741,6 +754,22 @@ const createFileAttachmentHref = (file: DetectedFileAttachment) => {
   params.set("size", String(file.fileSize));
   return `${fileAttachmentHrefPrefix}${params.toString()}`;
 };
+
+function getMediaHrefExtension(href: string) {
+  const trimmedHref = href.trim();
+  if (!trimmedHref) return "";
+
+  const fallbackPath = trimmedHref.split("#")[0].split("?")[0];
+
+  try {
+    const parsedHref = new URL(trimmedHref, "https://neatchat.local");
+    const match = parsedHref.pathname.match(/\.([a-z0-9]+)$/i);
+    return match?.[1]?.toLowerCase() ?? "";
+  } catch {
+    const match = fallbackPath.match(/\.([a-z0-9]+)$/i);
+    return match?.[1]?.toLowerCase() ?? "";
+  }
+}
 
 function detectFileAttachments(content: string): DetectedFileAttachment[] {
   const fileRegex =
@@ -936,8 +965,10 @@ function MarkDownContentInner(
             }
           }
 
+          const mediaHrefExtension = getMediaHrefExtension(href);
+
           // 处理音频链接
-          if (/\.(aac|mp3|opus|wav)$/.test(href)) {
+          if (audioMediaExtensions.has(mediaHrefExtension)) {
             return (
               <span className="markdown-media-frame markdown-media-audio">
                 <audio
@@ -953,7 +984,7 @@ function MarkDownContentInner(
           }
 
           // 处理视频链接
-          if (/\.(3gp|3g2|webm|ogv|mpeg|mp4|avi)$/.test(href)) {
+          if (videoMediaExtensions.has(mediaHrefExtension)) {
             return (
               <span className="markdown-media-frame markdown-media-video">
                 <video

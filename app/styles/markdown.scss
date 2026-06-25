@@ -1555,7 +1555,10 @@ summary,
       }
 
       &:focus-visible {
-        outline: none;
+        outline: var(--focus-ring);
+        outline-offset: 3px;
+        border-radius: 6px;
+        box-shadow: var(--focus-ring-shadow);
       }
 
       &:active {
@@ -2284,7 +2287,7 @@ summary,
     transition-duration: 0.01ms !important;
   }
 
-  .markdown-body .task-list-item .task-list-item-checkbox::before {
+  .markdown-body .task-list-item > input[type="checkbox"]::before {
     transition-duration: 0.01ms !important;
   }
 }
@@ -2398,6 +2401,12 @@ summary,
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
+}
+
+.markdown-table-scroll-viewport:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: -3px;
+  box-shadow: var(--focus-ring-shadow);
 }
 
 .markdown-body .markdown-table-scroll-shell {
@@ -2762,6 +2771,17 @@ summary,
 .markdown-body details blockquote,
 .markdown-body details > p > blockquote {
   padding: 0 0 0 1.5em;
+  background: transparent;
+  border: 0;
+  border-left: 3px solid var(--markdown-details-blockquote-rail-color);
+  border-radius: 0;
+  box-shadow: none;
+  line-height: inherit;
+}
+
+.markdown-body blockquote blockquote {
+  margin: 8px 0 0;
+  padding: 0 0 0 1em;
   background: transparent;
   border: 0;
   border-left: 3px solid var(--markdown-details-blockquote-rail-color);
@@ -3796,7 +3816,7 @@ summary,
   display: none;
 }
 
-.markdown-body .task-list-item-checkbox {
+.markdown-body .task-list-item > input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
   display: inline-grid;
@@ -3812,7 +3832,7 @@ summary,
   border-radius: 0.28em;
 }
 
-.markdown-body .task-list-item-checkbox::before {
+.markdown-body .task-list-item > input[type="checkbox"]::before {
   inline-size: 0.55em;
   block-size: 0.55em;
   content: "";
@@ -3823,36 +3843,36 @@ summary,
   transition: transform 0.16s ease;
 }
 
-.markdown-body .task-list-item-checkbox:checked {
+.markdown-body .task-list-item > input[type="checkbox"]:checked {
   background: var(--markdown-task-checkbox-checked-background);
 }
 
-.markdown-body .task-list-item-checkbox:checked::before {
+.markdown-body .task-list-item > input[type="checkbox"]:checked::before {
   transform: scale(1);
 }
 
-.markdown-body .task-list-item-checkbox:disabled {
+.markdown-body .task-list-item > input[type="checkbox"]:disabled {
   cursor: default;
   opacity: 1;
   background: var(--markdown-task-checkbox-disabled-background);
   border-color: var(--markdown-task-checkbox-disabled-border-color);
 }
 
-.markdown-body .task-list-item-checkbox:disabled::before {
+.markdown-body .task-list-item > input[type="checkbox"]:disabled::before {
   box-shadow: inset 1em 1em
     var(--markdown-task-checkbox-disabled-check-color);
 }
 
-.markdown-body .task-list-item-checkbox:checked:disabled {
+.markdown-body .task-list-item > input[type="checkbox"]:checked:disabled {
   background: var(--markdown-task-checkbox-disabled-checked-background);
 }
 
-.markdown-body .task-list-item-checkbox:focus-visible {
+.markdown-body .task-list-item > input[type="checkbox"]:focus-visible {
   outline: 2px solid var(--markdown-task-checkbox-focus-ring-color);
   outline-offset: 2px;
 }
 
-.markdown-body .contains-task-list:dir(rtl) .task-list-item-checkbox {
+.markdown-body .contains-task-list:dir(rtl) .task-list-item > input[type="checkbox"] {
   margin: 0 -1.6em 0.25em 0.2em;
 }
 
@@ -4045,12 +4065,8 @@ summary,
     margin-top: 0.32em;
   }
 
-  .markdown-body p > code,
-  .markdown-body li > code,
-  .markdown-body td > code,
-  .markdown-body p > tt,
-  .markdown-body li > tt,
-  .markdown-body td > tt {
+  .markdown-body :where(p, li, td, blockquote) code:not(del code),
+  .markdown-body :where(p, li, td, blockquote) tt:not(del tt) {
     padding: 0.1em 0.3em;
     line-height: 1.5;
     border-radius: 5px;

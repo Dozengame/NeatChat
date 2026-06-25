@@ -111,7 +111,7 @@ describe("Markdown file attachments", () => {
     const { container } = render(
       <Markdown
         content={
-          "[listen](https://example.com/clip.mp3)\n\n[watch](https://example.com/clip.mp4)"
+          "[listen](https://example.com/clip.MP3?sig=1#t=2)\n\n[watch](https://example.com/clip.MP4?sig=1#t=1)"
         }
       />,
     );
@@ -127,13 +127,16 @@ describe("Markdown file attachments", () => {
     expect(container.querySelector("figure.markdown-media-frame")).toBeNull();
     expect(audioPlayer).toHaveAttribute(
       "src",
-      "https://example.com/clip.mp3",
+      "https://example.com/clip.MP3?sig=1#t=2",
     );
     expect(audioPlayer).toHaveAttribute("controls");
     expect(audioPlayer).toHaveAttribute("aria-label", "音频附件");
     expect(videoPlayer).toHaveAttribute("controls");
     expect(videoPlayer).toHaveAttribute("aria-label", "视频附件");
-    expect(videoSource).toHaveAttribute("src", "https://example.com/clip.mp4");
+    expect(videoSource).toHaveAttribute(
+      "src",
+      "https://example.com/clip.MP4?sig=1#t=1",
+    );
     expect(container.querySelector(".markdown-video-player")).not.toHaveAttribute(
       "width",
     );
