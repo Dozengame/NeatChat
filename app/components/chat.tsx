@@ -4074,7 +4074,7 @@ function useChatInnerView() {
           </button>
           <IconButton
             className={styles["chat-mobile-header-button"]}
-            icon={<RenameIcon />}
+            icon={<SettingsIcon />}
             bordered
             title={Locale.Chat.InputActions.Settings}
             aria={Locale.Chat.InputActions.Settings}

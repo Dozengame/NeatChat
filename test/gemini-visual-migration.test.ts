@@ -773,6 +773,22 @@ describe("Gemini visual migration shell", () => {
       narrowEmptyContainerBlock,
       ".chat-empty-suggestion",
     );
+    const narrowEmptySuggestionFooterBlock = readCssBlock(
+      narrowEmptyContainerBlock,
+      ".chat-empty-suggestion-footer",
+    );
+    const narrowEmptySuggestionIconWrapperBlock = readCssBlock(
+      narrowEmptyContainerBlock,
+      ".chat-empty-suggestion-icon-wrapper",
+    );
+    const narrowEmptySuggestionIconSvgBlock = readCssBlock(
+      narrowEmptySuggestionIconWrapperBlock,
+      "svg",
+    );
+    const narrowEmptySuggestionAffordanceBlock = readCssBlock(
+      narrowEmptyContainerBlock,
+      ".chat-empty-suggestion-affordance",
+    );
     const inputStatusBlock = readCssBlock(
       chatStyles,
       ".chat-input-panel-inner-status",
@@ -2581,6 +2597,27 @@ describe("Gemini visual migration shell", () => {
     expect(narrowEmptySuggestionBlock).toMatch(
       /min-height:\s*48px\s*!important;/,
     );
+    expect(narrowEmptySuggestionFooterBlock).toMatch(/gap:\s*6px;/);
+    expect(narrowEmptySuggestionIconWrapperBlock).toMatch(
+      /display:\s*inline-flex\s*!important;/,
+    );
+    expect(narrowEmptySuggestionIconWrapperBlock).toMatch(
+      /flex:\s*0 0 22px\s*!important;/,
+    );
+    expect(narrowEmptySuggestionIconWrapperBlock).toMatch(
+      /width:\s*22px\s*!important;/,
+    );
+    expect(narrowEmptySuggestionIconWrapperBlock).toMatch(
+      /height:\s*22px\s*!important;/,
+    );
+    expect(narrowEmptySuggestionIconWrapperBlock).toMatch(
+      /color:\s*var\(--chat-empty-suggestion-icon-color\);/,
+    );
+    expect(narrowEmptySuggestionIconSvgBlock).toMatch(/width:\s*13px;/);
+    expect(narrowEmptySuggestionIconSvgBlock).toMatch(/height:\s*13px;/);
+    expect(narrowEmptySuggestionAffordanceBlock).toMatch(
+      /flex:\s*0 0 20px\s*!important;/,
+    );
     expect(chatStyles).toContain(".chat-reading-surface");
     expect(chatStyles).toContain(".chat-message-row");
     expect(chatStyles).toContain(".chat-message-row-user");
@@ -3033,6 +3070,12 @@ describe("Gemini visual migration shell", () => {
       /:global\(button:hover\),[\s\S]*:global\(button:focus-visible\)[\s\S]*border-color:\s*var\(--chat-header-action-hover-border-color\);/,
     );
     expect(mobileDesktopHeaderActionsBlock).toMatch(/display:\s*none;/);
+    expect(chat).toMatch(
+      /<IconButton\s+className=\{styles\["chat-mobile-header-button"\]\}\s+icon=\{<SettingsIcon \/>\}\s+bordered\s+title=\{Locale\.Chat\.InputActions\.Settings\}\s+aria=\{Locale\.Chat\.InputActions\.Settings\}/,
+    );
+    expect(chat).toMatch(
+      /styles\["chat-desktop-header-action"\][\s\S]*<IconButton\s+icon=\{<RenameIcon \/>\}\s+bordered\s+title=\{Locale\.Chat\.EditMessage\.Title\}/,
+    );
     expect(chatStyles).toContain(".chat-mobile-header");
     expect(chatStyles).toContain(".chat-mobile-header-button");
     expect(mobileHeaderRootBlock).toMatch(/gap:\s*8px;/);
@@ -4578,6 +4621,10 @@ describe("Gemini visual migration shell", () => {
       actionMenuBlock,
       ".chat-input-action",
     );
+    const actionMenuActionTextBlock = readCssBlock(
+      actionMenuActionBlock,
+      ".text",
+    );
     const actionMenuActionHoverBlock = readCssBlockContainingSelector(
       actionMenuActionBlock,
       "&:not(:disabled):hover",
@@ -4629,6 +4676,14 @@ describe("Gemini visual migration shell", () => {
     const mobileActionMenuBlock = readCssBlock(
       mobileStyles,
       ".chat-input-action-menu",
+    );
+    const mobileActionMenuActionBlock = readCssBlock(
+      mobileActionMenuBlock,
+      ".chat-input-action",
+    );
+    const mobileActionMenuActionTextBlock = readCssBlock(
+      mobileActionMenuActionBlock,
+      ".text",
     );
     const narrowStyles = chatStyles.slice(
       chatStyles.lastIndexOf("@media only screen and (max-width: 358px)"),
@@ -4873,6 +4928,10 @@ describe("Gemini visual migration shell", () => {
     }
     expect(actionMenuBlock).toMatch(/overscroll-behavior:\s*contain;/);
     expect(actionMenuBlock).toMatch(/scrollbar-width:\s*thin;/);
+    expect(actionMenuActionTextBlock).toMatch(/display:\s*flex;/);
+    expect(actionMenuActionTextBlock).toMatch(/opacity:\s*1;/);
+    expect(actionMenuActionTextBlock).toMatch(/transform:\s*none;/);
+    expect(actionMenuActionTextBlock).toMatch(/pointer-events:\s*auto;/);
     expect(actionMenuBackdropBlock).toMatch(
       /--chat-input-action-menu-backdrop-background:\s*color-mix\(in srgb,\s*var\(--surface\) 18%,\s*transparent\);/,
     );
@@ -4931,6 +4990,19 @@ describe("Gemini visual migration shell", () => {
     expect(mobileActionMenuBlock).toMatch(
       /max-height:\s*min\(380px,\s*calc\(100dvh - 140px\)\);/,
     );
+    expect(mobileActionMenuActionBlock).toMatch(/height:\s*46px;/);
+    expect(mobileActionMenuActionBlock).toMatch(/padding:\s*0 14px;/);
+    expect(mobileActionMenuActionTextBlock).toMatch(
+      /display:\s*flex\s*!important;/,
+    );
+    expect(mobileActionMenuActionTextBlock).toMatch(/opacity:\s*1\s*!important;/);
+    expect(mobileActionMenuActionTextBlock).toMatch(
+      /transform:\s*none\s*!important;/,
+    );
+    expect(mobileActionMenuActionTextBlock).toMatch(
+      /pointer-events:\s*auto\s*!important;/,
+    );
+    expect(mobileActionMenuActionTextBlock).toMatch(/white-space:\s*normal;/);
     expect(narrowActionMenuBlock).toMatch(
       /width:\s*min\(300px,\s*calc\(100vw - 24px\)\);/,
     );

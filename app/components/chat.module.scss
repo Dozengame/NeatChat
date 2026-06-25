@@ -2841,10 +2841,20 @@
   .chat-empty-suggestion-footer {
     width: auto !important;
     margin-top: 0 !important;
-    gap: 8px;
+    gap: 6px;
   }
   .chat-empty-suggestion-icon-wrapper {
-    display: none !important; // Hide category icon in tiny screens
+    display: inline-flex !important;
+    flex: 0 0 22px !important;
+    width: 22px !important;
+    height: 22px !important;
+    border-radius: 7px;
+    color: var(--chat-empty-suggestion-icon-color);
+
+    svg {
+      width: 13px;
+      height: 13px;
+    }
   }
   .chat-empty-suggestion-affordance {
     flex: 0 0 20px !important;
@@ -5956,7 +5966,12 @@
       font-size: 14px;
 
       .text {
+        display: flex !important;
+        opacity: 1 !important;
+        transform: none !important;
         padding-left: 12px;
+        pointer-events: auto !important;
+        white-space: normal;
       }
     }
   }
