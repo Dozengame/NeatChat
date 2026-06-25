@@ -2339,6 +2339,9 @@ summary,
   --markdown-thinking-card-radius: 8px;
   margin: 0 0 16px;
   padding: 10px 12px;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
   border-width: 1px;
   border-style: solid;
   border-color: var(--markdown-thinking-card-border-color);
@@ -2359,6 +2362,8 @@ summary,
   gap: 8px;
   min-height: 30px;
   max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   margin: 0 0 8px;
   padding: 5px 10px;
   border-width: 1px;
@@ -2372,6 +2377,7 @@ summary,
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0;
+  overflow-wrap: anywhere;
   list-style: none;
   cursor: pointer;
   user-select: none;
@@ -2402,6 +2408,10 @@ summary,
 
 .markdown-body details.markdown-thinking > *:not(summary) {
   padding-left: 16px;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .markdown-body details.markdown-thinking .thinking-loader {
@@ -3831,12 +3841,16 @@ summary,
 
   .markdown-body details.markdown-thinking {
     padding: 8px 10px;
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
     border-radius: var(--markdown-thinking-card-radius);
   }
 
   .markdown-body details.markdown-thinking > summary.markdown-thinking-summary {
     max-width: 100%;
     min-width: 0;
+    box-sizing: border-box;
     gap: 6px;
     white-space: normal;
     overflow-wrap: anywhere;
@@ -3845,11 +3859,19 @@ summary,
 
   .markdown-body details.markdown-thinking > *:not(summary) {
     padding-left: 10px;
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .markdown-body details.markdown-thinking blockquote,
   .markdown-body details.markdown-thinking > p > blockquote {
     padding: 0 0 0 1em;
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
     border-left: 3px solid var(--markdown-details-blockquote-rail-color);
   }
 

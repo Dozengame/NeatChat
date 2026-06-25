@@ -9876,6 +9876,9 @@ describe("Gemini visual migration shell", () => {
       /--markdown-thinking-card-radius:\s*8px;/,
     );
     expect(thinkingBlock).toMatch(/padding:\s*10px 12px;/);
+    expect(thinkingBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(thinkingBlock).toMatch(/max-width:\s*100%;/);
+    expect(thinkingBlock).toMatch(/min-width:\s*0;/);
     expect(thinkingBlock).toMatch(
       /border-radius:\s*var\(--markdown-thinking-card-radius\);/,
     );
@@ -9901,6 +9904,9 @@ describe("Gemini visual migration shell", () => {
     expect(thinkingSummaryBlock).toMatch(/align-items:\s*center;/);
     expect(thinkingSummaryBlock).toMatch(/gap:\s*8px;/);
     expect(thinkingSummaryBlock).toMatch(/min-height:\s*30px;/);
+    expect(thinkingSummaryBlock).toMatch(/max-width:\s*100%;/);
+    expect(thinkingSummaryBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(thinkingSummaryBlock).toMatch(/min-width:\s*0;/);
     expect(thinkingSummaryBlock).toMatch(/padding:\s*5px 10px;/);
     expect(thinkingSummaryBlock).toMatch(/border-radius:\s*999px;/);
     expect(thinkingSummaryBlock).toMatch(/border-width:\s*1px;/);
@@ -9918,6 +9924,7 @@ describe("Gemini visual migration shell", () => {
       /box-shadow:\s*inset 0 0 0 1px var\(--markdown-thinking-summary-ring-color\);/,
     );
     expect(thinkingSummaryBlock).toMatch(/letter-spacing:\s*0;/);
+    expect(thinkingSummaryBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(thinkingSummaryBlock).toMatch(/list-style:\s*none;/);
     expect(thinkingSummaryBlock).toMatch(
       /&::-webkit-details-marker[\s\S]*display:\s*none;/,
@@ -9956,14 +9963,26 @@ describe("Gemini visual migration shell", () => {
     expect(mobileThinkingBlock).toMatch(
       /border-radius:\s*var\(--markdown-thinking-card-radius\);/,
     );
+    expect(mobileThinkingBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(mobileThinkingBlock).toMatch(/max-width:\s*100%;/);
+    expect(mobileThinkingBlock).toMatch(/min-width:\s*0;/);
     expect(mobileThinkingSummaryBlock).toMatch(/max-width:\s*100%;/);
     expect(mobileThinkingSummaryBlock).toMatch(/min-width:\s*0;/);
+    expect(mobileThinkingSummaryBlock).toMatch(/box-sizing:\s*border-box;/);
     expect(mobileThinkingSummaryBlock).toMatch(/white-space:\s*normal;/);
     expect(mobileThinkingSummaryBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(mobileThinkingSummaryBlock).toMatch(/flex-wrap:\s*wrap;/);
     expect(mobileThinkingSummaryBlock).toMatch(/gap:\s*6px;/);
     expect(mobileThinkingContentBlock).toMatch(/padding-left:\s*10px;/);
+    expect(mobileThinkingContentBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(mobileThinkingContentBlock).toMatch(/max-width:\s*100%;/);
+    expect(mobileThinkingContentBlock).toMatch(/min-width:\s*0;/);
+    expect(mobileThinkingContentBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(mobileThinkingBlockquoteBlock).toMatch(/padding:\s*0 0 0 1em;/);
+    expect(mobileThinkingBlockquoteBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(mobileThinkingBlockquoteBlock).toMatch(/max-width:\s*100%;/);
+    expect(mobileThinkingBlockquoteBlock).toMatch(/min-width:\s*0;/);
+    expect(mobileThinkingBlockquoteBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(mobileThinkingBlockquoteBlock).toMatch(
       /border-left:\s*3px solid var\(--markdown-details-blockquote-rail-color\);/,
     );
