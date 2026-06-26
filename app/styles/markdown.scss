@@ -333,12 +333,17 @@ summary,
   );
   --markdown-code-block-background: color-mix(
     in srgb,
-    var(--surface-soft) 64%,
-    var(--surface-elevated)
+    var(--surface-elevated) 82%,
+    var(--surface-soft)
   );
   --markdown-code-block-border-color: color-mix(
     in srgb,
     var(--black-50) 10%,
+    transparent
+  );
+  --markdown-code-block-inner-highlight-color: color-mix(
+    in srgb,
+    rgb(255, 255, 255) 62%,
     transparent
   );
   --markdown-code-edge-surface: color-mix(
@@ -1087,6 +1092,11 @@ summary,
   --markdown-code-block-border-color: color-mix(
     in srgb,
     var(--black) 9%,
+    transparent
+  );
+  --markdown-code-block-inner-highlight-color: color-mix(
+    in srgb,
+    var(--black) 8%,
     transparent
   );
   --markdown-code-edge-surface: color-mix(
@@ -3357,6 +3367,7 @@ summary,
   direction: ltr;
   background-color: var(--markdown-code-block-background);
   border: 1px solid var(--markdown-code-block-border-color);
+  box-shadow: inset 0 1px 0 var(--markdown-code-block-inner-highlight-color);
   position: relative;
 }
 

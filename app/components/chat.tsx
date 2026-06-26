@@ -2471,8 +2471,9 @@ function useChatInnerView() {
   const desktopModelDetail = showHeaderImageControls
     ? `${headerCurrentSize} · ${getImageQualityLabel(headerCurrentQuality)}`
     : showHeaderReasoningControl
-    ? `思考 ${reasoningLabels[headerCurrentReasoningEffort]}`
+    ? reasoningLabels[headerCurrentReasoningEffort]
     : headerCurrentProviderName;
+  const mobileModelDetail = desktopModelDetail;
   const isReasoningSectionExpanded = expandedMobileModelSection === "reasoning";
   const isImageSizeSectionExpanded =
     expandedMobileModelSection === "image-size";
@@ -4055,8 +4056,8 @@ function useChatInnerView() {
             type="button"
             ref={modelSelectorButtonRef}
             className={styles["chat-mobile-model-title"]}
-            aria-label={`选择模型：${headerCurrentModelName}`}
-            title={headerCurrentModelName}
+            aria-label={`选择模型：${headerCurrentModelName}，${mobileModelDetail}`}
+            title={`${headerCurrentModelName} · ${mobileModelDetail}`}
             onKeyDown={handleModelMenuKeyDown}
             onClick={() => {
               setShowChatActionMenu(false);
@@ -4069,6 +4070,9 @@ function useChatInnerView() {
           >
             <span className={styles["chat-mobile-model-title-text"]}>
               {headerCurrentModelName}
+            </span>
+            <span className={styles["chat-mobile-model-title-meta"]}>
+              {mobileModelDetail}
             </span>
             <span className={styles["chat-mobile-model-title-arrow"]}>⌄</span>
           </button>

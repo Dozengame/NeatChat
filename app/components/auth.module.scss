@@ -255,9 +255,10 @@
   }
 
   :global(.password-input-container) {
+    position: relative;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     width: min(360px, 100%);
     max-width: none;
     min-width: 0;
@@ -280,10 +281,15 @@
     }
 
     :global(.password-eye) {
+      position: absolute;
+      left: 8px;
+      top: 50%;
+      transform: translateY(-50%);
       flex: 0 0 auto;
-      margin-right: 8px;
+      margin: 0;
       color: var(--auth-muted-color);
       border-radius: var(--auth-control-radius);
+      z-index: 1;
     }
 
     :global(.password-input) {
@@ -292,16 +298,18 @@
       min-width: 0;
       height: 100%;
       margin: 0;
-      padding: 0 4px;
+      padding: 0 44px;
       border: 0;
       outline: none;
       background: transparent;
       color: var(--auth-field-color);
       font-size: 14px;
       line-height: 20px;
+      text-align: center;
 
       &::placeholder {
         color: var(--auth-muted-color);
+        text-align: center;
       }
 
       &:focus-visible {

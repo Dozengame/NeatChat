@@ -1686,11 +1686,12 @@
   );
 
   appearance: none;
+  position: relative;
   flex: 1 1 auto;
   min-width: 0;
   min-height: 40px;
   max-width: min(100%, calc(100% - 104px));
-  padding: 0 12px;
+  padding: 0 30px;
   box-sizing: border-box;
   border: 1px solid var(--chat-header-control-border-color);
   border-radius: 999px;
@@ -1702,12 +1703,13 @@
   font: inherit;
   font-size: 14px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.15;
   letter-spacing: 0;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1725,12 +1727,27 @@
 
 .chat-mobile-model-title-text {
   min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.chat-mobile-model-title-meta {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--chat-model-title-muted-color);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .chat-mobile-model-title-arrow {
+  position: absolute;
+  right: 12px;
   flex: 0 0 auto;
   color: var(--chat-model-title-muted-color);
   font-size: 13px;
@@ -2527,7 +2544,7 @@
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   width: min(840px, 100%);
   margin-top: 24px;
@@ -2798,6 +2815,19 @@
     --chat-empty-suggestion-affordance-color: color-mix(in srgb, var(--black) 78%, transparent);
     --chat-empty-suggestion-affordance-hover-background: color-mix(in srgb, var(--primary) 15%, transparent);
     --chat-empty-suggestion-affordance-hover-color: color-mix(in srgb, var(--primary) 44%, var(--black));
+  }
+}
+
+@media screen and (max-width: 1180px) {
+  .chat-empty-suggestions {
+    grid-template-columns: repeat(2, minmax(240px, 1fr)) !important;
+    width: min(720px, 100%) !important;
+    max-width: 100%;
+    gap: 12px !important;
+  }
+
+  .chat-empty-suggestion {
+    min-height: 108px !important;
   }
 }
 

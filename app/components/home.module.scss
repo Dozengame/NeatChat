@@ -461,24 +461,32 @@
 
   svg [stroke="#333"],
   svg [stroke="#333333"],
+  svg [stroke="#000"],
+  svg [stroke="#000000"],
   svg [stroke="black"] {
     stroke: currentColor !important;
   }
 
   svg[stroke="#333"],
   svg[stroke="#333333"],
+  svg[stroke="#000"],
+  svg[stroke="#000000"],
   svg[stroke="black"] {
     stroke: currentColor !important;
   }
 
   svg [fill="#333"],
   svg [fill="#333333"],
+  svg [fill="#000"],
+  svg [fill="#000000"],
   svg [fill="black"] {
     fill: currentColor !important;
   }
 
   svg[fill="#333"],
   svg[fill="#333333"],
+  svg[fill="#000"],
+  svg[fill="#000000"],
   svg[fill="black"] {
     fill: currentColor !important;
   }
@@ -644,24 +652,32 @@
 
   svg [stroke="#333"],
   svg [stroke="#333333"],
+  svg [stroke="#000"],
+  svg [stroke="#000000"],
   svg [stroke="black"] {
     stroke: currentColor !important;
   }
 
   svg[stroke="#333"],
   svg[stroke="#333333"],
+  svg[stroke="#000"],
+  svg[stroke="#000000"],
   svg[stroke="black"] {
     stroke: currentColor !important;
   }
 
   svg [fill="#333"],
   svg [fill="#333333"],
+  svg [fill="#000"],
+  svg [fill="#000000"],
   svg [fill="black"] {
     fill: currentColor !important;
   }
 
   svg[fill="#333"],
   svg[fill="#333333"],
+  svg[fill="#000"],
+  svg[fill="#000000"],
   svg[fill="black"] {
     fill: currentColor !important;
   }
@@ -765,24 +781,32 @@
 
   svg [stroke="#333"],
   svg [stroke="#333333"],
+  svg [stroke="#000"],
+  svg [stroke="#000000"],
   svg [stroke="black"] {
     stroke: currentColor !important;
   }
 
   svg[stroke="#333"],
   svg[stroke="#333333"],
+  svg[stroke="#000"],
+  svg[stroke="#000000"],
   svg[stroke="black"] {
     stroke: currentColor !important;
   }
 
   svg [fill="#333"],
   svg [fill="#333333"],
+  svg [fill="#000"],
+  svg [fill="#000000"],
   svg [fill="black"] {
     fill: currentColor !important;
   }
 
   svg[fill="#333"],
   svg[fill="#333333"],
+  svg[fill="#000"],
+  svg[fill="#000000"],
   svg[fill="black"] {
     fill: currentColor !important;
   }
@@ -845,6 +869,42 @@
     width: 18px;
     height: 18px;
     flex: 0 0 18px;
+    filter: none !important;
+    color: currentColor;
+  }
+
+  svg [style*="stroke"] {
+    stroke: currentColor !important;
+  }
+
+  svg [style*="fill"] {
+    fill: currentColor !important;
+  }
+
+  svg [stroke="#333"],
+  svg [stroke="#333333"],
+  svg [stroke="#000"],
+  svg [stroke="#000000"],
+  svg [stroke="black"],
+  svg[stroke="#333"],
+  svg[stroke="#333333"],
+  svg[stroke="#000"],
+  svg[stroke="#000000"],
+  svg[stroke="black"] {
+    stroke: currentColor !important;
+  }
+
+  svg [fill="#333"],
+  svg [fill="#333333"],
+  svg [fill="#000"],
+  svg [fill="#000000"],
+  svg [fill="black"],
+  svg[fill="#333"],
+  svg[fill="#333333"],
+  svg[fill="#000"],
+  svg[fill="#000000"],
+  svg[fill="black"] {
+    fill: currentColor !important;
   }
 }
 
@@ -889,7 +949,21 @@
   font-weight: 400;
 }
 
+:global(.dark) .sidebar-toggle-button {
+  color: color-mix(in srgb, var(--black) 92%, transparent) !important;
+}
+
+:global(.dark) .sidebar-nav-item {
+  color: color-mix(in srgb, var(--black) 88%, transparent);
+
+  &:hover,
+  &:focus-visible {
+    color: color-mix(in srgb, var(--black) 96%, transparent);
+  }
+}
+
 :global(.dark) .sidebar-content-card {
+  color: color-mix(in srgb, var(--black) 90%, transparent);
   border-color: var(--sidebar-card-border-color);
   background: var(--surface-elevated);
 
@@ -911,6 +985,25 @@
 
   .sidebar-content-subtitle {
     color: var(--sidebar-item-active-muted-color);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(body:not(.light)) .sidebar-toggle-button {
+    color: color-mix(in srgb, var(--black) 92%, transparent) !important;
+  }
+
+  :global(body:not(.light)) .sidebar-nav-item {
+    color: color-mix(in srgb, var(--black) 88%, transparent);
+
+    &:hover,
+    &:focus-visible {
+      color: color-mix(in srgb, var(--black) 96%, transparent);
+    }
+  }
+
+  :global(body:not(.light)) .sidebar-content-card {
+    color: color-mix(in srgb, var(--black) 90%, transparent);
   }
 }
 
@@ -1137,10 +1230,10 @@
   }
 
   .chat-item {
-    min-height: 36px;
+    min-height: 64px;
     margin: 0;
-    padding: 0 40px 0 0;
-    border-radius: 0;
+    padding: 10px 46px 10px 12px;
+    border-radius: 8px;
     background: transparent;
     display: flex;
     align-items: center;
@@ -1151,17 +1244,30 @@
     margin-top: 6px;
   }
 
-  .chat-item:hover,
-  .chat-item-selected {
-    background: transparent;
+  .chat-item:hover {
+    background: var(--hover-color);
     color: var(--black);
+  }
+
+  .chat-item-selected {
+    background: var(--sidebar-item-active-background);
+    color: var(--black);
+    box-shadow:
+      inset 3px 0 0 var(--primary),
+      0 8px 22px var(--sidebar-action-active-drop-shadow);
+
+    &::before {
+      display: none;
+    }
   }
 
   .chat-item-link {
     width: 100%;
-    min-height: 36px;
+    min-height: auto;
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
   }
 
   .chat-item-title {
@@ -1172,11 +1278,25 @@
   }
 
   .chat-item-info {
-    display: none;
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+    margin-top: 6px;
+  }
+
+  .chat-item-count {
+    flex: 0 0 auto;
+  }
+
+  .chat-item-date {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: right;
   }
 
   .chat-item-delete {
-    right: 4px;
+    right: 8px;
     width: 34px;
     height: 34px;
     display: inline-flex;

@@ -1614,9 +1614,13 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(/showMobileModelSelector\s*&&\s*\(/);
     expect(chat).toContain('styles["chat-mobile-model-menu"]');
     expect(chat).toContain('styles["chat-mobile-model-title-text"]');
-    expect(chat).toContain("title={headerCurrentModelName}");
+    expect(chat).toContain('styles["chat-mobile-model-title-meta"]');
+    expect(chat).toContain("const mobileModelDetail = desktopModelDetail;");
     expect(chat).toContain(
-      'aria-label={`选择模型：${headerCurrentModelName}`}',
+      "title={`${headerCurrentModelName} · ${mobileModelDetail}`}",
+    );
+    expect(chat).toContain(
+      'aria-label={`选择模型：${headerCurrentModelName}，${mobileModelDetail}`}',
     );
     expect(chat).toContain('aria-controls="mobile-sidebar-drawer"');
     expect(chat).toContain("const isMobileSidebarOpen =");
@@ -1699,7 +1703,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("aria-expanded={showMobileModelSelector}");
     expect(chat).toContain('aria-controls="chat-model-menu"');
     expect(chat).toMatch(
-      /className=\{styles\["chat-mobile-model-title"\]\}[\s\S]*aria-label=\{`选择模型：\$\{headerCurrentModelName\}`\}[\s\S]*title=\{headerCurrentModelName\}[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*aria-controls="chat-model-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showMobileModelSelector\}/,
+      /className=\{styles\["chat-mobile-model-title"\]\}[\s\S]*aria-label=\{`选择模型：\$\{headerCurrentModelName\}，\$\{mobileModelDetail\}`\}[\s\S]*title=\{`\$\{headerCurrentModelName\} · \$\{mobileModelDetail\}`\}[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*aria-controls="chat-model-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showMobileModelSelector\}/,
     );
     expect(chat).toMatch(
       /className=\{styles\["chat-desktop-model-title"\]\}[\s\S]*aria-label="选择模型和参数"[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*aria-controls="chat-model-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showMobileModelSelector\}/,
@@ -3116,7 +3120,7 @@ describe("Gemini visual migration shell", () => {
     expect(mobileHeaderButtonBlock).not.toMatch(/backdrop-filter:\s*none\s*!important;/);
     expect(mobileHeaderButtonBlock).not.toMatch(/box-shadow:\s*none\s*!important;/);
     expect(mobileModelTitleBlock).toMatch(/min-height:\s*40px;/);
-    expect(mobileModelTitleBlock).toMatch(/padding:\s*0 12px;/);
+    expect(mobileModelTitleBlock).toMatch(/padding:\s*0 30px;/);
     expect(mobileModelTitleBlock).toMatch(/flex:\s*1 1 auto;/);
     expect(mobileModelTitleBlock).toMatch(
       /max-width:\s*min\(100%,\s*calc\(100% - 104px\)\);/,
@@ -4040,16 +4044,16 @@ describe("Gemini visual migration shell", () => {
       /svg \[style\*="stroke"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
     );
     expect(sidebarToggleButtonBlock).toMatch(
-      /svg \[stroke="#333"\],\s*svg \[stroke="#333333"\],\s*svg \[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+      /svg \[stroke="#333"\],\s*svg \[stroke="#333333"\],\s*svg \[stroke="#000"\],\s*svg \[stroke="#000000"\],\s*svg \[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
     );
     expect(sidebarToggleButtonBlock).toMatch(
-      /svg \[fill="#333"\],\s*svg \[fill="#333333"\],\s*svg \[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
+      /svg \[fill="#333"\],\s*svg \[fill="#333333"\],\s*svg \[fill="#000"\],\s*svg \[fill="#000000"\],\s*svg \[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
     );
     expect(sidebarToggleButtonBlock).toMatch(
-      /svg\[stroke="#333"\],\s*svg\[stroke="#333333"\],\s*svg\[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+      /svg\[stroke="#333"\],\s*svg\[stroke="#333333"\],\s*svg\[stroke="#000"\],\s*svg\[stroke="#000000"\],\s*svg\[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
     );
     expect(sidebarToggleButtonBlock).toMatch(
-      /svg\[fill="#333"\],\s*svg\[fill="#333333"\],\s*svg\[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
+      /svg\[fill="#333"\],\s*svg\[fill="#333333"\],\s*svg\[fill="#000"\],\s*svg\[fill="#000000"\],\s*svg\[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
     );
     expect(sidebarNavItemBlock).toMatch(/position:\s*relative;/);
     expect(sidebarNavItemBlock).toMatch(/overflow:\s*hidden;/);
@@ -4060,16 +4064,16 @@ describe("Gemini visual migration shell", () => {
       /svg \[style\*="stroke"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
     );
     expect(sidebarNavItemBlock).toMatch(
-      /svg \[stroke="#333"\],\s*svg \[stroke="#333333"\],\s*svg \[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+      /svg \[stroke="#333"\],\s*svg \[stroke="#333333"\],\s*svg \[stroke="#000"\],\s*svg \[stroke="#000000"\],\s*svg \[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
     );
     expect(sidebarNavItemBlock).toMatch(
-      /svg \[fill="#333"\],\s*svg \[fill="#333333"\],\s*svg \[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
+      /svg \[fill="#333"\],\s*svg \[fill="#333333"\],\s*svg \[fill="#000"\],\s*svg \[fill="#000000"\],\s*svg \[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
     );
     expect(sidebarNavItemBlock).toMatch(
-      /svg\[stroke="#333"\],\s*svg\[stroke="#333333"\],\s*svg\[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+      /svg\[stroke="#333"\],\s*svg\[stroke="#333333"\],\s*svg\[stroke="#000"\],\s*svg\[stroke="#000000"\],\s*svg\[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
     );
     expect(sidebarNavItemBlock).toMatch(
-      /svg\[fill="#333"\],\s*svg\[fill="#333333"\],\s*svg\[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
+      /svg\[fill="#333"\],\s*svg\[fill="#333333"\],\s*svg\[fill="#000"\],\s*svg\[fill="#000000"\],\s*svg\[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
     );
     expect(sidebarNavItemActiveBlock).toMatch(/color:\s*var\(--primary\);/);
     expect(sidebarNavItemActiveBlock).toMatch(/font-weight:\s*600;/);
@@ -4137,16 +4141,16 @@ describe("Gemini visual migration shell", () => {
       /svg \[style\*="stroke"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
     );
     expect(chatItemDeleteBlock).toMatch(
-      /svg \[stroke="#333"\],\s*svg \[stroke="#333333"\],\s*svg \[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+      /svg \[stroke="#333"\],\s*svg \[stroke="#333333"\],\s*svg \[stroke="#000"\],\s*svg \[stroke="#000000"\],\s*svg \[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
     );
     expect(chatItemDeleteBlock).toMatch(
-      /svg \[fill="#333"\],\s*svg \[fill="#333333"\],\s*svg \[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
+      /svg \[fill="#333"\],\s*svg \[fill="#333333"\],\s*svg \[fill="#000"\],\s*svg \[fill="#000000"\],\s*svg \[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
     );
     expect(chatItemDeleteBlock).toMatch(
-      /svg\[stroke="#333"\],\s*svg\[stroke="#333333"\],\s*svg\[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
+      /svg\[stroke="#333"\],\s*svg\[stroke="#333333"\],\s*svg\[stroke="#000"\],\s*svg\[stroke="#000000"\],\s*svg\[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
     );
     expect(chatItemDeleteBlock).toMatch(
-      /svg\[fill="#333"\],\s*svg\[fill="#333333"\],\s*svg\[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
+      /svg\[fill="#333"\],\s*svg\[fill="#333333"\],\s*svg\[fill="#000"\],\s*svg\[fill="#000000"\],\s*svg\[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
     );
     expect(chatItemDeleteBlock).toMatch(/pointer-events:\s*none;/);
     expect(chatItemDeleteBlock).toMatch(/&:focus-visible[\s\S]*opacity:\s*1;/);
@@ -15340,7 +15344,7 @@ describe("Gemini visual migration shell", () => {
     );
     expect(maskRootBlock).toMatch(/--update-announcement-panel-radius:\s*8px;/);
     expect(maskRootBlock).toMatch(
-      /--update-announcement-mobile-panel-radius:\s*8px 8px 0 0;/,
+      /--update-announcement-mobile-panel-radius:\s*8px;/,
     );
     expect(maskRootBlock).toMatch(
       /background:\s*var\(--update-announcement-mask-background\);/,
@@ -15392,12 +15396,18 @@ describe("Gemini visual migration shell", () => {
       /box-shadow:[\s\S]*var\(--update-announcement-confirm-shadow-color\)/,
     );
     expect(confirmBlock).toMatch(
-      /transition:[\s\S]*transform 0\.18s ease,[\s\S]*box-shadow 0\.18s ease,[\s\S]*filter 0\.18s ease;/,
+      /--icon-button-primary-background:\s*var\(--update-announcement-confirm-background\);/,
+    );
+    expect(confirmBlock).toMatch(
+      /transition:[\s\S]*transform 0\.18s ease,[\s\S]*background-color 0\.18s ease,[\s\S]*border-color 0\.18s ease,[\s\S]*color 0\.18s ease,[\s\S]*box-shadow 0\.18s ease,[\s\S]*filter 0\.18s ease;/,
     );
     expect(confirmHoverBlock).toMatch(
       /box-shadow:[\s\S]*var\(--update-announcement-confirm-hover-shadow-color\)/,
     );
     expect(confirmHoverBlock).toMatch(/transform:\s*translateY\(-1px\);/);
+    expect(confirmActiveBlock).toMatch(
+      /background-color:\s*var\(--update-announcement-confirm-active-background\);/,
+    );
     expect(confirmActiveBlock).toMatch(
       /box-shadow:[\s\S]*var\(--update-announcement-confirm-active-shadow-color\)/,
     );
@@ -15466,15 +15476,22 @@ describe("Gemini visual migration shell", () => {
     expect(updateAnnouncementStyles).not.toContain("var(--card-shadow)");
     expect(mobileMaskBlock).toMatch(/height:\s*100dvh;/);
     expect(mobileMaskBlock).toMatch(/padding:\s*0;/);
-    expect(mobilePanelBlock).toMatch(/width:\s*100vw;/);
+    expect(mobilePanelBlock).toMatch(/right:\s*16px;/);
+    expect(mobilePanelBlock).toMatch(/left:\s*16px;/);
     expect(mobilePanelBlock).toMatch(
-      /max-height:\s*calc\(78dvh - env\(safe-area-inset-bottom\)\);/,
+      /width:\s*min\(calc\(100vw - 32px\),\s*560px\);/,
+    );
+    expect(mobilePanelBlock).toMatch(
+      /max-height:\s*calc\(78dvh - 16px - env\(safe-area-inset-bottom\)\);/,
     );
     expect(mobilePanelBlock).toMatch(
       /border-radius:\s*var\(--update-announcement-mobile-panel-radius\);/,
     );
     expect(mobilePanelRootBlock).toMatch(
       /animation:\s*updateAnnouncementSheetIn 0\.28s cubic-bezier\(0\.2,\s*0,\s*0,\s*1\) both;/,
+    );
+    expect(readCssBlock(mobileBlock, ".footer")).toMatch(
+      /justify-content:\s*center;/,
     );
     expect(mobileConfirmBlock).toMatch(/width:\s*100%;/);
     expect(reducedMotionBlock).toMatch(
@@ -15489,6 +15506,216 @@ describe("Gemini visual migration shell", () => {
     expect(sheetKeyframesBlock).toMatch(
       /from\s*\{[\s\S]*opacity:\s*0;[\s\S]*transform:\s*translateY\(18px\);[\s\S]*\}[\s\S]*to\s*\{[\s\S]*opacity:\s*1;[\s\S]*transform:\s*translateY\(0\);/,
     );
+  });
+
+  test("covers user-reported chat shell visual regressions across desktop and mobile", () => {
+    const authStyles = read("app/components/auth.module.scss");
+    const updateAnnouncementStyles = read(
+      "app/components/update-announcement.module.scss",
+    );
+    const chat = read("app/components/chat.tsx");
+    const chatStyles = read("app/components/chat.module.scss");
+    const homeStyles = read("app/components/home.module.scss");
+    const uiLibStyles = read("app/components/ui-lib.module.scss");
+    const markdownStyles = read("app/styles/markdown.scss");
+    const highlightStyles = read("app/styles/highlight.scss");
+    const authBlock = readCssBlock(authStyles, ".auth-page");
+    const authPasswordContainerBlock = readCssBlock(
+      authBlock,
+      ":global(.password-input-container)",
+    );
+    const authPasswordEyeBlock = readCssBlock(
+      authPasswordContainerBlock,
+      ":global(.password-eye)",
+    );
+    const authPasswordInputBlock = readCssBlock(
+      authPasswordContainerBlock,
+      ":global(.password-input)",
+    );
+    const updateMobileBlock = readCssBlock(
+      updateAnnouncementStyles,
+      "@media screen and (max-width: 600px)",
+    );
+    const updateMobilePanelBlock = readCssBlock(updateMobileBlock, ".panel");
+    const updateMobileFooterBlock = readCssBlock(updateMobileBlock, ".footer");
+    const updateMobileConfirmBlock = readCssBlock(updateMobileBlock, ".confirm");
+    const updateConfirmBlock = readCssBlock(
+      updateAnnouncementStyles,
+      ".confirm",
+    );
+    const updateConfirmActiveBlock = readCssBlock(
+      updateConfirmBlock,
+      "&:active",
+    );
+    const chatEmptySuggestionsBlock = readCssBlock(
+      chatStyles,
+      ".chat-empty-suggestions",
+    );
+    const desktopEmptySuggestionsBlock = readCssBlock(
+      readCssBlock(chatStyles, "@media screen and (max-width: 1180px)"),
+      ".chat-empty-suggestions",
+    );
+    const desktopEmptySuggestionBlock = readCssBlock(
+      readCssBlock(chatStyles, "@media screen and (max-width: 1180px)"),
+      ".chat-empty-suggestion",
+    );
+    const mobileModelTitleBlock = readCssBlock(
+      chatStyles,
+      ".chat-mobile-model-title",
+    );
+    const mobileModelMetaBlock = readCssBlock(
+      chatStyles,
+      ".chat-mobile-model-title-meta",
+    );
+    const desktopModelMetaBlock = readCssBlock(
+      chatStyles,
+      ".chat-desktop-model-meta",
+    );
+    const compactChatListBlock = readCssBlock(
+      homeStyles.slice(homeStyles.lastIndexOf("\n.compact-container {")),
+      ".compact-container",
+    );
+    const compactChatItemBlock = readCssBlock(
+      compactChatListBlock,
+      ".chat-item",
+    );
+    const compactChatItemSelectedBlock = readCssBlock(
+      compactChatListBlock,
+      ".chat-item-selected",
+    );
+    const compactChatItemInfoBlock = readCssBlock(
+      compactChatListBlock,
+      ".chat-item-info",
+    );
+    const sidebarNavItemBlock = readCssBlock(homeStyles, ".sidebar-nav-item");
+    const sidebarContentCardBlock = readCssBlock(
+      homeStyles,
+      ".sidebar-content-card",
+    );
+    const sidebarToggleButtonDarkBlock = readCssBlock(
+      homeStyles,
+      ":global(.dark) .sidebar-toggle-button",
+    );
+    const sidebarNavItemDarkBlock = readCssBlock(
+      homeStyles,
+      ":global(.dark) .sidebar-nav-item",
+    );
+    const sidebarContentCardDarkBlock = readCssBlock(
+      homeStyles,
+      ":global(.dark) .sidebar-content-card",
+    );
+    const selectorBlock = readCssBlock(
+      uiLibStyles.slice(
+        uiLibStyles.indexOf(
+          "\n.selector {",
+          uiLibStyles.indexOf('.modal-input[data-long-input="true"]'),
+        ),
+      ),
+      ".selector",
+    );
+    const selectorContentBlock = readCssBlock(selectorBlock, "&-content");
+    const selectorSimpleBlock = readCssBlock(selectorContentBlock, "&.simple");
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const codePreBlock = readCssBlock(
+      markdownStyles.slice(
+        markdownStyles.indexOf(
+          "/* R4: Gemini-style refined code block card */",
+        ) - 120,
+      ),
+      ".markdown-body pre",
+    );
+    const highlightRootBlock = readCssBlock(highlightStyles, ".markdown-body");
+    const highlightPreBlock = readCssBlock(highlightRootBlock, ".hljs,\n  pre");
+
+    expect(authPasswordContainerBlock).toMatch(/position:\s*relative;/);
+    expect(authPasswordContainerBlock).toMatch(/justify-content:\s*center;/);
+    expect(authPasswordEyeBlock).toMatch(/position:\s*absolute;/);
+    expect(authPasswordEyeBlock).toMatch(/left:\s*8px;/);
+    expect(authPasswordInputBlock).toMatch(/text-align:\s*center;/);
+    expect(authPasswordInputBlock).toMatch(/padding:\s*0 44px;/);
+
+    expect(updateMobilePanelBlock).toMatch(
+      /width:\s*min\(calc\(100vw - 32px\),\s*560px\);/,
+    );
+    expect(updateMobilePanelBlock).toMatch(/right:\s*16px;/);
+    expect(updateMobilePanelBlock).toMatch(/left:\s*16px;/);
+    expect(updateMobilePanelBlock).toMatch(
+      /border-radius:\s*var\(--update-announcement-mobile-panel-radius\);/,
+    );
+    expect(updateMobileFooterBlock).toMatch(/justify-content:\s*center;/);
+    expect(updateMobileConfirmBlock).toMatch(/width:\s*100%;/);
+    expect(updateConfirmBlock).toMatch(
+      /--icon-button-primary-background:\s*var\(--update-announcement-confirm-background\);/,
+    );
+    expect(updateConfirmActiveBlock).toMatch(
+      /background-color:\s*var\(--update-announcement-confirm-active-background\);/,
+    );
+
+    expect(chat).toMatch(
+      /const desktopModelDetail = showHeaderImageControls[\s\S]*: showHeaderReasoningControl[\s\S]*\? reasoningLabels\[headerCurrentReasoningEffort\]/,
+    );
+    expect(chat).toContain("const mobileModelDetail = desktopModelDetail;");
+    expect(chat).toMatch(
+      /aria-label=\{`选择模型：\$\{headerCurrentModelName\}，\$\{mobileModelDetail\}`\}/,
+    );
+    expect(chat).toContain('styles["chat-mobile-model-title-meta"]');
+    expect(mobileModelTitleBlock).toMatch(/flex-direction:\s*column;/);
+    expect(mobileModelTitleBlock).toMatch(/gap:\s*2px;/);
+    expect(mobileModelMetaBlock).toMatch(/font-size:\s*11px;/);
+    expect(mobileModelMetaBlock).toMatch(/color:\s*var\(--chat-model-title-muted-color\);/);
+    expect(desktopModelMetaBlock).not.toMatch(/思考/);
+
+    expect(chatEmptySuggestionsBlock).toMatch(
+      /grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/,
+    );
+    expect(desktopEmptySuggestionsBlock).toMatch(
+      /grid-template-columns:\s*repeat\(2,\s*minmax\(240px,\s*1fr\)\) !important;/,
+    );
+    expect(desktopEmptySuggestionBlock).toMatch(/min-height:\s*108px !important;/);
+
+    expect(selectorContentBlock).toMatch(/max-width:\s*min\(520px,\s*calc\(100vw - 24px\)\);/);
+    expect(selectorSimpleBlock).toMatch(/max-width:\s*min\(320px,\s*calc\(100vw - 24px\)\);/);
+    expect(uiLibStyles).toMatch(
+      /@media screen and \(max-width: 600px\)[\s\S]*\.selector\s*\{[\s\S]*align-items:\s*flex-end;[\s\S]*padding:\s*0 12px 12px;/,
+    );
+
+    expect(sidebarToggleButtonDarkBlock).toMatch(
+      /color:\s*color-mix\(in srgb,\s*var\(--black\) 92%,\s*transparent\) !important;/,
+    );
+    expect(sidebarNavItemDarkBlock).toMatch(
+      /color:\s*color-mix\(in srgb,\s*var\(--black\) 88%,\s*transparent\);/,
+    );
+    expect(sidebarNavItemDarkBlock).toMatch(
+      /&:hover,\s*&:focus-visible\s*\{[\s\S]*color:\s*color-mix\(in srgb,\s*var\(--black\) 96%,\s*transparent\);/,
+    );
+    expect(sidebarNavItemBlock).toMatch(/svg \[stroke="#000"\]/);
+    expect(sidebarNavItemBlock).toMatch(/svg\[stroke="#000"\]/);
+    expect(sidebarNavItemBlock).toMatch(/svg \[fill="#000"\]/);
+    expect(sidebarContentCardBlock).toMatch(/svg \[stroke="#000"\]/);
+    expect(sidebarContentCardBlock).toMatch(/svg \[fill="#000"\]/);
+    expect(sidebarContentCardDarkBlock).toMatch(
+      /color:\s*color-mix\(in srgb,\s*var\(--black\) 90%,\s*transparent\);/,
+    );
+    expect(compactChatItemBlock).toMatch(/min-height:\s*64px;/);
+    expect(compactChatItemBlock).toMatch(/border-radius:\s*8px;/);
+    expect(compactChatItemBlock).toMatch(/padding:\s*10px 46px 10px 12px;/);
+    expect(compactChatItemSelectedBlock).toMatch(
+      /background:\s*var\(--sidebar-item-active-background\);/,
+    );
+    expect(compactChatItemSelectedBlock).toMatch(
+      /box-shadow:[\s\S]*inset 3px 0 0 var\(--primary\)[\s\S]*0 8px 22px var\(--sidebar-action-active-drop-shadow\)/,
+    );
+    expect(compactChatItemInfoBlock).toMatch(/display:\s*flex;/);
+    expect(compactChatItemInfoBlock).toMatch(/gap:\s*12px;/);
+
+    expect(lightMixinBlock).toMatch(
+      /--markdown-code-block-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 82%,\s*var\(--surface-soft\)\s*\);/,
+    );
+    expect(codePreBlock).toMatch(
+      /box-shadow:\s*inset 0 1px 0 var\(--markdown-code-block-inner-highlight-color\);/,
+    );
+    expect(highlightPreBlock).toMatch(/background:\s*transparent;/);
+    expect(highlightPreBlock).toMatch(/color:\s*var\(--color-fg-default\);/);
   });
 
   test("keeps error recovery surface aligned with Gemini utility panels", () => {
@@ -16811,7 +17038,7 @@ describe("Gemini visual migration shell", () => {
       /min-width:\s*min\(300px,\s*calc\(100vw - 24px\)\);/,
     );
     expect(selectorContentBlock).toMatch(
-      /max-width:\s*calc\(100vw - 24px\);/,
+      /max-width:\s*min\(520px,\s*calc\(100vw - 24px\)\);/,
     );
     expect(selectorContentBlock).toMatch(
       /max-height:\s*min\(78dvh,\s*600px\);/,
@@ -16850,9 +17077,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(mobileSelectorBlock).toMatch(/align-items:\s*flex-end;/);
     expect(mobileSelectorContentBlock).toMatch(
-      /width:\s*min\(100vw,\s*420px\);/,
+      /width:\s*100%;/,
     );
-    expect(mobileSelectorContentBlock).toMatch(/max-width:\s*100vw;/);
+    expect(mobileSelectorContentBlock).toMatch(/max-width:\s*100%;/);
     expect(mobileSelectorContentBlock).toMatch(/min-width:\s*0;/);
     expect(mobileSelectorContentBlock).toMatch(
       /max-height:\s*min\(76dvh,\s*600px\);/,
