@@ -264,6 +264,23 @@ echo "Done."
 
 表格说明：这段说明紧跟在表格之后，用于检查表格、段落和后续内容之间的节奏。
 
+## 步骤与列表
+
+1. 明确完成标准：同一行内包含 \`inline code\`、[列表内长链接](https://example.com/neatchat/markdown-stress/list-item/with/a/very/long/url/that/should/wrap-cleanly?surface=list&viewport=mobile) 和中文说明时，仍然应该自然换行。
+2. 拆分实现步骤：
+   - 桌面和移动端使用同一套列表节奏。
+   - 嵌套内容包含第二段说明，用于检查多段 list item。
+
+   第二段继续描述这个步骤，确保列表项内段落不会产生过大的空白，也不会挤压后续列表。
+3. 验证输出：
+   - 代码块、表格和列表连续出现时保持清晰层级。
+   - 320px 窄屏不出现页面横向滚动。
+
+任务清单：
+
+- [x] 已完成的任务列表项：行首 checkbox 与正文基线对齐。
+- [ ] 待确认的任务列表项：未选状态在 light/dark 下都要清晰。
+
 <details>
 <summary>折叠内容</summary>
 

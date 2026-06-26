@@ -1665,6 +1665,13 @@ summary,
   --markdown-paragraph-gap: 12px;
   --markdown-list-indent: 1.7em;
   --markdown-list-item-gap: 0.38em;
+  --markdown-list-nested-gap: 0.44em;
+  --markdown-list-paragraph-gap: 0.52em;
+  --markdown-task-checkbox-size: 0.92em;
+  --markdown-task-checkbox-gap: 0.38em;
+  --markdown-task-checkbox-offset: calc(
+    -1 * (var(--markdown-list-indent) - 0.24em)
+  );
   --markdown-code-block-max-width: min(100%, var(--markdown-reading-surface-max-width));
   --markdown-table-shell-max-width: min(100%, var(--markdown-reading-surface-max-width));
   -ms-text-size-adjust: 100%;
@@ -3110,11 +3117,14 @@ summary,
   margin-bottom: var(--markdown-block-gap);
   padding-left: var(--markdown-list-indent);
   line-height: var(--markdown-prose-line-height);
+  min-width: 0;
 }
 
 .markdown-body li {
   padding-left: 0.16em;
   line-height: inherit;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .markdown-body li::marker {
@@ -3364,12 +3374,21 @@ summary,
 .markdown-body ul ol,
 .markdown-body ol ol,
 .markdown-body ol ul {
-  margin-top: 0;
+  margin-top: var(--markdown-list-nested-gap);
   margin-bottom: 0;
 }
 
 .markdown-body li > p {
-  margin-top: 16px;
+  margin-top: 0;
+  margin-bottom: var(--markdown-list-paragraph-gap);
+}
+
+.markdown-body li > p + p {
+  margin-top: var(--markdown-list-paragraph-gap);
+}
+
+.markdown-body li > p:last-child {
+  margin-bottom: 0;
 }
 
 .markdown-body li + li {
@@ -4144,6 +4163,8 @@ summary,
 
 .markdown-body .task-list-item {
   list-style-type: none;
+  min-width: 0;
+  padding-left: 0;
 }
 
 .markdown-body .task-list-item label {
@@ -4166,12 +4187,13 @@ summary,
   appearance: none;
   -webkit-appearance: none;
   display: inline-grid;
-  inline-size: 0.95em;
-  block-size: 0.95em;
+  inline-size: var(--markdown-task-checkbox-size);
+  block-size: var(--markdown-task-checkbox-size);
   place-content: center;
-  margin: 0 0.2em 0.25em -1.4em;
+  margin: 0 var(--markdown-task-checkbox-gap) 0.16em
+    var(--markdown-task-checkbox-offset);
   color: var(--markdown-task-checkbox-check-color);
-  vertical-align: middle;
+  vertical-align: -0.08em;
   accent-color: var(--markdown-task-checkbox-checked-background);
   background: var(--markdown-task-checkbox-background);
   border: 1px solid var(--markdown-task-checkbox-border-color);
@@ -4219,7 +4241,8 @@ summary,
 }
 
 .markdown-body .contains-task-list:dir(rtl) .task-list-item > input[type="checkbox"] {
-  margin: 0 -1.6em 0.25em 0.2em;
+  margin: 0 var(--markdown-task-checkbox-offset) 0.16em
+    var(--markdown-task-checkbox-gap);
 }
 
 .markdown-body .contains-task-list {
@@ -4354,6 +4377,8 @@ summary,
     --markdown-heading-tight-gap: 8px;
     --markdown-list-indent: 1.45em;
     --markdown-list-item-gap: 0.32em;
+    --markdown-list-nested-gap: 0.36em;
+    --markdown-list-paragraph-gap: 0.44em;
     line-height: var(--markdown-prose-line-height);
   }
 
@@ -4411,7 +4436,8 @@ summary,
   }
 
   .markdown-body li > p {
-    margin-top: 8px;
+    margin-top: 0;
+    margin-bottom: var(--markdown-list-paragraph-gap);
   }
 
   .markdown-body li + li {

@@ -10869,6 +10869,10 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body li + li",
     );
+    const nestedListBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body ul ul,\n.markdown-body ul ol,\n.markdown-body ol ol,\n.markdown-body ol ul",
+    );
     const taskListItemBlock = readCssBlock(
       markdownStyles,
       ".markdown-body .task-list-item",
@@ -10876,6 +10880,14 @@ describe("Gemini visual migration shell", () => {
     const listItemParagraphBlock = readCssBlock(
       markdownStyles,
       ".markdown-body li > p",
+    );
+    const listItemParagraphSiblingBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body li > p + p",
+    );
+    const listItemParagraphLastBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body li > p:last-child",
     );
     const mobileMarkdownBlock = readCssBlock(
       markdownStyles,
@@ -10905,6 +10917,19 @@ describe("Gemini visual migration shell", () => {
       narrowMarkdownBlock,
       ".markdown-body ul,\n  .markdown-body ol",
     );
+    const taskCheckboxSource = markdownStyles.slice(
+      markdownStyles.indexOf(
+        '\n.markdown-body .task-list-item > input[type="checkbox"] {',
+      ),
+    );
+    const taskCheckboxBlock = readCssBlock(
+      taskCheckboxSource,
+      '.markdown-body .task-list-item > input[type="checkbox"]',
+    );
+    const taskCheckboxRtlBlock = readCssBlock(
+      taskCheckboxSource,
+      '.markdown-body .contains-task-list:dir(rtl) .task-list-item > input[type="checkbox"]',
+    );
     const listMarkerToneScope = [markerBlock, darkMarkerBlock].join("\n");
     const listMarkerTokenName = "--markdown-list-marker-color";
     const lightListMarkerTokens = readCustomProperties(lightMixinBlock, [
@@ -10929,8 +10954,11 @@ describe("Gemini visual migration shell", () => {
     expect(listBlock).toMatch(
       /margin-bottom:\s*var\(--markdown-block-gap\);/,
     );
+    expect(listBlock).toMatch(/min-width:\s*0;/);
     expect(listItemBlock).toMatch(/padding-left:\s*0\.16em;/);
     expect(listItemBlock).toMatch(/line-height:\s*inherit;/);
+    expect(listItemBlock).toMatch(/min-width:\s*0;/);
+    expect(listItemBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(markerBlock).toMatch(
       /color:\s*var\(--markdown-list-marker-color\);/,
     );
@@ -10941,11 +10969,36 @@ describe("Gemini visual migration shell", () => {
     expect(listMarkerToneScope).not.toMatch(
       /(?:\brgba?\(|\bhsla?\(|#[\da-fA-F]{3,8}|color-mix\()/,
     );
-    expect(listItemParagraphBlock).toMatch(/margin-top:\s*16px;/);
+    expect(nestedListBlock).toMatch(
+      /margin-top:\s*var\(--markdown-list-nested-gap\);/,
+    );
+    expect(nestedListBlock).toMatch(/margin-bottom:\s*0;/);
+    expect(listItemParagraphBlock).toMatch(/margin-top:\s*0;/);
+    expect(listItemParagraphBlock).toMatch(
+      /margin-bottom:\s*var\(--markdown-list-paragraph-gap\);/,
+    );
+    expect(listItemParagraphSiblingBlock).toMatch(
+      /margin-top:\s*var\(--markdown-list-paragraph-gap\);/,
+    );
+    expect(listItemParagraphLastBlock).toMatch(/margin-bottom:\s*0;/);
     expect(siblingItemBlock).toMatch(
       /margin-top:\s*var\(--markdown-list-item-gap\);/,
     );
     expect(taskListItemBlock).toMatch(/list-style-type:\s*none;/);
+    expect(taskListItemBlock).toMatch(/min-width:\s*0;/);
+    expect(taskCheckboxBlock).toMatch(
+      /inline-size:\s*var\(--markdown-task-checkbox-size\);/,
+    );
+    expect(taskCheckboxBlock).toMatch(
+      /block-size:\s*var\(--markdown-task-checkbox-size\);/,
+    );
+    expect(taskCheckboxBlock).toMatch(
+      /margin:\s*0\s+var\(--markdown-task-checkbox-gap\)\s+0\.16em\s+var\(--markdown-task-checkbox-offset\);/,
+    );
+    expect(taskCheckboxBlock).toMatch(/vertical-align:\s*-0\.08em;/);
+    expect(taskCheckboxRtlBlock).toMatch(
+      /margin:\s*0\s+var\(--markdown-task-checkbox-offset\)\s+0\.16em\s+var\(--markdown-task-checkbox-gap\);/,
+    );
     expect(mobileListBlock).toMatch(
       /padding-left:\s*var\(--markdown-list-indent\);/,
     );
@@ -10957,7 +11010,10 @@ describe("Gemini visual migration shell", () => {
     );
     expect(mobileListItemBlock).toMatch(/padding-left:\s*0\.08em;/);
     expect(mobileListItemBlock).toMatch(/overflow-wrap:\s*anywhere;/);
-    expect(mobileListItemParagraphBlock).toMatch(/margin-top:\s*8px;/);
+    expect(mobileListItemParagraphBlock).toMatch(/margin-top:\s*0;/);
+    expect(mobileListItemParagraphBlock).toMatch(
+      /margin-bottom:\s*var\(--markdown-list-paragraph-gap\);/,
+    );
     expect(mobileSiblingItemBlock).toMatch(
       /margin-top:\s*var\(--markdown-list-item-gap\);/,
     );
@@ -11219,7 +11275,12 @@ describe("Gemini visual migration shell", () => {
     expect(hrBlock).not.toMatch(/background-color/);
 
     expect(taskCheckboxBlock).toMatch(/appearance:\s*none;/);
-    expect(taskCheckboxBlock).toMatch(/inline-size:\s*0\.95em;/);
+    expect(taskCheckboxBlock).toMatch(
+      /inline-size:\s*var\(--markdown-task-checkbox-size\);/,
+    );
+    expect(taskCheckboxBlock).toMatch(
+      /block-size:\s*var\(--markdown-task-checkbox-size\);/,
+    );
     expect(taskCheckboxBlock).toMatch(
       /border:\s*1px solid var\(--markdown-task-checkbox-border-color\);/,
     );
@@ -11255,7 +11316,9 @@ describe("Gemini visual migration shell", () => {
     expect(taskCheckboxCheckedDisabledBlock).toMatch(
       /background:\s*var\(--markdown-task-checkbox-disabled-checked-background\);/,
     );
-    expect(taskCheckboxRtlBlock).toMatch(/margin:\s*0 -1\.6em 0\.25em 0\.2em;/);
+    expect(taskCheckboxRtlBlock).toMatch(
+      /margin:\s*0\s+var\(--markdown-task-checkbox-offset\)\s+0\.16em\s+var\(--markdown-task-checkbox-gap\);/,
+    );
     expect(reducedMotionTaskCheckboxBeforeBlock).toMatch(
       /transition-duration:\s*0\.01ms !important;/,
     );
@@ -15812,6 +15875,11 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("\\`\\`\\`json");
     expect(chat).toContain("\\`\\`\\`bash");
     expect(chat).toContain("| Surface | Expected behavior | QA focus |");
+    expect(chat).toContain("## 步骤与列表");
+    expect(chat).toContain("1. 明确完成标准：");
+    expect(chat).toContain("第二段继续描述这个步骤");
+    expect(chat).toContain("- [x] 已完成的任务列表项");
+    expect(chat).toContain("- [ ] 待确认的任务列表项");
     expect(chat).toContain("<details>");
     expect(chat).toContain("https://example.com/neatchat/markdown-stress/");
     expect(chat).toContain("End of markdown stress test content.");
@@ -15958,6 +16026,12 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("多模态预览");
     expect(chat).toContain("data:image/svg+xml");
     expect(chat).toContain("表格说明：");
+    expect(chat).toContain("## 步骤与列表");
+    expect(chat).toContain("1. 明确完成标准：");
+    expect(chat).toContain("https://example.com/neatchat/markdown-stress/list-item/");
+    expect(chat).toContain("第二段继续描述这个步骤");
+    expect(chat).toContain("- [x] 已完成的任务列表项");
+    expect(chat).toContain("- [ ] 待确认的任务列表项");
     expect(chat).toContain("details 内的引用内容");
     expect(chat).toContain("连续内容后续段落");
     expect(chat).toContain("https://example.com/neatchat/markdown-stress/");
