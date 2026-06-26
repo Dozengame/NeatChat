@@ -232,11 +232,11 @@
 
   .panel {
     position: fixed;
-    right: 16px;
-    bottom: calc(12px + env(safe-area-inset-bottom));
-    left: 16px;
-    width: min(calc(100vw - 32px), 560px);
-    max-height: calc(78dvh - 16px - env(safe-area-inset-bottom));
+    right: 24px;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    left: 24px;
+    width: min(calc(100vw - 48px), 520px);
+    max-height: min(560px, calc(72dvh - 18px - env(safe-area-inset-bottom)));
     margin: 0 auto;
     border-radius: var(--update-announcement-mobile-panel-radius);
     animation: updateAnnouncementSheetIn 0.28s cubic-bezier(0.2, 0, 0, 1) both;
@@ -256,7 +256,7 @@
   }
 
   .confirm {
-    width: 100%;
+    width: min(100%, 360px);
   }
 }
 

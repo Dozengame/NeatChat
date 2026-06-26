@@ -370,6 +370,49 @@
   svg {
     width: 18px;
     height: 18px;
+    filter: none !important;
+    color: currentColor;
+  }
+
+  svg [fill="none"],
+  svg[fill="none"],
+  svg [style*="fill:none"],
+  svg [style*="fill: none"] {
+    fill: none !important;
+  }
+
+  svg [stroke="none"],
+  svg[stroke="none"],
+  svg [style*="stroke:none"],
+  svg [style*="stroke: none"] {
+    stroke: none !important;
+  }
+
+  svg [style*="stroke"],
+  svg [stroke="#000"],
+  svg [stroke="#000000"],
+  svg [stroke="#333"],
+  svg [stroke="black"],
+  svg[stroke="#000"],
+  svg[stroke="#000000"],
+  svg[stroke="#333"],
+  svg[stroke="black"] {
+    stroke: currentColor !important;
+  }
+
+  svg [style*="fill:#000"],
+  svg [style*="fill: #000"],
+  svg [style*="fill:#333"],
+  svg [style*="fill: #333"],
+  svg [fill="#000"],
+  svg [fill="#000000"],
+  svg [fill="#333"],
+  svg [fill="black"],
+  svg[fill="#000"],
+  svg[fill="#000000"],
+  svg[fill="#333"],
+  svg[fill="black"] {
+    fill: currentColor !important;
   }
 
   &:not(:disabled):hover,
@@ -1657,6 +1700,49 @@
   svg {
     width: 18px;
     height: 18px;
+    filter: none !important;
+    color: currentColor;
+  }
+
+  svg [fill="none"],
+  svg[fill="none"],
+  svg [style*="fill:none"],
+  svg [style*="fill: none"] {
+    fill: none !important;
+  }
+
+  svg [stroke="none"],
+  svg[stroke="none"],
+  svg [style*="stroke:none"],
+  svg [style*="stroke: none"] {
+    stroke: none !important;
+  }
+
+  svg [style*="stroke"],
+  svg [stroke="#000"],
+  svg [stroke="#000000"],
+  svg [stroke="#333"],
+  svg [stroke="black"],
+  svg[stroke="#000"],
+  svg[stroke="#000000"],
+  svg[stroke="#333"],
+  svg[stroke="black"] {
+    stroke: currentColor !important;
+  }
+
+  svg [style*="fill:#000"],
+  svg [style*="fill: #000"],
+  svg [style*="fill:#333"],
+  svg [style*="fill: #333"],
+  svg [fill="#000"],
+  svg [fill="#000000"],
+  svg [fill="#333"],
+  svg [fill="black"],
+  svg[fill="#000"],
+  svg[fill="#000000"],
+  svg[fill="#333"],
+  svg[fill="black"] {
+    fill: currentColor !important;
   }
 
   &:hover {
@@ -3273,6 +3359,7 @@
 
 :global(.dark) .chat-mobile-header-button {
   color: var(--chat-header-title-color) !important;
+  background: var(--chat-header-control-background) !important;
 
   &:hover {
     background: var(--chat-header-control-hover-background) !important;
@@ -3692,6 +3779,7 @@
 
   :global(body:not(.light)) .chat-mobile-header-button {
     color: var(--chat-header-title-color) !important;
+    background: var(--chat-header-control-background) !important;
   }
 
   :global(body:not(.light)) .chat-desktop-header-actions {
@@ -4951,8 +5039,8 @@
   --chat-input-mode-chip-color: color-mix(in srgb, var(--primary) 54%, var(--black));
   --chat-input-send-foreground-color: var(--black);
   --chat-input-send-shadow-color: color-mix(in srgb, var(--primary) 20%, transparent);
-  --chat-input-send-disabled-background: color-mix(in srgb, var(--black) 12%, transparent);
-  --chat-input-send-disabled-icon-color: color-mix(in srgb, var(--black-50) 70%, transparent);
+  --chat-input-send-disabled-background: color-mix(in srgb, var(--black) 16%, transparent);
+  --chat-input-send-disabled-icon-color: color-mix(in srgb, var(--black) 78%, transparent);
   --chat-input-drag-border-color: color-mix(in srgb, var(--primary) 42%, transparent);
   --chat-input-drag-ring-color: color-mix(in srgb, var(--primary) 18%, transparent);
   --chat-input-drag-background: color-mix(in srgb, var(--surface-elevated) 88%, var(--primary) 4%);
@@ -4975,8 +5063,8 @@
     --chat-input-mode-chip-color: color-mix(in srgb, var(--primary) 54%, var(--black));
     --chat-input-send-foreground-color: var(--black);
     --chat-input-send-shadow-color: color-mix(in srgb, var(--primary) 20%, transparent);
-    --chat-input-send-disabled-background: color-mix(in srgb, var(--black) 12%, transparent);
-    --chat-input-send-disabled-icon-color: color-mix(in srgb, var(--black-50) 70%, transparent);
+    --chat-input-send-disabled-background: color-mix(in srgb, var(--black) 16%, transparent);
+    --chat-input-send-disabled-icon-color: color-mix(in srgb, var(--black) 78%, transparent);
     --chat-input-drag-border-color: color-mix(in srgb, var(--primary) 42%, transparent);
     --chat-input-drag-ring-color: color-mix(in srgb, var(--primary) 18%, transparent);
     --chat-input-drag-background: color-mix(in srgb, var(--surface-elevated) 88%, var(--primary) 4%);
@@ -5530,9 +5618,51 @@
   svg {
     width: 18px;
     height: 18px;
+    filter: none !important;
     color: currentColor;
     transform-origin: center;
     transition: transform 0.16s ease;
+  }
+
+  svg [fill="none"],
+  svg[fill="none"],
+  svg [style*="fill:none"],
+  svg [style*="fill: none"] {
+    fill: none !important;
+  }
+
+  svg [stroke="none"],
+  svg[stroke="none"],
+  svg [style*="stroke:none"],
+  svg [style*="stroke: none"] {
+    stroke: none !important;
+  }
+
+  svg [style*="stroke"],
+  svg [stroke="#000"],
+  svg [stroke="#000000"],
+  svg [stroke="#333"],
+  svg [stroke="black"],
+  svg[stroke="#000"],
+  svg[stroke="#000000"],
+  svg[stroke="#333"],
+  svg[stroke="black"] {
+    stroke: currentColor !important;
+  }
+
+  svg [style*="fill:#000"],
+  svg [style*="fill: #000"],
+  svg [style*="fill:#333"],
+  svg [style*="fill: #333"],
+  svg [fill="#000"],
+  svg [fill="#000000"],
+  svg [fill="#333"],
+  svg [fill="black"],
+  svg[fill="#000"],
+  svg[fill="#000000"],
+  svg[fill="#333"],
+  svg[fill="black"] {
+    fill: currentColor !important;
   }
 }
 

@@ -333,12 +333,28 @@ summary,
   );
   --markdown-code-block-background: color-mix(
     in srgb,
-    var(--surface-elevated) 82%,
-    var(--surface-soft)
+    var(--color-canvas-subtle) 94%,
+    var(--surface-elevated)
   );
   --markdown-code-block-border-color: color-mix(
     in srgb,
-    var(--black-50) 10%,
+    var(--color-border-default) 78%,
+    transparent
+  );
+  --markdown-code-line-number-width: 44px;
+  --markdown-code-line-number-color: color-mix(
+    in srgb,
+    var(--color-fg-subtle) 84%,
+    transparent
+  );
+  --markdown-code-gutter-border-color: color-mix(
+    in srgb,
+    var(--color-border-muted) 88%,
+    transparent
+  );
+  --markdown-code-gutter-background: color-mix(
+    in srgb,
+    var(--color-canvas-subtle) 80%,
     transparent
   );
   --markdown-code-block-inner-highlight-color: color-mix(
@@ -1092,6 +1108,22 @@ summary,
   --markdown-code-block-border-color: color-mix(
     in srgb,
     var(--black) 9%,
+    transparent
+  );
+  --markdown-code-line-number-width: 44px;
+  --markdown-code-line-number-color: color-mix(
+    in srgb,
+    var(--black-50) 78%,
+    transparent
+  );
+  --markdown-code-gutter-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --markdown-code-gutter-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 54%,
     transparent
   );
   --markdown-code-block-inner-highlight-color: color-mix(
@@ -3344,7 +3376,10 @@ summary,
   /* R4: Gemini-style refined code block card */
   --markdown-code-block-radius: 8px;
   --markdown-code-block-padding-y: 14px;
-  --markdown-code-block-padding-start: 16px;
+  --markdown-code-line-number-width: 44px;
+  --markdown-code-block-padding-start: calc(
+    var(--markdown-code-line-number-width) + 14px
+  );
   --markdown-code-action-rail-width: 64px;
   --markdown-code-action-inset: 12px;
   --markdown-code-action-size: 34px;
@@ -3369,6 +3404,30 @@ summary,
   border: 1px solid var(--markdown-code-block-border-color);
   box-shadow: inset 0 1px 0 var(--markdown-code-block-inner-highlight-color);
   position: relative;
+  isolation: isolate;
+}
+
+.markdown-body .highlight pre::before,
+.markdown-body pre::before {
+  content: attr(data-line-numbers);
+  position: absolute;
+  top: var(--markdown-code-block-padding-y);
+  bottom: var(--markdown-code-block-padding-y);
+  left: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  width: var(--markdown-code-line-number-width);
+  padding: 0 10px 0 8px;
+  overflow: hidden;
+  color: var(--markdown-code-line-number-color);
+  background: var(--markdown-code-gutter-background);
+  border-right: 1px solid var(--markdown-code-gutter-border-color);
+  font-variant-numeric: tabular-nums;
+  line-height: inherit;
+  text-align: right;
+  white-space: pre;
+  user-select: none;
+  pointer-events: none;
 }
 
 .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child)) {
@@ -3378,7 +3437,7 @@ summary,
     0 12px 30px var(--markdown-code-streaming-shadow-color);
   isolation: isolate;
 
-  &::before {
+  &::after {
     content: "";
     position: absolute;
     top: var(--markdown-code-block-padding-y);
@@ -3403,6 +3462,10 @@ summary,
 .markdown-body pre.markdown-code-block-labeled {
   padding-top: var(--markdown-code-labeled-padding-top);
   scroll-padding-top: var(--markdown-code-labeled-padding-top);
+}
+
+.markdown-body pre.markdown-code-block-labeled::before {
+  top: var(--markdown-code-labeled-padding-top);
 }
 
 .markdown-body pre .show-hide-button {
@@ -3479,9 +3542,8 @@ summary,
 .markdown-code-language {
   position: absolute;
   top: var(--markdown-code-action-inset);
-  right: calc(
-    var(--markdown-code-action-inset) + var(--markdown-code-action-size) + 6px
-  );
+  left: var(--markdown-code-block-padding-start);
+  right: var(--markdown-code-action-rail-width);
   z-index: 2;
   max-width: calc(
     100% - var(--markdown-code-action-rail-width) -
@@ -4151,7 +4213,10 @@ summary,
 
   .markdown-body pre {
     --markdown-code-block-padding-y: 12px;
-    --markdown-code-block-padding-start: 12px;
+    --markdown-code-line-number-width: 38px;
+    --markdown-code-block-padding-start: calc(
+      var(--markdown-code-line-number-width) + 12px
+    );
     --markdown-code-action-rail-width: 44px;
     --markdown-code-action-inset: 8px;
     --markdown-code-action-size: 30px;
@@ -4168,13 +4233,10 @@ summary,
 
   .markdown-code-language {
     left: var(--markdown-code-block-padding-start);
-    right: calc(
-      var(--markdown-code-action-inset) + var(--markdown-code-action-size) +
-        8px
-    );
+    right: var(--markdown-code-action-rail-width);
     max-width: calc(
       100% - var(--markdown-code-action-rail-width) -
-        var(--markdown-code-block-padding-start) - 8px
+        var(--markdown-code-block-padding-start)
     );
     line-height: var(--markdown-code-action-size);
     text-align: left;
@@ -4215,7 +4277,7 @@ summary,
       0 0 0 1px var(--markdown-code-streaming-border-color),
       0 8px 22px var(--markdown-code-streaming-shadow-color);
 
-    &::before {
+    &::after {
       left: 5px;
       width: 2px;
       box-shadow: 0 0 14px var(--markdown-code-streaming-rail-shadow-color);
@@ -4295,7 +4357,10 @@ summary,
 
   .markdown-body pre {
     --markdown-code-block-padding-y: 10px;
-    --markdown-code-block-padding-start: 10px;
+    --markdown-code-line-number-width: 38px;
+    --markdown-code-block-padding-start: calc(
+      var(--markdown-code-line-number-width) + 12px
+    );
     --markdown-code-action-rail-width: 40px;
     --markdown-code-action-inset: 7px;
     --markdown-code-action-size: 28px;
@@ -4315,7 +4380,7 @@ summary,
   .markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after,
   .markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after,
   .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child)),
-  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))::before,
+  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))::after,
   .markdown-body-container .token-info {
     animation: none !important;
     transform: none !important;
@@ -4342,7 +4407,7 @@ summary,
     opacity: 0.72;
   }
 
-  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))::before {
+  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))::after {
     opacity: 0.72;
   }
 }

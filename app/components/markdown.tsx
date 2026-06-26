@@ -167,6 +167,48 @@ function shouldWrapCodeLanguage(language: string) {
   ].includes(normalizedLanguage);
 }
 
+function getReactTextContent(node: React.ReactNode): string {
+  if (node == null || typeof node === "boolean") {
+    return "";
+  }
+
+  if (typeof node === "string" || typeof node === "number") {
+    return String(node);
+  }
+
+  if (Array.isArray(node)) {
+    return node.map(getReactTextContent).join("");
+  }
+
+  if (React.isValidElement<{ children?: React.ReactNode }>(node)) {
+    return getReactTextContent(node.props.children);
+  }
+
+  return "";
+}
+
+function getNormalizedCodeText(children: React.ReactNode): string {
+  return getReactTextContent(children)
+    .replace(/\r\n?/g, "\n")
+    .replace(/\n$/, "");
+}
+
+function getCodeLineCount(children: React.ReactNode): number {
+  const codeText = getNormalizedCodeText(children);
+
+  if (!codeText) {
+    return 1;
+  }
+
+  return codeText.split("\n").length;
+}
+
+function getCodeLineNumbers(children: React.ReactNode): string {
+  return Array.from({ length: getCodeLineCount(children) }, (_, index) =>
+    String(index + 1),
+  ).join("\n");
+}
+
 export function PreCode(props: { children: any }) {
   const ref = useRef<HTMLPreElement>(null);
   const [mermaidCode, setMermaidCode] = useState("");
@@ -231,6 +273,14 @@ export function PreCode(props: { children: any }) {
   const rawCodeLanguage = getRawCodeLanguage(props.children);
   const codeLanguage = getCodeLanguage(props.children);
   const shouldWrapCodeBlock = shouldWrapCodeLanguage(rawCodeLanguage);
+  const codeLineNumbers = useMemo(
+    () => getCodeLineNumbers(props.children),
+    [props.children],
+  );
+  const codeLineCount = useMemo(
+    () => getCodeLineCount(props.children),
+    [props.children],
+  );
 
   //Wrap the paragraph for plain-text
   useEffect(() => {
@@ -313,6 +363,8 @@ export function PreCode(props: { children: any }) {
         )}
         data-overflow-start={codeScrollHint.start ? "true" : "false"}
         data-overflow-end={codeScrollHint.end ? "true" : "false"}
+        data-line-numbers={codeLineNumbers}
+        data-line-count={codeLineCount}
         onScroll={syncCodeScrollHint}
       >
         {codeLanguage && (

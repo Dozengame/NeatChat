@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo, useState, Fragment } from "react";
+import React, { useEffect, useRef, useMemo, Fragment } from "react";
 
 import styles from "./home.module.scss";
 
@@ -9,7 +9,6 @@ import MaskIcon from "../icons/mask.svg";
 import DragIcon from "../icons/drag.svg";
 import DiscoveryIcon from "../icons/discovery.svg";
 import NeatIcon from "../icons/neat.svg";
-import FileIcon from "../icons/file.svg";
 import MenuIcon from "../icons/menu.svg";
 
 import Locale from "../locales";
@@ -23,15 +22,12 @@ import {
   MIN_SIDEBAR_WIDTH,
   NARROW_SIDEBAR_WIDTH,
   Path,
-  PLUGINS,
 } from "../constant";
 
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { isIOS, useCompactScreen, useMobileScreen } from "../utils";
 import dynamic from "next/dynamic";
-import { SimpleSelector } from "./ui-lib";
 import clsx from "clsx";
-import { isMcpEnabled } from "../mcp/actions";
 
 const ChatList = dynamic(async () => (await import("./chat-list")).ChatList, {
   loading: () => null,
@@ -265,45 +261,10 @@ export function SideBar(props: {
   useHotKey();
   const { onDragStart, shouldNarrow, toggleSideBar } = useDragSideBar();
   const isCompactScreen = useCompactScreen();
-  const [showPluginSelector, setShowPluginSelector] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const config = useAppConfig();
   const chatStore = useChatStore();
-  const [mcpEnabled, setMcpEnabled] = useState<boolean | null>(null);
-  const checkingMcpEnabledRef = useRef(false);
-  const discoveryItems = useMemo(
-    () => [
-      ...(mcpEnabled === true
-        ? [{ title: Locale.Mcp.Name, value: Path.McpMarket }]
-        : []),
-      ...PLUGINS.map((item) => ({
-        title: item.name,
-        value: item.path,
-      })),
-    ],
-    [mcpEnabled],
-  );
-
-  const openDiscoverySelector = () => {
-    setShowPluginSelector(true);
-
-    if (mcpEnabled !== null || checkingMcpEnabledRef.current) return;
-
-    checkingMcpEnabledRef.current = true;
-    isMcpEnabled()
-      .then((enabled) => {
-        setMcpEnabled(enabled);
-        console.log("[SideBar] MCP enabled:", enabled);
-      })
-      .catch((err) => {
-        console.error("[SideBar] failed to check MCP status:", err);
-        setMcpEnabled(false);
-      })
-      .finally(() => {
-        checkingMcpEnabledRef.current = false;
-      });
-  };
 
   const startNewChat = () => {
     if (config.dontShowMaskSplashScreen) {
@@ -380,72 +341,7 @@ export function SideBar(props: {
               </button>
             ))}
           </div>
-          <div
-            className={styles["sidebar-content-nav"]}
-            role="navigation"
-            aria-label={Locale.Home.ContentSection}
-          >
-            {!shouldNarrow && (
-              <div className={styles["sidebar-section-label"]}>
-                {Locale.Home.ContentSection}
-              </div>
-            )}
-            <button
-              type="button"
-              className={clsx(styles["sidebar-content-card"], {
-                [styles["sidebar-content-card-active"]]:
-                  location.pathname === Path.SearchChat,
-              })}
-              onClick={() => navigate(Path.SearchChat)}
-              aria-label={Locale.Home.LocalContent.Title}
-              aria-current={
-                location.pathname === Path.SearchChat ? "page" : undefined
-              }
-              title={shouldNarrow ? Locale.Home.LocalContent.Title : undefined}
-            >
-              <FileIcon />
-              {!shouldNarrow && (
-                <span className={styles["sidebar-content-copy"]}>
-                  <span className={styles["sidebar-content-title"]}>
-                    {Locale.Home.LocalContent.Title}
-                  </span>
-                  <span className={styles["sidebar-content-subtitle"]}>
-                    {Locale.Home.LocalContent.SubTitle}
-                  </span>
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
-              className={clsx(styles["sidebar-nav-item"], {
-                [styles["sidebar-nav-item-active"]]:
-                  location.pathname === Path.Plugins ||
-                  location.pathname === Path.McpMarket,
-              })}
-              onClick={openDiscoverySelector}
-              aria-label={Locale.Discovery.Name}
-              aria-current={
-                location.pathname === Path.Plugins ||
-                location.pathname === Path.McpMarket
-                  ? "page"
-                  : undefined
-              }
-              title={shouldNarrow ? Locale.Discovery.Name : undefined}
-            >
-              <DiscoveryIcon />
-              {!shouldNarrow && <span>{Locale.Discovery.Name}</span>}
-            </button>
-          </div>
         </div>
-        {showPluginSelector && (
-          <SimpleSelector
-            items={discoveryItems}
-            onClose={() => setShowPluginSelector(false)}
-            onSelection={(s) => {
-              navigate(s[0], { state: { fromHome: true } });
-            }}
-          />
-        )}
       </SideBarHeader>
       <SideBarBody
         backgroundAction={
@@ -528,6 +424,9 @@ export function SideBar(props: {
                   icon={<SettingsIcon />}
                   shadow
                 />
+                <span className={styles["sidebar-settings-label"]}>
+                  {Locale.Settings.Title}
+                </span>
               </Link>
             </div>
           )
