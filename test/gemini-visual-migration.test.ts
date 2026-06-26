@@ -9069,6 +9069,22 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       mediaVideoSelector,
     );
+    const mediaHeaderBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-media-header",
+    );
+    const mediaFallbackBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-media-fallback",
+    );
+    const mediaFooterBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-media-footer",
+    );
+    const mediaOpenLinkBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-media-open-link",
+    );
     const touchBlock = readCssBlock(
       markdownStyles,
       "@media (hover: none), (pointer: coarse), (max-width: 600px)",
@@ -9092,6 +9108,14 @@ describe("Gemini visual migration shell", () => {
       "--markdown-media-frame-hover-border-color",
       "--markdown-media-frame-hover-shadow-color",
       "--markdown-media-control-background",
+      "--markdown-media-type-background",
+      "--markdown-media-type-border-color",
+      "--markdown-media-type-color",
+      "--markdown-media-name-color",
+      "--markdown-media-fallback-background",
+      "--markdown-media-fallback-border-color",
+      "--markdown-media-fallback-color",
+      "--markdown-media-open-link-color",
     ];
     const lightMediaTokens = readCustomProperties(
       lightMixinBlock,
@@ -9108,6 +9132,8 @@ describe("Gemini visual migration shell", () => {
     ].join("\n");
 
     expect(markdown).toContain("function getMediaHrefExtension");
+    expect(markdown).toContain("function getMediaFileName");
+    expect(markdown).toContain("function MarkdownMediaCard");
     expect(markdown).toContain("const audioMediaExtensions = new Set");
     expect(markdown).toContain("const videoMediaExtensions = new Set");
     expect(markdown).toContain(
@@ -9119,17 +9145,22 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toMatch(
       /if \(videoMediaExtensions\.has\(mediaHrefExtension\)\)/,
     );
-    expect(markdown).toContain('aria-label="音频附件"');
-    expect(markdown).toContain('aria-label="视频附件"');
     expect(markdown).toContain(
-      '<span className="markdown-media-frame markdown-media-audio">',
+      '<MarkdownMediaCard kind="audio" href={href}>',
     );
+    expect(markdown).toContain('const mediaAriaLabel = `${typeLabel}附件：${mediaLabel}`;');
+    expect(markdown).toContain('className="markdown-media-header"');
+    expect(markdown).toContain('className="markdown-media-type"');
+    expect(markdown).toContain('className="markdown-media-name"');
+    expect(markdown).toContain('className="markdown-media-fallback"');
+    expect(markdown).toContain('role="status"');
+    expect(markdown).toContain('className="markdown-media-open-link"');
     expect(markdown).toContain('className="markdown-audio-player"');
     expect(markdown).toContain(
-      '<span className="markdown-media-frame markdown-media-video">',
+      '<MarkdownMediaCard kind="video" href={href}>',
     );
     expect(markdown).toContain('className="markdown-video-player"');
-    expect(markdown).toContain("<source src={href} />");
+    expect(markdown).toContain("<source src={href} onError={() => setHasError(true)} />");
     expect(markdown).not.toContain(
       '<figure className="markdown-media-frame',
     );
@@ -9187,6 +9218,7 @@ describe("Gemini visual migration shell", () => {
     expect(mediaFrameBlock).toMatch(/margin:\s*12px 0;/);
     expect(mediaFrameBlock).toMatch(/padding:\s*8px;/);
     expect(mediaFrameBlock).toMatch(/border-radius:\s*8px;/);
+    expect(mediaFrameBlock).toMatch(/line-height:\s*1\.4;/);
     expect(mediaFrameBlock).toMatch(
       /border:\s*1px solid var\(--markdown-media-frame-border-color\);/,
     );
@@ -9208,6 +9240,16 @@ describe("Gemini visual migration shell", () => {
     );
     expect(mediaFrameBlock).toMatch(
       /&:focus-within[\s\S]*box-shadow:[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 10px 26px var\(--markdown-media-frame-hover-shadow-color\);/,
+    );
+    expect(mediaHeaderBlock).toMatch(/display:\s*flex;/);
+    expect(mediaHeaderBlock).toMatch(/min-width:\s*0;/);
+    expect(mediaFallbackBlock).toMatch(/display:\s*flex;/);
+    expect(mediaFallbackBlock).toMatch(
+      /background:\s*var\(--markdown-media-fallback-background\);/,
+    );
+    expect(mediaFooterBlock).toMatch(/justify-content:\s*flex-end;/);
+    expect(mediaOpenLinkBlock).toMatch(
+      /color:\s*var\(--markdown-media-open-link-color\);/,
     );
     expect(mediaAudioBlock).toMatch(
       /width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
@@ -15838,6 +15880,46 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body p > .markdown-media-frame:only-child",
     );
+    const mediaFrameBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-media-frame",
+    );
+    const mediaHeaderBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-media-header",
+    );
+    const mediaTypeBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-media-type",
+    );
+    const mediaNameBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-media-name",
+    );
+    const mediaFallbackBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-media-fallback",
+    );
+    const mediaFooterBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-media-footer",
+    );
+    const mediaOpenLinkBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-media-open-link",
+    );
+    const touchMarkdownBlock = readCssBlock(
+      markdownStyles,
+      "@media (hover: none), (pointer: coarse), (max-width: 600px)",
+    );
+    const touchMediaFrameBlock = readCssBlock(
+      touchMarkdownBlock,
+      ".markdown-body .markdown-media-frame",
+    );
+    const touchMediaHeaderBlock = readCssBlock(
+      touchMarkdownBlock,
+      ".markdown-body .markdown-media-header",
+    );
     const mobileMarkdownBlock = readCssBlock(
       markdownStyles,
       "@media only screen and (max-width: 600px)",
@@ -15862,6 +15944,14 @@ describe("Gemini visual migration shell", () => {
       "--markdown-details-card-background",
       "--markdown-details-summary-background",
       "--markdown-details-summary-border-color",
+      "--markdown-media-type-background",
+      "--markdown-media-type-border-color",
+      "--markdown-media-type-color",
+      "--markdown-media-name-color",
+      "--markdown-media-fallback-background",
+      "--markdown-media-fallback-border-color",
+      "--markdown-media-fallback-color",
+      "--markdown-media-open-link-color",
     ]) {
       expect(lightMixinBlock).toContain(tokenName);
       expect(darkMixinBlock).toContain(tokenName);
@@ -15904,9 +15994,41 @@ describe("Gemini visual migration shell", () => {
     expect(mediaOnlyFrameBlock).toMatch(/display:\s*block;/);
     expect(mediaOnlyFrameBlock).toMatch(/width:\s*100%;/);
     expect(mediaOnlyFrameBlock).toMatch(/max-width:\s*100%;/);
+    expect(mediaFrameBlock).toMatch(/line-height:\s*1\.4;/);
+    expect(mediaHeaderBlock).toMatch(/display:\s*flex;/);
+    expect(mediaHeaderBlock).toMatch(/min-width:\s*0;/);
+    expect(mediaHeaderBlock).toMatch(/gap:\s*8px;/);
+    expect(mediaTypeBlock).toMatch(
+      /background:\s*var\(--markdown-media-type-background\);/,
+    );
+    expect(mediaTypeBlock).toMatch(
+      /border:\s*1px solid var\(--markdown-media-type-border-color\);/,
+    );
+    expect(mediaTypeBlock).toMatch(/color:\s*var\(--markdown-media-type-color\);/);
+    expect(mediaNameBlock).toMatch(/min-width:\s*0;/);
+    expect(mediaNameBlock).toMatch(/overflow:\s*hidden;/);
+    expect(mediaNameBlock).toMatch(/text-overflow:\s*ellipsis;/);
+    expect(mediaNameBlock).toMatch(/color:\s*var\(--markdown-media-name-color\);/);
+    expect(mediaFallbackBlock).toMatch(/display:\s*flex;/);
+    expect(mediaFallbackBlock).toMatch(/min-height:\s*64px;/);
+    expect(mediaFallbackBlock).toMatch(
+      /background:\s*var\(--markdown-media-fallback-background\);/,
+    );
+    expect(mediaFallbackBlock).toMatch(
+      /border:\s*1px solid var\(--markdown-media-fallback-border-color\);/,
+    );
+    expect(mediaFallbackBlock).toMatch(
+      /color:\s*var\(--markdown-media-fallback-color\);/,
+    );
+    expect(mediaFooterBlock).toMatch(/justify-content:\s*flex-end;/);
+    expect(mediaOpenLinkBlock).toMatch(
+      /color:\s*var\(--markdown-media-open-link-color\);/,
+    );
     expect(mobileDetailsCardBlock).toMatch(/padding:\s*8px 10px;/);
     expect(mobileDetailsSummaryBlock).toMatch(/margin:\s*-8px -10px;/);
     expect(mobileDetailsSummaryBlock).toMatch(/padding:\s*8px 10px;/);
+    expect(touchMediaFrameBlock).toMatch(/gap:\s*8px;/);
+    expect(touchMediaHeaderBlock).toMatch(/align-items:\s*flex-start;/);
   });
 
   test("keeps error recovery surface aligned with Gemini utility panels", () => {

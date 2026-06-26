@@ -214,6 +214,46 @@ summary,
     var(--surface-soft) 70%,
     transparent
   );
+  --markdown-media-type-background: color-mix(
+    in srgb,
+    var(--primary) 8%,
+    var(--surface-elevated)
+  );
+  --markdown-media-type-border-color: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
+  --markdown-media-type-color: color-mix(
+    in srgb,
+    var(--primary) 78%,
+    var(--black)
+  );
+  --markdown-media-name-color: color-mix(
+    in srgb,
+    var(--black) 82%,
+    transparent
+  );
+  --markdown-media-fallback-background: color-mix(
+    in srgb,
+    var(--surface-soft) 70%,
+    transparent
+  );
+  --markdown-media-fallback-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --markdown-media-fallback-color: color-mix(
+    in srgb,
+    var(--black-50) 74%,
+    transparent
+  );
+  --markdown-media-open-link-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 88%,
+    var(--black)
+  );
   --markdown-mermaid-frame-border-color: color-mix(
     in srgb,
     var(--black-50) 10%,
@@ -1002,6 +1042,46 @@ summary,
     in srgb,
     var(--surface-soft) 82%,
     transparent
+  );
+  --markdown-media-type-background: color-mix(
+    in srgb,
+    var(--markdown-link-color) 14%,
+    var(--surface)
+  );
+  --markdown-media-type-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 24%,
+    transparent
+  );
+  --markdown-media-type-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 74%,
+    var(--black)
+  );
+  --markdown-media-name-color: color-mix(
+    in srgb,
+    var(--black) 88%,
+    transparent
+  );
+  --markdown-media-fallback-background: color-mix(
+    in srgb,
+    var(--surface-soft) 58%,
+    var(--surface)
+  );
+  --markdown-media-fallback-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --markdown-media-fallback-color: color-mix(
+    in srgb,
+    var(--black) 74%,
+    transparent
+  );
+  --markdown-media-open-link-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 78%,
+    var(--black)
   );
   --markdown-mermaid-frame-border-color: color-mix(
     in srgb,
@@ -2240,7 +2320,7 @@ summary,
   border-radius: 8px;
   background: var(--markdown-media-frame-background);
   box-shadow: 0 8px 24px var(--markdown-media-frame-shadow-color);
-  line-height: 0;
+  line-height: 1.4;
   overflow: hidden;
   transition:
     border-color 0.18s ease,
@@ -2258,6 +2338,71 @@ summary,
     box-shadow:
       var(--focus-ring-shadow),
       0 10px 26px var(--markdown-media-frame-hover-shadow-color);
+  }
+}
+
+.markdown-body .markdown-media-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 0 8px;
+}
+
+.markdown-body .markdown-media-type {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border: 1px solid var(--markdown-media-type-border-color);
+  border-radius: 999px;
+  background: var(--markdown-media-type-background);
+  color: var(--markdown-media-type-color);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.55;
+  letter-spacing: 0;
+}
+
+.markdown-body .markdown-media-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--markdown-media-name-color);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.markdown-body .markdown-media-fallback {
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+  padding: 12px;
+  border: 1px solid var(--markdown-media-fallback-border-color);
+  border-radius: 6px;
+  background: var(--markdown-media-fallback-background);
+  color: var(--markdown-media-fallback-color);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.markdown-body .markdown-media-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+  line-height: 1.3;
+}
+
+.markdown-body .markdown-media-open-link {
+  color: var(--markdown-media-open-link-color);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  text-underline-offset: 2px;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
   }
 }
 
@@ -2309,6 +2454,7 @@ summary,
 
   .markdown-body .markdown-media-frame {
     width: 100%;
+    gap: 8px;
     padding: 6px;
     margin: 10px 0;
     transform: none;
@@ -2317,6 +2463,16 @@ summary,
     &:focus-within {
       transform: none;
     }
+  }
+
+  .markdown-body .markdown-media-header {
+    align-items: flex-start;
+    gap: 7px;
+    margin-bottom: 7px;
+  }
+
+  .markdown-body .markdown-media-type {
+    padding: 1px 7px;
   }
 
   .markdown-body .markdown-media-video .markdown-video-player {

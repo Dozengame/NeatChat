@@ -118,28 +118,73 @@ describe("Markdown file attachments", () => {
 
     const audioFrame = container.querySelector(".markdown-media-audio");
     const videoFrame = container.querySelector(".markdown-media-video");
+    const audioHeader = audioFrame?.querySelector(".markdown-media-header");
+    const videoHeader = videoFrame?.querySelector(".markdown-media-header");
     const audioPlayer = container.querySelector(".markdown-audio-player");
     const videoPlayer = container.querySelector(".markdown-video-player");
     const videoSource = container.querySelector(".markdown-video-player source");
+    const openLinks = container.querySelectorAll(".markdown-media-open-link");
 
     expect(audioFrame?.tagName).toBe("SPAN");
     expect(videoFrame?.tagName).toBe("SPAN");
     expect(container.querySelector("figure.markdown-media-frame")).toBeNull();
+    expect(audioHeader).toHaveTextContent("音频");
+    expect(audioHeader).toHaveTextContent("listen");
+    expect(videoHeader).toHaveTextContent("视频");
+    expect(videoHeader).toHaveTextContent("watch");
     expect(audioPlayer).toHaveAttribute(
       "src",
       "https://example.com/clip.MP3?sig=1#t=2",
     );
     expect(audioPlayer).toHaveAttribute("controls");
-    expect(audioPlayer).toHaveAttribute("aria-label", "音频附件");
+    expect(audioPlayer).toHaveAttribute("aria-label", "音频附件：listen");
     expect(videoPlayer).toHaveAttribute("controls");
-    expect(videoPlayer).toHaveAttribute("aria-label", "视频附件");
+    expect(videoPlayer).toHaveAttribute("aria-label", "视频附件：watch");
     expect(videoSource).toHaveAttribute(
       "src",
       "https://example.com/clip.MP4?sig=1#t=1",
     );
+    expect(openLinks).toHaveLength(2);
+    expect(openLinks[0]).toHaveAttribute(
+      "href",
+      "https://example.com/clip.MP3?sig=1#t=2",
+    );
+    expect(openLinks[0]).toHaveTextContent("打开原文件");
+    expect(openLinks[1]).toHaveAttribute(
+      "href",
+      "https://example.com/clip.MP4?sig=1#t=1",
+    );
+    expect(openLinks[1]).toHaveTextContent("打开原文件");
     expect(container.querySelector(".markdown-video-player")).not.toHaveAttribute(
       "width",
     );
+  });
+
+  test("shows a readable media fallback when audio or video cannot load", () => {
+    const { container } = render(
+      <Markdown
+        content={
+          "[listen](https://example.com/missing.mp3)\n\n[watch](https://example.com/missing.mp4)"
+        }
+      />,
+    );
+
+    const audioPlayer = container.querySelector(".markdown-audio-player");
+    const videoPlayer = container.querySelector(".markdown-video-player");
+
+    expect(audioPlayer).toBeInTheDocument();
+    expect(videoPlayer).toBeInTheDocument();
+
+    fireEvent.error(audioPlayer as Element);
+    fireEvent.error(videoPlayer as Element);
+
+    const fallbacks = container.querySelectorAll(".markdown-media-fallback");
+    expect(fallbacks).toHaveLength(2);
+    expect(fallbacks[0]).toHaveAttribute("role", "status");
+    expect(fallbacks[0]).toHaveTextContent("音频暂时无法预览");
+    expect(fallbacks[1]).toHaveTextContent("视频暂时无法预览");
+    expect(container.querySelector(".markdown-audio-player")).toBeNull();
+    expect(container.querySelector(".markdown-video-player")).toBeNull();
   });
 });
 

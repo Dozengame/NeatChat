@@ -826,6 +826,101 @@ function getMediaHrefExtension(href: string) {
   }
 }
 
+function getMediaFileName(href: string) {
+  const trimmedHref = href.trim();
+  if (!trimmedHref) return "";
+
+  const fallbackPath = trimmedHref.split("#")[0].split("?")[0];
+  const getNameFromPath = (path: string) => {
+    const lastSegment = path.split("/").filter(Boolean).pop() ?? "";
+    try {
+      return decodeURIComponent(lastSegment);
+    } catch {
+      return lastSegment;
+    }
+  };
+
+  try {
+    const parsedHref = new URL(trimmedHref, "https://neatchat.local");
+    return getNameFromPath(parsedHref.pathname);
+  } catch {
+    return getNameFromPath(fallbackPath);
+  }
+}
+
+function MarkdownMediaCard({
+  kind,
+  href,
+  children,
+}: {
+  kind: "audio" | "video";
+  href: string;
+  children: React.ReactNode;
+}) {
+  const [hasError, setHasError] = useState(false);
+  const typeLabel = kind === "audio" ? "音频" : "视频";
+  const mediaLabel =
+    getReactTextContent(children).trim() || getMediaFileName(href) || href;
+  const mediaAriaLabel = `${typeLabel}附件：${mediaLabel}`;
+  const fallbackText = `${typeLabel}暂时无法预览，可打开原文件查看。`;
+
+  return (
+    <span
+      className={clsx(
+        "markdown-media-frame",
+        kind === "audio" ? "markdown-media-audio" : "markdown-media-video",
+      )}
+      data-media-error={hasError ? "true" : undefined}
+    >
+      <span className="markdown-media-header">
+        <span className="markdown-media-type">{typeLabel}</span>
+        <span className="markdown-media-name">{mediaLabel}</span>
+      </span>
+      {hasError ? (
+        <span
+          className="markdown-media-fallback"
+          role="status"
+          aria-live="polite"
+        >
+          {fallbackText}
+        </span>
+      ) : kind === "audio" ? (
+        <audio
+          className="markdown-audio-player"
+          controls
+          preload="metadata"
+          src={href}
+          aria-label={mediaAriaLabel}
+          onError={() => setHasError(true)}
+        >
+          <track kind="captions" />
+        </audio>
+      ) : (
+        <video
+          className="markdown-video-player"
+          controls
+          preload="metadata"
+          aria-label={mediaAriaLabel}
+          onError={() => setHasError(true)}
+        >
+          <source src={href} onError={() => setHasError(true)} />
+          <track kind="captions" />
+        </video>
+      )}
+      <span className="markdown-media-footer">
+        <a
+          className="markdown-media-open-link"
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          打开原文件
+        </a>
+      </span>
+    </span>
+  );
+}
+
 function detectFileAttachments(content: string): DetectedFileAttachment[] {
   const fileRegex =
     /文件名: (.+?)\n类型: (.+?)\n大小: (.+?) KB\n\n([\s\S]+?)(?=\n\n---|$)/g;
@@ -1025,32 +1120,18 @@ function MarkDownContentInner(
           // 处理音频链接
           if (audioMediaExtensions.has(mediaHrefExtension)) {
             return (
-              <span className="markdown-media-frame markdown-media-audio">
-                <audio
-                  className="markdown-audio-player"
-                  controls
-                  src={href}
-                  aria-label="音频附件"
-                >
-                  <track kind="captions" />
-                </audio>
-              </span>
+              <MarkdownMediaCard kind="audio" href={href}>
+                {aProps.children}
+              </MarkdownMediaCard>
             );
           }
 
           // 处理视频链接
           if (videoMediaExtensions.has(mediaHrefExtension)) {
             return (
-              <span className="markdown-media-frame markdown-media-video">
-                <video
-                  className="markdown-video-player"
-                  controls
-                  aria-label="视频附件"
-                >
-                  <source src={href} />
-                  <track kind="captions" />
-                </video>
-              </span>
+              <MarkdownMediaCard kind="video" href={href}>
+                {aProps.children}
+              </MarkdownMediaCard>
             );
           }
 
