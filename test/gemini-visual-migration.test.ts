@@ -2020,7 +2020,7 @@ describe("Gemini visual migration shell", () => {
       /className=\{styles\["chat-input"\]\}[\s\S]*aria-label=\{\s*isCompactScreen\s*\?\s*Locale\.Chat\.MobileInput\s*:\s*Locale\.Chat\.Input\(submitKey\)\s*\}/,
     );
     expect(chat).toMatch(
-      /const canSubmitComposer =\s*userInput\.trim\(\)\.length > 0 \|\|\s*attachImages\.length > 0 \|\|\s*attachedFiles\.length > 0;/,
+      /const canSubmitComposer =\s*!markdownStressQaEnabled &&\s*\(\s*userInput\.trim\(\)\.length > 0 \|\|\s*attachImages\.length > 0 \|\|\s*attachedFiles\.length > 0\s*\);/,
     );
     expect(chat).toMatch(
       /className=\{styles\["chat-input-send"\]\}[\s\S]*disabled=\{!canSubmitComposer\}[\s\S]*aria=\{Locale\.Chat\.Send\}/,
@@ -15734,6 +15734,73 @@ describe("Gemini visual migration shell", () => {
     expect(highlightPreBlock).toMatch(/color:\s*var\(--color-fg-default\);/);
   });
 
+  test("keeps rendered markdown stress QA seed deterministic and non-persistent", () => {
+    const chat = read("app/components/chat.tsx");
+    const qaSeedBlock = chat.slice(
+      chat.indexOf("const MARKDOWN_STRESS_QA_PARAM"),
+      chat.indexOf("const stopAll"),
+    );
+
+    expect(chat).toContain('const MARKDOWN_STRESS_QA_PARAM = "markdown-stress";');
+    expect(chat).toContain("const MARKDOWN_STRESS_QA_CONTENT = `");
+    expect(chat).toContain("Markdown 压测示例文档");
+    expect(chat).toContain("\\`\\`\\`typescript");
+    expect(chat).toContain("\\`\\`\\`json");
+    expect(chat).toContain("\\`\\`\\`bash");
+    expect(chat).toContain("| Surface | Expected behavior | QA focus |");
+    expect(chat).toContain("<details>");
+    expect(chat).toContain("https://example.com/neatchat/markdown-stress/");
+    expect(chat).toContain("End of markdown stress test content.");
+    expect(chat).toMatch(
+      /function isMarkdownStressQaEnabled\(locationSearch: string\)[\s\S]*new URLSearchParams\(locationSearch\)[\s\S]*params\.get\("codex_qa"\) === MARKDOWN_STRESS_QA_PARAM/,
+    );
+    expect(chat).toMatch(
+      /const markdownStressQaEnabled = useMemo\(\s*\(\) => isMarkdownStressQaEnabled\(location\.search\),\s*\[location\.search\],?\s*\);/,
+    );
+    expect(chat).toMatch(
+      /if \(markdownStressQaEnabled\) \{[\s\S]*return MARKDOWN_STRESS_QA_MESSAGES;[\s\S]*\}/,
+    );
+    expect(chat).toMatch(
+      /const canSubmitComposer =\s*!markdownStressQaEnabled &&\s*\(/,
+    );
+    expect(chat).toMatch(
+      /const doSubmit = \(userInput: string\) => \{\s*if \(markdownStressQaEnabled\) \{\s*return;\s*\}/,
+    );
+    expect(chat).toMatch(
+      /fill:\s*markdownStressQaEnabled \? undefined : setUserInput,/,
+    );
+    expect(chat).toMatch(
+      /submit:\s*markdownStressQaEnabled\s*\?\s*undefined\s*:\s*\(text\) => \{[\s\S]*doSubmit\(text\);[\s\S]*\}/,
+    );
+    expect(chat).toMatch(
+      /useEffect\(\(\) => \{\s*if \(markdownStressQaEnabled\) \{\s*return;\s*\}[\s\S]*localStorage\.setItem\(unfinishedInputKey, dom\?\.value \?\? ""\);[\s\S]*\}, \[markdownStressQaEnabled, unfinishedInputKey\]\);/,
+    );
+    expect(chat).toContain(
+      "aria-readonly={markdownStressQaEnabled ? true : undefined}",
+    );
+    expect(chat).toContain("readOnly={markdownStressQaEnabled}");
+    expect(chat).toContain(
+      "onPaste={markdownStressQaEnabled ? undefined : handlePaste}",
+    );
+    expect(chat).toMatch(
+      /const startRenderIndex = markdownStressQaEnabled \? 0 : msgRenderIndex;/,
+    );
+    expect(chat).toMatch(
+      /return renderMessages\.slice\(startRenderIndex, endRenderIndex\);/,
+    );
+    expect(chat).toMatch(
+      /const showEmptyState =\s*!markdownStressQaEnabled &&\s*session\.messages\.length === 0/,
+    );
+    expect(chat).toMatch(
+      /data-testid=\{[\s\S]*isMarkdownStressQaMessage[\s\S]*\? "markdown-stress-qa-message"[\s\S]*: undefined[\s\S]*\}/,
+    );
+    expect(chat).toMatch(
+      /const showActions =[\s\S]*!isMarkdownStressQaMessage/,
+    );
+    expect(qaSeedBlock).not.toContain("chatStore.");
+    expect(qaSeedBlock).not.toContain("localStorage.");
+  });
+
   test("keeps error recovery surface aligned with Gemini utility panels", () => {
     const errorBoundary = read("app/components/error.tsx");
     const globalStyles = read("app/styles/globals.scss");
@@ -20062,7 +20129,7 @@ describe("Gemini visual migration shell", () => {
       ".markdown-body .highlight pre,\n.markdown-body pre";
     const codeBlock = readCssBlock(markdownStyles, codeBlockSelector);
     const codeLineNumberSelector =
-      ".markdown-body .highlight pre::before,\n.markdown-body pre::before";
+      ".markdown-body pre > .markdown-code-line-numbers";
     const codeLineNumberBlock = readCssBlock(
       markdownStyles,
       codeLineNumberSelector,
@@ -20073,7 +20140,7 @@ describe("Gemini visual migration shell", () => {
     );
     const labeledLineNumberBlock = readCssBlock(
       markdownStyles,
-      ".markdown-body pre.markdown-code-block-labeled::before",
+      ".markdown-body pre.markdown-code-block-labeled > .markdown-code-line-numbers",
     );
     const codeLanguageBlock = readCssBlock(
       markdownStyles,
@@ -20111,6 +20178,9 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toMatch(
       /data-line-numbers=\{codeLineNumbers\}[\s\S]*data-line-count=\{codeLineCount\}/,
     );
+    expect(markdown).toMatch(
+      /<span[\s\S]*className="markdown-code-line-numbers"[\s\S]*aria-hidden="true"[\s\S]*>\s*\{codeLineNumbers\}\s*<\/span>/,
+    );
     expect(markdown).toContain(
       'ref.current.querySelector("code")?.innerText ?? ""',
     );
@@ -20131,8 +20201,11 @@ describe("Gemini visual migration shell", () => {
     expect(codeBlock).toMatch(
       /--markdown-code-block-padding-start:\s*calc\(\s*var\(--markdown-code-line-number-width\) \+ 14px\s*\);/,
     );
+    expect(markdownStyles).not.toContain(
+      ".markdown-body .highlight pre::before,\n.markdown-body pre::before",
+    );
     expect(codeLineNumberBlock).toMatch(
-      /content:\s*attr\(data-line-numbers\);/,
+      /white-space:\s*pre;/,
     );
     expect(codeLineNumberBlock).toMatch(/position:\s*absolute;/);
     expect(codeLineNumberBlock).toMatch(/left:\s*0;/);

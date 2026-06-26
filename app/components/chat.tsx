@@ -204,6 +204,99 @@ const getImageQualityLabel = (quality: OpenAIImageQuality) =>
   imageQualityLabels[quality] ?? quality;
 type MobileModelAdvancedSection = "reasoning" | "image-size" | "image-quality";
 
+const MARKDOWN_STRESS_QA_PARAM = "markdown-stress";
+const MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX = "codex-qa-markdown-stress";
+const MARKDOWN_STRESS_QA_CONTENT = `# Markdown 压测示例文档
+
+这份内容只用于本地 UI QA，覆盖标题、段落、引用、列表、表格、代码块、details、长链接和长文本换行。
+
+> 这是一段 blockquote，用于测试引用样式、换行、嵌套、以及长文本渲染效果。
+> 第二行引用内容，包含 **bold**、_italic_、\`inline code\`。
+
+## 代码块
+
+\`\`\`typescript
+type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  meta?: {
+    markdown: true;
+    language: "zh-CN";
+  };
+};
+
+const renderMessage = (message: ChatMessage) => {
+  return message.content.trim() || "empty";
+};
+\`\`\`
+
+\`\`\`json
+{
+  "name": "stress-test",
+  "type": "markdown",
+  "enabled": true,
+  "items": [1, 2, 3, 4, 5],
+  "meta": {
+    "author": "OpenAI",
+    "language": "zh-CN"
+  }
+}
+\`\`\`
+
+\`\`\`bash
+#!/usr/bin/env bash
+set -e
+
+echo "Start build..."
+yarn install
+yarn build
+echo "Done."
+\`\`\`
+
+## 表格
+
+| Surface | Expected behavior | QA focus |
+| --- | --- | --- |
+| Code block | GitHub-like card with line numbers | Copy excludes gutter |
+| Table | Horizontal overflow stays contained | No page overflow |
+| Quote | Soft rail and readable text | Light and dark comfort |
+
+<details>
+<summary>折叠内容</summary>
+
+- 第一层列表内容
+  - 第二层列表内容
+  - 混合中文和 English text should wrap without clipping.
+- 长链接测试：https://example.com/neatchat/markdown-stress/very/long/path/that/should/wrap/without/forcing/horizontal/page/overflow?source=codex_qa&theme=both
+
+</details>
+
+长文本压测：中文内容混排用于验证编码、换行、滚动、折叠、锚点、复制、搜索、高亮、SSR、CSR、分页、虚拟滚动等能力。ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
+
+\`End of markdown stress test content.\`
+`;
+const MARKDOWN_STRESS_QA_MESSAGES: RenderMessage[] = [
+  {
+    id: `${MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX}-user`,
+    date: "2026/6/26 00:00:00",
+    role: "user",
+    content: "渲染一份 Markdown 压测示例文档，用于检查聊天内容显示。",
+  },
+  {
+    id: `${MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX}-assistant`,
+    date: "2026/6/26 00:00:01",
+    role: "assistant",
+    model: "gpt-5.4" as ModelType,
+    content: MARKDOWN_STRESS_QA_CONTENT,
+  },
+];
+
+function isMarkdownStressQaEnabled(locationSearch: string) {
+  const params = new URLSearchParams(locationSearch);
+  return params.get("codex_qa") === MARKDOWN_STRESS_QA_PARAM;
+}
+
 const stopAll = () => ChatControllerPool.stopAll();
 type ChatActionModalKey =
   | "model"
@@ -1789,6 +1882,10 @@ function useChatInnerView() {
   );
   const navigate = useNavigate();
   const location = useLocation();
+  const markdownStressQaEnabled = useMemo(
+    () => isMarkdownStressQaEnabled(location.search),
+    [location.search],
+  );
   const [attachImages, setAttachImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -1878,9 +1975,10 @@ function useChatInnerView() {
     imageGenerationEnabled ||
     promptHints.length > 0;
   const canSubmitComposer =
-    userInput.trim().length > 0 ||
-    attachImages.length > 0 ||
-    attachedFiles.length > 0;
+    !markdownStressQaEnabled &&
+    (userInput.trim().length > 0 ||
+      attachImages.length > 0 ||
+      attachedFiles.length > 0);
   const canAddMoreAttachments =
     attachImages.length < 3 || attachedFiles.length < 5;
   const attachmentSlotsFull =
@@ -2002,6 +2100,10 @@ function useChatInnerView() {
   };
 
   const doSubmit = (userInput: string) => {
+    if (markdownStressQaEnabled) {
+      return;
+    }
+
     if (
       userInput.trim() === "" &&
       isEmpty(attachImages) &&
@@ -2626,6 +2728,10 @@ function useChatInnerView() {
 
   // preview messages
   const renderMessages = useMemo(() => {
+    if (markdownStressQaEnabled) {
+      return MARKDOWN_STRESS_QA_MESSAGES;
+    }
+
     const visibleSessionMessages = getVisibleChatMessages(
       session.messages as RenderMessage[],
     );
@@ -2666,6 +2772,7 @@ function useChatInnerView() {
     config.sendPreviewBubble,
     context,
     isLoading,
+    markdownStressQaEnabled,
     session.messages,
     userInput,
   ]);
@@ -2683,13 +2790,15 @@ function useChatInnerView() {
   );
 
   const messages = useMemo(() => {
+    const startRenderIndex = markdownStressQaEnabled ? 0 : msgRenderIndex;
     const endRenderIndex = Math.min(
-      msgRenderIndex + 3 * CHAT_PAGE_SIZE,
+      startRenderIndex + 3 * CHAT_PAGE_SIZE,
       renderMessages.length,
     );
-    return renderMessages.slice(msgRenderIndex, endRenderIndex);
-  }, [msgRenderIndex, renderMessages]);
+    return renderMessages.slice(startRenderIndex, endRenderIndex);
+  }, [markdownStressQaEnabled, msgRenderIndex, renderMessages]);
   const showEmptyState =
+    !markdownStressQaEnabled &&
     session.messages.length === 0 &&
     context.length === 1 &&
     getMessageTextContent(context[0]) === BOT_HELLO.content &&
@@ -2895,10 +3004,12 @@ function useChatInnerView() {
   const showMaxIcon = !isCompactScreen && !clientConfig?.isApp;
 
   useCommand({
-    fill: setUserInput,
-    submit: (text) => {
-      doSubmit(text);
-    },
+    fill: markdownStressQaEnabled ? undefined : setUserInput,
+    submit: markdownStressQaEnabled
+      ? undefined
+      : (text) => {
+          doSubmit(text);
+        },
     code: (text) => {
       if (accessStore.disableFastLink) return;
       console.log("[Command] got code from url: ", text);
@@ -2953,11 +3064,15 @@ function useChatInnerView() {
 
   // remember unfinished input
   useEffect(() => {
+    if (markdownStressQaEnabled) {
+      return;
+    }
+
     const dom = inputRef.current;
     return () => {
       localStorage.setItem(unfinishedInputKey, dom?.value ?? "");
     };
-  }, [unfinishedInputKey]);
+  }, [markdownStressQaEnabled, unfinishedInputKey]);
 
   const appendAttachments = useCallback(
     (fileInfos: FileInfo[], imageUrls: string[]) => {
@@ -4627,12 +4742,16 @@ function useChatInnerView() {
               {(showEmptyState ? [] : messages).map((message, i) => {
                 const isUser = message.role === "user";
                 const isContext = i < context.length;
+                const isMarkdownStressQaMessage = message.id.startsWith(
+                  MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX,
+                );
                 const showActions =
                   i > 0 &&
                   !message.streaming &&
                   !message.preview &&
                   message.content.length > 0 &&
-                  !isContext;
+                  !isContext &&
+                  !isMarkdownStressQaMessage;
                 const showTyping = message.preview || message.streaming;
                 const isWaiting =
                   !isUser &&
@@ -4676,6 +4795,11 @@ function useChatInnerView() {
                       role="listitem"
                       aria-label={messageLabel}
                       aria-busy={showTyping ? true : undefined}
+                      data-testid={
+                        isMarkdownStressQaMessage
+                          ? "markdown-stress-qa-message"
+                          : undefined
+                      }
                     >
                       <div className={styles["chat-message-container"]}>
                         <div className={styles["chat-message-header"]}>
@@ -5091,17 +5215,19 @@ function useChatInnerView() {
                   aria-controls={
                     promptHints.length > 0 ? "chat-prompt-hints" : undefined
                   }
+                  aria-readonly={markdownStressQaEnabled ? true : undefined}
                   aria-haspopup="listbox"
                   onChange={(e) => onInput(e.currentTarget.value)}
                   value={userInput}
                   onKeyDown={onInputKeyDown}
+                  readOnly={markdownStressQaEnabled}
                   onFocus={() => {
                     scrollToBottom();
                   }}
                   onClick={() => {
                     scrollToBottom();
                   }}
-                  onPaste={handlePaste}
+                  onPaste={markdownStressQaEnabled ? undefined : handlePaste}
                   rows={isCompactScreen ? 1 : inputRows}
                   autoFocus={autoFocus}
                   style={{

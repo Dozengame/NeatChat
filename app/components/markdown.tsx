@@ -367,6 +367,9 @@ export function PreCode(props: { children: any }) {
         data-line-count={codeLineCount}
         onScroll={syncCodeScrollHint}
       >
+        <span className="markdown-code-line-numbers" aria-hidden="true">
+          {codeLineNumbers}
+        </span>
         {codeLanguage && (
           <span className="markdown-code-language" aria-hidden="true">
             {codeLanguage}

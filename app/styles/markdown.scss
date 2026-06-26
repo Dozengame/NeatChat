@@ -3407,9 +3407,7 @@ summary,
   isolation: isolate;
 }
 
-.markdown-body .highlight pre::before,
-.markdown-body pre::before {
-  content: attr(data-line-numbers);
+.markdown-body pre > .markdown-code-line-numbers {
   position: absolute;
   top: var(--markdown-code-block-padding-y);
   bottom: var(--markdown-code-block-padding-y);
@@ -3464,7 +3462,7 @@ summary,
   scroll-padding-top: var(--markdown-code-labeled-padding-top);
 }
 
-.markdown-body pre.markdown-code-block-labeled::before {
+.markdown-body pre.markdown-code-block-labeled > .markdown-code-line-numbers {
   top: var(--markdown-code-labeled-padding-top);
 }
 
