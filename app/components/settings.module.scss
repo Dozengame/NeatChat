@@ -153,6 +153,55 @@
   }
 }
 
+.settings-preference-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-height: 38px;
+  padding: 0 11px;
+  background-color: var(--settings-preference-field-background);
+  border: 1px solid var(--settings-preference-field-border-color);
+  border-radius: 8px;
+  color: var(--settings-preference-field-color);
+  box-shadow: inset 0 1px 0 var(--settings-preference-field-inner-shadow-color);
+  font: inherit;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+
+  span:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  span:last-child {
+    flex: 0 0 auto;
+    color: var(--settings-preference-field-placeholder-color);
+  }
+
+  &:hover {
+    background-color: var(--settings-preference-item-hover-background);
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--settings-preference-field-focus-border-color);
+    box-shadow:
+      0 0 0 3px var(--settings-preference-field-focus-shadow-color),
+      inset 0 1px 0 var(--settings-preference-field-inner-shadow-color);
+  }
+}
+
 .settings-preference-range {
   width: min(260px, 100%);
   max-width: 100%;
@@ -1821,6 +1870,37 @@
   }
 }
 
+.custom-instructions-actions {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.custom-instructions-edit-button {
+  min-height: 34px;
+  border: 1px solid var(--settings-preference-action-border-color);
+  background: var(--settings-preference-action-background);
+  color: var(--settings-preference-field-color);
+  box-shadow: 0 1px 2px var(--settings-preference-list-shadow-color);
+
+  &:hover {
+    background: var(--settings-preference-action-hover-background);
+  }
+
+  &:focus-visible {
+    box-shadow:
+      0 0 0 3px var(--settings-preference-action-focus-shadow-color),
+      0 1px 2px var(--settings-preference-list-shadow-color);
+  }
+}
+
+.custom-instructions-modal-input {
+  min-height: min(62dvh, 640px);
+  margin-top: 0;
+  resize: vertical;
+}
+
 .custom-instructions-status {
   position: absolute;
   width: 1px;
@@ -2076,15 +2156,32 @@
       min-height: 148px;
       padding: 12px;
     }
+
+    .settings-preference-select-trigger {
+      min-height: 44px;
+      padding: 0 12px;
+    }
+
+    .custom-instructions-actions {
+      justify-content: stretch;
+    }
+
+    .custom-instructions-edit-button {
+      width: 100%;
+      justify-content: center;
+      min-height: 40px;
+    }
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .custom-instructions-input,
+  .custom-instructions-edit-button,
   .settings-preference-list,
   .settings-preference-item,
   .settings-preference-item input[type="text"],
   .settings-preference-select select,
+  .settings-preference-select-trigger,
   .settings-preference-action,
   .settings-danger-item,
   .settings-danger-action,

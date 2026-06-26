@@ -965,6 +965,12 @@ pre {
     opacity: 0.72;
   }
 
+  &:hover .wrap-code-button {
+    pointer-events: all;
+    transform: translateX(var(--markdown-code-scroll-left, 0px));
+    opacity: 0.72;
+  }
+
   .copy-code-button {
     position: absolute;
     right: var(--markdown-code-action-inset, 12px);
@@ -1034,6 +1040,61 @@ pre {
     }
   }
 
+  .wrap-code-button {
+    position: absolute;
+    right: calc(var(--markdown-code-action-inset, 12px) + var(--markdown-code-action-size, 34px) + 8px);
+    top: var(--markdown-code-action-inset, 12px);
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--markdown-code-action-size, 34px);
+    height: var(--markdown-code-action-size, 34px);
+    cursor: pointer;
+    padding: 0;
+    background-color: var(--markdown-code-copy-button-background);
+    color: var(--markdown-code-copy-button-color);
+    border: 1px solid var(--markdown-code-copy-button-border-color);
+    border-radius: 999px;
+    transform: translate(var(--markdown-code-scroll-left, 0px), -2px);
+    pointer-events: none;
+    opacity: 0;
+    transition:
+      opacity ease 0.18s,
+      transform ease 0.18s,
+      background-color ease 0.18s,
+      color ease 0.18s,
+      border-color ease 0.18s;
+
+    svg {
+      width: 15px;
+      height: 15px;
+      fill: none;
+      color: currentColor;
+
+      path {
+        stroke: currentColor !important;
+        fill: none !important;
+      }
+    }
+
+    &:hover,
+    &[data-wrap-state="wrapped"] {
+      opacity: 1;
+      background-color: var(--markdown-code-copy-button-hover-background);
+      color: var(--markdown-code-copy-button-hover-color);
+      border-color: var(--markdown-code-copy-button-hover-border-color);
+    }
+
+    &:focus-visible {
+      pointer-events: all;
+      opacity: 1;
+      outline: var(--focus-ring);
+      outline-offset: 2px;
+      transform: translateX(var(--markdown-code-scroll-left, 0px));
+    }
+  }
+
   .copy-code-status {
     position: absolute;
     width: 1px;
@@ -1068,8 +1129,32 @@ pre {
   }
 }
 
+.dark pre .wrap-code-button {
+  background-color: var(--markdown-code-copy-button-background);
+  color: var(--markdown-code-copy-button-color);
+  border-color: var(--markdown-code-copy-button-border-color);
+
+  &:hover {
+    background-color: var(--markdown-code-copy-button-hover-background);
+    color: var(--markdown-code-copy-button-hover-color);
+    border-color: var(--markdown-code-copy-button-hover-border-color);
+  }
+
+  &[data-wrap-state="wrapped"] {
+    background-color: var(--markdown-code-copy-button-hover-background);
+    color: var(--markdown-code-copy-button-hover-color);
+    border-color: var(--markdown-code-copy-button-hover-border-color);
+  }
+}
+
 @media (hover: none), (pointer: coarse), (max-width: 600px) {
   pre .copy-code-button {
+    pointer-events: all;
+    opacity: 1;
+    transform: translateX(var(--markdown-code-scroll-left, 0px));
+  }
+
+  pre .wrap-code-button {
     pointer-events: all;
     opacity: 1;
     transform: translateX(var(--markdown-code-scroll-left, 0px));

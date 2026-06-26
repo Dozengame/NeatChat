@@ -106,6 +106,31 @@ describe("PreCode language labels", () => {
     );
   });
 
+  test("lets users toggle code wrapping without polluting copied code", () => {
+    renderCodeBlock("language-json");
+
+    const pre = document.querySelector("pre");
+    expect(pre).toHaveAttribute("data-wrap-state", "scroll");
+    expect(pre).not.toHaveClass("markdown-code-block-wrap");
+
+    const wrapButton = screen.getByRole("button", {
+      name: "自动换行 JSON 代码",
+    });
+    expect(wrapButton).toHaveAttribute("aria-pressed", "false");
+    expect(wrapButton).toHaveAttribute("data-wrap-state", "scroll");
+
+    fireEvent.click(wrapButton);
+
+    expect(pre).toHaveClass("markdown-code-block-wrap");
+    expect(pre).toHaveAttribute("data-wrap-state", "wrapped");
+    expect(wrapButton).toHaveAttribute("aria-pressed", "true");
+    expect(wrapButton).toHaveAttribute("data-wrap-state", "wrapped");
+
+    fireEvent.click(screen.getByRole("button", { name: "复制 JSON 代码" }));
+
+    expect(copyToClipboard).toHaveBeenCalledWith('{"tool": true}');
+  });
+
   test("exposes copy feedback through a polite live button label", () => {
     renderCodeBlock("language-typescript");
 

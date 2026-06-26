@@ -159,6 +159,21 @@ summary,
     var(--primary) 72%,
     transparent
   );
+  --markdown-task-list-background: color-mix(
+    in srgb,
+    var(--surface-soft) 58%,
+    transparent
+  );
+  --markdown-task-list-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --markdown-task-list-nested-border-color: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
   --markdown-image-frame-border-color: color-mix(
     in srgb,
     var(--black-50) 12%,
@@ -983,6 +998,21 @@ summary,
     in srgb,
     var(--primary) 58%,
     var(--black)
+  );
+  --markdown-task-list-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 54%,
+    var(--surface)
+  );
+  --markdown-task-list-border-color: color-mix(
+    in srgb,
+    var(--black) 12%,
+    transparent
+  );
+  --markdown-task-list-nested-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 22%,
+    transparent
   );
   --markdown-image-frame-border-color: color-mix(
     in srgb,
@@ -2103,7 +2133,7 @@ summary,
 .markdown-body p:has(> .markdown-image-frame:only-child),
 .markdown-body p:has(> .markdown-media-frame:only-child) {
   margin: 14px 0 var(--markdown-block-gap);
-  line-height: 0;
+  line-height: 1.65;
 }
 
 .markdown-body p > .markdown-image-frame:only-child {
@@ -2116,6 +2146,56 @@ summary,
   display: block;
   width: 100%;
   max-width: 100%;
+}
+
+.markdown-body p:has(> .markdown-image-frame):not(:has(> .markdown-image-frame:only-child)),
+.markdown-body p:has(> .markdown-media-frame):not(:has(> .markdown-media-frame:only-child)) {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.markdown-body p:has(> .markdown-image-frame):not(:has(> .markdown-image-frame:only-child)) > .markdown-image-frame {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 10px;
+  vertical-align: top;
+}
+
+.markdown-body p:has(> .markdown-media-frame):not(:has(> .markdown-media-frame:only-child)) > .markdown-media-frame {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 10px;
+}
+
+.markdown-body p:has(> .markdown-image-frame),
+.markdown-body p:has(> .markdown-media-frame) {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.markdown-body p:has(> .markdown-image-frame) > .markdown-image-frame {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 10px;
+  vertical-align: top;
+}
+
+.markdown-body p:has(> .markdown-media-frame) > .markdown-media-frame {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 10px;
 }
 
 .mermaid {
@@ -3671,7 +3751,7 @@ summary,
   --markdown-code-block-padding-start: calc(
     var(--markdown-code-line-number-width) + 14px
   );
-  --markdown-code-action-rail-width: 64px;
+  --markdown-code-action-rail-width: 106px;
   --markdown-code-action-inset: 12px;
   --markdown-code-action-size: 34px;
   --markdown-code-labeled-padding-top: 52px;
@@ -4191,7 +4271,8 @@ summary,
 .markdown-body .task-list-item {
   list-style-type: none;
   min-width: 0;
-  padding-left: 0;
+  position: relative;
+  padding-left: calc(var(--markdown-task-checkbox-size) + var(--markdown-task-checkbox-gap));
 }
 
 .markdown-body .task-list-item label {
@@ -4214,11 +4295,13 @@ summary,
   appearance: none;
   -webkit-appearance: none;
   display: inline-grid;
+  position: absolute;
+  left: 0;
+  top: 0.28em;
   inline-size: var(--markdown-task-checkbox-size);
   block-size: var(--markdown-task-checkbox-size);
   place-content: center;
-  margin: 0 var(--markdown-task-checkbox-gap) 0.16em
-    var(--markdown-task-checkbox-offset);
+  margin: 0;
   color: var(--markdown-task-checkbox-check-color);
   vertical-align: -0.08em;
   accent-color: var(--markdown-task-checkbox-checked-background);
@@ -4268,12 +4351,39 @@ summary,
 }
 
 .markdown-body .contains-task-list:dir(rtl) .task-list-item > input[type="checkbox"] {
-  margin: 0 var(--markdown-task-checkbox-offset) 0.16em
-    var(--markdown-task-checkbox-gap);
+  left: auto;
+  right: 0;
+  margin: 0;
 }
 
 .markdown-body .contains-task-list {
   position: relative;
+  margin: 10px 0 var(--markdown-block-gap);
+  padding: 10px 12px;
+  background: var(--markdown-task-list-background);
+  border: 1px solid var(--markdown-task-list-border-color);
+  border-radius: 8px;
+}
+
+.markdown-body .contains-task-list .contains-task-list {
+  margin: 8px 0 0;
+  padding: 6px 0 0 12px;
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--markdown-task-list-nested-border-color);
+  border-radius: 0;
+}
+
+.markdown-body .contains-task-list:dir(rtl) .task-list-item {
+  padding-right: calc(var(--markdown-task-checkbox-size) + var(--markdown-task-checkbox-gap));
+  padding-left: 0;
+}
+
+.markdown-body .contains-task-list:dir(rtl) .contains-task-list {
+  padding-right: 12px;
+  padding-left: 0;
+  border-right: 1px solid var(--markdown-task-list-nested-border-color);
+  border-left: 0;
 }
 
 .markdown-body .contains-task-list:hover .task-list-item-convert-container,
@@ -4530,7 +4640,7 @@ summary,
     --markdown-code-block-padding-start: calc(
       var(--markdown-code-line-number-width) + 12px
     );
-    --markdown-code-action-rail-width: 44px;
+    --markdown-code-action-rail-width: 78px;
     --markdown-code-action-inset: 8px;
     --markdown-code-action-size: 30px;
     --markdown-code-labeled-padding-top: 42px;
@@ -4680,7 +4790,7 @@ summary,
     --markdown-code-block-padding-start: calc(
       var(--markdown-code-line-number-width) + 12px
     );
-    --markdown-code-action-rail-width: 40px;
+    --markdown-code-action-rail-width: 72px;
     --markdown-code-action-inset: 7px;
     --markdown-code-action-size: 28px;
     --markdown-code-labeled-padding-top: 38px;

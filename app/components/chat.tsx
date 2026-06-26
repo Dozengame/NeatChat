@@ -294,6 +294,9 @@ echo "Done."
 
 - [x] 已完成的任务列表项：行首 checkbox 与正文基线对齐。
 - [ ] 待确认的任务列表项：未选状态在 light/dark 下都要清晰。
+- [ ] 未完成任务 4：包含嵌套子任务，检查缩进、checkbox 对齐和文本换行。
+  - [ ] 子任务 4.1：移动端窄屏不能挤压正文。
+  - [x] 子任务 4.2：完成态不能让图标和文本错位。
 
 <details>
 <summary>折叠内容</summary>
@@ -310,6 +313,8 @@ echo "Done."
 ## 多模态预览
 
 ![多模态预览](data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='640'%20height='360'%20viewBox='0%200%20640%20360'%3E%3Crect%20width='640'%20height='360'%20rx='28'%20fill='%23eef4ff'/%3E%3Ccircle%20cx='126'%20cy='116'%20r='48'%20fill='%236d8dff'/%3E%3Crect%20x='210'%20y='82'%20width='330'%20height='28'%20rx='14'%20fill='%236779e6'/%3E%3Crect%20x='210'%20y='132'%20width='250'%20height='20'%20rx='10'%20fill='%2392a7ff'/%3E%3Cpath%20d='M64%20286L222%20182l92%2064%2078-54%20184%2094H64z'%20fill='%23c8d7ff'/%3E%3C/svg%3E)
+
+![图片生成提示词预览](data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='640'%20height='360'%20viewBox='0%200%20640%20360'%3E%3Crect%20width='640'%20height='360'%20rx='28'%20fill='%23f7f7fb'/%3E%3Crect%20x='72'%20y='72'%20width='496'%20height='216'%20rx='18'%20fill='%23dfe7ff'/%3E%3Ccircle%20cx='168'%20cy='144'%20r='42'%20fill='%23799aff'/%3E%3Cpath%20d='M112%20242l92-70%2070%2052%2058-42%20196%2060z'%20fill='%23aebeff'/%3E%3C/svg%3E) 助手善于判断用户意图，当确定需要提供图片时，助手会输出 markdown 图片语法并追加一段较长的中文提示说明，用于验证图片后接长文本时不会挤压 token、按钮或消息边界，也不会产生横向滚动。
 
 [音频预览](/codex-qa/neatchat-stress-audio.mp3)
 

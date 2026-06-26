@@ -220,6 +220,8 @@ const en: LocaleType = {
       Content: {
         Title: "Custom Instructions",
         SubTitle: (count: number) => `${count}/1500`,
+        Edit: "Full-screen edit",
+        Done: "Done",
         Placeholder:
           "Describe what the assistant should always follow in new chats, such as response style, context, or output format.",
       },

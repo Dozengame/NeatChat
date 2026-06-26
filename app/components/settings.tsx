@@ -5,7 +5,16 @@ import styles from "./settings.module.scss";
 import ResetIcon from "../icons/reload.svg";
 import CloseIcon from "../icons/close.svg";
 import EditIcon from "../icons/edit.svg";
-import { Input, List, ListItem, PasswordInput, Select } from "./ui-lib";
+import ConfirmIcon from "../icons/confirm.svg";
+import {
+  Input,
+  List,
+  ListItem,
+  Modal,
+  PasswordInput,
+  Select,
+  SimpleSelector,
+} from "./ui-lib";
 import { ModelConfigList } from "./model-config";
 
 import { IconButton } from "./button";
@@ -47,14 +56,79 @@ import { createConfigFieldMeta } from "../utils/public-app-config";
 import { UserPromptModal } from "./settings-user-prompt-modal";
 import { DangerItems } from "./settings-danger-items";
 import { SyncItems } from "./settings-sync-items";
+import { useMobileScreen } from "../utils";
 
 export function Settings() {
   return useSettingsView();
 }
 
+function SettingsSelect<T extends string>(props: {
+  ariaLabel: string;
+  className?: string;
+  value: T;
+  options: Array<{ value: T; label: string }>;
+  onChange: (value: T) => void;
+}) {
+  const isMobileScreen = useMobileScreen();
+  const [showSettingsSelectSheet, setShowSettingsSelectSheet] = useState(false);
+  const selectedLabel =
+    props.options.find((option) => option.value === props.value)?.label ??
+    props.value;
+
+  if (!isMobileScreen) {
+    return (
+      <Select
+        className={props.className}
+        aria-label={props.ariaLabel}
+        value={props.value}
+        onChange={(e) => props.onChange(e.target.value as T)}
+      >
+        {props.options.map((option) => (
+          <option value={option.value} key={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </Select>
+    );
+  }
+
+  return (
+    <div className={props.className}>
+      <button
+        type="button"
+        className={styles["settings-preference-select-trigger"]}
+        aria-label={props.ariaLabel}
+        aria-haspopup="dialog"
+        aria-expanded={showSettingsSelectSheet}
+        onClick={() => setShowSettingsSelectSheet(true)}
+      >
+        <span>{selectedLabel}</span>
+        <span aria-hidden="true">⌄</span>
+      </button>
+      {showSettingsSelectSheet && (
+        <SimpleSelector
+          items={props.options.map((option) => ({
+            title: option.label,
+            value: option.value,
+          }))}
+          onClose={() => setShowSettingsSelectSheet(false)}
+          onSelection={(selection) => {
+            const [value] = selection;
+            if (value !== undefined) {
+              props.onChange(value);
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 function useSettingsView() {
   const navigate = useNavigate();
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showCustomInstructionsModal, setShowCustomInstructionsModal] =
+    useState(false);
   const config = useAppConfig();
   const updateConfig = config.update;
   const markModelConfigOverride = (fields: string[]) => {
@@ -884,65 +958,58 @@ function useSettingsView() {
               className={styles["settings-preference-item"]}
               title={Locale.Settings.SendKey}
             >
-              <Select
+              <SettingsSelect
                 className={styles["settings-preference-select"]}
-                aria-label={Locale.Settings.SendKey}
+                ariaLabel={Locale.Settings.SendKey}
                 value={config.submitKey}
-                onChange={(e) => {
+                options={Object.values(SubmitKey).map((v) => ({
+                  value: v,
+                  label: v,
+                }))}
+                onChange={(value) => {
                   updateConfig(
-                    (config) =>
-                      (config.submitKey = e.target.value as any as SubmitKey),
+                    (config) => (config.submitKey = value as any as SubmitKey),
                   );
                 }}
-              >
-                {Object.values(SubmitKey).map((v) => (
-                  <option value={v} key={v}>
-                    {v}
-                  </option>
-                ))}
-              </Select>
+              />
             </ListItem>
 
             <ListItem
               className={styles["settings-preference-item"]}
               title={Locale.Settings.Theme}
             >
-              <Select
+              <SettingsSelect
                 className={styles["settings-preference-select"]}
-                aria-label={Locale.Settings.Theme}
+                ariaLabel={Locale.Settings.Theme}
                 value={config.theme}
-                onChange={(e) => {
+                options={Object.values(Theme).map((v) => ({
+                  value: v,
+                  label: v,
+                }))}
+                onChange={(value) => {
                   updateConfig(
-                    (config) => (config.theme = e.target.value as any as Theme),
+                    (config) => (config.theme = value as any as Theme),
                   );
                 }}
-              >
-                {Object.values(Theme).map((v) => (
-                  <option value={v} key={v}>
-                    {v}
-                  </option>
-                ))}
-              </Select>
+              />
             </ListItem>
 
             <ListItem
               className={styles["settings-preference-item"]}
               title={Locale.Settings.Lang.Name}
             >
-              <Select
+              <SettingsSelect
                 className={styles["settings-preference-select"]}
-                aria-label={Locale.Settings.Lang.Name}
+                ariaLabel={Locale.Settings.Lang.Name}
                 value={getLang()}
-                onChange={(e) => {
-                  changeLang(e.target.value as any);
+                options={AllLangs.map((lang) => ({
+                  value: lang,
+                  label: ALL_LANG_OPTIONS[lang],
+                }))}
+                onChange={(value) => {
+                  changeLang(value as any);
                 }}
-              >
-                {AllLangs.map((lang) => (
-                  <option value={lang} key={lang}>
-                    {ALL_LANG_OPTIONS[lang]}
-                  </option>
-                ))}
-              </Select>
+              />
             </ListItem>
 
             <ListItem
@@ -1198,6 +1265,17 @@ function useSettingsView() {
                     )
                   }
                 />
+                <div className={styles["custom-instructions-actions"]}>
+                  <IconButton
+                    className={styles["custom-instructions-edit-button"]}
+                    aria={Locale.Settings.CustomInstructions.Content.Edit}
+                    icon={<EditIcon />}
+                    text={Locale.Settings.CustomInstructions.Content.Edit}
+                    bordered
+                    disabled={!config.enableCustomInstructions}
+                    onClick={() => setShowCustomInstructionsModal(true)}
+                  />
+                </div>
                 <span
                   id={customInstructionsDescriptionId}
                   className={styles["custom-instructions-status"]}
@@ -1384,6 +1462,44 @@ function useSettingsView() {
 
         {shouldShowPromptModal && (
           <UserPromptModal onClose={() => setShowPromptModal(false)} />
+        )}
+
+        {showCustomInstructionsModal && (
+          <div className="modal-mask">
+            <Modal
+              title={Locale.Settings.CustomInstructions.Content.Title}
+              defaultMax
+              onClose={() => setShowCustomInstructionsModal(false)}
+              actions={[
+                <IconButton
+                  key="done"
+                  icon={<ConfirmIcon />}
+                  text={Locale.Settings.CustomInstructions.Content.Done}
+                  bordered
+                  onClick={() => setShowCustomInstructionsModal(false)}
+                />,
+              ]}
+            >
+              <Input
+                aria-label={Locale.Settings.CustomInstructions.Content.Title}
+                aria-describedby={customInstructionsDescriptionId}
+                className={`${styles["custom-instructions-input"]} ${styles["custom-instructions-modal-input"]}`}
+                value={config.customInstructions}
+                maxLength={1500}
+                rows={16}
+                disabled={!config.enableCustomInstructions}
+                placeholder={
+                  Locale.Settings.CustomInstructions.Content.Placeholder
+                }
+                onInput={(e) =>
+                  updateConfig(
+                    (config) =>
+                      (config.customInstructions = e.currentTarget.value),
+                  )
+                }
+              />
+            </Modal>
+          </div>
         )}
 
         <DangerItems />

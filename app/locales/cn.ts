@@ -217,6 +217,8 @@ const cn = {
       Content: {
         Title: "自定义指令",
         SubTitle: (count: number) => `${count}/1500`,
+        Edit: "全屏编辑",
+        Done: "完成",
         Placeholder:
           "写下你希望助手在新对话中始终遵守的要求，例如回答风格、身份背景、输出格式。",
       },

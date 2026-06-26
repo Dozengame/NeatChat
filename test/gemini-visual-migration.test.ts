@@ -8368,7 +8368,7 @@ describe("Gemini visual migration shell", () => {
     expect(preBlock).toMatch(
       /--markdown-code-block-padding-start:\s*calc\(\s*var\(--markdown-code-line-number-width\) \+ 14px\s*\);/,
     );
-    expect(preBlock).toMatch(/--markdown-code-action-rail-width:\s*64px;/);
+    expect(preBlock).toMatch(/--markdown-code-action-rail-width:\s*106px;/);
     expect(preBlock).toMatch(/--markdown-code-action-inset:\s*12px;/);
     expect(preBlock).toMatch(/--markdown-code-action-size:\s*34px;/);
     expect(preBlock).toMatch(/--markdown-code-scroll-left:\s*0px;/);
@@ -8419,7 +8419,7 @@ describe("Gemini visual migration shell", () => {
       /--markdown-code-block-padding-start:\s*calc\(\s*var\(--markdown-code-line-number-width\) \+ 12px\s*\);/,
     );
     expect(mobileCodeBlock).toMatch(
-      /--markdown-code-action-rail-width:\s*44px;/,
+      /--markdown-code-action-rail-width:\s*78px;/,
     );
     expect(mobileCodeBlock).toMatch(/--markdown-code-action-inset:\s*8px;/);
     expect(mobileCodeBlock).toMatch(/--markdown-code-action-size:\s*30px;/);
@@ -8432,7 +8432,7 @@ describe("Gemini visual migration shell", () => {
     expect(mobileCodeBlock).toMatch(/font-size:\s*0\.88em;/);
     expect(mobileCodeBlock).toMatch(/line-height:\s*1\.58;/);
     expect(mobileCodeBlock).not.toMatch(
-      /--markdown-code-action-rail-width:\s*64px;/,
+      /--markdown-code-action-rail-width:\s*106px;/,
     );
     expect(mobileLabeledCodeBlock).toMatch(
       /padding-top:\s*var\(--markdown-code-labeled-padding-top\);/,
@@ -8453,7 +8453,7 @@ describe("Gemini visual migration shell", () => {
       /--markdown-code-block-padding-start:\s*calc\(\s*var\(--markdown-code-line-number-width\) \+ 12px\s*\);/,
     );
     expect(narrowCodeBlock).toMatch(
-      /--markdown-code-action-rail-width:\s*40px;/,
+      /--markdown-code-action-rail-width:\s*72px;/,
     );
     expect(narrowCodeBlock).toMatch(/--markdown-code-action-size:\s*28px;/);
     expect(languageLabelBlock).toMatch(/position:\s*absolute;/);
@@ -11103,12 +11103,15 @@ describe("Gemini visual migration shell", () => {
     expect(taskCheckboxBlock).toMatch(
       /block-size:\s*var\(--markdown-task-checkbox-size\);/,
     );
-    expect(taskCheckboxBlock).toMatch(
-      /margin:\s*0\s+var\(--markdown-task-checkbox-gap\)\s+0\.16em\s+var\(--markdown-task-checkbox-offset\);/,
-    );
+    expect(taskCheckboxBlock).toMatch(/position:\s*absolute;/);
+    expect(taskCheckboxBlock).toMatch(/left:\s*0;/);
+    expect(taskCheckboxBlock).toMatch(/top:\s*0\.28em;/);
+    expect(taskCheckboxBlock).toMatch(/margin:\s*0;/);
     expect(taskCheckboxBlock).toMatch(/vertical-align:\s*-0\.08em;/);
+    expect(taskCheckboxRtlBlock).toMatch(/left:\s*auto;/);
+    expect(taskCheckboxRtlBlock).toMatch(/right:\s*0;/);
     expect(taskCheckboxRtlBlock).toMatch(
-      /margin:\s*0\s+var\(--markdown-task-checkbox-offset\)\s+0\.16em\s+var\(--markdown-task-checkbox-gap\);/,
+      /margin:\s*0;/,
     );
     expect(mobileListBlock).toMatch(
       /padding-left:\s*var\(--markdown-list-indent\);/,
@@ -11427,8 +11430,10 @@ describe("Gemini visual migration shell", () => {
     expect(taskCheckboxCheckedDisabledBlock).toMatch(
       /background:\s*var\(--markdown-task-checkbox-disabled-checked-background\);/,
     );
+    expect(taskCheckboxRtlBlock).toMatch(/left:\s*auto;/);
+    expect(taskCheckboxRtlBlock).toMatch(/right:\s*0;/);
     expect(taskCheckboxRtlBlock).toMatch(
-      /margin:\s*0\s+var\(--markdown-task-checkbox-offset\)\s+0\.16em\s+var\(--markdown-task-checkbox-gap\);/,
+      /margin:\s*0;/,
     );
     expect(reducedMotionTaskCheckboxBeforeBlock).toMatch(
       /transition-duration:\s*0\.01ms !important;/,
@@ -16226,6 +16231,7 @@ describe("Gemini visual migration shell", () => {
     expect(imageOnlyParagraphBlock).toMatch(
       /margin:\s*14px 0 var\(--markdown-block-gap\);/,
     );
+    expect(imageOnlyParagraphBlock).toMatch(/line-height:\s*1\.65;/);
     expect(imageOnlyFrameBlock).toMatch(/display:\s*flex;/);
     expect(imageOnlyFrameBlock).toMatch(/width:\s*fit-content;/);
     expect(imageOnlyFrameBlock).toMatch(/max-width:\s*100%;/);
@@ -20491,7 +20497,10 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toContain("data-line-count={codeLineCount}");
     expect(markdown).toContain("copyToClipboard(");
     expect(markdown).toContain(
-      'ref.current.querySelector("code")?.innerText ?? ""',
+      'const codeElement = ref.current.querySelector("code");',
+    );
+    expect(markdown).toContain(
+      "codeElement?.innerText ?? codeElement?.textContent ?? \"\"",
     );
     expect(markdown).not.toMatch(/copyToClipboard\([\s\S]*codeLineNumbers/);
     expect(markdown).toContain('"show-hide-button"');
@@ -20653,7 +20662,10 @@ describe("Gemini visual migration shell", () => {
       /<span[\s\S]*className="markdown-code-line-numbers"[\s\S]*aria-hidden="true"[\s\S]*>\s*\{codeLineNumbers\}\s*<\/span>/,
     );
     expect(markdown).toContain(
-      'ref.current.querySelector("code")?.innerText ?? ""',
+      'const codeElement = ref.current.querySelector("code");',
+    );
+    expect(markdown).toContain(
+      "codeElement?.innerText ?? codeElement?.textContent ?? \"\"",
     );
     expect(markdown).not.toMatch(/querySelector\("pre"\)\?\.innerText/);
     for (const tokenName of codeTokenNames) {
@@ -22465,7 +22477,7 @@ describe("Gemini visual migration shell", () => {
       'className={styles["settings-preference-action"]}',
     );
     expect(settings).toMatch(
-      /className=\{styles\["settings-preference-item"\]\}[\s\S]*title=\{Locale\.Settings\.SendKey\}[\s\S]*className=\{styles\["settings-preference-select"\]\}[\s\S]*config\.submitKey = e\.target\.value as any as SubmitKey/,
+      /className=\{styles\["settings-preference-item"\]\}[\s\S]*title=\{Locale\.Settings\.SendKey\}[\s\S]*<SettingsSelect[\s\S]*className=\{styles\["settings-preference-select"\]\}[\s\S]*config\.submitKey = value as any as SubmitKey/,
     );
     expect(settings).toMatch(
       /className=\{styles\["settings-preference-item"\]\}[\s\S]*title=\{Locale\.Settings\.FontFamily\.Title\}[\s\S]*value=\{config\.fontFamily\}[\s\S]*config\.fontFamily = e\.currentTarget\.value/,
@@ -23488,6 +23500,109 @@ describe("Gemini visual migration shell", () => {
     );
     expect(customInstructionsPaintScope).not.toContain("var(--white)");
     expect(customInstructionsPaintScope).not.toContain("var(--gray)");
+  });
+
+  test("locks reported Markdown and Settings interaction regressions", () => {
+    const markdown = read("app/components/markdown.tsx");
+    const markdownStyles = read("app/styles/markdown.scss");
+    const globalStyles = read("app/styles/globals.scss");
+    const settings = read("app/components/settings.tsx");
+    const settingsStyles = read("app/components/settings.module.scss");
+    const taskListBlock = readRootCssBlock(
+      markdownStyles,
+      ".markdown-body .contains-task-list",
+    );
+    const taskItemBlock = readRootCssBlock(
+      markdownStyles,
+      ".markdown-body .task-list-item",
+    );
+    const taskCheckboxBlock = readRootCssBlock(
+      markdownStyles,
+      '.markdown-body .task-list-item > input[type="checkbox"]',
+    );
+    const mixedImageParagraphBlock = readRootCssBlock(
+      markdownStyles,
+      ".markdown-body p:has(> .markdown-image-frame),\n.markdown-body p:has(> .markdown-media-frame)",
+    );
+    const mixedImageFrameBlock = readRootCssBlock(
+      markdownStyles,
+      ".markdown-body p:has(> .markdown-image-frame) > .markdown-image-frame",
+    );
+    const customActionsBlock = readRootCssBlock(
+      settingsStyles,
+      ".custom-instructions-actions",
+    );
+    const customEditButtonBlock = readRootCssBlock(
+      settingsStyles,
+      ".custom-instructions-edit-button",
+    );
+    const customModalInputBlock = readRootCssBlock(
+      settingsStyles,
+      ".custom-instructions-modal-input",
+    );
+
+    expect(markdown).toContain("const [userWrapCode");
+    expect(markdown).toContain("isCodeWrapped");
+    expect(markdown).toContain("data-wrap-state");
+    expect(markdown).toContain('className="wrap-code-button"');
+    expect(markdown).toContain("aria-pressed={isCodeWrapped}");
+    expect(markdown).toContain("codeElement?.innerText");
+    expect(globalStyles).toContain(".wrap-code-button");
+    expect(globalStyles).toMatch(
+      /\.wrap-code-button[\s\S]*right:\s*calc\(var\(--markdown-code-action-inset,\s*12px\) \+ var\(--markdown-code-action-size,\s*34px\) \+ 8px\);/,
+    );
+    expect(markdownStyles).toMatch(
+      /--markdown-code-action-rail-width:\s*106px;/,
+    );
+
+    expect(taskListBlock).toMatch(/padding:\s*10px 12px;/);
+    expect(taskListBlock).toMatch(
+      /background:\s*var\(--markdown-task-list-background\);/,
+    );
+    expect(taskListBlock).toMatch(
+      /border:\s*1px solid var\(--markdown-task-list-border-color\);/,
+    );
+    expect(taskListBlock).toMatch(/border-radius:\s*8px;/);
+    expect(taskItemBlock).toMatch(/position:\s*relative;/);
+    expect(taskItemBlock).toMatch(
+      /padding-left:\s*calc\(var\(--markdown-task-checkbox-size\) \+ var\(--markdown-task-checkbox-gap\)\);/,
+    );
+    expect(taskCheckboxBlock).toMatch(/position:\s*absolute;/);
+    expect(taskCheckboxBlock).toMatch(/left:\s*0;/);
+    expect(taskCheckboxBlock).toMatch(/top:\s*0\.28em;/);
+    expect(taskCheckboxBlock).toMatch(/margin:\s*0;/);
+
+    expect(mixedImageParagraphBlock).toMatch(/line-height:\s*1\.65;/);
+    expect(mixedImageParagraphBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(mixedImageParagraphBlock).toMatch(/word-break:\s*break-word;/);
+    expect(mixedImageFrameBlock).toMatch(/display:\s*flex;/);
+    expect(mixedImageFrameBlock).toMatch(/margin-bottom:\s*10px;/);
+
+    expect(settings).toContain("function SettingsSelect");
+    expect(settings).toContain("SimpleSelector");
+    expect(settings).toContain("title: option.label");
+    expect(settings).toContain("const isMobileScreen = useMobileScreen();");
+    expect(settings).toContain("showSettingsSelectSheet");
+    expect(settings).toContain(
+      'className={styles["settings-preference-select-trigger"]}',
+    );
+    expect(settings).toContain("const [showCustomInstructionsModal");
+    expect(settings).toContain(
+      'className={styles["custom-instructions-actions"]}',
+    );
+    expect(settings).toContain(
+      'className={styles["custom-instructions-edit-button"]}',
+    );
+    expect(settings).toContain('styles["custom-instructions-modal-input"]');
+    expect(settings).toContain("defaultMax");
+    expect(customActionsBlock).toMatch(/display:\s*flex;/);
+    expect(customActionsBlock).toMatch(/justify-content:\s*flex-end;/);
+    expect(customEditButtonBlock).toMatch(
+      /border:\s*1px solid var\(--settings-preference-action-border-color\);/,
+    );
+    expect(customEditButtonBlock).toMatch(/min-height:\s*34px;/);
+    expect(customModalInputBlock).toMatch(/resize:\s*vertical;/);
+    expect(customModalInputBlock).toMatch(/min-height:\s*min\(62dvh, 640px\);/);
   });
 
   test("keeps ModelConfigList compress model select aligned with Gemini fields", () => {

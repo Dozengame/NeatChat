@@ -23,6 +23,7 @@ import Locale from "../locales";
 import DownloadIcon from "../icons/download.svg";
 import CopyIcon from "../icons/copy.svg";
 import ConfirmIcon from "../icons/confirm.svg";
+import ReturnIcon from "../icons/return.svg";
 import { useDebouncedCallback } from "use-debounce";
 import { showToast } from "./ui-lib-actions";
 
@@ -214,6 +215,7 @@ export function PreCode(props: { children: any }) {
   const [mermaidCode, setMermaidCode] = useState("");
   const [htmlCode, setHtmlCode] = useState("");
   const [copied, setCopied] = useState(false);
+  const [userWrapCode, setUserWrapCode] = useState<boolean | null>(null);
   const [codeScrollHint, setCodeScrollHint] = useState({
     start: false,
     end: false,
@@ -277,6 +279,7 @@ export function PreCode(props: { children: any }) {
   const rawCodeLanguage = getRawCodeLanguage(props.children);
   const codeLanguage = getCodeLanguage(props.children);
   const shouldWrapCodeBlock = shouldWrapCodeLanguage(rawCodeLanguage);
+  const isCodeWrapped = userWrapCode ?? shouldWrapCodeBlock;
   const codeLineNumbers = useMemo(
     () => getCodeLineNumbers(props.children),
     [props.children],
@@ -286,30 +289,25 @@ export function PreCode(props: { children: any }) {
     [props.children],
   );
 
-  //Wrap the paragraph for plain-text
   useEffect(() => {
-    if (ref.current) {
-      const codeElements = ref.current.querySelectorAll(
-        "code",
-      ) as NodeListOf<HTMLElement>;
-      codeElements.forEach((codeElement) => {
-        let languageClass = codeElement.className.match(
-          /(?:^|\s)language-([^\s]+)/,
-        );
-        let name = languageClass ? languageClass[1].split(":")[0] : "";
-        if (shouldWrapCodeLanguage(name)) {
-          codeElement.style.whiteSpace = "pre-wrap";
-        }
-      });
-      const timer = setTimeout(renderArtifacts, 1);
-      return () => clearTimeout(timer);
-    }
-  }, [renderArtifacts]);
+    setUserWrapCode(null);
+  }, [rawCodeLanguage]);
 
   useLayoutEffect(() => {
-    const scrollHintFrame = requestAnimationFrame(syncCodeScrollHint);
+    const scrollHintFrame = requestAnimationFrame(() => {
+      if (isCodeWrapped && ref.current) {
+        ref.current.scrollLeft = 0;
+      }
+      syncCodeScrollHint();
+    });
     return () => cancelAnimationFrame(scrollHintFrame);
-  }, [props.children, syncCodeScrollHint]);
+  }, [isCodeWrapped, props.children, syncCodeScrollHint]);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const timer = setTimeout(renderArtifacts, 1);
+    return () => clearTimeout(timer);
+  }, [props.children, renderArtifacts]);
 
   useEffect(() => {
     const codeScroller = getCodeScrollElement() ?? ref.current;
@@ -355,6 +353,14 @@ export function PreCode(props: { children: any }) {
     : copied
     ? "已复制代码"
     : "复制代码";
+  const codeWrapLabel = codeLanguage
+    ? isCodeWrapped
+      ? `关闭自动换行 ${codeLanguage} 代码`
+      : `自动换行 ${codeLanguage} 代码`
+    : isCodeWrapped
+    ? "关闭自动换行代码"
+    : "自动换行代码";
+  const wrapState = isCodeWrapped ? "wrapped" : "scroll";
 
   return (
     <>
@@ -363,10 +369,11 @@ export function PreCode(props: { children: any }) {
         className={clsx(
           "markdown-code-block",
           codeLanguage && "markdown-code-block-labeled",
-          shouldWrapCodeBlock && "markdown-code-block-wrap",
+          isCodeWrapped && "markdown-code-block-wrap",
         )}
         data-overflow-start={codeScrollHint.start ? "true" : "false"}
         data-overflow-end={codeScrollHint.end ? "true" : "false"}
+        data-wrap-state={wrapState}
         data-line-numbers={codeLineNumbers}
         data-line-count={codeLineCount}
         onScroll={syncCodeScrollHint}
@@ -381,6 +388,19 @@ export function PreCode(props: { children: any }) {
         )}
         <button
           type="button"
+          className="wrap-code-button"
+          aria-label={codeWrapLabel}
+          aria-pressed={isCodeWrapped}
+          title={codeWrapLabel}
+          data-wrap-state={wrapState}
+          onClick={() => {
+            setUserWrapCode((current) => !(current ?? shouldWrapCodeBlock));
+          }}
+        >
+          <ReturnIcon />
+        </button>
+        <button
+          type="button"
           className="copy-code-button"
           aria-label={codeCopyLabel}
           aria-live="polite"
@@ -389,8 +409,9 @@ export function PreCode(props: { children: any }) {
           data-copy-state={copied ? "copied" : "idle"}
           onClick={() => {
             if (ref.current) {
+              const codeElement = ref.current.querySelector("code");
               copyToClipboard(
-                ref.current.querySelector("code")?.innerText ?? "",
+                codeElement?.innerText ?? codeElement?.textContent ?? "",
               );
               setCopied(true);
 
