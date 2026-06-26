@@ -961,7 +961,7 @@ pre {
 
   &:hover .copy-code-button {
     pointer-events: all;
-    transform: translateY(0);
+    transform: translateX(var(--markdown-code-scroll-left, 0px));
     opacity: 0.72;
   }
 
@@ -981,7 +981,7 @@ pre {
     color: var(--markdown-code-copy-button-color);
     border: 1px solid var(--markdown-code-copy-button-border-color);
     border-radius: 999px;
-    transform: translateY(-2px);
+    transform: translate(var(--markdown-code-scroll-left, 0px), -2px);
     pointer-events: none;
     opacity: 0;
     transition:
@@ -1015,6 +1015,7 @@ pre {
       border-color: var(--markdown-code-copy-success-border-color);
       background-color: var(--markdown-code-copy-success-background);
       color: var(--markdown-code-copy-success-color);
+      transform: translateX(var(--markdown-code-scroll-left, 0px));
       box-shadow:
         0 1px 2px var(--markdown-code-copy-success-shadow-color),
         0 8px 18px var(--markdown-code-copy-success-accent-shadow-color);
@@ -1029,7 +1030,7 @@ pre {
       opacity: 1;
       outline: var(--focus-ring);
       outline-offset: 2px;
-      transform: translateY(0);
+      transform: translateX(var(--markdown-code-scroll-left, 0px));
     }
   }
 
@@ -1071,7 +1072,7 @@ pre {
   pre .copy-code-button {
     pointer-events: all;
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(var(--markdown-code-scroll-left, 0px));
   }
 }
 

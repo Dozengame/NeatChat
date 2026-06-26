@@ -412,11 +412,7 @@ summary,
     var(--color-border-muted) 88%,
     transparent
   );
-  --markdown-code-gutter-background: color-mix(
-    in srgb,
-    var(--color-canvas-subtle) 80%,
-    transparent
-  );
+  --markdown-code-gutter-background: var(--markdown-code-block-background);
   --markdown-code-block-inner-highlight-color: color-mix(
     in srgb,
     rgb(255, 255, 255) 62%,
@@ -1241,11 +1237,7 @@ summary,
     var(--black) 10%,
     transparent
   );
-  --markdown-code-gutter-background: color-mix(
-    in srgb,
-    var(--surface-elevated) 54%,
-    transparent
-  );
+  --markdown-code-gutter-background: var(--markdown-code-block-background);
   --markdown-code-block-inner-highlight-color: color-mix(
     in srgb,
     var(--black) 8%,
@@ -3628,6 +3620,7 @@ summary,
   /* R4: Gemini-style refined code block card */
   --markdown-code-block-radius: 8px;
   --markdown-code-block-padding-y: 14px;
+  --markdown-code-scroll-left: 0px;
   --markdown-code-line-number-width: 44px;
   --markdown-code-block-padding-start: calc(
     var(--markdown-code-line-number-width) + 14px
@@ -3676,6 +3669,7 @@ summary,
   line-height: inherit;
   text-align: right;
   white-space: pre;
+  transform: translateX(var(--markdown-code-scroll-left));
   user-select: none;
   pointer-events: none;
 }
@@ -3807,6 +3801,7 @@ summary,
   letter-spacing: 0;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transform: translateX(var(--markdown-code-scroll-left));
   pointer-events: none;
 }
 
@@ -3817,6 +3812,7 @@ summary,
   z-index: 1;
   width: 28px;
   min-width: 28px;
+  transform: translateX(var(--markdown-code-scroll-left));
   pointer-events: none;
 }
 

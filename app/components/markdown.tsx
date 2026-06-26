@@ -231,6 +231,10 @@ export function PreCode(props: { children: any }) {
       );
       return;
     }
+    codeScroller.style.setProperty(
+      "--markdown-code-scroll-left",
+      `${codeScroller.scrollLeft}px`,
+    );
 
     const maxScrollLeft = Math.max(
       0,

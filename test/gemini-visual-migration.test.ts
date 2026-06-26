@@ -8127,6 +8127,9 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toMatch(
       /const syncCodeScrollHint = useCallback\(\(\) => \{[\s\S]*const codeScroller = getCodeScrollElement\(\);[\s\S]*const maxScrollLeft = Math\.max\([\s\S]*codeScroller\.scrollWidth - codeScroller\.clientWidth[\s\S]*start: codeScroller\.scrollLeft > 1,[\s\S]*end: maxScrollLeft - codeScroller\.scrollLeft > 1,/,
     );
+    expect(markdown).toContain("codeScroller.style.setProperty(");
+    expect(markdown).toContain('"--markdown-code-scroll-left"');
+    expect(markdown).toContain("`${codeScroller.scrollLeft}px`");
     expect(markdown).toMatch(
       /let codeResizeObserver: ResizeObserver \| null = null;[\s\S]*typeof ResizeObserver !== "undefined"[\s\S]*codeResizeObserver = new ResizeObserver\(\(\) => \{[\s\S]*syncCodeScrollHint\(\);[\s\S]*codeResizeObserver\.observe\(codeScroller\)/,
     );
@@ -8303,6 +8306,7 @@ describe("Gemini visual migration shell", () => {
     expect(preBlock).toMatch(/--markdown-code-action-rail-width:\s*64px;/);
     expect(preBlock).toMatch(/--markdown-code-action-inset:\s*12px;/);
     expect(preBlock).toMatch(/--markdown-code-action-size:\s*34px;/);
+    expect(preBlock).toMatch(/--markdown-code-scroll-left:\s*0px;/);
     expect(preBlock).toMatch(/--markdown-code-labeled-padding-top:\s*52px;/);
     expect(preBlock).toMatch(/--markdown-code-fold-overlay-offset:\s*68px;/);
     expect(preBlock).toMatch(
@@ -8389,6 +8393,9 @@ describe("Gemini visual migration shell", () => {
     expect(narrowCodeBlock).toMatch(/--markdown-code-action-size:\s*28px;/);
     expect(languageLabelBlock).toMatch(/position:\s*absolute;/);
     expect(languageLabelBlock).toMatch(
+      /transform:\s*translateX\(var\(--markdown-code-scroll-left\)\);/,
+    );
+    expect(languageLabelBlock).toMatch(
       /max-width:\s*calc\(\s*100%\s*-\s*var\(--markdown-code-action-rail-width\)\s*-\s*var\(--markdown-code-block-padding-start\)\s*\);/,
     );
     expect(languageLabelBlock).toMatch(/overflow:\s*hidden;/);
@@ -8406,6 +8413,9 @@ describe("Gemini visual migration shell", () => {
       /color:\s*var\(--markdown-code-language-color\);/,
     );
     expect(codeScrollFadeBlock).toMatch(/position:\s*absolute;/);
+    expect(codeScrollFadeBlock).toMatch(
+      /transform:\s*translateX\(var\(--markdown-code-scroll-left\)\);/,
+    );
     expect(codeScrollFadeBlock).toMatch(/top:\s*0;/);
     expect(codeScrollFadeBlock).toMatch(/bottom:\s*0;/);
     expect(codeScrollFadeBlock).toMatch(/pointer-events:\s*none;/);
@@ -8447,6 +8457,9 @@ describe("Gemini visual migration shell", () => {
       /top:\s*var\(--markdown-code-action-inset,\s*12px\);/,
     );
     expect(copyButtonBlock).toMatch(/z-index:\s*3;/);
+    expect(copyButtonBlock).toMatch(
+      /transform:\s*translate\(var\(--markdown-code-scroll-left,\s*0px\),\s*-2px\);/,
+    );
     expect(copyButtonBlock).toMatch(/pointer-events:\s*none;/);
     expect(copyButtonBlock).toMatch(/opacity:\s*0;/);
     expect(copyButtonBlock).toMatch(
@@ -8533,13 +8546,20 @@ describe("Gemini visual migration shell", () => {
     }
     expect(desktopHoverBlock).toMatch(/pointer-events:\s*all;/);
     expect(desktopHoverBlock).toMatch(/opacity:\s*0\.72;/);
-    expect(desktopHoverBlock).toMatch(/transform:\s*translateY\(0\);/);
+    expect(desktopHoverBlock).toMatch(
+      /transform:\s*translateX\(var\(--markdown-code-scroll-left,\s*0px\)\);/,
+    );
     expect(focusVisibleBlock).toMatch(/pointer-events:\s*all;/);
     expect(focusVisibleBlock).toMatch(/opacity:\s*1;/);
     expect(focusVisibleBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(focusVisibleBlock).toMatch(
+      /transform:\s*translateX\(var\(--markdown-code-scroll-left,\s*0px\)\);/,
+    );
     expect(touchCopyButtonBlock).toMatch(/pointer-events:\s*all;/);
     expect(touchCopyButtonBlock).toMatch(/opacity:\s*1;/);
-    expect(touchCopyButtonBlock).toMatch(/transform:\s*translateY\(0\);/);
+    expect(touchCopyButtonBlock).toMatch(
+      /transform:\s*translateX\(var\(--markdown-code-scroll-left,\s*0px\)\);/,
+    );
     expect(showHideButtonBlock).toMatch(/position:\s*sticky;/);
     expect(showHideButtonBlock).toMatch(
       /bottom:\s*calc\(-1 \* var\(--markdown-code-block-padding-y\)\);/,
@@ -15683,7 +15703,7 @@ describe("Gemini visual migration shell", () => {
       ".markdown-body pre",
     );
     const highlightRootBlock = readCssBlock(highlightStyles, ".markdown-body");
-    const highlightPreBlock = readCssBlock(highlightRootBlock, ".hljs,\n  pre");
+    const highlightSyntaxBlock = readCssBlock(highlightRootBlock, ".hljs");
 
     expect(authPasswordContainerBlock).toMatch(/position:\s*relative;/);
     expect(authPasswordContainerBlock).toMatch(/justify-content:\s*center;/);
@@ -15772,8 +15792,10 @@ describe("Gemini visual migration shell", () => {
     expect(codePreBlock).toMatch(
       /box-shadow:\s*inset 0 1px 0 var\(--markdown-code-block-inner-highlight-color\);/,
     );
-    expect(highlightPreBlock).toMatch(/background:\s*transparent;/);
-    expect(highlightPreBlock).toMatch(/color:\s*var\(--color-fg-default\);/);
+    expect(highlightStyles).not.toContain("pre {\n    padding: 0;");
+    expect(highlightStyles).not.toContain(".hljs,\n  pre");
+    expect(highlightSyntaxBlock).toMatch(/background:\s*transparent;/);
+    expect(highlightSyntaxBlock).toMatch(/color:\s*var\(--color-fg-default\);/);
   });
 
   test("keeps rendered markdown stress QA seed deterministic and non-persistent", () => {
@@ -20353,6 +20375,7 @@ describe("Gemini visual migration shell", () => {
   test("keeps markdown code blocks GitHub-like with copy-safe line numbers", () => {
     const markdown = read("app/components/markdown.tsx");
     const markdownStyles = read("app/styles/markdown.scss");
+    const highlightStyles = read("app/styles/highlight.scss");
     const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
     const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
     const codeBlockSelector =
@@ -20395,6 +20418,8 @@ describe("Gemini visual migration shell", () => {
       mobileBlock,
       ".markdown-code-language",
     );
+    const highlightRootBlock = readCssBlock(highlightStyles, ".markdown-body");
+    const highlightSyntaxBlock = readCssBlock(highlightRootBlock, ".hljs");
 
     expect(markdown).toContain("function getReactTextContent");
     expect(markdown).toContain("function getCodeLineCount");
@@ -20421,6 +20446,12 @@ describe("Gemini visual migration shell", () => {
     }
     expect(lightCodeTokens["--markdown-code-line-number-width"]).toBe("44px");
     expect(darkCodeTokens["--markdown-code-line-number-width"]).toBe("44px");
+    expect(lightCodeTokens["--markdown-code-gutter-background"]).toBe(
+      "var(--markdown-code-block-background)",
+    );
+    expect(darkCodeTokens["--markdown-code-gutter-background"]).toBe(
+      "var(--markdown-code-block-background)",
+    );
     expect(lightCodeTokens["--markdown-code-block-background"]).toContain(
       "var(--color-canvas-subtle)",
     );
@@ -20434,6 +20465,10 @@ describe("Gemini visual migration shell", () => {
     expect(markdownStyles).not.toContain(
       ".markdown-body .highlight pre::before,\n.markdown-body pre::before",
     );
+    expect(highlightStyles).not.toContain("pre {\n    padding: 0;");
+    expect(highlightStyles).not.toContain(".hljs,\n  pre");
+    expect(highlightSyntaxBlock).toMatch(/background:\s*transparent;/);
+    expect(highlightSyntaxBlock).toMatch(/color:\s*var\(--color-fg-default\);/);
     expect(codeLineNumberBlock).toMatch(
       /white-space:\s*pre;/,
     );
@@ -20453,6 +20488,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(codeLineNumberBlock).toMatch(/white-space:\s*pre;/);
     expect(codeLineNumberBlock).toMatch(/text-align:\s*right;/);
+    expect(codeLineNumberBlock).toMatch(
+      /transform:\s*translateX\(var\(--markdown-code-scroll-left\)\);/,
+    );
     expect(codeLineNumberBlock).toMatch(
       /font-variant-numeric:\s*tabular-nums;/,
     );
