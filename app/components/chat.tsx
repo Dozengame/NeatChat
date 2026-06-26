@@ -256,11 +256,13 @@ echo "Done."
 
 ## 表格
 
-| Surface | Expected behavior | QA focus |
-| --- | --- | --- |
-| Code block | GitHub-like card with line numbers | Copy excludes gutter |
-| Table | Horizontal overflow stays contained | No page overflow |
-| Quote | Soft rail and readable text | Light and dark comfort |
+| Surface | Expected behavior | QA focus | Extra long validation note |
+| --- | --- | --- | --- |
+| Code block | GitHub-like card with line numbers | Copy excludes gutter | Keep language label, gutter, fold control, and copy button readable on mobile and desktop. |
+| Table | Horizontal overflow stays contained | No page overflow | A deliberately longer table cell checks the edge fade, keyboard focus region, and wrapping behavior. |
+| Quote | Soft rail and readable text | Light and dark comfort | Mixed Chinese and English text should remain calm without clipped glyphs or forced page width. |
+
+表格说明：这段说明紧跟在表格之后，用于检查表格、段落和后续内容之间的节奏。
 
 <details>
 <summary>折叠内容</summary>
@@ -270,7 +272,19 @@ echo "Done."
   - 混合中文和 English text should wrap without clipping.
 - 长链接测试：https://example.com/neatchat/markdown-stress/very/long/path/that/should/wrap/without/forcing/horizontal/page/overflow?source=codex_qa&theme=both
 
+> details 内的引用内容，用于检查普通折叠块内部引用、列表、链接和长文本的混排节奏。
+
 </details>
+
+## 多模态预览
+
+![多模态预览](data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='640'%20height='360'%20viewBox='0%200%20640%20360'%3E%3Crect%20width='640'%20height='360'%20rx='28'%20fill='%23eef4ff'/%3E%3Ccircle%20cx='126'%20cy='116'%20r='48'%20fill='%236d8dff'/%3E%3Crect%20x='210'%20y='82'%20width='330'%20height='28'%20rx='14'%20fill='%236779e6'/%3E%3Crect%20x='210'%20y='132'%20width='250'%20height='20'%20rx='10'%20fill='%2392a7ff'/%3E%3Cpath%20d='M64%20286L222%20182l92%2064%2078-54%20184%2094H64z'%20fill='%23c8d7ff'/%3E%3C/svg%3E)
+
+[音频预览](/codex-qa/neatchat-stress-audio.mp3)
+
+[视频预览](/codex-qa/neatchat-stress-video.mp4)
+
+连续内容后续段落：媒体、表格、details 和正文连续出现时，视觉节奏应该仍然保持轻量、留白清晰，并且不会让任何按钮、图片或控制条挤出聊天消息边界。
 
 长文本压测：中文内容混排用于验证编码、换行、滚动、折叠、锚点、复制、搜索、高亮、SSR、CSR、分页、虚拟滚动等能力。ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
 

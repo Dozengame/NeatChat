@@ -15801,6 +15801,114 @@ describe("Gemini visual migration shell", () => {
     expect(qaSeedBlock).not.toContain("localStorage.");
   });
 
+  test("keeps markdown stress mixed-format surfaces coordinated", () => {
+    const chat = read("app/components/chat.tsx");
+    const markdownStyles = read("app/styles/markdown.scss");
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const detailsCardBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body details:not(.markdown-thinking)",
+    );
+    const detailsSummaryBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body details:not(.markdown-thinking) > summary",
+    );
+    const detailsOpenSummaryBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body details:not(.markdown-thinking)[open] > summary",
+    );
+    const detailsContentBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body details:not(.markdown-thinking) > *:not(summary)",
+    );
+    const tableCellBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body table th,\n.markdown-body table td",
+    );
+    const imageOnlyParagraphBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body p:has(> .markdown-image-frame:only-child),\n.markdown-body p:has(> .markdown-media-frame:only-child)",
+    );
+    const imageOnlyFrameBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body p > .markdown-image-frame:only-child",
+    );
+    const mediaOnlyFrameBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body p > .markdown-media-frame:only-child",
+    );
+    const mobileMarkdownBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileDetailsCardBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body details:not(.markdown-thinking)",
+    );
+    const mobileDetailsSummaryBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body details:not(.markdown-thinking) > summary",
+    );
+
+    expect(chat).toContain("多模态预览");
+    expect(chat).toContain("data:image/svg+xml");
+    expect(chat).toContain("表格说明：");
+    expect(chat).toContain("details 内的引用内容");
+    expect(chat).toContain("连续内容后续段落");
+    expect(chat).toContain("https://example.com/neatchat/markdown-stress/");
+    for (const tokenName of [
+      "--markdown-details-card-border-color",
+      "--markdown-details-card-background",
+      "--markdown-details-summary-background",
+      "--markdown-details-summary-border-color",
+    ]) {
+      expect(lightMixinBlock).toContain(tokenName);
+      expect(darkMixinBlock).toContain(tokenName);
+    }
+    expect(detailsCardBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(detailsCardBlock).toMatch(
+      /max-width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+    );
+    expect(detailsCardBlock).toMatch(/padding:\s*10px 12px;/);
+    expect(detailsCardBlock).toMatch(
+      /border:\s*1px solid var\(--markdown-details-card-border-color\);/,
+    );
+    expect(detailsCardBlock).toMatch(
+      /background:\s*var\(--markdown-details-card-background\);/,
+    );
+    expect(detailsCardBlock).toMatch(/overflow:\s*hidden;/);
+    expect(detailsSummaryBlock).toMatch(/display:\s*flex;/);
+    expect(detailsSummaryBlock).toMatch(/gap:\s*6px;/);
+    expect(detailsSummaryBlock).toMatch(/margin:\s*-10px -12px;/);
+    expect(detailsSummaryBlock).toMatch(/padding:\s*8px 12px;/);
+    expect(detailsSummaryBlock).toMatch(/line-height:\s*1\.45;/);
+    expect(detailsSummaryBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(detailsOpenSummaryBlock).toMatch(/margin-bottom:\s*10px;/);
+    expect(detailsOpenSummaryBlock).toMatch(
+      /border-bottom:\s*1px solid var\(--markdown-details-summary-border-color\);/,
+    );
+    expect(detailsOpenSummaryBlock).toMatch(
+      /background:\s*var\(--markdown-details-summary-background\);/,
+    );
+    expect(detailsContentBlock).toMatch(/padding-left:\s*0;/);
+    expect(detailsContentBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(tableCellBlock).toMatch(/vertical-align:\s*top;/);
+    expect(tableCellBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(imageOnlyParagraphBlock).toMatch(
+      /margin:\s*14px 0 var\(--markdown-block-gap\);/,
+    );
+    expect(imageOnlyFrameBlock).toMatch(/display:\s*flex;/);
+    expect(imageOnlyFrameBlock).toMatch(/width:\s*fit-content;/);
+    expect(imageOnlyFrameBlock).toMatch(/max-width:\s*100%;/);
+    expect(mediaOnlyFrameBlock).toMatch(/display:\s*block;/);
+    expect(mediaOnlyFrameBlock).toMatch(/width:\s*100%;/);
+    expect(mediaOnlyFrameBlock).toMatch(/max-width:\s*100%;/);
+    expect(mobileDetailsCardBlock).toMatch(/padding:\s*8px 10px;/);
+    expect(mobileDetailsSummaryBlock).toMatch(/margin:\s*-8px -10px;/);
+    expect(mobileDetailsSummaryBlock).toMatch(/padding:\s*8px 10px;/);
+  });
+
   test("keeps error recovery surface aligned with Gemini utility panels", () => {
     const errorBoundary = read("app/components/error.tsx");
     const globalStyles = read("app/styles/globals.scss");

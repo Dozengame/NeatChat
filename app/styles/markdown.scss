@@ -134,6 +134,26 @@ summary,
     var(--primary) 42%,
     transparent
   );
+  --markdown-details-card-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
+  --markdown-details-card-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 76%,
+    transparent
+  );
+  --markdown-details-summary-background: color-mix(
+    in srgb,
+    var(--surface-soft) 62%,
+    transparent
+  );
+  --markdown-details-summary-border-color: color-mix(
+    in srgb,
+    var(--black-50) 10%,
+    transparent
+  );
   --markdown-list-marker-color: color-mix(
     in srgb,
     var(--primary) 72%,
@@ -901,6 +921,26 @@ summary,
   --markdown-details-blockquote-rail-color: color-mix(
     in srgb,
     var(--primary) 50%,
+    transparent
+  );
+  --markdown-details-card-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --markdown-details-card-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 64%,
+    transparent
+  );
+  --markdown-details-summary-background: color-mix(
+    in srgb,
+    var(--surface-soft) 56%,
+    transparent
+  );
+  --markdown-details-summary-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
     transparent
   );
   --markdown-list-marker-color: color-mix(
@@ -1976,6 +2016,24 @@ summary,
   }
 }
 
+.markdown-body p:has(> .markdown-image-frame:only-child),
+.markdown-body p:has(> .markdown-media-frame:only-child) {
+  margin: 14px 0 var(--markdown-block-gap);
+  line-height: 0;
+}
+
+.markdown-body p > .markdown-image-frame:only-child {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.markdown-body p > .markdown-media-frame:only-child {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+}
+
 .mermaid {
   appearance: none;
   background: none;
@@ -2541,6 +2599,42 @@ summary,
 
 .markdown-body details summary {
   cursor: pointer;
+}
+
+.markdown-body details:not(.markdown-thinking) {
+  box-sizing: border-box;
+  max-width: min(100%, var(--markdown-reading-surface-max-width));
+  min-width: 0;
+  margin: 0 0 var(--markdown-block-gap);
+  padding: 10px 12px;
+  border: 1px solid var(--markdown-details-card-border-color);
+  border-radius: 8px;
+  background: var(--markdown-details-card-background);
+  overflow: hidden;
+}
+
+.markdown-body details:not(.markdown-thinking) > summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -10px -12px;
+  padding: 8px 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.markdown-body details:not(.markdown-thinking)[open] > summary {
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--markdown-details-summary-border-color);
+  background: var(--markdown-details-summary-background);
+}
+
+.markdown-body details:not(.markdown-thinking) > *:not(summary) {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  padding-left: 0;
+  overflow-wrap: anywhere;
 }
 
 .markdown-body details:not([open]) > *:not(summary) {
@@ -3161,6 +3255,8 @@ summary,
 .markdown-body table th,
 .markdown-body table td {
   padding: 8px 16px;
+  vertical-align: top;
+  overflow-wrap: anywhere;
   /* R4: Only horizontal separators – borderless columns */
   border: none;
   border-bottom: 1px solid var(--markdown-table-cell-border-color);
@@ -4187,6 +4283,15 @@ summary,
     text-underline-offset: 2px;
     overflow-wrap: anywhere;
     word-break: break-word;
+  }
+
+  .markdown-body details:not(.markdown-thinking) {
+    padding: 8px 10px;
+  }
+
+  .markdown-body details:not(.markdown-thinking) > summary {
+    margin: -8px -10px;
+    padding: 8px 10px;
   }
 
   .markdown-body .markdown-loading-visual {
