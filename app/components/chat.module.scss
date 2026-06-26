@@ -1750,6 +1750,13 @@
     background: var(--chat-header-control-hover-background) !important;
   }
 
+  &:active {
+    color: var(--chat-header-title-color) !important;
+    border-color: var(--chat-header-control-expanded-border-color);
+    background: var(--chat-header-control-expanded-background) !important;
+    transform: scale(0.98);
+  }
+
   &:focus-visible {
     outline: var(--focus-ring);
     outline-offset: 2px;
@@ -3364,6 +3371,11 @@
   &:hover {
     background: var(--chat-header-control-hover-background) !important;
   }
+
+  &:active {
+    color: var(--chat-header-title-color) !important;
+    background: var(--chat-header-control-expanded-background) !important;
+  }
 }
 
 :global(.dark) .chat-desktop-model-menu {
@@ -3780,6 +3792,11 @@
   :global(body:not(.light)) .chat-mobile-header-button {
     color: var(--chat-header-title-color) !important;
     background: var(--chat-header-control-background) !important;
+
+    &:active {
+      color: var(--chat-header-title-color) !important;
+      background: var(--chat-header-control-expanded-background) !important;
+    }
   }
 
   :global(body:not(.light)) .chat-desktop-header-actions {

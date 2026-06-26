@@ -160,6 +160,9 @@
   }
 
   &:active {
+    --icon-button-primary-background: var(--update-announcement-confirm-active-background);
+    --icon-button-hover-background: var(--update-announcement-confirm-active-background);
+
     color: var(--update-announcement-confirm-color);
     background-color: var(--update-announcement-confirm-active-background);
     border-color: var(--update-announcement-confirm-active-border-color);
@@ -232,13 +235,17 @@
 
   .panel {
     position: fixed;
-    right: 24px;
-    bottom: calc(14px + env(safe-area-inset-bottom));
-    left: 24px;
-    width: min(calc(100vw - 48px), 520px);
-    max-height: min(560px, calc(72dvh - 18px - env(safe-area-inset-bottom)));
-    margin: 0 auto;
-    border-radius: var(--update-announcement-mobile-panel-radius);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    max-height: min(620px, calc(78dvh - env(safe-area-inset-bottom)));
+    margin: 0;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--update-announcement-mobile-panel-radius) var(--update-announcement-mobile-panel-radius) 0 0;
     animation: updateAnnouncementSheetIn 0.28s cubic-bezier(0.2, 0, 0, 1) both;
   }
 
@@ -256,7 +263,7 @@
   }
 
   .confirm {
-    width: min(100%, 360px);
+    width: 100%;
   }
 }
 
