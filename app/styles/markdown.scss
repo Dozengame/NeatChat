@@ -1662,7 +1662,9 @@ summary,
   --markdown-block-gap: 16px;
   --markdown-heading-gap: 22px;
   --markdown-heading-tight-gap: 10px;
+  --markdown-heading-stack-gap: 14px;
   --markdown-paragraph-gap: 12px;
+  --markdown-blockquote-content-gap: 8px;
   --markdown-list-indent: 1.7em;
   --markdown-list-item-gap: 0.38em;
   --markdown-list-nested-gap: 0.44em;
@@ -1674,6 +1676,9 @@ summary,
   );
   --markdown-code-block-max-width: min(100%, var(--markdown-reading-surface-max-width));
   --markdown-table-shell-max-width: min(100%, var(--markdown-reading-surface-max-width));
+  --markdown-table-cell-padding-y: 8px;
+  --markdown-table-cell-padding-x: 14px;
+  --markdown-table-cell-line-height: 1.48;
   -ms-text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
   margin: 0;
@@ -3004,6 +3009,10 @@ summary,
   margin-left: -32px;
 }
 
+.markdown-body :is(h1, h2, h3, h4, h5, h6) + :is(h1, h2, h3, h4, h5, h6) {
+  margin-top: var(--markdown-heading-stack-gap);
+}
+
 .markdown-body h3 {
   font-weight: var(--base-text-weight-semibold, 600);
   font-size: 1.12em;
@@ -3254,6 +3263,19 @@ summary,
   margin-top: 0;
 }
 
+.markdown-body blockquote > :not(:first-child) {
+  margin-top: var(--markdown-blockquote-content-gap);
+}
+
+.markdown-body blockquote > p {
+  margin-bottom: 0;
+}
+
+.markdown-body blockquote > ul,
+.markdown-body blockquote > ol {
+  margin-bottom: 0;
+}
+
 .markdown-body blockquote > :last-child {
   margin-bottom: 0;
 }
@@ -3421,7 +3443,9 @@ summary,
 
 .markdown-body table th,
 .markdown-body table td {
-  padding: 8px 16px;
+  padding: var(--markdown-table-cell-padding-y)
+    var(--markdown-table-cell-padding-x);
+  line-height: var(--markdown-table-cell-line-height);
   vertical-align: top;
   overflow-wrap: anywhere;
   /* R4: Only horizontal separators – borderless columns */
@@ -3552,9 +3576,12 @@ summary,
 .markdown-body tt {
   padding: 0.12em 0.36em;
   margin: 0;
+  max-width: 100%;
   font-size: 85%;
   line-height: 1.55;
   white-space: break-spaces;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   color: var(--markdown-inline-code-color);
   background: var(--markdown-inline-code-background);
   border: 1px solid var(--markdown-inline-code-border-color);
@@ -4375,10 +4402,15 @@ summary,
     --markdown-block-gap: 14px;
     --markdown-heading-gap: 18px;
     --markdown-heading-tight-gap: 8px;
+    --markdown-heading-stack-gap: 12px;
+    --markdown-blockquote-content-gap: 7px;
     --markdown-list-indent: 1.45em;
     --markdown-list-item-gap: 0.32em;
     --markdown-list-nested-gap: 0.36em;
     --markdown-list-paragraph-gap: 0.44em;
+    --markdown-table-cell-padding-y: 7px;
+    --markdown-table-cell-padding-x: 10px;
+    --markdown-table-cell-line-height: 1.45;
     line-height: var(--markdown-prose-line-height);
   }
 
@@ -4538,9 +4570,10 @@ summary,
 
   .markdown-body table th,
   .markdown-body table td {
-    padding: 7px 10px;
+    padding: var(--markdown-table-cell-padding-y)
+      var(--markdown-table-cell-padding-x);
     font-size: 0.95em;
-    line-height: 1.45;
+    line-height: var(--markdown-table-cell-line-height);
   }
 
   .markdown-body[data-streaming="true"] > :is(p, h1, h2, h3, h4, h5, h6):last-child::after,
@@ -4623,7 +4656,12 @@ summary,
   .markdown-body {
     --markdown-prose-line-height: 1.6;
     --markdown-block-gap: 12px;
+    --markdown-heading-stack-gap: 10px;
+    --markdown-blockquote-content-gap: 6px;
     --markdown-list-indent: 1.28em;
+    --markdown-table-cell-padding-y: 6px;
+    --markdown-table-cell-padding-x: 8px;
+    --markdown-table-cell-line-height: 1.43;
     line-height: var(--markdown-prose-line-height);
   }
 

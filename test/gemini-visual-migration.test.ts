@@ -8735,6 +8735,9 @@ describe("Gemini visual migration shell", () => {
     expect(inlineCodeBlock).toMatch(/padding:\s*0\.12em 0\.36em;/);
     expect(inlineCodeBlock).toMatch(/line-height:\s*1\.55;/);
     expect(inlineCodeBlock).toMatch(/white-space:\s*break-spaces;/);
+    expect(inlineCodeBlock).toMatch(/max-width:\s*100%;/);
+    expect(inlineCodeBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(inlineCodeBlock).toMatch(/word-break:\s*break-word;/);
     expect(inlineCodeBlock).toMatch(
       /background:\s*var\(--markdown-inline-code-background\);/,
     );
@@ -9935,6 +9938,8 @@ describe("Gemini visual migration shell", () => {
     const markdownStyles = read("app/styles/markdown.scss");
     const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
     const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const markdownBodyBlock = readCssBlock(markdownStyles, ".markdown-body");
+    const markdownBodyDeclarations = readRootDeclarations(markdownBodyBlock);
     const tableShellBlock = readCssBlock(
       markdownStyles,
       ".markdown-table-scroll-shell",
@@ -10070,6 +10075,15 @@ describe("Gemini visual migration shell", () => {
     expect(readRootDeclarations(tableShellBlock)).toMatch(
       /--markdown-table-shell-radius:\s*8px;/,
     );
+    expect(markdownBodyDeclarations).toMatch(
+      /--markdown-table-cell-padding-y:\s*8px;/,
+    );
+    expect(markdownBodyDeclarations).toMatch(
+      /--markdown-table-cell-padding-x:\s*14px;/,
+    );
+    expect(markdownBodyDeclarations).toMatch(
+      /--markdown-table-cell-line-height:\s*1\.48;/,
+    );
 
     expect(markdown).toContain("function MarkdownTable");
     expect(markdown).toContain("const [tableScrollHint, setTableScrollHint]");
@@ -10133,9 +10147,19 @@ describe("Gemini visual migration shell", () => {
     expect(mobileTableViewportBlock).toMatch(/scroll-padding-inline:\s*10px;/);
     expect(mobileTableFadeBlock).toMatch(/width:\s*22px;/);
     expect(mobileTableFadeBlock).toMatch(/min-width:\s*22px;/);
-    expect(mobileTableCellBlock).toMatch(/padding:\s*7px 10px;/);
+    expect(mobileMarkdownBlock).toMatch(
+      /--markdown-table-cell-padding-y:\s*7px;/,
+    );
+    expect(mobileMarkdownBlock).toMatch(
+      /--markdown-table-cell-padding-x:\s*10px;/,
+    );
+    expect(mobileTableCellBlock).toMatch(
+      /padding:\s*var\(--markdown-table-cell-padding-y\)\s+var\(--markdown-table-cell-padding-x\);/,
+    );
     expect(mobileTableCellBlock).toMatch(/font-size:\s*0\.95em;/);
-    expect(mobileTableCellBlock).toMatch(/line-height:\s*1\.45;/);
+    expect(mobileTableCellBlock).toMatch(
+      /line-height:\s*var\(--markdown-table-cell-line-height\);/,
+    );
     expect(tableBlock).toMatch(/width:\s*max-content;/);
     expect(tableBlock).toMatch(/min-width:\s*100%;/);
     expect(tableBlock).toMatch(/background:\s*transparent;/);
@@ -10490,6 +10514,8 @@ describe("Gemini visual migration shell", () => {
       readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
       ":root",
     );
+    const markdownBodyBlock = readCssBlock(markdownStyles, ".markdown-body");
+    const markdownBodyDeclarations = readRootDeclarations(markdownBodyBlock);
     const blockquoteBlock = readCssBlock(
       markdownStyles,
       ".markdown-body blockquote",
@@ -10505,6 +10531,18 @@ describe("Gemini visual migration shell", () => {
     const nestedBlockquoteBlock = readCssBlock(
       markdownStyles,
       ".markdown-body blockquote blockquote",
+    );
+    const blockquoteSiblingBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body blockquote > :not(:first-child)",
+    );
+    const blockquoteParagraphBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body blockquote > p",
+    );
+    const blockquoteListBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body blockquote > ul,\n.markdown-body blockquote > ol",
     );
     const darkDetailsBlockquoteBlock = readCssBlock(
       markdownStyles,
@@ -10555,6 +10593,9 @@ describe("Gemini visual migration shell", () => {
       expect(darkBlockquoteTokens[tokenName]).toContain("var(--");
     }
     expect(autoDarkRootBlock).toMatch(/@include dark;/);
+    expect(markdownBodyDeclarations).toMatch(
+      /--markdown-blockquote-content-gap:\s*8px;/,
+    );
 
     expect(blockquoteBlock).toMatch(/padding:\s*10px 14px;/);
     expect(blockquoteBlock).toMatch(/border-width:\s*1px;/);
@@ -10579,6 +10620,11 @@ describe("Gemini visual migration shell", () => {
     expect(blockquoteBlock).toMatch(
       /box-shadow:\s*inset 0 0 0 1px var\(--markdown-blockquote-ring-color\);/,
     );
+    expect(blockquoteSiblingBlock).toMatch(
+      /margin-top:\s*var\(--markdown-blockquote-content-gap\);/,
+    );
+    expect(blockquoteParagraphBlock).toMatch(/margin-bottom:\s*0;/);
+    expect(blockquoteListBlock).toMatch(/margin-bottom:\s*0;/);
     expect(darkBlockquoteBlock).toMatch(
       /background:\s*var\(--markdown-blockquote-background\);/,
     );
@@ -11357,6 +11403,10 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body h2 .anchor",
     );
+    const stackedHeadingBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body :is(h1, h2, h3, h4, h5, h6) + :is(h1, h2, h3, h4, h5, h6)",
+    );
     const headingCodeBlock = readCssBlock(
       markdownStyles,
       ".markdown-body h1 tt,\n.markdown-body h1 code,\n.markdown-body h2 tt,\n.markdown-body h2 code,\n.markdown-body h3 tt,\n.markdown-body h3 code,\n.markdown-body h4 tt,\n.markdown-body h4 code,\n.markdown-body h5 tt,\n.markdown-body h5 code,\n.markdown-body h6 tt,\n.markdown-body h6 code",
@@ -11417,8 +11467,12 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkRootBlock).toMatch(/@include dark;/);
 
     expect(markdownBodyBlock).toMatch(/font-size:\s*inherit;/);
+    const markdownBodyDeclarations = readRootDeclarations(markdownBodyBlock);
     expect(markdownBodyBlock).toMatch(
       /--markdown-prose-line-height:\s*1\.62;/,
+    );
+    expect(markdownBodyDeclarations).toMatch(
+      /--markdown-heading-stack-gap:\s*14px;/,
     );
     expect(markdownBodyBlock).toMatch(
       /line-height:\s*var\(--markdown-prose-line-height\);/,
@@ -11438,6 +11492,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(headingBlock).toMatch(/line-height:\s*1\.32;/);
     expect(headingBlock).toMatch(/letter-spacing:\s*0;/);
+    expect(stackedHeadingBlock).toMatch(
+      /margin-top:\s*var\(--markdown-heading-stack-gap\);/,
+    );
     expect(h1Block).toMatch(/font-size:\s*1\.55em;/);
     expect(h1Block).toMatch(/padding-bottom:\s*0;/);
     expect(h1Block).toMatch(/border-bottom:\s*0;/);
@@ -15871,6 +15928,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('const MARKDOWN_STRESS_QA_PARAM = "markdown-stress";');
     expect(chat).toContain("const MARKDOWN_STRESS_QA_CONTENT = `");
     expect(chat).toContain("Markdown 压测示例文档");
+    expect(chat).toContain("## 引用与行内代码");
+    expect(chat).toContain("连续标题层级");
+    expect(chat).toContain("veryLongInlineCodeIdentifier");
     expect(chat).toContain("\\`\\`\\`typescript");
     expect(chat).toContain("\\`\\`\\`json");
     expect(chat).toContain("\\`\\`\\`bash");
@@ -16025,6 +16085,9 @@ describe("Gemini visual migration shell", () => {
 
     expect(chat).toContain("多模态预览");
     expect(chat).toContain("data:image/svg+xml");
+    expect(chat).toContain("## 引用与行内代码");
+    expect(chat).toContain("连续标题层级");
+    expect(chat).toContain("veryLongInlineCodeIdentifier");
     expect(chat).toContain("表格说明：");
     expect(chat).toContain("## 步骤与列表");
     expect(chat).toContain("1. 明确完成标准：");

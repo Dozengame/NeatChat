@@ -208,10 +208,24 @@ const MARKDOWN_STRESS_QA_PARAM = "markdown-stress";
 const MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX = "codex-qa-markdown-stress";
 const MARKDOWN_STRESS_QA_CONTENT = `# Markdown 压测示例文档
 
-这份内容只用于本地 UI QA，覆盖标题、段落、引用、列表、表格、代码块、details、长链接和长文本换行。
+这份内容只用于本地 UI QA，覆盖标题、段落、引用、行内代码、列表、表格、代码块、details、长链接和长文本换行。
 
 > 这是一段 blockquote，用于测试引用样式、换行、嵌套、以及长文本渲染效果。
 > 第二行引用内容，包含 **bold**、_italic_、\`inline code\`。
+
+## 引用与行内代码
+
+> 引用第一段：同一行内混合中文、English words、\`inline code\` 和强调文本，用于检查低眩光背景、左侧 rail、段落节奏和换行。
+>
+> - 引用内列表第一项：短内容应该保持紧凑。
+> - 引用内列表第二项包含 \`veryLongInlineCodeIdentifierForMarkdownStressWrappingAndCopySafety\`，用于检查超长行内代码不会撑破消息宽度。
+>
+> 引用最后一段紧跟列表，用于检查 blockquote 内部多段内容之间的留白是否自然。
+
+### 连续标题层级
+#### 子标题紧跟标题
+
+连续标题后的正文包含 \`veryLongInlineCodeIdentifierForMarkdownStressWrappingAndCopySafety\`、普通链接和中文说明，用于检查标题、段落、行内代码之间的节奏。
 
 ## 代码块
 
