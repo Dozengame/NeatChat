@@ -209,7 +209,21 @@ const CHAT_BODY_BOTTOM_SAFE_AREA_MOBILE_BASE = 118;
 const CHAT_SCROLL_BOTTOM_CLEARANCE = 54;
 const CHAT_SCROLL_BOTTOM_MOBILE_CLEARANCE = 50;
 const MARKDOWN_STRESS_QA_PARAM = "markdown-stress";
+const MARKDOWN_STRESS_QA_BOUNDARY_PARAM = "streaming_boundary";
 const MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX = "codex-qa-markdown-stress";
+type MarkdownStressBoundaryVariant =
+  | "details"
+  | "table"
+  | "artifact"
+  | "image"
+  | "media";
+const MARKDOWN_STRESS_QA_BOUNDARY_VARIANTS: MarkdownStressBoundaryVariant[] = [
+  "details",
+  "table",
+  "artifact",
+  "image",
+  "media",
+];
 const MARKDOWN_STRESS_QA_CONTENT = `# Markdown 压测示例文档
 
 这份内容只用于本地 UI QA，覆盖标题、段落、引用、行内代码、列表、表格、代码块、details、长链接和长文本换行。
@@ -338,6 +352,56 @@ echo "Done."
 
 \`End of markdown stress test content.\`
 `;
+const MARKDOWN_STRESS_QA_BOUNDARY_CONTENT: Record<
+  MarkdownStressBoundaryVariant,
+  string
+> = {
+  details: `# codex-qa-streaming-details
+
+前置段落用于检查 streaming caret 在最终 details 块前的段落节奏。
+
+<details open>
+<summary>流式 details 终点</summary>
+
+- codex-qa-streaming-details
+- 最后一屏应该保留折叠块边界、左侧节奏和底部 caret 空间。
+
+</details>`,
+  table: `# codex-qa-streaming-table
+
+最终内容停在表格，用于检查 streaming caret 与横向滚动容器的距离。
+
+| codex-qa-streaming-table | 状态 | 说明 |
+| --- | --- | --- |
+| final-row | streaming | 表格边界不应挤压消息操作区或页面宽度。 |`,
+  artifact: `# codex-qa-streaming-artifact
+
+最终内容停在 HTML artifact 代码块，用于检查预览卡片与 streaming 状态的边界。
+
+\`\`\`html
+<!doctype html>
+<html>
+  <body>
+    <main aria-label="codex-qa-streaming-artifact">
+      <h1>codex-qa-streaming-artifact</h1>
+      <p>Artifact preview should stay bounded in the message column.</p>
+    </main>
+  </body>
+</html>
+\`\`\``,
+  image: `# codex-qa-streaming-image
+
+最终内容停在图片，用于检查媒体卡片底部空间和流式 caret。
+
+![codex-qa-streaming-image](data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='640'%20height='360'%20viewBox='0%200%20640%20360'%3E%3Crect%20width='640'%20height='360'%20rx='28'%20fill='%23eef4ff'/%3E%3Ccircle%20cx='146'%20cy='126'%20r='52'%20fill='%236d8dff'/%3E%3Cpath%20d='M76%20288l150-100%2088%2068%2076-48%20174%2080H76z'%20fill='%23b8c8ff'/%3E%3Ctext%20x='236'%20y='132'%20font-size='28'%20font-family='Arial'%20fill='%23324152'%3Ecodex-qa-streaming-image%3C/text%3E%3C/svg%3E)`,
+  media: `# codex-qa-streaming-media
+
+最终内容停在真实本地媒体资源，用于检查 audio/video card 的 loading、focus 和底部留白。
+
+[音频预览](/codex-qa/neatchat-stress-audio.mp3)
+
+[视频预览](/codex-qa/neatchat-stress-video.mp4)`,
+};
 const MARKDOWN_STRESS_QA_MESSAGES: RenderMessage[] = [
   {
     id: `${MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX}-user`,
@@ -353,10 +417,49 @@ const MARKDOWN_STRESS_QA_MESSAGES: RenderMessage[] = [
     content: MARKDOWN_STRESS_QA_CONTENT,
   },
 ];
+const MARKDOWN_STRESS_QA_BOUNDARY_MESSAGES: RenderMessage[] =
+  MARKDOWN_STRESS_QA_BOUNDARY_VARIANTS.map((variant) => ({
+    id: `${MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX}-streaming-${variant}`,
+    date: "2026/6/27 00:00:00",
+    role: "assistant",
+    model: "gpt-5.4" as ModelType,
+    streaming: true,
+    content: MARKDOWN_STRESS_QA_BOUNDARY_CONTENT[variant],
+  }));
 
 function isMarkdownStressQaEnabled(locationSearch: string) {
   const params = new URLSearchParams(locationSearch);
   return params.get("codex_qa") === MARKDOWN_STRESS_QA_PARAM;
+}
+
+function getMarkdownStressQaBoundaryVariant(locationSearch: string) {
+  const params = new URLSearchParams(locationSearch);
+  const variant = params.get(MARKDOWN_STRESS_QA_BOUNDARY_PARAM);
+  if (variant === "all") {
+    return variant;
+  }
+
+  if (
+    MARKDOWN_STRESS_QA_BOUNDARY_VARIANTS.includes(
+      variant as MarkdownStressBoundaryVariant,
+    )
+  ) {
+    return variant as MarkdownStressBoundaryVariant;
+  }
+}
+
+function getMarkdownStressQaMessages(locationSearch: string): RenderMessage[] {
+  const boundaryVariant = getMarkdownStressQaBoundaryVariant(locationSearch);
+  if (!boundaryVariant) return MARKDOWN_STRESS_QA_MESSAGES;
+
+  const boundaryMessages =
+    boundaryVariant === "all"
+      ? MARKDOWN_STRESS_QA_BOUNDARY_MESSAGES
+      : MARKDOWN_STRESS_QA_BOUNDARY_MESSAGES.filter((message) =>
+          message.id.endsWith(`-${boundaryVariant}`),
+        );
+
+  return [MARKDOWN_STRESS_QA_MESSAGES[0], ...boundaryMessages];
 }
 
 const stopAll = () => ChatControllerPool.stopAll();
@@ -2791,7 +2894,7 @@ function useChatInnerView() {
   // preview messages
   const renderMessages = useMemo(() => {
     if (markdownStressQaEnabled) {
-      return MARKDOWN_STRESS_QA_MESSAGES;
+      return getMarkdownStressQaMessages(location.search);
     }
 
     const visibleSessionMessages = getVisibleChatMessages(
@@ -2834,6 +2937,7 @@ function useChatInnerView() {
     config.sendPreviewBubble,
     context,
     isLoading,
+    location.search,
     markdownStressQaEnabled,
     session.messages,
     userInput,

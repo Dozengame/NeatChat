@@ -16108,7 +16108,30 @@ describe("Gemini visual migration shell", () => {
     );
 
     expect(chat).toContain('const MARKDOWN_STRESS_QA_PARAM = "markdown-stress";');
+    expect(chat).toContain(
+      'const MARKDOWN_STRESS_QA_BOUNDARY_PARAM = "streaming_boundary";',
+    );
+    expect(qaSeedBlock).toMatch(
+      /type MarkdownStressBoundaryVariant =[\s\S]*\| "details"[\s\S]*\| "table"[\s\S]*\| "artifact"[\s\S]*\| "image"[\s\S]*\| "media";/,
+    );
+    expect(chat).toContain(
+      "const MARKDOWN_STRESS_QA_BOUNDARY_VARIANTS: MarkdownStressBoundaryVariant[]",
+    );
+    expect(qaSeedBlock).toMatch(
+      /const MARKDOWN_STRESS_QA_BOUNDARY_CONTENT: Record<[\s\S]*MarkdownStressBoundaryVariant,[\s\S]*string[\s\S]*>/,
+    );
+    expect(chat).toContain(
+      "function getMarkdownStressQaBoundaryVariant(locationSearch: string)",
+    );
+    expect(chat).toContain(
+      "function getMarkdownStressQaMessages(locationSearch: string): RenderMessage[]",
+    );
     expect(chat).toContain("const MARKDOWN_STRESS_QA_CONTENT = `");
+    expect(chat).toContain("codex-qa-streaming-details");
+    expect(chat).toContain("codex-qa-streaming-table");
+    expect(chat).toContain("codex-qa-streaming-artifact");
+    expect(chat).toContain("codex-qa-streaming-image");
+    expect(chat).toContain("codex-qa-streaming-media");
     expect(chat).toContain("Markdown 压测示例文档");
     expect(chat).toContain("## 引用与行内代码");
     expect(chat).toContain("连续标题层级");
@@ -16123,16 +16146,45 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("- [x] 已完成的任务列表项");
     expect(chat).toContain("- [ ] 待确认的任务列表项");
     expect(chat).toContain("<details>");
+    expect(chat).toContain("[音频预览](/codex-qa/neatchat-stress-audio.mp3)");
+    expect(chat).toContain("[视频预览](/codex-qa/neatchat-stress-video.mp4)");
     expect(chat).toContain("https://example.com/neatchat/markdown-stress/");
     expect(chat).toContain("End of markdown stress test content.");
+    const qaAudioPath = path.join(
+      process.cwd(),
+      "public/codex-qa/neatchat-stress-audio.mp3",
+    );
+    const qaVideoPath = path.join(
+      process.cwd(),
+      "public/codex-qa/neatchat-stress-video.mp4",
+    );
+    expect(fs.existsSync(qaAudioPath)).toBe(true);
+    expect(fs.existsSync(qaVideoPath)).toBe(true);
+    const qaAudioBytes = fs.readFileSync(qaAudioPath);
+    const qaVideoBytes = fs.readFileSync(qaVideoPath);
+    expect(qaAudioBytes.length).toBeGreaterThan(512);
+    expect(qaAudioBytes.length).toBeLessThan(64 * 1024);
+    expect(
+      qaAudioBytes.subarray(0, 3).toString("ascii") === "ID3" ||
+        (qaAudioBytes[0] === 0xff && (qaAudioBytes[1] & 0xe0) === 0xe0),
+    ).toBe(true);
+    expect(qaVideoBytes.length).toBeGreaterThan(1024);
+    expect(qaVideoBytes.length).toBeLessThan(256 * 1024);
+    expect(qaVideoBytes.subarray(4, 8).toString("ascii")).toBe("ftyp");
     expect(chat).toMatch(
       /function isMarkdownStressQaEnabled\(locationSearch: string\)[\s\S]*new URLSearchParams\(locationSearch\)[\s\S]*params\.get\("codex_qa"\) === MARKDOWN_STRESS_QA_PARAM/,
     );
     expect(chat).toMatch(
       /const markdownStressQaEnabled = useMemo\(\s*\(\) => isMarkdownStressQaEnabled\(location\.search\),\s*\[location\.search\],?\s*\);/,
     );
+    expect(qaSeedBlock).toMatch(
+      /if \(!boundaryVariant\) return MARKDOWN_STRESS_QA_MESSAGES;/,
+    );
     expect(chat).toMatch(
-      /if \(markdownStressQaEnabled\) \{[\s\S]*return MARKDOWN_STRESS_QA_MESSAGES;[\s\S]*\}/,
+      /if \(markdownStressQaEnabled\) \{[\s\S]*return getMarkdownStressQaMessages\(location\.search\);[\s\S]*\}/,
+    );
+    expect(qaSeedBlock).toMatch(
+      /MARKDOWN_STRESS_QA_BOUNDARY_VARIANTS\.map\(\(variant\) => \(\{[\s\S]*id: `\$\{MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX\}-streaming-\$\{variant\}`[\s\S]*streaming: true[\s\S]*content: MARKDOWN_STRESS_QA_BOUNDARY_CONTENT\[variant\]/,
     );
     expect(chat).toMatch(
       /const canSubmitComposer =\s*!markdownStressQaEnabled &&\s*\(/,
