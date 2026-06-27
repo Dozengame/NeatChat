@@ -9533,6 +9533,10 @@ describe("Gemini visual migration shell", () => {
       "--markdown-mermaid-fallback-background",
       "--markdown-mermaid-fallback-color",
       "--markdown-mermaid-fallback-accent-color",
+      "--markdown-mermaid-scrollbar-thumb-color",
+      "--markdown-mermaid-scrollbar-track-color",
+      "--markdown-mermaid-fallback-code-background",
+      "--markdown-mermaid-fallback-code-border-color",
     ];
     const lightMermaidTokens = readCustomProperties(
       lightMixinBlock,
@@ -9600,6 +9604,18 @@ describe("Gemini visual migration shell", () => {
     expect(lightMixinBlock).toMatch(
       /--markdown-mermaid-fallback-accent-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 82%,\s*transparent\s*\);/,
     );
+    expect(lightMermaidTokens["--markdown-mermaid-scrollbar-thumb-color"]).toBe(
+      "color-mix( in srgb, var(--markdown-link-color) 20%, var(--surface-soft) )",
+    );
+    expect(lightMermaidTokens["--markdown-mermaid-scrollbar-track-color"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 62%, transparent )",
+    );
+    expect(lightMermaidTokens["--markdown-mermaid-fallback-code-background"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 68%, transparent )",
+    );
+    expect(lightMermaidTokens["--markdown-mermaid-fallback-code-border-color"]).toBe(
+      "color-mix( in srgb, var(--black-50) 12%, transparent )",
+    );
     expect(darkMixinBlock).toMatch(
       /--markdown-mermaid-frame-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
     );
@@ -9608,6 +9624,18 @@ describe("Gemini visual migration shell", () => {
     );
     expect(darkMixinBlock).toMatch(
       /--markdown-mermaid-fallback-accent-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 90%,\s*transparent\s*\);/,
+    );
+    expect(darkMermaidTokens["--markdown-mermaid-scrollbar-thumb-color"]).toBe(
+      "color-mix( in srgb, var(--markdown-link-color) 28%, var(--surface-soft) )",
+    );
+    expect(darkMermaidTokens["--markdown-mermaid-scrollbar-track-color"]).toBe(
+      "color-mix( in srgb, var(--surface-elevated) 50%, transparent )",
+    );
+    expect(darkMermaidTokens["--markdown-mermaid-fallback-code-background"]).toBe(
+      "color-mix( in srgb, var(--surface) 56%, transparent )",
+    );
+    expect(darkMermaidTokens["--markdown-mermaid-fallback-code-border-color"]).toBe(
+      "color-mix( in srgb, var(--black) 16%, transparent )",
     );
     expect(autoDarkRootBlock).toMatch(/@include dark;/);
 
@@ -9634,6 +9662,11 @@ describe("Gemini visual migration shell", () => {
     );
     expect(mermaidFrameBlock).toMatch(/overflow:\s*auto;/);
     expect(mermaidFrameBlock).toMatch(/overscroll-behavior-x:\s*contain;/);
+    expect(mermaidFrameBlock).toMatch(/scrollbar-width:\s*thin;/);
+    expect(mermaidFrameBlock).toMatch(/scrollbar-gutter:\s*stable;/);
+    expect(mermaidFrameBlock).toMatch(
+      /scrollbar-color:\s*var\(--markdown-mermaid-scrollbar-thumb-color\)\s+var\(--markdown-mermaid-scrollbar-track-color\);/,
+    );
     expect(mermaidFrameBlock).toMatch(
       /&:hover,\s*&:focus-visible[\s\S]*border-color:\s*var\(--markdown-mermaid-frame-hover-border-color\);/,
     );
@@ -9684,8 +9717,22 @@ describe("Gemini visual migration shell", () => {
     expect(mermaidFallbackCodeBlock).toMatch(
       /max-height:\s*min\(38vh, 320px\);/,
     );
+    expect(mermaidFallbackCodeBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(mermaidFallbackCodeBlock).toMatch(/border-radius:\s*6px;/);
+    expect(mermaidFallbackCodeBlock).toMatch(
+      /border:\s*1px solid var\(--markdown-mermaid-fallback-code-border-color\);/,
+    );
+    expect(mermaidFallbackCodeBlock).toMatch(
+      /background:\s*var\(--markdown-mermaid-fallback-code-background\);/,
+    );
     expect(mermaidFallbackCodeBlock).toMatch(/overflow:\s*auto;/);
     expect(mermaidFallbackCodeBlock).toMatch(/overflow-x:\s*auto;/);
+    expect(mermaidFallbackCodeBlock).toMatch(/overscroll-behavior:\s*contain;/);
+    expect(mermaidFallbackCodeBlock).toMatch(/scrollbar-width:\s*thin;/);
+    expect(mermaidFallbackCodeBlock).toMatch(/scrollbar-gutter:\s*stable;/);
+    expect(mermaidFallbackCodeBlock).toMatch(
+      /scrollbar-color:\s*var\(--markdown-mermaid-scrollbar-thumb-color\)\s+var\(--markdown-mermaid-scrollbar-track-color\);/,
+    );
     expect(mermaidFallbackCodeBlock).toMatch(/white-space:\s*pre-wrap;/);
     expect(mermaidFallbackCodeBlock).toMatch(/word-break:\s*break-word;/);
     expect(mermaidTokenValues).not.toContain("var(--white)");
@@ -21284,6 +21331,18 @@ describe("Gemini visual migration shell", () => {
       artifactFrameBlock,
       "&:hover,\n  &:focus-within",
     );
+    const artifactFrameFocusWithinBlock = readLastCssBlock(
+      artifactFrameBlock,
+      "&:focus-within",
+    );
+    const artifactFrameHasSupportBlock = readCssBlock(
+      artifactFrameBlock,
+      "@supports selector(:has(*))",
+    );
+    const artifactFrameIframeFocusBlock = readLastCssBlock(
+      artifactFrameHasSupportBlock,
+      "&:has(> iframe:focus)",
+    );
     const markdownTouchBlock = readCssBlock(
       markdownStyles,
       "@media (hover: none), (pointer: coarse), (max-width: 600px)",
@@ -21303,6 +21362,18 @@ describe("Gemini visual migration shell", () => {
     const markdownReducedMotionBlock = readCssBlock(
       markdownStyles,
       "@media (prefers-reduced-motion: reduce)",
+    );
+    const markdownReducedMotionArtifactBlock = readCssBlock(
+      markdownReducedMotionBlock,
+      ".markdown-body .markdown-artifact-preview-frame,\n  .markdown-body .markdown-artifact-preview-frame:hover,\n  .markdown-body .markdown-artifact-preview-frame:focus-within",
+    );
+    const markdownReducedMotionHasSupportBlock = readCssBlock(
+      markdownReducedMotionBlock,
+      "@supports selector(:has(*))",
+    );
+    const markdownReducedMotionIframeFocusBlock = readCssBlock(
+      markdownReducedMotionHasSupportBlock,
+      ".markdown-body .markdown-artifact-preview-frame:has(> iframe:focus)",
     );
     const artifactTokenNames = [
       "--markdown-artifact-frame-border-color",
@@ -21336,6 +21407,9 @@ describe("Gemini visual migration shell", () => {
       artifactFrameBlock,
       artifactIframeBlock,
       artifactFrameHoverBlock,
+      artifactFrameFocusWithinBlock,
+      artifactFrameHasSupportBlock,
+      artifactFrameIframeFocusBlock,
       mobileArtifactPreviewBlock,
       mobileArtifactFrameBlock,
       mobileArtifactIframeBlock,
@@ -21343,6 +21417,14 @@ describe("Gemini visual migration shell", () => {
 
     expect(markdown).toMatch(
       /<figure className="markdown-artifact-preview">[\s\S]*<div className="markdown-artifact-preview-frame">[\s\S]*<HTMLPreview[\s\S]*code=\{htmlCode\}[\s\S]*autoHeight=\{!document\.fullscreenElement\}[\s\S]*height=\{!document\.fullscreenElement \? 600 : height\}[\s\S]*\/>[\s\S]*<\/div>[\s\S]*<\/figure>/,
+    );
+    expect(
+      markdown.match(
+        /<figure className="markdown-artifact-preview">[\s\S]*?<\/figure>/,
+      )?.[0] ?? "",
+    ).not.toMatch(/tabIndex=\{0\}|role="group"|aria-label="HTML preview"/);
+    expect(markdown).not.toMatch(
+      /markdown-artifact-preview-frame"[\s\S]{0,120}tabIndex=\{0\}/,
     );
     expect(markdown).not.toMatch(
       /htmlCode\.length > 0 && enableArtifacts && \(\s*<HTMLPreview/,
@@ -21413,6 +21495,23 @@ describe("Gemini visual migration shell", () => {
       /box-shadow:\s*0 10px 26px var\(--markdown-artifact-frame-hover-shadow-color\);/,
     );
     expect(artifactFrameHoverBlock).toMatch(/transform:\s*translateY\(-1px\);/);
+    expect(artifactFrameFocusWithinBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(artifactFrameFocusWithinBlock).toMatch(/outline-offset:\s*2px;/);
+    expect(artifactFrameFocusWithinBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 10px 26px var\(--markdown-artifact-frame-hover-shadow-color\);/,
+    );
+    expect(artifactFrameBlock).toMatch(/@supports selector\(:has\(\*\)\)/);
+    expect(artifactFrameHasSupportBlock).toBeTruthy();
+    expect(artifactFrameHoverBlock).not.toContain(":has(> iframe:focus)");
+    expect(artifactFrameIframeFocusBlock).toMatch(
+      /border-color:\s*var\(--markdown-artifact-frame-hover-border-color\);/,
+    );
+    expect(artifactFrameIframeFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(artifactFrameIframeFocusBlock).toMatch(/outline-offset:\s*2px;/);
+    expect(artifactFrameIframeFocusBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 10px 26px var\(--markdown-artifact-frame-hover-shadow-color\);/,
+    );
+    expect(artifactFrameIframeFocusBlock).toMatch(/transform:\s*translateY\(-1px\);/);
     expect(artifactIframeBlock).toMatch(/display:\s*block;/);
     expect(artifactIframeBlock).toMatch(/width:\s*100%;/);
     expect(artifactIframeBlock).toMatch(/max-width:\s*100%;/);
@@ -21426,6 +21525,13 @@ describe("Gemini visual migration shell", () => {
     expect(mobileArtifactIframeBlock).toMatch(/max-height:\s*min\(64vh, 520px\);/);
     expect(markdownReducedMotionBlock).toMatch(
       /\.markdown-body \.markdown-artifact-preview-frame,[\s\S]*\.markdown-body \.markdown-artifact-preview-frame:hover,[\s\S]*\.markdown-body \.markdown-artifact-preview-frame:focus-within[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(markdownReducedMotionArtifactBlock).not.toContain(":has(> iframe:focus)");
+    expect(markdownReducedMotionIframeFocusBlock).toMatch(
+      /transform:\s*none !important;/,
+    );
+    expect(markdownReducedMotionIframeFocusBlock).toMatch(
+      /transition-duration:\s*0\.01ms !important;/,
     );
     expect(artifactPaintScope).not.toMatch(
       /(?:border:\s*var\(--border-in-light\)|background-color:\s*var\(--white\)|border-radius:\s*4px|rgba\(|#[0-9a-fA-F]{3,8}\b)/,

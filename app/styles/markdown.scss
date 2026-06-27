@@ -339,6 +339,16 @@ summary,
     var(--black-50) 12%,
     transparent
   );
+  --markdown-mermaid-scrollbar-thumb-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 20%,
+    var(--surface-soft)
+  );
+  --markdown-mermaid-scrollbar-track-color: color-mix(
+    in srgb,
+    var(--surface-elevated) 62%,
+    transparent
+  );
   --markdown-artifact-frame-border-color: color-mix(
     in srgb,
     var(--black-50) 10%,
@@ -387,6 +397,16 @@ summary,
   --markdown-mermaid-fallback-accent-color: color-mix(
     in srgb,
     var(--markdown-link-color) 82%,
+    transparent
+  );
+  --markdown-mermaid-fallback-code-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 68%,
+    transparent
+  );
+  --markdown-mermaid-fallback-code-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
     transparent
   );
   --markdown-image-download-ink: rgb(31, 31, 31);
@@ -1249,6 +1269,16 @@ summary,
     var(--surface) 28%,
     transparent
   );
+  --markdown-mermaid-scrollbar-thumb-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 28%,
+    var(--surface-soft)
+  );
+  --markdown-mermaid-scrollbar-track-color: color-mix(
+    in srgb,
+    var(--surface-elevated) 50%,
+    transparent
+  );
   --markdown-artifact-frame-border-color: color-mix(
     in srgb,
     var(--black) 10%,
@@ -1297,6 +1327,16 @@ summary,
   --markdown-mermaid-fallback-accent-color: color-mix(
     in srgb,
     var(--markdown-link-color) 90%,
+    transparent
+  );
+  --markdown-mermaid-fallback-code-background: color-mix(
+    in srgb,
+    var(--surface) 56%,
+    transparent
+  );
+  --markdown-mermaid-fallback-code-border-color: color-mix(
+    in srgb,
+    var(--black) 16%,
     transparent
   );
   --markdown-image-download-ink: rgb(32, 33, 36);
@@ -2403,6 +2443,10 @@ summary,
   color: var(--color-fg-default);
   overflow: auto;
   overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--markdown-mermaid-scrollbar-thumb-color)
+    var(--markdown-mermaid-scrollbar-track-color);
   text-align: center;
   transition:
     border-color 0.18s ease,
@@ -2459,10 +2503,19 @@ summary,
 
 .markdown-body .markdown-mermaid-fallback-code {
   display: block;
+  box-sizing: border-box;
   max-width: 100%;
   max-height: min(38vh, 320px);
+  border: 1px solid var(--markdown-mermaid-fallback-code-border-color);
+  border-radius: 6px;
+  background: var(--markdown-mermaid-fallback-code-background);
   overflow: auto;
   overflow-x: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--markdown-mermaid-scrollbar-thumb-color)
+    var(--markdown-mermaid-scrollbar-track-color);
   white-space: pre-wrap;
   word-break: break-word;
   padding: 10px;
@@ -2495,6 +2548,26 @@ summary,
     border-color: var(--markdown-artifact-frame-hover-border-color);
     box-shadow: 0 10px 26px var(--markdown-artifact-frame-hover-shadow-color);
     transform: translateY(-1px);
+  }
+
+  &:focus-within {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    box-shadow:
+      var(--focus-ring-shadow),
+      0 10px 26px var(--markdown-artifact-frame-hover-shadow-color);
+  }
+
+  @supports selector(:has(*)) {
+    &:has(> iframe:focus) {
+      border-color: var(--markdown-artifact-frame-hover-border-color);
+      outline: var(--focus-ring);
+      outline-offset: 2px;
+      box-shadow:
+        var(--focus-ring-shadow),
+        0 10px 26px var(--markdown-artifact-frame-hover-shadow-color);
+      transform: translateY(-1px);
+    }
   }
 
   > iframe {
@@ -2809,6 +2882,13 @@ summary,
   .markdown-body .markdown-artifact-preview-frame:focus-within {
     transform: none !important;
     transition-duration: 0.01ms !important;
+  }
+
+  @supports selector(:has(*)) {
+    .markdown-body .markdown-artifact-preview-frame:has(> iframe:focus) {
+      transform: none !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 
   .markdown-body a,
