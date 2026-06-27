@@ -222,7 +222,10 @@ describe("Gemini visual migration shell", () => {
     );
     const chatBodyBlock = readCssBlock(chatStyles, ".chat-body");
     const chatBodyRootBlock = readRootDeclarations(chatBodyBlock);
-    const chatBodyTokenNames = ["--chat-body-background"];
+    const chatBodyTokenNames = [
+      "--chat-body-background",
+      "--chat-body-bottom-safe-area",
+    ];
     const chatBodyTokens = readCustomProperties(
       chatBodyRootBlock,
       chatBodyTokenNames,
@@ -409,6 +412,9 @@ describe("Gemini visual migration shell", () => {
     );
     const scrollToBottomRootBlock =
       readRootDeclarations(scrollToBottomBlock);
+    const desktopChatBodyRootBlock = readRootDeclarations(
+      readCssBlock(desktopStyles, ".chat-body"),
+    );
     const scrollToBottomHoverBlock = readCssBlock(
       scrollToBottomBlock,
       "&:hover",
@@ -732,6 +738,9 @@ describe("Gemini visual migration shell", () => {
     const mobileScrollToBottomBlock = readCssBlock(
       mobileStyles,
       ".chat-scroll-to-bottom",
+    );
+    const mobileChatBodyRootBlock = readRootDeclarations(
+      readCssBlock(mobileStyles, ".chat-body"),
     );
     const mobileStatusRowBlock = readCssBlock(
       mobileStyles,
@@ -2057,6 +2066,36 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /<section[\s\S]*id="chat-scroll-body"[\s\S]*className=\{clsx\(styles\["chat-body"\][\s\S]*ref=\{scrollRef\}[\s\S]*aria-label="聊天消息"[\s\S]*onScroll=\{\(e\) => onChatBodyScroll\(e\.currentTarget\)\}/,
     );
+    expect(chat).toMatch(/const CHAT_BODY_BOTTOM_SAFE_AREA_BASE = 150;/);
+    expect(chat).toMatch(
+      /const CHAT_BODY_BOTTOM_SAFE_AREA_MOBILE_BASE = 118;/,
+    );
+    expect(chat).toMatch(/const CHAT_SCROLL_BOTTOM_CLEARANCE = 54;/);
+    expect(chat).toMatch(
+      /const CHAT_SCROLL_BOTTOM_MOBILE_CLEARANCE = 50;/,
+    );
+    expect(chat).toContain("const getChatBodyBottomSafeArea = useCallback");
+    expect(chat).toContain("const inputPanel = chatInputPanelRef.current;");
+    expect(chat).toContain("const scrollDom = scrollRef.current;");
+    expect(chat).toContain("Math.ceil(scrollRect.bottom - inputPanelRect.top)");
+    expect(chat).toContain(
+      "return Math.max(baseSafeArea, panelOverlap + scrollButtonClearance);",
+    );
+    expect(chat).toContain("const syncChatBodyBottomSafeArea = useCallback");
+    expect(chat).toContain("currentSafeArea === nextSafeArea");
+    expect(chat).toContain('typeof ResizeObserver !== "undefined"');
+    expect(chat).toContain("new ResizeObserver(syncChatBodyBottomSafeArea)");
+    expect(chat).toContain(
+      'window.addEventListener("resize", syncChatBodyBottomSafeArea);',
+    );
+    expect(chat).toContain("resizeObserver?.disconnect();");
+    expect(chat).toContain(
+      'window.removeEventListener("resize", syncChatBodyBottomSafeArea);',
+    );
+    expect(chat).toContain(
+      '"--chat-body-bottom-safe-area": `${chatBodyBottomSafeArea}px`,',
+    );
+    expect(chat).toMatch(/id="chat-scroll-body"[\s\S]*style=\{chatBodyStyle\}/);
     expect(chatBodyRootBlock).toMatch(
       /--conversation-max-width:\s*min\(920px,\s*100%\);/,
     );
@@ -2068,6 +2107,15 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chatBodyRootBlock).toMatch(/overflow-x:\s*hidden;/);
     expect(chatBodyRootBlock).toMatch(
+      /--chat-body-bottom-safe-area:\s*calc\(132px \+ env\(safe-area-inset-bottom\)\);/,
+    );
+    expect(chatBodyRootBlock).toMatch(
+      /padding:\s*28px 24px var\(--chat-body-bottom-safe-area\);/,
+    );
+    expect(chatBodyRootBlock).toMatch(
+      /scroll-padding-bottom:\s*var\(--chat-body-bottom-safe-area\);/,
+    );
+    expect(chatBodyRootBlock).toMatch(
       /background-color:\s*var\(--chat-body-background\);/,
     );
     expect(chatBodyTokens["--chat-body-background"]).toBe(
@@ -2076,10 +2124,49 @@ describe("Gemini visual migration shell", () => {
     expect(darkChatBodyTokens["--chat-body-background"]).toBe(
       "color-mix(in srgb, var(--surface) 68%, var(--surface-soft))",
     );
+    expect(chatBodyTokens["--chat-body-bottom-safe-area"]).toBe(
+      "calc(132px + env(safe-area-inset-bottom))",
+    );
     expect(autoDarkChatBodyTokens).toEqual(darkChatBodyTokens);
     expect(chatBodyRootBlock).not.toContain("background-color: var(--gray)");
     expect(chat).toMatch(
       /className=\{clsx\(styles\["chat-input-panel"\][\s\S]*\)\}[\s\S]*\{!showEmptyState && !hitBottom && !showChatActionMenu && \([\s\S]*className=\{styles\["chat-scroll-to-bottom"\]\}[\s\S]*aria-label=\{Locale\.Chat\.InputActions\.ToBottom\}[\s\S]*aria-controls="chat-scroll-body"[\s\S]*onClick=\{scrollToBottom\}[\s\S]*<BottomIcon \/>[\s\S]*\)\}[\s\S]*<PromptHints/,
+    );
+    expect(scrollToBottomRootBlock).toMatch(
+      /--chat-scroll-bottom-size:\s*42px;/,
+    );
+    expect(scrollToBottomRootBlock).toMatch(
+      /--chat-scroll-bottom-composer-gap:\s*12px;/,
+    );
+    expect(scrollToBottomRootBlock).toMatch(/top:\s*auto;/);
+    expect(scrollToBottomRootBlock).toMatch(
+      /bottom:\s*calc\(100% \+ var\(--chat-scroll-bottom-composer-gap\)\);/,
+    );
+    expect(scrollToBottomRootBlock).toMatch(
+      /width:\s*var\(--chat-scroll-bottom-size\);/,
+    );
+    expect(scrollToBottomRootBlock).toMatch(
+      /height:\s*var\(--chat-scroll-bottom-size\);/,
+    );
+    expect(scrollToBottomRootBlock).not.toMatch(/top:\s*-\d/);
+    expect(mobileChatBodyRootBlock).toMatch(
+      /--chat-body-bottom-safe-area:\s*calc\(118px \+ env\(safe-area-inset-bottom\)\);/,
+    );
+    expect(mobileChatBodyRootBlock).toMatch(
+      /padding-bottom:\s*var\(--chat-body-bottom-safe-area\);/,
+    );
+    expect(mobileScrollToBottomBlock).toMatch(
+      /--chat-scroll-bottom-size:\s*40px;/,
+    );
+    expect(mobileScrollToBottomBlock).toMatch(
+      /--chat-scroll-bottom-composer-gap:\s*10px;/,
+    );
+    expect(mobileScrollToBottomBlock).not.toMatch(/top:\s*-\d/);
+    expect(desktopChatBodyRootBlock).toMatch(
+      /--chat-body-bottom-safe-area:\s*calc\(150px \+ env\(safe-area-inset-bottom\)\);/,
+    );
+    expect(desktopChatBodyRootBlock).toMatch(
+      /padding:\s*34px 40px var\(--chat-body-bottom-safe-area\);/,
     );
     expect(chat).toMatch(
       /const syncHitBottomState = useCallback\(\s*\(e: HTMLElement, syncAutoScroll = false\) => \{[\s\S]*const bottomHeight = e\.scrollTop \+ e\.clientHeight;[\s\S]*setHitBottom\(isHitBottom\);[\s\S]*if \(syncAutoScroll\) \{[\s\S]*setAutoScroll\(isHitBottom\);[\s\S]*\}[\s\S]*return \{ bottomHeight, isHitBottom \};[\s\S]*\},\s*\[isMobileScreen, setAutoScroll\],\s*\);/,
@@ -2785,10 +2872,17 @@ describe("Gemini visual migration shell", () => {
     expect(chatMessageItemBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(scrollToBottomBlock).toMatch(/position:\s*absolute;/);
     expect(scrollToBottomBlock).toMatch(/left:\s*50%;/);
-    expect(scrollToBottomBlock).toMatch(/top:\s*-56px;/);
+    expect(scrollToBottomBlock).toMatch(/top:\s*auto;/);
+    expect(scrollToBottomBlock).toMatch(
+      /bottom:\s*calc\(100% \+ var\(--chat-scroll-bottom-composer-gap\)\);/,
+    );
     expect(scrollToBottomBlock).toMatch(/z-index:\s*20;/);
-    expect(scrollToBottomBlock).toMatch(/width:\s*42px;/);
-    expect(scrollToBottomBlock).toMatch(/height:\s*42px;/);
+    expect(scrollToBottomBlock).toMatch(
+      /width:\s*var\(--chat-scroll-bottom-size\);/,
+    );
+    expect(scrollToBottomBlock).toMatch(
+      /height:\s*var\(--chat-scroll-bottom-size\);/,
+    );
     expect(scrollToBottomBlock).toMatch(/border-radius:\s*999px;/);
     for (const tokenName of scrollToBottomTokenNames) {
       expect(lightScrollToBottomTokens[tokenName]).toBeTruthy();
@@ -2877,9 +2971,13 @@ describe("Gemini visual migration shell", () => {
         autoDarkScrollToBottomActiveBlock,
       ].join("\n"),
     ).not.toMatch(/rgba?\(|#[0-9a-fA-F]{3,8}\b/);
-    expect(mobileScrollToBottomBlock).toMatch(/top:\s*-52px;/);
-    expect(mobileScrollToBottomBlock).toMatch(/width:\s*40px;/);
-    expect(mobileScrollToBottomBlock).toMatch(/height:\s*40px;/);
+    expect(mobileScrollToBottomBlock).toMatch(
+      /--chat-scroll-bottom-size:\s*40px;/,
+    );
+    expect(mobileScrollToBottomBlock).toMatch(
+      /--chat-scroll-bottom-composer-gap:\s*10px;/,
+    );
+    expect(mobileScrollToBottomBlock).not.toMatch(/top:\s*-\d/);
     expect(sendButtonDisabledBlock).toMatch(
       /cursor:\s*default;/,
     );

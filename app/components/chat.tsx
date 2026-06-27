@@ -204,6 +204,10 @@ const getImageQualityLabel = (quality: OpenAIImageQuality) =>
   imageQualityLabels[quality] ?? quality;
 type MobileModelAdvancedSection = "reasoning" | "image-size" | "image-quality";
 
+const CHAT_BODY_BOTTOM_SAFE_AREA_BASE = 150;
+const CHAT_BODY_BOTTOM_SAFE_AREA_MOBILE_BASE = 118;
+const CHAT_SCROLL_BOTTOM_CLEARANCE = 54;
+const CHAT_SCROLL_BOTTOM_MOBILE_CLEARANCE = 50;
 const MARKDOWN_STRESS_QA_PARAM = "markdown-stress";
 const MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX = "codex-qa-markdown-stress";
 const MARKDOWN_STRESS_QA_CONTENT = `# Markdown 压测示例文档
@@ -2908,6 +2912,63 @@ function useChatInnerView() {
   }, [renderMessages.length, scrollDomToBottom, setMsgRenderIndex]);
   const clearContextDividerRef = useRef<HTMLButtonElement>(null);
   const chatInputPanelRef = useRef<HTMLDivElement>(null);
+  const [chatBodyBottomSafeArea, setChatBodyBottomSafeArea] = useState<
+    number | null
+  >(null);
+  const getChatBodyBottomSafeArea = useCallback(() => {
+    const inputPanel = chatInputPanelRef.current;
+    const scrollDom = scrollRef.current;
+    if (!inputPanel || !scrollDom) return null;
+
+    const inputPanelRect = inputPanel.getBoundingClientRect();
+    const scrollRect = scrollDom.getBoundingClientRect();
+    const panelOverlap = Math.max(
+      0,
+      Math.ceil(scrollRect.bottom - inputPanelRect.top),
+    );
+    const baseSafeArea = isMobileScreen
+      ? CHAT_BODY_BOTTOM_SAFE_AREA_MOBILE_BASE
+      : CHAT_BODY_BOTTOM_SAFE_AREA_BASE;
+    const scrollButtonClearance = isMobileScreen
+      ? CHAT_SCROLL_BOTTOM_MOBILE_CLEARANCE
+      : CHAT_SCROLL_BOTTOM_CLEARANCE;
+
+    return Math.max(baseSafeArea, panelOverlap + scrollButtonClearance);
+  }, [isMobileScreen, scrollRef]);
+  const syncChatBodyBottomSafeArea = useCallback(() => {
+    const nextSafeArea = getChatBodyBottomSafeArea();
+    setChatBodyBottomSafeArea((currentSafeArea) =>
+      currentSafeArea === nextSafeArea ? currentSafeArea : nextSafeArea,
+    );
+  }, [getChatBodyBottomSafeArea]);
+  useLayoutEffect(() => {
+    syncChatBodyBottomSafeArea();
+
+    const inputPanel = chatInputPanelRef.current;
+    const scrollDom = scrollRef.current;
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(syncChatBodyBottomSafeArea)
+        : null;
+
+    if (inputPanel) resizeObserver?.observe(inputPanel);
+    if (scrollDom) resizeObserver?.observe(scrollDom);
+    window.addEventListener("resize", syncChatBodyBottomSafeArea);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", syncChatBodyBottomSafeArea);
+    };
+  }, [scrollRef, syncChatBodyBottomSafeArea]);
+  const chatBodyStyle = useMemo(
+    () =>
+      chatBodyBottomSafeArea === null
+        ? undefined
+        : ({
+            "--chat-body-bottom-safe-area": `${chatBodyBottomSafeArea}px`,
+          } as React.CSSProperties),
+    [chatBodyBottomSafeArea],
+  );
   const getClearContextBottomInset = useCallback(() => {
     if (!isCompactScreen) return 96;
 
@@ -4699,6 +4760,7 @@ function useChatInnerView() {
               [styles["chat-body-empty"]]: showEmptyHero,
             })}
             ref={scrollRef}
+            style={chatBodyStyle}
             aria-label="聊天消息"
             onScroll={(e) => onChatBodyScroll(e.currentTarget)}
           >
