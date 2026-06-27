@@ -20090,11 +20090,13 @@ describe("Gemini visual migration shell", () => {
       '.markdown-body[data-streaming="true"] > :is(p, h1, h2, h3, h4, h5, h6):last-child::after',
       '.markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after',
       '.markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after',
+      '.markdown-body[data-streaming="true"] > blockquote:last-child > :is(ul, ol):last-child > li:last-child::after',
     ].join(",\n");
     const mobileMarkdownStreamingCaretSelector = [
       '.markdown-body[data-streaming="true"] > :is(p, h1, h2, h3, h4, h5, h6):last-child::after',
       '  .markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after',
       '  .markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after',
+      '  .markdown-body[data-streaming="true"] > blockquote:last-child > :is(ul, ol):last-child > li:last-child::after',
     ].join(",\n");
     const markdownStreamingCaretBlock = readCssBlock(
       markdownStyles,
@@ -23603,6 +23605,139 @@ describe("Gemini visual migration shell", () => {
     expect(customEditButtonBlock).toMatch(/min-height:\s*34px;/);
     expect(customModalInputBlock).toMatch(/resize:\s*vertical;/);
     expect(customModalInputBlock).toMatch(/min-height:\s*min\(62dvh, 640px\);/);
+  });
+
+  test("keeps complex Markdown reading surfaces calm across themes and streaming", () => {
+    const chat = read("app/components/chat.tsx");
+    const markdownStyles = read("app/styles/markdown.scss");
+    const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
+    const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
+    const markdownBodyBlock = readRootCssBlock(markdownStyles, ".markdown-body");
+    const blockquoteBlock = readRootCssBlock(
+      markdownStyles,
+      ".markdown-body blockquote",
+    );
+    const inlineCodeBlock = readRootCssBlock(
+      markdownStyles,
+      ".markdown-body code,\n.markdown-body tt",
+    );
+    const tableShellBlock = readRootCssBlock(
+      markdownStyles,
+      ".markdown-table-scroll-shell",
+    );
+    const tableFocusBlock = readRootCssBlock(
+      markdownStyles,
+      ".markdown-table-scroll-shell:focus-within",
+    );
+    const headingStackBlock = readRootCssBlock(
+      markdownStyles,
+      ".markdown-body :is(h1, h2, h3, h4, h5, h6) + :is(h1, h2, h3, h4, h5, h6)",
+    );
+    const blockquoteStreamingSelector =
+      '.markdown-body[data-streaming="true"] > blockquote:last-child > :is(ul, ol):last-child > li:last-child::after';
+    const blockquoteStreamingCaretBlock = readRootCssBlock(
+      markdownStyles,
+      blockquoteStreamingSelector,
+    );
+    const markdownMobileBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileBlockquoteBlock = readCssBlock(
+      markdownMobileBlock,
+      ".markdown-body blockquote",
+    );
+    const mobileTableShellBlock = readCssBlock(
+      markdownMobileBlock,
+      ".markdown-table-scroll-shell",
+    );
+    const mobileStreamingCaretBlock = readCssBlock(
+      markdownMobileBlock,
+      blockquoteStreamingSelector,
+    );
+    const markdownReducedMotionBlock = markdownStyles.slice(
+      markdownStyles.lastIndexOf("@media (prefers-reduced-motion: reduce)"),
+    );
+    const readingTokenNames = [
+      "--markdown-inline-code-shadow-color",
+      "--markdown-blockquote-color",
+      "--markdown-table-focus-border-color",
+      "--markdown-table-focus-shadow-color",
+    ];
+    const lightReadingTokens = readCustomProperties(
+      lightMixinBlock,
+      readingTokenNames,
+    );
+    const darkReadingTokens = readCustomProperties(
+      darkMixinBlock,
+      readingTokenNames,
+    );
+    const readingPaintScope = [
+      blockquoteBlock,
+      inlineCodeBlock,
+      tableShellBlock,
+      tableFocusBlock,
+      blockquoteStreamingCaretBlock,
+      mobileBlockquoteBlock,
+      mobileTableShellBlock,
+      mobileStreamingCaretBlock,
+    ].join("\n");
+
+    expect(chat).toContain("## 深度阅读节奏");
+    expect(chat).toContain("连续标题后的引用、表格、details 和长行内代码");
+    expect(chat).toContain("blockquoteStreamingCaretProbe");
+
+    for (const tokenMap of [lightReadingTokens, darkReadingTokens]) {
+      expect(Object.values(tokenMap)).not.toContain("");
+      expect(Object.values(tokenMap).join("\n")).not.toMatch(
+        /#[0-9a-fA-F]{3,8}\b|rgba\(/,
+      );
+    }
+
+    expect(markdownBodyBlock).toMatch(
+      /--markdown-blockquote-max-width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+    );
+    expect(markdownBodyBlock).toMatch(
+      /--markdown-table-focus-shadow-size:\s*0 0 0 3px;/,
+    );
+    expect(blockquoteBlock).toMatch(
+      /max-width:\s*var\(--markdown-blockquote-max-width\);/,
+    );
+    expect(blockquoteBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(blockquoteBlock).toMatch(
+      /color:\s*var\(--markdown-blockquote-color\);/,
+    );
+    expect(blockquoteBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(headingStackBlock).toMatch(
+      /scroll-margin-top:\s*var\(--markdown-heading-gap\);/,
+    );
+
+    expect(inlineCodeBlock).toMatch(/box-decoration-break:\s*clone;/);
+    expect(inlineCodeBlock).toMatch(
+      /box-shadow:\s*inset 0 -1px 0 var\(--markdown-inline-code-shadow-color\);/,
+    );
+    expect(tableShellBlock).toMatch(/isolation:\s*isolate;/);
+    expect(tableFocusBlock).toMatch(
+      /border-color:\s*var\(--markdown-table-focus-border-color\);/,
+    );
+    expect(tableFocusBlock).toMatch(
+      /box-shadow:\s*var\(--markdown-table-focus-shadow-size\) var\(--markdown-table-focus-shadow-color\);/,
+    );
+    expect(markdownStyles).toContain(blockquoteStreamingSelector);
+    expect(blockquoteStreamingCaretBlock).toMatch(
+      /background:\s*var\(--markdown-streaming-caret-background\);/,
+    );
+    expect(blockquoteStreamingCaretBlock).toMatch(/pointer-events:\s*none;/);
+
+    expect(mobileBlockquoteBlock).toMatch(/max-width:\s*100%;/);
+    expect(mobileTableShellBlock).toMatch(
+      /--markdown-table-focus-shadow-size:\s*0 0 0 2px;/,
+    );
+    expect(mobileStreamingCaretBlock).toMatch(/width:\s*6px;/);
+    expect(markdownReducedMotionBlock).toContain(blockquoteStreamingSelector);
+    expect(readingPaintScope).not.toContain("var(--white)");
+    expect(readingPaintScope).not.toContain("var(--gray)");
+    expect(readingPaintScope).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba\(/);
   });
 
   test("keeps ModelConfigList compress model select aligned with Gemini fields", () => {

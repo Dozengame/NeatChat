@@ -227,6 +227,14 @@ const MARKDOWN_STRESS_QA_CONTENT = `# Markdown 压测示例文档
 
 连续标题后的正文包含 \`veryLongInlineCodeIdentifierForMarkdownStressWrappingAndCopySafety\`、普通链接和中文说明，用于检查标题、段落、行内代码之间的节奏。
 
+## 深度阅读节奏
+
+连续标题后的引用、表格、details 和长行内代码需要在 light/dark 下保持低眩光阅读面，并且 320px 窄屏不能出现页面级横向滚动。
+
+> 深度引用第一段：包含 \`blockquoteStreamingCaretProbe\`、中文说明和 English words，用于检查引用卡片的宽度、文字颜色和 streaming caret 位置。
+>
+> - 引用内列表最后一项保留 \`blockquoteStreamingCaretProbeNestedListItem\`，用于检查流式输出停在引用列表末尾时 caret 不会漂到卡片外。
+
 ## 代码块
 
 \`\`\`typescript

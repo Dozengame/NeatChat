@@ -74,6 +74,11 @@ summary,
     var(--primary) 14%,
     transparent
   );
+  --markdown-inline-code-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    transparent
+  );
   --markdown-inline-code-color: color-mix(
     in srgb,
     var(--black) 88%,
@@ -127,6 +132,11 @@ summary,
   --markdown-blockquote-ring-color: color-mix(
     in srgb,
     var(--surface-elevated) 48%,
+    transparent
+  );
+  --markdown-blockquote-color: color-mix(
+    in srgb,
+    var(--black-50) 88%,
     transparent
   );
   --markdown-details-blockquote-rail-color: color-mix(
@@ -718,6 +728,16 @@ summary,
     var(--black-50) 12%,
     transparent
   );
+  --markdown-table-focus-border-color: color-mix(
+    in srgb,
+    var(--primary) 24%,
+    transparent
+  );
+  --markdown-table-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 12%,
+    transparent
+  );
   --markdown-table-row-background: color-mix(
     in srgb,
     var(--surface-elevated) 58%,
@@ -914,6 +934,11 @@ summary,
     var(--markdown-link-color) 24%,
     transparent
   );
+  --markdown-inline-code-shadow-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 18%,
+    transparent
+  );
   --markdown-inline-code-color: color-mix(
     in srgb,
     var(--black) 88%,
@@ -967,6 +992,11 @@ summary,
   --markdown-blockquote-ring-color: color-mix(
     in srgb,
     var(--surface-elevated) 28%,
+    transparent
+  );
+  --markdown-blockquote-color: color-mix(
+    in srgb,
+    var(--black) 72%,
     transparent
   );
   --markdown-details-blockquote-rail-color: color-mix(
@@ -1558,6 +1588,16 @@ summary,
     var(--black) 10%,
     transparent
   );
+  --markdown-table-focus-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 30%,
+    transparent
+  );
+  --markdown-table-focus-shadow-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 16%,
+    transparent
+  );
   --markdown-table-row-background: color-mix(
     in srgb,
     var(--surface-elevated) 52%,
@@ -1694,6 +1734,7 @@ summary,
   --markdown-heading-tight-gap: 10px;
   --markdown-heading-stack-gap: 14px;
   --markdown-paragraph-gap: 12px;
+  --markdown-blockquote-max-width: min(100%, var(--markdown-reading-surface-max-width));
   --markdown-blockquote-content-gap: 8px;
   --markdown-list-indent: 1.7em;
   --markdown-list-item-gap: 0.38em;
@@ -1709,6 +1750,7 @@ summary,
   --markdown-table-cell-padding-y: 8px;
   --markdown-table-cell-padding-x: 14px;
   --markdown-table-cell-line-height: 1.48;
+  --markdown-table-focus-shadow-size: 0 0 0 3px;
   -ms-text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
   margin: 0;
@@ -1940,7 +1982,8 @@ summary,
 
 .markdown-body[data-streaming="true"] > :is(p, h1, h2, h3, h4, h5, h6):last-child::after,
 .markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after,
-.markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after {
+.markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after,
+.markdown-body[data-streaming="true"] > blockquote:last-child > :is(ul, ol):last-child > li:last-child::after {
   content: "";
   display: inline-block;
   width: 7px;
@@ -2740,9 +2783,15 @@ summary,
   max-width: var(--markdown-table-shell-max-width);
   box-sizing: border-box;
   overflow: hidden;
+  isolation: isolate;
   background: var(--markdown-table-shell-background);
   border: 1px solid var(--markdown-table-shell-border-color);
   border-radius: var(--markdown-table-shell-radius);
+}
+
+.markdown-table-scroll-shell:focus-within {
+  border-color: var(--markdown-table-focus-border-color);
+  box-shadow: var(--markdown-table-focus-shadow-size) var(--markdown-table-focus-shadow-color);
 }
 
 .markdown-table-scroll-viewport {
@@ -3091,6 +3140,7 @@ summary,
 
 .markdown-body :is(h1, h2, h3, h4, h5, h6) + :is(h1, h2, h3, h4, h5, h6) {
   margin-top: var(--markdown-heading-stack-gap);
+  scroll-margin-top: var(--markdown-heading-gap);
 }
 
 .markdown-body h3 {
@@ -3136,8 +3186,10 @@ summary,
 
 .markdown-body blockquote {
   margin: 0;
+  box-sizing: border-box;
+  max-width: var(--markdown-blockquote-max-width);
   padding: 10px 14px;
-  color: var(--color-fg-muted);
+  color: var(--markdown-blockquote-color);
   border-width: 1px;
   border-style: solid;
   border-top-color: var(--markdown-blockquote-border-color);
@@ -3147,6 +3199,7 @@ summary,
   border-radius: 8px;
   background: var(--markdown-blockquote-background);
   line-height: 1.65;
+  overflow-wrap: anywhere;
   box-shadow: inset 0 0 0 1px var(--markdown-blockquote-ring-color);
 }
 
@@ -3666,6 +3719,7 @@ summary,
   background: var(--markdown-inline-code-background);
   border: 1px solid var(--markdown-inline-code-border-color);
   border-radius: 6px;
+  box-shadow: inset 0 -1px 0 var(--markdown-inline-code-shadow-color);
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
@@ -4559,6 +4613,7 @@ summary,
   }
 
   .markdown-body blockquote {
+    max-width: 100%;
     padding: 8px 10px;
     border-radius: 8px;
     line-height: var(--markdown-prose-line-height);
@@ -4667,6 +4722,7 @@ summary,
 
   .markdown-table-scroll-shell {
     --markdown-table-shell-radius: 7px;
+    --markdown-table-focus-shadow-size: 0 0 0 2px;
   }
 
   .markdown-table-scroll-viewport {
@@ -4688,7 +4744,8 @@ summary,
 
   .markdown-body[data-streaming="true"] > :is(p, h1, h2, h3, h4, h5, h6):last-child::after,
   .markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after,
-  .markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after {
+  .markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after,
+  .markdown-body[data-streaming="true"] > blockquote:last-child > :is(ul, ol):last-child > li:last-child::after {
     width: 6px;
     max-height: 16px;
     min-height: 12px;
@@ -4808,6 +4865,7 @@ summary,
   .markdown-body[data-streaming="true"] > :is(p, h1, h2, h3, h4, h5, h6):last-child::after,
   .markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after,
   .markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after,
+  .markdown-body[data-streaming="true"] > blockquote:last-child > :is(ul, ol):last-child > li:last-child::after,
   .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child)),
   .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))::after,
   .markdown-body-container .token-info {
@@ -4832,7 +4890,8 @@ summary,
 
   .markdown-body[data-streaming="true"] > :is(p, h1, h2, h3, h4, h5, h6):last-child::after,
   .markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after,
-  .markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after {
+  .markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after,
+  .markdown-body[data-streaming="true"] > blockquote:last-child > :is(ul, ol):last-child > li:last-child::after {
     opacity: 0.72;
   }
 
