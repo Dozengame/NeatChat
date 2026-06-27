@@ -40,13 +40,13 @@
 .compact-container {
   --mobile-sidebar-drawer-width: 304px;
   --mobile-sidebar-drawer-offset: -304px;
-  --mobile-sidebar-drawer-background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
+  --mobile-sidebar-drawer-background: color-mix(in srgb, var(--surface-elevated) 82%, transparent);
   --mobile-sidebar-drawer-border-color: color-mix(in srgb, var(--black) 10%, transparent);
-  --mobile-sidebar-drawer-shadow-color: color-mix(in srgb, var(--black-50) 24%, transparent);
-  --mobile-sidebar-drawer-inset-color: color-mix(in srgb, rgb(255, 255, 255) 58%, transparent);
-  --mobile-sidebar-drawer-filter: blur(24px) saturate(185%);
-  --mobile-sidebar-backdrop-background: color-mix(in srgb, rgb(32, 33, 36) 28%, transparent);
-  --mobile-sidebar-backdrop-filter: blur(8px) saturate(135%);
+  --mobile-sidebar-drawer-shadow-color: color-mix(in srgb, var(--black-50) 18%, transparent);
+  --mobile-sidebar-drawer-inset-color: color-mix(in srgb, var(--surface) 64%, transparent);
+  --mobile-sidebar-drawer-filter: blur(24px) saturate(165%);
+  --mobile-sidebar-backdrop-background: color-mix(in srgb, var(--black) 20%, transparent);
+  --mobile-sidebar-backdrop-filter: blur(8px) saturate(125%);
   --window-width: 100vw;
   --window-height: var(--full-height);
   --window-content-width: var(--window-width);
@@ -99,22 +99,24 @@
 }
 
 :global(.dark) .compact-container {
-  --mobile-sidebar-drawer-background: color-mix(in srgb, rgb(22, 24, 29) 72%, transparent);
-  --mobile-sidebar-drawer-border-color: color-mix(in srgb, rgb(232, 234, 237) 12%, transparent);
-  --mobile-sidebar-drawer-shadow-color: color-mix(in srgb, rgb(0, 0, 0) 52%, transparent);
-  --mobile-sidebar-drawer-inset-color: color-mix(in srgb, rgb(255, 255, 255) 8%, transparent);
-  --mobile-sidebar-backdrop-background: color-mix(in srgb, rgb(8, 10, 14) 52%, transparent);
-  --mobile-sidebar-backdrop-filter: blur(10px) saturate(145%);
+  --mobile-sidebar-drawer-background: color-mix(in srgb, var(--surface-elevated) 84%, transparent);
+  --mobile-sidebar-drawer-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --mobile-sidebar-drawer-shadow-color: color-mix(in srgb, var(--surface) 54%, transparent);
+  --mobile-sidebar-drawer-inset-color: color-mix(in srgb, var(--black) 8%, transparent);
+  --mobile-sidebar-drawer-filter: blur(24px) saturate(150%);
+  --mobile-sidebar-backdrop-background: color-mix(in srgb, var(--surface) 56%, transparent);
+  --mobile-sidebar-backdrop-filter: blur(10px) saturate(130%);
 }
 
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .compact-container {
-    --mobile-sidebar-drawer-background: color-mix(in srgb, rgb(22, 24, 29) 72%, transparent);
-    --mobile-sidebar-drawer-border-color: color-mix(in srgb, rgb(232, 234, 237) 12%, transparent);
-    --mobile-sidebar-drawer-shadow-color: color-mix(in srgb, rgb(0, 0, 0) 52%, transparent);
-    --mobile-sidebar-drawer-inset-color: color-mix(in srgb, rgb(255, 255, 255) 8%, transparent);
-    --mobile-sidebar-backdrop-background: color-mix(in srgb, rgb(8, 10, 14) 52%, transparent);
-    --mobile-sidebar-backdrop-filter: blur(10px) saturate(145%);
+    --mobile-sidebar-drawer-background: color-mix(in srgb, var(--surface-elevated) 84%, transparent);
+    --mobile-sidebar-drawer-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+    --mobile-sidebar-drawer-shadow-color: color-mix(in srgb, var(--surface) 54%, transparent);
+    --mobile-sidebar-drawer-inset-color: color-mix(in srgb, var(--black) 8%, transparent);
+    --mobile-sidebar-drawer-filter: blur(24px) saturate(150%);
+    --mobile-sidebar-backdrop-background: color-mix(in srgb, var(--surface) 56%, transparent);
+    --mobile-sidebar-backdrop-filter: blur(10px) saturate(130%);
   }
 }
 

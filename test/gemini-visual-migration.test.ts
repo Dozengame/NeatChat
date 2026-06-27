@@ -1454,6 +1454,27 @@ describe("Gemini visual migration shell", () => {
       homeStyles,
       ".compact-container .sidebar-backdrop",
     );
+    const mobileSidebarDrawerTokenNames = [
+      "--mobile-sidebar-drawer-background",
+      "--mobile-sidebar-drawer-border-color",
+      "--mobile-sidebar-drawer-shadow-color",
+      "--mobile-sidebar-drawer-inset-color",
+      "--mobile-sidebar-drawer-filter",
+      "--mobile-sidebar-backdrop-background",
+      "--mobile-sidebar-backdrop-filter",
+    ];
+    const compactSidebarDrawerTokens = readCustomProperties(
+      compactContainerRootDeclarations,
+      mobileSidebarDrawerTokenNames,
+    );
+    const darkCompactSidebarDrawerTokens = readCustomProperties(
+      darkCompactContainerBlock,
+      mobileSidebarDrawerTokenNames,
+    );
+    const autoDarkCompactSidebarDrawerTokens = readCustomProperties(
+      autoDarkCompactContainerBlock,
+      mobileSidebarDrawerTokenNames,
+    );
     const compactContainerSidebarBlock = readCssBlock(
       compactContainerBlock,
       ".sidebar",
@@ -3934,58 +3955,48 @@ describe("Gemini visual migration shell", () => {
     expect(homeStyles).toContain(".sidebar-backdrop");
     expect(homeStyles).toContain("z-index: 900");
     expect(homeStyles).toContain("z-index: 1000");
-    expect(compactContainerRootDeclarations).toMatch(
-      /--mobile-sidebar-drawer-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 78%,\s*transparent\);/,
-    );
-    expect(compactContainerRootDeclarations).toMatch(
-      /--mobile-sidebar-drawer-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
-    );
-    expect(compactContainerRootDeclarations).toMatch(
-      /--mobile-sidebar-drawer-shadow-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 24%,\s*transparent\);/,
-    );
-    expect(compactContainerRootDeclarations).toMatch(
-      /--mobile-sidebar-drawer-inset-color:\s*color-mix\(in srgb,\s*rgb\(255,\s*255,\s*255\) 58%,\s*transparent\);/,
-    );
-    expect(compactContainerRootDeclarations).toMatch(
-      /--mobile-sidebar-drawer-filter:\s*blur\(24px\) saturate\(185%\);/,
-    );
-    expect(compactContainerRootDeclarations).toMatch(
-      /--mobile-sidebar-backdrop-background:\s*color-mix\(in srgb,\s*rgb\(32,\s*33,\s*36\) 28%,\s*transparent\);/,
-    );
-    expect(compactContainerRootDeclarations).toMatch(
-      /--mobile-sidebar-backdrop-filter:\s*blur\(8px\) saturate\(135%\);/,
-    );
-    expect(darkCompactContainerBlock).toMatch(
-      /--mobile-sidebar-drawer-background:\s*color-mix\(in srgb,\s*rgb\(22,\s*24,\s*29\) 72%,\s*transparent\);/,
-    );
-    expect(darkCompactContainerBlock).toMatch(
-      /--mobile-sidebar-drawer-border-color:\s*color-mix\(in srgb,\s*rgb\(232,\s*234,\s*237\) 12%,\s*transparent\);/,
-    );
-    expect(darkCompactContainerBlock).toMatch(
-      /--mobile-sidebar-drawer-shadow-color:\s*color-mix\(in srgb,\s*rgb\(0,\s*0,\s*0\) 52%,\s*transparent\);/,
-    );
-    expect(darkCompactContainerBlock).toMatch(
-      /--mobile-sidebar-drawer-inset-color:\s*color-mix\(in srgb,\s*rgb\(255,\s*255,\s*255\) 8%,\s*transparent\);/,
-    );
-    expect(darkCompactContainerBlock).toMatch(
-      /--mobile-sidebar-backdrop-background:\s*color-mix\(in srgb,\s*rgb\(8,\s*10,\s*14\) 52%,\s*transparent\);/,
-    );
-    expect(darkCompactContainerBlock).toMatch(
-      /--mobile-sidebar-backdrop-filter:\s*blur\(10px\) saturate\(145%\);/,
-    );
+    expect(compactSidebarDrawerTokens).toEqual({
+      "--mobile-sidebar-drawer-background":
+        "color-mix(in srgb, var(--surface-elevated) 82%, transparent)",
+      "--mobile-sidebar-drawer-border-color":
+        "color-mix(in srgb, var(--black) 10%, transparent)",
+      "--mobile-sidebar-drawer-shadow-color":
+        "color-mix(in srgb, var(--black-50) 18%, transparent)",
+      "--mobile-sidebar-drawer-inset-color":
+        "color-mix(in srgb, var(--surface) 64%, transparent)",
+      "--mobile-sidebar-drawer-filter": "blur(24px) saturate(165%)",
+      "--mobile-sidebar-backdrop-background":
+        "color-mix(in srgb, var(--black) 20%, transparent)",
+      "--mobile-sidebar-backdrop-filter": "blur(8px) saturate(125%)",
+    });
+    expect(darkCompactSidebarDrawerTokens).toEqual({
+      "--mobile-sidebar-drawer-background":
+        "color-mix(in srgb, var(--surface-elevated) 84%, transparent)",
+      "--mobile-sidebar-drawer-border-color":
+        "color-mix(in srgb, var(--black) 10%, transparent)",
+      "--mobile-sidebar-drawer-shadow-color":
+        "color-mix(in srgb, var(--surface) 54%, transparent)",
+      "--mobile-sidebar-drawer-inset-color":
+        "color-mix(in srgb, var(--black) 8%, transparent)",
+      "--mobile-sidebar-drawer-filter": "blur(24px) saturate(150%)",
+      "--mobile-sidebar-backdrop-background":
+        "color-mix(in srgb, var(--surface) 56%, transparent)",
+      "--mobile-sidebar-backdrop-filter": "blur(10px) saturate(130%)",
+    });
+    for (const tokenMap of [
+      compactSidebarDrawerTokens,
+      darkCompactSidebarDrawerTokens,
+      autoDarkCompactSidebarDrawerTokens,
+    ]) {
+      expect(Object.values(tokenMap)).not.toContain("");
+      expect(Object.values(tokenMap).join("\n")).not.toMatch(
+        /rgb\(|rgba\(|#|var\(--white\)|var\(--gray\)/,
+      );
+    }
     expect(autoDarkCompactContainerSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkCompactContainerMediaIndex).toBeGreaterThan(-1);
-    expect(autoDarkCompactContainerBlock).toMatch(
-      /--mobile-sidebar-drawer-background:\s*color-mix\(in srgb,\s*rgb\(22,\s*24,\s*29\) 72%,\s*transparent\);/,
-    );
-    expect(autoDarkCompactContainerBlock).toMatch(
-      /--mobile-sidebar-drawer-border-color:\s*color-mix\(in srgb,\s*rgb\(232,\s*234,\s*237\) 12%,\s*transparent\);/,
-    );
-    expect(autoDarkCompactContainerBlock).toMatch(
-      /--mobile-sidebar-backdrop-background:\s*color-mix\(in srgb,\s*rgb\(8,\s*10,\s*14\) 52%,\s*transparent\);/,
-    );
-    expect(autoDarkCompactContainerBlock).toMatch(
-      /--mobile-sidebar-backdrop-filter:\s*blur\(10px\) saturate\(145%\);/,
+    expect(autoDarkCompactSidebarDrawerTokens).toEqual(
+      darkCompactSidebarDrawerTokens,
     );
     expect(compactContainerSidebarBlock).toMatch(
       /background:\s*var\(--mobile-sidebar-drawer-background\);/,
