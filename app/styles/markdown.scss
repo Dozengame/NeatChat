@@ -219,6 +219,21 @@ summary,
     var(--primary) 18%,
     transparent
   );
+  --markdown-task-list-hover-background: color-mix(
+    in srgb,
+    var(--primary) 6%,
+    var(--surface-elevated)
+  );
+  --markdown-task-list-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 20%,
+    transparent
+  );
+  --markdown-task-list-focus-ring-color: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    transparent
+  );
   --markdown-image-frame-border-color: color-mix(
     in srgb,
     var(--black-50) 12%,
@@ -873,6 +888,16 @@ summary,
     var(--primary) 18%,
     transparent
   );
+  --markdown-footnotes-focus-background: color-mix(
+    in srgb,
+    var(--primary) 6%,
+    var(--surface-elevated)
+  );
+  --markdown-footnotes-focus-ring-color: color-mix(
+    in srgb,
+    var(--primary) 12%,
+    transparent
+  );
   --markdown-mark-background: color-mix(
     in srgb,
     var(--primary) 10%,
@@ -897,6 +922,16 @@ summary,
     in srgb,
     var(--surface-elevated) 86%,
     transparent
+  );
+  --markdown-task-checkbox-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 28%,
+    transparent
+  );
+  --markdown-task-checkbox-hover-background: color-mix(
+    in srgb,
+    var(--primary) 6%,
+    var(--surface-elevated)
   );
   --markdown-task-checkbox-checked-background: color-mix(
     in srgb,
@@ -1147,6 +1182,21 @@ summary,
   --markdown-task-list-nested-border-color: color-mix(
     in srgb,
     var(--markdown-link-color) 22%,
+    transparent
+  );
+  --markdown-task-list-hover-background: color-mix(
+    in srgb,
+    var(--markdown-link-color) 10%,
+    var(--surface-elevated)
+  );
+  --markdown-task-list-hover-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 24%,
+    transparent
+  );
+  --markdown-task-list-focus-ring-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 12%,
     transparent
   );
   --markdown-image-frame-border-color: color-mix(
@@ -1803,6 +1853,16 @@ summary,
     var(--markdown-link-color) 22%,
     transparent
   );
+  --markdown-footnotes-focus-background: color-mix(
+    in srgb,
+    var(--markdown-link-color) 10%,
+    var(--surface-soft)
+  );
+  --markdown-footnotes-focus-ring-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 14%,
+    transparent
+  );
   --markdown-mark-background: color-mix(
     in srgb,
     var(--markdown-link-color) 18%,
@@ -1827,6 +1887,16 @@ summary,
     in srgb,
     var(--surface-elevated) 72%,
     transparent
+  );
+  --markdown-task-checkbox-hover-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 30%,
+    transparent
+  );
+  --markdown-task-checkbox-hover-background: color-mix(
+    in srgb,
+    var(--markdown-link-color) 12%,
+    var(--surface-elevated)
   );
   --markdown-task-checkbox-checked-background: color-mix(
     in srgb,
@@ -2894,6 +2964,19 @@ summary,
   .markdown-body a,
   .markdown-body a:hover,
   .markdown-body a:active {
+    transition-duration: 0.01ms !important;
+  }
+
+  .markdown-body .contains-task-list,
+  .markdown-body .contains-task-list:hover,
+  .markdown-body .contains-task-list:focus-within,
+  .markdown-body .footnotes li,
+  .markdown-body .footnotes li:hover,
+  .markdown-body .footnotes li:focus-within,
+  .markdown-body .footnotes li:target,
+  .markdown-body .task-list-item > input[type="checkbox"],
+  .markdown-body .task-list-item > input[type="checkbox"]:hover:not(:disabled):not(:checked),
+  .markdown-body .task-list-item > input[type="checkbox"]:focus-visible {
     transition-duration: 0.01ms !important;
   }
 
@@ -4414,13 +4497,17 @@ summary,
 }
 
 .markdown-body .footnotes {
+  box-sizing: border-box;
+  max-width: min(100%, var(--markdown-reading-surface-max-width));
   margin-top: 22px;
   padding: 12px 14px;
   font-size: 12px;
+  line-height: 1.55;
   color: var(--markdown-footnotes-color);
   background: var(--markdown-footnotes-background);
   border-top: 1px solid var(--markdown-footnotes-border-color);
   border-radius: 10px;
+  overflow-wrap: anywhere;
 }
 
 .markdown-body .footnotes ol {
@@ -4435,6 +4522,18 @@ summary,
 
 .markdown-body .footnotes li {
   position: relative;
+  padding: 1px 2px;
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+  transition:
+    background 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.markdown-body .footnotes li:hover,
+.markdown-body .footnotes li:focus-within {
+  background: var(--markdown-footnotes-focus-background);
+  box-shadow: 0 0 0 3px var(--markdown-footnotes-focus-ring-color);
 }
 
 .markdown-body .footnotes li:target::before {
@@ -4635,6 +4734,10 @@ summary,
   background: var(--markdown-task-checkbox-background);
   border: 1px solid var(--markdown-task-checkbox-border-color);
   border-radius: 0.28em;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
 }
 
 .markdown-body .task-list-item > input[type="checkbox"]::before {
@@ -4650,6 +4753,11 @@ summary,
 
 .markdown-body .task-list-item > input[type="checkbox"]:checked {
   background: var(--markdown-task-checkbox-checked-background);
+}
+
+.markdown-body .task-list-item > input[type="checkbox"]:hover:not(:disabled):not(:checked) {
+  background: var(--markdown-task-checkbox-hover-background);
+  border-color: var(--markdown-task-checkbox-hover-border-color);
 }
 
 .markdown-body .task-list-item > input[type="checkbox"]:checked::before {
@@ -4675,6 +4783,7 @@ summary,
 .markdown-body .task-list-item > input[type="checkbox"]:focus-visible {
   outline: 2px solid var(--markdown-task-checkbox-focus-ring-color);
   outline-offset: 2px;
+  box-shadow: 0 0 0 3px var(--markdown-task-list-focus-ring-color);
 }
 
 .markdown-body .contains-task-list:dir(rtl) .task-list-item > input[type="checkbox"] {
@@ -4684,21 +4793,41 @@ summary,
 }
 
 .markdown-body .contains-task-list {
+  box-sizing: border-box;
   position: relative;
+  max-width: min(100%, var(--markdown-reading-surface-max-width));
   margin: 10px 0 var(--markdown-block-gap);
   padding: 10px 12px;
   background: var(--markdown-task-list-background);
   border: 1px solid var(--markdown-task-list-border-color);
   border-radius: 8px;
+  overflow-wrap: anywhere;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.markdown-body .contains-task-list:hover {
+  background: var(--markdown-task-list-hover-background);
+  border-color: var(--markdown-task-list-hover-border-color);
+}
+
+.markdown-body .contains-task-list:focus-within {
+  background: var(--markdown-task-list-hover-background);
+  border-color: var(--markdown-task-list-hover-border-color);
+  box-shadow: 0 0 0 3px var(--markdown-task-list-focus-ring-color);
 }
 
 .markdown-body .contains-task-list .contains-task-list {
+  max-width: 100%;
   margin: 8px 0 0;
   padding: 6px 0 0 12px;
   background: transparent;
   border: 0;
   border-left: 1px solid var(--markdown-task-list-nested-border-color);
   border-radius: 0;
+  overflow-wrap: anywhere;
 }
 
 .markdown-body .contains-task-list:dir(rtl) .task-list-item {
@@ -4912,6 +5041,20 @@ summary,
 
   .markdown-body li + li {
     margin-top: var(--markdown-list-item-gap);
+  }
+
+  .markdown-body .footnotes {
+    max-width: 100%;
+    padding: 10px 11px;
+  }
+
+  .markdown-body .footnotes li:target::before {
+    left: -18px;
+  }
+
+  .markdown-body .contains-task-list {
+    max-width: 100%;
+    padding: 9px 10px;
   }
 
   .markdown-body :where(p, li, td, blockquote) code:not(del code),

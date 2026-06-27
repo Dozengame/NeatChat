@@ -11520,8 +11520,32 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body .footnotes li:target",
     );
+    const footnotesItemBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .footnotes li",
+    );
+    const footnotesItemInteractiveBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .footnotes li:hover,\n.markdown-body .footnotes li:focus-within",
+    );
     const markBlock = readCssBlock(markdownStyles, ".markdown-body mark");
     const hrBlock = readCssBlock(markdownStyles, ".markdown-body hr");
+    const taskListBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .contains-task-list",
+    );
+    const taskListHoverBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .contains-task-list:hover",
+    );
+    const taskListFocusBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .contains-task-list:focus-within",
+    );
+    const taskListNestedBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .contains-task-list .contains-task-list",
+    );
     const taskCheckboxSource = markdownStyles.slice(
       markdownStyles.indexOf(
         '\n.markdown-body .task-list-item > input[type="checkbox"] {',
@@ -11538,6 +11562,10 @@ describe("Gemini visual migration shell", () => {
     const taskCheckboxCheckedBlock = readCssBlock(
       taskCheckboxSource,
       '.markdown-body .task-list-item > input[type="checkbox"]:checked',
+    );
+    const taskCheckboxHoverBlock = readCssBlock(
+      taskCheckboxSource,
+      '.markdown-body .task-list-item > input[type="checkbox"]:hover:not(:disabled):not(:checked)',
     );
     const taskCheckboxCheckedBeforeBlock = readCssBlock(
       taskCheckboxSource,
@@ -11571,6 +11599,26 @@ describe("Gemini visual migration shell", () => {
       reducedMotionBlock,
       '.markdown-body .task-list-item > input[type="checkbox"]::before',
     );
+    const reducedMotionTaskInteractiveBlock = readCssBlock(
+      reducedMotionBlock,
+      '.markdown-body .contains-task-list,\n  .markdown-body .contains-task-list:hover,\n  .markdown-body .contains-task-list:focus-within,\n  .markdown-body .footnotes li,\n  .markdown-body .footnotes li:hover,\n  .markdown-body .footnotes li:focus-within,\n  .markdown-body .footnotes li:target,\n  .markdown-body .task-list-item > input[type="checkbox"],\n  .markdown-body .task-list-item > input[type="checkbox"]:hover:not(:disabled):not(:checked),\n  .markdown-body .task-list-item > input[type="checkbox"]:focus-visible',
+    );
+    const mobileMarkdownBlock = readCssBlock(
+      markdownStyles,
+      "@media only screen and (max-width: 600px)",
+    );
+    const mobileFootnotesBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body .footnotes",
+    );
+    const mobileFootnotesTargetBeforeBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body .footnotes li:target::before",
+    );
+    const mobileTaskListBlock = readCssBlock(
+      mobileMarkdownBlock,
+      ".markdown-body .contains-task-list",
+    );
     const utilityToneScope = [
       csvBlock,
       csvCellBlock,
@@ -11579,11 +11627,18 @@ describe("Gemini visual migration shell", () => {
       footnotesBlock,
       footnotesTargetBeforeBlock,
       footnotesTargetBlock,
+      footnotesItemBlock,
+      footnotesItemInteractiveBlock,
       markBlock,
       hrBlock,
+      taskListBlock,
+      taskListHoverBlock,
+      taskListFocusBlock,
+      taskListNestedBlock,
       taskCheckboxBlock,
       taskCheckboxBeforeBlock,
       taskCheckboxCheckedBlock,
+      taskCheckboxHoverBlock,
       taskCheckboxCheckedBeforeBlock,
       taskCheckboxFocusBlock,
       taskCheckboxDisabledBlock,
@@ -11591,6 +11646,10 @@ describe("Gemini visual migration shell", () => {
       taskCheckboxCheckedDisabledBlock,
       taskCheckboxRtlBlock,
       reducedMotionTaskCheckboxBeforeBlock,
+      reducedMotionTaskInteractiveBlock,
+      mobileFootnotesBlock,
+      mobileFootnotesTargetBeforeBlock,
+      mobileTaskListBlock,
     ].join("\n");
     const utilityTokenNames = [
       "--markdown-csv-border-color",
@@ -11603,11 +11662,18 @@ describe("Gemini visual migration shell", () => {
       "--markdown-footnotes-color",
       "--markdown-footnotes-target-background",
       "--markdown-footnotes-target-ring-color",
+      "--markdown-footnotes-focus-background",
+      "--markdown-footnotes-focus-ring-color",
       "--markdown-mark-background",
       "--markdown-mark-color",
       "--markdown-hr-background",
+      "--markdown-task-list-hover-background",
+      "--markdown-task-list-hover-border-color",
+      "--markdown-task-list-focus-ring-color",
       "--markdown-task-checkbox-border-color",
       "--markdown-task-checkbox-background",
+      "--markdown-task-checkbox-hover-border-color",
+      "--markdown-task-checkbox-hover-background",
       "--markdown-task-checkbox-checked-background",
       "--markdown-task-checkbox-check-color",
       "--markdown-task-checkbox-focus-ring-color",
@@ -11648,6 +11714,67 @@ describe("Gemini visual migration shell", () => {
     );
     expect(darkUtilityTokens["--markdown-hr-background"]).toBe(
       "color-mix( in srgb, var(--black) 12%, transparent )",
+    );
+    expect(lightUtilityTokens["--markdown-task-list-hover-background"]).toBe(
+      "color-mix( in srgb, var(--primary) 6%, var(--surface-elevated) )",
+    );
+    expect(lightUtilityTokens["--markdown-task-list-hover-border-color"]).toBe(
+      "color-mix( in srgb, var(--primary) 20%, transparent )",
+    );
+    expect(lightUtilityTokens["--markdown-task-list-focus-ring-color"]).toBe(
+      "color-mix( in srgb, var(--primary) 10%, transparent )",
+    );
+    expect(lightUtilityTokens["--markdown-footnotes-focus-background"]).toBe(
+      "color-mix( in srgb, var(--primary) 6%, var(--surface-elevated) )",
+    );
+    expect(lightUtilityTokens["--markdown-footnotes-focus-ring-color"]).toBe(
+      "color-mix( in srgb, var(--primary) 12%, transparent )",
+    );
+    expect(lightUtilityTokens["--markdown-task-checkbox-hover-border-color"]).toBe(
+      "color-mix( in srgb, var(--primary) 28%, transparent )",
+    );
+    expect(lightUtilityTokens["--markdown-task-checkbox-hover-background"]).toBe(
+      "color-mix( in srgb, var(--primary) 6%, var(--surface-elevated) )",
+    );
+    expect(darkUtilityTokens["--markdown-task-list-hover-background"]).toBe(
+      "color-mix( in srgb, var(--markdown-link-color) 10%, var(--surface-elevated) )",
+    );
+    expect(darkUtilityTokens["--markdown-task-list-hover-border-color"]).toBe(
+      "color-mix( in srgb, var(--markdown-link-color) 24%, transparent )",
+    );
+    expect(darkUtilityTokens["--markdown-task-list-focus-ring-color"]).toBe(
+      "color-mix( in srgb, var(--markdown-link-color) 12%, transparent )",
+    );
+    expect(darkUtilityTokens["--markdown-footnotes-focus-background"]).toBe(
+      "color-mix( in srgb, var(--markdown-link-color) 10%, var(--surface-soft) )",
+    );
+    expect(darkUtilityTokens["--markdown-footnotes-focus-ring-color"]).toBe(
+      "color-mix( in srgb, var(--markdown-link-color) 14%, transparent )",
+    );
+    expect(darkUtilityTokens["--markdown-task-checkbox-hover-border-color"]).toBe(
+      "color-mix( in srgb, var(--markdown-link-color) 30%, transparent )",
+    );
+    expect(darkUtilityTokens["--markdown-task-checkbox-hover-background"]).toBe(
+      "color-mix( in srgb, var(--markdown-link-color) 12%, var(--surface-elevated) )",
+    );
+    const interactiveUtilityTokenScope = [
+      lightUtilityTokens["--markdown-task-list-hover-background"],
+      lightUtilityTokens["--markdown-task-list-hover-border-color"],
+      lightUtilityTokens["--markdown-task-list-focus-ring-color"],
+      lightUtilityTokens["--markdown-footnotes-focus-background"],
+      lightUtilityTokens["--markdown-footnotes-focus-ring-color"],
+      lightUtilityTokens["--markdown-task-checkbox-hover-border-color"],
+      lightUtilityTokens["--markdown-task-checkbox-hover-background"],
+      darkUtilityTokens["--markdown-task-list-hover-background"],
+      darkUtilityTokens["--markdown-task-list-hover-border-color"],
+      darkUtilityTokens["--markdown-task-list-focus-ring-color"],
+      darkUtilityTokens["--markdown-footnotes-focus-background"],
+      darkUtilityTokens["--markdown-footnotes-focus-ring-color"],
+      darkUtilityTokens["--markdown-task-checkbox-hover-border-color"],
+      darkUtilityTokens["--markdown-task-checkbox-hover-background"],
+    ].join("\n");
+    expect(interactiveUtilityTokenScope).not.toMatch(
+      /var\(--(?:white|gray)\)/,
     );
     const baseUtilityTokenScope = [
       lightUtilityTokens["--markdown-mark-background"],
@@ -11719,6 +11846,23 @@ describe("Gemini visual migration shell", () => {
       /background:\s*var\(--markdown-footnotes-background\);/,
     );
     expect(footnotesBlock).toMatch(/border-radius:\s*10px;/);
+    expect(footnotesBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(footnotesBlock).toMatch(
+      /max-width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+    );
+    expect(footnotesBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(footnotesBlock).toMatch(/line-height:\s*1\.55;/);
+    expect(footnotesItemBlock).toMatch(/border-radius:\s*6px;/);
+    expect(footnotesItemBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(footnotesItemBlock).toMatch(
+      /transition:[\s\S]*background 0\.16s ease,[\s\S]*box-shadow 0\.16s ease;/,
+    );
+    expect(footnotesItemInteractiveBlock).toMatch(
+      /background:\s*var\(--markdown-footnotes-focus-background\);/,
+    );
+    expect(footnotesItemInteractiveBlock).toMatch(
+      /box-shadow:\s*0 0 0 3px var\(--markdown-footnotes-focus-ring-color\);/,
+    );
     expect(footnotesTargetBeforeBlock).toMatch(
       /border:\s*1px solid var\(--markdown-footnotes-target-ring-color\);/,
     );
@@ -11728,6 +11872,9 @@ describe("Gemini visual migration shell", () => {
     expect(footnotesTargetBlock).toMatch(
       /box-shadow:\s*0 0 0 4px var\(--markdown-footnotes-target-ring-color\);/,
     );
+    expect(mobileFootnotesBlock).toMatch(/padding:\s*10px 11px;/);
+    expect(mobileFootnotesBlock).toMatch(/max-width:\s*100%;/);
+    expect(mobileFootnotesTargetBeforeBlock).toMatch(/left:\s*-18px;/);
 
     expect(markBlock).toMatch(
       /background:\s*var\(--markdown-mark-background\);/,
@@ -11738,6 +11885,34 @@ describe("Gemini visual migration shell", () => {
     expect(hrBlock).toMatch(/border:\s*0;/);
     expect(hrBlock).not.toMatch(/border-bottom/);
     expect(hrBlock).not.toMatch(/background-color/);
+
+    expect(taskListBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(taskListBlock).toMatch(
+      /max-width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+    );
+    expect(taskListBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(taskListBlock).toMatch(
+      /transition:[\s\S]*background 0\.16s ease,[\s\S]*border-color 0\.16s ease,[\s\S]*box-shadow 0\.16s ease;/,
+    );
+    expect(taskListHoverBlock).toMatch(
+      /background:\s*var\(--markdown-task-list-hover-background\);/,
+    );
+    expect(taskListHoverBlock).toMatch(
+      /border-color:\s*var\(--markdown-task-list-hover-border-color\);/,
+    );
+    expect(taskListFocusBlock).toMatch(
+      /background:\s*var\(--markdown-task-list-hover-background\);/,
+    );
+    expect(taskListFocusBlock).toMatch(
+      /border-color:\s*var\(--markdown-task-list-hover-border-color\);/,
+    );
+    expect(taskListFocusBlock).toMatch(
+      /box-shadow:\s*0 0 0 3px var\(--markdown-task-list-focus-ring-color\);/,
+    );
+    expect(taskListNestedBlock).toMatch(/max-width:\s*100%;/);
+    expect(taskListNestedBlock).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(mobileTaskListBlock).toMatch(/padding:\s*9px 10px;/);
+    expect(mobileTaskListBlock).toMatch(/max-width:\s*100%;/);
 
     expect(taskCheckboxBlock).toMatch(/appearance:\s*none;/);
     expect(taskCheckboxBlock).toMatch(
@@ -11755,9 +11930,18 @@ describe("Gemini visual migration shell", () => {
     expect(taskCheckboxBlock).toMatch(
       /accent-color:\s*var\(--markdown-task-checkbox-checked-background\);/,
     );
+    expect(taskCheckboxBlock).toMatch(
+      /transition:[\s\S]*background 0\.16s ease,[\s\S]*border-color 0\.16s ease,[\s\S]*box-shadow 0\.16s ease;/,
+    );
     expect(taskCheckboxBeforeBlock).toMatch(/clip-path:\s*polygon\(/);
     expect(taskCheckboxBeforeBlock).toMatch(
       /box-shadow:\s*inset 1em 1em var\(--markdown-task-checkbox-check-color\);/,
+    );
+    expect(taskCheckboxHoverBlock).toMatch(
+      /border-color:\s*var\(--markdown-task-checkbox-hover-border-color\);/,
+    );
+    expect(taskCheckboxHoverBlock).toMatch(
+      /background:\s*var\(--markdown-task-checkbox-hover-background\);/,
     );
     expect(taskCheckboxCheckedBlock).toMatch(
       /background:\s*var\(--markdown-task-checkbox-checked-background\);/,
@@ -11767,6 +11951,9 @@ describe("Gemini visual migration shell", () => {
       /outline:\s*2px solid var\(--markdown-task-checkbox-focus-ring-color\);/,
     );
     expect(taskCheckboxFocusBlock).toMatch(/outline-offset:\s*2px;/);
+    expect(taskCheckboxFocusBlock).toMatch(
+      /box-shadow:\s*0 0 0 3px var\(--markdown-task-list-focus-ring-color\);/,
+    );
     expect(taskCheckboxDisabledBlock).toMatch(/cursor:\s*default;/);
     expect(taskCheckboxDisabledBlock).toMatch(/opacity:\s*1;/);
     expect(taskCheckboxDisabledBlock).toMatch(
@@ -11790,6 +11977,12 @@ describe("Gemini visual migration shell", () => {
       /transition-duration:\s*0\.01ms !important;/,
     );
     expect(reducedMotionTaskCheckboxBeforeBlock).not.toMatch(
+      /transform:\s*none !important;/,
+    );
+    expect(reducedMotionTaskInteractiveBlock).toMatch(
+      /transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(reducedMotionTaskInteractiveBlock).not.toMatch(
       /transform:\s*none !important;/,
     );
     expect(utilityToneScope).not.toMatch(
