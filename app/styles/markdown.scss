@@ -164,6 +164,41 @@ summary,
     var(--black-50) 10%,
     transparent
   );
+  --markdown-details-summary-hover-background: color-mix(
+    in srgb,
+    var(--primary) 7%,
+    var(--surface-elevated)
+  );
+  --markdown-details-summary-active-background: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    var(--surface-soft)
+  );
+  --markdown-details-summary-hover-color: color-mix(
+    in srgb,
+    var(--primary) 74%,
+    var(--black)
+  );
+  --markdown-details-marker-background: color-mix(
+    in srgb,
+    var(--primary) 8%,
+    var(--surface-soft)
+  );
+  --markdown-details-marker-color: color-mix(
+    in srgb,
+    var(--black-50) 82%,
+    var(--primary) 18%
+  );
+  --markdown-details-marker-hover-background: color-mix(
+    in srgb,
+    var(--primary) 12%,
+    var(--surface-elevated)
+  );
+  --markdown-details-marker-hover-color: color-mix(
+    in srgb,
+    var(--primary) 82%,
+    var(--black)
+  );
   --markdown-list-marker-color: color-mix(
     in srgb,
     var(--primary) 72%,
@@ -728,6 +763,21 @@ summary,
     var(--black-50) 12%,
     transparent
   );
+  --markdown-table-scrollbar-thumb-color: color-mix(
+    in srgb,
+    var(--primary) 22%,
+    var(--surface-soft)
+  );
+  --markdown-table-scrollbar-track-color: color-mix(
+    in srgb,
+    var(--surface-elevated) 64%,
+    transparent
+  );
+  --markdown-table-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
   --markdown-table-focus-border-color: color-mix(
     in srgb,
     var(--primary) 24%,
@@ -1023,6 +1073,41 @@ summary,
     in srgb,
     var(--black) 10%,
     transparent
+  );
+  --markdown-details-summary-hover-background: color-mix(
+    in srgb,
+    var(--primary) 12%,
+    var(--surface)
+  );
+  --markdown-details-summary-active-background: color-mix(
+    in srgb,
+    var(--primary) 16%,
+    var(--surface-soft)
+  );
+  --markdown-details-summary-hover-color: color-mix(
+    in srgb,
+    var(--primary) 52%,
+    var(--black)
+  );
+  --markdown-details-marker-background: color-mix(
+    in srgb,
+    var(--primary) 12%,
+    var(--surface-soft)
+  );
+  --markdown-details-marker-color: color-mix(
+    in srgb,
+    var(--black) 74%,
+    var(--primary) 26%
+  );
+  --markdown-details-marker-hover-background: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    var(--surface)
+  );
+  --markdown-details-marker-hover-color: color-mix(
+    in srgb,
+    var(--primary) 58%,
+    var(--black)
   );
   --markdown-list-marker-color: color-mix(
     in srgb,
@@ -1586,6 +1671,21 @@ summary,
   --markdown-table-cell-border-color: color-mix(
     in srgb,
     var(--black) 10%,
+    transparent
+  );
+  --markdown-table-scrollbar-thumb-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 28%,
+    var(--surface-soft)
+  );
+  --markdown-table-scrollbar-track-color: color-mix(
+    in srgb,
+    var(--surface-elevated) 54%,
+    transparent
+  );
+  --markdown-table-hover-border-color: color-mix(
+    in srgb,
+    var(--markdown-link-color) 24%,
     transparent
   );
   --markdown-table-focus-border-color: color-mix(
@@ -2823,6 +2923,14 @@ summary,
   background: var(--markdown-table-shell-background);
   border: 1px solid var(--markdown-table-shell-border-color);
   border-radius: var(--markdown-table-shell-radius);
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    background 0.16s ease;
+}
+
+.markdown-table-scroll-shell:hover {
+  border-color: var(--markdown-table-hover-border-color);
 }
 
 .markdown-table-scroll-shell:focus-within {
@@ -2837,6 +2945,9 @@ summary,
   overflow-y: hidden;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--markdown-table-scrollbar-thumb-color)
+    var(--markdown-table-scrollbar-track-color);
   -webkit-overflow-scrolling: touch;
 }
 
@@ -2946,14 +3057,58 @@ summary,
   gap: 6px;
   margin: -10px -12px;
   padding: 8px 12px;
+  border-radius: 7px;
+  color: var(--markdown-details-marker-color);
   line-height: 1.45;
   overflow-wrap: anywhere;
+  transition:
+    background 0.16s ease,
+    color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.markdown-body details:not(.markdown-thinking) > summary::before {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin-right: 0;
+  border-radius: 999px;
+  background: var(--markdown-details-marker-background);
+  color: var(--markdown-details-marker-color);
+  font-size: 0.78em;
+  transition:
+    transform 0.18s ease,
+    background 0.16s ease,
+    color 0.16s ease;
 }
 
 .markdown-body details:not(.markdown-thinking)[open] > summary {
   margin-bottom: 10px;
   border-bottom: 1px solid var(--markdown-details-summary-border-color);
   background: var(--markdown-details-summary-background);
+}
+
+.markdown-body details:not(.markdown-thinking) > summary:hover {
+  background: var(--markdown-details-summary-hover-background);
+  color: var(--markdown-details-summary-hover-color);
+
+  &::before {
+    background: var(--markdown-details-marker-hover-background);
+    color: var(--markdown-details-marker-hover-color);
+  }
+}
+
+.markdown-body details:not(.markdown-thinking) > summary:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring-shadow);
+}
+
+.markdown-body details:not(.markdown-thinking) > summary:active {
+  background: var(--markdown-details-summary-active-background);
 }
 
 .markdown-body details:not(.markdown-thinking) > *:not(summary) {
@@ -4911,6 +5066,10 @@ summary,
 
 @media (prefers-reduced-motion: reduce) {
   .markdown-body pre .show-hide-button button,
+  .markdown-table-scroll-shell,
+  .markdown-table-scroll-fade,
+  .markdown-body details:not(.markdown-thinking) > summary,
+  .markdown-body details:not(.markdown-thinking) > summary::before,
   .markdown-body details.markdown-thinking .thinking-loader,
   .markdown-body
     details.markdown-thinking

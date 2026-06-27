@@ -29,6 +29,13 @@ function readCssBlock(source: string, selector: string) {
   return "";
 }
 
+function readLastCssBlock(source: string, selector: string) {
+  const selectorIndex = source.lastIndexOf(selector);
+  if (selectorIndex < 0) return "";
+
+  return readCssBlock(source.slice(selectorIndex), selector);
+}
+
 function readCssBlockContainingSelector(source: string, selector: string) {
   const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const selectorMatch = new RegExp(
@@ -10107,6 +10114,14 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-table-scroll-shell",
     );
+    const tableShellHoverBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-table-scroll-shell:hover",
+    );
+    const tableShellFocusWithinBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-table-scroll-shell:focus-within",
+    );
     const tableShellSpacingBlock = readCssBlock(
       markdownStyles,
       ".markdown-body .markdown-table-scroll-shell",
@@ -10177,8 +10192,15 @@ describe("Gemini visual migration shell", () => {
       mobileMarkdownBlock,
       ".markdown-body table td",
     );
+    const reducedMotionBlock = readLastCssBlock(
+      markdownStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
     const tableToneScope = [
       tableShellBlock,
+      tableShellHoverBlock,
+      tableShellFocusWithinBlock,
+      tableViewportBlock,
       tableFadeStartBlock,
       tableFadeEndBlock,
       tableHeaderBlock,
@@ -10194,15 +10216,47 @@ describe("Gemini visual migration shell", () => {
       "--markdown-table-edge-surface",
       "--markdown-table-header-background",
       "--markdown-table-cell-border-color",
+      "--markdown-table-scrollbar-thumb-color",
+      "--markdown-table-scrollbar-track-color",
+      "--markdown-table-hover-border-color",
       "--markdown-table-row-background",
       "--markdown-table-row-alt-background",
       "--markdown-table-row-hover-background",
     ];
+    const tableInteractionTokenNames = [
+      "--markdown-table-scrollbar-thumb-color",
+      "--markdown-table-scrollbar-track-color",
+      "--markdown-table-hover-border-color",
+    ];
+    const lightTableInteractionTokens = readCustomProperties(
+      lightMixinBlock,
+      tableInteractionTokenNames,
+    );
+    const darkTableInteractionTokens = readCustomProperties(
+      darkMixinBlock,
+      tableInteractionTokenNames,
+    );
 
     for (const tokenName of tableTokenNames) {
       expect(lightMixinBlock).toContain(tokenName);
       expect(darkMixinBlock).toContain(tokenName);
     }
+    expect(lightTableInteractionTokens).toEqual({
+      "--markdown-table-scrollbar-thumb-color":
+        "color-mix( in srgb, var(--primary) 22%, var(--surface-soft) )",
+      "--markdown-table-scrollbar-track-color":
+        "color-mix( in srgb, var(--surface-elevated) 64%, transparent )",
+      "--markdown-table-hover-border-color":
+        "color-mix( in srgb, var(--primary) 18%, transparent )",
+    });
+    expect(darkTableInteractionTokens).toEqual({
+      "--markdown-table-scrollbar-thumb-color":
+        "color-mix( in srgb, var(--markdown-link-color) 28%, var(--surface-soft) )",
+      "--markdown-table-scrollbar-track-color":
+        "color-mix( in srgb, var(--surface-elevated) 54%, transparent )",
+      "--markdown-table-hover-border-color":
+        "color-mix( in srgb, var(--markdown-link-color) 24%, transparent )",
+    });
 
     expect(lightMixinBlock).toMatch(
       /--markdown-table-shell-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 72%,\s*transparent\s*\);/,
@@ -10278,9 +10332,21 @@ describe("Gemini visual migration shell", () => {
     expect(tableShellBlock).toMatch(
       /background:\s*var\(--markdown-table-shell-background\);/,
     );
+    expect(tableShellBlock).toMatch(
+      /transition:[\s\S]*border-color 0\.16s ease,[\s\S]*box-shadow 0\.16s ease,[\s\S]*background 0\.16s ease;/,
+    );
     expect(tableShellBlock).toMatch(/overflow:\s*hidden;/);
     expect(tableShellBlock).toMatch(
       /max-width:\s*var\(--markdown-table-shell-max-width\);/,
+    );
+    expect(tableShellHoverBlock).toMatch(
+      /border-color:\s*var\(--markdown-table-hover-border-color\);/,
+    );
+    expect(tableShellFocusWithinBlock).toMatch(
+      /border-color:\s*var\(--markdown-table-focus-border-color\);/,
+    );
+    expect(tableShellFocusWithinBlock).toMatch(
+      /box-shadow:\s*var\(--markdown-table-focus-shadow-size\) var\(--markdown-table-focus-shadow-color\);/,
     );
     expect(tableShellSpacingBlock).toMatch(
       /margin:\s*0 0 var\(--markdown-block-gap\);/,
@@ -10290,6 +10356,10 @@ describe("Gemini visual migration shell", () => {
     expect(tableViewportBlock).toMatch(/overscroll-behavior-x:\s*contain;/);
     expect(tableViewportBlock).toMatch(/-webkit-overflow-scrolling:\s*touch;/);
     expect(tableViewportBlock).toMatch(/scrollbar-width:\s*thin;/);
+    expect(tableViewportBlock).toMatch(/scrollbar-gutter:\s*stable;/);
+    expect(tableViewportBlock).toMatch(
+      /scrollbar-color:\s*var\(--markdown-table-scrollbar-thumb-color\)\s+var\(--markdown-table-scrollbar-track-color\);/,
+    );
     expect(tableViewportFocusVisibleBlock).toMatch(
       /outline:\s*var\(--focus-ring\);/,
     );
@@ -10349,7 +10419,7 @@ describe("Gemini visual migration shell", () => {
       /\.markdown-body table tr:nth-child\(2n\)\s*\{/,
     );
     expect(tableToneScope).not.toMatch(
-      /rgba\(60,\s*64,\s*67|rgba\(255,\s*255,\s*255|var\(--color-border-muted\)|var\(--color-canvas-default\)/,
+      /rgba\(60,\s*64,\s*67|rgba\(255,\s*255,\s*255|var\(--color-border-muted\)|var\(--color-canvas-default\)|#[\da-fA-F]{3,8}/,
     );
     expect(
       [
@@ -10362,6 +10432,9 @@ describe("Gemini visual migration shell", () => {
         )
         ?.join("\n"),
     ).not.toContain("transparent");
+    expect(reducedMotionBlock).toMatch(
+      /\.markdown-table-scroll-shell,[\s\S]*\.markdown-table-scroll-fade,[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
   });
 
   test("keeps Gemini-style LaTeX display math bounded", () => {
@@ -10618,15 +10691,49 @@ describe("Gemini visual migration shell", () => {
       detailsSummaryBlock,
       "&:active",
     );
+    const ordinaryDetailsSummaryBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body details:not(.markdown-thinking) > summary",
+    );
+    const ordinaryDetailsSummaryBeforeBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body details:not(.markdown-thinking) > summary::before",
+    );
+    const ordinaryOpenDetailsSummaryBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body details:not(.markdown-thinking)[open] > summary",
+    );
+    const ordinaryDetailsSummaryHoverBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body details:not(.markdown-thinking) > summary:hover",
+    );
+    const ordinaryDetailsSummaryFocusVisibleBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body details:not(.markdown-thinking) > summary:focus-visible",
+    );
+    const ordinaryDetailsSummaryActiveBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body details:not(.markdown-thinking) > summary:active",
+    );
     const lightMixinBlock = readCssBlock(markdownStyles, "@mixin light");
     const darkMixinBlock = readCssBlock(markdownStyles, "@mixin dark");
     const autoDarkRootBlock = readCssBlock(
       readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
       ":root",
     );
+    const reducedMotionBlock = readLastCssBlock(
+      markdownStyles,
+      "@media (prefers-reduced-motion: reduce)",
+    );
     const detailsDisclosureToneScope = [
       detailsSummaryHoverBlock,
       detailsSummaryHoverBeforeBlock,
+      ordinaryDetailsSummaryBlock,
+      ordinaryDetailsSummaryBeforeBlock,
+      ordinaryOpenDetailsSummaryBlock,
+      ordinaryDetailsSummaryHoverBlock,
+      ordinaryDetailsSummaryFocusVisibleBlock,
+      ordinaryDetailsSummaryActiveBlock,
       lightMixinBlock.match(
         /--markdown-disclosure-hover-color:[\s\S]*?;/,
       )?.[0] ?? "",
@@ -10635,6 +10742,56 @@ describe("Gemini visual migration shell", () => {
       )?.[0] ?? "",
     ].join("\n");
 
+    const detailsInteractionTokenNames = [
+      "--markdown-details-summary-hover-background",
+      "--markdown-details-summary-active-background",
+      "--markdown-details-summary-hover-color",
+      "--markdown-details-marker-background",
+      "--markdown-details-marker-color",
+      "--markdown-details-marker-hover-background",
+      "--markdown-details-marker-hover-color",
+    ];
+
+    for (const tokenName of detailsInteractionTokenNames) {
+      expect(lightMixinBlock).toContain(tokenName);
+      expect(darkMixinBlock).toContain(tokenName);
+    }
+    expect(readCustomProperties(lightMixinBlock, detailsInteractionTokenNames)).toEqual(
+      {
+        "--markdown-details-summary-hover-background":
+          "color-mix( in srgb, var(--primary) 7%, var(--surface-elevated) )",
+        "--markdown-details-summary-active-background":
+          "color-mix( in srgb, var(--primary) 10%, var(--surface-soft) )",
+        "--markdown-details-summary-hover-color":
+          "color-mix( in srgb, var(--primary) 74%, var(--black) )",
+        "--markdown-details-marker-background":
+          "color-mix( in srgb, var(--primary) 8%, var(--surface-soft) )",
+        "--markdown-details-marker-color":
+          "color-mix( in srgb, var(--black-50) 82%, var(--primary) 18% )",
+        "--markdown-details-marker-hover-background":
+          "color-mix( in srgb, var(--primary) 12%, var(--surface-elevated) )",
+        "--markdown-details-marker-hover-color":
+          "color-mix( in srgb, var(--primary) 82%, var(--black) )",
+      },
+    );
+    expect(readCustomProperties(darkMixinBlock, detailsInteractionTokenNames)).toEqual(
+      {
+        "--markdown-details-summary-hover-background":
+          "color-mix( in srgb, var(--primary) 12%, var(--surface) )",
+        "--markdown-details-summary-active-background":
+          "color-mix( in srgb, var(--primary) 16%, var(--surface-soft) )",
+        "--markdown-details-summary-hover-color":
+          "color-mix( in srgb, var(--primary) 52%, var(--black) )",
+        "--markdown-details-marker-background":
+          "color-mix( in srgb, var(--primary) 12%, var(--surface-soft) )",
+        "--markdown-details-marker-color":
+          "color-mix( in srgb, var(--black) 74%, var(--primary) 26% )",
+        "--markdown-details-marker-hover-background":
+          "color-mix( in srgb, var(--primary) 18%, var(--surface) )",
+        "--markdown-details-marker-hover-color":
+          "color-mix( in srgb, var(--primary) 58%, var(--black) )",
+      },
+    );
     expect(lightMixinBlock).toMatch(
       /--markdown-disclosure-hover-color:\s*var\(--primary\);/,
     );
@@ -10664,6 +10821,55 @@ describe("Gemini visual migration shell", () => {
       /box-shadow:\s*var\(--focus-ring-shadow\);/,
     );
     expect(detailsSummaryActiveBlock).toMatch(/background:\s*none;/);
+    expect(ordinaryDetailsSummaryBlock).toMatch(
+      /color:\s*var\(--markdown-details-marker-color\);/,
+    );
+    expect(ordinaryDetailsSummaryBlock).toMatch(/border-radius:\s*7px;/);
+    expect(ordinaryDetailsSummaryBlock).toMatch(
+      /transition:[\s\S]*background 0\.16s ease,[\s\S]*color 0\.16s ease,[\s\S]*box-shadow 0\.16s ease;/,
+    );
+    expect(ordinaryDetailsSummaryBeforeBlock).toMatch(
+      /background:\s*var\(--markdown-details-marker-background\);/,
+    );
+    expect(ordinaryDetailsSummaryBeforeBlock).toMatch(
+      /color:\s*var\(--markdown-details-marker-color\);/,
+    );
+    expect(ordinaryDetailsSummaryBeforeBlock).toMatch(/border-radius:\s*999px;/);
+    expect(ordinaryDetailsSummaryBeforeBlock).toMatch(/width:\s*18px;/);
+    expect(ordinaryDetailsSummaryBeforeBlock).toMatch(/height:\s*18px;/);
+    expect(ordinaryOpenDetailsSummaryBlock).toMatch(
+      /background:\s*var\(--markdown-details-summary-background\);/,
+    );
+    expect(
+      markdownStyles.indexOf(
+        ".markdown-body details:not(.markdown-thinking)[open] > summary",
+      ),
+    ).toBeLessThan(
+      markdownStyles.indexOf(
+        ".markdown-body details:not(.markdown-thinking) > summary:hover",
+      ),
+    );
+    expect(ordinaryDetailsSummaryHoverBlock).toMatch(
+      /background:\s*var\(--markdown-details-summary-hover-background\);/,
+    );
+    expect(ordinaryDetailsSummaryHoverBlock).toMatch(
+      /color:\s*var\(--markdown-details-summary-hover-color\);/,
+    );
+    expect(ordinaryDetailsSummaryHoverBlock).toMatch(
+      /&::before[\s\S]*background:\s*var\(--markdown-details-marker-hover-background\);/,
+    );
+    expect(ordinaryDetailsSummaryHoverBlock).toMatch(
+      /&::before[\s\S]*color:\s*var\(--markdown-details-marker-hover-color\);/,
+    );
+    expect(ordinaryDetailsSummaryFocusVisibleBlock).toMatch(
+      /box-shadow:\s*var\(--focus-ring-shadow\);/,
+    );
+    expect(ordinaryDetailsSummaryActiveBlock).toMatch(
+      /background:\s*var\(--markdown-details-summary-active-background\);/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.markdown-body details:not\(\.markdown-thinking\) > summary,[\s\S]*\.markdown-body details:not\(\.markdown-thinking\) > summary::before,[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
     expect(detailsDisclosureToneScope).not.toMatch(
       /(?:rgba?|hsla?|hwb|oklch|oklab|lch|lab|color|device-cmyk)\(|#[0-9a-fA-F]{3,8}\b|rgb\(49,\s*94,\s*248\)/,
     );
