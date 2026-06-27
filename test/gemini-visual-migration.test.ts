@@ -1309,29 +1309,30 @@ describe("Gemini visual migration shell", () => {
       "--sidebar-mobile-account-settings-icon-color",
       "--sidebar-on-primary",
     ]);
+    const sidebarDarkOverrideTokenNames = [
+      "--sidebar-background",
+      "--sidebar-mobile-shadow",
+      "--sidebar-card-hover-background",
+      "--sidebar-card-hover-shadow",
+      "--sidebar-action-active-drop-shadow",
+      "--sidebar-mobile-account-background",
+      "--sidebar-mobile-account-border-color",
+      "--sidebar-mobile-account-hover-background",
+      "--sidebar-mobile-account-shadow-color",
+      "--sidebar-mobile-account-focus-shadow-color",
+      "--sidebar-mobile-account-meta-color",
+      "--sidebar-mobile-account-settings-background",
+      "--sidebar-mobile-account-settings-border-color",
+      "--sidebar-mobile-account-settings-hover-background",
+      "--sidebar-mobile-account-settings-focus-shadow-color",
+    ];
     const darkSidebarOverrideBlock = readCssBlock(
       sidebarBlock,
       ":global(.dark) &",
     );
     const darkSidebarOverrideTokens = readCustomProperties(
       darkSidebarOverrideBlock,
-      [
-        "--sidebar-background",
-        "--sidebar-mobile-shadow",
-        "--sidebar-card-hover-background",
-        "--sidebar-card-hover-shadow",
-        "--sidebar-action-active-drop-shadow",
-        "--sidebar-mobile-account-background",
-        "--sidebar-mobile-account-border-color",
-        "--sidebar-mobile-account-hover-background",
-        "--sidebar-mobile-account-shadow-color",
-        "--sidebar-mobile-account-focus-shadow-color",
-        "--sidebar-mobile-account-meta-color",
-        "--sidebar-mobile-account-settings-background",
-        "--sidebar-mobile-account-settings-border-color",
-        "--sidebar-mobile-account-settings-hover-background",
-        "--sidebar-mobile-account-settings-focus-shadow-color",
-      ],
+      sidebarDarkOverrideTokenNames,
     );
     const autoDarkSidebarSelector = ":global(body:not(.light)) .sidebar";
     const autoDarkSidebarSelectorIndex = homeStyles.indexOf(
@@ -1347,18 +1348,7 @@ describe("Gemini visual migration shell", () => {
     );
     const autoDarkSidebarOverrideTokens = readCustomProperties(
       autoDarkSidebarOverrideBlock,
-      [
-        "--sidebar-mobile-account-background",
-        "--sidebar-mobile-account-border-color",
-        "--sidebar-mobile-account-hover-background",
-        "--sidebar-mobile-account-shadow-color",
-        "--sidebar-mobile-account-focus-shadow-color",
-        "--sidebar-mobile-account-meta-color",
-        "--sidebar-mobile-account-settings-background",
-        "--sidebar-mobile-account-settings-border-color",
-        "--sidebar-mobile-account-settings-hover-background",
-        "--sidebar-mobile-account-settings-focus-shadow-color",
-      ],
+      sidebarDarkOverrideTokenNames,
     );
     const sidebarBodyBlock = readCssBlock(
       homeStyles.slice(homeStyles.lastIndexOf("\n.sidebar-body {")),
@@ -4182,8 +4172,17 @@ describe("Gemini visual migration shell", () => {
       "var(--surface-elevated)",
     );
     expect(darkSidebarOverrideTokens["--sidebar-mobile-shadow"]).toContain(
-      "rgb(0, 0, 0)",
+      "var(--surface)",
     );
+    expect(darkSidebarOverrideTokens["--sidebar-mobile-shadow"]).not.toMatch(
+      /rgb\(|rgba\(|#/,
+    );
+    expect(
+      darkSidebarOverrideTokens["--sidebar-mobile-account-shadow-color"],
+    ).toContain("var(--surface)");
+    expect(
+      darkSidebarOverrideTokens["--sidebar-mobile-account-shadow-color"],
+    ).not.toMatch(/rgb\(|rgba\(|#/);
     expect(
       darkSidebarOverrideTokens["--sidebar-card-hover-background"],
     ).toContain("var(--surface-elevated)");
@@ -4193,18 +4192,7 @@ describe("Gemini visual migration shell", () => {
     expect(
       darkSidebarOverrideTokens["--sidebar-action-active-drop-shadow"],
     ).toContain("var(--primary)");
-    for (const tokenName of [
-      "--sidebar-mobile-account-background",
-      "--sidebar-mobile-account-border-color",
-      "--sidebar-mobile-account-hover-background",
-      "--sidebar-mobile-account-shadow-color",
-      "--sidebar-mobile-account-focus-shadow-color",
-      "--sidebar-mobile-account-meta-color",
-      "--sidebar-mobile-account-settings-background",
-      "--sidebar-mobile-account-settings-border-color",
-      "--sidebar-mobile-account-settings-hover-background",
-      "--sidebar-mobile-account-settings-focus-shadow-color",
-    ]) {
+    for (const tokenName of sidebarDarkOverrideTokenNames) {
       expect(darkSidebarOverrideTokens[tokenName]).toBeTruthy();
       expect(autoDarkSidebarOverrideTokens[tokenName]).toBe(
         darkSidebarOverrideTokens[tokenName],

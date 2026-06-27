@@ -260,14 +260,14 @@
 
   :global(.dark) & {
     --sidebar-background: color-mix(in srgb, var(--surface-elevated) 84%, transparent);
-    --sidebar-mobile-shadow: 0 16px 48px color-mix(in srgb, rgb(0, 0, 0) 44%, transparent);
+    --sidebar-mobile-shadow: 0 16px 48px color-mix(in srgb, var(--surface) 44%, transparent);
     --sidebar-card-hover-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--primary) 14%);
     --sidebar-card-hover-shadow: none;
     --sidebar-action-active-drop-shadow: color-mix(in srgb, var(--primary) 14%, transparent);
     --sidebar-mobile-account-background: color-mix(in srgb, var(--surface-elevated) 70%, transparent);
     --sidebar-mobile-account-border-color: color-mix(in srgb, var(--black) 10%, transparent);
     --sidebar-mobile-account-hover-background: color-mix(in srgb, var(--surface-elevated) 82%, var(--primary) 12%);
-    --sidebar-mobile-account-shadow-color: color-mix(in srgb, rgb(0, 0, 0) 18%, transparent);
+    --sidebar-mobile-account-shadow-color: color-mix(in srgb, var(--surface) 18%, transparent);
     --sidebar-mobile-account-focus-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
     --sidebar-mobile-account-meta-color: color-mix(in srgb, var(--black-50) 82%, transparent);
     --sidebar-mobile-account-settings-background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
@@ -305,10 +305,15 @@
 
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .sidebar {
+    --sidebar-background: color-mix(in srgb, var(--surface-elevated) 84%, transparent);
+    --sidebar-mobile-shadow: 0 16px 48px color-mix(in srgb, var(--surface) 44%, transparent);
+    --sidebar-card-hover-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--primary) 14%);
+    --sidebar-card-hover-shadow: none;
+    --sidebar-action-active-drop-shadow: color-mix(in srgb, var(--primary) 14%, transparent);
     --sidebar-mobile-account-background: color-mix(in srgb, var(--surface-elevated) 70%, transparent);
     --sidebar-mobile-account-border-color: color-mix(in srgb, var(--black) 10%, transparent);
     --sidebar-mobile-account-hover-background: color-mix(in srgb, var(--surface-elevated) 82%, var(--primary) 12%);
-    --sidebar-mobile-account-shadow-color: color-mix(in srgb, rgb(0, 0, 0) 18%, transparent);
+    --sidebar-mobile-account-shadow-color: color-mix(in srgb, var(--surface) 18%, transparent);
     --sidebar-mobile-account-focus-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
     --sidebar-mobile-account-meta-color: color-mix(in srgb, var(--black-50) 82%, transparent);
     --sidebar-mobile-account-settings-background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
