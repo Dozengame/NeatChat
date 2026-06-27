@@ -218,7 +218,6 @@ describe("Gemini visual migration shell", () => {
     const constants = read("app/constant.ts");
     const cnLocale = read("app/locales/cn.ts");
     const enLocale = read("app/locales/en.ts");
-    const qaNotes = read("design-qa.md");
     const gitignore = read(".gitignore");
     const chatActionMenuKeyDownBlock = readFunctionBlock(
       chat,
@@ -4483,8 +4482,7 @@ describe("Gemini visual migration shell", () => {
     expect(enLocale).toContain("PrimarySection:");
     expect(enLocale).toContain("ContentSection:");
     expect(enLocale).toContain("LocalContent:");
-    expect(qaNotes).not.toContain("console `warn/error` logs empty");
-    expect(qaNotes).toContain("known React dev warning");
+    expect(gitignore).toContain("design-qa.md");
     expect(gitignore).toContain("design-prototypes/");
     expect(gitignore).toContain(".DS_Store");
   });
@@ -5025,7 +5023,18 @@ describe("Gemini visual migration shell", () => {
     expect(composerActionBlock).toMatch(
       /border:\s*1px solid var\(--chat-composer-action-border-color\);/,
     );
-    expect(composerActionBlock).toMatch(/transition:[\s\S]*width ease 0\.3s/);
+    expect(composerActionsRootBlock).toMatch(
+      /--chat-composer-action-reveal-delay:\s*0\.12s;/,
+    );
+    expect(composerActionsRootBlock).toMatch(
+      /--chat-composer-action-reveal-duration:\s*0\.18s;/,
+    );
+    expect(composerActionsRootBlock).toMatch(
+      /--chat-composer-action-ease:\s*cubic-bezier\(0\.2,\s*0,\s*0,\s*1\);/,
+    );
+    expect(composerActionBlock).toMatch(
+      /transition:[\s\S]*width var\(--chat-composer-action-reveal-duration\)[\s\S]*var\(--chat-composer-action-ease\)/,
+    );
     expect(composerActionBlock).toMatch(
       /transition:[\s\S]*border-color 0\.18s ease/,
     );
@@ -5040,9 +5049,12 @@ describe("Gemini visual migration shell", () => {
     expect(composerActionTextBlock).toMatch(/opacity:\s*0;/);
     expect(composerActionTextBlock).toMatch(/transform:\s*translateX\(-5px\);/);
     expect(composerActionTextBlock).toMatch(
-      /transition:\s*opacity 0\.2s ease,\s*transform 0\.2s ease;/,
+      /transition:[\s\S]*opacity var\(--chat-composer-action-reveal-duration\)[\s\S]*var\(--chat-composer-action-ease\),[\s\S]*transform var\(--chat-composer-action-reveal-duration\)[\s\S]*var\(--chat-composer-action-ease\);/,
     );
     expect(composerActionTextBlock).toMatch(/pointer-events:\s*none;/);
+    expect(composerActionHoverBlock).toMatch(
+      /--delay:\s*var\(--chat-composer-action-reveal-delay\);/,
+    );
     expect(composerActionHoverBlock).toMatch(
       /background-color:\s*var\(--chat-composer-action-hover-background\);/,
     );
@@ -5058,6 +5070,9 @@ describe("Gemini visual migration shell", () => {
     expect(composerActionHoverTextBlock).toMatch(/opacity:\s*1;/);
     expect(composerActionHoverTextBlock).toMatch(/transform:\s*translateX\(0\);/);
     expect(composerActionFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(composerActionFocusBlock).toMatch(
+      /--delay:\s*var\(--chat-composer-action-reveal-delay\);/,
+    );
     expect(composerActionFocusBlock).toMatch(/outline-offset:\s*2px;/);
     expect(composerActionFocusBlock).toMatch(
       /box-shadow:\s*var\(--focus-ring-shadow\),\s*0 8px 20px var\(--chat-composer-action-focus-shadow-color\);/,
@@ -20038,6 +20053,10 @@ describe("Gemini visual migration shell", () => {
       /const remainingImageSlots = Math\.max\(\s*0,\s*3 - attachImagesRef\.current\.length,\s*\);/,
     );
     expect(dropzoneBlock).toMatch(/isolation:\s*isolate;/);
+    expect(dropzoneBlock).toMatch(/contain:\s*paint;/);
+    expect(dropzoneBlock).toMatch(
+      /will-change:\s*opacity,\s*backdrop-filter,/,
+    );
     expect(dropzoneBlock).toMatch(/pointer-events:\s*none;/);
     expect(dropzoneBlock).toMatch(
       /--chat-dropzone-active-background:\s*color-mix\(in srgb,\s*var\(--surface\) 58%,\s*transparent\);/,
@@ -20208,6 +20227,9 @@ describe("Gemini visual migration shell", () => {
     expect(activeDropzoneBeforeBlock).toMatch(/opacity:\s*1;/);
     expect(dropzoneContentBlock).toMatch(/scale\(0\.96\)/);
     expect(dropzoneContentBlock).toMatch(/position:\s*relative;/);
+    expect(dropzoneContentBlock).toMatch(
+      /will-change:\s*transform,\s*opacity,\s*border-color,\s*box-shadow;/,
+    );
     expect(dropzoneContentBlock).toMatch(/overflow:\s*hidden;/);
     expect(dropzoneContentBlock).toMatch(
       /backdrop-filter:\s*blur\(22px\) saturate\(180%\);/,
@@ -20327,6 +20349,9 @@ describe("Gemini visual migration shell", () => {
     expect(reducedMotionBlock).toContain(".chat-dropzone::before");
     expect(reducedMotionBlock).toMatch(
       /\.chat-dropzone::before,\s*\.chat-dropzone-content::before,\s*\.chat-dropzone,\s*\.chat-dropzone-content\s*\{[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(reducedMotionBlock).toMatch(
+      /\.chat-dropzone::before,\s*\.chat-dropzone-content::before,\s*\.chat-dropzone,\s*\.chat-dropzone-content\s*\{[\s\S]*will-change:\s*auto;/,
     );
     expect(reducedMotionBlock).toMatch(
       /\.chat-dropzone-icon,\s*\.chat-dropzone-summary\s*\{[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
@@ -21116,11 +21141,18 @@ describe("Gemini visual migration shell", () => {
     expect(streamingRevealBlock).toMatch(/overflow-anchor:\s*none;/);
     expect(streamingRevealBlock).toMatch(/overflow:\s*hidden;/);
     expect(streamingRevealBlock).toMatch(/isolation:\s*isolate;/);
+    expect(streamingRevealBlock).toMatch(/contain:\s*paint;/);
+    expect(streamingRevealBlock).toMatch(
+      /will-change:\s*box-shadow,\s*border-color;/,
+    );
     expect(streamingRevealBlock).toMatch(
       /animation:\s*streamingSurfaceHandoff 0\.42s cubic-bezier\(0\.2,\s*0,\s*0,\s*1\) both;/,
     );
     expect(streamingRevealBlock).toContain(":global(.markdown-body-container)");
     expect(streamingRevealBlock).toMatch(/transform-origin:\s*top left;/);
+    expect(streamingRevealBlock).toMatch(
+      /will-change:\s*transform,\s*opacity;/,
+    );
     expect(streamingRevealBlock).toMatch(
       /animation:\s*streamingTextReveal 0\.24s cubic-bezier\(0\.2,\s*0,\s*0,\s*1\) both;/,
     );
@@ -21162,7 +21194,7 @@ describe("Gemini visual migration shell", () => {
       /\.chat-message-streaming-reveal[\s\S]*&::after[\s\S]*display:\s*none;/,
     );
     expect(reducedMotionBlock).toMatch(
-      /\.chat-message-streaming-reveal[\s\S]*animation:\s*none !important;[\s\S]*box-shadow:\s*none !important;/,
+      /\.chat-message-streaming-reveal[\s\S]*animation:\s*none !important;[\s\S]*box-shadow:\s*none !important;[\s\S]*will-change:\s*auto;/,
     );
     expect(markdownReducedMotionBlock).toMatch(
       /\.markdown-loading-dot[\s\S]*animation:\s*none !important;[\s\S]*box-shadow:[\s\S]*var\(--markdown-loading-dot-secondary\)[\s\S]*var\(--markdown-loading-dot-trailing\);/,
