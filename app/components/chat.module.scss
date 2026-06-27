@@ -3912,15 +3912,9 @@
   box-sizing: border-box;
   display: flex;
   margin-top: 8px;
-
-  // Required by Jest tests, DO NOT delete or reorder:
+  opacity: 0;
   transform: translateY(4px);
   pointer-events: none;
-
-  // Real styling overrides:
-  opacity: 0.3;
-  pointer-events: auto !important;
-  transform: none !important;
   transition: opacity 0.2s ease;
 }
 
@@ -4109,6 +4103,13 @@
 }
 
 @media (hover: none), (pointer: coarse) {
+  .chat-message-actions {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
   .chat-message-action-rail .chat-input-action {
     &:hover {
       background: var(--message-action-button-background);
@@ -4169,6 +4170,8 @@
 
     .chat-message-actions {
       opacity: 1;
+      pointer-events: auto;
+      transform: none;
     }
 
     .chat-message-action-date {
@@ -4178,6 +4181,8 @@
 
   &:focus-within .chat-message-actions {
     opacity: 1;
+    pointer-events: auto;
+    transform: none;
   }
 }
 

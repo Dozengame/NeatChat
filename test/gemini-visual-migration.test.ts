@@ -17995,6 +17995,10 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-input-action-menu",
     );
+    const messageContainerBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-container",
+    );
     const messageActionRailBlock = readCssBlock(
       chatStyles,
       ".chat-message-action-rail",
@@ -18034,6 +18038,10 @@ describe("Gemini visual migration shell", () => {
       chatStyles.slice(mobileMessageActionMediaIndex),
       "@media only screen and (max-width: 600px)",
     );
+    const mobileMessageActionsBlock = readCssBlock(
+      mobileChatStyles,
+      ".chat-message-actions",
+    );
     const mobileMessageActionRailBlock = readCssBlock(
       mobileChatStyles,
       ".chat-message-action-rail",
@@ -18045,6 +18053,10 @@ describe("Gemini visual migration shell", () => {
     const touchMessageActionMediaBlock = readCssBlock(
       chatStyles.slice(chatStyles.indexOf(".chat-message-action-rail")),
       "@media (hover: none), (pointer: coarse)",
+    );
+    const touchMessageActionsBlock = readCssBlock(
+      touchMessageActionMediaBlock,
+      ".chat-message-actions",
     );
     const touchMessageActionButtonBlock = readCssBlock(
       touchMessageActionMediaBlock,
@@ -18104,9 +18116,20 @@ describe("Gemini visual migration shell", () => {
     );
     expect(autoDarkMessageActionTokens).toEqual(darkMessageActionTokens);
     expect(messageActionsBlock).toMatch(/margin-top:\s*8px;/);
-    expect(messageActionsBlock).toMatch(/pointer-events:\s*auto\s*!important;/);
-    expect(messageActionsBlock).toMatch(/transform:\s*none\s*!important;/);
+    expect(messageActionsBlock).toMatch(/opacity:\s*0;/);
+    expect(messageActionsBlock).toMatch(/pointer-events:\s*none;/);
+    expect(messageActionsBlock).toMatch(/transform:\s*translateY\(4px\);/);
     expect(messageActionsBlock).toMatch(/transition:\s*opacity 0\.2s ease;/);
+    expect(messageActionsBlock).not.toMatch(
+      /pointer-events:\s*auto\s*!important;/,
+    );
+    expect(messageActionsBlock).not.toMatch(/transform:\s*none\s*!important;/);
+    expect(messageContainerBlock).toMatch(
+      /&:hover[\s\S]*\.chat-message-actions\s*\{[\s\S]*opacity:\s*1;[\s\S]*pointer-events:\s*auto;[\s\S]*transform:\s*none;/,
+    );
+    expect(messageContainerBlock).toMatch(
+      /&:focus-within \.chat-message-actions\s*\{[\s\S]*opacity:\s*1;[\s\S]*pointer-events:\s*auto;[\s\S]*transform:\s*none;/,
+    );
     expect(messageActionRailRootBlock).toMatch(/display:\s*inline-flex;/);
     expect(messageActionRailRootBlock).toMatch(/flex-wrap:\s*wrap;/);
     expect(messageActionRailRootBlock).toMatch(/border-radius:\s*999px;/);
@@ -18176,6 +18199,13 @@ describe("Gemini visual migration shell", () => {
       /svg\[fill="#333"\],\s*svg\[fill="#333333"\],\s*svg\[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
     );
     expect(mobileMessageActionMediaIndex).toBeGreaterThan(-1);
+    expect(mobileMessageActionsBlock).toMatch(/opacity:\s*1\s*!important;/);
+    expect(mobileMessageActionsBlock).toMatch(
+      /pointer-events:\s*auto\s*!important;/,
+    );
+    expect(mobileMessageActionsBlock).toMatch(
+      /transform:\s*none\s*!important;/,
+    );
     expect(mobileMessageActionRailBlock).toMatch(/gap:\s*3px;/);
     expect(mobileMessageActionButtonBlock).toMatch(/width:\s*34px;/);
     expect(mobileMessageActionButtonBlock).toMatch(/height:\s*34px;/);
@@ -18190,6 +18220,13 @@ describe("Gemini visual migration shell", () => {
     );
     expect(touchMessageActionButtonBlock).toMatch(
       /&:hover[\s\S]*box-shadow:\s*none;/,
+    );
+    expect(touchMessageActionsBlock).toMatch(/opacity:\s*1\s*!important;/);
+    expect(touchMessageActionsBlock).toMatch(
+      /pointer-events:\s*auto\s*!important;/,
+    );
+    expect(touchMessageActionsBlock).toMatch(
+      /transform:\s*none\s*!important;/,
     );
     expect(touchMessageActionButtonBlock).toMatch(
       /&:active[\s\S]*background:\s*var\(--message-action-button-active-background\);/,
@@ -18325,7 +18362,15 @@ describe("Gemini visual migration shell", () => {
       autoDarkMessageMetaBlock,
     ].join("\n");
 
-    expect(chat).toContain('styles["chat-message-edit"]');
+    expect([...chat.matchAll(/styles\["chat-message-edit"\]/g)]).toHaveLength(
+      1,
+    );
+    expect(chat).toMatch(
+      /\{!isUser && \(\s*<div className=\{styles\["chat-message-edit"\]\}>/,
+    );
+    expect(chat).not.toMatch(
+      /\{isUser \? \(\s*<div className=\{styles\["chat-message-avatar"\]\}>[\s\S]*styles\["chat-message-edit"\]/,
+    );
     expect(Object.values(lightMessageMetaTokens).every(Boolean)).toBeTruthy();
     expect(Object.values(darkMessageMetaTokens).every(Boolean)).toBeTruthy();
     expect(Object.values(autoDarkMessageMetaTokens).every(Boolean)).toBeTruthy();
