@@ -20235,15 +20235,56 @@ describe("Gemini visual migration shell", () => {
       '.markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after',
       '.markdown-body[data-streaming="true"] > blockquote:last-child > :is(ul, ol):last-child > li:last-child::after',
     ].join(",\n");
+    const markdownStreamingBoundarySelector = [
+      '.markdown-body[data-streaming="true"] > details:not(.markdown-thinking):last-child::after',
+      '.markdown-body[data-streaming="true"] > .markdown-table-scroll-shell:last-child::after',
+      '.markdown-body[data-streaming="true"] > .markdown-artifact-preview:last-child::after',
+      '.markdown-body[data-streaming="true"] > p:last-child > .markdown-image-frame:only-child::after',
+      '.markdown-body[data-streaming="true"] > p:last-child > .markdown-media-frame:only-child::after',
+    ].join(",\n");
+    const markdownStreamingBoundarySelectors = [
+      '.markdown-body[data-streaming="true"] > details:not(.markdown-thinking):last-child::after',
+      '.markdown-body[data-streaming="true"] > .markdown-table-scroll-shell:last-child::after',
+      '.markdown-body[data-streaming="true"] > .markdown-artifact-preview:last-child::after',
+      '.markdown-body[data-streaming="true"] > p:last-child > .markdown-image-frame:only-child::after',
+      '.markdown-body[data-streaming="true"] > p:last-child > .markdown-media-frame:only-child::after',
+    ];
+    const markdownStreamingImageBoundaryOverrideSelector =
+      '.markdown-body[data-streaming="true"] > p:last-child > .markdown-image-frame:only-child::after';
+    const markdownStreamingMediaParagraphSuppressSelector = [
+      '.markdown-body[data-streaming="true"] > p:has(> .markdown-image-frame:only-child):last-child::after',
+      '.markdown-body[data-streaming="true"] > p:has(> .markdown-media-frame:only-child):last-child::after',
+    ].join(",\n");
     const mobileMarkdownStreamingCaretSelector = [
       '.markdown-body[data-streaming="true"] > :is(p, h1, h2, h3, h4, h5, h6):last-child::after',
       '  .markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after',
       '  .markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after',
       '  .markdown-body[data-streaming="true"] > blockquote:last-child > :is(ul, ol):last-child > li:last-child::after',
     ].join(",\n");
+    const mobileMarkdownStreamingBoundarySelector = [
+      '  .markdown-body[data-streaming="true"] > details:not(.markdown-thinking):last-child::after',
+      '  .markdown-body[data-streaming="true"] > .markdown-table-scroll-shell:last-child::after',
+      '  .markdown-body[data-streaming="true"] > .markdown-artifact-preview:last-child::after',
+      '  .markdown-body[data-streaming="true"] > p:last-child > .markdown-image-frame:only-child::after',
+      '  .markdown-body[data-streaming="true"] > p:last-child > .markdown-media-frame:only-child::after',
+    ].join(",\n");
+    const mobileMarkdownStreamingImageBoundaryOverrideSelector =
+      '  .markdown-body[data-streaming="true"] > p:last-child > .markdown-image-frame:only-child::after';
     const markdownStreamingCaretBlock = readCssBlock(
       markdownStyles,
       markdownStreamingCaretSelector,
+    );
+    const markdownStreamingBoundaryBlock = readCssBlock(
+      markdownStyles,
+      markdownStreamingBoundarySelector,
+    );
+    const markdownStreamingImageBoundaryOverrideBlock = readCssBlock(
+      markdownStyles,
+      markdownStreamingImageBoundaryOverrideSelector,
+    );
+    const markdownStreamingMediaParagraphSuppressBlock = readCssBlock(
+      markdownStyles,
+      markdownStreamingMediaParagraphSuppressSelector,
     );
     const markdownBodyAfterBlock = readCssBlock(
       markdownStyles,
@@ -20268,6 +20309,14 @@ describe("Gemini visual migration shell", () => {
     const mobileStreamingCaretBlock = readCssBlock(
       markdownMobileBlock,
       mobileMarkdownStreamingCaretSelector,
+    );
+    const mobileStreamingBoundaryBlock = readCssBlock(
+      markdownMobileBlock,
+      mobileMarkdownStreamingBoundarySelector,
+    );
+    const mobileStreamingImageBoundaryOverrideBlock = readCssBlock(
+      markdownMobileBlock,
+      mobileMarkdownStreamingImageBoundaryOverrideSelector,
     );
     const streamingMobileScope = chatStyles.slice(
       chatStyles.indexOf(".chat-message-shimmer"),
@@ -20410,6 +20459,15 @@ describe("Gemini visual migration shell", () => {
     expect(markdownStyles).toContain(
       '.markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after',
     );
+    expect(markdownStyles).toContain(
+      '.markdown-body[data-streaming="true"] > details:not(.markdown-thinking):last-child::after',
+    );
+    expect(markdownStyles).toContain(
+      '.markdown-body[data-streaming="true"] > .markdown-table-scroll-shell:last-child::after',
+    );
+    expect(markdownStyles).toContain(
+      '.markdown-body[data-streaming="true"] > p:last-child > .markdown-media-frame:only-child::after',
+    );
     expect(markdownStreamingCaretBlock).toMatch(/content:\s*"";/);
     expect(markdownStreamingCaretBlock).toMatch(/display:\s*inline-block;/);
     expect(markdownStreamingCaretBlock).toMatch(/width:\s*7px;/);
@@ -20426,11 +20484,54 @@ describe("Gemini visual migration shell", () => {
       /animation:\s*markdownStreamingCaretPulse 1\.08s ease-in-out infinite;/,
     );
     expect(markdownStreamingCaretBlock).toMatch(/pointer-events:\s*none;/);
+    expect(markdownStreamingBoundaryBlock).toMatch(/content:\s*"";/);
+    expect(markdownStreamingBoundaryBlock).toMatch(/position:\s*absolute;/);
+    expect(markdownStreamingBoundaryBlock).toMatch(/top:\s*10px;/);
+    expect(markdownStreamingBoundaryBlock).toMatch(/right:\s*10px;/);
+    expect(markdownStreamingBoundaryBlock).toMatch(/width:\s*7px;/);
+    expect(markdownStreamingBoundaryBlock).toMatch(/height:\s*18px;/);
+    expect(markdownStreamingBoundaryBlock).toMatch(/border-radius:\s*999px;/);
+    expect(markdownStreamingBoundaryBlock).toMatch(
+      /background:\s*var\(--markdown-streaming-caret-background\);/,
+    );
+    expect(markdownStreamingBoundaryBlock).toMatch(
+      /box-shadow:[\s\S]*var\(--markdown-streaming-caret-border-color\)[\s\S]*var\(--markdown-streaming-caret-shadow-color\);/,
+    );
+    expect(markdownStreamingBoundaryBlock).toMatch(
+      /animation:\s*markdownStreamingCaretPulse 1\.08s ease-in-out infinite;/,
+    );
+    expect(markdownStreamingBoundaryBlock).toMatch(/pointer-events:\s*none;/);
+    expect(markdownStreamingImageBoundaryOverrideBlock).toMatch(
+      /right:\s*auto;/,
+    );
+    expect(markdownStreamingImageBoundaryOverrideBlock).toMatch(
+      /left:\s*10px;/,
+    );
+    expect(markdownStyles).toContain(
+      '.markdown-body[data-streaming="true"] > p:has(> .markdown-image-frame:only-child):last-child::after',
+    );
+    expect(markdownStyles).toContain(
+      '.markdown-body[data-streaming="true"] > p:has(> .markdown-media-frame:only-child):last-child::after',
+    );
+    expect(markdownStreamingMediaParagraphSuppressBlock).toMatch(
+      /content:\s*none;/,
+    );
+    expect(markdownStreamingMediaParagraphSuppressBlock).toMatch(
+      /display:\s*none;/,
+    );
     expect(mobileStreamingCaretBlock).toMatch(/width:\s*6px;/);
     expect(mobileStreamingCaretBlock).toMatch(/max-height:\s*16px;/);
     expect(mobileStreamingCaretBlock).toMatch(/min-height:\s*12px;/);
     expect(mobileStreamingCaretBlock).toMatch(/margin-left:\s*3px;/);
     expect(mobileStreamingCaretBlock).toMatch(/vertical-align:\s*-0\.14em;/);
+    expect(mobileStreamingBoundaryBlock).toMatch(/top:\s*8px;/);
+    expect(mobileStreamingBoundaryBlock).toMatch(/right:\s*8px;/);
+    expect(mobileStreamingBoundaryBlock).toMatch(/width:\s*6px;/);
+    expect(mobileStreamingBoundaryBlock).toMatch(/height:\s*16px;/);
+    expect(mobileStreamingImageBoundaryOverrideBlock).toMatch(
+      /right:\s*auto;/,
+    );
+    expect(mobileStreamingImageBoundaryOverrideBlock).toMatch(/left:\s*8px;/);
     expect(streamingToneScope).not.toMatch(legacyStreamingPaint);
     expect(shimmerBlock).toMatch(/min-height:\s*72px;/);
     expect(shimmerBlock).toContain("&::after");
@@ -20574,6 +20675,14 @@ describe("Gemini visual migration shell", () => {
     expect(markdownReducedMotionBlock).toMatch(
       /\.markdown-body\[data-streaming="true"\] > :is\(p, h1, h2, h3, h4, h5, h6\):last-child::after[\s\S]*animation:\s*none !important;[\s\S]*opacity:\s*0\.72;/,
     );
+    for (const selector of markdownStreamingBoundarySelectors) {
+      expect(markdownReducedMotionBlock).toContain(selector);
+      expect(markdownReducedMotionBlock).toMatch(
+        new RegExp(
+          `${escapeRegExp(selector)}[\\s\\S]*animation:\\s*none !important;[\\s\\S]*opacity:\\s*0\\.72;`,
+        ),
+      );
+    }
   });
 
   test("keeps streaming code blocks visibly active without changing code behavior", () => {

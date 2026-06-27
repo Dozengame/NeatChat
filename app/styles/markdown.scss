@@ -2002,6 +2002,40 @@ summary,
   pointer-events: none;
 }
 
+.markdown-body[data-streaming="true"] > details:not(.markdown-thinking):last-child::after,
+.markdown-body[data-streaming="true"] > .markdown-table-scroll-shell:last-child::after,
+.markdown-body[data-streaming="true"] > .markdown-artifact-preview:last-child::after,
+.markdown-body[data-streaming="true"] > p:last-child > .markdown-image-frame:only-child::after,
+.markdown-body[data-streaming="true"] > p:last-child > .markdown-media-frame:only-child::after {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 7px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--markdown-streaming-caret-background);
+  box-shadow:
+    0 0 0 1px var(--markdown-streaming-caret-border-color),
+    0 4px 12px var(--markdown-streaming-caret-shadow-color);
+  transform-origin: center bottom;
+  animation: markdownStreamingCaretPulse 1.08s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.markdown-body[data-streaming="true"] > p:last-child > .markdown-image-frame:only-child::after {
+  right: auto;
+  left: 10px;
+}
+
+.markdown-body[data-streaming="true"] > p:has(> .markdown-image-frame:only-child):last-child::after,
+.markdown-body[data-streaming="true"] > p:has(> .markdown-media-frame:only-child):last-child::after {
+  content: none;
+  display: none;
+}
+
 .markdown-body .octicon {
   display: inline-block;
   fill: currentColor;
@@ -2336,6 +2370,8 @@ summary,
 
 .markdown-body .markdown-artifact-preview {
   display: block;
+  position: relative;
+  isolation: isolate;
   box-sizing: border-box;
   width: min(100%, var(--markdown-reading-surface-max-width));
   max-width: 100%;
@@ -2891,6 +2927,8 @@ summary,
 }
 
 .markdown-body details:not(.markdown-thinking) {
+  position: relative;
+  isolation: isolate;
   box-sizing: border-box;
   max-width: min(100%, var(--markdown-reading-surface-max-width));
   min-width: 0;
@@ -4753,6 +4791,22 @@ summary,
     vertical-align: -0.14em;
   }
 
+  .markdown-body[data-streaming="true"] > details:not(.markdown-thinking):last-child::after,
+  .markdown-body[data-streaming="true"] > .markdown-table-scroll-shell:last-child::after,
+  .markdown-body[data-streaming="true"] > .markdown-artifact-preview:last-child::after,
+  .markdown-body[data-streaming="true"] > p:last-child > .markdown-image-frame:only-child::after,
+  .markdown-body[data-streaming="true"] > p:last-child > .markdown-media-frame:only-child::after {
+    top: 8px;
+    right: 8px;
+    width: 6px;
+    height: 16px;
+  }
+
+  .markdown-body[data-streaming="true"] > p:last-child > .markdown-image-frame:only-child::after {
+    right: auto;
+    left: 8px;
+  }
+
   .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child)) {
     box-shadow:
       0 0 0 1px var(--markdown-code-streaming-border-color),
@@ -4866,6 +4920,11 @@ summary,
   .markdown-body[data-streaming="true"] > :is(ul, ol):last-child > li:last-child::after,
   .markdown-body[data-streaming="true"] > blockquote:last-child > :last-child::after,
   .markdown-body[data-streaming="true"] > blockquote:last-child > :is(ul, ol):last-child > li:last-child::after,
+  .markdown-body[data-streaming="true"] > details:not(.markdown-thinking):last-child::after,
+  .markdown-body[data-streaming="true"] > .markdown-table-scroll-shell:last-child::after,
+  .markdown-body[data-streaming="true"] > .markdown-artifact-preview:last-child::after,
+  .markdown-body[data-streaming="true"] > p:last-child > .markdown-image-frame:only-child::after,
+  .markdown-body[data-streaming="true"] > p:last-child > .markdown-media-frame:only-child::after,
   .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child)),
   .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))::after,
   .markdown-body-container .token-info {
@@ -4896,6 +4955,17 @@ summary,
   }
 
   .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))::after {
+    opacity: 0.72;
+  }
+
+  .markdown-body[data-streaming="true"] > details:not(.markdown-thinking):last-child::after,
+  .markdown-body[data-streaming="true"] > .markdown-table-scroll-shell:last-child::after,
+  .markdown-body[data-streaming="true"] > .markdown-artifact-preview:last-child::after,
+  .markdown-body[data-streaming="true"] > p:last-child > .markdown-image-frame:only-child::after,
+  .markdown-body[data-streaming="true"] > p:last-child > .markdown-media-frame:only-child::after {
+    animation: none !important;
+    transform: none !important;
+    transition-duration: 0.01ms !important;
     opacity: 0.72;
   }
 }
