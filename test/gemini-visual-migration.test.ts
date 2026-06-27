@@ -1547,6 +1547,10 @@ describe("Gemini visual migration shell", () => {
       chat,
       "const handleModelMenuKeyDown = (event: React.KeyboardEvent<HTMLElement>) =>",
     );
+    const chatActionsViewBlock = readFunctionBlock(
+      chat,
+      "function useChatActionsView(props: ChatActionsProps)",
+    );
 
     expect(chat).toContain('styles["chat-empty-state"]');
     expect(chat).toContain('styles["chat-empty-title"]');
@@ -1567,13 +1571,32 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /const showEmptyHero\s*=\s*showEmptyState\s*&&\s*!hasActiveInputContent\s*&&\s*!showChatActionMenu;/,
     );
+    expect(chat).toContain("const showDesktopModelControls = !showEmptyState;");
     expect(chat).toContain('[styles["chat-body-empty"]]: showEmptyHero');
     expect(chat).toContain("{showEmptyHero && (");
     expect(chat).toContain("Locale.Chat.EmptyTitle");
     expect(chat).not.toContain("你好！想聊点什么？");
     expect(chat).toContain("<ChatActions");
-    expect(chat).toMatch(
-      /!isCompactScreen && config\.enablePromptHints && \([\s\S]*<ChatAction[\s\S]*onClick=\{\(\) => \{[\s\S]*props\.showPromptHints\(\);[\s\S]*props\.onActionComplete\?\.\(\);[\s\S]*\}\}[\s\S]*text=\{Locale\.Chat\.InputActions\.Prompt\}/,
+    expect(chatActionsViewBlock).toContain('aria-label="多模态工具"');
+    expect(chatActionsViewBlock).toContain('aria-label="会话工具"');
+    expect(chatActionsViewBlock).toContain('text={"上传附件"}');
+    expect(chatActionsViewBlock).toContain(
+      'text={props.imageGenerationEnabled ? "关闭图片生成" : "图片生成"}',
+    );
+    expect(chatActionsViewBlock).toContain(
+      "text={Locale.Chat.InputActions.ToBottom}",
+    );
+    expect(chatActionsViewBlock).toContain(
+      "text={Locale.Chat.InputActions.Clear}",
+    );
+    expect(chatActionsViewBlock).not.toContain(
+      "text={Locale.Chat.InputActions.Prompt}",
+    );
+    expect(chatActionsViewBlock).not.toContain(
+      "text={Locale.Chat.ShortcutKey.Title}",
+    );
+    expect(chat).toContain(
+      'if (n === 1 && text === "/" && config.enablePromptHints)',
     );
     expect(chat).toContain("handleUploadAttachments");
     expect(chat).toContain("setImageGenerationEnabled");
@@ -1762,6 +1785,12 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chat).toMatch(
       /className=\{styles\["chat-desktop-model-title"\]\}[\s\S]*aria-label="选择模型和参数"[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*aria-controls="chat-model-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showMobileModelSelector\}/,
+    );
+    expect(chat).toMatch(
+      /\{showDesktopModelControls && \([\s\S]*className=\{styles\["chat-desktop-model-title"\]\}/,
+    );
+    expect(chat).toMatch(
+      /\{showDesktopModelControls && \([\s\S]*className=\{clsx\([\s\S]*styles\["chat-desktop-header-actions"\]/,
     );
     expect(chat).toContain('aria-label="关闭模型选择"');
     expect(chat).toContain('id="chat-model-menu"');
@@ -3722,10 +3751,10 @@ describe("Gemini visual migration shell", () => {
       /--chat-multimodal-section-subtitle-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 92%,\s*transparent\);/,
     );
     expect(actionMenuRootDeclarations).toMatch(
-      /--chat-multimodal-section-divider-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 14%,\s*transparent\);/,
+      /--chat-multimodal-section-divider-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 12%,\s*transparent\);/,
     );
     expect(actionMenuRootDeclarations).toMatch(
-      /--chat-multimodal-section-primary-background:\s*color-mix\(in srgb,\s*var\(--primary\) 7%,\s*transparent\);/,
+      /--chat-multimodal-section-primary-background:\s*color-mix\(in srgb,\s*var\(--primary\) 10%,\s*var\(--surface-elevated\)\);/,
     );
     expect(actionMenuRootDeclarations).toMatch(
       /--chat-input-action-active-background:\s*color-mix\(in srgb,\s*var\(--primary\) 10%,\s*transparent\);/,
@@ -3734,19 +3763,19 @@ describe("Gemini visual migration shell", () => {
       /--chat-input-action-active-color:\s*var\(--primary\);/,
     );
     expect(actionMenuRootDeclarations).toMatch(
-      /--chat-input-action-menu-radius:\s*8px;/,
+      /--chat-input-action-menu-radius:\s*15px;/,
     );
     expect(actionMenuRootDeclarations).toMatch(
       /--chat-input-action-menu-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
     );
     expect(actionMenuRootDeclarations).toMatch(
-      /--chat-input-action-menu-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 94%,\s*transparent\);/,
+      /--chat-input-action-menu-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 96%,\s*var\(--surface-soft\)\);/,
     );
     expect(actionMenuRootDeclarations).toMatch(
-      /--chat-input-action-menu-shadow-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 18%,\s*transparent\);/,
+      /--chat-input-action-menu-shadow-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 22%,\s*transparent\);/,
     );
     expect(actionMenuRootDeclarations).toMatch(
-      /--chat-input-action-menu-accent-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 6%,\s*transparent\);/,
+      /--chat-input-action-menu-accent-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 8%,\s*transparent\);/,
     );
     expect(darkActionMenuMultimodalSectionBlock).toMatch(
       /--chat-multimodal-section-title-color:\s*color-mix\(in srgb,\s*var\(--black\) 94%,\s*transparent\);/,
@@ -3758,7 +3787,7 @@ describe("Gemini visual migration shell", () => {
       /--chat-multimodal-section-divider-color:\s*color-mix\(in srgb,\s*var\(--black\) 9%,\s*transparent\);/,
     );
     expect(darkActionMenuMultimodalSectionBlock).toMatch(
-      /--chat-multimodal-section-primary-background:\s*color-mix\(in srgb,\s*var\(--primary\) 14%,\s*var\(--surface\)\);/,
+      /--chat-multimodal-section-primary-background:\s*color-mix\(in srgb,\s*var\(--primary\) 18%,\s*var\(--surface\)\);/,
     );
     expect(darkActionMenuBlock).toMatch(
       /--chat-input-action-active-background:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*var\(--surface\)\);/,
@@ -3770,7 +3799,7 @@ describe("Gemini visual migration shell", () => {
       /--chat-input-action-menu-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 8%,\s*transparent\);/,
     );
     expect(darkActionMenuBlock).toMatch(
-      /--chat-input-action-menu-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\);/,
+      /--chat-input-action-menu-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--surface\)\);/,
     );
     expect(darkActionMenuBlock).toMatch(
       /--chat-input-action-menu-shadow-color:\s*color-mix\(in srgb,\s*var\(--surface\) 32%,\s*transparent\);/,
@@ -3784,7 +3813,7 @@ describe("Gemini visual migration shell", () => {
       /--chat-multimodal-section-title-color:\s*color-mix\(in srgb,\s*var\(--black\) 94%,\s*transparent\);/,
     );
     expect(autoDarkActionMenuMultimodalBlock).toMatch(
-      /--chat-multimodal-section-primary-background:\s*color-mix\(in srgb,\s*var\(--primary\) 14%,\s*var\(--surface\)\);/,
+      /--chat-multimodal-section-primary-background:\s*color-mix\(in srgb,\s*var\(--primary\) 18%,\s*var\(--surface\)\);/,
     );
     expect(autoDarkActionMenuSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkActionMenuMediaIndex).toBeGreaterThan(-1);
@@ -3798,7 +3827,7 @@ describe("Gemini visual migration shell", () => {
       /--chat-input-action-menu-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 8%,\s*transparent\);/,
     );
     expect(autoDarkActionMenuBlock).toMatch(
-      /--chat-input-action-menu-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\);/,
+      /--chat-input-action-menu-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--surface\)\);/,
     );
     expect(autoDarkActionMenuBlock).toMatch(
       /--chat-input-action-menu-shadow-color:\s*color-mix\(in srgb,\s*var\(--surface\) 32%,\s*transparent\);/,
@@ -3830,9 +3859,15 @@ describe("Gemini visual migration shell", () => {
     );
     expect(actionMenuRootDeclarations).toMatch(/box-sizing:\s*border-box;/);
     expect(actionMenuRootDeclarations).toMatch(
-      /width:\s*min\(336px,\s*calc\(100vw - 32px\)\);/,
+      /width:\s*min\(300px,\s*calc\(100vw - 32px\)\);/,
     );
-    expect(actionMenuRootDeclarations).toMatch(/padding:\s*10px;/);
+    expect(chatStyles).toContain(
+      "width: min(300px, calc(100vw - var(--sidebar-width) - 48px));",
+    );
+    expect(chatStyles).not.toContain(
+      "width: min(336px, calc(100vw - var(--sidebar-width) - 48px));",
+    );
+    expect(actionMenuRootDeclarations).toMatch(/padding:\s*9px;/);
     expect(actionMenuRootDeclarations).toMatch(
       /border:\s*1px solid var\(--chat-input-action-menu-border-color\);/,
     );
@@ -5115,7 +5150,7 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkActionMenuHoverTokens).toEqual(darkActionMenuHoverTokens);
     expect(lightActionMenuSurfaceTokens).toEqual({
       "--chat-input-action-menu-shadow-color":
-        "color-mix(in srgb, var(--black-50) 18%, transparent)",
+        "color-mix(in srgb, var(--black-50) 22%, transparent)",
     });
     expect(darkActionMenuSurfaceTokens).toEqual({
       "--chat-input-action-menu-shadow-color":
@@ -7268,7 +7303,7 @@ describe("Gemini visual migration shell", () => {
       chat.indexOf('aria-label="多模态工具"'),
     );
     const uploadActionMarkupEnd = chat.indexOf(
-      "{!isCompactScreen && config.enablePromptHints",
+      'aria-label="会话工具"',
       uploadActionMarkupStart,
     );
     const uploadActionMarkup = chat.slice(
@@ -19548,6 +19583,10 @@ describe("Gemini visual migration shell", () => {
       chat,
       "function useChatInnerView() {",
     );
+    const chatActionsViewBlock = readFunctionBlock(
+      chat,
+      "function useChatActionsView(props: ChatActionsProps)",
+    );
     const shortcutMobileMediaIndex = chatStyles.indexOf(
       "@media screen and (max-width: 600px)",
       chatStyles.indexOf(".shortcut-key span"),
@@ -19635,8 +19674,8 @@ describe("Gemini visual migration shell", () => {
       /openShortcutKeyModal\(\s*document\.activeElement instanceof HTMLElement[\s\S]*\);/,
     );
     expect(chat).toContain("openShortcutKeyModal: () => void;");
-    expect(chat).toMatch(
-      /onClick=\{\(\) => \{[\s\S]*props\.onActionComplete\?\.\(\);[\s\S]*props\.openShortcutKeyModal\(\);[\s\S]*\}\}[\s\S]*text=\{Locale\.Chat\.ShortcutKey\.Title\}/,
+    expect(chatActionsViewBlock).not.toContain(
+      "text={Locale.Chat.ShortcutKey.Title}",
     );
     expect(chat).toMatch(
       /openShortcutKeyModal=\{\(\) =>\s*openShortcutKeyModal\(chatInputMenuButtonRef\.current\)\s*\}/,

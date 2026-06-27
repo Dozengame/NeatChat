@@ -22,7 +22,6 @@ import SpeakIcon from "../icons/speak.svg";
 import SpeakStopIcon from "../icons/speak-stop.svg";
 import LoadingIcon from "../icons/three-dots.svg";
 import LoadingButtonIcon from "../icons/loading.svg";
-import PromptIcon from "../icons/prompt.svg";
 import MaxIcon from "../icons/max.svg";
 import MinIcon from "../icons/min.svg";
 import ResetIcon from "../icons/reload.svg";
@@ -50,7 +49,6 @@ import SizeIcon from "../icons/size.svg";
 import QualityIcon from "../icons/hd.svg";
 import StyleIcon from "../icons/palette.svg";
 import PluginIcon from "../icons/plugin.svg";
-import ShortcutkeyIcon from "../icons/shortcutkey.svg";
 import ReloadIcon from "../icons/reload.svg";
 import HeadphoneIcon from "../icons/headphone.svg";
 import {
@@ -1358,17 +1356,6 @@ function useChatActionsView(props: ChatActionsProps) {
             }
           />
 
-          {!isCompactScreen && config.enablePromptHints && (
-            <ChatAction
-              onClick={() => {
-                props.showPromptHints();
-                props.onActionComplete?.();
-              }}
-              text={Locale.Chat.InputActions.Prompt}
-              icon={<PromptIcon />}
-            />
-          )}
-
           <ChatAction
             active={props.imageGenerationEnabled}
             ariaPressed={props.imageGenerationEnabled}
@@ -1680,17 +1667,6 @@ function useChatActionsView(props: ChatActionsProps) {
                   });
                 }}
                 showSearch={false}
-              />
-            )}
-
-            {!isCompactScreen && config.enableShortcuts && (
-              <ChatAction
-                onClick={() => {
-                  props.onActionComplete?.();
-                  props.openShortcutKeyModal();
-                }}
-                text={Locale.Chat.ShortcutKey.Title}
-                icon={<ShortcutkeyIcon />}
               />
             )}
           </div>
@@ -2972,6 +2948,7 @@ function useChatInnerView() {
   const showEmptyComposer = showEmptyState && !hasActiveInputContent;
   const showEmptyHero =
     showEmptyState && !hasActiveInputContent && !showChatActionMenu;
+  const showDesktopModelControls = !showEmptyState;
   const applyEmptySuggestion = useCallback(
     (suggestion: string) => {
       setShowChatActionMenu(false);
@@ -4450,108 +4427,112 @@ function useChatInnerView() {
             >
               {!session.topic ? DEFAULT_TOPIC : session.topic}
             </button>
-            <button
-              type="button"
-              ref={modelSelectorButtonRef}
-              className={styles["chat-desktop-model-title"]}
-              aria-label="选择模型和参数"
-              onKeyDown={handleModelMenuKeyDown}
-              onClick={() => {
-                setShowChatActionMenu(false);
-                setExpandedMobileModelSection(null);
-                setShowMobileModelSelector((open) => !open);
-              }}
-              aria-controls="chat-model-menu"
-              aria-haspopup="dialog"
-              aria-expanded={showMobileModelSelector}
-            >
-              <span className={styles["chat-desktop-model-name"]}>
-                {headerCurrentModelName}
-              </span>
-              <span className={styles["chat-desktop-model-meta"]}>
-                {desktopModelDetail}
-              </span>
-              <span className={styles["chat-desktop-model-title-arrow"]}>
-                ⌄
-              </span>
-            </button>
-          </div>
-          <div
-            className={clsx(
-              "window-actions",
-              styles["chat-desktop-header-actions"],
+            {showDesktopModelControls && (
+              <button
+                type="button"
+                ref={modelSelectorButtonRef}
+                className={styles["chat-desktop-model-title"]}
+                aria-label="选择模型和参数"
+                onKeyDown={handleModelMenuKeyDown}
+                onClick={() => {
+                  setShowChatActionMenu(false);
+                  setExpandedMobileModelSection(null);
+                  setShowMobileModelSelector((open) => !open);
+                }}
+                aria-controls="chat-model-menu"
+                aria-haspopup="dialog"
+                aria-expanded={showMobileModelSelector}
+              >
+                <span className={styles["chat-desktop-model-name"]}>
+                  {headerCurrentModelName}
+                </span>
+                <span className={styles["chat-desktop-model-meta"]}>
+                  {desktopModelDetail}
+                </span>
+                <span className={styles["chat-desktop-model-title-arrow"]}>
+                  ⌄
+                </span>
+              </button>
             )}
-          >
+          </div>
+          {showDesktopModelControls && (
             <div
               className={clsx(
-                "window-action-button",
-                styles["chat-desktop-header-action"],
+                "window-actions",
+                styles["chat-desktop-header-actions"],
               )}
             >
-              <IconButton
-                icon={<ReloadIcon />}
-                bordered
-                title={Locale.Chat.Actions.RefreshTitle}
-                aria={Locale.Chat.Actions.RefreshTitle}
-                onClick={() => {
-                  showToast(Locale.Chat.Actions.RefreshToast);
-                  chatStore.summarizeSession(true, session);
-                }}
-              />
-            </div>
-            <div
-              className={clsx(
-                "window-action-button",
-                styles["chat-desktop-header-action"],
-              )}
-            >
-              <IconButton
-                icon={<RenameIcon />}
-                bordered
-                title={Locale.Chat.EditMessage.Title}
-                aria={Locale.Chat.EditMessage.Title}
-                onClick={() => setIsEditingMessage(true)}
-              />
-            </div>
-            <div
-              className={clsx(
-                "window-action-button",
-                styles["chat-desktop-header-action"],
-                styles["chat-desktop-header-action-export"],
-              )}
-            >
-              <IconButton
-                icon={<ExportIcon />}
-                bordered
-                title={Locale.Chat.Actions.Export}
-                aria={Locale.Chat.Actions.Export}
-                onClick={() => {
-                  setShowExport(true);
-                }}
-              />
-            </div>
-            {showMaxIcon && (
               <div
                 className={clsx(
                   "window-action-button",
                   styles["chat-desktop-header-action"],
-                  styles["chat-desktop-header-action-fullscreen"],
                 )}
               >
                 <IconButton
-                  icon={config.tightBorder ? <MinIcon /> : <MaxIcon />}
+                  icon={<ReloadIcon />}
                   bordered
-                  title={Locale.Chat.Actions.FullScreen}
-                  aria={Locale.Chat.Actions.FullScreen}
+                  title={Locale.Chat.Actions.RefreshTitle}
+                  aria={Locale.Chat.Actions.RefreshTitle}
                   onClick={() => {
-                    config.update(
-                      (config) => (config.tightBorder = !config.tightBorder),
-                    );
+                    showToast(Locale.Chat.Actions.RefreshToast);
+                    chatStore.summarizeSession(true, session);
                   }}
                 />
               </div>
-            )}
-          </div>
+              <div
+                className={clsx(
+                  "window-action-button",
+                  styles["chat-desktop-header-action"],
+                )}
+              >
+                <IconButton
+                  icon={<RenameIcon />}
+                  bordered
+                  title={Locale.Chat.EditMessage.Title}
+                  aria={Locale.Chat.EditMessage.Title}
+                  onClick={() => setIsEditingMessage(true)}
+                />
+              </div>
+              <div
+                className={clsx(
+                  "window-action-button",
+                  styles["chat-desktop-header-action"],
+                  styles["chat-desktop-header-action-export"],
+                )}
+              >
+                <IconButton
+                  icon={<ExportIcon />}
+                  bordered
+                  title={Locale.Chat.Actions.Export}
+                  aria={Locale.Chat.Actions.Export}
+                  onClick={() => {
+                    setShowExport(true);
+                  }}
+                />
+              </div>
+              {showMaxIcon && (
+                <div
+                  className={clsx(
+                    "window-action-button",
+                    styles["chat-desktop-header-action"],
+                    styles["chat-desktop-header-action-fullscreen"],
+                  )}
+                >
+                  <IconButton
+                    icon={config.tightBorder ? <MinIcon /> : <MaxIcon />}
+                    bordered
+                    title={Locale.Chat.Actions.FullScreen}
+                    aria={Locale.Chat.Actions.FullScreen}
+                    onClick={() => {
+                      config.update(
+                        (config) => (config.tightBorder = !config.tightBorder),
+                      );
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
           {promptToast}
         </div>
       )}
