@@ -2294,8 +2294,8 @@
   --chat-body-background: color-mix(in srgb, var(--surface) 68%, var(--surface-soft));
   --chat-body-bottom-safe-area: calc(132px + env(safe-area-inset-bottom));
   --conversation-max-width: min(920px, 100%);
-  --assistant-message-max-width: min(760px, 100%);
-  --user-message-max-width: min(660px, 100%);
+  --assistant-message-max-width: min(780px, 100%);
+  --user-message-max-width: min(560px, 100%);
 
   flex: 1;
   overflow: auto;
@@ -2577,12 +2577,12 @@
 
 .chat-reading-surface {
   box-sizing: border-box;
-  width: var(--conversation-max-width);
-  max-width: calc(100% - 16px);
-  margin: 0 auto;
+  width: min(780px, 100%);
+  max-width: calc(100% - 32px);
+  margin: 14px auto 0;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 26px;
 }
 
 .chat-empty-state {
@@ -5016,6 +5016,21 @@
   &:hover {
     min-width: 0;
   }
+}
+
+.chat-reading-surface .chat-message-row-assistant > .chat-message-container > .chat-message-item {
+  background-color: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+.chat-reading-surface .chat-message-row-user > .chat-message-container > .chat-message-item {
+  border-radius: 28px;
+  padding: 17px 22px;
+  font-size: 15px;
+  line-height: 1.55;
 }
 
 .chat-input-panel {

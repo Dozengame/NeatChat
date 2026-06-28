@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 
 import styles from "./settings.module.scss";
 
@@ -6,6 +6,7 @@ import ResetIcon from "../icons/reload.svg";
 import CloseIcon from "../icons/close.svg";
 import EditIcon from "../icons/edit.svg";
 import ConfirmIcon from "../icons/confirm.svg";
+import DiscoveryIcon from "../icons/discovery.svg";
 import {
   Input,
   List,
@@ -60,6 +61,31 @@ import { useMobileScreen } from "../utils";
 
 export function Settings() {
   return useSettingsView();
+}
+
+const settingsSectionTabs = [
+  { id: "settings-section-general", label: "常规" },
+  { id: "settings-section-dialog", label: "对话" },
+  { id: "settings-section-data", label: "数据" },
+  { id: "settings-section-model", label: "模型" },
+  { id: "settings-section-advanced", label: "高级" },
+] as const;
+
+function SettingsSection(props: {
+  id: string;
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <section id={props.id} className={styles["settings-section"]}>
+      <div className={styles["settings-section-head"]}>
+        <h2>{props.title}</h2>
+        <p>{props.description}</p>
+      </div>
+      {props.children}
+    </section>
+  );
 }
 
 function SettingsSelect<T extends string>(props: {
@@ -188,6 +214,73 @@ function useSettingsView() {
       config.customInstructions.length,
     );
   const [shouldShowPromptModal, setShowPromptModal] = useState(false);
+  const [settingsSearchQuery, setSettingsSearchQuery] = useState("");
+  const normalizedSettingsSearchQuery = settingsSearchQuery
+    .trim()
+    .toLocaleLowerCase();
+  const isSettingsSectionVisible = (...keywords: string[]) => {
+    if (!normalizedSettingsSearchQuery) return true;
+
+    return keywords.some((keyword) =>
+      keyword.toLocaleLowerCase().includes(normalizedSettingsSearchQuery),
+    );
+  };
+  const settingsSectionVisibility = {
+    general: isSettingsSectionVisible(
+      "常规",
+      "发送键",
+      "主题",
+      "Language",
+      "字体",
+      "font",
+    ),
+    dialog: isSettingsSectionVisible(
+      "对话",
+      "自动生成标题",
+      "预览气泡",
+      "Artifacts",
+      "代码折叠",
+      "模型搜索",
+      "快捷指令",
+      "清除聊天",
+      "快捷键",
+    ),
+    data: isSettingsSectionVisible(
+      "数据",
+      "同步",
+      "导出",
+      "导入",
+      "面具",
+      "提示词",
+      "prompt",
+    ),
+    model: isSettingsSectionVisible(
+      "模型",
+      "访问密码",
+      "provider",
+      "api",
+      "model",
+      "tokens",
+      "思考深度",
+      "压缩",
+    ),
+    advanced: isSettingsSectionVisible(
+      "高级",
+      "自定义指令",
+      "custom instructions",
+      "重置",
+      "清除",
+    ),
+  };
+  const hasVisibleSettingsSections = Object.values(
+    settingsSectionVisibility,
+  ).some(Boolean);
+  const scrollToSettingsSection = (sectionId: string) => {
+    document.getElementById(sectionId)?.scrollIntoView({
+      block: "start",
+      behavior: "smooth",
+    });
+  };
 
   const showUsage = accessStore.isAuthorized();
   const apiResourceLocked =
@@ -929,536 +1022,641 @@ function useSettingsView() {
 
   return (
     <ErrorBoundary>
-      <div className="window-header" data-tauri-drag-region>
-        <div className="window-header-title">
-          <div className="window-header-main-title">
-            {Locale.Settings.Title}
+      <div className={styles["settings-page"]}>
+        <div className={styles["settings-page-head"]} data-tauri-drag-region>
+          <div className={styles["settings-title-stack"]}>
+            <h1>{Locale.Settings.Title}</h1>
+            <p>按使用场景重新分组，减少长列表扫描成本</p>
           </div>
-          <div className="window-header-sub-title">
-            {Locale.Settings.SubTitle}
-          </div>
-        </div>
-        <div className="window-actions">
-          <div className="window-action-button"></div>
-          <div className="window-action-button"></div>
-          <div className="window-action-button">
-            <IconButton
-              aria={Locale.UI.Close}
-              icon={<CloseIcon />}
-              onClick={() => navigate(Path.Home)}
-              bordered
+          <label className={styles["settings-search"]}>
+            <DiscoveryIcon />
+            <input
+              type="search"
+              aria-label="搜索设置"
+              placeholder="搜索设置"
+              value={settingsSearchQuery}
+              onChange={(e) => setSettingsSearchQuery(e.currentTarget.value)}
             />
-          </div>
-        </div>
-      </div>
-      <div className={styles["settings"]}>
-        <div className={styles["settings-preferences-surface"]}>
-          <List className={styles["settings-preference-list"]}>
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Settings.SendKey}
-            >
-              <SettingsSelect
-                className={styles["settings-preference-select"]}
-                ariaLabel={Locale.Settings.SendKey}
-                value={config.submitKey}
-                options={Object.values(SubmitKey).map((v) => ({
-                  value: v,
-                  label: v,
-                }))}
-                onChange={(value) => {
-                  updateConfig(
-                    (config) => (config.submitKey = value as any as SubmitKey),
-                  );
-                }}
-              />
-            </ListItem>
-
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Settings.Theme}
-            >
-              <SettingsSelect
-                className={styles["settings-preference-select"]}
-                ariaLabel={Locale.Settings.Theme}
-                value={config.theme}
-                options={Object.values(Theme).map((v) => ({
-                  value: v,
-                  label: v,
-                }))}
-                onChange={(value) => {
-                  updateConfig(
-                    (config) => (config.theme = value as any as Theme),
-                  );
-                }}
-              />
-            </ListItem>
-
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Settings.Lang.Name}
-            >
-              <SettingsSelect
-                className={styles["settings-preference-select"]}
-                ariaLabel={Locale.Settings.Lang.Name}
-                value={getLang()}
-                options={AllLangs.map((lang) => ({
-                  value: lang,
-                  label: ALL_LANG_OPTIONS[lang],
-                }))}
-                onChange={(value) => {
-                  changeLang(value as any);
-                }}
-              />
-            </ListItem>
-
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Settings.FontSize.Title}
-              subTitle={Locale.Settings.FontSize.SubTitle}
-            >
-              <InputRange
-                className={styles["settings-preference-range"]}
-                aria={Locale.Settings.FontSize.Title}
-                title={`${config.fontSize ?? 14}px`}
-                value={config.fontSize}
-                min="12"
-                max="40"
-                step="1"
-                onChange={(e) =>
-                  updateConfig(
-                    (config) =>
-                      (config.fontSize = Number.parseInt(
-                        e.currentTarget.value,
-                      )),
-                  )
-                }
-              ></InputRange>
-            </ListItem>
-
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Settings.FontFamily.Title}
-              subTitle={Locale.Settings.FontFamily.SubTitle}
-            >
-              <input
-                aria-label={Locale.Settings.FontFamily.Title}
-                type="text"
-                value={config.fontFamily}
-                placeholder={Locale.Settings.FontFamily.Placeholder}
-                onChange={(e) =>
-                  updateConfig(
-                    (config) => (config.fontFamily = e.currentTarget.value),
-                  )
-                }
-              ></input>
-            </ListItem>
-
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Settings.AutoGenerateTitle.Title}
-              subTitle={Locale.Settings.AutoGenerateTitle.SubTitle}
-            >
-              <input
-                aria-label={Locale.Settings.AutoGenerateTitle.Title}
-                type="checkbox"
-                checked={config.enableAutoGenerateTitle}
-                onChange={(e) =>
-                  updateConfig(
-                    (config) =>
-                      (config.enableAutoGenerateTitle =
-                        e.currentTarget.checked),
-                  )
-                }
-              ></input>
-            </ListItem>
-
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Settings.SendPreviewBubble.Title}
-              subTitle={Locale.Settings.SendPreviewBubble.SubTitle}
-            >
-              <input
-                aria-label={Locale.Settings.SendPreviewBubble.Title}
-                type="checkbox"
-                checked={config.sendPreviewBubble}
-                onChange={(e) =>
-                  updateConfig(
-                    (config) =>
-                      (config.sendPreviewBubble = e.currentTarget.checked),
-                  )
-                }
-              ></input>
-            </ListItem>
-
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Mask.Config.Artifacts.Title}
-              subTitle={Locale.Mask.Config.Artifacts.SubTitle}
-            >
-              <input
-                aria-label={Locale.Mask.Config.Artifacts.Title}
-                type="checkbox"
-                checked={config.enableArtifacts}
-                onChange={(e) =>
-                  updateConfig(
-                    (config) =>
-                      (config.enableArtifacts = e.currentTarget.checked),
-                  )
-                }
-              ></input>
-            </ListItem>
-
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Mask.Config.CodeFold.Title}
-              subTitle={Locale.Mask.Config.CodeFold.SubTitle}
-            >
-              <input
-                type="checkbox"
-                aria-label={Locale.Mask.Config.CodeFold.Title}
-                checked={config.enableCodeFold}
-                onChange={(e) =>
-                  updateConfig(
-                    (config) =>
-                      (config.enableCodeFold = e.currentTarget.checked),
-                  )
-                }
-              />
-            </ListItem>
-          </List>
-
-          <List className={styles["settings-preference-list"]}>
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Settings.EnableModelSearch}
-              subTitle={Locale.Settings.EnableModelSearchSubTitle}
-            >
-              <input
-                type="checkbox"
-                aria-label={Locale.Settings.EnableModelSearch}
-                checked={config.enableModelSearch}
-                onChange={(e) =>
-                  updateConfig(
-                    (config) =>
-                      (config.enableModelSearch = e.currentTarget.checked),
-                  )
-                }
-              />
-            </ListItem>
-
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Settings.EnableThemeChange.Title}
-              subTitle={Locale.Settings.EnableThemeChange.SubTitle}
-            >
-              <input
-                type="checkbox"
-                aria-label={Locale.Settings.EnableThemeChange.Title}
-                checked={config.enableThemeChange}
-                onChange={(e) =>
-                  updateConfig(
-                    (config) =>
-                      (config.enableThemeChange = e.currentTarget.checked),
-                  )
-                }
-              />
-            </ListItem>
-
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Settings.EnablePromptHints.Title}
-              subTitle={Locale.Settings.EnablePromptHints.SubTitle}
-            >
-              <input
-                type="checkbox"
-                aria-label={Locale.Settings.EnablePromptHints.Title}
-                checked={config.enablePromptHints}
-                onChange={(e) =>
-                  updateConfig(
-                    (config) =>
-                      (config.enablePromptHints = e.currentTarget.checked),
-                  )
-                }
-              />
-            </ListItem>
-
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Settings.EnableClearContext.Title}
-              subTitle={Locale.Settings.EnableClearContext.SubTitle}
-            >
-              <input
-                type="checkbox"
-                aria-label={Locale.Settings.EnableClearContext.Title}
-                checked={config.enableClearContext}
-                onChange={(e) =>
-                  updateConfig(
-                    (config) =>
-                      (config.enableClearContext = e.currentTarget.checked),
-                  )
-                }
-              />
-            </ListItem>
-
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Settings.EnableShortcuts.Title}
-              subTitle={Locale.Settings.EnableShortcuts.SubTitle}
-            >
-              <input
-                type="checkbox"
-                aria-label={Locale.Settings.EnableShortcuts.Title}
-                checked={config.enableShortcuts}
-                onChange={(e) =>
-                  updateConfig(
-                    (config) =>
-                      (config.enableShortcuts = e.currentTarget.checked),
-                  )
-                }
-              />
-            </ListItem>
-          </List>
-
-          <List className={styles["settings-preference-list"]}>
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Settings.CustomInstructions.Enable.Title}
-              subTitle={Locale.Settings.CustomInstructions.Enable.SubTitle}
-            >
-              <input
-                aria-label={Locale.Settings.CustomInstructions.Enable.Title}
-                type="checkbox"
-                checked={config.enableCustomInstructions}
-                onChange={(e) =>
-                  updateConfig(
-                    (config) =>
-                      (config.enableCustomInstructions =
-                        e.currentTarget.checked),
-                  )
-                }
-              />
-            </ListItem>
-
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Settings.CustomInstructions.Content.Title}
-              subTitle={customInstructionsDescription}
-              vertical
-            >
-              <>
-                <Input
-                  aria-label={Locale.Settings.CustomInstructions.Content.Title}
-                  aria-describedby={customInstructionsDescriptionId}
-                  className={styles["custom-instructions-input"]}
-                  value={config.customInstructions}
-                  maxLength={1500}
-                  rows={6}
-                  disabled={!config.enableCustomInstructions}
-                  placeholder={
-                    Locale.Settings.CustomInstructions.Content.Placeholder
-                  }
-                  onInput={(e) =>
-                    updateConfig(
-                      (config) =>
-                        (config.customInstructions = e.currentTarget.value),
-                    )
-                  }
-                />
-                <div className={styles["custom-instructions-actions"]}>
-                  <IconButton
-                    className={styles["custom-instructions-edit-button"]}
-                    aria={Locale.Settings.CustomInstructions.Content.Edit}
-                    icon={<EditIcon />}
-                    text={Locale.Settings.CustomInstructions.Content.Edit}
-                    bordered
-                    disabled={!config.enableCustomInstructions}
-                    onClick={() => setShowCustomInstructionsModal(true)}
-                  />
-                </div>
-                <span
-                  id={customInstructionsDescriptionId}
-                  className={styles["custom-instructions-status"]}
-                >
-                  {customInstructionsDescription}
-                </span>
-              </>
-            </ListItem>
-          </List>
+          </label>
+          <IconButton
+            className={styles["settings-close"]}
+            aria={Locale.UI.Close}
+            icon={<CloseIcon />}
+            onClick={() => navigate(Path.Home)}
+            bordered
+          />
         </div>
 
-        <SyncItems />
-
-        <div className={styles["settings-preferences-surface"]}>
-          <List className={styles["settings-preference-list"]}>
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Settings.Mask.Splash.Title}
-              subTitle={Locale.Settings.Mask.Splash.SubTitle}
+        <nav className={styles["settings-section-tabs"]} aria-label="设置分组">
+          {settingsSectionTabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={styles["settings-section-tab"]}
+              aria-controls={tab.id}
+              onClick={() => scrollToSettingsSection(tab.id)}
             >
-              <input
-                aria-label={Locale.Settings.Mask.Splash.Title}
-                type="checkbox"
-                checked={!config.dontShowMaskSplashScreen}
-                onChange={(e) =>
-                  updateConfig(
-                    (config) =>
-                      (config.dontShowMaskSplashScreen =
-                        !e.currentTarget.checked),
-                  )
-                }
-              ></input>
-            </ListItem>
+              {tab.label}
+            </button>
+          ))}
+        </nav>
 
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Settings.Mask.Builtin.Title}
-              subTitle={Locale.Settings.Mask.Builtin.SubTitle}
-            >
-              <input
-                aria-label={Locale.Settings.Mask.Builtin.Title}
-                type="checkbox"
-                checked={config.hideBuiltinMasks}
-                onChange={(e) =>
-                  updateConfig(
-                    (config) =>
-                      (config.hideBuiltinMasks = e.currentTarget.checked),
-                  )
-                }
-              ></input>
-            </ListItem>
-          </List>
-
-          <List className={styles["settings-preference-list"]}>
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Settings.Prompt.Disable.Title}
-              subTitle={Locale.Settings.Prompt.Disable.SubTitle}
-            >
-              <input
-                aria-label={Locale.Settings.Prompt.Disable.Title}
-                type="checkbox"
-                checked={config.disablePromptHint}
-                onChange={(e) =>
-                  updateConfig(
-                    (config) =>
-                      (config.disablePromptHint = e.currentTarget.checked),
-                  )
-                }
-              ></input>
-            </ListItem>
-
-            <ListItem
-              className={styles["settings-preference-item"]}
-              title={Locale.Settings.Prompt.List}
-              subTitle={Locale.Settings.Prompt.ListCount(
-                builtinCount,
-                customCount,
-              )}
-            >
-              <IconButton
-                className={styles["settings-preference-action"]}
-                aria={Locale.Settings.Prompt.List + Locale.Settings.Prompt.Edit}
-                icon={<EditIcon />}
-                text={Locale.Settings.Prompt.Edit}
-                onClick={() => setShowPromptModal(true)}
-              />
-            </ListItem>
-          </List>
-        </div>
-
-        <div className={styles["settings-access-surface"]}>
-          <List id={SlotID.CustomModel}>
-            {accessCodeComponent}
-
-            {!apiResourceLocked && (
-              <>
-                {useCustomConfigComponent}
-
-                {accessStore.useCustomConfig && (
-                  <>
+        <div className={styles["settings"]}>
+          <div className={styles["settings-stack"]}>
+            {settingsSectionVisibility.general && (
+              <SettingsSection
+                id="settings-section-general"
+                title="常规偏好"
+                description="输入方式、主题、语言和字体。"
+              >
+                <div className={styles["settings-preferences-surface"]}>
+                  <List className={styles["settings-preference-list"]}>
                     <ListItem
-                      title={Locale.Settings.Access.Provider.Title}
-                      subTitle={Locale.Settings.Access.Provider.SubTitle}
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Settings.SendKey}
                     >
-                      <Select
-                        className={styles["settings-access-select"]}
-                        aria-label={Locale.Settings.Access.Provider.Title}
-                        value={accessStore.provider}
-                        onChange={(e) => {
-                          accessStore.update(
-                            (access) =>
-                              (access.provider = e.target
-                                .value as ServiceProvider),
+                      <SettingsSelect
+                        className={styles["settings-preference-select"]}
+                        ariaLabel={Locale.Settings.SendKey}
+                        value={config.submitKey}
+                        options={Object.values(SubmitKey).map((v) => ({
+                          value: v,
+                          label: v,
+                        }))}
+                        onChange={(value) => {
+                          updateConfig(
+                            (config) =>
+                              (config.submitKey = value as any as SubmitKey),
                           );
                         }}
-                      >
-                        {Object.entries(ServiceProvider).map(([k, v]) => (
-                          <option value={v} key={k}>
-                            {k}
-                          </option>
-                        ))}
-                      </Select>
+                      />
                     </ListItem>
 
-                    {openAIConfigComponent}
-                    {azureConfigComponent}
-                    {googleConfigComponent}
-                    {anthropicConfigComponent}
-                    {baiduConfigComponent}
-                    {byteDanceConfigComponent}
-                    {alibabaConfigComponent}
-                    {tencentConfigComponent}
-                    {moonshotConfigComponent}
-                    {stabilityConfigComponent}
-                    {lflytekConfigComponent}
-                    {XAIConfigComponent}
-                    {chatglmConfigComponent}
-                  </>
-                )}
-              </>
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Settings.Theme}
+                    >
+                      <SettingsSelect
+                        className={styles["settings-preference-select"]}
+                        ariaLabel={Locale.Settings.Theme}
+                        value={config.theme}
+                        options={Object.values(Theme).map((v) => ({
+                          value: v,
+                          label: v,
+                        }))}
+                        onChange={(value) => {
+                          updateConfig(
+                            (config) => (config.theme = value as any as Theme),
+                          );
+                        }}
+                      />
+                    </ListItem>
+
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Settings.Lang.Name}
+                    >
+                      <SettingsSelect
+                        className={styles["settings-preference-select"]}
+                        ariaLabel={Locale.Settings.Lang.Name}
+                        value={getLang()}
+                        options={AllLangs.map((lang) => ({
+                          value: lang,
+                          label: ALL_LANG_OPTIONS[lang],
+                        }))}
+                        onChange={(value) => {
+                          changeLang(value as any);
+                        }}
+                      />
+                    </ListItem>
+
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Settings.FontSize.Title}
+                      subTitle={Locale.Settings.FontSize.SubTitle}
+                    >
+                      <InputRange
+                        className={styles["settings-preference-range"]}
+                        aria={Locale.Settings.FontSize.Title}
+                        title={`${config.fontSize ?? 14}px`}
+                        value={config.fontSize}
+                        min="12"
+                        max="40"
+                        step="1"
+                        onChange={(e) =>
+                          updateConfig(
+                            (config) =>
+                              (config.fontSize = Number.parseInt(
+                                e.currentTarget.value,
+                              )),
+                          )
+                        }
+                      ></InputRange>
+                    </ListItem>
+
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Settings.FontFamily.Title}
+                      subTitle={Locale.Settings.FontFamily.SubTitle}
+                    >
+                      <input
+                        aria-label={Locale.Settings.FontFamily.Title}
+                        type="text"
+                        value={config.fontFamily}
+                        placeholder={Locale.Settings.FontFamily.Placeholder}
+                        onChange={(e) =>
+                          updateConfig(
+                            (config) =>
+                              (config.fontFamily = e.currentTarget.value),
+                          )
+                        }
+                      ></input>
+                    </ListItem>
+                  </List>
+                </div>
+              </SettingsSection>
             )}
 
-            {!shouldHideBalanceQuery && !clientConfig?.isApp ? (
-              <ListItem
-                title={Locale.Settings.Usage.Title}
-                subTitle={
-                  showUsage
-                    ? loadingUsage
-                      ? Locale.Settings.Usage.IsChecking
-                      : Locale.Settings.Usage.SubTitle(
-                          usage?.used ?? "[?]",
-                          usage?.subscription ?? "[?]",
-                        )
-                    : Locale.Settings.Usage.NoAccess
-                }
+            {settingsSectionVisibility.dialog && (
+              <SettingsSection
+                id="settings-section-dialog"
+                title="对话体验"
+                description="控制聊天标题、预览气泡、Artifacts、代码阅读和会话工具。"
               >
-                {!showUsage || loadingUsage ? (
-                  <div />
-                ) : (
-                  <IconButton
-                    icon={<ResetIcon></ResetIcon>}
-                    text={Locale.Settings.Usage.Check}
-                    onClick={() => checkUsage(true)}
-                  />
-                )}
-              </ListItem>
-            ) : null}
-          </List>
-        </div>
+                <div className={styles["settings-preferences-surface"]}>
+                  <List className={styles["settings-preference-list"]}>
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Settings.AutoGenerateTitle.Title}
+                      subTitle={Locale.Settings.AutoGenerateTitle.SubTitle}
+                    >
+                      <input
+                        aria-label={Locale.Settings.AutoGenerateTitle.Title}
+                        type="checkbox"
+                        checked={config.enableAutoGenerateTitle}
+                        onChange={(e) =>
+                          updateConfig(
+                            (config) =>
+                              (config.enableAutoGenerateTitle =
+                                e.currentTarget.checked),
+                          )
+                        }
+                      ></input>
+                    </ListItem>
 
-        <List>
-          <ModelConfigList
-            modelConfig={config.modelConfig}
-            modelConfigMeta={config.modelConfigMeta}
-            markOverride={markModelConfigOverride}
-            updateConfig={(updater) => {
-              const modelConfig = { ...config.modelConfig };
-              updater(modelConfig);
-              config.update((config) => (config.modelConfig = modelConfig));
-            }}
-          />
-        </List>
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Settings.SendPreviewBubble.Title}
+                      subTitle={Locale.Settings.SendPreviewBubble.SubTitle}
+                    >
+                      <input
+                        aria-label={Locale.Settings.SendPreviewBubble.Title}
+                        type="checkbox"
+                        checked={config.sendPreviewBubble}
+                        onChange={(e) =>
+                          updateConfig(
+                            (config) =>
+                              (config.sendPreviewBubble =
+                                e.currentTarget.checked),
+                          )
+                        }
+                      ></input>
+                    </ListItem>
+
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Mask.Config.Artifacts.Title}
+                      subTitle={Locale.Mask.Config.Artifacts.SubTitle}
+                    >
+                      <input
+                        aria-label={Locale.Mask.Config.Artifacts.Title}
+                        type="checkbox"
+                        checked={config.enableArtifacts}
+                        onChange={(e) =>
+                          updateConfig(
+                            (config) =>
+                              (config.enableArtifacts =
+                                e.currentTarget.checked),
+                          )
+                        }
+                      ></input>
+                    </ListItem>
+
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Mask.Config.CodeFold.Title}
+                      subTitle={Locale.Mask.Config.CodeFold.SubTitle}
+                    >
+                      <input
+                        type="checkbox"
+                        aria-label={Locale.Mask.Config.CodeFold.Title}
+                        checked={config.enableCodeFold}
+                        onChange={(e) =>
+                          updateConfig(
+                            (config) =>
+                              (config.enableCodeFold = e.currentTarget.checked),
+                          )
+                        }
+                      />
+                    </ListItem>
+
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Settings.EnableModelSearch}
+                      subTitle={Locale.Settings.EnableModelSearchSubTitle}
+                    >
+                      <input
+                        type="checkbox"
+                        aria-label={Locale.Settings.EnableModelSearch}
+                        checked={config.enableModelSearch}
+                        onChange={(e) =>
+                          updateConfig(
+                            (config) =>
+                              (config.enableModelSearch =
+                                e.currentTarget.checked),
+                          )
+                        }
+                      />
+                    </ListItem>
+
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Settings.EnableThemeChange.Title}
+                      subTitle={Locale.Settings.EnableThemeChange.SubTitle}
+                    >
+                      <input
+                        type="checkbox"
+                        aria-label={Locale.Settings.EnableThemeChange.Title}
+                        checked={config.enableThemeChange}
+                        onChange={(e) =>
+                          updateConfig(
+                            (config) =>
+                              (config.enableThemeChange =
+                                e.currentTarget.checked),
+                          )
+                        }
+                      />
+                    </ListItem>
+
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Settings.EnablePromptHints.Title}
+                      subTitle={Locale.Settings.EnablePromptHints.SubTitle}
+                    >
+                      <input
+                        type="checkbox"
+                        aria-label={Locale.Settings.EnablePromptHints.Title}
+                        checked={config.enablePromptHints}
+                        onChange={(e) =>
+                          updateConfig(
+                            (config) =>
+                              (config.enablePromptHints =
+                                e.currentTarget.checked),
+                          )
+                        }
+                      />
+                    </ListItem>
+
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Settings.EnableClearContext.Title}
+                      subTitle={Locale.Settings.EnableClearContext.SubTitle}
+                    >
+                      <input
+                        type="checkbox"
+                        aria-label={Locale.Settings.EnableClearContext.Title}
+                        checked={config.enableClearContext}
+                        onChange={(e) =>
+                          updateConfig(
+                            (config) =>
+                              (config.enableClearContext =
+                                e.currentTarget.checked),
+                          )
+                        }
+                      />
+                    </ListItem>
+
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Settings.EnableShortcuts.Title}
+                      subTitle={Locale.Settings.EnableShortcuts.SubTitle}
+                    >
+                      <input
+                        type="checkbox"
+                        aria-label={Locale.Settings.EnableShortcuts.Title}
+                        checked={config.enableShortcuts}
+                        onChange={(e) =>
+                          updateConfig(
+                            (config) =>
+                              (config.enableShortcuts =
+                                e.currentTarget.checked),
+                          )
+                        }
+                      />
+                    </ListItem>
+                  </List>
+                </div>
+              </SettingsSection>
+            )}
+
+            {settingsSectionVisibility.data && (
+              <SettingsSection
+                id="settings-section-data"
+                title="数据"
+                description="云端同步、本地导入导出、面具和提示词。"
+              >
+                <div className={styles["settings-preferences-surface"]}>
+                  <SyncItems />
+
+                  <List className={styles["settings-preference-list"]}>
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Settings.Mask.Splash.Title}
+                      subTitle={Locale.Settings.Mask.Splash.SubTitle}
+                    >
+                      <input
+                        aria-label={Locale.Settings.Mask.Splash.Title}
+                        type="checkbox"
+                        checked={!config.dontShowMaskSplashScreen}
+                        onChange={(e) =>
+                          updateConfig(
+                            (config) =>
+                              (config.dontShowMaskSplashScreen =
+                                !e.currentTarget.checked),
+                          )
+                        }
+                      ></input>
+                    </ListItem>
+
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Settings.Mask.Builtin.Title}
+                      subTitle={Locale.Settings.Mask.Builtin.SubTitle}
+                    >
+                      <input
+                        aria-label={Locale.Settings.Mask.Builtin.Title}
+                        type="checkbox"
+                        checked={config.hideBuiltinMasks}
+                        onChange={(e) =>
+                          updateConfig(
+                            (config) =>
+                              (config.hideBuiltinMasks =
+                                e.currentTarget.checked),
+                          )
+                        }
+                      ></input>
+                    </ListItem>
+                  </List>
+
+                  <List className={styles["settings-preference-list"]}>
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Settings.Prompt.Disable.Title}
+                      subTitle={Locale.Settings.Prompt.Disable.SubTitle}
+                    >
+                      <input
+                        aria-label={Locale.Settings.Prompt.Disable.Title}
+                        type="checkbox"
+                        checked={config.disablePromptHint}
+                        onChange={(e) =>
+                          updateConfig(
+                            (config) =>
+                              (config.disablePromptHint =
+                                e.currentTarget.checked),
+                          )
+                        }
+                      ></input>
+                    </ListItem>
+
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Settings.Prompt.List}
+                      subTitle={Locale.Settings.Prompt.ListCount(
+                        builtinCount,
+                        customCount,
+                      )}
+                    >
+                      <IconButton
+                        className={styles["settings-preference-action"]}
+                        aria={
+                          Locale.Settings.Prompt.List +
+                          Locale.Settings.Prompt.Edit
+                        }
+                        icon={<EditIcon />}
+                        text={Locale.Settings.Prompt.Edit}
+                        onClick={() => setShowPromptModal(true)}
+                      />
+                    </ListItem>
+                  </List>
+                </div>
+              </SettingsSection>
+            )}
+
+            {settingsSectionVisibility.model && (
+              <SettingsSection
+                id="settings-section-model"
+                title="模型"
+                description="访问密码、服务来源、模型参数和压缩设置。"
+              >
+                <div className={styles["settings-access-surface"]}>
+                  <List id={SlotID.CustomModel}>
+                    {accessCodeComponent}
+
+                    {!apiResourceLocked && (
+                      <>
+                        {useCustomConfigComponent}
+
+                        {accessStore.useCustomConfig && (
+                          <>
+                            <ListItem
+                              title={Locale.Settings.Access.Provider.Title}
+                              subTitle={
+                                Locale.Settings.Access.Provider.SubTitle
+                              }
+                            >
+                              <Select
+                                className={styles["settings-access-select"]}
+                                aria-label={
+                                  Locale.Settings.Access.Provider.Title
+                                }
+                                value={accessStore.provider}
+                                onChange={(e) => {
+                                  accessStore.update(
+                                    (access) =>
+                                      (access.provider = e.target
+                                        .value as ServiceProvider),
+                                  );
+                                }}
+                              >
+                                {Object.entries(ServiceProvider).map(
+                                  ([k, v]) => (
+                                    <option value={v} key={k}>
+                                      {k}
+                                    </option>
+                                  ),
+                                )}
+                              </Select>
+                            </ListItem>
+
+                            {openAIConfigComponent}
+                            {azureConfigComponent}
+                            {googleConfigComponent}
+                            {anthropicConfigComponent}
+                            {baiduConfigComponent}
+                            {byteDanceConfigComponent}
+                            {alibabaConfigComponent}
+                            {tencentConfigComponent}
+                            {moonshotConfigComponent}
+                            {stabilityConfigComponent}
+                            {lflytekConfigComponent}
+                            {XAIConfigComponent}
+                            {chatglmConfigComponent}
+                          </>
+                        )}
+                      </>
+                    )}
+
+                    {!shouldHideBalanceQuery && !clientConfig?.isApp ? (
+                      <ListItem
+                        title={Locale.Settings.Usage.Title}
+                        subTitle={
+                          showUsage
+                            ? loadingUsage
+                              ? Locale.Settings.Usage.IsChecking
+                              : Locale.Settings.Usage.SubTitle(
+                                  usage?.used ?? "[?]",
+                                  usage?.subscription ?? "[?]",
+                                )
+                            : Locale.Settings.Usage.NoAccess
+                        }
+                      >
+                        {!showUsage || loadingUsage ? (
+                          <div />
+                        ) : (
+                          <IconButton
+                            icon={<ResetIcon></ResetIcon>}
+                            text={Locale.Settings.Usage.Check}
+                            onClick={() => checkUsage(true)}
+                          />
+                        )}
+                      </ListItem>
+                    ) : null}
+                  </List>
+                </div>
+
+                <List>
+                  <ModelConfigList
+                    modelConfig={config.modelConfig}
+                    modelConfigMeta={config.modelConfigMeta}
+                    markOverride={markModelConfigOverride}
+                    updateConfig={(updater) => {
+                      const modelConfig = { ...config.modelConfig };
+                      updater(modelConfig);
+                      config.update(
+                        (config) => (config.modelConfig = modelConfig),
+                      );
+                    }}
+                  />
+                </List>
+              </SettingsSection>
+            )}
+
+            {settingsSectionVisibility.advanced && (
+              <SettingsSection
+                id="settings-section-advanced"
+                title="高级偏好"
+                description="新对话默认指令、重置和清除操作。"
+              >
+                <div className={styles["settings-preferences-surface"]}>
+                  <List className={styles["settings-preference-list"]}>
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Settings.CustomInstructions.Enable.Title}
+                      subTitle={
+                        Locale.Settings.CustomInstructions.Enable.SubTitle
+                      }
+                    >
+                      <input
+                        aria-label={
+                          Locale.Settings.CustomInstructions.Enable.Title
+                        }
+                        type="checkbox"
+                        checked={config.enableCustomInstructions}
+                        onChange={(e) =>
+                          updateConfig(
+                            (config) =>
+                              (config.enableCustomInstructions =
+                                e.currentTarget.checked),
+                          )
+                        }
+                      />
+                    </ListItem>
+
+                    <ListItem
+                      className={styles["settings-preference-item"]}
+                      title={Locale.Settings.CustomInstructions.Content.Title}
+                      subTitle={customInstructionsDescription}
+                      vertical
+                    >
+                      <>
+                        <Input
+                          aria-label={
+                            Locale.Settings.CustomInstructions.Content.Title
+                          }
+                          aria-describedby={customInstructionsDescriptionId}
+                          className={styles["custom-instructions-input"]}
+                          value={config.customInstructions}
+                          maxLength={1500}
+                          rows={6}
+                          disabled={!config.enableCustomInstructions}
+                          placeholder={
+                            Locale.Settings.CustomInstructions.Content
+                              .Placeholder
+                          }
+                          onInput={(e) =>
+                            updateConfig(
+                              (config) =>
+                                (config.customInstructions =
+                                  e.currentTarget.value),
+                            )
+                          }
+                        />
+                        <div className={styles["custom-instructions-actions"]}>
+                          <IconButton
+                            className={
+                              styles["custom-instructions-edit-button"]
+                            }
+                            aria={
+                              Locale.Settings.CustomInstructions.Content.Edit
+                            }
+                            icon={<EditIcon />}
+                            text={
+                              Locale.Settings.CustomInstructions.Content.Edit
+                            }
+                            bordered
+                            disabled={!config.enableCustomInstructions}
+                            onClick={() => setShowCustomInstructionsModal(true)}
+                          />
+                        </div>
+                        <span
+                          id={customInstructionsDescriptionId}
+                          className={styles["custom-instructions-status"]}
+                        >
+                          {customInstructionsDescription}
+                        </span>
+                      </>
+                    </ListItem>
+                  </List>
+                </div>
+                <DangerItems />
+              </SettingsSection>
+            )}
+
+            {!hasVisibleSettingsSections && (
+              <div className={styles["settings-empty"]}>没有匹配的设置</div>
+            )}
+          </div>
+        </div>
 
         {shouldShowPromptModal && (
           <UserPromptModal onClose={() => setShowPromptModal(false)} />
@@ -1501,8 +1699,6 @@ function useSettingsView() {
             </Modal>
           </div>
         )}
-
-        <DangerItems />
       </div>
     </ErrorBoundary>
   );

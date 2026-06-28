@@ -1936,9 +1936,9 @@ summary,
 }
 
 .markdown-body {
-  --markdown-reading-max-width: 760px;
+  --markdown-reading-max-width: 780px;
   --markdown-reading-surface-max-width: var(--markdown-reading-max-width);
-  --markdown-prose-line-height: 1.62;
+  --markdown-prose-line-height: 1.72;
   --markdown-block-gap: 16px;
   --markdown-heading-gap: 22px;
   --markdown-heading-tight-gap: 10px;
@@ -3076,7 +3076,7 @@ summary,
 }
 
 .markdown-table-scroll-shell {
-  --markdown-table-shell-radius: 8px;
+  --markdown-table-shell-radius: 14px;
   position: relative;
   width: 100%;
   max-width: var(--markdown-table-shell-max-width);
@@ -4154,7 +4154,7 @@ summary,
 .markdown-body .highlight pre,
 .markdown-body pre {
   /* R4: Gemini-style refined code block card */
-  --markdown-code-block-radius: 8px;
+  --markdown-code-block-radius: 14px;
   --markdown-code-block-padding-y: 14px;
   --markdown-code-scroll-left: 0px;
   --markdown-code-line-number-width: 44px;
@@ -5137,7 +5137,7 @@ summary,
   }
 
   .markdown-table-scroll-shell {
-    --markdown-table-shell-radius: 7px;
+    --markdown-table-shell-radius: 10px;
     --markdown-table-focus-shadow-size: 0 0 0 2px;
   }
 
