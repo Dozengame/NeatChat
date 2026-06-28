@@ -976,7 +976,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 0 8px 2px;
+  padding: 0;
 }
 
 .chat-multimodal-section-title,
@@ -2310,6 +2310,45 @@
 
 .chat-body-empty {
   overflow: hidden;
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  &::before {
+    left: 50%;
+    top: 34%;
+    width: min(760px, 68%);
+    height: 260px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(
+      ellipse at center,
+      color-mix(in srgb, var(--primary) 12%, transparent) 0%,
+      color-mix(in srgb, var(--primary) 5%, transparent) 42%,
+      transparent 72%
+    );
+    filter: blur(22px);
+    opacity: 0.42;
+  }
+
+  &::after {
+    right: -12%;
+    top: 8%;
+    width: min(560px, 44%);
+    height: 78%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--primary) 5%, transparent) 54%,
+      color-mix(in srgb, var(--copy-success-color) 5%, transparent) 100%
+    );
+    filter: blur(28px);
+    opacity: 0.2;
+  }
 }
 
 .chat-scroll-to-bottom {
@@ -2641,77 +2680,99 @@
 .chat-empty-suggestions {
   position: relative;
   z-index: 1;
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
-  width: min(760px, 100%);
-  margin-top: 22px;
+  width: min(640px, 100%);
+  margin-top: 24px;
   margin-bottom: 0;
-  padding: 0 20px;
+  padding: 0;
   list-style: none;
   pointer-events: auto;
 }
 
 .chat-empty-suggestion-item {
-  display: flex;
+  display: block;
   min-width: 0;
   max-width: 100%;
 }
 
 .chat-empty-suggestion {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  --chat-empty-suggestion-radius: 999px;
-  --chat-empty-suggestion-background: color-mix(in srgb, var(--surface-elevated) 68%, transparent);
+  --chat-empty-suggestion-radius: 8px;
+  --chat-empty-suggestion-background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-elevated) 88%, transparent) 0%,
+    color-mix(in srgb, var(--surface-elevated) 72%, var(--surface)) 100%
+  );
   --chat-empty-suggestion-color: color-mix(in srgb, var(--black) 86%, transparent);
-  --chat-empty-suggestion-title-color: color-mix(in srgb, var(--black) 88%, transparent);
-  --chat-empty-suggestion-text-color: color-mix(in srgb, var(--black-50) 88%, transparent);
-  --chat-empty-suggestion-border-color: color-mix(in srgb, var(--black-50) 12%, transparent);
-  --chat-empty-suggestion-shadow-color: color-mix(in srgb, var(--black) 4%, transparent);
-  --chat-empty-suggestion-hover-background: color-mix(in srgb, var(--surface-elevated) 84%, transparent);
-  --chat-empty-suggestion-hover-border-color: color-mix(in srgb, var(--primary) 22%, transparent);
-  --chat-empty-suggestion-hover-shadow-color: color-mix(in srgb, var(--black) 6%, transparent);
-  --chat-empty-suggestion-ring-color: color-mix(in srgb, var(--primary) 10%, transparent);
-  --chat-empty-suggestion-icon-background: color-mix(in srgb, var(--black-50) 8%, transparent);
-  --chat-empty-suggestion-icon-color: color-mix(in srgb, var(--black-50) 92%, transparent);
-  --chat-empty-suggestion-affordance-background: color-mix(in srgb, var(--black-50) 8%, transparent);
+  --chat-empty-suggestion-title-color: color-mix(in srgb, var(--black) 92%, transparent);
+  --chat-empty-suggestion-text-color: color-mix(in srgb, var(--black-50) 78%, transparent);
+  --chat-empty-suggestion-border-color: color-mix(in srgb, var(--black-50) 14%, transparent);
+  --chat-empty-suggestion-inner-border-color: color-mix(in srgb, var(--white) 34%, transparent);
+  --chat-empty-suggestion-shadow-color: color-mix(in srgb, var(--black) 6%, transparent);
+  --chat-empty-suggestion-hover-background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-elevated) 96%, transparent) 0%,
+    color-mix(in srgb, var(--primary) 6%, var(--surface-elevated)) 100%
+  );
+  --chat-empty-suggestion-hover-border-color: color-mix(in srgb, var(--primary) 28%, transparent);
+  --chat-empty-suggestion-hover-shadow-color: color-mix(in srgb, var(--primary) 13%, transparent);
+  --chat-empty-suggestion-ring-color: color-mix(in srgb, var(--primary) 12%, transparent);
+  --chat-empty-suggestion-icon-background: color-mix(in srgb, var(--black-50) 9%, transparent);
+  --chat-empty-suggestion-icon-color: color-mix(in srgb, var(--black-50) 90%, transparent);
+  --chat-empty-suggestion-affordance-background: color-mix(in srgb, var(--black-50) 10%, transparent);
   --chat-empty-suggestion-affordance-color: color-mix(in srgb, var(--black) 78%, transparent);
-  --chat-empty-suggestion-affordance-hover-background: color-mix(in srgb, var(--primary) 10%, transparent);
+  --chat-empty-suggestion-affordance-hover-background: color-mix(in srgb, var(--primary) 16%, transparent);
   --chat-empty-suggestion-affordance-hover-color: var(--primary);
 
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: stretch !important;
-  justify-content: space-between !important;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
   appearance: none;
   min-width: 0;
-  width: auto;
-  max-width: 100% !important;
-  min-height: 46px;
-  padding: 0 16px !important;
+  width: 100%;
+  max-width: 100%;
+  min-height: 88px;
+  padding: 12px;
   border: 1px solid var(--chat-empty-suggestion-border-color);
   border-radius: var(--chat-empty-suggestion-radius);
   background: var(--chat-empty-suggestion-background);
   color: var(--chat-empty-suggestion-color);
-  box-shadow: 0 1px 2px var(--chat-empty-suggestion-shadow-color);
+  box-shadow:
+    inset 0 1px 0 var(--chat-empty-suggestion-inner-border-color),
+    0 10px 28px var(--chat-empty-suggestion-shadow-color);
   cursor: pointer;
   font: inherit;
   text-align: left;
+  overflow: hidden;
   transition:
-    background-color 0.2s ease,
+    background 0.2s ease,
     border-color 0.2s ease,
     box-shadow 0.2s ease,
     transform 0.2s ease;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--white) 12%, transparent),
+      transparent 48%
+    );
+    opacity: 0.5;
+    pointer-events: none;
+  }
 
   &:hover,
   &:focus-visible {
     border-color: var(--chat-empty-suggestion-hover-border-color);
     background: var(--chat-empty-suggestion-hover-background);
     box-shadow:
-      0 4px 14px var(--chat-empty-suggestion-hover-shadow-color),
+      inset 0 1px 0 var(--chat-empty-suggestion-inner-border-color),
+      0 16px 42px var(--chat-empty-suggestion-hover-shadow-color),
       0 0 0 3px var(--chat-empty-suggestion-ring-color);
     transform: translateY(-2px);
   }
@@ -2721,6 +2782,7 @@
     outline-offset: 2px;
     box-shadow:
       var(--focus-ring-shadow),
+      inset 0 1px 0 var(--chat-empty-suggestion-inner-border-color),
       0 0 0 3px var(--chat-empty-suggestion-ring-color);
   }
 
@@ -2728,40 +2790,47 @@
     border-color: var(--chat-empty-suggestion-hover-border-color);
     background: var(--chat-empty-suggestion-hover-background);
     box-shadow:
-      0 2px 8px var(--chat-empty-suggestion-hover-shadow-color),
+      inset 0 1px 0 var(--chat-empty-suggestion-inner-border-color),
+      0 8px 24px var(--chat-empty-suggestion-hover-shadow-color),
       0 0 0 3px var(--chat-empty-suggestion-ring-color);
     transform: translateY(0) scale(0.98);
   }
 }
 
 .chat-empty-suggestion-header {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .chat-empty-suggestion-title {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 650;
   color: var(--chat-empty-suggestion-title-color);
-  line-height: 1;
+  line-height: 1.2;
 }
 
 .chat-empty-suggestion-text {
-  display: none !important;
-  color: var(--chat-empty-suggestion-text-color) !important;
+  display: block;
+  color: var(--chat-empty-suggestion-text-color);
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .chat-empty-suggestion-footer {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 0;
-  width: auto;
+  margin-top: 10px;
+  width: 100%;
 }
 
 .chat-empty-suggestion-icon-wrapper {
-  display: none;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 28px;
@@ -2778,16 +2847,16 @@
 }
 
 .chat-empty-suggestion-affordance {
-  flex: 0 0 18px;
-  width: 18px;
-  height: 18px;
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
   border-radius: 999px;
-  background: transparent;
+  background: var(--chat-empty-suggestion-affordance-background);
   color: var(--chat-empty-suggestion-affordance-color);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1;
   transition: transform 0.2s ease, background-color 0.2s ease;
 }
@@ -2814,29 +2883,39 @@
 }
 
 :global(.dark) .chat-empty-suggestion {
-  --chat-empty-suggestion-background: color-mix(in srgb, var(--surface-elevated) 70%, transparent);
+  --chat-empty-suggestion-background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-elevated) 84%, var(--surface-soft)) 0%,
+    color-mix(in srgb, var(--surface-elevated) 72%, var(--surface)) 100%
+  );
   --chat-empty-suggestion-color: color-mix(in srgb, var(--black) 86%, transparent);
   --chat-empty-suggestion-title-color: color-mix(in srgb, var(--black) 92%, transparent);
-  --chat-empty-suggestion-text-color: color-mix(in srgb, var(--black) 62%, transparent);
-  --chat-empty-suggestion-border-color: color-mix(in srgb, var(--black) 10%, transparent);
-  --chat-empty-suggestion-shadow-color: color-mix(in srgb, var(--surface) 20%, transparent);
-  --chat-empty-suggestion-hover-background: color-mix(in srgb, var(--surface-elevated) 80%, var(--surface));
-  --chat-empty-suggestion-hover-border-color: color-mix(in srgb, var(--primary) 30%, transparent);
-  --chat-empty-suggestion-hover-shadow-color: color-mix(in srgb, var(--surface) 30%, transparent);
+  --chat-empty-suggestion-text-color: color-mix(in srgb, var(--black-50) 82%, transparent);
+  --chat-empty-suggestion-border-color: color-mix(in srgb, var(--black) 11%, transparent);
+  --chat-empty-suggestion-inner-border-color: color-mix(in srgb, var(--black) 7%, transparent);
+  --chat-empty-suggestion-shadow-color: color-mix(in srgb, var(--surface) 24%, transparent);
+  --chat-empty-suggestion-hover-background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-elevated) 92%, var(--surface-soft)) 0%,
+    color-mix(in srgb, var(--primary) 12%, var(--surface-elevated)) 100%
+  );
+  --chat-empty-suggestion-hover-border-color: color-mix(in srgb, var(--primary) 32%, transparent);
+  --chat-empty-suggestion-hover-shadow-color: color-mix(in srgb, var(--primary) 10%, var(--surface));
   --chat-empty-suggestion-ring-color: color-mix(in srgb, var(--primary) 16%, transparent);
-  --chat-empty-suggestion-icon-background: color-mix(in srgb, var(--black) 8%, transparent);
-  --chat-empty-suggestion-icon-color: color-mix(in srgb, var(--black) 70%, transparent);
-  --chat-empty-suggestion-affordance-background: color-mix(in srgb, var(--black) 12%, transparent);
-  --chat-empty-suggestion-affordance-color: color-mix(in srgb, var(--black) 78%, transparent);
-  --chat-empty-suggestion-affordance-hover-background: color-mix(in srgb, var(--primary) 15%, transparent);
-  --chat-empty-suggestion-affordance-hover-color: color-mix(in srgb, var(--primary) 44%, var(--black));
+  --chat-empty-suggestion-icon-background: color-mix(in srgb, var(--black) 8%, var(--surface));
+  --chat-empty-suggestion-icon-color: color-mix(in srgb, var(--black) 76%, transparent);
+  --chat-empty-suggestion-affordance-background: color-mix(in srgb, var(--black) 10%, var(--surface));
+  --chat-empty-suggestion-affordance-color: color-mix(in srgb, var(--black) 80%, transparent);
+  --chat-empty-suggestion-affordance-hover-background: color-mix(in srgb, var(--primary) 18%, var(--surface));
+  --chat-empty-suggestion-affordance-hover-color: color-mix(in srgb, var(--primary) 52%, var(--black));
 
   &:hover,
   &:focus-visible {
     border-color: var(--chat-empty-suggestion-hover-border-color);
     background: var(--chat-empty-suggestion-hover-background);
     box-shadow:
-      0 4px 14px var(--chat-empty-suggestion-hover-shadow-color),
+      inset 0 1px 0 var(--chat-empty-suggestion-inner-border-color),
+      0 16px 42px var(--chat-empty-suggestion-hover-shadow-color),
       0 0 0 3px var(--chat-empty-suggestion-ring-color);
   }
 
@@ -2845,6 +2924,7 @@
     outline-offset: 2px;
     box-shadow:
       var(--focus-ring-shadow),
+      inset 0 1px 0 var(--chat-empty-suggestion-inner-border-color),
       0 0 0 3px var(--chat-empty-suggestion-ring-color);
   }
 }
@@ -2854,16 +2934,16 @@
 }
 
 :global(.dark) .chat-empty-suggestion-text {
-  display: none !important;
+  display: block;
 }
 
 :global(.dark) .chat-empty-suggestion-icon-wrapper {
-  display: none;
+  display: inline-flex;
   color: var(--chat-empty-suggestion-icon-color);
 }
 
 :global(.dark) .chat-empty-suggestion-affordance {
-  background: transparent;
+  background: var(--chat-empty-suggestion-affordance-background);
   color: var(--chat-empty-suggestion-affordance-color);
 }
 
@@ -2889,62 +2969,71 @@
   }
 
   :global(body:not(.light)) .chat-empty-suggestion {
-    --chat-empty-suggestion-background: color-mix(in srgb, var(--surface-elevated) 70%, transparent);
+    --chat-empty-suggestion-background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-elevated) 84%, var(--surface-soft)) 0%,
+      color-mix(in srgb, var(--surface-elevated) 72%, var(--surface)) 100%
+    );
     --chat-empty-suggestion-color: color-mix(in srgb, var(--black) 86%, transparent);
     --chat-empty-suggestion-title-color: color-mix(in srgb, var(--black) 92%, transparent);
-    --chat-empty-suggestion-text-color: color-mix(in srgb, var(--black) 62%, transparent);
-    --chat-empty-suggestion-border-color: color-mix(in srgb, var(--black) 10%, transparent);
-    --chat-empty-suggestion-shadow-color: color-mix(in srgb, var(--surface) 20%, transparent);
-    --chat-empty-suggestion-hover-background: color-mix(in srgb, var(--surface-elevated) 80%, var(--surface));
-    --chat-empty-suggestion-hover-border-color: color-mix(in srgb, var(--primary) 30%, transparent);
-    --chat-empty-suggestion-hover-shadow-color: color-mix(in srgb, var(--surface) 30%, transparent);
+    --chat-empty-suggestion-text-color: color-mix(in srgb, var(--black-50) 82%, transparent);
+    --chat-empty-suggestion-border-color: color-mix(in srgb, var(--black) 11%, transparent);
+    --chat-empty-suggestion-inner-border-color: color-mix(in srgb, var(--black) 7%, transparent);
+    --chat-empty-suggestion-shadow-color: color-mix(in srgb, var(--surface) 24%, transparent);
+    --chat-empty-suggestion-hover-background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-elevated) 92%, var(--surface-soft)) 0%,
+      color-mix(in srgb, var(--primary) 12%, var(--surface-elevated)) 100%
+    );
+    --chat-empty-suggestion-hover-border-color: color-mix(in srgb, var(--primary) 32%, transparent);
+    --chat-empty-suggestion-hover-shadow-color: color-mix(in srgb, var(--primary) 10%, var(--surface));
     --chat-empty-suggestion-ring-color: color-mix(in srgb, var(--primary) 16%, transparent);
-    --chat-empty-suggestion-icon-background: color-mix(in srgb, var(--black) 8%, transparent);
-    --chat-empty-suggestion-icon-color: color-mix(in srgb, var(--black) 70%, transparent);
-    --chat-empty-suggestion-affordance-background: color-mix(in srgb, var(--black) 12%, transparent);
-    --chat-empty-suggestion-affordance-color: color-mix(in srgb, var(--black) 78%, transparent);
-    --chat-empty-suggestion-affordance-hover-background: color-mix(in srgb, var(--primary) 15%, transparent);
-    --chat-empty-suggestion-affordance-hover-color: color-mix(in srgb, var(--primary) 44%, var(--black));
+    --chat-empty-suggestion-icon-background: color-mix(in srgb, var(--black) 8%, var(--surface));
+    --chat-empty-suggestion-icon-color: color-mix(in srgb, var(--black) 76%, transparent);
+    --chat-empty-suggestion-affordance-background: color-mix(in srgb, var(--black) 10%, var(--surface));
+    --chat-empty-suggestion-affordance-color: color-mix(in srgb, var(--black) 80%, transparent);
+    --chat-empty-suggestion-affordance-hover-background: color-mix(in srgb, var(--primary) 18%, var(--surface));
+    --chat-empty-suggestion-affordance-hover-color: color-mix(in srgb, var(--primary) 52%, var(--black));
   }
 }
 
 @media screen and (max-width: 1180px) {
   .chat-empty-suggestions {
-    justify-content: center !important;
-    width: min(640px, 100%) !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: min(620px, 100%);
     max-width: 100%;
-    gap: 10px !important;
+    gap: 10px;
   }
 
   .chat-empty-suggestion {
-    min-height: 46px !important;
+    min-height: 88px;
   }
 }
 
 // Container Queries responsive design
-@container chat-container (max-width: 768px) {
+@container chat-container (max-width: 560px) {
   .chat-empty-suggestions {
-    justify-content: center !important;
-    gap: 10px !important;
-    width: min(560px, 100%) !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    width: min(360px, 100%);
   }
 }
 
 @container chat-container (max-width: 480px) {
   .chat-empty-suggestions {
-    justify-content: center !important;
-    gap: 8px !important;
-    width: min(360px, 100%) !important;
-    margin-top: 14px !important;
-    padding: 0 !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: min(360px, 100%);
+    margin-top: 14px;
+    padding: 0;
   }
   .chat-empty-suggestion {
-    min-height: 40px !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    padding: 0 12px !important;
-    border-radius: var(--chat-empty-suggestion-radius) !important;
+    min-height: 86px;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+    padding: 12px;
+    border-radius: var(--chat-empty-suggestion-radius);
   }
   .chat-empty-suggestion-header {
     justify-content: center;
@@ -2956,30 +3045,30 @@
     white-space: nowrap;
   }
   .chat-empty-suggestion-text {
-    display: none !important; // Hide subtitle in tiny screens to save height
+    display: none;
   }
   .chat-empty-suggestion-footer {
-    width: auto !important;
-    margin-top: 0 !important;
+    width: 100%;
+    margin-top: 10px;
     gap: 6px;
   }
   .chat-empty-suggestion-icon-wrapper {
-    display: inline-flex !important;
-    flex: 0 0 22px !important;
-    width: 22px !important;
-    height: 22px !important;
+    display: inline-flex;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
     border-radius: 7px;
     color: var(--chat-empty-suggestion-icon-color);
 
     svg {
-      width: 13px;
-      height: 13px;
+      width: 14px;
+      height: 14px;
     }
   }
   .chat-empty-suggestion-affordance {
-    flex: 0 0 20px !important;
-    width: 20px !important;
-    height: 20px !important;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
   }
 }
 
@@ -4439,7 +4528,7 @@
 }
 
 .chat-message-item-image {
-  width: auto;
+  width: 100%;
   height: auto;
   max-height: min(52vh, 520px);
   object-fit: contain;
@@ -4498,8 +4587,10 @@
 
   position: relative;
   display: block;
-  width: max-content;
+  box-sizing: border-box;
+  width: fit-content;
   max-width: 100%;
+  overflow: hidden;
   margin-top: 10px;
   line-height: 0;
 
@@ -4561,7 +4652,9 @@
 
 .chat-message-image-preview-button {
   display: block;
+  width: 100%;
   max-width: 100%;
+  overflow: hidden;
   padding: 0;
   border: 0;
   background: transparent;
@@ -5753,7 +5846,7 @@
 }
 
 .chat-input-action-menu-backdrop {
-  --chat-input-action-menu-backdrop-background: color-mix(in srgb, var(--surface) 18%, transparent);
+  --chat-input-action-menu-backdrop-background: color-mix(in srgb, var(--surface) 12%, transparent);
 
   position: fixed;
   inset: 0;
@@ -5774,8 +5867,8 @@
   &-open {
     display: block;
     background: var(--chat-input-action-menu-backdrop-background);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(1px);
+    -webkit-backdrop-filter: blur(1px);
   }
 }
 
@@ -5783,41 +5876,53 @@
   --chat-multimodal-section-title-color: color-mix(in srgb, var(--black) 92%, transparent);
   --chat-multimodal-section-subtitle-color: color-mix(in srgb, var(--black-50) 92%, transparent);
   --chat-multimodal-section-divider-color: color-mix(in srgb, var(--black-50) 12%, transparent);
-  --chat-multimodal-section-primary-background: color-mix(in srgb, var(--primary) 10%, var(--surface-elevated));
-  --chat-multimodal-section-primary-border-color: color-mix(in srgb, var(--primary) 14%, transparent);
+  --chat-multimodal-section-primary-background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--primary) 11%, var(--surface-elevated)) 0%,
+    color-mix(in srgb, var(--surface-elevated) 92%, var(--surface-soft)) 100%
+  );
+  --chat-multimodal-section-primary-border-color: color-mix(in srgb, var(--primary) 18%, transparent);
   --chat-multimodal-section-meta-background: color-mix(in srgb, var(--surface-elevated) 82%, transparent);
   --chat-multimodal-section-meta-color: color-mix(in srgb, var(--black-50) 92%, transparent);
   --chat-multimodal-section-meta-warning-background: color-mix(in srgb, rgb(234, 179, 8) 12%, var(--surface-elevated));
   --chat-multimodal-section-meta-warning-color: color-mix(in srgb, rgb(133, 77, 14) 82%, var(--black));
   --chat-input-action-active-background: color-mix(in srgb, var(--primary) 10%, transparent);
   --chat-input-action-active-color: var(--primary);
-  --chat-input-action-hover-background: color-mix(in srgb, var(--primary) 7%, transparent);
+  --chat-input-action-background: color-mix(in srgb, var(--surface-elevated) 68%, transparent);
+  --chat-input-action-border-color: color-mix(in srgb, var(--black-50) 10%, transparent);
+  --chat-input-action-hover-background: color-mix(in srgb, var(--primary) 8%, var(--surface-elevated));
   --chat-input-action-hover-color: color-mix(in srgb, var(--black) 86%, transparent);
   --chat-input-action-hover-shadow-color: color-mix(in srgb, var(--primary) 8%, transparent);
   --chat-input-action-disabled-background: color-mix(in srgb, var(--surface-soft) 46%, transparent);
   --chat-input-action-disabled-color: color-mix(in srgb, var(--black-50) 74%, transparent);
   --chat-input-action-disabled-ring-color: color-mix(in srgb, var(--black-50) 10%, transparent);
-  --chat-input-action-menu-radius: 15px;
-  --chat-input-action-menu-border-color: color-mix(in srgb, var(--black) 10%, transparent);
-  --chat-input-action-menu-background: color-mix(in srgb, var(--surface-elevated) 96%, var(--surface-soft));
-  --chat-input-action-menu-shadow-color: color-mix(in srgb, var(--black-50) 22%, transparent);
-  --chat-input-action-menu-accent-shadow-color: color-mix(in srgb, var(--primary) 8%, transparent);
+  --chat-input-action-menu-radius: 16px;
+  --chat-input-action-menu-padding: 8px;
+  --chat-input-action-menu-section-padding: 8px;
+  --chat-input-action-menu-border-color: color-mix(in srgb, var(--primary) 14%, var(--black-50));
+  --chat-input-action-menu-background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-elevated) 98%, var(--surface-soft)) 0%,
+    color-mix(in srgb, var(--surface-elevated) 92%, var(--surface)) 100%
+  );
+  --chat-input-action-menu-shadow-color: color-mix(in srgb, var(--black-50) 24%, transparent);
+  --chat-input-action-menu-accent-shadow-color: color-mix(in srgb, var(--primary) 12%, transparent);
 
   position: absolute;
-  left: 0;
+  left: 52px;
   bottom: 70px;
-  width: min(300px, calc(100vw - 32px));
-  max-height: min(420px, 58vh);
+  width: min(320px, calc(100vw - 84px));
+  max-height: min(460px, calc(100dvh - 180px));
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
   box-sizing: border-box;
-  padding: 9px;
+  padding: var(--chat-input-action-menu-padding);
   border: 1px solid var(--chat-input-action-menu-border-color);
   border-radius: var(--chat-input-action-menu-radius);
   background: var(--chat-input-action-menu-background);
   box-shadow:
-    0 18px 48px var(--chat-input-action-menu-shadow-color),
+    0 24px 68px var(--chat-input-action-menu-shadow-color),
     0 0 0 1px var(--chat-input-action-menu-accent-shadow-color);
   z-index: 30;
 
@@ -5845,6 +5950,7 @@
   .chat-input-actions {
     flex-direction: column;
     align-items: stretch;
+    gap: 6px;
   }
 
   .chat-multimodal-tray,
@@ -5852,19 +5958,20 @@
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 4px;
+    gap: 6px;
     width: 100%;
     min-width: 0;
   }
 
   .chat-multimodal-section {
-    padding: 6px;
-    border-radius: 13px;
+    box-sizing: border-box;
+    padding: var(--chat-input-action-menu-section-padding);
+    border-radius: 12px;
   }
 
   .chat-multimodal-section + .chat-multimodal-section {
-    margin-top: 4px;
-    padding-top: 8px;
+    margin-top: 2px;
+    padding-top: var(--chat-input-action-menu-section-padding);
     border-top: 1px solid var(--chat-multimodal-section-divider-color);
   }
 
@@ -5881,10 +5988,10 @@
   .chat-input-action {
     width: 100%;
     height: 40px;
-    padding: 0 12px;
-    border: 0;
-    border-radius: 9px;
-    background: transparent;
+    padding: 0 11px;
+    border: 1px solid var(--chat-input-action-border-color);
+    border-radius: 10px;
+    background: var(--chat-input-action-background);
     box-sizing: border-box;
 
     .text {
@@ -5899,6 +6006,7 @@
     &:not(:disabled):focus-visible {
       width: 100%;
       background: var(--chat-input-action-hover-background);
+      border-color: var(--chat-multimodal-section-primary-border-color);
       color: var(--chat-input-action-hover-color);
       box-shadow: 0 6px 18px var(--chat-input-action-hover-shadow-color);
     }
@@ -5935,8 +6043,12 @@
   --chat-multimodal-section-title-color: color-mix(in srgb, var(--black) 94%, transparent);
   --chat-multimodal-section-subtitle-color: color-mix(in srgb, var(--black-50) 88%, transparent);
   --chat-multimodal-section-divider-color: color-mix(in srgb, var(--black) 9%, transparent);
-  --chat-multimodal-section-primary-background: color-mix(in srgb, var(--primary) 18%, var(--surface));
-  --chat-multimodal-section-primary-border-color: color-mix(in srgb, var(--primary) 15%, transparent);
+  --chat-multimodal-section-primary-background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--primary) 18%, var(--surface)) 0%,
+    color-mix(in srgb, var(--surface-elevated) 86%, var(--surface)) 100%
+  );
+  --chat-multimodal-section-primary-border-color: color-mix(in srgb, var(--primary) 20%, transparent);
   --chat-multimodal-section-meta-background: color-mix(in srgb, var(--black) 8%, transparent);
   --chat-multimodal-section-meta-color: color-mix(in srgb, var(--black-50) 88%, transparent);
   --chat-multimodal-section-meta-warning-background: color-mix(in srgb, rgb(251, 191, 36) 15%, var(--surface));
@@ -5946,16 +6058,22 @@
 :global(.dark) .chat-input-action-menu {
   --chat-input-action-active-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
   --chat-input-action-active-color: color-mix(in srgb, var(--primary) 78%, var(--black));
+  --chat-input-action-background: color-mix(in srgb, var(--black) 7%, transparent);
+  --chat-input-action-border-color: color-mix(in srgb, var(--black) 8%, transparent);
   --chat-input-action-hover-background: color-mix(in srgb, var(--primary) 12%, var(--surface));
   --chat-input-action-hover-color: color-mix(in srgb, var(--black) 90%, transparent);
   --chat-input-action-hover-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
   --chat-input-action-disabled-background: color-mix(in srgb, var(--black) 7%, transparent);
   --chat-input-action-disabled-color: color-mix(in srgb, var(--black-50) 88%, transparent);
   --chat-input-action-disabled-ring-color: color-mix(in srgb, var(--black) 8%, transparent);
-  --chat-input-action-menu-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-  --chat-input-action-menu-background: color-mix(in srgb, var(--surface-elevated) 92%, var(--surface));
-  --chat-input-action-menu-shadow-color: color-mix(in srgb, var(--surface) 32%, transparent);
-  --chat-input-action-menu-accent-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
+  --chat-input-action-menu-border-color: color-mix(in srgb, var(--primary) 16%, var(--black));
+  --chat-input-action-menu-background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-elevated) 94%, var(--surface-soft)) 0%,
+    color-mix(in srgb, var(--surface-elevated) 86%, var(--surface)) 100%
+  );
+  --chat-input-action-menu-shadow-color: color-mix(in srgb, var(--surface) 38%, transparent);
+  --chat-input-action-menu-accent-shadow-color: color-mix(in srgb, var(--primary) 11%, var(--surface));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -5963,8 +6081,12 @@
     --chat-multimodal-section-title-color: color-mix(in srgb, var(--black) 94%, transparent);
     --chat-multimodal-section-subtitle-color: color-mix(in srgb, var(--black-50) 88%, transparent);
     --chat-multimodal-section-divider-color: color-mix(in srgb, var(--black) 9%, transparent);
-    --chat-multimodal-section-primary-background: color-mix(in srgb, var(--primary) 18%, var(--surface));
-    --chat-multimodal-section-primary-border-color: color-mix(in srgb, var(--primary) 15%, transparent);
+    --chat-multimodal-section-primary-background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--primary) 18%, var(--surface)) 0%,
+      color-mix(in srgb, var(--surface-elevated) 86%, var(--surface)) 100%
+    );
+    --chat-multimodal-section-primary-border-color: color-mix(in srgb, var(--primary) 20%, transparent);
     --chat-multimodal-section-meta-background: color-mix(in srgb, var(--black) 8%, transparent);
     --chat-multimodal-section-meta-color: color-mix(in srgb, var(--black-50) 88%, transparent);
     --chat-multimodal-section-meta-warning-background: color-mix(in srgb, rgb(251, 191, 36) 15%, var(--surface));
@@ -5974,16 +6096,22 @@
   :global(body:not(.light)) .chat-input-action-menu {
     --chat-input-action-active-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
     --chat-input-action-active-color: color-mix(in srgb, var(--primary) 78%, var(--black));
+    --chat-input-action-background: color-mix(in srgb, var(--black) 7%, transparent);
+    --chat-input-action-border-color: color-mix(in srgb, var(--black) 8%, transparent);
     --chat-input-action-hover-background: color-mix(in srgb, var(--primary) 12%, var(--surface));
     --chat-input-action-hover-color: color-mix(in srgb, var(--black) 90%, transparent);
     --chat-input-action-hover-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
     --chat-input-action-disabled-background: color-mix(in srgb, var(--black) 7%, transparent);
     --chat-input-action-disabled-color: color-mix(in srgb, var(--black-50) 88%, transparent);
     --chat-input-action-disabled-ring-color: color-mix(in srgb, var(--black) 8%, transparent);
-    --chat-input-action-menu-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-    --chat-input-action-menu-background: color-mix(in srgb, var(--surface-elevated) 92%, var(--surface));
-    --chat-input-action-menu-shadow-color: color-mix(in srgb, var(--surface) 32%, transparent);
-    --chat-input-action-menu-accent-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
+    --chat-input-action-menu-border-color: color-mix(in srgb, var(--primary) 16%, var(--black));
+    --chat-input-action-menu-background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-elevated) 94%, var(--surface-soft)) 0%,
+      color-mix(in srgb, var(--surface-elevated) 86%, var(--surface)) 100%
+    );
+    --chat-input-action-menu-shadow-color: color-mix(in srgb, var(--surface) 38%, transparent);
+    --chat-input-action-menu-accent-shadow-color: color-mix(in srgb, var(--primary) 11%, var(--surface));
   }
 }
 
@@ -6074,15 +6202,17 @@
   }
 
   .chat-empty-suggestions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(320px, 100%);
     max-width: 320px;
     gap: 8px;
     margin-top: 0;
   }
 
   .chat-empty-suggestion {
-    max-width: 150px;
-    min-height: 44px;
-    padding: 0 12px;
+    max-width: 100%;
+    min-height: 86px;
+    padding: 12px;
     font-size: 12px;
   }
 
@@ -6150,6 +6280,7 @@
 
   .chat-input-action-menu {
     bottom: calc(64px + env(safe-area-inset-bottom));
+    left: 0;
     width: min(320px, calc(100vw - 48px));
     max-height: min(380px, calc(100dvh - 140px));
     overscroll-behavior: contain;
@@ -6364,7 +6495,7 @@
 
   .chat-input-action-menu {
     bottom: calc(100% + 12px);
-    width: min(300px, calc(100vw - var(--sidebar-width) - 48px));
+    width: min(320px, calc(100% - 52px));
   }
 }
 

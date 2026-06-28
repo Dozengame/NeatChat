@@ -212,7 +212,6 @@ export function Modal(props: {
             className={styles["modal-header-action"]}
             onClick={() => setMax(!isMax)}
             aria-label={isMax ? "Restore modal" : "Maximize modal"}
-            style={unstyledButton}
           >
             {isMax ? <MinIcon /> : <MaxIcon />}
           </button>
@@ -221,7 +220,6 @@ export function Modal(props: {
             className={styles["modal-header-action"]}
             onClick={onClose}
             aria-label="Close modal"
-            style={unstyledButton}
           >
             <CloseIcon />
           </button>

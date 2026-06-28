@@ -3124,6 +3124,7 @@ function useChatInnerView() {
   const showEmptyHero =
     showEmptyState && !hasActiveInputContent && !showChatActionMenu;
   const showDesktopModelControls = !showEmptyState;
+  const showDesktopChatHeader = !isCompactScreen && !showEmptyState;
   const applyEmptySuggestion = useCallback(
     (suggestion: string) => {
       setShowChatActionMenu(false);
@@ -4580,7 +4581,7 @@ function useChatInnerView() {
           />
           {promptToast}
         </div>
-      ) : (
+      ) : showDesktopChatHeader ? (
         <div
           className={clsx("window-header", styles["chat-desktop-header"])}
           data-tauri-drag-region
@@ -4710,7 +4711,7 @@ function useChatInnerView() {
           )}
           {promptToast}
         </div>
-      )}
+      ) : null}
 
       {/* 
         We always render the model menu in the DOM to support smooth CSS exit transitions.
@@ -5514,7 +5515,7 @@ function useChatInnerView() {
                   setShowChatActionMenu((open) => !open);
                 }}
                 aria-label={
-                  showChatActionMenu ? "关闭对话工具" : "打开对话工具"
+                  showChatActionMenu ? "收起对话工具" : "打开对话工具"
                 }
                 aria-controls="chat-input-action-menu"
                 aria-haspopup="dialog"

@@ -229,23 +229,21 @@
 @media screen and (max-width: 600px) {
   .mask {
     align-items: flex-end;
+    justify-content: center;
     height: 100dvh;
-    padding: 0;
+    padding: 0 max(12px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
   }
 
   .panel {
-    position: fixed;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    position: relative;
     width: 100%;
-    max-width: none;
-    max-height: min(620px, calc(78dvh - env(safe-area-inset-bottom)));
+    max-width: 420px;
+    max-height: min(620px, calc(86dvh - env(safe-area-inset-bottom)));
     margin: 0;
-    border-right: 0;
-    border-bottom: 0;
-    border-left: 0;
-    border-radius: var(--update-announcement-mobile-panel-radius) var(--update-announcement-mobile-panel-radius) 0 0;
+    border: 1px solid var(--update-announcement-panel-border-color);
+    border-radius: var(--update-announcement-mobile-panel-radius);
     animation: updateAnnouncementSheetIn 0.28s cubic-bezier(0.2, 0, 0, 1) both;
   }
 
@@ -259,7 +257,7 @@
 
   .footer {
     justify-content: center;
-    padding: 14px 20px calc(18px + env(safe-area-inset-bottom));
+    padding: 14px 20px 18px;
   }
 
   .confirm {

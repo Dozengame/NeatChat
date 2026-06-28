@@ -784,6 +784,14 @@ describe("Gemini visual migration shell", () => {
       mobileStyles,
       ".chat-empty-title",
     );
+    const desktopEmptyContainerBlock = readCssBlock(
+      chatStyles,
+      "@media screen and (max-width: 1180px)",
+    );
+    const desktopEmptySuggestionsBlock = readCssBlock(
+      desktopEmptyContainerBlock,
+      ".chat-empty-suggestions",
+    );
     const narrowEmptyContainerBlock = readCssBlock(
       chatStyles,
       "@container chat-container (max-width: 480px)",
@@ -1580,6 +1588,9 @@ describe("Gemini visual migration shell", () => {
       /const showEmptyHero\s*=\s*showEmptyState\s*&&\s*!hasActiveInputContent\s*&&\s*!showChatActionMenu;/,
     );
     expect(chat).toContain("const showDesktopModelControls = !showEmptyState;");
+    expect(chat).toContain(
+      "const showDesktopChatHeader = !isCompactScreen && !showEmptyState;",
+    );
     expect(chat).toContain('[styles["chat-body-empty"]]: showEmptyHero');
     expect(chat).toContain("{showEmptyHero && (");
     expect(chat).toContain("Locale.Chat.EmptyTitle");
@@ -1686,6 +1697,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["chat-desktop-header-actions"]');
     expect(chat).toContain('styles["chat-desktop-header-action"]');
     expect(chat).toContain('styles["chat-desktop-header-action-export"]');
+    expect(chat).toMatch(
+      /\) : showDesktopChatHeader \? \(\s*<div[\s\S]*styles\["chat-desktop-header"\]/,
+    );
     expect(desktopHeaderExportActionBlock).not.toMatch(
       /display:\s*none\s*!important/,
     );
@@ -1833,8 +1847,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('role="option"');
     expect(chat).toContain("aria-selected={selected}");
     expect(chat).toContain('"打开对话工具"');
+    expect(chat).toContain('"收起对话工具"');
     expect(chat).toMatch(
-      /aria-label=\{\s*showChatActionMenu\s*\?\s*"关闭对话工具"\s*:\s*"打开对话工具"\s*\}/,
+      /aria-label=\{\s*showChatActionMenu\s*\?\s*"收起对话工具"\s*:\s*"打开对话工具"\s*\}/,
     );
     expect(chat).toContain('id="chat-prompt-hints"');
     expect(chat).toMatch(
@@ -2617,9 +2632,11 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain("@keyframes chat-empty-title-shimmer");
     expect(chatStyles).not.toContain("@keyframes textShine");
     expect(chatStyles).toContain(".chat-empty-suggestions");
-    expect(emptySuggestionsBlock).toMatch(/display:\s*flex;/);
-    expect(emptySuggestionsBlock).toMatch(/justify-content:\s*center;/);
-    expect(emptySuggestionsBlock).toMatch(/flex-wrap:\s*wrap;/);
+    expect(emptySuggestionsBlock).toMatch(/display:\s*grid;/);
+    expect(emptySuggestionsBlock).toMatch(
+      /grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/,
+    );
+    expect(emptySuggestionsBlock).toMatch(/width:\s*min\(640px,\s*100%\);/);
     expect(emptySuggestionsBlock).not.toMatch(/display:\s*none/);
     expect(chatStyles).toContain(".chat-empty-suggestion-item");
     expect(chatStyles).toContain(".chat-empty-suggestion");
@@ -2628,26 +2645,27 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /className=\{styles\["chat-empty-suggestion"\]\}[\s\S]*<span[\s\S]*className=\{styles\["chat-empty-suggestion-text"\]\}[\s\S]*>\s*\{suggestion\}\s*<\/span>[\s\S]*<span[\s\S]*styles\["chat-empty-suggestion-affordance"\][\s\S]*aria-hidden="true"/,
     );
-    expect(emptySuggestionBlock).toMatch(/display:\s*inline-flex;/);
-    expect(emptySuggestionBlock).toMatch(/align-items:\s*center;/);
-    expect(emptySuggestionBlock).toMatch(/justify-content:\s*center;/);
-    expect(emptySuggestionBlock).toMatch(/gap:\s*6px;/);
-    expect(emptySuggestionBlock).toMatch(/width:\s*auto;/);
-    expect(emptySuggestionBlock).toMatch(/min-height:\s*46px;/);
-    expect(emptySuggestionBlock).not.toMatch(/min-height:\s*1[01]\dpx/);
+    expect(emptySuggestionBlock).toMatch(/display:\s*flex;/);
+    expect(emptySuggestionBlock).toMatch(/flex-direction:\s*column;/);
+    expect(emptySuggestionBlock).toMatch(/align-items:\s*stretch;/);
     expect(emptySuggestionBlock).toMatch(
-      /--chat-empty-suggestion-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 68%,\s*transparent\);/,
+      /justify-content:\s*space-between;/,
+    );
+    expect(emptySuggestionBlock).toMatch(/width:\s*100%;/);
+    expect(emptySuggestionBlock).toMatch(/min-height:\s*88px;/);
+    expect(emptySuggestionBlock).toMatch(
+      /--chat-empty-suggestion-background:\s*linear-gradient\(/,
     );
     expect(emptySuggestionBlock).toMatch(
-      /--chat-empty-suggestion-border-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 12%,\s*transparent\);/,
+      /--chat-empty-suggestion-border-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 14%,\s*transparent\);/,
     );
     expect(emptySuggestionBlock).toMatch(
-      /--chat-empty-suggestion-title-color:\s*color-mix\(in srgb,\s*var\(--black\) 88%,\s*transparent\);/,
+      /--chat-empty-suggestion-title-color:\s*color-mix\(in srgb,\s*var\(--black\) 92%,\s*transparent\);/,
     );
     expect(emptySuggestionBlock).toMatch(
-      /--chat-empty-suggestion-radius:\s*999px;/,
+      /--chat-empty-suggestion-radius:\s*8px;/,
     );
-    expect(emptySuggestionBlock).toMatch(/padding:\s*0 16px\s*!important;/);
+    expect(emptySuggestionBlock).toMatch(/padding:\s*12px;/);
     expect(emptySuggestionBlock).toMatch(
       /border:\s*1px solid var\(--chat-empty-suggestion-border-color\);/,
     );
@@ -2661,13 +2679,13 @@ describe("Gemini visual migration shell", () => {
       /color:\s*var\(--chat-empty-suggestion-color\);/,
     );
     expect(emptySuggestionBlock).toMatch(
-      /box-shadow:\s*0 1px 2px var\(--chat-empty-suggestion-shadow-color\);/,
+      /box-shadow:[\s\S]*inset 0 1px 0 var\(--chat-empty-suggestion-inner-border-color\),[\s\S]*0 10px 28px var\(--chat-empty-suggestion-shadow-color\);/,
     );
     expect(emptySuggestionBlock).toMatch(
       /&:hover,\s*&:focus-visible\s*\{[\s\S]*border-color:\s*var\(--chat-empty-suggestion-hover-border-color\);[\s\S]*background:\s*var\(--chat-empty-suggestion-hover-background\);/,
     );
     expect(emptySuggestionBlock).toMatch(
-      /&:focus-visible\s*\{[\s\S]*outline:\s*var\(--focus-ring\);[\s\S]*outline-offset:\s*2px;[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\),[\s\S]*0 0 0 3px var\(--chat-empty-suggestion-ring-color\);/,
+      /&:focus-visible\s*\{[\s\S]*outline:\s*var\(--focus-ring\);[\s\S]*outline-offset:\s*2px;[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\),[\s\S]*inset 0 1px 0 var\(--chat-empty-suggestion-inner-border-color\),[\s\S]*0 0 0 3px var\(--chat-empty-suggestion-ring-color\);/,
     );
     expect(emptySuggestionBlock).toContain("&:active");
     expect(emptySuggestionBlock).toMatch(
@@ -2676,25 +2694,25 @@ describe("Gemini visual migration shell", () => {
     expect(emptySuggestionTitleBlock).toMatch(
       /color:\s*var\(--chat-empty-suggestion-title-color\);/,
     );
-    expect(emptySuggestionTitleBlock).toMatch(/line-height:\s*1;/);
-    expect(emptySuggestionTextBlock).toMatch(/display:\s*none\s*!important;/);
-    expect(emptySuggestionFooterBlock).toMatch(/width:\s*auto;/);
-    expect(emptySuggestionFooterBlock).toMatch(/margin-top:\s*0;/);
-    expect(emptySuggestionIconWrapperBlock).toMatch(/display:\s*none;/);
+    expect(emptySuggestionTitleBlock).toMatch(/line-height:\s*1\.2;/);
+    expect(emptySuggestionTextBlock).toMatch(/display:\s*block;/);
+    expect(emptySuggestionFooterBlock).toMatch(/width:\s*100%;/);
+    expect(emptySuggestionFooterBlock).toMatch(/margin-top:\s*10px;/);
+    expect(emptySuggestionIconWrapperBlock).toMatch(/display:\s*inline-flex;/);
     expect(emptySuggestionIconWrapperBlock).toMatch(
       /color:\s*var\(--chat-empty-suggestion-icon-color\);/,
     );
-    expect(emptySuggestionAffordanceBlock).toMatch(/flex:\s*0 0 18px;/);
-    expect(emptySuggestionAffordanceBlock).toMatch(/width:\s*18px;/);
-    expect(emptySuggestionAffordanceBlock).toMatch(/height:\s*18px;/);
+    expect(emptySuggestionAffordanceBlock).toMatch(/flex:\s*0 0 26px;/);
+    expect(emptySuggestionAffordanceBlock).toMatch(/width:\s*26px;/);
+    expect(emptySuggestionAffordanceBlock).toMatch(/height:\s*26px;/);
     expect(emptySuggestionAffordanceBlock).toMatch(/border-radius:\s*999px;/);
     expect(emptySuggestionAffordanceBlock).toMatch(
-      /background:\s*transparent;/,
+      /background:\s*var\(--chat-empty-suggestion-affordance-background\);/,
     );
     expect(emptySuggestionAffordanceBlock).toMatch(
       /color:\s*var\(--chat-empty-suggestion-affordance-color\);/,
     );
-    expect(emptySuggestionAffordanceBlock).toMatch(/font-size:\s*11px;/);
+    expect(emptySuggestionAffordanceBlock).toMatch(/font-size:\s*13px;/);
     expect(emptySuggestionFocusAffordanceBlock).toMatch(
       /transform:\s*translateX\(1px\);/,
     );
@@ -2705,36 +2723,36 @@ describe("Gemini visual migration shell", () => {
       /color:\s*var\(--chat-empty-suggestion-affordance-hover-color\);/,
     );
     expect(darkEmptySuggestionBlock).toMatch(
-      /--chat-empty-suggestion-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 70%,\s*transparent\);/,
+      /--chat-empty-suggestion-background:\s*linear-gradient\(/,
     );
     expect(darkEmptySuggestionBlock).toMatch(
-      /--chat-empty-suggestion-hover-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 80%,\s*var\(--surface\)\);/,
+      /--chat-empty-suggestion-hover-background:\s*linear-gradient\(/,
     );
     expect(darkEmptySuggestionBlock).toMatch(
-      /--chat-empty-suggestion-affordance-hover-color:\s*color-mix\(in srgb,\s*var\(--primary\) 44%,\s*var\(--black\)\);/,
+      /--chat-empty-suggestion-affordance-hover-color:\s*color-mix\(in srgb,\s*var\(--primary\) 52%,\s*var\(--black\)\);/,
     );
     expect(darkEmptySuggestionBlock).toMatch(
-      /&:focus-visible\s*\{[\s\S]*outline:\s*var\(--focus-ring\);[\s\S]*outline-offset:\s*2px;[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\),[\s\S]*0 0 0 3px var\(--chat-empty-suggestion-ring-color\);/,
+      /&:focus-visible\s*\{[\s\S]*outline:\s*var\(--focus-ring\);[\s\S]*outline-offset:\s*2px;[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\),[\s\S]*inset 0 1px 0 var\(--chat-empty-suggestion-inner-border-color\),[\s\S]*0 0 0 3px var\(--chat-empty-suggestion-ring-color\);/,
     );
     expect(darkEmptySuggestionTitleBlock).toMatch(
       /color:\s*var\(--chat-empty-suggestion-title-color\);/,
     );
     expect(darkEmptySuggestionTextBlock).toMatch(
-      /display:\s*none\s*!important;/,
+      /display:\s*block;/,
     );
     expect(darkEmptySuggestionIconWrapperBlock).toMatch(
-      /display:\s*none;/,
+      /display:\s*inline-flex;/,
     );
     expect(darkEmptySuggestionAffordanceBlock).toMatch(
-      /background:\s*transparent;/,
+      /background:\s*var\(--chat-empty-suggestion-affordance-background\);/,
     );
     expect(autoDarkEmptySuggestionSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkEmptySuggestionMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkEmptySuggestionBlock).toMatch(
-      /--chat-empty-suggestion-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 70%,\s*transparent\);/,
+      /--chat-empty-suggestion-background:\s*linear-gradient\(/,
     );
     expect(autoDarkEmptySuggestionBlock).toMatch(
-      /--chat-empty-suggestion-hover-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 80%,\s*var\(--surface\)\);/,
+      /--chat-empty-suggestion-hover-background:\s*linear-gradient\(/,
     );
     expect(emptySuggestionToneScope).not.toMatch(legacyEmptySuggestionPaint);
     expect(reducedMotionBlock).toMatch(
@@ -2756,36 +2774,39 @@ describe("Gemini visual migration shell", () => {
       /\.chat-desktop-header,\s*\.chat-mobile-header,\s*\.chat-mobile-header-button,\s*\.chat-mobile-model-title,\s*\.chat-desktop-model-title\s*\{[\s\S]*transition-duration:\s*0\.01ms !important;/,
     );
     expect(emptySuggestionTextBlock).not.toMatch(/-webkit-line-clamp/);
-    expect(mobileEmptySuggestionBlock).toMatch(/min-height:\s*44px;/);
-    expect(narrowEmptySuggestionsBlock).toMatch(
-      /justify-content:\s*center\s*!important;/,
+    expect(mobileEmptySuggestionBlock).toMatch(/min-height:\s*86px;/);
+    expect(desktopEmptySuggestionsBlock).toMatch(
+      /grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/,
     );
     expect(narrowEmptySuggestionsBlock).toMatch(
-      /width:\s*min\(360px,\s*100%\)\s*!important;/,
+      /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/,
+    );
+    expect(narrowEmptySuggestionsBlock).toMatch(
+      /width:\s*min\(360px,\s*100%\);/,
     );
     expect(narrowEmptySuggestionBlock).toMatch(
-      /min-height:\s*40px\s*!important;/,
+      /min-height:\s*86px;/,
     );
     expect(narrowEmptySuggestionFooterBlock).toMatch(/gap:\s*6px;/);
     expect(narrowEmptySuggestionIconWrapperBlock).toMatch(
-      /display:\s*inline-flex\s*!important;/,
+      /display:\s*inline-flex;/,
     );
     expect(narrowEmptySuggestionIconWrapperBlock).toMatch(
-      /flex:\s*0 0 22px\s*!important;/,
+      /flex:\s*0 0 24px;/,
     );
     expect(narrowEmptySuggestionIconWrapperBlock).toMatch(
-      /width:\s*22px\s*!important;/,
+      /width:\s*24px;/,
     );
     expect(narrowEmptySuggestionIconWrapperBlock).toMatch(
-      /height:\s*22px\s*!important;/,
+      /height:\s*24px;/,
     );
     expect(narrowEmptySuggestionIconWrapperBlock).toMatch(
       /color:\s*var\(--chat-empty-suggestion-icon-color\);/,
     );
-    expect(narrowEmptySuggestionIconSvgBlock).toMatch(/width:\s*13px;/);
-    expect(narrowEmptySuggestionIconSvgBlock).toMatch(/height:\s*13px;/);
+    expect(narrowEmptySuggestionIconSvgBlock).toMatch(/width:\s*14px;/);
+    expect(narrowEmptySuggestionIconSvgBlock).toMatch(/height:\s*14px;/);
     expect(narrowEmptySuggestionAffordanceBlock).toMatch(
-      /flex:\s*0 0 20px\s*!important;/,
+      /flex:\s*0 0 24px;/,
     );
     expect(chatStyles).toContain(".chat-reading-surface");
     expect(chatStyles).toContain(".chat-message-row");
@@ -3773,7 +3794,7 @@ describe("Gemini visual migration shell", () => {
       /--chat-multimodal-section-divider-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 12%,\s*transparent\);/,
     );
     expect(actionMenuRootDeclarations).toMatch(
-      /--chat-multimodal-section-primary-background:\s*color-mix\(in srgb,\s*var\(--primary\) 10%,\s*var\(--surface-elevated\)\);/,
+      /--chat-multimodal-section-primary-background:\s*linear-gradient\(/,
     );
     expect(actionMenuRootDeclarations).toMatch(
       /--chat-input-action-active-background:\s*color-mix\(in srgb,\s*var\(--primary\) 10%,\s*transparent\);/,
@@ -3782,19 +3803,25 @@ describe("Gemini visual migration shell", () => {
       /--chat-input-action-active-color:\s*var\(--primary\);/,
     );
     expect(actionMenuRootDeclarations).toMatch(
-      /--chat-input-action-menu-radius:\s*15px;/,
+      /--chat-input-action-menu-radius:\s*16px;/,
     );
     expect(actionMenuRootDeclarations).toMatch(
-      /--chat-input-action-menu-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
+      /--chat-input-action-menu-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 14%,\s*var\(--black-50\)\);/,
     );
     expect(actionMenuRootDeclarations).toMatch(
-      /--chat-input-action-menu-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 96%,\s*var\(--surface-soft\)\);/,
+      /--chat-input-action-menu-background:\s*linear-gradient\(/,
     );
     expect(actionMenuRootDeclarations).toMatch(
-      /--chat-input-action-menu-shadow-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 22%,\s*transparent\);/,
+      /--chat-input-action-menu-shadow-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 24%,\s*transparent\);/,
     );
     expect(actionMenuRootDeclarations).toMatch(
-      /--chat-input-action-menu-accent-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 8%,\s*transparent\);/,
+      /--chat-input-action-menu-accent-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 12%,\s*transparent\);/,
+    );
+    expect(actionMenuRootDeclarations).toMatch(
+      /--chat-input-action-menu-padding:\s*8px;/,
+    );
+    expect(actionMenuRootDeclarations).toMatch(
+      /--chat-input-action-menu-section-padding:\s*8px;/,
     );
     expect(darkActionMenuMultimodalSectionBlock).toMatch(
       /--chat-multimodal-section-title-color:\s*color-mix\(in srgb,\s*var\(--black\) 94%,\s*transparent\);/,
@@ -3806,7 +3833,7 @@ describe("Gemini visual migration shell", () => {
       /--chat-multimodal-section-divider-color:\s*color-mix\(in srgb,\s*var\(--black\) 9%,\s*transparent\);/,
     );
     expect(darkActionMenuMultimodalSectionBlock).toMatch(
-      /--chat-multimodal-section-primary-background:\s*color-mix\(in srgb,\s*var\(--primary\) 18%,\s*var\(--surface\)\);/,
+      /--chat-multimodal-section-primary-background:\s*linear-gradient\(/,
     );
     expect(darkActionMenuBlock).toMatch(
       /--chat-input-action-active-background:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*var\(--surface\)\);/,
@@ -3815,16 +3842,16 @@ describe("Gemini visual migration shell", () => {
       /--chat-input-action-active-color:\s*color-mix\(in srgb,\s*var\(--primary\) 78%,\s*var\(--black\)\);/,
     );
     expect(darkActionMenuBlock).toMatch(
-      /--chat-input-action-menu-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 8%,\s*transparent\);/,
+      /--chat-input-action-menu-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*var\(--black\)\);/,
     );
     expect(darkActionMenuBlock).toMatch(
-      /--chat-input-action-menu-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--surface\)\);/,
+      /--chat-input-action-menu-background:\s*linear-gradient\(/,
     );
     expect(darkActionMenuBlock).toMatch(
-      /--chat-input-action-menu-shadow-color:\s*color-mix\(in srgb,\s*var\(--surface\) 32%,\s*transparent\);/,
+      /--chat-input-action-menu-shadow-color:\s*color-mix\(in srgb,\s*var\(--surface\) 38%,\s*transparent\);/,
     );
     expect(darkActionMenuBlock).toMatch(
-      /--chat-input-action-menu-accent-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 8%,\s*var\(--surface\)\);/,
+      /--chat-input-action-menu-accent-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 11%,\s*var\(--surface\)\);/,
     );
     expect(autoDarkActionMenuMultimodalSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkActionMenuMultimodalMediaIndex).toBeGreaterThan(-1);
@@ -3832,7 +3859,7 @@ describe("Gemini visual migration shell", () => {
       /--chat-multimodal-section-title-color:\s*color-mix\(in srgb,\s*var\(--black\) 94%,\s*transparent\);/,
     );
     expect(autoDarkActionMenuMultimodalBlock).toMatch(
-      /--chat-multimodal-section-primary-background:\s*color-mix\(in srgb,\s*var\(--primary\) 18%,\s*var\(--surface\)\);/,
+      /--chat-multimodal-section-primary-background:\s*linear-gradient\(/,
     );
     expect(autoDarkActionMenuSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkActionMenuMediaIndex).toBeGreaterThan(-1);
@@ -3843,16 +3870,16 @@ describe("Gemini visual migration shell", () => {
       /--chat-input-action-active-color:\s*color-mix\(in srgb,\s*var\(--primary\) 78%,\s*var\(--black\)\);/,
     );
     expect(autoDarkActionMenuBlock).toMatch(
-      /--chat-input-action-menu-border-color:\s*color-mix\(in srgb,\s*var\(--black\) 8%,\s*transparent\);/,
+      /--chat-input-action-menu-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 16%,\s*var\(--black\)\);/,
     );
     expect(autoDarkActionMenuBlock).toMatch(
-      /--chat-input-action-menu-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 92%,\s*var\(--surface\)\);/,
+      /--chat-input-action-menu-background:\s*linear-gradient\(/,
     );
     expect(autoDarkActionMenuBlock).toMatch(
-      /--chat-input-action-menu-shadow-color:\s*color-mix\(in srgb,\s*var\(--surface\) 32%,\s*transparent\);/,
+      /--chat-input-action-menu-shadow-color:\s*color-mix\(in srgb,\s*var\(--surface\) 38%,\s*transparent\);/,
     );
     expect(autoDarkActionMenuBlock).toMatch(
-      /--chat-input-action-menu-accent-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 8%,\s*var\(--surface\)\);/,
+      /--chat-input-action-menu-accent-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 11%,\s*var\(--surface\)\);/,
     );
     expect(multimodalTitleBlock).toMatch(
       /color:\s*var\(--chat-multimodal-section-title-color\);/,
@@ -3877,16 +3904,16 @@ describe("Gemini visual migration shell", () => {
       legacyMultimodalSectionPaint,
     );
     expect(actionMenuRootDeclarations).toMatch(/box-sizing:\s*border-box;/);
+    expect(actionMenuRootDeclarations).toMatch(/left:\s*52px;/);
     expect(actionMenuRootDeclarations).toMatch(
-      /width:\s*min\(300px,\s*calc\(100vw - 32px\)\);/,
+      /width:\s*min\(320px,\s*calc\(100vw - 84px\)\);/,
     );
     expect(chatStyles).toContain(
-      "width: min(300px, calc(100vw - var(--sidebar-width) - 48px));",
+      "width: min(320px, calc(100% - 52px));",
     );
-    expect(chatStyles).not.toContain(
-      "width: min(336px, calc(100vw - var(--sidebar-width) - 48px));",
+    expect(actionMenuRootDeclarations).toMatch(
+      /padding:\s*var\(--chat-input-action-menu-padding\);/,
     );
-    expect(actionMenuRootDeclarations).toMatch(/padding:\s*9px;/);
     expect(actionMenuRootDeclarations).toMatch(
       /border:\s*1px solid var\(--chat-input-action-menu-border-color\);/,
     );
@@ -3897,13 +3924,17 @@ describe("Gemini visual migration shell", () => {
       /background:\s*var\(--chat-input-action-menu-background\);/,
     );
     expect(actionMenuRootDeclarations).toMatch(
-      /box-shadow:\s*0 18px 48px var\(--chat-input-action-menu-shadow-color\),[\s\S]*0 0 0 1px var\(--chat-input-action-menu-accent-shadow-color\);/,
+      /box-shadow:\s*0 24px 68px var\(--chat-input-action-menu-shadow-color\),[\s\S]*0 0 0 1px var\(--chat-input-action-menu-accent-shadow-color\);/,
     );
     expect(actionMenuRootDeclarations).not.toContain(
       "border: var(--border-in-light)",
     );
     expect(actionMenuRootDeclarations).not.toContain("border-radius: 20px");
     expect(actionMenuRootDeclarations).not.toContain("box-shadow: var(--shadow)");
+    expect(actionMenuBlock).toMatch(
+      /\.chat-multimodal-section\s*\{[\s\S]*box-sizing:\s*border-box;[\s\S]*padding:\s*var\(--chat-input-action-menu-section-padding\);/,
+    );
+    expect(multimodalHeaderBlock).toMatch(/padding:\s*0;/);
     expect(actionMenuOpenStabilizerBlock).toMatch(/display:\s*block;/);
     expect(actionMenuOpenStabilizerBlock).toMatch(/opacity:\s*1;/);
     expect(actionMenuOpenStabilizerBlock).toMatch(
@@ -5169,11 +5200,11 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkActionMenuHoverTokens).toEqual(darkActionMenuHoverTokens);
     expect(lightActionMenuSurfaceTokens).toEqual({
       "--chat-input-action-menu-shadow-color":
-        "color-mix(in srgb, var(--black-50) 22%, transparent)",
+        "color-mix(in srgb, var(--black-50) 24%, transparent)",
     });
     expect(darkActionMenuSurfaceTokens).toEqual({
       "--chat-input-action-menu-shadow-color":
-        "color-mix(in srgb, var(--surface) 32%, transparent)",
+        "color-mix(in srgb, var(--surface) 38%, transparent)",
     });
     expect(autoDarkActionMenuSurfaceTokens).toEqual(
       darkActionMenuSurfaceTokens,
@@ -5192,7 +5223,7 @@ describe("Gemini visual migration shell", () => {
     expect(actionMenuActionTextBlock).toMatch(/transform:\s*none;/);
     expect(actionMenuActionTextBlock).toMatch(/pointer-events:\s*auto;/);
     expect(actionMenuBackdropBlock).toMatch(
-      /--chat-input-action-menu-backdrop-background:\s*color-mix\(in srgb,\s*var\(--surface\) 18%,\s*transparent\);/,
+      /--chat-input-action-menu-backdrop-background:\s*color-mix\(in srgb,\s*var\(--surface\) 12%,\s*transparent\);/,
     );
     expect(actionMenuBackdropBlock).toMatch(
       /&-open[\s\S]*background:\s*var\(--chat-input-action-menu-backdrop-background\);/,
@@ -5378,7 +5409,7 @@ describe("Gemini visual migration shell", () => {
       /className=\{clsx\(styles\["chat-input-menu-button"\], \{[\s\S]*styles\["chat-input-menu-button-active"\]\]: showChatActionMenu,/,
     );
     expect(chat).toMatch(
-      /aria-label=\{\s*showChatActionMenu\s*\?\s*"关闭对话工具"\s*:\s*"打开对话工具"\s*\}/,
+      /aria-label=\{\s*showChatActionMenu\s*\?\s*"收起对话工具"\s*:\s*"打开对话工具"\s*\}/,
     );
     expect(chat).toMatch(
       /ref=\{chatInputMenuButtonRef\}[\s\S]*aria-controls="chat-input-action-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showChatActionMenu\}/,
@@ -16331,28 +16362,22 @@ describe("Gemini visual migration shell", () => {
     expect(updateAnnouncementStyles).not.toContain("border-radius: 14px");
     expect(updateAnnouncementStyles).not.toContain("var(--card-shadow)");
     expect(mobileMaskBlock).toMatch(/height:\s*100dvh;/);
-    expect(mobileMaskBlock).toMatch(/padding:\s*0;/);
-    expect(mobilePanelBlock).toMatch(/right:\s*0;/);
-    expect(mobilePanelBlock).toMatch(/bottom:\s*0;/);
-    expect(mobilePanelBlock).toMatch(/left:\s*0;/);
+    expect(mobileMaskBlock).toMatch(
+      /padding:\s*0 max\(12px,\s*env\(safe-area-inset-right\)\)[\s\S]*max\(12px,\s*env\(safe-area-inset-bottom\)\)[\s\S]*max\(12px,\s*env\(safe-area-inset-left\)\);/,
+    );
+    expect(mobilePanelBlock).toMatch(/position:\s*relative;/);
     expect(mobilePanelBlock).toMatch(
       /width:\s*100%;/,
     );
-    expect(mobilePanelBlock).toMatch(/max-width:\s*none;/);
+    expect(mobilePanelBlock).toMatch(/max-width:\s*420px;/);
     expect(mobilePanelBlock).toMatch(
-      /border-right:\s*0;/,
+      /border:\s*1px solid var\(--update-announcement-panel-border-color\);/,
     );
     expect(mobilePanelBlock).toMatch(
-      /border-bottom:\s*0;/,
+      /max-height:\s*min\(620px,\s*calc\(86dvh - env\(safe-area-inset-bottom\)\)\);/,
     );
     expect(mobilePanelBlock).toMatch(
-      /border-left:\s*0;/,
-    );
-    expect(mobilePanelBlock).toMatch(
-      /max-height:\s*min\(620px,\s*calc\(78dvh - env\(safe-area-inset-bottom\)\)\);/,
-    );
-    expect(mobilePanelBlock).toMatch(
-      /border-radius:\s*var\(--update-announcement-mobile-panel-radius\) var\(--update-announcement-mobile-panel-radius\) 0 0;/,
+      /border-radius:\s*var\(--update-announcement-mobile-panel-radius\);/,
     );
     expect(mobilePanelRootBlock).toMatch(
       /animation:\s*updateAnnouncementSheetIn 0\.28s cubic-bezier\(0\.2,\s*0,\s*0,\s*1\) both;/,
@@ -16501,13 +16526,11 @@ describe("Gemini visual migration shell", () => {
     expect(authPasswordInputBlock).toMatch(/text-align:\s*center;/);
     expect(authPasswordInputBlock).toMatch(/padding:\s*0 44px;/);
 
-    expect(updateMobilePanelBlock).toMatch(/right:\s*0;/);
-    expect(updateMobilePanelBlock).toMatch(/bottom:\s*0;/);
-    expect(updateMobilePanelBlock).toMatch(/left:\s*0;/);
+    expect(updateMobilePanelBlock).toMatch(/position:\s*relative;/);
     expect(updateMobilePanelBlock).toMatch(/width:\s*100%;/);
-    expect(updateMobilePanelBlock).toMatch(/max-width:\s*none;/);
+    expect(updateMobilePanelBlock).toMatch(/max-width:\s*420px;/);
     expect(updateMobilePanelBlock).toMatch(
-      /border-radius:\s*var\(--update-announcement-mobile-panel-radius\) var\(--update-announcement-mobile-panel-radius\) 0 0;/,
+      /border-radius:\s*var\(--update-announcement-mobile-panel-radius\);/,
     );
     expect(updateMobileFooterBlock).toMatch(/justify-content:\s*center;/);
     expect(updateMobileConfirmBlock).toMatch(/width:\s*100%;/);
@@ -16535,13 +16558,15 @@ describe("Gemini visual migration shell", () => {
     expect(mobileModelMetaBlock).toMatch(/color:\s*var\(--chat-model-title-muted-color\);/);
     expect(desktopModelMetaBlock).not.toMatch(/思考/);
 
-    expect(chatEmptySuggestionsBlock).toMatch(/display:\s*flex;/);
-    expect(chatEmptySuggestionsBlock).toMatch(/flex-wrap:\s*wrap;/);
-    expect(chatEmptySuggestionsBlock).toMatch(/justify-content:\s*center;/);
-    expect(desktopEmptySuggestionsBlock).toMatch(
-      /justify-content:\s*center !important;/,
+    expect(chatEmptySuggestionsBlock).toMatch(/display:\s*grid;/);
+    expect(chatEmptySuggestionsBlock).toMatch(
+      /grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/,
     );
-    expect(desktopEmptySuggestionBlock).toMatch(/min-height:\s*46px !important;/);
+    expect(chatEmptySuggestionsBlock).toMatch(/width:\s*min\(640px,\s*100%\);/);
+    expect(desktopEmptySuggestionsBlock).toMatch(
+      /grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/,
+    );
+    expect(desktopEmptySuggestionBlock).toMatch(/min-height:\s*88px;/);
 
     expect(selectorContentBlock).toMatch(/max-width:\s*min\(520px,\s*calc\(100vw - 24px\)\);/);
     expect(selectorSimpleBlock).toMatch(/max-width:\s*min\(320px,\s*calc\(100vw - 24px\)\);/);
@@ -17830,6 +17855,22 @@ describe("Gemini visual migration shell", () => {
       modalHeaderActionsBlock,
       ".modal-header-action",
     );
+    const modalHeaderActionSvgBlock = readCssBlock(
+      modalHeaderActionBlock,
+      ":global(svg)",
+    );
+    const modalHeaderActionSvgPathBlock = readCssBlock(
+      modalHeaderActionBlock,
+      ":global(svg path)",
+    );
+    const modalHeaderActionHoverBlock = readCssBlock(
+      modalHeaderActionBlock,
+      "&:hover",
+    );
+    const modalHeaderActionFocusBlock = readCssBlock(
+      modalHeaderActionBlock,
+      "&:focus-visible",
+    );
     const modalFooterBlock = readCssBlock(uiLibStyles, ".modal-footer");
     const modalActionsBlock = readCssBlock(modalFooterBlock, ".modal-actions");
     const toastContentBlock = readCssBlock(uiLibStyles, ".toast-content");
@@ -18038,6 +18079,15 @@ describe("Gemini visual migration shell", () => {
     expect(sharedSurfaceBlock).toMatch(
       /--ui-lib-modal-input-inner-shadow-color:\s*color-mix\(in srgb,\s*var\(--surface\) 58%,\s*transparent\);/,
     );
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-header-action-color:\s*color-mix\(in srgb,\s*var\(--black\) 78%,\s*transparent\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-header-action-hover-background:\s*color-mix\(in srgb,\s*var\(--black\) 7%,\s*transparent\);/,
+    );
+    expect(sharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-header-action-focus-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 18%,\s*transparent\);/,
+    );
     expect(darkSharedSurfaceBlock).toMatch(
       /--ui-lib-overlay-background:\s*color-mix\(in srgb,\s*var\(--ui-lib-shadow-ink\) 54%,\s*transparent\);/,
     );
@@ -18065,6 +18115,15 @@ describe("Gemini visual migration shell", () => {
     expect(darkSharedSurfaceBlock).toMatch(
       /--ui-lib-modal-input-inner-shadow-color:\s*color-mix\(in srgb,\s*var\(--surface\) 18%,\s*transparent\);/,
     );
+    expect(darkSharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-header-action-color:\s*color-mix\(in srgb,\s*var\(--black\) 88%,\s*transparent\);/,
+    );
+    expect(darkSharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-header-action-hover-background:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
+    );
+    expect(darkSharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-header-action-focus-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 24%,\s*transparent\);/,
+    );
     expect(autoDarkSharedSurfaceSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkSharedSurfaceMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkSharedSurfaceBlock).toMatch(
@@ -18084,6 +18143,12 @@ describe("Gemini visual migration shell", () => {
     );
     expect(autoDarkSharedSurfaceBlock).toMatch(
       /--ui-lib-modal-input-inner-shadow-color:\s*color-mix\(in srgb,\s*var\(--surface\) 18%,\s*transparent\);/,
+    );
+    expect(autoDarkSharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-header-action-color:\s*color-mix\(in srgb,\s*var\(--black\) 88%,\s*transparent\);/,
+    );
+    expect(autoDarkSharedSurfaceBlock).toMatch(
+      /--ui-lib-modal-header-action-hover-background:\s*color-mix\(in srgb,\s*var\(--black\) 10%,\s*transparent\);/,
     );
     expect(Object.values(uiLibModalInputTokenMap)).not.toContain("");
     expect(Object.values(darkUiLibModalInputTokenMap)).not.toContain("");
@@ -18172,6 +18237,26 @@ describe("Gemini visual migration shell", () => {
     expect(modalHeaderActionBlock).toMatch(/border-radius:\s*6px;/);
     expect(modalHeaderActionBlock).toMatch(/min-width:\s*32px;/);
     expect(modalHeaderActionBlock).toMatch(/min-height:\s*32px;/);
+    expect(modalHeaderActionBlock).toMatch(/appearance:\s*none;/);
+    expect(modalHeaderActionBlock).toMatch(
+      /color:\s*var\(--ui-lib-modal-header-action-color\);/,
+    );
+    expect(modalHeaderActionBlock).toMatch(/background:\s*transparent;/);
+    expect(modalHeaderActionHoverBlock).toMatch(
+      /background:\s*var\(--ui-lib-modal-header-action-hover-background\);/,
+    );
+    expect(modalHeaderActionHoverBlock).not.toContain("filter");
+    expect(modalHeaderActionFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(modalHeaderActionFocusBlock).toMatch(
+      /box-shadow:\s*0 0 0 3px var\(--ui-lib-modal-header-action-focus-shadow-color\);/,
+    );
+    expect(modalHeaderActionSvgBlock).toMatch(/display:\s*block;/);
+    expect(modalHeaderActionSvgPathBlock).toMatch(
+      /stroke:\s*currentColor !important;/,
+    );
+    expect(modalHeaderActionSvgPathBlock).toMatch(
+      /stroke-opacity:\s*1 !important;/,
+    );
     expect(modalFooterBlock).toMatch(
       /border-top:\s*1px solid var\(--ui-lib-divider-color\);/,
     );
@@ -19530,6 +19615,11 @@ describe("Gemini visual migration shell", () => {
       /box-shadow:\s*0 8px 24px var\(--chat-message-image-shadow-color\);/,
     );
     expect(messageImageBlock).toMatch(/max-width:\s*100%;/);
+    expect(messageImageBlock).toMatch(/width:\s*100%;/);
+    expect(messageImageFrameRootBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(messageImageFrameRootBlock).toMatch(/overflow:\s*hidden;/);
+    expect(messageImageFrameRootBlock).not.toMatch(/width:\s*max-content;/);
+    expect(messageImagePreviewButtonBlock).toMatch(/width:\s*100%;/);
     expect(messageImageFrameBlock).toMatch(
       /&:hover,\s*&:focus-within[\s\S]*\.chat-message-item-image,[\s\S]*\.chat-message-item-image-multi[\s\S]*border-color:\s*var\(--chat-message-image-hover-border-color\);/,
     );
@@ -23608,14 +23698,11 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
-  test("keeps Settings page grouped by top search and horizontal tabs", () => {
+  test("keeps Settings page direct without redundant search and section tabs", () => {
     const settings = read("app/components/settings.tsx");
     const settingsStyles = read("app/components/settings.module.scss");
     const pageBlock = readCssBlock(settingsStyles, ".settings-page");
     const headBlock = readCssBlock(settingsStyles, ".settings-page-head");
-    const searchBlock = readCssBlock(settingsStyles, ".settings-search");
-    const tabsBlock = readCssBlock(settingsStyles, ".settings-section-tabs");
-    const tabBlock = readCssBlock(settingsStyles, ".settings-section-tab");
     const stackBlock = readCssBlock(settingsStyles, ".settings-stack");
     const sectionBlock = readCssBlock(settingsStyles, ".settings-section");
     const sectionHeadBlock = readCssBlock(settingsStyles, ".settings-section-head");
@@ -23624,17 +23711,20 @@ describe("Gemini visual migration shell", () => {
       "@media screen and (max-width: 600px)",
     );
     const mobileHeadBlock = readCssBlock(mobileSettingsBlock, ".settings-page-head");
-    const mobileSearchBlock = readCssBlock(mobileSettingsBlock, ".settings-search");
 
     expect(settings).toContain('className={styles["settings-page"]}');
     expect(settings).toContain('className={styles["settings-page-head"]}');
-    expect(settings).toContain('className={styles["settings-search"]}');
-    expect(settings).toContain('aria-label="搜索设置"');
-    expect(settings).toContain('placeholder="搜索设置"');
-    expect(settings).toContain("settingsSearchQuery");
-    expect(settings).toContain("settingsSectionTabs");
-    expect(settings).toContain("isSettingsSectionVisible");
+    expect(settings).not.toContain('className={styles["settings-search"]}');
+    expect(settings).not.toContain('aria-label="搜索设置"');
+    expect(settings).not.toContain('placeholder="搜索设置"');
+    expect(settings).not.toContain("settingsSearchQuery");
+    expect(settings).not.toContain("settingsSectionTabs");
+    expect(settings).not.toContain("isSettingsSectionVisible");
+    expect(settings).not.toContain('aria-label="设置分组"');
     expect(settings).not.toContain('styles["settings-rail"]');
+    expect(settingsStyles).not.toContain(".settings-search");
+    expect(settingsStyles).not.toContain(".settings-section-tabs");
+    expect(settingsStyles).not.toContain(".settings-section-tab");
     for (const sectionId of [
       "settings-section-general",
       "settings-section-dialog",
@@ -23644,23 +23734,24 @@ describe("Gemini visual migration shell", () => {
     ]) {
       expect(settings).toContain(sectionId);
     }
-    expect(settings).toMatch(/label:\s*"常规"[\s\S]*label:\s*"对话"[\s\S]*label:\s*"数据"[\s\S]*label:\s*"模型"[\s\S]*label:\s*"高级"/);
-    expect(settings).toMatch(/<div className=\{styles\["settings-stack"\]\}>[\s\S]*settingsSectionVisibility\.general[\s\S]*settingsSectionVisibility\.dialog[\s\S]*settingsSectionVisibility\.data[\s\S]*settingsSectionVisibility\.model[\s\S]*settingsSectionVisibility\.advanced/);
+    expect(settings).toMatch(/<div className=\{styles\["settings-stack"\]\}>[\s\S]*id="settings-section-general"[\s\S]*id="settings-section-dialog"[\s\S]*id="settings-section-data"[\s\S]*id="settings-section-model"[\s\S]*id="settings-section-advanced"/);
+    expect(settings.indexOf("config.enableCustomInstructions")).toBeGreaterThan(
+      settings.indexOf('id="settings-section-dialog"'),
+    );
+    expect(settings.indexOf("config.enableCustomInstructions")).toBeLessThan(
+      settings.indexOf('id="settings-section-data"'),
+    );
 
     expect(pageBlock).toMatch(/height:\s*100%;/);
     expect(pageBlock).toMatch(/overflow:\s*hidden;/);
-    expect(headBlock).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\) minmax\(240px, 360px\) auto;/);
-    expect(headBlock).toMatch(/min-height:\s*84px;/);
-    expect(searchBlock).toMatch(/border-radius:\s*999px;/);
-    expect(searchBlock).toMatch(/min-height:\s*40px;/);
-    expect(tabsBlock).toMatch(/overflow-x:\s*auto;/);
-    expect(tabBlock).toMatch(/border-radius:\s*999px;/);
+    expect(headBlock).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\) auto;/);
+    expect(headBlock).toMatch(/min-height:\s*72px;/);
     expect(stackBlock).toMatch(/max-width:\s*880px;/);
     expect(stackBlock).toMatch(/gap:\s*18px;/);
     expect(sectionBlock).toMatch(/border-radius:\s*14px;/);
     expect(sectionHeadBlock).toMatch(/border-bottom:\s*1px solid var\(--settings-section-border-color\);/);
     expect(mobileHeadBlock).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\) auto;/);
-    expect(mobileSearchBlock).toMatch(/grid-column:\s*1 \/ -1;/);
+    expect(mobileSettingsBlock).not.toContain(".settings-search");
   });
 
   test("keeps Settings access provider fields aligned with Gemini utility fields", () => {
