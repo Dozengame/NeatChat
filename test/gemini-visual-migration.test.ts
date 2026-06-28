@@ -340,6 +340,10 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-input-panel-inner:has(.chat-input:focus)",
     );
+    const inputPanelInnerBlock = readCssBlock(
+      chatStyles,
+      ".chat-input-panel-inner",
+    );
     const inputPanelFocusMenuButtonBlock = readCssBlock(
       chatStyles,
       ".chat-input-panel:focus-within .chat-input-menu-button",
@@ -2836,9 +2840,9 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain(".attach-image-item");
     expect(chatStyles).toContain(".attach-file-item");
     expect(attachmentsContainerBlock).toMatch(/align-items:\s*center;/);
-    expect(attachmentsContainerBlock).toMatch(/gap:\s*8px;/);
-    expect(attachmentsContainerBlock).toMatch(/padding:\s*2px 58px 4px 0;/);
-    expect(attachmentsContainerBlock).toMatch(/scroll-padding-right:\s*58px;/);
+    expect(attachmentsContainerBlock).toMatch(/gap:\s*6px;/);
+    expect(attachmentsContainerBlock).toMatch(/padding:\s*1px 50px 3px 0;/);
+    expect(attachmentsContainerBlock).toMatch(/scroll-padding-right:\s*50px;/);
     expect(attachmentsContainerBlock).toMatch(/min-width:\s*0;/);
     expect(attachmentsContainerBlock).toMatch(/box-sizing:\s*border-box;/);
     expect(attachmentsContainerBlock).not.toMatch(
@@ -2848,11 +2852,11 @@ describe("Gemini visual migration shell", () => {
       /-webkit-overflow-scrolling:\s*touch;/,
     );
     expect(attachItemBlock).toMatch(/flex:\s*0 0 auto;/);
-    expect(attachItemBlock).toMatch(/height:\s*64px;/);
-    expect(attachImageItemBlock).toMatch(/width:\s*64px;/);
-    expect(attachFileItemBlock).toMatch(/max-width:\s*min\(220px,\s*68vw\);/);
-    expect(attachImageBlock).toMatch(/width:\s*64px;/);
-    expect(attachImageBlock).toMatch(/height:\s*64px;/);
+    expect(attachItemBlock).toMatch(/height:\s*52px;/);
+    expect(attachImageItemBlock).toMatch(/width:\s*52px;/);
+    expect(attachFileItemBlock).toMatch(/max-width:\s*min\(196px,\s*64vw\);/);
+    expect(attachImageBlock).toMatch(/width:\s*52px;/);
+    expect(attachImageBlock).toMatch(/height:\s*52px;/);
     expect(attachImageMaskBlock).toMatch(/opacity:\s*0;/);
     expect(attachImageMaskBlock).toMatch(/pointer-events:\s*none;/);
     expect(chatStyles).toMatch(
@@ -2875,16 +2879,16 @@ describe("Gemini visual migration shell", () => {
     expect(touchDeleteImageBlock).toMatch(/height:\s*24px;/);
     expect(touchDeleteImageBlock).not.toMatch(/width:\s*28px;/);
     expect(touchDeleteImageBlock).not.toMatch(/height:\s*28px;/);
-    expect(attachFileBlock).toMatch(/height:\s*64px;/);
-    expect(attachFileBlock).toMatch(/min-width:\s*176px;/);
-    expect(mobileAttachImageBlock).toMatch(/width:\s*58px;/);
-    expect(mobileAttachImageBlock).toMatch(/height:\s*58px;/);
-    expect(mobileAttachFileBlock).toMatch(/height:\s*58px;/);
+    expect(attachFileBlock).toMatch(/height:\s*52px;/);
+    expect(attachFileBlock).toMatch(/min-width:\s*156px;/);
+    expect(mobileAttachImageBlock).toMatch(/width:\s*50px;/);
+    expect(mobileAttachImageBlock).toMatch(/height:\s*50px;/);
+    expect(mobileAttachFileBlock).toMatch(/height:\s*50px;/);
     expect(finalMobileAttachmentsContainerBlock).toMatch(
-      /padding:\s*2px 50px 4px 0;/,
+      /padding:\s*1px 44px 3px 0;/,
     );
     expect(finalMobileAttachFileBlock).toMatch(
-      /width:\s*min\(170px,\s*55vw\);/,
+      /width:\s*min\(164px,\s*55vw\);/,
     );
     expect(messageActionsBlock).toMatch(/margin-top:\s*8px;/);
     expect(messageActionsBlock).toMatch(/transform:\s*translateY\(4px\);/);
@@ -3671,6 +3675,9 @@ describe("Gemini visual migration shell", () => {
       expect(tokenValue).not.toMatch(/var\(--(?:white|gray)\)/);
     }
     expect(chatInputPanelBlock).not.toMatch(/var\(--composer-shadow\)/);
+    expect(inputPanelInnerBlock).toMatch(/box-sizing:\s*border-box;/);
+    expect(inputPanelInnerBlock).toMatch(/min-width:\s*0;/);
+    expect(inputPanelInnerBlock).toMatch(/max-width:\s*100%;/);
     expect(inputPanelInnerFocusBlock).toMatch(
       /border-color:\s*var\(--chat-input-focus-border-color\) !important;/,
     );
@@ -6794,18 +6801,18 @@ describe("Gemini visual migration shell", () => {
       /<div(?=[^>]*className=\{styles\["attach-file-name"\]\})(?=[^>]*title=\{file\.name\})[^>]*>\s*\{file\.name\}\s*<\/div>/,
     );
     expect(chat).toContain("getFileIconClass(file.type)");
-    expect(attachItemBlock).toMatch(/--attachment-item-radius:\s*8px;/);
+    expect(attachItemBlock).toMatch(/--attachment-item-radius:\s*12px;/);
     expect(attachItemBlock).toMatch(
-      /--attachment-item-border-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 14%,\s*transparent\);/,
+      /--attachment-item-border-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 10%,\s*transparent\);/,
     );
     expect(attachItemBlock).toMatch(
-      /--attachment-item-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 92%,\s*transparent\);/,
+      /--attachment-item-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 76%,\s*transparent\);/,
     );
     expect(attachItemBlock).toMatch(
-      /--attachment-item-hover-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 28%,\s*transparent\);/,
+      /--attachment-item-hover-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 22%,\s*transparent\);/,
     );
     expect(attachItemBlock).toMatch(
-      /--attachment-file-icon-background:\s*color-mix\(in srgb,\s*var\(--primary\) 10%,\s*var\(--surface-elevated\)\);/,
+      /--attachment-file-icon-background:\s*color-mix\(in srgb,\s*var\(--primary\) 8%,\s*var\(--surface-elevated\)\);/,
     );
     expect(attachImageBlock).toMatch(
       /border:\s*1px solid var\(--attachment-item-border-color\);/,
@@ -6817,13 +6824,13 @@ describe("Gemini visual migration shell", () => {
       /background-color:\s*var\(--attachment-item-background\);/,
     );
     expect(attachImageBlock).toMatch(
-      /0 8px 24px var\(--attachment-item-shadow-color\);/,
+      /0 4px 14px var\(--attachment-item-shadow-color\);/,
     );
     expect(attachImageBlock).toMatch(
       /&:hover,[\s\S]*&:focus-visible[\s\S]*border-color:\s*var\(--attachment-item-hover-border-color\);/,
     );
     expect(attachImageBlock).toMatch(
-      /&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\),[\s\S]*0 8px 24px var\(--attachment-item-hover-shadow-color\);/,
+      /&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\),[\s\S]*0 6px 18px var\(--attachment-item-hover-shadow-color\);/,
     );
     expect(attachFileBlock).toMatch(
       /border:\s*1px solid var\(--attachment-item-border-color\);/,
@@ -6835,12 +6842,12 @@ describe("Gemini visual migration shell", () => {
       /background-color:\s*var\(--attachment-item-background\);/,
     );
     expect(attachFileBlock).toMatch(
-      /0 8px 24px var\(--attachment-item-shadow-color\);/,
+      /0 4px 14px var\(--attachment-item-shadow-color\);/,
     );
     expect(attachFileBlock).toMatch(
       /&:hover,[\s\S]*&:focus-visible[\s\S]*border-color:\s*var\(--attachment-item-hover-border-color\);/,
     );
-    expect(attachFileIconBlock).toMatch(/border-radius:\s*8px;/);
+    expect(attachFileIconBlock).toMatch(/border-radius:\s*10px;/);
     expect(attachFileIconBlock).toMatch(
       /background:\s*var\(--attachment-file-icon-background\);/,
     );
@@ -6947,7 +6954,7 @@ describe("Gemini visual migration shell", () => {
       /&:hover,[\s\S]*&:focus-visible[\s\S]*background-color:\s*var\(--attachment-delete-button-hover-background\);/,
     );
     expect(darkAttachItemBlock).toMatch(
-      /--attachment-item-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 74%,\s*transparent\);/,
+      /--attachment-item-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 62%,\s*transparent\);/,
     );
     expect(darkDeleteImageBlock).toMatch(
       /--attachment-delete-button-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 84%,\s*transparent\);/,
@@ -6955,7 +6962,7 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkAttachItemSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkAttachItemMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkAttachItemBlock).toMatch(
-      /--attachment-item-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 74%,\s*transparent\);/,
+      /--attachment-item-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 62%,\s*transparent\);/,
     );
     expect(autoDarkDeleteImageSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkDeleteImageMediaIndex).toBeGreaterThan(-1);
@@ -6965,10 +6972,10 @@ describe("Gemini visual migration shell", () => {
     expect(attachmentPreviewToneScope).not.toMatch(
       /border:\s*var\(--border-in-light\)|background-color:\s*var\(--white\)|rgba\(\$color:\s*#000|rgba\(\$color:\s*#888/,
     );
-    expect(mobileAttachImageBlock).toMatch(/width:\s*58px;/);
-    expect(mobileAttachImageBlock).toMatch(/height:\s*58px;/);
-    expect(mobileAttachFileBlock).toMatch(/width:\s*min\(170px,\s*55vw\);/);
-    expect(mobileAttachFileBlock).toMatch(/height:\s*58px;/);
+    expect(mobileAttachImageBlock).toMatch(/width:\s*50px;/);
+    expect(mobileAttachImageBlock).toMatch(/height:\s*50px;/);
+    expect(mobileAttachFileBlock).toMatch(/width:\s*min\(164px,\s*55vw\);/);
+    expect(mobileAttachFileBlock).toMatch(/height:\s*50px;/);
   });
 
   test("keeps attached file editing modal aligned with Gemini utility fields", () => {
@@ -7190,20 +7197,20 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /\{\(attachImages\.length > 0 \|\| attachedFiles\.length > 0\) && \([\s\S]*\{canAddMoreAttachments && \([\s\S]*className=\{clsx\([\s\S]*styles\["attach-item"\][\s\S]*styles\["attach-add-item"\][\s\S]*role="listitem"[\s\S]*<button[\s\S]*type="button"[\s\S]*className=\{styles\["attachment-add-button"\]\}[\s\S]*aria-label="继续添加附件"[\s\S]*title="继续添加附件"[\s\S]*disabled=\{uploading\}[\s\S]*onClick=\{handleUploadAttachments\}[\s\S]*<AddIcon \/>/,
     );
-    expect(attachAddItemBlock).toMatch(/width:\s*64px;/);
-    expect(attachmentAddButtonBlock).toMatch(/width:\s*64px;/);
-    expect(attachmentAddButtonBlock).toMatch(/height:\s*64px;/);
+    expect(attachAddItemBlock).toMatch(/width:\s*52px;/);
+    expect(attachmentAddButtonBlock).toMatch(/width:\s*52px;/);
+    expect(attachmentAddButtonBlock).toMatch(/height:\s*52px;/);
     expect(attachmentAddButtonBlock).toMatch(
       /border-radius:\s*var\(--attachment-item-radius\);/,
     );
     expect(attachmentAddButtonBlock).toMatch(
-      /--attachment-add-button-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 38%,\s*transparent\);/,
+      /--attachment-add-button-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 28%,\s*transparent\);/,
     );
     expect(attachmentAddButtonBlock).toMatch(
-      /--attachment-add-button-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 86%,\s*transparent\);/,
+      /--attachment-add-button-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 78%,\s*transparent\);/,
     );
     expect(attachmentAddButtonBlock).toMatch(
-      /--attachment-add-button-hover-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 62%,\s*transparent\);/,
+      /--attachment-add-button-hover-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 48%,\s*transparent\);/,
     );
     expect(attachmentAddButtonBlock).toMatch(
       /border:\s*1px dashed var\(--attachment-add-button-border-color\);/,
@@ -7225,14 +7232,14 @@ describe("Gemini visual migration shell", () => {
       /&:not\(:disabled\):hover,[\s\S]*&:not\(:disabled\):focus-visible[\s\S]*background:\s*var\(--attachment-add-button-hover-background\);[\s\S]*border-color:\s*var\(--attachment-add-button-hover-border-color\);/,
     );
     expect(attachmentAddButtonBlock).toMatch(
-      /0 8px 24px var\(--attachment-add-button-hover-shadow-color\);/,
+      /0 6px 18px var\(--attachment-add-button-hover-shadow-color\);/,
     );
     expect(attachmentAddButtonBlock).toMatch(/&:disabled[\s\S]*opacity:\s*0\.58;/);
     expect(darkAttachmentAddButtonBlock).toMatch(
-      /--attachment-add-button-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 72%,\s*transparent\);/,
+      /--attachment-add-button-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 64%,\s*transparent\);/,
     );
     expect(darkAttachmentAddButtonBlock).toMatch(
-      /--attachment-add-button-hover-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 58%,\s*transparent\);/,
+      /--attachment-add-button-hover-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 44%,\s*transparent\);/,
     );
     expect(darkAttachmentAddButtonBlock).toMatch(
       /&:not\(:disabled\):hover,[\s\S]*&:not\(:disabled\):focus-visible[\s\S]*background:\s*var\(--attachment-add-button-hover-background\);/,
@@ -7240,13 +7247,13 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkAttachmentAddButtonSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkAttachmentAddButtonMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkAttachmentAddButtonBlock).toMatch(
-      /--attachment-add-button-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 72%,\s*transparent\);/,
+      /--attachment-add-button-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 64%,\s*transparent\);/,
     );
     expect(attachmentAddButtonToneScope).not.toMatch(
       legacyAttachmentAddButtonPaint,
     );
-    expect(mobileAddButtonBlock).toMatch(/width:\s*58px;/);
-    expect(mobileAddButtonBlock).toMatch(/height:\s*58px;/);
+    expect(mobileAddButtonBlock).toMatch(/width:\s*50px;/);
+    expect(mobileAddButtonBlock).toMatch(/height:\s*50px;/);
   });
 
   test("keeps attachment strip full state visible and inert", () => {
@@ -7367,9 +7374,9 @@ describe("Gemini visual migration shell", () => {
     expect(fullIndicatorMarkup).toContain("<span>已满</span>");
     expect(fullIndicatorMarkup).not.toContain("onClick");
     expect(fullIndicatorMarkup).not.toContain("handleUploadAttachments");
-    expect(attachFullItemBlock).toMatch(/width:\s*64px;/);
-    expect(attachmentFullIndicatorBlock).toMatch(/width:\s*64px;/);
-    expect(attachmentFullIndicatorBlock).toMatch(/height:\s*64px;/);
+    expect(attachFullItemBlock).toMatch(/width:\s*58px;/);
+    expect(attachmentFullIndicatorBlock).toMatch(/width:\s*58px;/);
+    expect(attachmentFullIndicatorBlock).toMatch(/height:\s*52px;/);
     expect(attachmentFullIndicatorBlock).toMatch(
       /border-radius:\s*var\(--attachment-item-radius\);/,
     );
@@ -7377,32 +7384,24 @@ describe("Gemini visual migration shell", () => {
     expect(attachmentFullIndicatorBlock).toMatch(/font-size:\s*11px;/);
     expect(attachmentFullIndicatorBlock).toMatch(/font-weight:\s*520;/);
     expect(attachmentFullIndicatorBlock).toContain(
-      "--attachment-full-indicator-border-color: color-mix(in srgb, var(--black-50) 16%, transparent);",
+      "--attachment-full-indicator-border-color: color-mix(in srgb, var(--black-50) 12%, transparent);",
     );
     expect(attachmentFullIndicatorBlock).toContain(
-      "--attachment-full-indicator-background-start: color-mix(in srgb, var(--surface-elevated) 82%, transparent);",
+      "--attachment-full-indicator-background: color-mix(in srgb, var(--surface-elevated) 74%, transparent);",
     );
     expect(attachmentFullIndicatorBlock).toContain(
-      "--attachment-full-indicator-background-end: color-mix(in srgb, var(--surface-soft) 72%, transparent);",
+      "--attachment-full-indicator-color: color-mix(in srgb, var(--black-50) 78%, transparent);",
     );
     expect(attachmentFullIndicatorBlock).toContain(
-      "--attachment-full-indicator-background-base: color-mix(in srgb, var(--surface-elevated) 86%, transparent);",
-    );
-    expect(attachmentFullIndicatorBlock).toContain(
-      "--attachment-full-indicator-color: color-mix(in srgb, var(--black-50) 84%, transparent);",
-    );
-    expect(attachmentFullIndicatorBlock).toContain(
-      "--attachment-full-indicator-inner-ring-color: color-mix(in srgb, var(--surface) 48%, transparent);",
+      "--attachment-full-indicator-inner-ring-color: color-mix(in srgb, var(--surface) 42%, transparent);",
     );
     expect(attachmentFullIndicatorBlock).toMatch(
       /border:\s*1px solid var\(--attachment-full-indicator-border-color\);/,
     );
     expect(attachmentFullIndicatorBlock).toContain(
-      "linear-gradient(145deg, var(--attachment-full-indicator-background-start), var(--attachment-full-indicator-background-end))",
+      "background: var(--attachment-full-indicator-background);",
     );
-    expect(attachmentFullIndicatorBlock).toContain(
-      "var(--attachment-full-indicator-background-base)",
-    );
+    expect(attachmentFullIndicatorBlock).not.toContain("linear-gradient");
     expect(attachmentFullIndicatorBlock).toMatch(
       /color:\s*var\(--attachment-full-indicator-color\);/,
     );
@@ -7415,16 +7414,10 @@ describe("Gemini visual migration shell", () => {
       "--attachment-full-indicator-border-color: color-mix(in srgb, var(--black) 10%, transparent);",
     );
     expect(darkAttachmentFullIndicatorBlock).toContain(
-      "--attachment-full-indicator-background-start: color-mix(in srgb, var(--surface-soft) 72%, transparent);",
+      "--attachment-full-indicator-background: color-mix(in srgb, var(--surface-elevated) 58%, transparent);",
     );
     expect(darkAttachmentFullIndicatorBlock).toContain(
-      "--attachment-full-indicator-background-end: color-mix(in srgb, var(--surface) 62%, transparent);",
-    );
-    expect(darkAttachmentFullIndicatorBlock).toContain(
-      "--attachment-full-indicator-background-base: color-mix(in srgb, var(--surface) 72%, transparent);",
-    );
-    expect(darkAttachmentFullIndicatorBlock).toContain(
-      "--attachment-full-indicator-color: color-mix(in srgb, var(--black) 68%, transparent);",
+      "--attachment-full-indicator-color: color-mix(in srgb, var(--black) 62%, transparent);",
     );
     expect(darkAttachmentFullIndicatorBlock).toContain(
       "--attachment-full-indicator-inner-ring-color: color-mix(in srgb, var(--black) 6%, transparent);",
@@ -7433,11 +7426,9 @@ describe("Gemini visual migration shell", () => {
       /border-color:\s*var\(--attachment-full-indicator-border-color\);/,
     );
     expect(darkAttachmentFullIndicatorBlock).toContain(
-      "linear-gradient(145deg, var(--attachment-full-indicator-background-start), var(--attachment-full-indicator-background-end))",
+      "background: var(--attachment-full-indicator-background);",
     );
-    expect(darkAttachmentFullIndicatorBlock).toContain(
-      "var(--attachment-full-indicator-background-base)",
-    );
+    expect(darkAttachmentFullIndicatorBlock).not.toContain("linear-gradient");
     expect(darkAttachmentFullIndicatorBlock).toMatch(
       /color:\s*var\(--attachment-full-indicator-color\);/,
     );
@@ -7450,16 +7441,10 @@ describe("Gemini visual migration shell", () => {
       "--attachment-full-indicator-border-color: color-mix(in srgb, var(--black) 10%, transparent);",
     );
     expect(autoDarkAttachmentFullIndicatorBlock).toContain(
-      "--attachment-full-indicator-background-start: color-mix(in srgb, var(--surface-soft) 72%, transparent);",
+      "--attachment-full-indicator-background: color-mix(in srgb, var(--surface-elevated) 58%, transparent);",
     );
     expect(autoDarkAttachmentFullIndicatorBlock).toContain(
-      "--attachment-full-indicator-background-end: color-mix(in srgb, var(--surface) 62%, transparent);",
-    );
-    expect(autoDarkAttachmentFullIndicatorBlock).toContain(
-      "--attachment-full-indicator-background-base: color-mix(in srgb, var(--surface) 72%, transparent);",
-    );
-    expect(autoDarkAttachmentFullIndicatorBlock).toContain(
-      "--attachment-full-indicator-color: color-mix(in srgb, var(--black) 68%, transparent);",
+      "--attachment-full-indicator-color: color-mix(in srgb, var(--black) 62%, transparent);",
     );
     expect(autoDarkAttachmentFullIndicatorBlock).toContain(
       "--attachment-full-indicator-inner-ring-color: color-mix(in srgb, var(--black) 6%, transparent);",
@@ -7468,11 +7453,9 @@ describe("Gemini visual migration shell", () => {
       /border-color:\s*var\(--attachment-full-indicator-border-color\);/,
     );
     expect(autoDarkAttachmentFullIndicatorBlock).toContain(
-      "linear-gradient(145deg, var(--attachment-full-indicator-background-start), var(--attachment-full-indicator-background-end))",
+      "background: var(--attachment-full-indicator-background);",
     );
-    expect(autoDarkAttachmentFullIndicatorBlock).toContain(
-      "var(--attachment-full-indicator-background-base)",
-    );
+    expect(autoDarkAttachmentFullIndicatorBlock).not.toContain("linear-gradient");
     expect(autoDarkAttachmentFullIndicatorBlock).toMatch(
       /color:\s*var\(--attachment-full-indicator-color\);/,
     );
@@ -7482,8 +7465,8 @@ describe("Gemini visual migration shell", () => {
     expect(attachmentFullIndicatorToneScope).not.toMatch(
       legacyAttachmentFullIndicatorPaint,
     );
-    expect(mobileFullIndicatorBlock).toMatch(/width:\s*58px;/);
-    expect(mobileFullIndicatorBlock).toMatch(/height:\s*58px;/);
+    expect(mobileFullIndicatorBlock).toMatch(/width:\s*54px;/);
+    expect(mobileFullIndicatorBlock).toMatch(/height:\s*50px;/);
   });
 
   test("keeps composer attachment strip overflow hints non-blocking", () => {
@@ -7525,7 +7508,7 @@ describe("Gemini visual migration shell", () => {
     expect(attachmentShellBlock).toMatch(/min-width:\s*0;/);
     expect(attachmentFadeBlock).toMatch(/position:\s*absolute;/);
     expect(attachmentFadeBlock).toMatch(/pointer-events:\s*none;/);
-    expect(attachmentFadeBlock).toMatch(/width:\s*28px;/);
+    expect(attachmentFadeBlock).toMatch(/width:\s*24px;/);
     expect(attachmentFadeStartBlock).toMatch(/linear-gradient\(\s*90deg/);
     expect(attachmentFadeEndBlock).toMatch(/linear-gradient\(\s*270deg/);
     expect(chatStyles).toMatch(
@@ -7789,21 +7772,21 @@ describe("Gemini visual migration shell", () => {
       /rgba\((?:255,\s*255,\s*255|32,\s*33,\s*36|60,\s*64,\s*67|232,\s*234,\s*237|234,\s*67,\s*53|242,\s*139,\s*130)/;
 
     expect(attachmentShellBlock).toMatch(
-      /--attachment-edge-surface:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 96%,\s*transparent\);/,
+      /--attachment-edge-surface:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 92%,\s*transparent\);/,
     );
     expect(darkAttachmentShellBlock).toMatch(
-      /--attachment-edge-surface:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 86%,\s*transparent\);/,
+      /--attachment-edge-surface:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 80%,\s*transparent\);/,
     );
     expect(autoDarkAttachmentShellSelectorIndex).toBeGreaterThan(-1);
     expect(autoDarkAttachmentShellMediaIndex).toBeGreaterThan(-1);
     expect(autoDarkAttachmentShellBlock).toMatch(
-      /--attachment-edge-surface:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 86%,\s*transparent\);/,
+      /--attachment-edge-surface:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 80%,\s*transparent\);/,
     );
     expect(attachItemRootDeclarations).toMatch(
-      /--attachment-touch-mask-strong-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 16%,\s*transparent\);/,
+      /--attachment-touch-mask-strong-color:\s*color-mix\(in srgb,\s*var\(--black-50\) 12%,\s*transparent\);/,
     );
     expect(attachItemRootDeclarations).toMatch(
-      /--attachment-swipe-delete-mask-strong-color:\s*color-mix\(in srgb,\s*rgb\(234,\s*67,\s*53\) 24%,\s*transparent\);/,
+      /--attachment-swipe-delete-mask-strong-color:\s*color-mix\(in srgb,\s*rgb\(234,\s*67,\s*53\) 18%,\s*transparent\);/,
     );
     expect(attachItemRootDeclarations).toMatch(
       /var\(--attachment-swipe-delete-mask-strong-color\) 0/,
@@ -7828,10 +7811,10 @@ describe("Gemini visual migration shell", () => {
     );
     expect(attachmentMaskToneScope).not.toMatch(legacyAttachmentMaskPaint);
     expect(attachImageBlock).toMatch(
-      /&:active\s*\{[\s\S]*transform:\s*scale\(0\.985\);[\s\S]*box-shadow:\s*0 4px 16px var\(--attachment-item-hover-shadow-color\);/,
+      /&:active\s*\{[\s\S]*transform:\s*scale\(0\.985\);[\s\S]*box-shadow:\s*0 3px 12px var\(--attachment-item-hover-shadow-color\);/,
     );
     expect(attachFileBlock).toMatch(
-      /&:active\s*\{[\s\S]*transform:\s*scale\(0\.985\);[\s\S]*box-shadow:\s*0 4px 16px var\(--attachment-item-hover-shadow-color\);/,
+      /&:active\s*\{[\s\S]*transform:\s*scale\(0\.985\);[\s\S]*box-shadow:\s*0 3px 12px var\(--attachment-item-hover-shadow-color\);/,
     );
     expect(attachFileCardBlock).toMatch(/min-width:\s*0;/);
     expect(attachFileCardBlock).toMatch(/overflow:\s*hidden;/);
@@ -7848,7 +7831,7 @@ describe("Gemini visual migration shell", () => {
       "inset 0 0 0 1px var(--attachment-add-button-hover-inner-ring-color)",
     );
     expect(attachmentAddButtonFocusBlock).toContain(
-      "0 8px 24px var(--attachment-add-button-hover-shadow-color)",
+      "0 6px 18px var(--attachment-add-button-hover-shadow-color)",
     );
     expect(darkAttachmentAddButtonFocusBlock).toMatch(
       /outline:\s*var\(--focus-ring\);/,
@@ -7863,7 +7846,7 @@ describe("Gemini visual migration shell", () => {
       "inset 0 0 0 1px var(--attachment-add-button-hover-inner-ring-color)",
     );
     expect(darkAttachmentAddButtonFocusBlock).toContain(
-      "0 8px 24px var(--attachment-add-button-hover-shadow-color)",
+      "0 6px 18px var(--attachment-add-button-hover-shadow-color)",
     );
     expect(reducedMotionBlock).toMatch(
       /\.attach-image,\s*\.attach-file,\s*\.attachment-add-button,\s*\.delete-image,\s*\.attach-image-mask\s*\{[\s\S]*transition-duration:\s*0\.01ms !important;/,
@@ -16621,6 +16604,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain(
       'const MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_PARAM = "dropzone_preview";',
     );
+    expect(chat).toMatch(
+      /const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_PARAM\s*=\s*"attachment_strip_preview";/,
+    );
     expect(qaSeedBlock).toMatch(
       /type MarkdownStressBoundaryVariant =[\s\S]*\| "details"[\s\S]*\| "table"[\s\S]*\| "artifact"[\s\S]*\| "image"[\s\S]*\| "media";/,
     );
@@ -16635,6 +16621,12 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chat).toContain(
       "function getMarkdownStressQaDropzonePreviewVariant(locationSearch: string)",
+    );
+    expect(chat).toMatch(
+      /function getMarkdownStressQaAttachmentStripPreviewVariant\([\s\S]*locationSearch: string[\s\S]*\)/,
+    );
+    expect(chat).toMatch(
+      /function createMarkdownStressQaAttachmentStripPreview\(/,
     );
     expect(chat).toContain(
       "function getMarkdownStressQaMessages(locationSearch: string): RenderMessage[]",
@@ -16699,6 +16691,24 @@ describe("Gemini visual migration shell", () => {
     expect(qaSeedBlock).toMatch(
       /function getMarkdownStressQaDropzonePreviewVariant\(locationSearch: string\)[\s\S]*params\.get\(MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_PARAM\)[\s\S]*variant === "accepted" \|\| variant === "blocked"/,
     );
+    expect(qaSeedBlock).toMatch(
+      /type MarkdownStressAttachmentStripPreviewVariant =[\s\S]*\| "populated"[\s\S]*\| "full"[\s\S]*\| "overflow";/,
+    );
+    expect(qaSeedBlock).toMatch(
+      /function getMarkdownStressQaAttachmentStripPreviewVariant\([\s\S]*locationSearch: string[\s\S]*\)[\s\S]*params\.get\(MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_PARAM\)[\s\S]*variant === "populated" \|\| variant === "full" \|\| variant === "overflow"/,
+    );
+    expect(qaSeedBlock).toMatch(
+      /const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_IMAGES: Record<[\s\S]*MarkdownStressAttachmentStripPreviewVariant,[\s\S]*string\[\][\s\S]*>/,
+    );
+    expect(qaSeedBlock).toMatch(
+      /const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_FILE_FIXTURES: Record<[\s\S]*MarkdownStressAttachmentStripPreviewVariant,[\s\S]*Array<Pick<FileInfo,[\s\S]*"name"[\s\S]*"type"[\s\S]*"content"[\s\S]*>>[\s\S]*>/,
+    );
+    expect(qaSeedBlock).toMatch(
+      /function createMarkdownStressQaAttachmentStripPreview\([\s\S]*variant: MarkdownStressAttachmentStripPreviewVariant,[\s\S]*\): \{ images: string\[\]; files: FileInfo\[\] \}/,
+    );
+    expect(qaSeedBlock).toMatch(
+      /new File\([\s\S]*\[fixture\.content\],[\s\S]*fixture\.name,[\s\S]*\{[\s\S]*type:\s*fixture\.type[\s\S]*\}[\s\S]*\)/,
+    );
     expect(chat).toMatch(
       /const markdownStressQaEnabled = useMemo\(\s*\(\) => isMarkdownStressQaEnabled\(location\.search\),\s*\[location\.search\],?\s*\);/,
     );
@@ -16710,6 +16720,15 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chat).toMatch(
       /const isDropzonePreviewActive = dragActive \|\| dropzonePreviewSummary != null;/,
+    );
+    expect(chat).toMatch(
+      /const markdownStressQaAttachmentStripPreview = useMemo\([\s\S]*getMarkdownStressQaAttachmentStripPreviewVariant\(location\.search\)[\s\S]*\[location\.search, markdownStressQaEnabled\]/,
+    );
+    expect(chat).toMatch(
+      /useEffect\(\(\) => \{[\s\S]*if \(!markdownStressQaAttachmentStripPreview\) return;[\s\S]*const seededAttachments = createMarkdownStressQaAttachmentStripPreview\([\s\S]*markdownStressQaAttachmentStripPreview[\s\S]*\);[\s\S]*setAttachImages\(seededAttachments\.images\);[\s\S]*setAttachedFiles\(seededAttachments\.files\);[\s\S]*setIsInputExpanded\(true\);[\s\S]*\}, \[markdownStressQaAttachmentStripPreview\]\);/,
+    );
+    expect(chat).toMatch(
+      /data-attachment-strip-preview=\{[\s\S]*markdownStressQaAttachmentStripPreview \?\? undefined[\s\S]*\}/,
     );
     expect(qaSeedBlock).toMatch(
       /if \(!boundaryVariant\) return MARKDOWN_STRESS_QA_MESSAGES;/,

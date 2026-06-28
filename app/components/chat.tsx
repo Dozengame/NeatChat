@@ -209,6 +209,8 @@ const CHAT_SCROLL_BOTTOM_MOBILE_CLEARANCE = 50;
 const MARKDOWN_STRESS_QA_PARAM = "markdown-stress";
 const MARKDOWN_STRESS_QA_BOUNDARY_PARAM = "streaming_boundary";
 const MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_PARAM = "dropzone_preview";
+const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_PARAM =
+  "attachment_strip_preview";
 const MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX = "codex-qa-markdown-stress";
 type MarkdownStressBoundaryVariant =
   | "details"
@@ -217,6 +219,10 @@ type MarkdownStressBoundaryVariant =
   | "image"
   | "media";
 type MarkdownStressDropzonePreviewVariant = "accepted" | "blocked";
+type MarkdownStressAttachmentStripPreviewVariant =
+  | "populated"
+  | "full"
+  | "overflow";
 const MARKDOWN_STRESS_QA_BOUNDARY_VARIANTS: MarkdownStressBoundaryVariant[] = [
   "details",
   "table",
@@ -441,6 +447,90 @@ const MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_SUMMARIES: Record<
     willAdd: false,
   },
 };
+const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_IMAGES: Record<
+  MarkdownStressAttachmentStripPreviewVariant,
+  string[]
+> = {
+  populated: [
+    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%231a73e8'/%3E%3Ccircle%20cx='102'%20cy='104'%20r='36'%20fill='%23d7e3ff'/%3E%3Cpath%20d='M42%20252l92-92%2058%2048%2038-36%2048%2080H42z'%20fill='%23edf2ff'/%3E%3C/svg%3E",
+  ],
+  full: [
+    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%231a73e8'/%3E%3Ccircle%20cx='102'%20cy='104'%20r='36'%20fill='%23d7e3ff'/%3E%3Cpath%20d='M42%20252l92-92%2058%2048%2038-36%2048%2080H42z'%20fill='%23edf2ff'/%3E%3C/svg%3E",
+    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%230b8043'/%3E%3Ccircle%20cx='230'%20cy='94'%20r='34'%20fill='%23c8f7dc'/%3E%3Cpath%20d='M38%20244l86-74%2054%2044%2044-62%2062%2092H38z'%20fill='%23e7f8ee'/%3E%3C/svg%3E",
+    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%23a142f4'/%3E%3Ccircle%20cx='98'%20cy='92'%20r='32'%20fill='%23f1dcff'/%3E%3Cpath%20d='M44%20246l72-72%2046%2040%2048-58%2068%2090H44z'%20fill='%23f7edff'/%3E%3C/svg%3E",
+  ],
+  overflow: [
+    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%231a73e8'/%3E%3Ccircle%20cx='102'%20cy='104'%20r='36'%20fill='%23d7e3ff'/%3E%3Cpath%20d='M42%20252l92-92%2058%2048%2038-36%2048%2080H42z'%20fill='%23edf2ff'/%3E%3C/svg%3E",
+    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%230b8043'/%3E%3Ccircle%20cx='230'%20cy='94'%20r='34'%20fill='%23c8f7dc'/%3E%3Cpath%20d='M38%20244l86-74%2054%2044%2044-62%2062%2092H38z'%20fill='%23e7f8ee'/%3E%3C/svg%3E",
+    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%23a142f4'/%3E%3Ccircle%20cx='98'%20cy='92'%20r='32'%20fill='%23f1dcff'/%3E%3Cpath%20d='M44%20246l72-72%2046%2040%2048-58%2068%2090H44z'%20fill='%23f7edff'/%3E%3C/svg%3E",
+  ],
+};
+const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_FILE_FIXTURES: Record<
+  MarkdownStressAttachmentStripPreviewVariant,
+  Array<Pick<FileInfo, "name" | "type" | "content">>
+> = {
+  populated: [
+    {
+      name: "产品需求摘要.md",
+      type: "text/markdown",
+      content: "# 产品需求摘要\n\n用于验证附件 strip 的普通填充状态。",
+    },
+    {
+      name: "release-checklist.json",
+      type: "application/json",
+      content: '{ "status": "draft", "items": ["qa", "review"] }',
+    },
+  ],
+  full: [
+    {
+      name: "界面压测报告.md",
+      type: "text/markdown",
+      content: "# 界面压测报告\n\n用于验证附件已满状态。",
+    },
+    {
+      name: "markdown-render-fixture.json",
+      type: "application/json",
+      content: '{ "fixture": "markdown-render", "rows": 42 }',
+    },
+    {
+      name: "table-overflow-sample.csv",
+      type: "text/csv",
+      content: "metric,value\nlatency,128\nmemory,452",
+    },
+    {
+      name: "long-code-block.ts",
+      type: "text/typescript",
+      content: "export const fixture = 'long-code-block';",
+    },
+    {
+      name: "qa-notes.txt",
+      type: "text/plain",
+      content: "最多 3 张图片和 5 个文件时显示已满状态。",
+    },
+  ],
+  overflow: [
+    {
+      name: "2026-markdown-performance-benchmark-summary.md",
+      type: "text/markdown",
+      content: "# Markdown Performance Benchmark\n\nOverflow fixture.",
+    },
+    {
+      name: "conversation-export-with-extra-long-file-name.json",
+      type: "application/json",
+      content: '{ "messages": 128, "attachments": true }',
+    },
+    {
+      name: "nested-list-and-table-regression-cases.csv",
+      type: "text/csv",
+      content: "case,result\nnested-list,pass\ntable,pass",
+    },
+    {
+      name: "streaming-code-block-boundary-sample.ts",
+      type: "text/typescript",
+      content: "export function sample() { return 'streaming'; }",
+    },
+  ],
+};
 
 function isMarkdownStressQaEnabled(locationSearch: string) {
   const params = new URLSearchParams(locationSearch);
@@ -467,6 +557,35 @@ function getMarkdownStressQaDropzonePreviewVariant(locationSearch: string) {
   const params = new URLSearchParams(locationSearch);
   const variant = params.get(MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_PARAM);
   return variant === "accepted" || variant === "blocked" ? variant : undefined;
+}
+
+function getMarkdownStressQaAttachmentStripPreviewVariant(
+  locationSearch: string,
+) {
+  const params = new URLSearchParams(locationSearch);
+  const variant = params.get(MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_PARAM);
+  return variant === "populated" || variant === "full" || variant === "overflow"
+    ? variant
+    : undefined;
+}
+
+function createMarkdownStressQaAttachmentStripPreview(
+  variant: MarkdownStressAttachmentStripPreviewVariant,
+): { images: string[]; files: FileInfo[] } {
+  const files = MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_FILE_FIXTURES[
+    variant
+  ].map((fixture) => ({
+    ...fixture,
+    size: new Blob([fixture.content]).size,
+    originalFile: new File([fixture.content], fixture.name, {
+      type: fixture.type,
+    }),
+  }));
+
+  return {
+    images: [...MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_IMAGES[variant]],
+    files,
+  };
 }
 
 function getMarkdownStressQaMessages(locationSearch: string): RenderMessage[] {
@@ -2057,6 +2176,13 @@ function useChatInnerView() {
         : undefined,
     [location.search, markdownStressQaEnabled],
   );
+  const markdownStressQaAttachmentStripPreview = useMemo(
+    () =>
+      markdownStressQaEnabled
+        ? getMarkdownStressQaAttachmentStripPreviewVariant(location.search)
+        : undefined,
+    [location.search, markdownStressQaEnabled],
+  );
   const [attachImages, setAttachImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -2146,6 +2272,18 @@ function useChatInnerView() {
   const [isInputExpanded, setIsInputExpanded] = useState(false);
   const [showChatActionMenu, setShowChatActionMenu] = useState(false);
   const ignoreInputCollapseUntil = useRef(0);
+
+  useEffect(() => {
+    if (!markdownStressQaAttachmentStripPreview) return;
+
+    const seededAttachments = createMarkdownStressQaAttachmentStripPreview(
+      markdownStressQaAttachmentStripPreview,
+    );
+    setAttachImages(seededAttachments.images);
+    setAttachedFiles(seededAttachments.files);
+    setIsInputExpanded(true);
+  }, [markdownStressQaAttachmentStripPreview]);
+
   const hasActiveInputContent =
     userInput.trim().length > 0 ||
     attachImages.length > 0 ||
@@ -5463,6 +5601,9 @@ function useChatInnerView() {
                   <div
                     className={styles["attachments-scroll-shell"]}
                     data-composer-attachment-strip="true"
+                    data-attachment-strip-preview={
+                      markdownStressQaAttachmentStripPreview ?? undefined
+                    }
                     data-overflow-start={
                       attachmentScrollHint.start ? "true" : "false"
                     }
