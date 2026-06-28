@@ -208,6 +208,7 @@ const CHAT_SCROLL_BOTTOM_CLEARANCE = 54;
 const CHAT_SCROLL_BOTTOM_MOBILE_CLEARANCE = 50;
 const MARKDOWN_STRESS_QA_PARAM = "markdown-stress";
 const MARKDOWN_STRESS_QA_BOUNDARY_PARAM = "streaming_boundary";
+const MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_PARAM = "dropzone_preview";
 const MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX = "codex-qa-markdown-stress";
 type MarkdownStressBoundaryVariant =
   | "details"
@@ -215,6 +216,7 @@ type MarkdownStressBoundaryVariant =
   | "artifact"
   | "image"
   | "media";
+type MarkdownStressDropzonePreviewVariant = "accepted" | "blocked";
 const MARKDOWN_STRESS_QA_BOUNDARY_VARIANTS: MarkdownStressBoundaryVariant[] = [
   "details",
   "table",
@@ -424,6 +426,21 @@ const MARKDOWN_STRESS_QA_BOUNDARY_MESSAGES: RenderMessage[] =
     streaming: true,
     content: MARKDOWN_STRESS_QA_BOUNDARY_CONTENT[variant],
   }));
+const MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_SUMMARIES: Record<
+  MarkdownStressDropzonePreviewVariant,
+  DraggedAttachmentSummary
+> = {
+  accepted: {
+    text: "可添加 2 张图片 · 1 个文件",
+    hint: "释放后添加到输入框 · 最多3张图片、5个文件",
+    willAdd: true,
+  },
+  blocked: {
+    text: "附件已满",
+    hint: "最多3张图片、5个文件 · 请先移除部分附件",
+    willAdd: false,
+  },
+};
 
 function isMarkdownStressQaEnabled(locationSearch: string) {
   const params = new URLSearchParams(locationSearch);
@@ -444,6 +461,12 @@ function getMarkdownStressQaBoundaryVariant(locationSearch: string) {
   ) {
     return variant as MarkdownStressBoundaryVariant;
   }
+}
+
+function getMarkdownStressQaDropzonePreviewVariant(locationSearch: string) {
+  const params = new URLSearchParams(locationSearch);
+  const variant = params.get(MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_PARAM);
+  return variant === "accepted" || variant === "blocked" ? variant : undefined;
 }
 
 function getMarkdownStressQaMessages(locationSearch: string): RenderMessage[] {
@@ -2027,6 +2050,13 @@ function useChatInnerView() {
     () => isMarkdownStressQaEnabled(location.search),
     [location.search],
   );
+  const markdownStressQaDropzonePreview = useMemo(
+    () =>
+      markdownStressQaEnabled
+        ? getMarkdownStressQaDropzonePreviewVariant(location.search)
+        : undefined,
+    [location.search, markdownStressQaEnabled],
+  );
   const [attachImages, setAttachImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -2046,6 +2076,13 @@ function useChatInnerView() {
   const [dragPayloadSummary, setDragPayloadSummary] =
     useState<DraggedAttachmentSummary | null>(null);
   const dragCounter = useRef(0);
+  const dropzonePreviewSummary = markdownStressQaDropzonePreview
+    ? MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_SUMMARIES[
+        markdownStressQaDropzonePreview
+      ]
+    : null;
+  const dropzonePayloadSummary = dropzonePreviewSummary ?? dragPayloadSummary;
+  const isDropzonePreviewActive = dragActive || dropzonePreviewSummary != null;
 
   const isMounted = useRef(true);
   useEffect(() => {
@@ -4303,9 +4340,9 @@ function useChatInnerView() {
         aria-live="polite"
         aria-atomic="true"
       >
-        {dragActive
-          ? `${dragPayloadSummary?.text ?? "拖拽文件或图片到此处上传"}，${
-              dragPayloadSummary?.hint ??
+        {isDropzonePreviewActive
+          ? `${dropzonePayloadSummary?.text ?? "拖拽文件或图片到此处上传"}，${
+              dropzonePayloadSummary?.hint ??
               "释放后添加到输入框 · 最多3张图片、5个文件"
             }。`
           : ""}
@@ -4313,12 +4350,12 @@ function useChatInnerView() {
       <div
         className={clsx(
           styles["chat-dropzone"],
-          dragActive && styles["chat-dropzone-active"],
+          isDropzonePreviewActive && styles["chat-dropzone-active"],
         )}
-        aria-hidden={!dragActive}
-        data-drop-active={dragActive ? "true" : "false"}
+        aria-hidden={!isDropzonePreviewActive}
+        data-drop-active={isDropzonePreviewActive ? "true" : "false"}
         data-drop-accepted={
-          dragPayloadSummary?.willAdd === false ? "false" : "true"
+          dropzonePayloadSummary?.willAdd === false ? "false" : "true"
         }
         aria-labelledby="chat-dropzone-status"
         aria-describedby="chat-dropzone-summary chat-dropzone-hint"
@@ -4334,10 +4371,10 @@ function useChatInnerView() {
             id="chat-dropzone-summary"
             className={styles["chat-dropzone-summary"]}
           >
-            {dragPayloadSummary?.text ?? "检测拖拽附件"}
+            {dropzonePayloadSummary?.text ?? "检测拖拽附件"}
           </p>
           <p id="chat-dropzone-hint" className={styles["chat-dropzone-hint"]}>
-            {dragPayloadSummary?.hint ??
+            {dropzonePayloadSummary?.hint ??
               "释放后添加到输入框 · 最多3张图片、5个文件"}
           </p>
         </div>
@@ -5262,7 +5299,7 @@ function useChatInnerView() {
               [styles["chat-input-panel-collapsed"]]: !shouldExpandChatInput,
               [styles["chat-input-panel-empty"]]: showEmptyComposer,
             })}
-            data-drag-active={dragActive ? "true" : undefined}
+            data-drag-active={isDropzonePreviewActive ? "true" : undefined}
           >
             {!showEmptyState && !hitBottom && !showChatActionMenu && (
               <button
