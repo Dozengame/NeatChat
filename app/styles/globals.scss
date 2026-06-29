@@ -1078,9 +1078,14 @@ pre {
       }
     }
 
-    &:hover,
-    &[data-wrap-state="wrapped"] {
+    &:hover {
       opacity: 1;
+      background-color: var(--markdown-code-copy-button-hover-background);
+      color: var(--markdown-code-copy-button-hover-color);
+      border-color: var(--markdown-code-copy-button-hover-border-color);
+    }
+
+    &[data-wrap-state="wrapped"] {
       background-color: var(--markdown-code-copy-button-hover-background);
       color: var(--markdown-code-copy-button-hover-color);
       border-color: var(--markdown-code-copy-button-hover-border-color);

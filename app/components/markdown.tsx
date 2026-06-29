@@ -210,6 +210,73 @@ function getCodeLineNumbers(children: React.ReactNode): string {
   ).join("\n");
 }
 
+function splitChildrenIntoLines(
+  children: React.ReactNode,
+): React.ReactNode[][] {
+  const lines: React.ReactNode[][] = [[]];
+  let currentLine = lines[0];
+
+  function processNode(node: React.ReactNode) {
+    if (node == null || typeof node === "boolean") {
+      return;
+    }
+
+    if (typeof node === "string" || typeof node === "number") {
+      const parts = String(node).split("\n");
+      parts.forEach((part, index) => {
+        if (index > 0) {
+          currentLine = [];
+          lines.push(currentLine);
+        }
+        if (part) {
+          currentLine.push(part);
+        }
+      });
+      return;
+    }
+
+    if (Array.isArray(node)) {
+      node.forEach(processNode);
+      return;
+    }
+
+    if (React.isValidElement(node)) {
+      const text = getReactTextContent(node);
+      if (!text.includes("\n")) {
+        currentLine.push(node);
+        return;
+      }
+
+      const elementChildren = (node.props as any).children;
+      if (elementChildren) {
+        const innerLines = splitChildrenIntoLines(elementChildren);
+        innerLines.forEach((innerLine, index) => {
+          if (index > 0) {
+            currentLine = [];
+            lines.push(currentLine);
+          }
+          if (innerLine.length > 0) {
+            const cloned = React.cloneElement(
+              node,
+              { key: `${node.key || ""}-line-${index}` },
+              ...innerLine,
+            );
+            currentLine.push(cloned);
+          }
+        });
+      } else {
+        currentLine.push(node);
+      }
+      return;
+    }
+
+    currentLine.push(node);
+  }
+
+  processNode(children);
+  return lines;
+}
+
 export function PreCode(props: { children: any }) {
   const ref = useRef<HTMLPreElement>(null);
   const [mermaidCode, setMermaidCode] = useState("");
@@ -468,7 +535,11 @@ export function PreCode(props: { children: any }) {
   );
 }
 
-function CustomCode(props: { children: any; className?: string }) {
+export function CustomCode(props: {
+  children: any;
+  className?: string;
+  inline?: boolean;
+}) {
   const config = useAppConfig();
   const features = useContext(MarkdownFeatureContext);
   const enableCodeFold = features.enableCodeFold && config.enableCodeFold;
@@ -479,17 +550,24 @@ function CustomCode(props: { children: any; className?: string }) {
   const [showToggle, setShowToggle] = useState(false);
 
   useLayoutEffect(() => {
-    if (ref.current) {
+    if (ref.current && !props.inline) {
       const codeHeight = ref.current.scrollHeight;
       setShowToggle(codeHeight > 400);
       ref.current.scrollTop = ref.current.scrollHeight;
     }
-  }, [props.children]);
+  }, [props.children, props.inline]);
 
   const toggleCollapsed = () => {
     setCollapsed((collapsed) => !collapsed);
   };
-  const showMoreButton = showToggle && enableCodeFold && collapsed;
+
+  const lines = useMemo(() => {
+    if (props.inline) return null;
+    return splitChildrenIntoLines(props.children);
+  }, [props.children, props.inline]);
+
+  const showMoreButton =
+    !props.inline && showToggle && enableCodeFold && collapsed;
   return (
     <>
       <code
@@ -497,11 +575,23 @@ function CustomCode(props: { children: any; className?: string }) {
         className={clsx(props?.className)}
         ref={ref}
         style={{
-          maxHeight: enableCodeFold && collapsed ? "400px" : "none",
-          overflowY: "hidden",
+          maxHeight:
+            !props.inline && enableCodeFold && collapsed ? "400px" : "none",
+          overflowY: !props.inline ? "hidden" : undefined,
         }}
       >
-        {props.children}
+        {lines
+          ? lines.map((lineNodes, index) => (
+              <React.Fragment key={index}>
+                <span className="code-line">
+                  {lineNodes.length > 0 ? lineNodes : ""}
+                </span>
+                {index < lines.length - 1 && (
+                  <span className="code-line-newline">{"\n"}</span>
+                )}
+              </React.Fragment>
+            ))
+          : props.children}
       </code>
 
       {showMoreButton && (

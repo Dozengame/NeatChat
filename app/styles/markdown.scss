@@ -4429,6 +4429,47 @@ summary,
   border: 0;
 }
 
+.markdown-body pre.markdown-code-block-wrap {
+  counter-reset: code-line-counter;
+}
+
+.markdown-body pre.markdown-code-block-wrap > .markdown-code-line-numbers {
+  color: transparent !important;
+}
+
+.markdown-body pre.markdown-code-block-wrap > :is(code, tt) > .code-line-newline {
+  display: none;
+}
+
+.markdown-body pre.markdown-code-block-wrap > :is(code, tt) > .code-line {
+  display: block;
+  position: relative;
+  min-height: 1.6em;
+}
+
+.markdown-body pre.markdown-code-block-wrap > :is(code, tt) > .code-line::before {
+  counter-increment: code-line-counter;
+  content: counter(code-line-counter);
+  position: absolute;
+  left: calc(-1 * var(--markdown-code-block-padding-start));
+  width: var(--markdown-code-line-number-width);
+  padding: 0 10px 0 8px;
+  box-sizing: border-box;
+  text-align: right;
+  color: var(--markdown-code-line-number-color);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.markdown-body pre.markdown-code-block-wrap > code,
+.markdown-body pre.markdown-code-block-wrap > tt {
+  display: block;
+  margin-left: calc(-1 * var(--markdown-code-block-padding-start));
+  padding-left: var(--markdown-code-block-padding-start);
+}
+
 .markdown-body pre.markdown-code-block-wrap code,
 .markdown-body pre.markdown-code-block-wrap tt {
   max-width: 100%;
