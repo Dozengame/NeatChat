@@ -201,6 +201,7 @@ const imageQualityLabels: Record<OpenAIImageQuality, string> = {
 const getImageQualityLabel = (quality: OpenAIImageQuality) =>
   imageQualityLabels[quality] ?? quality;
 type MobileModelAdvancedSection = "reasoning" | "image-size" | "image-quality";
+type ModelMenuPlacement = "header" | "empty-composer";
 
 const CHAT_BODY_BOTTOM_SAFE_AREA_BASE = 150;
 const CHAT_BODY_BOTTOM_SAFE_AREA_MOBILE_BASE = 118;
@@ -2676,9 +2677,44 @@ function useChatInnerView() {
   const [showMobileModelSelector, setShowMobileModelSelector] = useState(false);
   const [expandedMobileModelSection, setExpandedMobileModelSection] =
     useState<MobileModelAdvancedSection | null>(null);
+  const [modelMenuPlacement, setModelMenuPlacement] =
+    useState<ModelMenuPlacement>("header");
+  const [emptyComposerModelMenuStyle, setEmptyComposerModelMenuStyle] =
+    useState<React.CSSProperties | undefined>(undefined);
   const modelSelectorButtonRef = useRef<HTMLButtonElement>(null);
   const modelMenuRef = useRef<HTMLDivElement>(null);
   const modelMenuFocusFrameRef = useRef<number | null>(null);
+  const getEmptyComposerModelMenuStyle = (button: HTMLButtonElement) => {
+    const viewportPadding = 16;
+    const menuWidth = Math.min(380, window.innerWidth - viewportPadding * 2);
+    const buttonRect = button.getBoundingClientRect();
+    const left = Math.max(
+      viewportPadding,
+      Math.min(
+        buttonRect.right - menuWidth,
+        window.innerWidth - menuWidth - viewportPadding,
+      ),
+    );
+    const belowTop = buttonRect.bottom + 10;
+    const belowSpace = window.innerHeight - belowTop - viewportPadding;
+    const maxEstimatedMenuHeight = Math.min(
+      320,
+      window.innerHeight - viewportPadding * 2,
+    );
+    const top =
+      belowSpace >= 260
+        ? belowTop
+        : Math.max(
+            viewportPadding,
+            buttonRect.top - maxEstimatedMenuHeight - 10,
+          );
+
+    return {
+      "--chat-model-menu-empty-left": `${left}px`,
+      "--chat-model-menu-empty-top": `${Math.max(viewportPadding, top)}px`,
+      "--chat-model-menu-empty-width": `${menuWidth}px`,
+    } as React.CSSProperties;
+  };
   const closeMobileModelSelector = useCallback(() => {
     setShowMobileModelSelector(false);
     setExpandedMobileModelSection(null);
@@ -3125,6 +3161,7 @@ function useChatInnerView() {
     showEmptyState && !hasActiveInputContent && !showChatActionMenu;
   const showDesktopModelControls = !showEmptyState;
   const showDesktopChatHeader = !isCompactScreen && !showEmptyState;
+  const showEmptyComposerModelSelect = showEmptyComposer && !isCompactScreen;
   const applyEmptySuggestion = useCallback(
     (suggestion: string) => {
       setShowChatActionMenu(false);
@@ -4553,6 +4590,8 @@ function useChatInnerView() {
             onClick={() => {
               setShowChatActionMenu(false);
               setExpandedMobileModelSection(null);
+              setModelMenuPlacement("header");
+              setEmptyComposerModelMenuStyle(undefined);
               setShowMobileModelSelector((open) => !open);
             }}
             aria-controls="chat-model-menu"
@@ -4613,6 +4652,8 @@ function useChatInnerView() {
                 onClick={() => {
                   setShowChatActionMenu(false);
                   setExpandedMobileModelSection(null);
+                  setModelMenuPlacement("header");
+                  setEmptyComposerModelMenuStyle(undefined);
                   setShowMobileModelSelector((open) => !open);
                 }}
                 aria-controls="chat-model-menu"
@@ -4742,8 +4783,15 @@ function useChatInnerView() {
             : styles["chat-desktop-model-menu"],
           {
             [styles["chat-model-menu-visible"]]: showMobileModelSelector,
+            [styles["chat-desktop-model-menu-empty-composer"]]:
+              modelMenuPlacement === "empty-composer" && !isCompactScreen,
           },
         )}
+        style={
+          modelMenuPlacement === "empty-composer" && !isCompactScreen
+            ? emptyComposerModelMenuStyle
+            : undefined
+        }
         onKeyDown={handleModelMenuKeyDown}
         tabIndex={-1}
         role="dialog"
@@ -5572,6 +5620,36 @@ function useChatInnerView() {
                     fontFamily: config.fontFamily,
                   }}
                 />
+
+                {showEmptyComposerModelSelect && (
+                  <button
+                    type="button"
+                    ref={modelSelectorButtonRef}
+                    className={styles["chat-input-model-button"]}
+                    aria-label={`选择模型：${headerCurrentModelName}，${desktopModelDetail}`}
+                    title={`${headerCurrentModelName} · ${desktopModelDetail}`}
+                    onKeyDown={handleModelMenuKeyDown}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setShowChatActionMenu(false);
+                      setExpandedMobileModelSection(null);
+                      setModelMenuPlacement("empty-composer");
+                      setEmptyComposerModelMenuStyle(
+                        getEmptyComposerModelMenuStyle(event.currentTarget),
+                      );
+                      setShowMobileModelSelector((open) => !open);
+                    }}
+                    aria-controls="chat-model-menu"
+                    aria-haspopup="dialog"
+                    aria-expanded={showMobileModelSelector}
+                  >
+                    <span className={styles["chat-input-model-name"]}>
+                      {headerCurrentModelName}
+                    </span>
+                    <span className={styles["chat-input-model-arrow"]}>⌄</span>
+                  </button>
+                )}
 
                 {showInputStatusRow && (
                   <div
