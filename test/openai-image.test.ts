@@ -1,8 +1,11 @@
 import { DEFAULT_MODELS, ServiceProvider } from "../app/constant";
 import {
+  OPENAI_IMAGE_REQUEST_TIMEOUT_MS,
+  abortOpenAIImageRequest,
   applyOpenAIImageGenerationDefaults,
   buildOpenAIImageEditFormData,
   buildOpenAIImageGenerationPayload,
+  createOpenAIImageTimeoutError,
   getOpenAIImageGenerationProgressContent,
   getOpenAIImageOutputContentType,
   isOpenAIImageGenerationModelConfig,
@@ -195,6 +198,24 @@ describe("OpenAI image generation models", () => {
         phase: "saving",
       }),
     ).toContain("正在保存图片");
+  });
+
+  test("uses an explicit long timeout for image generation requests", () => {
+    expect(OPENAI_IMAGE_REQUEST_TIMEOUT_MS).toBe(10 * 60 * 1000);
+
+    const timeoutError = createOpenAIImageTimeoutError(123_000);
+    expect(timeoutError.message).toBe(
+      "OpenAI image generation timed out after 123 seconds",
+    );
+
+    const controller = new AbortController();
+    abortOpenAIImageRequest(controller, 123_000);
+
+    expect(controller.signal.aborted).toBe(true);
+    expect(controller.signal.reason).toBeInstanceOf(Error);
+    expect((controller.signal.reason as Error).message).toBe(
+      "OpenAI image generation timed out after 123 seconds",
+    );
   });
 
   test("wraps non-json image responses as OpenAI errors", () => {

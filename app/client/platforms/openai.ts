@@ -8,14 +8,14 @@ import {
   Azure,
   REQUEST_TIMEOUT_MS,
   ServiceProvider,
-  } from "@/app/constant";
+} from "@/app/constant";
 import {
   ChatMessageTool,
   useAccessStore,
   useAppConfig,
   useChatStore,
   usePluginStore,
-  } from "@/app/store";
+} from "@/app/store";
 import { collectModelsWithDefaultModel } from "@/app/utils/model";
 import {
   preProcessImageContent,
@@ -23,18 +23,18 @@ import {
   base64Image2Blob,
   cacheImageToBase64Image,
   stream,
-  } from "@/app/utils/chat";
+} from "@/app/utils/chat";
 import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
 import {
   shouldUseOpenAIResponses,
   shouldRequireOpenAIResponsesWebSearch,
   shouldEnableOpenAIResponsesWebSearch,
   supportsOpenAIResponsesWebSearch,
-  } from "@/app/utils/openai-responses";
+} from "@/app/utils/openai-responses";
 import {
   buildOpenAIResponsesPayload,
   ResponsesRequestPayload,
-  } from "./openai-responses-builder";
+} from "./openai-responses-builder";
 
 import {
   ChatOptions,
@@ -56,6 +56,8 @@ import {
 } from "@/app/utils";
 import { fetch } from "@/app/utils/stream";
 import {
+  OPENAI_IMAGE_REQUEST_TIMEOUT_MS,
+  abortOpenAIImageRequest,
   buildOpenAIImageEditFormData,
   buildOpenAIImageGenerationPayload,
   getOpenAIImageGenerationProgressContent,
@@ -751,14 +753,18 @@ export class ChatGPTApi implements LLMApi {
         }
 
         // make a fetch request
-        const requestTimeoutId = setTimeout(
-          () => controller.abort(),
-          useResponses
-            ? OPENAI_RESPONSES_TIMEOUT_MS
-            : isImageGeneration
-            ? REQUEST_TIMEOUT_MS * 4
-            : REQUEST_TIMEOUT_MS, // dalle3 using b64_json is slow.
-        );
+        const requestTimeoutMs = useResponses
+          ? OPENAI_RESPONSES_TIMEOUT_MS
+          : isImageGeneration
+          ? OPENAI_IMAGE_REQUEST_TIMEOUT_MS
+          : REQUEST_TIMEOUT_MS;
+        const requestTimeoutId = setTimeout(() => {
+          if (isImageGeneration) {
+            abortOpenAIImageRequest(controller, requestTimeoutMs);
+            return;
+          }
+          controller.abort();
+        }, requestTimeoutMs);
 
         const res = await fetch(chatPath, chatPayload);
         clearTimeout(requestTimeoutId);

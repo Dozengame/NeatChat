@@ -3,6 +3,7 @@ import { getServerSideConfig } from "../config/server";
 import { OPENAI_BASE_URL, OpenaiPath, ServiceProvider } from "../constant";
 import { cloudflareAIGatewayUrl } from "../utils/cloudflare";
 import { getModelProvider, isModelAvailableInServer } from "../utils/model";
+import { OPENAI_IMAGE_REQUEST_TIMEOUT_MS } from "../utils/openai-image";
 
 const serverConfig = getServerSideConfig();
 
@@ -57,12 +58,15 @@ export async function requestOpenai(req: NextRequest) {
   console.log("[Proxy] ", path);
   console.log("[Base Url]", baseUrl);
 
-  const timeoutId = setTimeout(
-    () => {
-      controller.abort();
-    },
-    10 * 60 * 1000,
-  );
+  const timeoutId = setTimeout(() => {
+    controller.abort(
+      new Error(
+        `OpenAI proxy request timed out after ${Math.round(
+          OPENAI_IMAGE_REQUEST_TIMEOUT_MS / 1000,
+        )} seconds`,
+      ),
+    );
+  }, OPENAI_IMAGE_REQUEST_TIMEOUT_MS);
 
   if (isAzure) {
     const azureApiVersion =
@@ -109,7 +113,9 @@ export async function requestOpenai(req: NextRequest) {
       : cloudflareAIGatewayUrl(`${baseUrl}/${path}`);
   console.log("fetchUrl", fetchUrl);
   const fetchHeaders: Record<string, string> = {
-    "Content-Type": isMultipartRequest ? requestContentType : "application/json",
+    "Content-Type": isMultipartRequest
+      ? requestContentType
+      : "application/json",
     "Cache-Control": "no-store",
     [authHeaderName]: authValue,
     ...(serverConfig.openaiOrgId && {

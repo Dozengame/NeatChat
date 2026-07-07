@@ -1,4 +1,4 @@
-import { ServiceProvider } from "../constant";
+import { REQUEST_TIMEOUT_MS, ServiceProvider } from "../constant";
 import type {
   DalleStyle,
   GptImageQuality,
@@ -13,6 +13,8 @@ import type {
 const GPT_IMAGE_2_MODEL = "gpt-image-2";
 const DALLE_MODEL_PREFIX = "dall-e";
 const GPT_IMAGE_MODEL_PREFIX = "gpt-image";
+
+export const OPENAI_IMAGE_REQUEST_TIMEOUT_MS = REQUEST_TIMEOUT_MS * 10;
 
 export const DALLE3_IMAGE_SIZES = [
   "1024x1024",
@@ -35,12 +37,7 @@ export const GPT_IMAGE_2_SIZES = [
   "2160x3840",
 ] as const;
 
-export const GPT_IMAGE_2_QUALITIES = [
-  "auto",
-  "low",
-  "medium",
-  "high",
-] as const;
+export const GPT_IMAGE_2_QUALITIES = ["auto", "low", "medium", "high"] as const;
 
 const GPT_IMAGE_2_DEFAULTS = {
   size: "auto" as GptImageSize,
@@ -122,9 +119,7 @@ export function isGptImageGenerationModel(model?: string) {
 }
 
 export function isOpenAIImageGenerationModel(model?: string) {
-  return (
-    isDalleImageGenerationModel(model) || isGptImageGenerationModel(model)
-  );
+  return isDalleImageGenerationModel(model) || isGptImageGenerationModel(model);
 }
 
 export function isOpenAIImageGenerationModelConfig(params: {
@@ -178,6 +173,23 @@ export function getOpenAIImageGenerationProgressContent(params: {
     default:
       return `正在准备图片生成请求...${modelLine}`;
   }
+}
+
+export function createOpenAIImageTimeoutError(
+  timeoutMs = OPENAI_IMAGE_REQUEST_TIMEOUT_MS,
+) {
+  return new Error(
+    `OpenAI image generation timed out after ${Math.round(
+      timeoutMs / 1000,
+    )} seconds`,
+  );
+}
+
+export function abortOpenAIImageRequest(
+  controller: AbortController,
+  timeoutMs = OPENAI_IMAGE_REQUEST_TIMEOUT_MS,
+) {
+  controller.abort(createOpenAIImageTimeoutError(timeoutMs));
 }
 
 export function parseOpenAIImageResponsePayload(params: {
@@ -253,7 +265,9 @@ export function buildOpenAIImageGenerationPayload(params: {
     const size = GPT_IMAGE_2_SIZES.includes(params.config?.size as any)
       ? params.config?.size
       : GPT_IMAGE_2_DEFAULTS.size;
-    const quality = GPT_IMAGE_2_QUALITIES.includes(params.config?.quality as any)
+    const quality = GPT_IMAGE_2_QUALITIES.includes(
+      params.config?.quality as any,
+    )
       ? params.config?.quality
       : GPT_IMAGE_2_DEFAULTS.quality;
     const background =
@@ -268,7 +282,8 @@ export function buildOpenAIImageGenerationPayload(params: {
         ? params.config.output_format
         : GPT_IMAGE_2_DEFAULTS.output_format;
     const moderation =
-      params.config?.moderation === "low" || params.config?.moderation === "auto"
+      params.config?.moderation === "low" ||
+      params.config?.moderation === "auto"
         ? params.config.moderation
         : GPT_IMAGE_2_DEFAULTS.moderation;
 
