@@ -3,9 +3,9 @@ import { getServerSideConfig } from "../config/server";
 import { OPENAI_BASE_URL, OpenaiPath, ServiceProvider } from "../constant";
 import { cloudflareAIGatewayUrl } from "../utils/cloudflare";
 import { getModelProvider, isModelAvailableInServer } from "../utils/model";
-import { OPENAI_IMAGE_REQUEST_TIMEOUT_MS } from "../utils/openai-image";
 
 const serverConfig = getServerSideConfig();
+const OPENAI_PROXY_REQUEST_TIMEOUT_MS = 10 * 60 * 1000;
 
 function isOpenAIImagePath(path: string) {
   return path === OpenaiPath.ImagePath || path === OpenaiPath.ImageEditPath;
@@ -62,11 +62,11 @@ export async function requestOpenai(req: NextRequest) {
     controller.abort(
       new Error(
         `OpenAI proxy request timed out after ${Math.round(
-          OPENAI_IMAGE_REQUEST_TIMEOUT_MS / 1000,
+          OPENAI_PROXY_REQUEST_TIMEOUT_MS / 1000,
         )} seconds`,
       ),
     );
-  }, OPENAI_IMAGE_REQUEST_TIMEOUT_MS);
+  }, OPENAI_PROXY_REQUEST_TIMEOUT_MS);
 
   if (isAzure) {
     const azureApiVersion =

@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { handle as openaiHandler } from "../../../../openai";
 
 export const runtime = "nodejs";
-export const maxDuration = 600;
+export const maxDuration = 300;
 
 export async function POST(
   req: NextRequest,

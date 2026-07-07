@@ -1,4 +1,4 @@
-import { REQUEST_TIMEOUT_MS, ServiceProvider } from "../constant";
+import { ServiceProvider } from "../constant";
 import type {
   DalleStyle,
   GptImageQuality,
@@ -10,11 +10,13 @@ import type {
   OpenAIImageSize,
 } from "../typing";
 
+export const VERCEL_HOBBY_MAX_DURATION_SECONDS = 300;
 const GPT_IMAGE_2_MODEL = "gpt-image-2";
 const DALLE_MODEL_PREFIX = "dall-e";
 const GPT_IMAGE_MODEL_PREFIX = "gpt-image";
 
-export const OPENAI_IMAGE_REQUEST_TIMEOUT_MS = REQUEST_TIMEOUT_MS * 10;
+export const OPENAI_IMAGE_REQUEST_TIMEOUT_MS =
+  VERCEL_HOBBY_MAX_DURATION_SECONDS * 1000;
 
 export const DALLE3_IMAGE_SIZES = [
   "1024x1024",

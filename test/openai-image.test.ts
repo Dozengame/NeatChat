@@ -1,6 +1,9 @@
+import { readFileSync } from "fs";
+
 import { DEFAULT_MODELS, ServiceProvider } from "../app/constant";
 import {
   OPENAI_IMAGE_REQUEST_TIMEOUT_MS,
+  VERCEL_HOBBY_MAX_DURATION_SECONDS,
   abortOpenAIImageRequest,
   applyOpenAIImageGenerationDefaults,
   buildOpenAIImageEditFormData,
@@ -200,8 +203,16 @@ describe("OpenAI image generation models", () => {
     ).toContain("正在保存图片");
   });
 
-  test("uses an explicit long timeout for image generation requests", () => {
-    expect(OPENAI_IMAGE_REQUEST_TIMEOUT_MS).toBe(10 * 60 * 1000);
+  test("uses a Vercel Hobby-compatible timeout for image generation requests", () => {
+    expect(VERCEL_HOBBY_MAX_DURATION_SECONDS).toBe(300);
+    expect(OPENAI_IMAGE_REQUEST_TIMEOUT_MS).toBe(5 * 60 * 1000);
+
+    const routeSource = readFileSync(
+      "app/api/openai/v1/images/[action]/route.ts",
+      "utf8",
+    );
+    expect(routeSource).toContain("export const maxDuration = 300;");
+    expect(routeSource).not.toContain("export const maxDuration = 600;");
 
     const timeoutError = createOpenAIImageTimeoutError(123_000);
     expect(timeoutError.message).toBe(
