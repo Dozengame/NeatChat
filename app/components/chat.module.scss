@@ -6105,46 +6105,6 @@
     }
   }
 
-  .chat-image-generation-options {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    width: 100%;
-  }
-
-  .chat-image-generation-option {
-    min-height: 58px;
-    height: auto;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 8px 11px;
-    overflow: visible;
-
-    .icon {
-      flex: 0 0 auto;
-      margin-top: 2px;
-    }
-
-    .chat-image-generation-option-copy {
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-      gap: 3px;
-      line-height: 1.25;
-    }
-
-    .chat-image-generation-option-title {
-      font-weight: 600;
-      color: inherit;
-    }
-
-    .chat-image-generation-option-subtitle {
-      color: var(--chat-multimodal-section-subtitle-color);
-      font-size: 12px;
-      white-space: normal;
-    }
-  }
-
   .chat-input-action-disabled,
   .chat-input-action:disabled {
     cursor: default;
