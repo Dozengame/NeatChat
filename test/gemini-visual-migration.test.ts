@@ -2410,7 +2410,7 @@ describe("Gemini visual migration shell", () => {
       /finally \{[\s\S]*document\.body\.removeChild\(textArea\);[\s\S]*\}/,
     );
     expect(chat).toMatch(
-      /text=\{props\.imageGenerationEnabled \? "关闭图片生成" : "图片生成"\}[\s\S]*ariaHasPopup=\{isCompactScreen \? undefined : "listbox"\}[\s\S]*ariaExpanded=\{\s*isCompactScreen \? undefined : actionModals\.imageGeneration\s*\}/,
+      /text=\{props\.imageGenerationEnabled \? "关闭图片生成" : "图片生成"\}[\s\S]*ariaHasPopup=\{isCompactScreen \? undefined : "menu"\}[\s\S]*ariaExpanded=\{\s*isCompactScreen \? undefined : actionModals\.imageGeneration\s*\}/,
     );
     expect(chat).toMatch(
       /text=\{currentModelName\}[\s\S]*ariaHasPopup="listbox"[\s\S]*ariaExpanded=\{actionModals\.model\}/,
@@ -4898,6 +4898,26 @@ describe("Gemini visual migration shell", () => {
       actionMenuActionBlock,
       ".text",
     );
+    const imageGenerationOptionsBlock = readCssBlock(
+      actionMenuBlock,
+      ".chat-image-generation-options",
+    );
+    const imageGenerationOptionBlock = readCssBlock(
+      actionMenuBlock,
+      ".chat-image-generation-option",
+    );
+    const imageGenerationOptionCopyBlock = readCssBlock(
+      imageGenerationOptionBlock,
+      ".chat-image-generation-option-copy",
+    );
+    const imageGenerationOptionTitleBlock = readCssBlock(
+      imageGenerationOptionBlock,
+      ".chat-image-generation-option-title",
+    );
+    const imageGenerationOptionSubtitleBlock = readCssBlock(
+      imageGenerationOptionBlock,
+      ".chat-image-generation-option-subtitle",
+    );
     const actionMenuActionHoverBlock = readCssBlockContainingSelector(
       actionMenuActionBlock,
       "&:not(:disabled):hover",
@@ -5222,6 +5242,29 @@ describe("Gemini visual migration shell", () => {
     expect(actionMenuActionTextBlock).toMatch(/opacity:\s*1;/);
     expect(actionMenuActionTextBlock).toMatch(/transform:\s*none;/);
     expect(actionMenuActionTextBlock).toMatch(/pointer-events:\s*auto;/);
+    expect(chat).toContain('styles["chat-image-generation-options"]');
+    expect(chat).toContain('aria-label="图片生成模式"');
+    expect(chat).toContain('styles["chat-image-generation-option"]');
+    expect(chat).toMatch(
+      /const selectImageGenerationMode = \(enabled: boolean\) => \{[\s\S]*setActionModalOpen\("imageGeneration", false\);[\s\S]*void setImageGenerationMode\(enabled\);[\s\S]*\};/,
+    );
+    expect(chat).not.toMatch(/actionModals\.imageGeneration && \(\s*<Selector/);
+    expect(imageGenerationOptionsBlock).toMatch(/display:\s*flex;/);
+    expect(imageGenerationOptionsBlock).toMatch(/flex-direction:\s*column;/);
+    expect(imageGenerationOptionsBlock).toMatch(/gap:\s*6px;/);
+    expect(imageGenerationOptionsBlock).toMatch(/width:\s*100%;/);
+    expect(imageGenerationOptionBlock).toMatch(/min-height:\s*58px;/);
+    expect(imageGenerationOptionBlock).toMatch(/height:\s*auto;/);
+    expect(imageGenerationOptionBlock).toMatch(/align-items:\s*flex-start;/);
+    expect(imageGenerationOptionBlock).toMatch(/overflow:\s*visible;/);
+    expect(imageGenerationOptionCopyBlock).toMatch(/display:\s*flex;/);
+    expect(imageGenerationOptionCopyBlock).toMatch(/flex-direction:\s*column;/);
+    expect(imageGenerationOptionCopyBlock).toMatch(/min-width:\s*0;/);
+    expect(imageGenerationOptionTitleBlock).toMatch(/font-weight:\s*600;/);
+    expect(imageGenerationOptionSubtitleBlock).toMatch(/white-space:\s*normal;/);
+    expect(imageGenerationOptionSubtitleBlock).toMatch(
+      /color:\s*var\(--chat-multimodal-section-subtitle-color\);/,
+    );
     expect(actionMenuBackdropBlock).toMatch(
       /--chat-input-action-menu-backdrop-background:\s*color-mix\(in srgb,\s*var\(--surface\) 12%,\s*transparent\);/,
     );
