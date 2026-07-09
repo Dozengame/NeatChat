@@ -165,6 +165,46 @@ export function extractClipboardImageUrls(clipboardData: DataTransfer) {
   return imageUrls;
 }
 
+function getClipboardFileSignature(file: File) {
+  const normalizedName = file.name.trim() || "clipboard-file";
+  const normalizedType =
+    file.type.trim().toLowerCase() || getFileTypeByExtension(normalizedName);
+
+  return [normalizedName, normalizedType, file.size].join(":");
+}
+
+export function getClipboardAttachmentPayload(clipboardData: DataTransfer) {
+  const filesFromList = Array.from(clipboardData.files ?? []);
+  const filesFromItems = Array.from(clipboardData.items ?? [])
+    .map((item) => (item.kind === "file" ? item.getAsFile() : null))
+    .filter((file): file is File => !!file);
+  const seenFiles = new Set<string>();
+  const files = [...filesFromList, ...filesFromItems].filter((file) => {
+    const key = getClipboardFileSignature(file);
+    if (seenFiles.has(key)) {
+      return false;
+    }
+    seenFiles.add(key);
+    return true;
+  });
+  const hasImageFile = files.some((file) => isAttachmentImage(file));
+
+  return {
+    files,
+    imageUrls: hasImageFile ? [] : extractClipboardImageUrls(clipboardData),
+  };
+}
+
+export function replaceAttachmentImageAtIndex(
+  images: string[],
+  selectedIndex: number,
+  editedImage: string,
+) {
+  return images.map((image, index) =>
+    index === selectedIndex ? editedImage : image,
+  );
+}
+
 /**
  * 添加 Word 文件读取函数
  * @param file 要读取的文件

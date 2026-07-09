@@ -151,11 +151,12 @@ import clsx from "clsx";
 import {
   type DraggedAttachmentSummary,
   FileInfo,
-  extractClipboardImageUrls,
+  getClipboardAttachmentPayload,
   getDraggedAttachmentSummary,
   getFileIconClass,
   isAttachmentImage,
   processAttachmentFiles,
+  replaceAttachmentImageAtIndex,
   uploadAttachments,
 } from "../utils/file";
 import {
@@ -3633,22 +3634,8 @@ function useChatInnerView() {
 
   const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const clipboardData = e.clipboardData;
-    const filesFromList = Array.from(clipboardData?.files ?? []);
-    const filesFromItems = Array.from(clipboardData?.items ?? [])
-      .map((item) => (item.kind === "file" ? item.getAsFile() : null))
-      .filter((file): file is File => !!file);
-    const seenFiles = new Set<string>();
-    const pastedFiles = [...filesFromList, ...filesFromItems].filter((file) => {
-      const key = [file.name, file.type, file.size, file.lastModified].join(
-        ":",
-      );
-      if (seenFiles.has(key)) {
-        return false;
-      }
-      seenFiles.add(key);
-      return true;
-    });
-    const pastedImageUrls = extractClipboardImageUrls(clipboardData);
+    const { files: pastedFiles, imageUrls: pastedImageUrls } =
+      getClipboardAttachmentPayload(clipboardData);
 
     if (pastedFiles.length > 0 || pastedImageUrls.length > 0) {
       e.preventDefault();
@@ -4172,6 +4159,7 @@ function useChatInnerView() {
   // 在_Chat组件中添加状态
   const [editingImage, setEditingImage] = useState<string | null>(null);
   const [editingImageTitle, setEditingImageTitle] = useState("编辑图片");
+  const editingAttachmentImageIndexRef = useRef<number | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewImageActionLabels, setPreviewImageActionLabels] = useState(
     getImageActionLabels(),
@@ -5714,6 +5702,8 @@ function useChatInnerView() {
                               setEditingImageTitle(
                                 `编辑第 ${index + 1} 张图片附件`,
                               );
+                              editingAttachmentImageIndexRef.current = index;
+                              editingImageMessageIdRef.current = null;
                               setEditingImage(image);
                             }}
                           />
@@ -6057,14 +6047,19 @@ function useChatInnerView() {
           onClose={() => {
             setEditingImage(null);
             setEditingImageTitle("编辑图片");
+            editingAttachmentImageIndexRef.current = null;
             editingImageMessageIdRef.current = null; // 清除消息ID
           }}
           onSave={(editedImage) => {
             // 检查是否为附件图片
-            if (attachImages.includes(editingImage)) {
-              setAttachImages(
-                attachImages.map((img) =>
-                  img === editingImage ? editedImage : img,
+            if (editingAttachmentImageIndexRef.current != null) {
+              const attachmentImageIndex =
+                editingAttachmentImageIndexRef.current;
+              setAttachImages((currentImages) =>
+                replaceAttachmentImageAtIndex(
+                  currentImages,
+                  attachmentImageIndex,
+                  editedImage,
                 ),
               );
             }
@@ -6110,6 +6105,7 @@ function useChatInnerView() {
 
             setEditingImage(null);
             setEditingImageTitle("编辑图片");
+            editingAttachmentImageIndexRef.current = null;
             editingImageMessageIdRef.current = null; // 清除消息ID
           }}
         />

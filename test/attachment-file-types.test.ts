@@ -1,9 +1,11 @@
 import {
   extractClipboardImageUrls,
+  getClipboardAttachmentPayload,
   getDraggedAttachmentSummary,
   getFileTypeByExtension,
   isAttachmentImage,
   isSupportedAttachmentFile,
+  replaceAttachmentImageAtIndex,
 } from "../app/utils/file";
 import { isVisionModel } from "../app/utils";
 
@@ -22,6 +24,32 @@ function dragTransferFromItems(files: File[]) {
       type: file.type,
       getAsFile: () => file,
     })),
+  } as unknown as DataTransfer;
+}
+
+function clipboardTransfer({
+  files = [],
+  items = [],
+  html = "",
+  text = "",
+}: {
+  files?: File[];
+  items?: File[];
+  html?: string;
+  text?: string;
+}) {
+  return {
+    files,
+    items: items.map((file) => ({
+      kind: "file",
+      type: file.type,
+      getAsFile: () => file,
+    })),
+    getData(type: string) {
+      if (type === "text/html") return html;
+      if (type === "text/plain") return text;
+      return "";
+    },
   } as unknown as DataTransfer;
 }
 
@@ -122,5 +150,44 @@ describe("attachment file type support", () => {
       dataUrl,
       "https://example.com/a.png",
     ]);
+  });
+
+  test("deduplicates pasted files exposed through both clipboard file lists", () => {
+    const fileListImage = new File(["image"], "pasted.png", {
+      type: "image/png",
+      lastModified: 1,
+    });
+    const itemListImage = new File(["image"], "pasted.png", {
+      type: "image/png",
+      lastModified: 2,
+    });
+    const fileListDocument = new File(["notes"], "notes.txt", {
+      type: "text/plain",
+      lastModified: 1,
+    });
+    const itemListDocument = new File(["notes"], "notes.txt", {
+      type: "text/plain",
+      lastModified: 2,
+    });
+    const dataUrl =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB";
+
+    const payload = getClipboardAttachmentPayload(
+      clipboardTransfer({
+        files: [fileListImage, fileListDocument],
+        items: [itemListImage, itemListDocument],
+        html: `<img src="${dataUrl}">`,
+        text: `copied image ${dataUrl}`,
+      }),
+    );
+
+    expect(payload.files).toEqual([fileListImage, fileListDocument]);
+    expect(payload.imageUrls).toEqual([]);
+  });
+
+  test("replaces only the selected attachment image when duplicate urls exist", () => {
+    expect(replaceAttachmentImageAtIndex(["same", "same"], 1, "edited")).toEqual(
+      ["same", "edited"],
+    );
   });
 });
