@@ -30,6 +30,123 @@ import {
 
 const logger = new MCPClientLogger("MCP Actions");
 const CONFIG_PATH = path.join(process.cwd(), "app/mcp/mcp_config.json");
+const MCP_INITIALIZATION_RETRY_DELAYS_MS = [500, 1500];
+const RETRYABLE_MCP_INITIALIZATION_ERROR_CODES = new Set([
+  "UND_ERR_CONNECT_TIMEOUT",
+  "UND_ERR_HEADERS_TIMEOUT",
+  "UND_ERR_BODY_TIMEOUT",
+  "UND_ERR_SOCKET",
+  "ETIMEDOUT",
+  "ECONNRESET",
+  "ECONNREFUSED",
+  "EAI_AGAIN",
+]);
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function formatError(error: unknown) {
+  return error instanceof Error
+    ? `${error.name}: ${error.message}`
+    : String(error);
+}
+
+function isRetryableMcpInitializationError(error: unknown): boolean {
+  const pending = [error];
+  const seen = new Set<unknown>();
+
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (!current || seen.has(current)) {
+      continue;
+    }
+    seen.add(current);
+
+    if (current instanceof Error) {
+      const message = current.message.toLowerCase();
+      if (
+        (current.name === "TypeError" && message.includes("fetch failed")) ||
+        message.includes("connect timeout") ||
+        message.includes("connection timeout") ||
+        message.includes("timeout")
+      ) {
+        return true;
+      }
+      if (current.cause) {
+        pending.push(current.cause);
+      }
+    }
+
+    if (typeof current === "object") {
+      const value = current as {
+        cause?: unknown;
+        code?: unknown;
+        errno?: unknown;
+      };
+      for (const code of [value.code, value.errno]) {
+        if (
+          typeof code === "string" &&
+          RETRYABLE_MCP_INITIALIZATION_ERROR_CODES.has(code)
+        ) {
+          return true;
+        }
+      }
+      if (value.cause) {
+        pending.push(value.cause);
+      }
+    }
+  }
+
+  return false;
+}
+
+async function createInitializedClientWithRetry(
+  clientId: string,
+  serverConfig: ServerConfig,
+) {
+  for (
+    let attemptIndex = 0;
+    attemptIndex <= MCP_INITIALIZATION_RETRY_DELAYS_MS.length;
+    attemptIndex += 1
+  ) {
+    let client: Awaited<ReturnType<typeof createClient>> | null = null;
+    try {
+      client = await createClient(clientId, serverConfig);
+      const tools = await listTools(client);
+      return { client, tools };
+    } catch (error) {
+      if (client) {
+        try {
+          await removeClient(client);
+        } catch (closeError) {
+          logger.error(
+            `Failed to close client [${clientId}] after initialization error: ${closeError}`,
+          );
+        }
+      }
+
+      const retryDelayMs = MCP_INITIALIZATION_RETRY_DELAYS_MS[attemptIndex];
+      if (
+        retryDelayMs === undefined ||
+        !isRetryableMcpInitializationError(error)
+      ) {
+        throw error;
+      }
+
+      logger.info(
+        `Retrying initialization for client [${clientId}] in ${retryDelayMs}ms after ${formatError(
+          error,
+        )} (attempt ${attemptIndex + 2}/${
+          MCP_INITIALIZATION_RETRY_DELAYS_MS.length + 1
+        })`,
+      );
+      await delay(retryDelayMs);
+    }
+  }
+
+  throw new Error(`Failed to initialize client [${clientId}]`);
+}
 
 async function auth() {
   const serverConfig = getServerSideConfig();
@@ -161,8 +278,10 @@ async function initializeSingleClient(
   });
 
   try {
-    const client = await createClient(clientId, serverConfig);
-    const tools = await listTools(client);
+    const { client, tools } = await createInitializedClientWithRetry(
+      clientId,
+      serverConfig,
+    );
     logger.info(
       `Supported tools for [${clientId}]: ${JSON.stringify(tools, null, 2)}`,
     );
@@ -339,8 +458,10 @@ export async function resumeMcpServer(clientId: string): Promise<void> {
     // 先尝试初始化客户端
     logger.info(`Trying to initialize client [${clientId}]...`);
     try {
-      const client = await createClient(clientId, serverConfig);
-      const tools = await listTools(client);
+      const { client, tools } = await createInitializedClientWithRetry(
+        clientId,
+        serverConfig,
+      );
       clientsMap.set(clientId, { client, tools, errorMsg: null });
       logger.success(`Client [${clientId}] initialized successfully`);
 
