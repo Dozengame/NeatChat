@@ -1,10 +1,12 @@
 import {
   extractClipboardImageUrls,
+  getAttachmentRenderKey,
   getClipboardAttachmentPayload,
   getDraggedAttachmentSummary,
   getFileTypeByExtension,
   isAttachmentImage,
   isSupportedAttachmentFile,
+  removeAttachmentAtIndex,
   replaceAttachmentImageAtIndex,
 } from "../app/utils/file";
 import { isVisionModel } from "../app/utils";
@@ -189,5 +191,31 @@ describe("attachment file type support", () => {
     expect(replaceAttachmentImageAtIndex(["same", "same"], 1, "edited")).toEqual(
       ["same", "edited"],
     );
+  });
+
+  test("creates distinct render keys for duplicate attachment values", () => {
+    const duplicateFile = {
+      name: "same.md",
+      type: "text/markdown",
+      size: 128,
+      content: "# Same",
+      originalFile: new File(["# Same"], "same.md", {
+        type: "text/markdown",
+      }),
+    };
+
+    expect(getAttachmentRenderKey("image", "same-url", 0)).not.toBe(
+      getAttachmentRenderKey("image", "same-url", 1),
+    );
+    expect(getAttachmentRenderKey("file", duplicateFile, 0)).not.toBe(
+      getAttachmentRenderKey("file", duplicateFile, 1),
+    );
+  });
+
+  test("removes attachments by index without mutating the source list", () => {
+    const source = ["a", "b", "c"];
+
+    expect(removeAttachmentAtIndex(source, 1)).toEqual(["a", "c"]);
+    expect(source).toEqual(["a", "b", "c"]);
   });
 });

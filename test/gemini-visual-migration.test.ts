@@ -6687,11 +6687,19 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /const focusComposerAttachmentAfterRemoval = useCallback\(\s*\(nextAttachmentIndex: number\) => \{[\s\S]*requestAnimationFrame\(\(\) => \{[\s\S]*attachmentsContainerRef\.current\?\.querySelectorAll<HTMLButtonElement>\(\s*`button\.\$\{styles\["attach-image"\]\}, button\.\$\{styles\["attach-file"\]\}, button\.\$\{styles\["attachment-add-button"\]\}`[\s\S]*const nextControl =[\s\S]*attachmentControls\[[\s\S]*inputRef\.current;[\s\S]*nextControl\?\.focus\(\);[\s\S]*\}\);[\s\S]*\},\s*\[\],?\s*\);/,
     );
+    expect(chat).toContain("getAttachmentRenderKey,");
+    expect(chat).toContain("removeAttachmentAtIndex,");
     expect(chat).toMatch(
-      /function deleteAttachedFile\(index: number\) \{[\s\S]*setAttachedFiles\(attachedFiles\.filter\(\(_, i\) => i !== index\)\);[\s\S]*focusComposerAttachmentAfterRemoval\(attachImages\.length \+ index\);[\s\S]*\}/,
+      /function deleteAttachedFile\(index: number\) \{[\s\S]*setAttachedFiles\(\(currentFiles\) =>[\s\S]*removeAttachmentAtIndex\(currentFiles,\s*index\)[\s\S]*\);[\s\S]*focusComposerAttachmentAfterRemoval\(attachImages\.length \+ index\);[\s\S]*\}/,
     );
     expect(chat).toMatch(
-      /ariaLabel=\{`删除第 \$\{index \+ 1\} 张图片附件`\}[\s\S]*deleteImage=\{\(e\) => \{[\s\S]*setAttachImages\([\s\S]*attachImages\.filter\(\(_, i\) => i !== index\),[\s\S]*\);[\s\S]*focusComposerAttachmentAfterRemoval\(index\);[\s\S]*\}\}/,
+      /key=\{getAttachmentRenderKey\("image",\s*image,\s*index\)\}/,
+    );
+    expect(chat).toMatch(
+      /key=\{getAttachmentRenderKey\("file",\s*file,\s*index\)\}/,
+    );
+    expect(chat).toMatch(
+      /ariaLabel=\{`删除第 \$\{index \+ 1\} 张图片附件`\}[\s\S]*deleteImage=\{\(e\) => \{[\s\S]*setAttachImages\(\(currentImages\) =>[\s\S]*removeAttachmentAtIndex\([\s\S]*currentImages,[\s\S]*index,?[\s\S]*\)[\s\S]*\);[\s\S]*focusComposerAttachmentAfterRemoval\(index\);[\s\S]*\}\}/,
     );
   });
 
@@ -7695,10 +7703,10 @@ describe("Gemini visual migration shell", () => {
       /handleAttachmentTouchMove\(\s*getAttachmentSwipeKey\("file", index\),\s*event,\s*\)/,
     );
     expect(chat).toMatch(
-      /setAttachImages\([\s\S]*attachImages\.filter\(\(_, i\) => i !== index\),[\s\S]*\);[\s\S]*clearActiveAttachmentDelete\(\);[\s\S]*focusComposerAttachmentAfterRemoval\(index\);/,
+      /setAttachImages\(\(currentImages\) =>[\s\S]*removeAttachmentAtIndex\([\s\S]*currentImages,[\s\S]*index,?[\s\S]*\)[\s\S]*\);[\s\S]*clearActiveAttachmentDelete\(\);[\s\S]*focusComposerAttachmentAfterRemoval\(index\);/,
     );
     expect(chat).toMatch(
-      /function deleteAttachedFile\(index: number\) \{[\s\S]*setAttachedFiles\(attachedFiles\.filter\(\(_, i\) => i !== index\)\);[\s\S]*clearActiveAttachmentDelete\(\);[\s\S]*focusComposerAttachmentAfterRemoval\(attachImages\.length \+ index\);[\s\S]*\}/,
+      /function deleteAttachedFile\(index: number\) \{[\s\S]*setAttachedFiles\(\(currentFiles\) =>[\s\S]*removeAttachmentAtIndex\(currentFiles,\s*index\)[\s\S]*\);[\s\S]*clearActiveAttachmentDelete\(\);[\s\S]*focusComposerAttachmentAfterRemoval\(attachImages\.length \+ index\);[\s\S]*\}/,
     );
     expect(swipeActiveItemBlock).toMatch(/z-index:\s*1;/);
     expect(swipeActiveMaskBlock).toMatch(/opacity:\s*1;/);

@@ -151,11 +151,13 @@ import clsx from "clsx";
 import {
   type DraggedAttachmentSummary,
   FileInfo,
+  getAttachmentRenderKey,
   getClipboardAttachmentPayload,
   getDraggedAttachmentSummary,
   getFileIconClass,
   isAttachmentImage,
   processAttachmentFiles,
+  removeAttachmentAtIndex,
   replaceAttachmentImageAtIndex,
   uploadAttachments,
 } from "../utils/file";
@@ -4147,7 +4149,9 @@ function useChatInnerView() {
 
   // 添加删除单个文件函数
   function deleteAttachedFile(index: number) {
-    setAttachedFiles(attachedFiles.filter((_, i) => i !== index));
+    setAttachedFiles((currentFiles) =>
+      removeAttachmentAtIndex(currentFiles, index),
+    );
     clearActiveAttachmentDelete();
     focusComposerAttachmentAfterRemoval(attachImages.length + index);
   }
@@ -5667,7 +5671,7 @@ function useChatInnerView() {
                             styles["attach-image-item"],
                           )}
                           role="listitem"
-                          key={image}
+                          key={getAttachmentRenderKey("image", image, index)}
                           data-attachment-swipe-key={getAttachmentSwipeKey(
                             "image",
                             index,
@@ -5712,8 +5716,8 @@ function useChatInnerView() {
                               ariaLabel={`删除第 ${index + 1} 张图片附件`}
                               deleteImage={(e) => {
                                 e.stopPropagation(); // 防止触发图片点击事件
-                                setAttachImages(
-                                  attachImages.filter((_, i) => i !== index),
+                                setAttachImages((currentImages) =>
+                                  removeAttachmentAtIndex(currentImages, index),
                                 );
                                 clearActiveAttachmentDelete();
                                 focusComposerAttachmentAfterRemoval(index);
@@ -5736,7 +5740,7 @@ function useChatInnerView() {
                               styles["attach-file-item"],
                             )}
                             role="listitem"
-                            key={`${file.name}-${file.size}-${file.type}`}
+                            key={getAttachmentRenderKey("file", file, index)}
                             data-attachment-swipe-key={getAttachmentSwipeKey(
                               "file",
                               index,

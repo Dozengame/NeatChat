@@ -205,6 +205,36 @@ export function replaceAttachmentImageAtIndex(
   );
 }
 
+export function removeAttachmentAtIndex<T>(
+  attachments: T[],
+  selectedIndex: number,
+) {
+  return attachments.filter((_, index) => index !== selectedIndex);
+}
+
+function getShortAttachmentHash(value: string) {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
+  }
+  return hash.toString(36);
+}
+
+export function getAttachmentRenderKey(
+  type: "image" | "file",
+  attachment: string | FileInfo,
+  index: number,
+) {
+  if (type === "image" && typeof attachment === "string") {
+    return `image-${index}-${attachment.length}-${getShortAttachmentHash(
+      attachment,
+    )}`;
+  }
+
+  const file = attachment as FileInfo;
+  return `file-${index}-${file.name}-${file.size}-${file.type}`;
+}
+
 /**
  * 添加 Word 文件读取函数
  * @param file 要读取的文件
