@@ -261,6 +261,42 @@ describe("buildOpenAIResponsesPayload", () => {
     expect(payload.tool_choice).toBe("required");
   });
 
+  test("merges direct Plugin functions with hosted web search", () => {
+    const functionTool = {
+      type: "function" as const,
+      name: "get_weather",
+      description: "Get weather",
+      parameters: { type: "object", properties: {} },
+    };
+    const payload = buildOpenAIResponsesPayload({
+      messages: [{ role: "user", content: "Weather today?" }],
+      modelConfig: { ...modelConfig, model: "gpt-5.6-terra" as any },
+      enableWebSearch: true,
+      functionTools: [functionTool],
+    }) as any;
+
+    expect(payload.tools).toEqual([{ type: "web_search" }, functionTool]);
+  });
+
+  test("keeps required web search scoped by omitting Plugin functions", () => {
+    const payload = buildOpenAIResponsesPayload({
+      messages: [{ role: "user", content: "What changed today?" }],
+      modelConfig: { ...modelConfig, model: "gpt-5.6-terra" as any },
+      enableWebSearch: true,
+      webSearchMode: "required",
+      functionTools: [
+        {
+          type: "function",
+          name: "get_weather",
+          parameters: { type: "object", properties: {} },
+        },
+      ],
+    }) as any;
+
+    expect(payload.tools).toEqual([{ type: "web_search" }]);
+    expect(payload.tool_choice).toBe("required");
+  });
+
   test("does not add hosted web search for pasted attachment body text", () => {
     const content = [
       "文件名: 粘贴的文本.txt",
@@ -321,5 +357,193 @@ describe("buildOpenAIResponsesPayload", () => {
     }) as any;
 
     expect(payload.reasoning.effort).toBe("low");
+  });
+
+  test("adds the safe GPT-5.6 capability defaults", () => {
+    const payload = buildOpenAIResponsesPayload({
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Describe this" },
+            {
+              type: "image_url",
+              image_url: { url: "data:image/png;base64,aa" },
+            },
+          ],
+        },
+      ],
+      modelConfig: {
+        ...modelConfig,
+        model: "gpt-5.6-terra" as any,
+      },
+      store: false,
+      reasoningSummary: "auto",
+    }) as any;
+
+    expect(payload.reasoning).toEqual({
+      effort: "low",
+      summary: "auto",
+      mode: "standard",
+      context: "auto",
+    });
+    expect(payload.input[0].content[1]).toEqual({
+      type: "input_image",
+      image_url: "data:image/png;base64,aa",
+      detail: "high",
+    });
+    expect(payload.prompt_cache_options).toEqual({
+      mode: "implicit",
+      ttl: "30m",
+    });
+    expect(payload.include).toEqual(["reasoning.encrypted_content"]);
+  });
+
+  test("requests encrypted reasoning for stored GPT-5.6 traces", () => {
+    const payload = buildOpenAIResponsesPayload({
+      messages: [{ role: "user", content: "Hello" }],
+      modelConfig: {
+        ...modelConfig,
+        model: "gpt-5.6-terra" as any,
+      },
+      store: true,
+    }) as any;
+
+    expect(payload.include).toEqual(["reasoning.encrypted_content"]);
+  });
+
+  test("adds opt-in GPT-5.6 pro, context, image, and explicit cache fields", () => {
+    const payload = buildOpenAIResponsesPayload({
+      messages: [
+        { role: "user", content: "First question" },
+        {
+          role: "assistant",
+          content: "Prior answer",
+          openaiResponsesOutput: [
+            {
+              id: "rs_123",
+              type: "reasoning",
+              encrypted_content: "encrypted",
+              summary: [],
+            },
+          ],
+        },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Follow up" },
+            {
+              type: "image_url",
+              image_url: { url: "data:image/png;base64,bb" },
+            },
+          ],
+        },
+      ],
+      modelConfig: {
+        ...modelConfig,
+        model: "gpt-5.6-luna" as any,
+        reasoningMode: "pro",
+        reasoningContext: "all_turns",
+        inputImageDetail: "original",
+        promptCacheMode: "explicit",
+        promptCacheKey: "project-neatchat",
+      } as any,
+      store: false,
+    }) as any;
+
+    expect(payload.reasoning).toMatchObject({
+      mode: "pro",
+      context: "all_turns",
+    });
+    expect(payload.include).toEqual(["reasoning.encrypted_content"]);
+    expect(payload.input).toContainEqual(
+      expect.objectContaining({
+        id: "rs_123",
+        encrypted_content: "encrypted",
+      }),
+    );
+    expect(payload.input.at(-1).content).toEqual([
+      { type: "input_text", text: "Follow up" },
+      {
+        type: "input_image",
+        image_url: "data:image/png;base64,bb",
+        detail: "original",
+        prompt_cache_breakpoint: { mode: "explicit" },
+      },
+    ]);
+    expect(payload.prompt_cache_options).toEqual({
+      mode: "explicit",
+      ttl: "30m",
+    });
+    expect(payload.prompt_cache_key).toBe("project-neatchat");
+    expect(
+      JSON.stringify(payload.input).match(/prompt_cache_breakpoint/g),
+    ).toHaveLength(1);
+  });
+
+  test("omits GPT-5.6-only fields for older models", () => {
+    const payload = buildOpenAIResponsesPayload({
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Describe this" },
+            {
+              type: "image_url",
+              image_url: { url: "data:image/png;base64,aa" },
+            },
+          ],
+        },
+      ],
+      modelConfig: {
+        ...modelConfig,
+        model: "gpt-5.5" as any,
+        reasoningMode: "pro",
+        reasoningContext: "all_turns",
+        inputImageDetail: "original",
+        promptCacheMode: "explicit",
+        promptCacheKey: "should-not-leak",
+      } as any,
+      store: false,
+    }) as any;
+
+    expect(payload.reasoning.mode).toBeUndefined();
+    expect(payload.reasoning.context).toBeUndefined();
+    expect(payload.input[0].content[1].detail).toBeUndefined();
+    expect(payload.input[0].content[1].prompt_cache_breakpoint).toBeUndefined();
+    expect(payload.prompt_cache_options).toBeUndefined();
+    expect(payload.prompt_cache_key).toBeUndefined();
+    expect(payload.program).toBeUndefined();
+    expect(payload.mcp).toBeUndefined();
+    expect(payload.multi_agent).toBeUndefined();
+  });
+
+  test("omits GPT-5.6 capability fields for an Azure deployment with the same name", () => {
+    const payload = buildOpenAIResponsesPayload({
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image_url",
+              image_url: { url: "data:image/png;base64,aa" },
+            },
+          ],
+        },
+      ],
+      modelConfig: {
+        ...modelConfig,
+        model: "gpt-5.6-terra" as any,
+        providerName: ServiceProvider.Azure,
+        reasoningMode: "pro",
+        reasoningContext: "all_turns",
+        inputImageDetail: "original",
+        promptCacheMode: "explicit",
+      } as any,
+    }) as any;
+
+    expect(payload.reasoning).toBeUndefined();
+    expect(payload.input[0].content[0].detail).toBeUndefined();
+    expect(payload.prompt_cache_options).toBeUndefined();
   });
 });

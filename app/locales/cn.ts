@@ -41,6 +41,8 @@ const cn = {
       Copy: "复制",
       Stop: "停止",
       Retry: "重试",
+      RetryToolTraceBlocked:
+        "工具可能已经执行。为避免重复操作，请发送一条新消息继续。",
       Pin: "固定",
       PinToastContent: "已将 1 条对话固定至预设提示词",
       PinToastAction: "查看",
@@ -646,6 +648,49 @@ const cn = {
       HighDescription: "用于高难度推理",
       XHighDescription: "用于需要更多探索和校验的任务",
       MaxDescription: "用于最困难且质量优先的任务",
+    },
+    GPT56Capabilities: {
+      ConfigSource: {
+        Prefix: "来源：",
+        Separator: "。",
+        Locked: "该项已由管理员锁定",
+        AdminForced: "管理员锁定",
+        ServerDefault: "管理员默认",
+        UserOverride: "个人设置",
+        ConversationOverride: "当前会话",
+        Fallback: "系统默认",
+      },
+      ReasoningMode: {
+        Title: "推理模式",
+        SubTitle: "Standard 平衡速度与质量；Pro 优先深度推理",
+        Standard: "Standard",
+        Pro: "Pro",
+      },
+      ReasoningContext: {
+        Title: "推理上下文",
+        SubTitle: "控制模型在当前轮或跨轮保留推理上下文",
+        Auto: "自动",
+        CurrentTurn: "仅当前轮",
+        AllTurns: "全部轮次",
+      },
+      InputImageDetail: {
+        Title: "图片理解精度",
+        SubTitle: "默认 High，避免 GPT-5.6 Auto 使用 Original 增加成本与延迟",
+        Low: "Low",
+        High: "High",
+        Original: "Original",
+        Auto: "Auto",
+      },
+      PromptCacheMode: {
+        Title: "Prompt Cache 模式",
+        SubTitle: "Implicit 自动缓存；Explicit 在最新输入处设置缓存断点",
+        Implicit: "Implicit",
+        Explicit: "Explicit",
+      },
+      PromptCacheKey: {
+        Title: "Prompt Cache Key",
+        SubTitle: "可选路由键；会发送到 OpenAI，请勿填写密钥或个人信息",
+      },
     },
     MaxTokens: {
       Title: "输出上限 (max_output_tokens)",

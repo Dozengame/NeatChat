@@ -176,6 +176,10 @@ async function getAccessDeviceId(
   return verifySignedAccessDeviceId(headerDeviceId || cookieDeviceId, config);
 }
 
+export async function getVerifiedAccessDeviceId(req: NextRequest) {
+  return getAccessDeviceId(req, getServerSideConfig().accessControl);
+}
+
 export async function ensureAccessDeviceCookie<T extends NextResponse>(
   req: NextRequest,
   response: T,

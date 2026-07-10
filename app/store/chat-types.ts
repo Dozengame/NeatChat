@@ -24,6 +24,7 @@ export type ChatMessage = RequestMessage & {
   openaiResponseId?: string;
   openaiResponseStored?: boolean;
   openaiResponsesOutput?: unknown[];
+  openaiResponsesRecoveryPending?: boolean;
   tools?: ChatMessageTool[];
   audio_url?: string;
   isMcpResponse?: boolean;

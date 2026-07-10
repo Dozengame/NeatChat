@@ -19,7 +19,11 @@ import {
   type ChatMessage,
   type ChatMessageTool,
 } from "./chat-types";
-export { DEFAULT_TOPIC, type ChatMessage, type ChatMessageTool } from "./chat-types";
+export {
+  DEFAULT_TOPIC,
+  type ChatMessage,
+  type ChatMessageTool,
+} from "./chat-types";
 import { ChatControllerPool } from "../client/controller";
 import { showToast } from "../components/ui-lib-actions";
 import {
@@ -61,6 +65,7 @@ import {
 } from "../mcp/display";
 import { JIMENG_MCP_SERVER_ID } from "../mcp/jimeng";
 import { registerChatStore } from "./chat-state-link";
+import { isOpenAIGpt56ModelConfig } from "../utils/openai-responses";
 
 const localStorage = safeLocalStorage();
 const JIMENG_RESULT_POLL_INTERVAL_MS = 3000;
@@ -74,6 +79,27 @@ export function createMessage(override: Partial<ChatMessage>): ChatMessage {
     content: "",
     ...override,
   };
+}
+
+export function hasClosedResponsesFunctionTrace(message: ChatMessage) {
+  const output = message.openaiResponsesOutput;
+  if (!Array.isArray(output)) return false;
+  const callIds = new Set(
+    output.flatMap((item: any) =>
+      item?.type === "function_call" && typeof item.call_id === "string"
+        ? [item.call_id]
+        : [],
+    ),
+  );
+  if (callIds.size === 0) return false;
+  const outputIds = new Set(
+    output.flatMap((item: any) =>
+      item?.type === "function_call_output" && typeof item.call_id === "string"
+        ? [item.call_id]
+        : [],
+    ),
+  );
+  return Array.from(callIds).every((callId) => outputIds.has(callId));
 }
 
 export interface ChatStat {
@@ -685,6 +711,7 @@ export const useChatStore = createPersistStore(
         api.llm.chat({
           messages: sendMessages,
           config: { ...modelConfig, stream: true },
+          allowTools: true,
           onUpdate(message) {
             botMessage.streaming = true;
             if (message) {
@@ -696,7 +723,26 @@ export const useChatStore = createPersistStore(
           },
           onFinish(message, _responseRes, metadata) {
             botMessage.streaming = false;
-            if (message || options?.visibleMcpResult) {
+            const isRecoveryPending =
+              metadata?.openaiResponsesRecoveryPending === true;
+            if (
+              !isRecoveryPending &&
+              Array.isArray(metadata?.openaiResponsesOutput) &&
+              isOpenAIGpt56ModelConfig(modelConfig)
+            ) {
+              get().updateTargetSession(session, (session) => {
+                session.messages.forEach((message) => {
+                  if (message.openaiResponsesRecoveryPending) {
+                    message.openaiResponsesRecoveryPending = false;
+                  }
+                });
+              });
+            }
+            if (
+              message ||
+              options?.visibleMcpResult ||
+              metadata?.openaiResponsesOutput?.length
+            ) {
               botMessage.content = options?.visibleMcpResult
                 ? mergeJimengResultIntoReply(
                     message || "",
@@ -707,6 +753,7 @@ export const useChatStore = createPersistStore(
               botMessage.openaiResponseStored = metadata?.openaiResponseStored;
               botMessage.openaiResponsesOutput =
                 metadata?.openaiResponsesOutput;
+              botMessage.openaiResponsesRecoveryPending = isRecoveryPending;
               botMessage.date = new Date().toLocaleString();
               get().onNewMessage(botMessage, session);
             }
@@ -728,8 +775,13 @@ export const useChatStore = createPersistStore(
               session.messages = session.messages.concat();
             });
           },
-          onError(error) {
+          onError(error, metadata) {
             const isAborted = error.message?.includes?.("aborted");
+            botMessage.openaiResponseId = metadata?.openaiResponseId;
+            botMessage.openaiResponseStored = metadata?.openaiResponseStored;
+            botMessage.openaiResponsesOutput = metadata?.openaiResponsesOutput;
+            botMessage.openaiResponsesRecoveryPending =
+              metadata?.openaiResponsesRecoveryPending === true;
             botMessage.content +=
               "\n\n" +
               prettyObject({
@@ -740,6 +792,12 @@ export const useChatStore = createPersistStore(
             userMessage.isError = !isAborted;
             botMessage.isError = !isAborted;
             get().updateTargetSession(session, (session) => {
+              const savedUserMessage = session.messages.find(
+                (message) => message.id === userMessage.id,
+              );
+              if (savedUserMessage) {
+                savedUserMessage.isError = !isAborted;
+              }
               session.messages = session.messages.concat();
             });
             ChatControllerPool.remove(
@@ -784,6 +842,12 @@ export const useChatStore = createPersistStore(
 
         const session = options?.session ?? get().currentSession();
         const modelConfig = session.mask.modelConfig;
+        const isOpenAIGpt56 = isOpenAIGpt56ModelConfig({
+          model: modelConfig.model,
+          providerName: modelConfig.providerName,
+        });
+        const preserveAllReasoningTurns =
+          isOpenAIGpt56 && modelConfig.reasoningContext === "all_turns";
         const clearContextIndex = session.clearContextIndex ?? 0;
         const messages = session.messages.slice();
         const totalMessageCount = session.messages.length;
@@ -866,7 +930,9 @@ export const useChatStore = createPersistStore(
           session.memoryPrompt.length > 0 &&
           session.lastSummarizeIndex > clearContextIndex;
         const longTermMemoryPrompts =
-          shouldSendLongTermMemory && memoryPrompt ? [memoryPrompt] : [];
+          !preserveAllReasoningTurns && shouldSendLongTermMemory && memoryPrompt
+            ? [memoryPrompt]
+            : [];
         const longTermMemoryStartIndex = session.lastSummarizeIndex;
 
         // short term memory
@@ -885,28 +951,74 @@ export const useChatStore = createPersistStore(
           ? Math.min(longTermMemoryStartIndex, shortTermMemoryStartIndex)
           : shortTermMemoryStartIndex;
         // and if user has cleared history messages, we should exclude the memory too.
-        const contextStartIndex = Math.max(clearContextIndex, memoryStartIndex);
+        const contextStartIndex = preserveAllReasoningTurns
+          ? clearContextIndex
+          : Math.max(clearContextIndex, memoryStartIndex);
         const maxTokenThreshold = modelConfig.max_output_tokens;
+        const requiredReplayMessageIndexes = new Set<number>();
+        for (
+          let i = totalMessageCount - 1;
+          isOpenAIGpt56 && i >= clearContextIndex;
+          i -= 1
+        ) {
+          const message = messages[i];
+          if (
+            message?.role !== "assistant" ||
+            !message.openaiResponsesRecoveryPending ||
+            !hasClosedResponsesFunctionTrace(message)
+          ) {
+            continue;
+          }
+          requiredReplayMessageIndexes.add(i);
+          if (i - 1 >= clearContextIndex && messages[i - 1]?.role === "user") {
+            requiredReplayMessageIndexes.add(i - 1);
+          }
+        }
 
         // get recent messages as much as possible
-        const reversedRecentMessages = [];
+        const selectedMessageIndexes = new Set<number>();
         for (
           let i = totalMessageCount - 1, tokenCount = 0;
-          i >= contextStartIndex && tokenCount < maxTokenThreshold;
+          i >= contextStartIndex &&
+          (preserveAllReasoningTurns || tokenCount < maxTokenThreshold);
           i -= 1
         ) {
           const msg = messages[i];
-          if (!msg || msg.isError) continue;
+          const isReplayableErrorUser =
+            preserveAllReasoningTurns &&
+            msg?.isError &&
+            msg.role === "user" &&
+            messages[i + 1]?.role === "assistant" &&
+            messages[i + 1]?.isError &&
+            !!messages[i + 1]?.openaiResponsesOutput?.length;
+          const isRequiredReplayMessage = requiredReplayMessageIndexes.has(i);
+          if (
+            !msg ||
+            (msg.isError &&
+              !(
+                preserveAllReasoningTurns && msg.openaiResponsesOutput?.length
+              ) &&
+              !isReplayableErrorUser &&
+              !isRequiredReplayMessage)
+          ) {
+            continue;
+          }
           tokenCount += estimateTokenLength(getMessageTextContent(msg));
-          reversedRecentMessages.push(msg);
+          selectedMessageIndexes.add(i);
         }
+        requiredReplayMessageIndexes.forEach((index) =>
+          selectedMessageIndexes.add(index),
+        );
+        const recentHistoryMessages = Array.from(selectedMessageIndexes)
+          .sort((left, right) => left - right)
+          .map((index) => messages[index]);
         // concat all messages
         const recentMessages = [
           ...systemPrompts,
           ...customInstructionPrompts,
           ...longTermMemoryPrompts,
           ...contextPrompts,
-          ...reversedRecentMessages.reverse(),
+          ...recentHistoryMessages,
         ];
 
         return recentMessages;

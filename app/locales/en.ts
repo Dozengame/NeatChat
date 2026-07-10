@@ -42,6 +42,8 @@ const en: LocaleType = {
       Copy: "Copy",
       Stop: "Stop",
       Retry: "Retry",
+      RetryToolTraceBlocked:
+        "A tool may already have run. Send a new message to continue without repeating the action.",
       Pin: "Pin",
       PinToastContent: "Pinned 1 messages to contextual prompts",
       PinToastAction: "View",
@@ -650,6 +652,52 @@ const en: LocaleType = {
       HighDescription: "For difficult reasoning tasks",
       XHighDescription: "For tasks needing more exploration and verification",
       MaxDescription: "For the hardest quality-first tasks",
+    },
+    GPT56Capabilities: {
+      ConfigSource: {
+        Prefix: "Source: ",
+        Separator: ". ",
+        Locked: "This setting is locked by the administrator",
+        AdminForced: "Administrator locked",
+        ServerDefault: "Administrator default",
+        UserOverride: "Personal setting",
+        ConversationOverride: "Current conversation",
+        Fallback: "System default",
+      },
+      ReasoningMode: {
+        Title: "Reasoning Mode",
+        SubTitle: "Standard balances speed and quality; Pro prioritizes depth",
+        Standard: "Standard",
+        Pro: "Pro",
+      },
+      ReasoningContext: {
+        Title: "Reasoning Context",
+        SubTitle: "Controls current-turn or cross-turn reasoning context",
+        Auto: "Auto",
+        CurrentTurn: "Current turn",
+        AllTurns: "All turns",
+      },
+      InputImageDetail: {
+        Title: "Input Image Detail",
+        SubTitle:
+          "Defaults to High so GPT-5.6 Auto does not increase cost and latency with Original",
+        Low: "Low",
+        High: "High",
+        Original: "Original",
+        Auto: "Auto",
+      },
+      PromptCacheMode: {
+        Title: "Prompt Cache Mode",
+        SubTitle:
+          "Implicit caches automatically; Explicit marks the latest input breakpoint",
+        Implicit: "Implicit",
+        Explicit: "Explicit",
+      },
+      PromptCacheKey: {
+        Title: "Prompt Cache Key",
+        SubTitle:
+          "Optional routing key sent to OpenAI; do not enter secrets or personal data",
+      },
     },
     MaxTokens: {
       Title: "Max Output Tokens",

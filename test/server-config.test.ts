@@ -11,7 +11,12 @@ import {
   isGpt5OrNewerModel,
   parseOpenAICompressMessageLengthThreshold,
   parseOpenAIMaxOutputTokens,
+  parseOpenAIResponsesInputImageDetail,
+  parseOpenAIResponsesPromptCacheKey,
+  parseOpenAIResponsesPromptCacheMode,
+  parseOpenAIResponsesReasoningContext,
   parseOpenAIResponsesReasoningEffort,
+  parseOpenAIResponsesReasoningMode,
   parseOpenAIResponsesTextVerbosity,
   shouldEnableOpenAIResponsesWebSearch,
   shouldRequireOpenAIResponsesWebSearch,
@@ -247,6 +252,18 @@ describe("OpenAI Responses config", () => {
     expect(parseOpenAIResponsesReasoningEffort("bad")).toBe("low");
     expect(parseOpenAIResponsesTextVerbosity("low")).toBe("low");
     expect(parseOpenAIResponsesTextVerbosity("bad")).toBe("medium");
+    expect(parseOpenAIResponsesReasoningMode("pro")).toBe("pro");
+    expect(parseOpenAIResponsesReasoningMode("bad")).toBe("standard");
+    expect(parseOpenAIResponsesReasoningContext("all_turns")).toBe("all_turns");
+    expect(parseOpenAIResponsesReasoningContext("bad")).toBe("auto");
+    expect(parseOpenAIResponsesInputImageDetail("original")).toBe("original");
+    expect(parseOpenAIResponsesInputImageDetail("bad")).toBe("high");
+    expect(parseOpenAIResponsesPromptCacheMode("explicit")).toBe("explicit");
+    expect(parseOpenAIResponsesPromptCacheMode("bad")).toBe("implicit");
+    expect(parseOpenAIResponsesPromptCacheKey("  project-neatchat  ")).toBe(
+      "project-neatchat",
+    );
+    expect(parseOpenAIResponsesPromptCacheKey("   ")).toBeUndefined();
   });
 
   test("maps reasoning effort to enough output budget", () => {
@@ -284,6 +301,11 @@ describe("OpenAI Responses config", () => {
     process.env.OPENAI_MAX_OUTPUT_TOKENS = "";
     process.env.OPENAI_TEXT_VERBOSITY = "";
     process.env.OPENAI_STORE_RESPONSES = "";
+    process.env.OPENAI_REASONING_MODE = "";
+    process.env.OPENAI_REASONING_CONTEXT = "";
+    process.env.OPENAI_INPUT_IMAGE_DETAIL = "";
+    process.env.OPENAI_PROMPT_CACHE_MODE = "";
+    process.env.OPENAI_PROMPT_CACHE_KEY = "";
 
     const config = getServerSideConfig();
 
@@ -293,6 +315,47 @@ describe("OpenAI Responses config", () => {
     expect(config.openaiMaxOutputTokens).toBeUndefined();
     expect(config.openaiTextVerbosity).toBe("medium");
     expect(config.openaiStoreResponses).toBe(false);
+    expect(config.openaiReasoningMode).toBe("standard");
+    expect(config.openaiReasoningContext).toBe("auto");
+    expect(config.openaiInputImageDetail).toBe("high");
+    expect(config.openaiPromptCacheMode).toBe("implicit");
+    expect(config.openaiPromptCacheKey).toBeUndefined();
+  });
+
+  test("publishes configured GPT-5.6 capability defaults without secrets", () => {
+    process.env.CUSTOM_MODELS = "-all,gpt-5.6-terra@openai";
+    process.env.DEFAULT_MODEL = "gpt-5.6-terra";
+    process.env.OPENAI_REASONING_MODE = "pro";
+    process.env.OPENAI_REASONING_CONTEXT = "current_turn";
+    process.env.OPENAI_INPUT_IMAGE_DETAIL = "original";
+    process.env.OPENAI_PROMPT_CACHE_MODE = "explicit";
+    process.env.OPENAI_PROMPT_CACHE_KEY = "project-neatchat";
+    process.env.WEBUI_LOCKED_FIELDS = [
+      "reasoningMode",
+      "reasoningContext",
+      "inputImageDetail",
+      "promptCacheMode",
+      "promptCacheKey",
+    ].join(",");
+
+    const publicConfig = buildPublicAppConfig(
+      new Date("2026-07-10T00:00:00.000Z"),
+    );
+
+    expect(publicConfig.defaults).toMatchObject({
+      reasoningMode: "pro",
+      reasoningContext: "current_turn",
+      inputImageDetail: "original",
+      promptCacheMode: "explicit",
+      promptCacheKey: "project-neatchat",
+    });
+    expect(publicConfig.forced).toMatchObject({
+      reasoningMode: "pro",
+      reasoningContext: "current_turn",
+      inputImageDetail: "original",
+      promptCacheMode: "explicit",
+      promptCacheKey: "project-neatchat",
+    });
   });
 
   test("enables stored OpenAI Responses only when explicitly configured", () => {

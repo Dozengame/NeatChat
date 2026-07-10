@@ -9,7 +9,12 @@ import {
   OPENAI_RESPONSES_DEFAULT_TEMPERATURE,
   parseOpenAICompressMessageLengthThreshold,
   parseOpenAIMaxOutputTokens,
+  parseOpenAIResponsesInputImageDetail,
+  parseOpenAIResponsesPromptCacheKey,
+  parseOpenAIResponsesPromptCacheMode,
+  parseOpenAIResponsesReasoningContext,
   parseOpenAIResponsesReasoningEffort,
+  parseOpenAIResponsesReasoningMode,
   parseOpenAIResponsesTextVerbosity,
 } from "../utils/openai-responses";
 
@@ -65,6 +70,11 @@ declare global {
       OPENAI_RESPONSES_URL?: string; // custom responses endpoint
       OPENAI_STORE_RESPONSES?: string; // store responses for OpenAI dashboard/API logs
       OPENAI_REASONING_EFFORT?: string; // responses api reasoning effort
+      OPENAI_REASONING_MODE?: string; // GPT-5.6 responses reasoning mode
+      OPENAI_REASONING_CONTEXT?: string; // GPT-5.6 responses reasoning context
+      OPENAI_INPUT_IMAGE_DETAIL?: string; // GPT-5.6 responses input image detail
+      OPENAI_PROMPT_CACHE_MODE?: string; // GPT-5.6 responses prompt cache mode
+      OPENAI_PROMPT_CACHE_KEY?: string; // non-sensitive prompt cache routing key
       OPENAI_MAX_OUTPUT_TOKENS?: string; // responses api max_output_tokens
       OPENAI_TEXT_VERBOSITY?: string; // responses api text verbosity
       OPENAI_COMPRESS_MESSAGE_LENGTH_THRESHOLD?: string; // default history compression threshold
@@ -222,6 +232,21 @@ export const getServerSideConfig = () => {
   const openaiTextVerbosity = parseOpenAIResponsesTextVerbosity(
     process.env.OPENAI_TEXT_VERBOSITY,
   );
+  const openaiReasoningMode = parseOpenAIResponsesReasoningMode(
+    process.env.OPENAI_REASONING_MODE,
+  );
+  const openaiReasoningContext = parseOpenAIResponsesReasoningContext(
+    process.env.OPENAI_REASONING_CONTEXT,
+  );
+  const openaiInputImageDetail = parseOpenAIResponsesInputImageDetail(
+    process.env.OPENAI_INPUT_IMAGE_DETAIL,
+  );
+  const openaiPromptCacheMode = parseOpenAIResponsesPromptCacheMode(
+    process.env.OPENAI_PROMPT_CACHE_MODE,
+  );
+  const openaiPromptCacheKey = parseOpenAIResponsesPromptCacheKey(
+    process.env.OPENAI_PROMPT_CACHE_KEY,
+  );
   const openaiCompressMessageLengthThreshold =
     parseOpenAICompressMessageLengthThreshold(
       process.env.OPENAI_COMPRESS_MESSAGE_LENGTH_THRESHOLD,
@@ -294,6 +319,11 @@ export const getServerSideConfig = () => {
     openaiReasoningEffort,
     openaiMaxOutputTokens,
     openaiTextVerbosity,
+    openaiReasoningMode,
+    openaiReasoningContext,
+    openaiInputImageDetail,
+    openaiPromptCacheMode,
+    openaiPromptCacheKey,
     openaiCompressMessageLengthThreshold,
     webuiConfigVersion: process.env.WEBUI_CONFIG_VERSION?.trim() || undefined,
     webuiLockedFields: process.env.WEBUI_LOCKED_FIELDS,

@@ -184,6 +184,11 @@ const MODEL_CONFIG_FIELDS = [
   "temperature",
   "max_output_tokens",
   "reasoningEffort",
+  "reasoningMode",
+  "reasoningContext",
+  "inputImageDetail",
+  "promptCacheMode",
+  "promptCacheKey",
   "textVerbosity",
   "compressMessageLengthThreshold",
   "historyMessageCount",
@@ -235,6 +240,20 @@ function getServerModelConfig(publicConfig: PublicAppConfig) {
     reasoningEffort:
       publicConfig.forced.reasoningEffort ??
       publicConfig.defaults.reasoningEffort,
+    reasoningMode:
+      publicConfig.forced.reasoningMode ?? publicConfig.defaults.reasoningMode,
+    reasoningContext:
+      publicConfig.forced.reasoningContext ??
+      publicConfig.defaults.reasoningContext,
+    inputImageDetail:
+      publicConfig.forced.inputImageDetail ??
+      publicConfig.defaults.inputImageDetail,
+    promptCacheMode:
+      publicConfig.forced.promptCacheMode ??
+      publicConfig.defaults.promptCacheMode,
+    promptCacheKey:
+      publicConfig.forced.promptCacheKey ??
+      publicConfig.defaults.promptCacheKey,
     textVerbosity:
       publicConfig.forced.textVerbosity ?? publicConfig.defaults.textVerbosity,
     compressMessageLengthThreshold:
@@ -428,6 +447,23 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
         }
 
         if (!session.mask.syncGlobalConfig) {
+          if (modelConfig[field] === undefined) {
+            modelConfig = {
+              ...modelConfig,
+              [field]: globalConfig.modelConfig[field] ?? serverValue,
+            };
+            modelConfigMeta = {
+              ...modelConfigMeta,
+              [field]:
+                globalConfig.modelConfigMeta?.[field] ??
+                createConfigFieldMeta({
+                  source: "server_default",
+                  publicConfig,
+                }),
+            };
+            continue;
+          }
+
           modelConfigMeta = setFieldMeta(
             modelConfigMeta,
             field,

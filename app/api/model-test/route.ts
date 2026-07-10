@@ -5,10 +5,12 @@ import { ModelTestResult } from "@/app/utils/model-test";
 import { buildOpenAIModelTestRequest } from "@/app/utils/openai-model-test";
 import {
   checkCurrentRequestAccessUsage,
+  getVerifiedAccessDeviceId,
   usageErrorResponse,
   withUsageAccounting,
 } from "@/app/api/abuse-control";
 import { auth, authErrorResponse } from "@/app/api/auth";
+import { sanitizeOpenAIResponsesSafetyIdentifier } from "@/app/api/openai-safety";
 
 const MODEL_TEST_MAX_MODELS = 1;
 
@@ -132,8 +134,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const verifiedDeviceId = await getVerifiedAccessDeviceId(req);
     const modelRequests = models.map((model) =>
-      buildOpenAIModelTestRequest(String(model), serverConfig),
+      sanitizeOpenAIResponsesSafetyIdentifier(
+        buildOpenAIModelTestRequest(String(model), serverConfig),
+        verifiedDeviceId,
+      ),
     );
     const usageCheck = await checkCurrentRequestAccessUsage(req, {
       estimatedTokens:

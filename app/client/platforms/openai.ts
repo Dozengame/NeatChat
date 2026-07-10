@@ -29,12 +29,21 @@ import {
   shouldUseOpenAIResponses,
   shouldRequireOpenAIResponsesWebSearch,
   shouldEnableOpenAIResponsesWebSearch,
+  isOpenAIGpt56ModelConfig,
   supportsOpenAIResponsesWebSearch,
 } from "@/app/utils/openai-responses";
 import {
   buildOpenAIResponsesPayload,
   ResponsesRequestPayload,
 } from "./openai-responses-builder";
+import {
+  adaptPluginToolsForResponses,
+  extractOpenAIResponsesText,
+  runOpenAIResponsesToolLoop,
+  sendOpenAIResponsesSseRound,
+  type PluginFunctionExecutor,
+  type ResponsesFunctionTool,
+} from "./openai-responses-tools";
 
 import {
   ChatOptions,
@@ -166,38 +175,6 @@ export interface AzureChatRequestPayload {
   top_p: number;
 }
 
-function extractResponsesText(res: any) {
-  const outputText =
-    typeof res?.output_text === "string" ? res.output_text : undefined;
-  const parts: string[] = [];
-  const citations = new Map<string, string>();
-  for (const output of res?.output ?? []) {
-    if (Array.isArray(output?.content)) {
-      for (const content of output.content) {
-        if (content?.type === "output_text" && content.text) {
-          parts.push(content.text);
-          for (const annotation of content.annotations ?? []) {
-            if (annotation?.type === "url_citation" && annotation.url) {
-              citations.set(annotation.url, annotation.title || annotation.url);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  const text = parts.join("") || outputText || "";
-  if (citations.size === 0) {
-    return text;
-  }
-
-  const sources = Array.from(citations.entries())
-    .map(([url, title]) => `- [${title}](${url})`)
-    .join("\n");
-
-  return `${text}\n\n来源：\n${sources}`;
-}
-
 function parseResponsesSSE(text: string) {
   const json = JSON.parse(text);
 
@@ -284,7 +261,7 @@ export class ChatGPTApi implements LLMApi {
       }
       return "```\n" + JSON.stringify(res, null, 4) + "\n```";
     }
-    const responsesText = extractResponsesText(res);
+    const responsesText = extractOpenAIResponsesText(res);
     if (responsesText) {
       return responsesText;
     }
@@ -374,6 +351,37 @@ export class ChatGPTApi implements LLMApi {
       modelConfig.store ??
       accessStore.serverConfigSnapshot?.defaults.store ??
       false;
+    let responsesFunctionTools: ResponsesFunctionTool[] = [];
+    let responsesFunctionExecutors: Record<string, PluginFunctionExecutor> = {};
+    if (
+      useResponses &&
+      options.config.stream &&
+      options.allowTools === true &&
+      isOpenAIGpt56ModelConfig({
+        model: modelConfig.model,
+        providerName: modelConfig.providerName,
+      })
+    ) {
+      const session = useChatStore.getState().currentSession();
+      try {
+        const [pluginTools, pluginExecutors] = usePluginStore
+          .getState()
+          .getAsTools(session.mask?.plugin || []);
+        if (Array.isArray(pluginTools) && pluginTools.length > 0) {
+          const adapted = adaptPluginToolsForResponses(
+            pluginTools,
+            pluginExecutors as Record<string, PluginFunctionExecutor>,
+          );
+          responsesFunctionTools = adapted.tools;
+          responsesFunctionExecutors = adapted.executors;
+        }
+      } catch (error) {
+        options.onError?.(
+          error instanceof Error ? error : new Error(String(error)),
+        );
+        return;
+      }
+    }
     let requestPayload:
       | AzureChatRequestPayload
       | ResponsesRequestPayload
@@ -414,15 +422,26 @@ export class ChatGPTApi implements LLMApi {
               : v.role === "assistant" // 如果 role 是 assistant
               ? getMessageTextContentWithoutThinking(v) // 调用 getMessageTextContentWithoutThinking
               : getMessageTextContent(v); // 否则调用 getMessageTextContent
-          return { role: v.role, content };
+          return {
+            role: v.role,
+            content,
+            ...(useResponses
+              ? {
+                  openaiResponseId: v.openaiResponseId,
+                  openaiResponseStored: v.openaiResponseStored,
+                  openaiResponsesOutput: v.openaiResponsesOutput,
+                }
+              : {}),
+          };
         }),
       );
 
       if (useResponses) {
-        const enableWebSearch = supportsOpenAIResponsesWebSearch({
-          model: modelConfig.model,
-          providerName: modelConfig.providerName || ServiceProvider.OpenAI,
-        });
+        const enableWebSearch =
+          supportsOpenAIResponsesWebSearch({
+            model: modelConfig.model,
+            providerName: modelConfig.providerName || ServiceProvider.OpenAI,
+          }) && options.allowTools === true;
         const latestUserText =
           messages.reduce<string | undefined>(
             (latest, message) =>
@@ -439,6 +458,10 @@ export class ChatGPTApi implements LLMApi {
           shouldRequireOpenAIResponsesWebSearch(latestUserText)
             ? "required"
             : undefined;
+        if (webSearchMode === "required") {
+          responsesFunctionTools = [];
+          responsesFunctionExecutors = {};
+        }
 
         requestPayload = buildOpenAIResponsesPayload({
           messages,
@@ -459,6 +482,7 @@ export class ChatGPTApi implements LLMApi {
           store: storeResponses,
           enableWebSearch: shouldEnableWebSearch,
           webSearchMode,
+          functionTools: responsesFunctionTools,
         });
       } else {
         requestPayload = {
@@ -521,15 +545,36 @@ export class ChatGPTApi implements LLMApi {
         );
       }
       if (shouldStream) {
+        if (useResponses && responsesFunctionTools.length > 0) {
+          const headers = await getHeadersAsync();
+          await runOpenAIResponsesToolLoop({
+            initialPayload: requestPayload as ResponsesRequestPayload,
+            executors: responsesFunctionExecutors,
+            controller,
+            sendRound: (payload) =>
+              sendOpenAIResponsesSseRound({
+                url: chatPath,
+                headers,
+                payload,
+                controller,
+                timeoutMs: OPENAI_RESPONSES_TIMEOUT_MS,
+                onUpdate: options.onUpdate,
+              }),
+            callbacks: options,
+          });
+          return;
+        }
+
         let index = -1;
         let isInThinking = false;
         let hasResponsesOutput = false;
         const session = useChatStore.getState().currentSession();
 
         // 获取所有插件工具
-        const [allTools, funcs] = usePluginStore
-          .getState()
-          .getAsTools(session.mask?.plugin || []);
+        const [allTools, funcs] =
+          options.allowTools === true
+            ? usePluginStore.getState().getAsTools(session.mask?.plugin || [])
+            : [[], {}];
 
         const webAccessState = useResponses
           ? supportsOpenAIResponsesWebSearch({
@@ -548,7 +593,9 @@ export class ChatGPTApi implements LLMApi {
         // 特殊处理gemini模型的联网功能
         // 如果是gemini-2.0-flash-exp且用户选择了googleSearch，使用特定的tools
         // 否则使用常规插件tools
-        const useGoogleSearch = session.mask?.plugin?.includes("googleSearch");
+        const useGoogleSearch =
+          options.allowTools === true &&
+          session.mask?.plugin?.includes("googleSearch");
         const isGeminiFlash = modelConfig.model === "gemini-2.0-flash-exp";
 
         const tools = useResponses
@@ -623,7 +670,7 @@ export class ChatGPTApi implements LLMApi {
               }
 
               if (json.type === "response.completed" && json.response) {
-                const finalText = extractResponsesText(json.response);
+                const finalText = extractOpenAIResponsesText(json.response);
                 if (finalText) {
                   return {
                     content: finalText,

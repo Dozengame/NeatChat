@@ -3,6 +3,7 @@ import { webcrypto } from "crypto";
 import {
   checkAccessUsage,
   createSignedAccessDeviceId,
+  getVerifiedAccessDeviceId,
   markSystemAccessCodeRequest,
   resetAccessUsageForTests,
   usageErrorResponse,
@@ -69,17 +70,14 @@ async function recordUsage(req: any, totalTokens: number) {
     },
   });
 
-  await withUsageAccounting(
-    req,
-    {
-      status: 200,
-      statusText: "OK",
-      headers: new Headers({
-        "content-type": "application/json",
-      }),
-      text: async () => body,
-    } as any,
-  );
+  await withUsageAccounting(req, {
+    status: 200,
+    statusText: "OK",
+    headers: new Headers({
+      "content-type": "application/json",
+    }),
+    text: async () => body,
+  } as any);
 }
 
 describe("access control tiers", () => {
@@ -315,6 +313,39 @@ describe("access control tiers", () => {
       error: "daily_token_limit_exceeded",
       status: 429,
     });
+  });
+
+  test("returns only the verified raw access device ID", async () => {
+    process.env.ACCESS_DEVICE_ID_ENABLED = "true";
+    process.env.ACCESS_DEVICE_ID_SECRET = "test-device-secret";
+    const config = buildAccessControlConfig(process.env);
+    const rawDeviceId = "device-one-000001";
+    const signedDeviceId = await createSignedAccessDeviceId(
+      config,
+      rawDeviceId,
+    );
+
+    expect(
+      await getVerifiedAccessDeviceId(
+        makeRequest("normal-key", "8.8.8.8", {
+          cookies: { neatchat_device_id: signedDeviceId },
+        }),
+      ),
+    ).toBe(rawDeviceId);
+    expect(
+      await getVerifiedAccessDeviceId(
+        makeRequest("normal-key", "8.8.8.8", {
+          cookies: { neatchat_device_id: `${signedDeviceId}tampered` },
+        }),
+      ),
+    ).toBeUndefined();
+    expect(
+      await getVerifiedAccessDeviceId(
+        makeRequest("normal-key", "8.8.8.8", {
+          cookies: { neatchat_device_id: rawDeviceId },
+        }),
+      ),
+    ).toBeUndefined();
   });
 
   test("keeps the same signed device ID scoped by IP", async () => {

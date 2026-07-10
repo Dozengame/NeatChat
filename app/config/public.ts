@@ -81,6 +81,11 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
       temperature: serverConfig.defaultTemperature,
       max_output_tokens: defaultMaxOutputTokens,
       reasoningEffort,
+      reasoningMode: serverConfig.openaiReasoningMode,
+      reasoningContext: serverConfig.openaiReasoningContext,
+      inputImageDetail: serverConfig.openaiInputImageDetail,
+      promptCacheMode: serverConfig.openaiPromptCacheMode,
+      promptCacheKey: serverConfig.openaiPromptCacheKey ?? "",
       reasoningSummary: "auto" as const,
       textVerbosity: serverConfig.openaiTextVerbosity,
       truncation: "disabled" as const,
@@ -100,6 +105,21 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
       apiKeyLocked: lockedFields.includes("apiKey"),
       temperature: serverConfig.defaultTemperature,
       ...(lockedFields.includes("reasoningEffort") ? { reasoningEffort } : {}),
+      ...(lockedFields.includes("reasoningMode")
+        ? { reasoningMode: serverConfig.openaiReasoningMode }
+        : {}),
+      ...(lockedFields.includes("reasoningContext")
+        ? { reasoningContext: serverConfig.openaiReasoningContext }
+        : {}),
+      ...(lockedFields.includes("inputImageDetail")
+        ? { inputImageDetail: serverConfig.openaiInputImageDetail }
+        : {}),
+      ...(lockedFields.includes("promptCacheMode")
+        ? { promptCacheMode: serverConfig.openaiPromptCacheMode }
+        : {}),
+      ...(lockedFields.includes("promptCacheKey")
+        ? { promptCacheKey: serverConfig.openaiPromptCacheKey ?? "" }
+        : {}),
       textVerbosity: serverConfig.openaiTextVerbosity,
       ...(typeof effectiveMaxOutputTokens === "number"
         ? { max_output_tokens: effectiveMaxOutputTokens }

@@ -164,6 +164,148 @@ describe("applyPublicAppConfig", () => {
     expect(current.mask.modelConfig.max_output_tokens).toBe(30000);
   });
 
+  test("propagates GPT-5.6 response capability defaults to global and synced sessions", () => {
+    useChatStore.setState({
+      temporarySession: session(12345, true) as any,
+    } as any);
+
+    applyPublicAppConfig(
+      publicConfig({
+        defaults: {
+          model: "gpt-5.6-terra",
+          providerName: "OpenAI",
+          reasoningMode: "pro",
+          reasoningContext: "all_turns",
+          inputImageDetail: "original",
+          promptCacheMode: "explicit",
+          promptCacheKey: "project-neatchat",
+        } as any,
+        forced: {
+          model: "gpt-5.6-terra",
+          providerName: "OpenAI",
+        },
+        allowedModels: ["gpt-5.6-terra@OpenAI"],
+        legacy: {
+          customModels: "-all,gpt-5.6-terra@openai",
+          defaultModel: "gpt-5.6-terra",
+        },
+      }),
+    );
+
+    expect(useAppConfig.getState().modelConfig).toMatchObject({
+      reasoningMode: "pro",
+      reasoningContext: "all_turns",
+      inputImageDetail: "original",
+      promptCacheMode: "explicit",
+      promptCacheKey: "project-neatchat",
+    });
+    expect(
+      useChatStore.getState().temporarySession!.mask.modelConfig,
+    ).toMatchObject({
+      reasoningMode: "pro",
+      reasoningContext: "all_turns",
+      inputImageDetail: "original",
+      promptCacheMode: "explicit",
+      promptCacheKey: "project-neatchat",
+    });
+  });
+
+  test("preserves unsynced GPT-5.6 capability overrides", () => {
+    const overriddenSession = session(12345, false) as any;
+    overriddenSession.mask.modelConfig.model = "gpt-5.6-terra";
+    Object.assign(overriddenSession.mask.modelConfig, {
+      reasoningMode: "standard",
+      reasoningContext: "current_turn",
+      inputImageDetail: "low",
+      promptCacheMode: "implicit",
+      promptCacheKey: "conversation-key",
+    });
+    useChatStore.setState({
+      temporarySession: overriddenSession,
+    } as any);
+
+    applyPublicAppConfig(
+      publicConfig({
+        defaults: {
+          model: "gpt-5.6-terra",
+          providerName: "OpenAI",
+          reasoningMode: "pro",
+          reasoningContext: "all_turns",
+          inputImageDetail: "original",
+          promptCacheMode: "explicit",
+          promptCacheKey: "server-key",
+        } as any,
+        forced: {
+          model: "gpt-5.6-terra",
+          providerName: "OpenAI",
+        },
+        allowedModels: ["gpt-5.6-terra@OpenAI"],
+      }),
+    );
+
+    expect(
+      useChatStore.getState().temporarySession!.mask.modelConfig,
+    ).toMatchObject({
+      reasoningMode: "standard",
+      reasoningContext: "current_turn",
+      inputImageDetail: "low",
+      promptCacheMode: "implicit",
+      promptCacheKey: "conversation-key",
+    });
+  });
+
+  test("hydrates missing GPT-5.6 capability fields in old unsynced sessions", () => {
+    const persistedSession = session(12345, false) as any;
+    persistedSession.mask.modelConfig.model = "gpt-5.6-terra";
+    for (const field of [
+      "reasoningMode",
+      "reasoningContext",
+      "inputImageDetail",
+      "promptCacheMode",
+      "promptCacheKey",
+    ]) {
+      delete persistedSession.mask.modelConfig[field];
+    }
+    useChatStore.setState({
+      temporarySession: persistedSession,
+    } as any);
+
+    applyPublicAppConfig(
+      publicConfig({
+        defaults: {
+          model: "gpt-5.6-terra",
+          providerName: "OpenAI",
+          reasoningMode: "pro",
+          reasoningContext: "all_turns",
+          inputImageDetail: "original",
+          promptCacheMode: "explicit",
+          promptCacheKey: "server-key",
+        } as any,
+        forced: {
+          model: "gpt-5.6-terra",
+          providerName: "OpenAI",
+        },
+        allowedModels: ["gpt-5.6-terra@OpenAI"],
+      }),
+    );
+
+    const current = useChatStore.getState().temporarySession!;
+    expect(current.mask.modelConfig).toMatchObject({
+      reasoningMode: "pro",
+      reasoningContext: "all_turns",
+      inputImageDetail: "original",
+      promptCacheMode: "explicit",
+      promptCacheKey: "server-key",
+    });
+    expect(current.mask.modelConfigMeta).toMatchObject({
+      reasoningMode: { source: "server_default" },
+      reasoningContext: { source: "server_default" },
+      inputImageDetail: { source: "server_default" },
+      promptCacheMode: { source: "server_default" },
+      promptCacheKey: { source: "server_default" },
+    });
+  });
+
   test("keeps an allowed conversation model selectable when only customModels is locked", () => {
     useChatStore.setState({
       temporarySession: {

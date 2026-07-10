@@ -2,6 +2,11 @@ export const OPENAI_RESPONSES_DEFAULT_MODEL = "gpt-5.6-terra";
 export const OPENAI_RESPONSES_DEFAULT_TEMPERATURE = 1;
 export const OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT = "low";
 export const OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY = "medium";
+export const OPENAI_RESPONSES_DEFAULT_REASONING_MODE = "standard";
+export const OPENAI_RESPONSES_DEFAULT_REASONING_CONTEXT = "auto";
+export const OPENAI_RESPONSES_DEFAULT_INPUT_IMAGE_DETAIL = "high";
+export const OPENAI_RESPONSES_DEFAULT_PROMPT_CACHE_MODE = "implicit";
+export const OPENAI_RESPONSES_PROMPT_CACHE_TTL = "30m";
 export const OPENAI_RESPONSES_DEFAULT_COMPRESS_MESSAGE_LENGTH_THRESHOLD = 1000;
 export const OPENAI_GPT_56_MAX_OUTPUT_TOKENS = 128000;
 const OPENAI_RESPONSES_FALLBACK_MAX_OUTPUT_TOKENS = 512000;
@@ -36,10 +41,25 @@ export type OpenAIChatReasoningEffort = OpenAIResponsesReasoningEffort;
 
 export type OpenAIResponsesTextVerbosity = "low" | "medium" | "high";
 export type OpenAIResponsesWebSearchMode = "auto" | "required";
+export type OpenAIResponsesReasoningMode = "standard" | "pro";
+export type OpenAIResponsesReasoningContext =
+  | "auto"
+  | "current_turn"
+  | "all_turns";
+export type OpenAIResponsesInputImageDetail =
+  | "low"
+  | "high"
+  | "original"
+  | "auto";
+export type OpenAIResponsesPromptCacheMode = "implicit" | "explicit";
 
 const REASONING_EFFORTS = new Set<string>(OPENAI_RESPONSES_REASONING_EFFORTS);
 
 const TEXT_VERBOSITIES = new Set(["low", "medium", "high"]);
+const REASONING_MODES = new Set(["standard", "pro"]);
+const REASONING_CONTEXTS = new Set(["auto", "current_turn", "all_turns"]);
+const INPUT_IMAGE_DETAILS = new Set(["low", "high", "original", "auto"]);
+const PROMPT_CACHE_MODES = new Set(["implicit", "explicit"]);
 
 const OPENAI_PROVIDER_NAMES = new Set(["openai", "chatgpt"]);
 
@@ -133,6 +153,39 @@ export function parseOpenAIResponsesTextVerbosity(value?: string) {
   return OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY;
 }
 
+export function parseOpenAIResponsesReasoningMode(value?: string) {
+  const normalized = value?.trim().toLowerCase();
+  return REASONING_MODES.has(normalized ?? "")
+    ? (normalized as OpenAIResponsesReasoningMode)
+    : OPENAI_RESPONSES_DEFAULT_REASONING_MODE;
+}
+
+export function parseOpenAIResponsesReasoningContext(value?: string) {
+  const normalized = value?.trim().toLowerCase();
+  return REASONING_CONTEXTS.has(normalized ?? "")
+    ? (normalized as OpenAIResponsesReasoningContext)
+    : OPENAI_RESPONSES_DEFAULT_REASONING_CONTEXT;
+}
+
+export function parseOpenAIResponsesInputImageDetail(value?: string) {
+  const normalized = value?.trim().toLowerCase();
+  return INPUT_IMAGE_DETAILS.has(normalized ?? "")
+    ? (normalized as OpenAIResponsesInputImageDetail)
+    : OPENAI_RESPONSES_DEFAULT_INPUT_IMAGE_DETAIL;
+}
+
+export function parseOpenAIResponsesPromptCacheMode(value?: string) {
+  const normalized = value?.trim().toLowerCase();
+  return PROMPT_CACHE_MODES.has(normalized ?? "")
+    ? (normalized as OpenAIResponsesPromptCacheMode)
+    : OPENAI_RESPONSES_DEFAULT_PROMPT_CACHE_MODE;
+}
+
+export function parseOpenAIResponsesPromptCacheKey(value?: string) {
+  const normalized = value?.trim();
+  return normalized || undefined;
+}
+
 export function parseOpenAICompressMessageLengthThreshold(value?: string) {
   const normalized = value?.trim().toLowerCase();
   if (!normalized) {
@@ -180,11 +233,27 @@ export function isOpenAIGpt5OrNewerModelConfig(params: {
   );
 }
 
+export function isOpenAIGpt56ModelConfig(params: {
+  model?: string;
+  providerName?: string;
+}) {
+  const providerName = params.providerName?.trim().toLowerCase();
+  return (
+    (!providerName || OPENAI_PROVIDER_NAMES.has(providerName)) &&
+    isGpt56Model(params.model)
+  );
+}
+
 export function applyOpenAIResponsesModelConstraints(config: {
   model?: string;
   providerName?: string;
   reasoningEffort?: OpenAIResponsesReasoningEffort;
   max_output_tokens?: number;
+  reasoningMode?: OpenAIResponsesReasoningMode;
+  reasoningContext?: OpenAIResponsesReasoningContext;
+  inputImageDetail?: OpenAIResponsesInputImageDetail;
+  promptCacheMode?: OpenAIResponsesPromptCacheMode;
+  promptCacheKey?: string;
 }) {
   if (typeof config.max_output_tokens === "number") {
     config.max_output_tokens = clampOpenAIResponsesMaxOutputTokens(
@@ -197,6 +266,24 @@ export function applyOpenAIResponsesModelConstraints(config: {
     config.reasoningEffort = normalizeOpenAIResponsesReasoningEffort(
       config.reasoningEffort,
       config.model,
+    );
+  }
+
+  if (isOpenAIGpt56ModelConfig(config)) {
+    config.reasoningMode = parseOpenAIResponsesReasoningMode(
+      config.reasoningMode,
+    );
+    config.reasoningContext = parseOpenAIResponsesReasoningContext(
+      config.reasoningContext,
+    );
+    config.inputImageDetail = parseOpenAIResponsesInputImageDetail(
+      config.inputImageDetail,
+    );
+    config.promptCacheMode = parseOpenAIResponsesPromptCacheMode(
+      config.promptCacheMode,
+    );
+    config.promptCacheKey = parseOpenAIResponsesPromptCacheKey(
+      config.promptCacheKey,
     );
   }
 }

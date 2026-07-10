@@ -3,6 +3,10 @@ import { getServerSideConfig } from "../config/server";
 import { OPENAI_BASE_URL, OpenaiPath, ServiceProvider } from "../constant";
 import { cloudflareAIGatewayUrl } from "../utils/cloudflare";
 import { getModelProvider, isModelAvailableInServer } from "../utils/model";
+import {
+  applyOpenAISafetyIdentifier,
+  sanitizeOpenAIResponsesSafetyIdentifier,
+} from "./openai-safety";
 
 const serverConfig = getServerSideConfig();
 const OPENAI_PROXY_REQUEST_TIMEOUT_MS = 10 * 60 * 1000;
@@ -133,8 +137,10 @@ export async function requestOpenai(req: NextRequest) {
     signal: controller.signal,
   };
 
-  // #1815 try to refuse gpt4 request
-  if (serverConfig.customModels && req.body) {
+  const shouldInspectRequestBody =
+    !!req.body &&
+    (!!serverConfig.customModels || path === OpenaiPath.ResponsesPath);
+  if (shouldInspectRequestBody) {
     try {
       let requestModel = "";
       if (isMultipartRequest) {
@@ -146,21 +152,29 @@ export async function requestOpenai(req: NextRequest) {
         const clonedBody = await req.text();
         fetchOptions.body = clonedBody;
 
-        const jsonBody = JSON.parse(clonedBody) as { model?: string };
-        requestModel = jsonBody?.model ?? "";
+        let jsonBody = JSON.parse(clonedBody) as Record<string, unknown>;
+        if (path === OpenaiPath.ResponsesPath) {
+          jsonBody = sanitizeOpenAIResponsesSafetyIdentifier(jsonBody);
+          fetchOptions.body = JSON.stringify(jsonBody);
+          try {
+            jsonBody = await applyOpenAISafetyIdentifier(req, jsonBody);
+            fetchOptions.body = JSON.stringify(jsonBody);
+          } catch (error) {
+            console.error("[OpenAI] safety identifier injection failed", error);
+          }
+        }
+        requestModel = typeof jsonBody.model === "string" ? jsonBody.model : "";
       }
 
-      // not undefined and is false
-      const providerName = isAzure
-        ? ServiceProvider.Azure
-        : ServiceProvider.OpenAI;
       if (
+        serverConfig.customModels &&
         isModelAvailableInServer(
           serverConfig.customModels,
-          requestModel,
-          providerName as string,
+          String(requestModel),
+          (isAzure ? ServiceProvider.Azure : ServiceProvider.OpenAI) as string,
         )
       ) {
+        clearTimeout(timeoutId);
         return NextResponse.json(
           {
             error: true,
@@ -172,7 +186,7 @@ export async function requestOpenai(req: NextRequest) {
         );
       }
     } catch (e) {
-      console.error("[OpenAI] gpt4 filter", e);
+      console.error("[OpenAI] request body preprocessing failed", e);
     }
   }
 

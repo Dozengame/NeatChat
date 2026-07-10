@@ -57,6 +57,7 @@ import {
   BOT_HELLO,
   createMessage,
   DEFAULT_TOPIC,
+  hasClosedResponsesFunctionTrace,
 } from "../store/chat";
 import { useAccessStore } from "../store/access";
 import { SubmitKey, Theme, useAppConfig, ModelType } from "../store/config";
@@ -2621,6 +2622,11 @@ function useChatInnerView() {
 
     if (userMessage === undefined) {
       console.error("[Chat] failed to resend", message);
+      return;
+    }
+
+    if (botMessage && hasClosedResponsesFunctionTrace(botMessage)) {
+      showToast(Locale.Chat.Actions.RetryToolTraceBlocked);
       return;
     }
 

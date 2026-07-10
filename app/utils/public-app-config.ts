@@ -3,7 +3,11 @@ import md5 from "spark-md5";
 import { DEFAULT_MODELS, ServiceProvider } from "../constant";
 import { collectModels, getModelProvider } from "./model";
 import type {
+  OpenAIResponsesInputImageDetail,
+  OpenAIResponsesPromptCacheMode,
+  OpenAIResponsesReasoningContext,
   OpenAIResponsesReasoningEffort,
+  OpenAIResponsesReasoningMode,
   OpenAIResponsesTextVerbosity,
 } from "./openai-responses";
 import type { PublicUpdateAnnouncement } from "./update-announcement";
@@ -39,6 +43,11 @@ export type PublicAppConfig = {
     top_p?: number;
     max_output_tokens?: number;
     reasoningEffort?: OpenAIResponsesReasoningEffort;
+    reasoningMode?: OpenAIResponsesReasoningMode;
+    reasoningContext?: OpenAIResponsesReasoningContext;
+    inputImageDetail?: OpenAIResponsesInputImageDetail;
+    promptCacheMode?: OpenAIResponsesPromptCacheMode;
+    promptCacheKey?: string;
     reasoningSummary?: "auto" | "concise" | "detailed";
     textVerbosity?: OpenAIResponsesTextVerbosity;
     truncation?: "auto" | "disabled";
@@ -58,6 +67,11 @@ export type PublicAppConfig = {
     apiKeyLocked?: boolean;
     temperature?: number;
     reasoningEffort?: OpenAIResponsesReasoningEffort;
+    reasoningMode?: OpenAIResponsesReasoningMode;
+    reasoningContext?: OpenAIResponsesReasoningContext;
+    inputImageDetail?: OpenAIResponsesInputImageDetail;
+    promptCacheMode?: OpenAIResponsesPromptCacheMode;
+    promptCacheKey?: string;
     textVerbosity?: OpenAIResponsesTextVerbosity;
     max_output_tokens?: number;
   };
