@@ -97,6 +97,7 @@ const INPUT_IMAGE_DETAIL_LABELS: Record<
 
 const PROMPT_CACHE_MODE_LABELS: Record<OpenAIResponsesPromptCacheMode, string> =
   {
+    disabled: Locale.Settings.GPT56Capabilities.PromptCacheMode.Disabled,
     implicit: Locale.Settings.GPT56Capabilities.PromptCacheMode.Implicit,
     explicit: Locale.Settings.GPT56Capabilities.PromptCacheMode.Explicit,
   };
@@ -503,11 +504,13 @@ function useModelConfigListView(props: {
                     });
                   }}
                 >
-                  {(["implicit", "explicit"] as const).map((mode) => (
-                    <option value={mode} key={mode}>
-                      {PROMPT_CACHE_MODE_LABELS[mode]}
-                    </option>
-                  ))}
+                  {(["disabled", "implicit", "explicit"] as const).map(
+                    (mode) => (
+                      <option value={mode} key={mode}>
+                        {PROMPT_CACHE_MODE_LABELS[mode]}
+                      </option>
+                    ),
+                  )}
                 </Select>
               </ListItem>
               <ListItem
@@ -524,7 +527,9 @@ function useModelConfigListView(props: {
                   }
                   type="text"
                   value={promptCacheKey}
-                  disabled={isLocked("promptCacheKey")}
+                  disabled={
+                    isLocked("promptCacheKey") || promptCacheMode === "disabled"
+                  }
                   onChange={(e) => {
                     updateUnlocked(["promptCacheKey"], (config) => {
                       config.promptCacheKey = e.currentTarget.value;

@@ -481,6 +481,32 @@ describe("buildOpenAIResponsesPayload", () => {
     ).toHaveLength(1);
   });
 
+  test("disables GPT-5.6 cache writes with explicit mode and no breakpoints", () => {
+    const payload = buildOpenAIResponsesPayload({
+      messages: [
+        { role: "user", content: "First question" },
+        { role: "assistant", content: "Prior answer" },
+        { role: "user", content: "Follow up" },
+      ],
+      modelConfig: {
+        ...modelConfig,
+        model: "gpt-5.6-terra" as any,
+        promptCacheMode: "disabled",
+        promptCacheKey: "stale-key-must-not-leak",
+      } as any,
+      store: false,
+    }) as any;
+
+    expect(payload.prompt_cache_options).toEqual({
+      mode: "explicit",
+      ttl: "30m",
+    });
+    expect(payload.prompt_cache_key).toBeUndefined();
+    expect(JSON.stringify(payload.input)).not.toContain(
+      "prompt_cache_breakpoint",
+    );
+  });
+
   test("omits GPT-5.6-only fields for older models", () => {
     const payload = buildOpenAIResponsesPayload({
       messages: [

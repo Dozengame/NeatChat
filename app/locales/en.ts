@@ -689,7 +689,8 @@ const en: LocaleType = {
       PromptCacheMode: {
         Title: "Prompt Cache Mode",
         SubTitle:
-          "Implicit caches automatically; Explicit marks the latest input breakpoint",
+          "Disabled uses Explicit with no breakpoint to avoid cache writes; Implicit caches automatically; Explicit marks the latest input breakpoint",
+        Disabled: "Disabled",
         Implicit: "Implicit",
         Explicit: "Explicit",
       },

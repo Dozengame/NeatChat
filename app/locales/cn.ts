@@ -683,7 +683,9 @@ const cn = {
       },
       PromptCacheMode: {
         Title: "Prompt Cache 模式",
-        SubTitle: "Implicit 自动缓存；Explicit 在最新输入处设置缓存断点",
+        SubTitle:
+          "关闭使用无断点的 Explicit 策略以避免缓存写入；Implicit 自动缓存；Explicit 在最新输入处设置缓存断点",
+        Disabled: "关闭",
         Implicit: "Implicit",
         Explicit: "Explicit",
       },

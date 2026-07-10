@@ -51,7 +51,10 @@ export type OpenAIResponsesInputImageDetail =
   | "high"
   | "original"
   | "auto";
-export type OpenAIResponsesPromptCacheMode = "implicit" | "explicit";
+export type OpenAIResponsesPromptCacheMode =
+  | "disabled"
+  | "implicit"
+  | "explicit";
 
 const REASONING_EFFORTS = new Set<string>(OPENAI_RESPONSES_REASONING_EFFORTS);
 
@@ -59,7 +62,7 @@ const TEXT_VERBOSITIES = new Set(["low", "medium", "high"]);
 const REASONING_MODES = new Set(["standard", "pro"]);
 const REASONING_CONTEXTS = new Set(["auto", "current_turn", "all_turns"]);
 const INPUT_IMAGE_DETAILS = new Set(["low", "high", "original", "auto"]);
-const PROMPT_CACHE_MODES = new Set(["implicit", "explicit"]);
+const PROMPT_CACHE_MODES = new Set(["disabled", "implicit", "explicit"]);
 
 const OPENAI_PROVIDER_NAMES = new Set(["openai", "chatgpt"]);
 

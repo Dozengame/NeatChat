@@ -32,6 +32,8 @@ describe("GPT-5.6 Settings contract", () => {
   test("keeps both locales complete and warns against cache-key secrets", () => {
     const cn = read("app/locales/cn.ts");
     const en = read("app/locales/en.ts");
+    const modelConfig = read("app/components/model-config.tsx");
+    const envTemplate = read(".env.template");
 
     for (const locale of [cn, en]) {
       expect(locale).toContain("GPT56Capabilities");
@@ -45,7 +47,19 @@ describe("GPT-5.6 Settings contract", () => {
     expect(cn).toContain("请勿填写密钥或个人信息");
     expect(en).toContain("do not enter secrets or personal data");
     expect(en).toContain('Prefix: "Source: "');
-    expect(read("app/components/model-config.tsx")).not.toContain("来源：");
+    expect(cn).toContain('Disabled: "关闭"');
+    expect(en).toContain('Disabled: "Disabled"');
+    expect(modelConfig).toContain(
+      'disabled: Locale.Settings.GPT56Capabilities.PromptCacheMode.Disabled',
+    );
+    expect(modelConfig).toContain(
+      '(["disabled", "implicit", "explicit"] as const)',
+    );
+    expect(modelConfig).toMatch(
+      /disabled=\{[\s\S]*isLocked\("promptCacheKey"\)[\s\S]*promptCacheMode === "disabled"[\s\S]*\}/,
+    );
+    expect(envTemplate).toContain("disabled、implicit、explicit");
+    expect(modelConfig).not.toContain("来源：");
   });
 
   test("keeps GPT-5.6 select values readable at narrow widths", () => {

@@ -258,6 +258,7 @@ describe("OpenAI Responses config", () => {
     expect(parseOpenAIResponsesReasoningContext("bad")).toBe("auto");
     expect(parseOpenAIResponsesInputImageDetail("original")).toBe("original");
     expect(parseOpenAIResponsesInputImageDetail("bad")).toBe("high");
+    expect(parseOpenAIResponsesPromptCacheMode("disabled")).toBe("disabled");
     expect(parseOpenAIResponsesPromptCacheMode("explicit")).toBe("explicit");
     expect(parseOpenAIResponsesPromptCacheMode("bad")).toBe("implicit");
     expect(parseOpenAIResponsesPromptCacheKey("  project-neatchat  ")).toBe(
@@ -356,6 +357,22 @@ describe("OpenAI Responses config", () => {
       promptCacheMode: "explicit",
       promptCacheKey: "project-neatchat",
     });
+  });
+
+  test("publishes a disabled GPT-5.6 Prompt Cache default", () => {
+    process.env.CUSTOM_MODELS = "-all,gpt-5.6-terra@openai";
+    process.env.DEFAULT_MODEL = "gpt-5.6-terra";
+    process.env.OPENAI_PROMPT_CACHE_MODE = "disabled";
+    process.env.OPENAI_PROMPT_CACHE_KEY = "";
+
+    const serverConfig = getServerSideConfig();
+    const publicConfig = buildPublicAppConfig(
+      new Date("2026-07-10T00:00:00.000Z"),
+    );
+
+    expect(serverConfig.openaiPromptCacheMode).toBe("disabled");
+    expect(publicConfig.defaults.promptCacheMode).toBe("disabled");
+    expect(publicConfig.defaults.promptCacheKey).toBe("");
   });
 
   test("enables stored OpenAI Responses only when explicitly configured", () => {

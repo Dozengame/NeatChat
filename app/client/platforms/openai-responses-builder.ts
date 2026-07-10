@@ -87,7 +87,7 @@ export interface ResponsesRequestPayload {
   tool_choice?: "auto" | "required";
   prompt_cache_key?: string;
   prompt_cache_options?: {
-    mode: OpenAIResponsesPromptCacheMode;
+    mode: Exclude<OpenAIResponsesPromptCacheMode, "disabled">;
     ttl: typeof OPENAI_RESPONSES_PROMPT_CACHE_TTL;
   };
 }
@@ -331,20 +331,27 @@ export function buildOpenAIResponsesPayload(params: {
     const configuredCacheMode = parseOpenAIResponsesPromptCacheMode(
       params.modelConfig.promptCacheMode,
     );
-    const hasExplicitBreakpoint =
-      configuredCacheMode === "explicit" &&
-      Array.isArray(payload.input) &&
-      addExplicitPromptCacheBreakpoint(payload.input);
-    const cacheMode = hasExplicitBreakpoint ? "explicit" : "implicit";
-    payload.prompt_cache_options = {
-      mode: cacheMode,
-      ttl: OPENAI_RESPONSES_PROMPT_CACHE_TTL,
-    };
-    const promptCacheKey = parseOpenAIResponsesPromptCacheKey(
-      params.modelConfig.promptCacheKey,
-    );
-    if (promptCacheKey) {
-      payload.prompt_cache_key = promptCacheKey;
+    if (configuredCacheMode === "disabled") {
+      payload.prompt_cache_options = {
+        mode: "explicit",
+        ttl: OPENAI_RESPONSES_PROMPT_CACHE_TTL,
+      };
+    } else {
+      const hasExplicitBreakpoint =
+        configuredCacheMode === "explicit" &&
+        Array.isArray(payload.input) &&
+        addExplicitPromptCacheBreakpoint(payload.input);
+      const cacheMode = hasExplicitBreakpoint ? "explicit" : "implicit";
+      payload.prompt_cache_options = {
+        mode: cacheMode,
+        ttl: OPENAI_RESPONSES_PROMPT_CACHE_TTL,
+      };
+      const promptCacheKey = parseOpenAIResponsesPromptCacheKey(
+        params.modelConfig.promptCacheKey,
+      );
+      if (promptCacheKey) {
+        payload.prompt_cache_key = promptCacheKey;
+      }
     }
   }
 
