@@ -642,6 +642,7 @@ export const useChatStore = createPersistStore(
             ? getOpenAIImageGenerationProgressContent({
                 model: modelConfig.model,
                 phase: "preparing",
+                copy: Locale.Chat.ImageGeneration.Progress,
               })
             : "",
           streaming: true,
@@ -1240,7 +1241,12 @@ export const useChatStore = createPersistStore(
               if (mcpRequest.clientId === JIMENG_MCP_SERVER_ID) {
                 const progressText =
                   formatJimengMcpRequestForChat(content) ||
-                  "图片生成任务\n\n当前进度：\n- 状态：正在提交到 jimeng-mcp";
+                  [
+                    Locale.Chat.ImageGeneration.Task,
+                    "",
+                    Locale.Chat.ImageGeneration.Progress.Preparing,
+                    `- ${Locale.Chat.ImageGeneration.Submitting}`,
+                  ].join("\n");
                 const updateJimengMessage = (nextContent: string) => {
                   get().updateTargetSession(
                     targetSession ?? get().currentSession(),
@@ -1317,7 +1323,7 @@ export const useChatStore = createPersistStore(
                             resultForChat,
                             [
                               "gen_status: timeout",
-                              "error_message: 结果查询超时，请稍后重试",
+                              `error_message: ${Locale.Chat.ImageGeneration.QueryTimeout}`,
                             ].join("\n"),
                           ),
                           { includeImages: false },
@@ -1332,12 +1338,12 @@ export const useChatStore = createPersistStore(
                         progressText,
                         [
                           "gen_status: failed",
-                          "error_message: 任务提交或查询失败，请稍后重试",
+                          `error_message: ${Locale.Chat.ImageGeneration.SubmitOrQueryFailed}`,
                         ].join("\n"),
                         { includeImages: false },
                       ),
                     );
-                    showToast("图片生成失败");
+                    showToast(Locale.Chat.ImageGeneration.Failed);
                   });
                 return;
               }

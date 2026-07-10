@@ -204,12 +204,12 @@ const reasoningDescriptions: Record<OpenAIChatReasoningEffort, string> = {
   max: Locale.Settings.ReasoningEffort.MaxDescription,
 };
 const imageQualityLabels: Record<OpenAIImageQuality, string> = {
-  auto: "自动",
-  low: "低清晰度",
-  medium: "标准清晰度",
-  high: "高清晰度",
-  standard: "标准",
-  hd: "高清",
+  auto: Locale.Settings.ImageGeneration.Auto,
+  low: Locale.Settings.ImageGeneration.Low,
+  medium: Locale.Settings.ImageGeneration.Medium,
+  high: Locale.Settings.ImageGeneration.High,
+  standard: Locale.Settings.ImageGeneration.Standard,
+  hd: Locale.Settings.ImageGeneration.HD,
 };
 const getImageQualityLabel = (quality: OpenAIImageQuality) =>
   imageQualityLabels[quality] ?? quality;
@@ -772,7 +772,7 @@ async function downloadImage(src: string) {
     window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
   } catch (error) {
     console.warn("[Image Download] Falling back to direct link", error);
-    showToast("无法直接保存图片，已打开原图");
+    showToast(Locale.ImageActions.OpenedOriginal);
     triggerFileDownload(src, fileName);
   }
 }
@@ -1086,7 +1086,7 @@ export function PromptHints(props: {
       id="chat-prompt-hints"
       className={styles["prompt-hints"]}
       role="listbox"
-      aria-label="提示词建议"
+      aria-label={Locale.Chat.Accessibility.PromptSuggestions}
       aria-activedescendant={`chat-prompt-hint-${activeSelectIndex}`}
     >
       {prompts.map((prompt, i) => (
@@ -1121,7 +1121,10 @@ const ClearContextDivider = React.forwardRef<HTMLButtonElement>(
         type="button"
         ref={ref}
         className={styles["clear-context"]}
-        aria-label={`${Locale.Context.Clear}，${Locale.Context.Revert}`}
+        aria-label={Locale.Chat.Accessibility.CombinedLabels([
+          Locale.Context.Clear,
+          Locale.Context.Revert,
+        ])}
         title={Locale.Context.Revert}
         onClick={() =>
           chatStore.updateTargetSession(
@@ -1426,12 +1429,12 @@ function useChatActionsView(props: ChatActionsProps) {
         mcpEnabled = await isMcpEnabled();
       } catch (error) {
         console.warn("[MCP] Failed to check MCP status", error);
-        showToast("图片生成未启用");
+        showToast(Locale.Chat.ImageGeneration.NotEnabled);
         return;
       }
 
       if (!mcpEnabled) {
-        showToast("图片生成未启用");
+        showToast(Locale.Chat.ImageGeneration.NotEnabled);
         return;
       }
 
@@ -1439,7 +1442,11 @@ function useChatActionsView(props: ChatActionsProps) {
         await activateMcpClient(JIMENG_MCP_SERVER_ID);
         chatStore.resetMcpCache();
       } catch (error) {
-        showToast(error instanceof Error ? error.message : "图片生成启用失败");
+        showToast(
+          error instanceof Error
+            ? error.message
+            : Locale.Chat.ImageGeneration.EnableFailed,
+        );
         return;
       }
     } else {
@@ -1452,7 +1459,11 @@ function useChatActionsView(props: ChatActionsProps) {
     }
 
     props.setImageGenerationEnabled(enabled);
-    showToast(enabled ? "已启用图片生成" : "已关闭图片生成");
+    showToast(
+      enabled
+        ? Locale.Chat.ImageGeneration.Enabled
+        : Locale.Chat.ImageGeneration.Disabled,
+    );
   };
   const hasSessionActions =
     couldStop ||
@@ -1468,14 +1479,14 @@ function useChatActionsView(props: ChatActionsProps) {
             styles["chat-multimodal-section-primary"],
           )}
           role="group"
-          aria-label="多模态工具"
+          aria-label={Locale.Chat.ChatToolMenu.MultimodalTools}
         >
           <div className={styles["chat-multimodal-section-header"]}>
             <span className={styles["chat-multimodal-section-title"]}>
-              <span>添加内容</span>
+              <span>{Locale.Chat.ChatToolMenu.AddContent}</span>
             </span>
             <span className={styles["chat-multimodal-section-subtitle"]}>
-              <span>文件和图片</span>
+              <span>{Locale.Chat.ChatToolMenu.FilesAndImages}</span>
             </span>
             <span
               id="chat-multimodal-upload-state"
@@ -1486,7 +1497,9 @@ function useChatActionsView(props: ChatActionsProps) {
               )}
               aria-live="polite"
             >
-              {props.attachmentSlotsFull ? "已满" : "3 图 · 5 文件"}
+              {props.attachmentSlotsFull
+                ? Locale.Chat.ChatToolMenu.Full
+                : Locale.Chat.ChatToolMenu.Capacity}
             </span>
           </div>
           <ChatAction
@@ -1495,13 +1508,13 @@ function useChatActionsView(props: ChatActionsProps) {
               props.uploadAttachments();
               completeMobileAction();
             }}
-            text={"上传附件"}
+            text={Locale.Chat.ChatToolMenu.UploadAttachment}
             icon={props.uploading ? <LoadingButtonIcon /> : <AttachmentIcon />}
             ariaDescribedBy="chat-multimodal-upload-state"
             disabled={props.attachmentSlotsFull}
             title={
               props.attachmentSlotsFull
-                ? "附件已满：最多 3 张图片、5 个文件"
+                ? Locale.Chat.ChatToolMenu.AttachmentFull
                 : undefined
             }
           />
@@ -1513,7 +1526,11 @@ function useChatActionsView(props: ChatActionsProps) {
               await setImageGenerationMode(!props.imageGenerationEnabled);
               completeMobileAction();
             }}
-            text={props.imageGenerationEnabled ? "关闭图片生成" : "图片生成"}
+            text={
+              props.imageGenerationEnabled
+                ? Locale.Chat.ChatToolMenu.DisableImageGeneration
+                : Locale.Chat.ChatToolMenu.ImageGeneration
+            }
             icon={<ImageIcon />}
           />
         </div>
@@ -1525,14 +1542,14 @@ function useChatActionsView(props: ChatActionsProps) {
               styles["chat-multimodal-section-session"],
             )}
             role="group"
-            aria-label="会话工具"
+            aria-label={Locale.Chat.ChatToolMenu.SessionTools}
           >
             <div className={styles["chat-multimodal-section-header"]}>
               <span className={styles["chat-multimodal-section-title"]}>
-                <span>会话</span>
+                <span>{Locale.Chat.ChatToolMenu.Session}</span>
               </span>
               <span className={styles["chat-multimodal-section-subtitle"]}>
-                <span>模型和设置</span>
+                <span>{Locale.Chat.ChatToolMenu.ModelsAndSettings}</span>
               </span>
             </div>
             {couldStop && (
@@ -1601,7 +1618,9 @@ function useChatActionsView(props: ChatActionsProps) {
               <ChatAction
                 onClick={() => {
                   if (modelLocked) {
-                    showToast("该项已由管理员锁定");
+                    showToast(
+                      Locale.Settings.GPT56Capabilities.ConfigSource.Locked,
+                    );
                     return;
                   }
                   setActionModalOpen("model", true);
@@ -1841,7 +1860,7 @@ function ChatInputReasoningAction() {
 
   const openReasoningSelector = () => {
     if (reasoningLocked) {
-      showToast("该项已由管理员锁定");
+      showToast(Locale.Settings.GPT56Capabilities.ConfigSource.Locked);
       return;
     }
     setShowReasoningSelectorModal(true);
@@ -1883,7 +1902,9 @@ function ChatInputReasoningAction() {
           openReasoningSelector();
         }}
         disabled={reasoningLocked}
-        aria-label={`思考等级：${reasoningLabels[currentReasoningEffort]}`}
+        aria-label={Locale.Chat.ModelMenu.SelectedReasoning(
+          reasoningLabels[currentReasoningEffort],
+        )}
         aria-haspopup="listbox"
         aria-expanded={showReasoningSelectorModal}
       >
@@ -2356,15 +2377,17 @@ function useChatInnerView() {
           : text;
 
       // 将长文本转换为文件附件
+      const inputTextFileName = Locale.Chat.Attachments.InputTextFile(
+        new Date().toISOString().slice(0, 19).replace(/[T:]/g, "-"),
+      );
       const longTextFile: FileInfo = {
-        name: `输入文本_${new Date()
-          .toISOString()
-          .slice(0, 19)
-          .replace(/[T:]/g, "-")}.txt`,
+        name: inputTextFileName,
         type: "text/plain",
         size: text.length,
         content: truncatedText,
-        originalFile: new File([text], "输入文本.txt", { type: "text/plain" }),
+        originalFile: new File([text], inputTextFileName, {
+          type: "text/plain",
+        }),
       };
 
       // 添加到文件附件列表
@@ -2374,11 +2397,13 @@ function useChatInnerView() {
       setUserInput("");
 
       // 显示提示
-      showToast("文本过长，已自动转换为文件附件");
+      showToast(Locale.Chat.Attachments.TextConverted);
 
       // 如果文本被截断，显示额外提示
       if (text.length > MAX_FILE_CONTENT_LENGTH) {
-        showToast(`文件内容过大，已截断至 ${MAX_FILE_CONTENT_LENGTH} 字符`);
+        showToast(
+          Locale.Chat.Attachments.ContentTruncated(MAX_FILE_CONTENT_LENGTH),
+        );
       }
 
       return;
@@ -2415,12 +2440,13 @@ function useChatInnerView() {
 
     if (userInput.length > MAX_TEXT_LENGTH) {
       // 将长文本转换为文件附件
+      const longTextFileName = Locale.Chat.Attachments.LongTextFile;
       const longTextFile: FileInfo = {
-        name: "长文本.txt",
+        name: longTextFileName,
         type: "text/plain",
         size: userInput.length,
         content: userInput,
-        originalFile: new File([userInput], "长文本.txt", {
+        originalFile: new File([userInput], longTextFileName, {
           type: "text/plain",
         }),
       };
@@ -2428,10 +2454,10 @@ function useChatInnerView() {
       filesToSend.push(longTextFile);
 
       // 替换用户输入为提示信息
-      finalUserInput = "我发送了一个长文本文件，内容已自动转换为附件。";
+      finalUserInput = Locale.Chat.Attachments.LongTextMessage;
 
       // 显示提示
-      showToast("文本过长，已自动转换为文件附件");
+      showToast(Locale.Chat.Attachments.TextConverted);
     }
 
     // 如果有附加文件，将文件信息添加到用户输入
@@ -2932,7 +2958,7 @@ function useChatInnerView() {
     );
   const selectHeaderModel = (selected: string) => {
     if (headerModelLocked) {
-      showToast("该项已由管理员锁定");
+      showToast(Locale.Settings.GPT56Capabilities.ConfigSource.Locked);
       return;
     }
     const [model, providerName] = getModelProvider(selected);
@@ -2964,7 +2990,7 @@ function useChatInnerView() {
     reasoningEffort: OpenAIChatReasoningEffort,
   ) => {
     if (headerReasoningLocked) {
-      showToast("该项已由管理员锁定");
+      showToast(Locale.Settings.GPT56Capabilities.ConfigSource.Locked);
       return;
     }
     chatStore.updateTargetSession(session, (session) => {
@@ -3493,11 +3519,11 @@ function useChatInnerView() {
 
         if (filesToAdd.length > 0) {
           setAttachedFiles([...currentAttachedFiles, ...filesToAdd]);
-          messages.push(`已添加 ${filesToAdd.length} 个文件`);
+          messages.push(Locale.Chat.Attachments.AddedFiles(filesToAdd.length));
         }
 
         if (fileInfos.length > remainingFileSlots) {
-          messages.push("最多只能上传5个文件，已保留前5个");
+          messages.push(Locale.Chat.Attachments.MaxFiles);
         }
       }
 
@@ -3507,16 +3533,18 @@ function useChatInnerView() {
 
         if (imagesToAdd.length > 0) {
           setAttachImages([...currentAttachImages, ...imagesToAdd]);
-          messages.push(`已添加 ${imagesToAdd.length} 张图片`);
+          messages.push(
+            Locale.Chat.Attachments.AddedImages(imagesToAdd.length),
+          );
         }
 
         if (imageUrls.length > remainingImageSlots) {
-          messages.push("最多只能上传3张图片，已保留前3张");
+          messages.push(Locale.Chat.Attachments.MaxImages);
         }
       }
 
       if (messages.length > 0) {
-        showToast(messages.join("，"));
+        showToast(Locale.Chat.Attachments.JoinMessages(messages));
       }
     },
     // All state reads go through refs; setAttachedFiles/setAttachImages are stable
@@ -3599,7 +3627,7 @@ function useChatInnerView() {
         const MAX_SIZE = 15 * 1024 * 1024;
         const validSizeFiles = files.filter((file) => {
           if (file.size > MAX_SIZE) {
-            showToast(`文件 ${file.name} 超过 15MB 限制，已忽略`);
+            showToast(Locale.Chat.Attachments.FileTooLarge(file.name));
             return false;
           }
           return true;
@@ -3622,10 +3650,10 @@ function useChatInnerView() {
         );
 
         if (images.length > remainingImageSlots) {
-          showToast("最多只能上传3张图片，已保留前3张");
+          showToast(Locale.Chat.Attachments.MaxImages);
         }
         if (documents.length > remainingFileSlots) {
-          showToast("最多只能上传5个文件，已保留前5个");
+          showToast(Locale.Chat.Attachments.MaxFiles);
         }
 
         const slicedImages = images.slice(0, remainingImageSlots);
@@ -3646,7 +3674,7 @@ function useChatInnerView() {
         } catch (error) {
           if (!isMounted.current) return;
           console.error("读取拖拽附件失败:", error);
-          showToast("读取拖拽附件失败");
+          showToast(Locale.Chat.Attachments.DragReadFailed);
         } finally {
           if (isMounted.current) {
             setUploading(false);
@@ -3682,7 +3710,7 @@ function useChatInnerView() {
         appendAttachments(fileInfos, [...imageUrls, ...pastedImageUrls]);
       } catch (error) {
         console.error("读取粘贴附件失败:", error);
-        showToast("读取粘贴附件失败");
+        showToast(Locale.Chat.Attachments.PasteReadFailed);
       } finally {
         setUploading(false);
       }
@@ -3696,7 +3724,7 @@ function useChatInnerView() {
 
         // 检查文件数量限制
         if (attachedFiles.length >= 5) {
-          showToast("最多只能上传5个文件");
+          showToast(Locale.Chat.Attachments.FileSlotsFull);
           return;
         }
 
@@ -3709,11 +3737,14 @@ function useChatInnerView() {
             : text;
 
         // 将长文本转为文件附件
-        const file = new File([text], "粘贴的文本.txt", { type: "text/plain" });
+        const pastedTextFileName = Locale.Chat.Attachments.PastedTextFile;
+        const file = new File([text], pastedTextFileName, {
+          type: "text/plain",
+        });
         setAttachedFiles([
           ...attachedFiles,
           {
-            name: "粘贴的文本.txt",
+            name: pastedTextFileName,
             type: "text/plain",
             size: text.length,
             content: truncatedText,
@@ -3721,7 +3752,7 @@ function useChatInnerView() {
           },
         ]);
 
-        showToast("已将长文本转为附件");
+        showToast(Locale.Chat.Attachments.LongTextConverted);
       }
     }
   };
@@ -3729,7 +3760,7 @@ function useChatInnerView() {
   // 修改上传附件的处理函数
   async function handleUploadAttachments() {
     if (attachmentSlotsFull) {
-      showToast("附件已满：最多 3 张图片、5 个文件");
+      showToast(Locale.Chat.Attachments.Full);
       return;
     }
 
@@ -3745,7 +3776,7 @@ function useChatInnerView() {
       },
       // 上传失败
       (error) => {
-        showToast("读取文件失败");
+        showToast(Locale.Chat.Attachments.FileReadFailed);
       },
       // 完成上传
       () => {
@@ -4196,7 +4227,9 @@ function useChatInnerView() {
 
   // 在_Chat组件中添加状态
   const [editingImage, setEditingImage] = useState<string | null>(null);
-  const [editingImageTitle, setEditingImageTitle] = useState("编辑图片");
+  const [editingImageTitle, setEditingImageTitle] = useState(
+    Locale.ImageEditor.Title,
+  );
   const editingAttachmentImageIndexRef = useRef<number | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewImageActionLabels, setPreviewImageActionLabels] = useState(
@@ -4499,10 +4532,11 @@ function useChatInnerView() {
         aria-atomic="true"
       >
         {isDropzonePreviewActive
-          ? `${dropzonePayloadSummary?.text ?? "拖拽文件或图片到此处上传"}，${
+          ? Locale.Chat.Attachments.LiveStatus(
+              dropzonePayloadSummary?.text ?? Locale.Chat.Attachments.DropTitle,
               dropzonePayloadSummary?.hint ??
-              "释放后添加到输入框 · 最多3张图片、5个文件"
-            }。`
+                Locale.Chat.Attachments.Drag.AddHint,
+            )
           : ""}
       </span>
       <div
@@ -4523,17 +4557,17 @@ function useChatInnerView() {
             <AttachmentIcon />
           </div>
           <p id="chat-dropzone-status" className={styles["chat-dropzone-text"]}>
-            拖拽文件或图片到此处上传
+            {Locale.Chat.Attachments.DropTitle}
           </p>
           <p
             id="chat-dropzone-summary"
             className={styles["chat-dropzone-summary"]}
           >
-            {dropzonePayloadSummary?.text ?? "检测拖拽附件"}
+            {dropzonePayloadSummary?.text ?? Locale.Chat.Attachments.DropDetect}
           </p>
           <p id="chat-dropzone-hint" className={styles["chat-dropzone-hint"]}>
             {dropzonePayloadSummary?.hint ??
-              "释放后添加到输入框 · 最多3张图片、5个文件"}
+              Locale.Chat.Attachments.Drag.AddHint}
           </p>
         </div>
       </div>
@@ -4542,7 +4576,7 @@ function useChatInnerView() {
         className={clsx(styles["chat-input-action-menu-backdrop"], {
           [styles["chat-input-action-menu-backdrop-open"]]: showChatActionMenu,
         })}
-        aria-label="关闭对话工具"
+        aria-label={Locale.Chat.ChatToolMenu.Close}
         onClick={() => {
           setShowChatActionMenu(false);
           requestAnimationFrame(() => chatInputMenuButtonRef.current?.focus());
@@ -4566,7 +4600,10 @@ function useChatInnerView() {
             type="button"
             ref={modelSelectorButtonRef}
             className={styles["chat-mobile-model-title"]}
-            aria-label={`选择模型：${headerCurrentModelName}，${mobileModelDetail}`}
+            aria-label={Locale.Chat.ModelMenu.SelectModel(
+              headerCurrentModelName,
+              mobileModelDetail,
+            )}
             title={`${headerCurrentModelName} · ${mobileModelDetail}`}
             onKeyDown={handleModelMenuKeyDown}
             onClick={() => {
@@ -4629,7 +4666,7 @@ function useChatInnerView() {
                 type="button"
                 ref={modelSelectorButtonRef}
                 className={styles["chat-desktop-model-title"]}
-                aria-label="选择模型和参数"
+                aria-label={Locale.Chat.ModelMenu.SelectModelAndParams}
                 onKeyDown={handleModelMenuKeyDown}
                 onClick={() => {
                   setShowChatActionMenu(false);
@@ -4736,7 +4773,7 @@ function useChatInnerView() {
         </div>
       ) : null}
 
-      {/* 
+      {/*
         We always render the model menu in the DOM to support smooth CSS exit transitions.
         We toggle its visibility via class name instead of: showMobileModelSelector && (
       */}
@@ -4750,7 +4787,7 @@ function useChatInnerView() {
             [styles["chat-model-menu-visible"]]: showMobileModelSelector,
           },
         )}
-        aria-label="关闭模型选择"
+        aria-label={Locale.Chat.ModelMenu.Close}
         onClick={() => {
           closeMobileModelSelector();
           restoreModelSelectorFocus();
@@ -4778,16 +4815,16 @@ function useChatInnerView() {
         tabIndex={-1}
         role="dialog"
         aria-modal="true"
-        aria-label="模型和思考等级"
+        aria-label={Locale.Chat.ModelMenu.ModelAndReasoning}
       >
         <div
           className={styles["chat-mobile-model-list"]}
           role="listbox"
-          aria-label="可选模型"
+          aria-label={Locale.Chat.ModelMenu.AvailableModels}
         >
           {headerAvailableModels.length === 0 ? (
             <div className={styles["chat-mobile-model-empty"]}>
-              暂无可用模型
+              {Locale.Chat.ModelMenu.Empty}
             </div>
           ) : (
             headerAvailableModels.map((model) => {
@@ -4840,7 +4877,7 @@ function useChatInnerView() {
                   onClick={() => toggleMobileModelSection("reasoning")}
                 >
                   <span>
-                    <strong>思考等级</strong>
+                    <strong>{Locale.Chat.ModelMenu.ReasoningEffort}</strong>
                     <small>
                       {reasoningLabels[headerCurrentReasoningEffort]}
                     </small>
@@ -4854,7 +4891,7 @@ function useChatInnerView() {
                     id="chat-mobile-reasoning-options"
                     className={styles["chat-mobile-reasoning-list"]}
                     role="listbox"
-                    aria-label="思考等级选项"
+                    aria-label={Locale.Chat.ModelMenu.ReasoningOptions}
                   >
                     {headerReasoningEfforts.map((effort) => {
                       const selected = effort === headerCurrentReasoningEffort;
@@ -4904,7 +4941,7 @@ function useChatInnerView() {
                     onClick={() => toggleMobileModelSection("image-size")}
                   >
                     <span>
-                      <strong>图片尺寸</strong>
+                      <strong>{Locale.Chat.ModelMenu.ImageSize}</strong>
                       <small>{headerCurrentSize}</small>
                     </span>
                     <span className={styles["chat-mobile-reasoning-caret"]}>
@@ -4916,7 +4953,7 @@ function useChatInnerView() {
                       id="chat-mobile-image-size-options"
                       className={styles["chat-mobile-reasoning-list"]}
                       role="listbox"
-                      aria-label="图片尺寸选项"
+                      aria-label={Locale.Chat.ModelMenu.ImageSizeOptions}
                     >
                       {headerImageSizes.map((size) => {
                         const selected = size === headerCurrentSize;
@@ -4950,7 +4987,7 @@ function useChatInnerView() {
                               <span
                                 className={styles["chat-mobile-model-provider"]}
                               >
-                                生成图片尺寸
+                                {Locale.Chat.ModelMenu.GeneratedImageSize}
                               </span>
                             </span>
                           </button>
@@ -4969,7 +5006,7 @@ function useChatInnerView() {
                       onClick={() => toggleMobileModelSection("image-quality")}
                     >
                       <span>
-                        <strong>图片清晰度</strong>
+                        <strong>{Locale.Chat.ModelMenu.ImageQuality}</strong>
                         <small>
                           {getImageQualityLabel(headerCurrentQuality)}
                         </small>
@@ -4983,7 +5020,7 @@ function useChatInnerView() {
                         id="chat-mobile-image-quality-options"
                         className={styles["chat-mobile-reasoning-list"]}
                         role="listbox"
-                        aria-label="图片清晰度选项"
+                        aria-label={Locale.Chat.ModelMenu.ImageQualityOptions}
                       >
                         {headerImageQualitys.map((quality) => {
                           const selected = quality === headerCurrentQuality;
@@ -5052,7 +5089,7 @@ function useChatInnerView() {
             })}
             ref={scrollRef}
             style={chatBodyStyle}
-            aria-label="聊天消息"
+            aria-label={Locale.Chat.Accessibility.ChatMessages}
             onScroll={(e) => onChatBodyScroll(e.currentTarget)}
           >
             {showEmptyHero && (
@@ -5065,7 +5102,7 @@ function useChatInnerView() {
                 </h1>
                 <ul
                   className={styles["chat-empty-suggestions"]}
-                  aria-label="建议问题"
+                  aria-label={Locale.Chat.Accessibility.SuggestedQuestions}
                 >
                   {Locale.Chat.EmptySuggestions.map((suggestion) => (
                     <li
@@ -5081,23 +5118,9 @@ function useChatInnerView() {
                           <span
                             className={styles["chat-empty-suggestion-title"]}
                           >
-                            {(() => {
-                              const isZh =
-                                Locale.Chat.EmptySuggestions[0] ===
-                                "总结这段内容";
-                              const idx =
-                                Locale.Chat.EmptySuggestions.indexOf(
-                                  suggestion,
-                                );
-                              return (
-                                [
-                                  isZh ? "总结文本" : "Summarize text",
-                                  isZh ? "规划日程" : "Plan schedule",
-                                  isZh ? "创意绘图" : "Creative poster",
-                                  isZh ? "分析文档" : "Analyze document",
-                                ][idx] || suggestion
-                              );
-                            })()}
+                            {Locale.Chat.EmptySuggestionTitles[
+                              Locale.Chat.EmptySuggestions.indexOf(suggestion)
+                            ] || suggestion}
                           </span>
                           <span
                             className={styles["chat-empty-suggestion-text"]}
@@ -5145,7 +5168,7 @@ function useChatInnerView() {
               className={styles["chat-reading-surface"]}
               ref={readingSurfaceRef}
               role="list"
-              aria-label="会话消息列表"
+              aria-label={Locale.Chat.Accessibility.MessageList}
               aria-live="polite"
               aria-relevant="additions text"
               aria-atomic="false"
@@ -5173,18 +5196,21 @@ function useChatInnerView() {
 
                 const shouldShowClearContextDivider =
                   i === clearContextIndex - 1;
-                const messageLabel = `${isUser ? "用户消息" : "助手消息"} ${
-                  i + 1
-                }`;
-                const messageActionLabel = `${messageLabel} 操作`;
+                const messageLabel = isUser
+                  ? Locale.Chat.Accessibility.UserMessage(i + 1)
+                  : Locale.Chat.Accessibility.AssistantMessage(i + 1);
+                const messageActionLabel =
+                  Locale.Chat.Accessibility.MessageActions(messageLabel);
                 const messageActionId = getMessageActionId(message, i);
                 const isMessageCopied =
                   copiedMessageActionId === messageActionId;
-                const messageCopyActionLabel = `${messageActionLabel}：${
-                  isMessageCopied
-                    ? Locale.Copy.Success
-                    : Locale.Chat.Actions.Copy
-                }`;
+                const messageCopyActionLabel =
+                  Locale.Chat.Accessibility.ActionLabel(
+                    messageActionLabel,
+                    isMessageCopied
+                      ? Locale.Copy.Success
+                      : Locale.Chat.Actions.Copy,
+                  );
                 const messageCopyStatus = isMessageCopied
                   ? `${messageLabel} ${Locale.Copy.Success}`
                   : "";
@@ -5371,19 +5397,28 @@ function useChatInnerView() {
                               <>
                                 <ChatAction
                                   text={Locale.Chat.Actions.Retry}
-                                  ariaLabel={`${messageActionLabel}：${Locale.Chat.Actions.Retry}`}
+                                  ariaLabel={Locale.Chat.Accessibility.ActionLabel(
+                                    messageActionLabel,
+                                    Locale.Chat.Actions.Retry,
+                                  )}
                                   icon={<ResetIcon />}
                                   onClick={() => onResend(message)}
                                 />
                                 <ChatAction
                                   text={Locale.Chat.Actions.Delete}
-                                  ariaLabel={`${messageActionLabel}：${Locale.Chat.Actions.Delete}`}
+                                  ariaLabel={Locale.Chat.Accessibility.ActionLabel(
+                                    messageActionLabel,
+                                    Locale.Chat.Actions.Delete,
+                                  )}
                                   icon={<DeleteIcon />}
                                   onClick={() => onDelete(message.id ?? i)}
                                 />
                                 <ChatAction
                                   text={Locale.Chat.Actions.Pin}
-                                  ariaLabel={`${messageActionLabel}：${Locale.Chat.Actions.Pin}`}
+                                  ariaLabel={Locale.Chat.Accessibility.ActionLabel(
+                                    messageActionLabel,
+                                    Locale.Chat.Actions.Pin,
+                                  )}
                                   icon={<PinIcon />}
                                   onClick={() => onPinMessage(message)}
                                 />
@@ -5429,11 +5464,12 @@ function useChatInnerView() {
                                           ? Locale.Chat.Actions.StopSpeech
                                           : Locale.Chat.Actions.Speech
                                       }
-                                      ariaLabel={`${messageActionLabel}：${
+                                      ariaLabel={Locale.Chat.Accessibility.ActionLabel(
+                                        messageActionLabel,
                                         speechStatus
                                           ? Locale.Chat.Actions.StopSpeech
-                                          : Locale.Chat.Actions.Speech
-                                      }`}
+                                          : Locale.Chat.Actions.Speech,
+                                      )}
                                       icon={
                                         speechStatus ? (
                                           <SpeakStopIcon />
@@ -5496,7 +5532,7 @@ function useChatInnerView() {
               onKeyDown={handleChatActionMenuKeyDown}
               role="dialog"
               aria-modal="true"
-              aria-label="对话工具菜单"
+              aria-label={Locale.Chat.ChatToolMenu.MenuLabel}
             >
               <ChatActions
                 uploadAttachments={handleUploadAttachments}
@@ -5545,7 +5581,9 @@ function useChatInnerView() {
                   setShowChatActionMenu((open) => !open);
                 }}
                 aria-label={
-                  showChatActionMenu ? "收起对话工具" : "打开对话工具"
+                  showChatActionMenu
+                    ? Locale.Chat.ChatToolMenu.Close
+                    : Locale.Chat.ChatToolMenu.Open
                 }
                 aria-controls="chat-input-action-menu"
                 aria-haspopup="dialog"
@@ -5608,7 +5646,10 @@ function useChatInnerView() {
                     type="button"
                     ref={modelSelectorButtonRef}
                     className={styles["chat-input-model-button"]}
-                    aria-label={`选择模型：${headerCurrentModelName}，${desktopModelDetail}`}
+                    aria-label={Locale.Chat.ModelMenu.SelectModel(
+                      headerCurrentModelName,
+                      desktopModelDetail,
+                    )}
                     title={`${headerCurrentModelName} · ${desktopModelDetail}`}
                     onKeyDown={handleModelMenuKeyDown}
                     onClick={(event) => {
@@ -5639,7 +5680,7 @@ function useChatInnerView() {
                     role="status"
                     aria-live="polite"
                     aria-atomic="true"
-                    aria-label="当前输入模式"
+                    aria-label={Locale.Chat.ModelMenu.CurrentInputMode}
                   >
                     {showInputReasoningAction && <ChatInputReasoningAction />}
                     {imageGenerationEnabled && (
@@ -5648,10 +5689,10 @@ function useChatInnerView() {
                           styles["chat-input-mode-chip"],
                           styles["chat-input-image-mode-chip"],
                         )}
-                        aria-label="图片生成模式已开启"
+                        aria-label={Locale.Chat.ImageGeneration.ModeEnabled}
                       >
                         <ImageIcon />
-                        <span>图片生成</span>
+                        <span>{Locale.Chat.ImageGeneration.ModeLabel}</span>
                       </span>
                     )}
                   </div>
@@ -5694,7 +5735,7 @@ function useChatInnerView() {
                       ref={attachmentsContainerRef}
                       className={styles["attachments-container"]}
                       role="list"
-                      aria-label="附件预览"
+                      aria-label={Locale.Chat.Attachments.Preview}
                       onScroll={syncAttachmentScrollHint}
                     >
                       {/* 图片附件 */}
@@ -5734,11 +5775,13 @@ function useChatInnerView() {
                           <button
                             type="button"
                             className={styles["attach-image"]}
-                            aria-label={`编辑第 ${index + 1} 张图片附件`}
+                            aria-label={Locale.Chat.Attachments.EditImage(
+                              index + 1,
+                            )}
                             style={{ backgroundImage: `url("${image}")` }}
                             onClick={() => {
                               setEditingImageTitle(
-                                `编辑第 ${index + 1} 张图片附件`,
+                                Locale.Chat.Attachments.EditImage(index + 1),
                               );
                               editingAttachmentImageIndexRef.current = index;
                               editingImageMessageIdRef.current = null;
@@ -5747,7 +5790,9 @@ function useChatInnerView() {
                           />
                           <div className={styles["attach-image-mask"]}>
                             <DeleteImageButton
-                              ariaLabel={`删除第 ${index + 1} 张图片附件`}
+                              ariaLabel={Locale.Chat.Attachments.DeleteImage(
+                                index + 1,
+                              )}
                               deleteImage={(e) => {
                                 e.stopPropagation(); // 防止触发图片点击事件
                                 setAttachImages((currentImages) =>
@@ -5763,9 +5808,11 @@ function useChatInnerView() {
 
                       {/* 文件附件 */}
                       {attachedFiles.map((file, index) => {
-                        const fileEditContextLabel = `编辑第 ${
-                          index + 1
-                        } 个文件附件：${file.name}`;
+                        const fileEditContextLabel =
+                          Locale.Chat.Attachments.EditFile(
+                            index + 1,
+                            file.name,
+                          );
 
                         return (
                           <div
@@ -5810,7 +5857,12 @@ function useChatInnerView() {
                                   fileEditContextLabel,
                                   file.content,
                                   20, // 更多行数以便于编辑文件内容
-                                  { ariaLabel: `${fileEditContextLabel}内容` },
+                                  {
+                                    ariaLabel:
+                                      Locale.Chat.Attachments.EditFileContent(
+                                        file.name,
+                                      ),
+                                  },
                                 );
 
                                 if (newContent) {
@@ -5865,9 +5917,10 @@ function useChatInnerView() {
                             </button>
                             <div className={styles["attach-image-mask"]}>
                               <DeleteImageButton
-                                ariaLabel={`删除第 ${index + 1} 个文件附件：${
-                                  file.name
-                                }`}
+                                ariaLabel={Locale.Chat.Attachments.DeleteFile(
+                                  index + 1,
+                                  file.name,
+                                )}
                                 deleteImage={(e) => {
                                   e.stopPropagation(); // 防止触发文件点击事件
                                   deleteAttachedFile(index);
@@ -5888,8 +5941,8 @@ function useChatInnerView() {
                           <button
                             type="button"
                             className={styles["attachment-add-button"]}
-                            aria-label="继续添加附件"
-                            title="继续添加附件"
+                            aria-label={Locale.Chat.Attachments.AddMore}
+                            title={Locale.Chat.Attachments.AddMore}
                             disabled={uploading}
                             onClick={handleUploadAttachments}
                           >
@@ -5909,11 +5962,11 @@ function useChatInnerView() {
                             className={styles["attachment-full-indicator"]}
                             role="status"
                             aria-live="polite"
-                            aria-label="附件已满：最多 3 张图片、5 个文件"
-                            title="附件已满：最多 3 张图片、5 个文件"
+                            aria-label={Locale.Chat.Attachments.Full}
+                            title={Locale.Chat.Attachments.Full}
                           >
                             <AttachmentIcon />
-                            <span>已满</span>
+                            <span>{Locale.Chat.Attachments.FullShort}</span>
                           </div>
                         </div>
                       )}
@@ -5973,7 +6026,7 @@ function useChatInnerView() {
       {showFileEditModal && editingFile && (
         <div className="modal-mask">
           <Modal
-            title={`编辑文件内容: ${editingFile.name}`}
+            title={Locale.Chat.Attachments.EditFileContent(editingFile.name)}
             onClose={() => setShowFileEditModal(false)}
             actions={[
               <IconButton
@@ -6015,7 +6068,9 @@ function useChatInnerView() {
           >
             <div className={styles["file-edit-scroll"]}>
               <textarea
-                aria-label={`编辑文件内容: ${editingFile.name}`}
+                aria-label={Locale.Chat.Attachments.EditFileContent(
+                  editingFile.name,
+                )}
                 className={styles["file-edit-textarea"]}
                 value={editingFile.content}
                 onChange={(e) => {
@@ -6060,8 +6115,8 @@ function useChatInnerView() {
             <button
               type="button"
               className={styles["image-preview-button"]}
-              aria-label="关闭预览"
-              title="关闭预览"
+              aria-label={Locale.ImageActions.ClosePreview}
+              title={Locale.ImageActions.ClosePreview}
               onClick={closeImagePreview}
             >
               <CancelIcon />
@@ -6084,7 +6139,7 @@ function useChatInnerView() {
           title={editingImageTitle}
           onClose={() => {
             setEditingImage(null);
-            setEditingImageTitle("编辑图片");
+            setEditingImageTitle(Locale.ImageEditor.Title);
             editingAttachmentImageIndexRef.current = null;
             editingImageMessageIdRef.current = null; // 清除消息ID
           }}
@@ -6142,7 +6197,7 @@ function useChatInnerView() {
             }
 
             setEditingImage(null);
-            setEditingImageTitle("编辑图片");
+            setEditingImageTitle(Locale.ImageEditor.Title);
             editingAttachmentImageIndexRef.current = null;
             editingImageMessageIdRef.current = null; // 清除消息ID
           }}

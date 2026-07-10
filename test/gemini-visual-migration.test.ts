@@ -1574,7 +1574,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("Locale.Chat.EmptySuggestions");
     expect(chat).toContain('styles["chat-empty-suggestions"]');
     expect(chat).toMatch(
-      /<ul[\s\S]*className=\{styles\["chat-empty-suggestions"\]\}[\s\S]*aria-label="建议问题"[\s\S]*>\s*\{Locale\.Chat\.EmptySuggestions\.map/,
+      /<ul[\s\S]*className=\{styles\["chat-empty-suggestions"\]\}[\s\S]*aria-label=\{Locale\.Chat\.Accessibility\.SuggestedQuestions\}[\s\S]*>\s*\{Locale\.Chat\.EmptySuggestions\.map/,
     );
     expect(chat).toContain('styles["chat-empty-suggestion-item"]');
     expect(chat).toContain('styles["chat-empty-suggestion"]');
@@ -1596,11 +1596,20 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("Locale.Chat.EmptyTitle");
     expect(chat).not.toContain("你好！想聊点什么？");
     expect(chat).toContain("<ChatActions");
-    expect(chatActionsViewBlock).toContain('aria-label="多模态工具"');
-    expect(chatActionsViewBlock).toContain('aria-label="会话工具"');
-    expect(chatActionsViewBlock).toContain('text={"上传附件"}');
     expect(chatActionsViewBlock).toContain(
-      'text={props.imageGenerationEnabled ? "关闭图片生成" : "图片生成"}',
+      "aria-label={Locale.Chat.ChatToolMenu.MultimodalTools}",
+    );
+    expect(chatActionsViewBlock).toContain(
+      "aria-label={Locale.Chat.ChatToolMenu.SessionTools}",
+    );
+    expect(chatActionsViewBlock).toContain(
+      "text={Locale.Chat.ChatToolMenu.UploadAttachment}",
+    );
+    expect(chatActionsViewBlock).toContain(
+      "Locale.Chat.ChatToolMenu.DisableImageGeneration",
+    );
+    expect(chatActionsViewBlock).toContain(
+      "Locale.Chat.ChatToolMenu.ImageGeneration",
     );
     expect(chatActionsViewBlock).toContain(
       "text={Locale.Chat.InputActions.ToBottom}",
@@ -1622,29 +1631,43 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["chat-input-status-row"]');
     expect(chat).toContain('styles["chat-input-mode-chip"]');
     expect(chat).toContain('styles["chat-input-image-mode-chip"]');
-    expect(chat).toContain('aria-label="当前输入模式"');
-    expect(chat).toMatch(
-      /className=\{styles\["chat-input-status-row"\]\}[\s\S]*role="status"[\s\S]*aria-live="polite"[\s\S]*aria-atomic="true"[\s\S]*aria-label="当前输入模式"/,
+    expect(chat).toContain(
+      "aria-label={Locale.Chat.ModelMenu.CurrentInputMode}",
     );
     expect(chat).toMatch(
-      /className=\{clsx\([\s\S]*styles\["chat-input-mode-chip"\][\s\S]*styles\["chat-input-reasoning"\][\s\S]*\)\}[\s\S]*aria-label=\{`思考等级：\$\{reasoningLabels\[currentReasoningEffort\]\}`\}[\s\S]*aria-haspopup="listbox"[\s\S]*aria-expanded=\{showReasoningSelectorModal\}/,
+      /className=\{styles\["chat-input-status-row"\]\}[\s\S]*role="status"[\s\S]*aria-live="polite"[\s\S]*aria-atomic="true"[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.CurrentInputMode\}/,
     );
-    expect(chat).toContain('aria-label="图片生成模式已开启"');
+    expect(chat).toMatch(
+      /className=\{clsx\([\s\S]*styles\["chat-input-mode-chip"\][\s\S]*styles\["chat-input-reasoning"\][\s\S]*\)\}[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.SelectedReasoning\(\s*reasoningLabels\[currentReasoningEffort\],?\s*\)\}[\s\S]*aria-haspopup="listbox"[\s\S]*aria-expanded=\{showReasoningSelectorModal\}/,
+    );
+    expect(chat).toContain(
+      "aria-label={Locale.Chat.ImageGeneration.ModeEnabled}",
+    );
     expect(chat).toContain("{imageGenerationEnabled && (");
     expect(chat).toContain('styles["chat-multimodal-tray"]');
     expect(chat).toContain('styles["chat-multimodal-section"]');
     expect(chat).toContain('role="dialog"');
-    expect(chat).toContain('aria-label="对话工具菜单"');
+    expect(chat).toContain(
+      "aria-label={Locale.Chat.ChatToolMenu.MenuLabel}",
+    );
     expect(chat).toContain('role="group"');
-    expect(chat).toContain('aria-label="多模态工具"');
+    expect(chat).toContain(
+      "aria-label={Locale.Chat.ChatToolMenu.MultimodalTools}",
+    );
     expect(chat).toContain('styles["chat-multimodal-section-header"]');
     expect(chat).toContain('styles["chat-multimodal-section-title"]');
     expect(chat).toContain('styles["chat-multimodal-section-subtitle"]');
-    expect(chat).toContain("<span>添加内容</span>");
-    expect(chat).toContain("<span>文件和图片</span>");
-    expect(chat).toContain('aria-label="会话工具"');
+    expect(chat).toContain(
+      "<span>{Locale.Chat.ChatToolMenu.AddContent}</span>",
+    );
+    expect(chat).toContain(
+      "<span>{Locale.Chat.ChatToolMenu.FilesAndImages}</span>",
+    );
+    expect(chat).toContain(
+      "aria-label={Locale.Chat.ChatToolMenu.SessionTools}",
+    );
     expect(chat).toMatch(
-      /aria-label="会话工具"[\s\S]*className=\{styles\["chat-multimodal-section-header"\]\}[\s\S]*className=\{styles\["chat-multimodal-section-title"\]\}[\s\S]*<span>会话<\/span>[\s\S]*className=\{styles\["chat-multimodal-section-subtitle"\]\}[\s\S]*<span>模型和设置<\/span>/,
+      /aria-label=\{Locale\.Chat\.ChatToolMenu\.SessionTools\}[\s\S]*className=\{styles\["chat-multimodal-section-header"\]\}[\s\S]*className=\{styles\["chat-multimodal-section-title"\]\}[\s\S]*<span>\{Locale\.Chat\.ChatToolMenu\.Session\}<\/span>[\s\S]*className=\{styles\["chat-multimodal-section-subtitle"\]\}[\s\S]*<span>\{Locale\.Chat\.ChatToolMenu\.ModelsAndSettings\}<\/span>/,
     );
     expect(chat).toContain("ariaPressed={props.imageGenerationEnabled}");
     expect(chat).toContain("aria-pressed={props.ariaPressed}");
@@ -1657,38 +1680,46 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT");
     expect(chat).toContain("uploadAttachments(");
     expect(chat).toContain('styles["attachments-container"]');
-    expect(chat).toContain('aria-label="附件预览"');
+    expect(chat).toContain(
+      "aria-label={Locale.Chat.Attachments.Preview}",
+    );
     expect(chat).toContain('role="list"');
     expect(chat).toContain('role="listitem"');
     expect(chat).toContain('styles["attach-image-item"]');
     expect(chat).toContain('styles["attach-file-item"]');
     expect(chat).toContain('styles["attach-image"]');
-    expect(chat).toContain("aria-label={`编辑第 ${index + 1} 张图片附件`}");
+    expect(chat).toMatch(
+      /aria-label=\{Locale\.Chat\.Attachments\.EditImage\(\s*index \+ 1,\s*\)\}/,
+    );
     expect(chat).toContain(
-      'const [editingImageTitle, setEditingImageTitle] = useState("编辑图片");',
+      "Locale.ImageEditor.Title",
     );
     expect(chat).toMatch(
-      /onClick=\{\(\) => \{[\s\S]*setEditingImageTitle\(\s*`编辑第 \$\{index \+ 1\} 张图片附件`,?\s*\);[\s\S]*setEditingImage\(image\);[\s\S]*\}\}/,
+      /onClick=\{\(\) => \{[\s\S]*setEditingImageTitle\(\s*Locale\.Chat\.Attachments\.EditImage\(index \+ 1\),?\s*\);[\s\S]*setEditingImage\(image\);[\s\S]*\}\}/,
     );
     expect(chat).toContain("title={editingImageTitle}");
     expect(chat).toContain('styles["attach-file"]');
     expect(chat).toContain("aria-label={fileEditContextLabel}");
     expect(chat).toMatch(
-      /const fileEditContextLabel = `编辑第 \$\{[\s\S]*index \+ 1[\s\S]*\} 个文件附件：\$\{file\.name\}`;/,
+      /const fileEditContextLabel =\s*Locale\.Chat\.Attachments\.EditFile\(\s*index \+ 1,\s*file\.name,?\s*\);/,
     );
     expect(chat).toContain("const newContent = await showPrompt(");
     expect(chat).toContain("fileEditContextLabel,");
     expect(chat).toContain("file.content,");
-    expect(chat).toContain("{ ariaLabel: `${fileEditContextLabel}内容` },");
+    expect(chat).toMatch(
+      /ariaLabel:\s*Locale\.Chat\.Attachments\.EditFileContent\(\s*file\.name,?\s*\)/,
+    );
     expect(uiLibActions).toContain("ariaLabel?: string");
     expect(uiLibActions).toContain("ariaLabel={options?.ariaLabel}");
     expect(promptInput).toContain("ariaLabel?: string");
     expect(chat).toMatch(
       /function DeleteImageButton\(props: \{[\s\S]*ariaLabel: string;[\s\S]*deleteImage: \(e\?: any\) => void[\s\S]*aria-label=\{props\.ariaLabel\}/,
     );
-    expect(chat).toContain("ariaLabel={`删除第 ${index + 1} 张图片附件`}");
     expect(chat).toMatch(
-      /ariaLabel=\{`删除第 \$\{index \+ 1\} 个文件附件：\$\{\s*file\.name\s*\}`\}/,
+      /ariaLabel=\{Locale\.Chat\.Attachments\.DeleteImage\(\s*index \+ 1,\s*\)\}/,
+    );
+    expect(chat).toMatch(
+      /ariaLabel=\{Locale\.Chat\.Attachments\.DeleteFile\(\s*index \+ 1,\s*file\.name,?\s*\)\}/,
     );
     expect(chat).toContain('styles["chat-desktop-title-stack"]');
     expect(chat).toContain('styles["chat-desktop-header"]');
@@ -1719,8 +1750,8 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain(
       "title={`${headerCurrentModelName} · ${mobileModelDetail}`}",
     );
-    expect(chat).toContain(
-      'aria-label={`选择模型：${headerCurrentModelName}，${mobileModelDetail}`}',
+    expect(chat).toMatch(
+      /aria-label=\{Locale\.Chat\.ModelMenu\.SelectModel\(\s*headerCurrentModelName,\s*mobileModelDetail,?\s*\)\}/,
     );
     expect(chat).toContain('aria-controls="mobile-sidebar-drawer"');
     expect(chat).toContain("const isMobileSidebarOpen =");
@@ -1803,10 +1834,10 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("aria-expanded={showMobileModelSelector}");
     expect(chat).toContain('aria-controls="chat-model-menu"');
     expect(chat).toMatch(
-      /className=\{styles\["chat-mobile-model-title"\]\}[\s\S]*aria-label=\{`选择模型：\$\{headerCurrentModelName\}，\$\{mobileModelDetail\}`\}[\s\S]*title=\{`\$\{headerCurrentModelName\} · \$\{mobileModelDetail\}`\}[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*aria-controls="chat-model-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showMobileModelSelector\}/,
+      /className=\{styles\["chat-mobile-model-title"\]\}[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.SelectModel\(\s*headerCurrentModelName,\s*mobileModelDetail,\s*\)\}[\s\S]*title=\{`\$\{headerCurrentModelName\} · \$\{mobileModelDetail\}`\}[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*aria-controls="chat-model-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showMobileModelSelector\}/,
     );
     expect(chat).toMatch(
-      /className=\{styles\["chat-desktop-model-title"\]\}[\s\S]*aria-label="选择模型和参数"[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*aria-controls="chat-model-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showMobileModelSelector\}/,
+      /className=\{styles\["chat-desktop-model-title"\]\}[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.SelectModelAndParams\}[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*aria-controls="chat-model-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showMobileModelSelector\}/,
     );
     expect(chat).toMatch(
       /\{showDesktopModelControls && \([\s\S]*className=\{styles\["chat-desktop-model-title"\]\}/,
@@ -1814,13 +1845,15 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /\{showDesktopModelControls && \([\s\S]*className=\{clsx\([\s\S]*styles\["chat-desktop-header-actions"\]/,
     );
-    expect(chat).toContain('aria-label="关闭模型选择"');
+    expect(chat).toContain("aria-label={Locale.Chat.ModelMenu.Close}");
     expect(chat).toContain('id="chat-model-menu"');
     expect(chat).toContain('role="dialog"');
     expect(chat).toMatch(
-      /id="chat-model-menu"[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*aria-label="模型和思考等级"/,
+      /id="chat-model-menu"[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.ModelAndReasoning\}/,
     );
-    expect(chat).toContain('aria-label="模型和思考等级"');
+    expect(chat).toContain(
+      "aria-label={Locale.Chat.ModelMenu.ModelAndReasoning}",
+    );
     expect(chat).toMatch(
       /id="chat-model-menu"[\s\S]*ref=\{modelMenuRef\}[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*tabIndex=\{-1\}[\s\S]*role="dialog"[\s\S]*aria-modal="true"/,
     );
@@ -1828,32 +1861,40 @@ describe("Gemini visual migration shell", () => {
       /if \(!showMobileModelSelector\) return;[\s\S]*const closeModelSelectorOnEscape = \(event: KeyboardEvent\) =>[\s\S]*event\.key === "Escape"[\s\S]*closeMobileModelSelector\(\);[\s\S]*restoreModelSelectorFocus\(\);[\s\S]*window\.addEventListener\("keydown", closeModelSelectorOnEscape\);[\s\S]*window\.removeEventListener\("keydown", closeModelSelectorOnEscape\);/,
     );
     expect(chat).toMatch(
-      /aria-label="关闭模型选择"[\s\S]*onClick=\{\(\) => \{[\s\S]*closeMobileModelSelector\(\);[\s\S]*restoreModelSelectorFocus\(\);[\s\S]*\}\}/,
+      /aria-label=\{Locale\.Chat\.ModelMenu\.Close\}[\s\S]*onClick=\{\(\) => \{[\s\S]*closeMobileModelSelector\(\);[\s\S]*restoreModelSelectorFocus\(\);[\s\S]*\}\}/,
     );
     expect(chat).toContain('role="listbox"');
-    expect(chat).toContain('aria-label="可选模型"');
-    expect(chat).toContain('aria-label="思考等级选项"');
-    expect(chat).toContain('aria-label="图片尺寸选项"');
-    expect(chat).toContain('aria-label="图片清晰度选项"');
-    expect(chat).toMatch(
-      /className=\{styles\["chat-mobile-reasoning-head"\]\}[\s\S]*aria-expanded=\{isReasoningSectionExpanded\}[\s\S]*aria-controls="chat-mobile-reasoning-options"[\s\S]*id="chat-mobile-reasoning-options"[\s\S]*role="listbox"[\s\S]*aria-label="思考等级选项"/,
+    expect(chat).toContain(
+      "aria-label={Locale.Chat.ModelMenu.AvailableModels}",
+    );
+    expect(chat).toContain(
+      "aria-label={Locale.Chat.ModelMenu.ReasoningOptions}",
+    );
+    expect(chat).toContain(
+      "aria-label={Locale.Chat.ModelMenu.ImageSizeOptions}",
+    );
+    expect(chat).toContain(
+      "aria-label={Locale.Chat.ModelMenu.ImageQualityOptions}",
     );
     expect(chat).toMatch(
-      /className=\{styles\["chat-mobile-reasoning-head"\]\}[\s\S]*aria-expanded=\{isImageSizeSectionExpanded\}[\s\S]*aria-controls="chat-mobile-image-size-options"[\s\S]*id="chat-mobile-image-size-options"[\s\S]*role="listbox"[\s\S]*aria-label="图片尺寸选项"/,
+      /className=\{styles\["chat-mobile-reasoning-head"\]\}[\s\S]*aria-expanded=\{isReasoningSectionExpanded\}[\s\S]*aria-controls="chat-mobile-reasoning-options"[\s\S]*id="chat-mobile-reasoning-options"[\s\S]*role="listbox"[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.ReasoningOptions\}/,
     );
     expect(chat).toMatch(
-      /className=\{styles\["chat-mobile-reasoning-head"\]\}[\s\S]*aria-expanded=\{isImageQualitySectionExpanded\}[\s\S]*aria-controls="chat-mobile-image-quality-options"[\s\S]*id="chat-mobile-image-quality-options"[\s\S]*role="listbox"[\s\S]*aria-label="图片清晰度选项"/,
+      /className=\{styles\["chat-mobile-reasoning-head"\]\}[\s\S]*aria-expanded=\{isImageSizeSectionExpanded\}[\s\S]*aria-controls="chat-mobile-image-size-options"[\s\S]*id="chat-mobile-image-size-options"[\s\S]*role="listbox"[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.ImageSizeOptions\}/,
+    );
+    expect(chat).toMatch(
+      /className=\{styles\["chat-mobile-reasoning-head"\]\}[\s\S]*aria-expanded=\{isImageQualitySectionExpanded\}[\s\S]*aria-controls="chat-mobile-image-quality-options"[\s\S]*id="chat-mobile-image-quality-options"[\s\S]*role="listbox"[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.ImageQualityOptions\}/,
     );
     expect(chat).toContain('role="option"');
     expect(chat).toContain("aria-selected={selected}");
-    expect(chat).toContain('"打开对话工具"');
-    expect(chat).toContain('"收起对话工具"');
+    expect(chat).toContain("Locale.Chat.ChatToolMenu.Open");
+    expect(chat).toContain("Locale.Chat.ChatToolMenu.Close");
     expect(chat).toMatch(
-      /aria-label=\{\s*showChatActionMenu\s*\?\s*"收起对话工具"\s*:\s*"打开对话工具"\s*\}/,
+      /aria-label=\{\s*showChatActionMenu\s*\?\s*Locale\.Chat\.ChatToolMenu\.Close\s*:\s*Locale\.Chat\.ChatToolMenu\.Open\s*\}/,
     );
     expect(chat).toContain('id="chat-prompt-hints"');
     expect(chat).toMatch(
-      /className=\{styles\["prompt-hints"\]\}[\s\S]*role="listbox"[\s\S]*aria-label="提示词建议"/,
+      /className=\{styles\["prompt-hints"\]\}[\s\S]*role="listbox"[\s\S]*aria-label=\{Locale\.Chat\.Accessibility\.PromptSuggestions\}/,
     );
     expect(chat).toMatch(
       /className=\{styles\["prompt-hints"\]\}[\s\S]*aria-activedescendant=\{`chat-prompt-hint-\$\{activeSelectIndex\}`\}/,
@@ -2099,9 +2140,11 @@ describe("Gemini visual migration shell", () => {
       /if \(\(event\.target as HTMLElement \| null\)\?\.closest\('\[role="listbox"\]'\)\) \{[\s\S]*return;[\s\S]*\}/,
     );
     expect(chat).toContain("ref={chatInputMenuButtonRef}");
-    expect(chat).toContain('aria-label="关闭对话工具"');
+    expect(chat).toContain(
+      "aria-label={Locale.Chat.ChatToolMenu.Close}",
+    );
     expect(chat).toMatch(
-      /id="chat-input-action-menu"[\s\S]*ref=\{chatInputActionMenuRef\}[\s\S]*className=\{clsx\(styles\["chat-input-action-menu"\][\s\S]*\)[\s\S]*\}[\s\S]*onKeyDown=\{handleChatActionMenuKeyDown\}[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*aria-label="对话工具菜单"/,
+      /id="chat-input-action-menu"[\s\S]*ref=\{chatInputActionMenuRef\}[\s\S]*className=\{clsx\(styles\["chat-input-action-menu"\][\s\S]*\)[\s\S]*\}[\s\S]*onKeyDown=\{handleChatActionMenuKeyDown\}[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*aria-label=\{Locale\.Chat\.ChatToolMenu\.MenuLabel\}/,
     );
     expect(chat).toMatch(
       /ref=\{chatInputMenuButtonRef\}[\s\S]*onKeyDown=\{handleChatActionMenuKeyDown\}[\s\S]*aria-controls="chat-input-action-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showChatActionMenu\}/,
@@ -2110,7 +2153,7 @@ describe("Gemini visual migration shell", () => {
       /if \(!showChatActionMenu\) return;[\s\S]*const closeChatActionMenuOnEscape = \(event: KeyboardEvent\) =>[\s\S]*event\.key === "Escape"[\s\S]*setShowChatActionMenu\(false\);[\s\S]*window\.addEventListener\("keydown", closeChatActionMenuOnEscape\);[\s\S]*window\.removeEventListener\("keydown", closeChatActionMenuOnEscape\);/,
     );
     expect(chat).toMatch(
-      /className=\{clsx\(styles\["chat-input-action-menu-backdrop"\][\s\S]*\)[\s\S]*\}[\s\S]*aria-label="关闭对话工具"[\s\S]*onClick=\{\(\) => \{[\s\S]*setShowChatActionMenu\(false\);[\s\S]*requestAnimationFrame\([\s\S]*\(\) => chatInputMenuButtonRef\.current\?\.focus\(\),?[\s\S]*\);[\s\S]*\}\}/,
+      /className=\{clsx\(styles\["chat-input-action-menu-backdrop"\][\s\S]*\)[\s\S]*\}[\s\S]*aria-label=\{Locale\.Chat\.ChatToolMenu\.Close\}[\s\S]*onClick=\{\(\) => \{[\s\S]*setShowChatActionMenu\(false\);[\s\S]*requestAnimationFrame\([\s\S]*\(\) => chatInputMenuButtonRef\.current\?\.focus\(\),?[\s\S]*\);[\s\S]*\}\}/,
     );
     expect(chat).toMatch(
       /requestAnimationFrame\([\s\S]*\(\) => chatInputMenuButtonRef\.current\?\.focus\(\),?[\s\S]*\);/,
@@ -2133,7 +2176,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["chat-reading-surface"]');
     expect(chat).toContain('styles["chat-scroll-to-bottom"]');
     expect(chat).toMatch(
-      /<section[\s\S]*id="chat-scroll-body"[\s\S]*className=\{clsx\(styles\["chat-body"\][\s\S]*ref=\{scrollRef\}[\s\S]*aria-label="聊天消息"[\s\S]*onScroll=\{\(e\) => onChatBodyScroll\(e\.currentTarget\)\}/,
+      /<section[\s\S]*id="chat-scroll-body"[\s\S]*className=\{clsx\(styles\["chat-body"\][\s\S]*ref=\{scrollRef\}[\s\S]*aria-label=\{Locale\.Chat\.Accessibility\.ChatMessages\}[\s\S]*onScroll=\{\(e\) => onChatBodyScroll\(e\.currentTarget\)\}/,
     );
     expect(chat).toMatch(/const CHAT_BODY_BOTTOM_SAFE_AREA_BASE = 150;/);
     expect(chat).toMatch(
@@ -2259,22 +2302,22 @@ describe("Gemini visual migration shell", () => {
       /const readingSurface = readingSurfaceRef\.current;[\s\S]*new ResizeObserver\(syncHitBottomAfterResize\);[\s\S]*contentResizeObserver\.observe\(readingSurface\);[\s\S]*contentResizeObserver\?\.disconnect\(\);/,
     );
     expect(chat).toMatch(
-      /className=\{styles\["chat-reading-surface"\]\}[\s\S]*ref=\{readingSurfaceRef\}[\s\S]*role="list"[\s\S]*aria-label="会话消息列表"/,
+      /className=\{styles\["chat-reading-surface"\]\}[\s\S]*ref=\{readingSurfaceRef\}[\s\S]*role="list"[\s\S]*aria-label=\{Locale\.Chat\.Accessibility\.MessageList\}/,
     );
     expect(chat).toMatch(
-      /className=\{styles\["chat-reading-surface"\]\}[\s\S]*role="list"[\s\S]*aria-label="会话消息列表"[\s\S]*aria-live="polite"[\s\S]*aria-relevant="additions text"[\s\S]*aria-atomic="false"/,
+      /className=\{styles\["chat-reading-surface"\]\}[\s\S]*role="list"[\s\S]*aria-label=\{Locale\.Chat\.Accessibility\.MessageList\}[\s\S]*aria-live="polite"[\s\S]*aria-relevant="additions text"[\s\S]*aria-atomic="false"/,
     );
     expect(chat).toContain('styles["chat-message-row"]');
     expect(chat).toContain('styles["chat-message-row-user"]');
     expect(chat).toContain('styles["chat-message-row-assistant"]');
     expect(chat).toMatch(
-      /const messageLabel = `\$\{isUser \? "用户消息" : "助手消息"\} \$\{\s*i \+ 1\s*\}`;/,
+      /const messageLabel = isUser\s*\? Locale\.Chat\.Accessibility\.UserMessage\(i \+ 1\)\s*:\s*Locale\.Chat\.Accessibility\.AssistantMessage\(i \+ 1\);/,
     );
     expect(chat).toMatch(
       /className=\{clsx\([\s\S]*styles\["chat-message-row"\][\s\S]*\)\}[\s\S]*role="listitem"[\s\S]*aria-label=\{messageLabel\}[\s\S]*aria-busy=\{showTyping \? true : undefined\}/,
     );
     expect(chat).toMatch(
-      /const messageActionLabel = `\$\{messageLabel\} 操作`;/,
+      /const messageActionLabel =\s*Locale\.Chat\.Accessibility\.MessageActions\(messageLabel\);/,
     );
     expect(chat).toMatch(
       /className=\{styles\["chat-message-actions"\]\}[\s\S]*role="group"[\s\S]*aria-label=\{messageActionLabel\}/,
@@ -2358,7 +2401,7 @@ describe("Gemini visual migration shell", () => {
       /const messageActionId = getMessageActionId\(message, i\);[\s\S]*const isMessageCopied =[\s\S]*copiedMessageActionId === messageActionId;/,
     );
     expect(chat).toMatch(
-      /const messageCopyActionLabel = `\$\{messageActionLabel\}：\$\{[\s\S]*isMessageCopied[\s\S]*\? Locale\.Copy\.Success[\s\S]*: Locale\.Chat\.Actions\.Copy[\s\S]*\}`;/,
+      /const messageCopyActionLabel =\s*Locale\.Chat\.Accessibility\.ActionLabel\(\s*messageActionLabel,[\s\S]*isMessageCopied[\s\S]*\? Locale\.Copy\.Success[\s\S]*: Locale\.Chat\.Actions\.Copy,[\s\S]*\);/,
     );
     expect(chat).toMatch(
       /const messageCopyStatus = isMessageCopied[\s\S]*\? `\$\{messageLabel\} \$\{Locale\.Copy\.Success\}`[\s\S]*: "";/,
@@ -2410,10 +2453,10 @@ describe("Gemini visual migration shell", () => {
       /finally \{[\s\S]*document\.body\.removeChild\(textArea\);[\s\S]*\}/,
     );
     expect(chat).toMatch(
-      /ariaPressed=\{props\.imageGenerationEnabled\}[\s\S]*onClick=\{async \(\) => \{[\s\S]*await setImageGenerationMode\(!props\.imageGenerationEnabled\);[\s\S]*completeMobileAction\(\);[\s\S]*\}\}[\s\S]*text=\{props\.imageGenerationEnabled \? "关闭图片生成" : "图片生成"\}/,
+      /ariaPressed=\{props\.imageGenerationEnabled\}[\s\S]*onClick=\{async \(\) => \{[\s\S]*await setImageGenerationMode\(!props\.imageGenerationEnabled\);[\s\S]*completeMobileAction\(\);[\s\S]*\}\}[\s\S]*text=\{[\s\S]*Locale\.Chat\.ChatToolMenu\.DisableImageGeneration[\s\S]*Locale\.Chat\.ChatToolMenu\.ImageGeneration[\s\S]*\}/,
     );
     expect(chat).not.toMatch(
-      /text=\{props\.imageGenerationEnabled \? "关闭图片生成" : "图片生成"\}[\s\S]*ariaHasPopup=\{isCompactScreen \? undefined : "(?:menu|listbox)"\}/,
+      /text=\{[\s\S]*Locale\.Chat\.ChatToolMenu\.DisableImageGeneration[\s\S]*Locale\.Chat\.ChatToolMenu\.ImageGeneration[\s\S]*\}[\s\S]*ariaHasPopup=\{isCompactScreen \? undefined : "(?:menu|listbox)"\}/,
     );
     expect(chat).not.toContain("actionModals.imageGeneration");
     expect(chat).toMatch(
@@ -2432,13 +2475,13 @@ describe("Gemini visual migration shell", () => {
       /text=\{Locale\.Plugin\.Name\}[\s\S]*ariaHasPopup="listbox"[\s\S]*ariaExpanded=\{actionModals\.plugin\}/,
     );
     expect(chat).toMatch(
-      /text=\{Locale\.Chat\.Actions\.Retry\}[\s\S]*ariaLabel=\{`\$\{messageActionLabel\}：\$\{Locale\.Chat\.Actions\.Retry\}`\}/,
+      /text=\{Locale\.Chat\.Actions\.Retry\}[\s\S]*ariaLabel=\{Locale\.Chat\.Accessibility\.ActionLabel\(\s*messageActionLabel,\s*Locale\.Chat\.Actions\.Retry,?\s*\)\}/,
     );
     expect(chat).toMatch(
-      /text=\{Locale\.Chat\.Actions\.Delete\}[\s\S]*ariaLabel=\{`\$\{messageActionLabel\}：\$\{Locale\.Chat\.Actions\.Delete\}`\}/,
+      /text=\{Locale\.Chat\.Actions\.Delete\}[\s\S]*ariaLabel=\{Locale\.Chat\.Accessibility\.ActionLabel\(\s*messageActionLabel,\s*Locale\.Chat\.Actions\.Delete,?\s*\)\}/,
     );
     expect(chat).toMatch(
-      /text=\{Locale\.Chat\.Actions\.Pin\}[\s\S]*ariaLabel=\{`\$\{messageActionLabel\}：\$\{Locale\.Chat\.Actions\.Pin\}`\}/,
+      /text=\{Locale\.Chat\.Actions\.Pin\}[\s\S]*ariaLabel=\{Locale\.Chat\.Accessibility\.ActionLabel\(\s*messageActionLabel,\s*Locale\.Chat\.Actions\.Pin,?\s*\)\}/,
     );
     expect(chat).toContain("ariaLabel={messageCopyActionLabel}");
     expect(chat).not.toContain('style={{ marginTop: "8px" }}');
@@ -2529,7 +2572,7 @@ describe("Gemini visual migration shell", () => {
     expect(home).toContain("isMobileOpen={isMobileDrawerOpen}");
     expect(home).toContain("isMobileDrawerOpen &&");
     expect(home).toContain('styles["sidebar-backdrop"]');
-    expect(home).toContain('aria-label="关闭侧边栏"');
+    expect(home).toContain("aria-label={Locale.UI.CloseSidebar}");
     expect(home).toContain('aria-controls="mobile-sidebar-drawer"');
     expect(home).toContain("aria-expanded={isMobileDrawerOpen}");
     expect(home).toContain("navigate(Path.Chat)");
@@ -5073,10 +5116,10 @@ describe("Gemini visual migration shell", () => {
       /className=\{clsx\([\s\S]*styles\["chat-multimodal-section-meta"\][\s\S]*props\.attachmentSlotsFull &&[\s\S]*styles\["chat-multimodal-section-meta-warning"\]/,
     );
     expect(chat).toMatch(
-      /props\.attachmentSlotsFull \? "已满" : "3 图 · 5 文件"/,
+      /props\.attachmentSlotsFull\s*\?\s*Locale\.Chat\.ChatToolMenu\.Full\s*:\s*Locale\.Chat\.ChatToolMenu\.Capacity/,
     );
     expect(chat).toMatch(
-      /text=\{"上传附件"\}[\s\S]*ariaDescribedBy="chat-multimodal-upload-state"[\s\S]*disabled=\{props\.attachmentSlotsFull\}/,
+      /text=\{Locale\.Chat\.ChatToolMenu\.UploadAttachment\}[\s\S]*ariaDescribedBy="chat-multimodal-upload-state"[\s\S]*disabled=\{props\.attachmentSlotsFull\}/,
     );
     expect(Object.values(lightComposerActionTokens).every(Boolean)).toBeTruthy();
     expect(Object.values(darkComposerActionTokens).every(Boolean)).toBeTruthy();
@@ -5421,7 +5464,7 @@ describe("Gemini visual migration shell", () => {
       /className=\{clsx\(styles\["chat-input-menu-button"\], \{[\s\S]*styles\["chat-input-menu-button-active"\]\]: showChatActionMenu,/,
     );
     expect(chat).toMatch(
-      /aria-label=\{\s*showChatActionMenu\s*\?\s*"收起对话工具"\s*:\s*"打开对话工具"\s*\}/,
+      /aria-label=\{\s*showChatActionMenu\s*\?\s*Locale\.Chat\.ChatToolMenu\.Close\s*:\s*Locale\.Chat\.ChatToolMenu\.Open\s*\}/,
     );
     expect(chat).toMatch(
       /ref=\{chatInputMenuButtonRef\}[\s\S]*aria-controls="chat-input-action-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showChatActionMenu\}/,
@@ -6699,7 +6742,7 @@ describe("Gemini visual migration shell", () => {
       /key=\{getAttachmentRenderKey\("file",\s*file,\s*index\)\}/,
     );
     expect(chat).toMatch(
-      /ariaLabel=\{`删除第 \$\{index \+ 1\} 张图片附件`\}[\s\S]*deleteImage=\{\(e\) => \{[\s\S]*setAttachImages\(\(currentImages\) =>[\s\S]*removeAttachmentAtIndex\([\s\S]*currentImages,[\s\S]*index,?[\s\S]*\)[\s\S]*\);[\s\S]*focusComposerAttachmentAfterRemoval\(index\);[\s\S]*\}\}/,
+      /ariaLabel=\{Locale\.Chat\.Attachments\.DeleteImage\(\s*index \+ 1,\s*\)\}[\s\S]*deleteImage=\{\(e\) => \{[\s\S]*setAttachImages\(\(currentImages\) =>[\s\S]*removeAttachmentAtIndex\([\s\S]*currentImages,[\s\S]*index,?[\s\S]*\)[\s\S]*\);[\s\S]*focusComposerAttachmentAfterRemoval\(index\);[\s\S]*\}\}/,
     );
   });
 
@@ -7105,8 +7148,8 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("showFileEditModal && editingFile");
     expect(chat).toContain('styles["file-edit-scroll"]');
     expect(chat).toContain('styles["file-edit-textarea"]');
-    expect(chat).toContain(
-      'aria-label={`编辑文件内容: ${editingFile.name}`}',
+    expect(chat).toMatch(
+      /aria-label=\{Locale\.Chat\.Attachments\.EditFileContent\(\s*editingFile\.name,?\s*\)\}/,
     );
     expect(fileEditScrollBlock).toMatch(/max-height:\s*min\(58dvh,\s*540px\);/);
     expect(fileEditScrollBlock).toMatch(/overflow:\s*auto;/);
@@ -7246,7 +7289,7 @@ describe("Gemini visual migration shell", () => {
       /const canAddMoreAttachments =\s*attachImages\.length < 3 \|\| attachedFiles\.length < 5;/,
     );
     expect(chat).toMatch(
-      /\{\(attachImages\.length > 0 \|\| attachedFiles\.length > 0\) && \([\s\S]*\{canAddMoreAttachments && \([\s\S]*className=\{clsx\([\s\S]*styles\["attach-item"\][\s\S]*styles\["attach-add-item"\][\s\S]*role="listitem"[\s\S]*<button[\s\S]*type="button"[\s\S]*className=\{styles\["attachment-add-button"\]\}[\s\S]*aria-label="继续添加附件"[\s\S]*title="继续添加附件"[\s\S]*disabled=\{uploading\}[\s\S]*onClick=\{handleUploadAttachments\}[\s\S]*<AddIcon \/>/,
+      /\{\(attachImages\.length > 0 \|\| attachedFiles\.length > 0\) && \([\s\S]*\{canAddMoreAttachments && \([\s\S]*className=\{clsx\([\s\S]*styles\["attach-item"\][\s\S]*styles\["attach-add-item"\][\s\S]*role="listitem"[\s\S]*<button[\s\S]*type="button"[\s\S]*className=\{styles\["attachment-add-button"\]\}[\s\S]*aria-label=\{Locale\.Chat\.Attachments\.AddMore\}[\s\S]*title=\{Locale\.Chat\.Attachments\.AddMore\}[\s\S]*disabled=\{uploading\}[\s\S]*onClick=\{handleUploadAttachments\}[\s\S]*<AddIcon \/>/,
     );
     expect(attachAddItemBlock).toMatch(/width:\s*52px;/);
     expect(attachmentAddButtonBlock).toMatch(/width:\s*52px;/);
@@ -7370,10 +7413,10 @@ describe("Gemini visual migration shell", () => {
     );
     const uploadActionMarkupStart = chat.indexOf(
       "<ChatAction",
-      chat.indexOf('aria-label="多模态工具"'),
+      chat.indexOf("aria-label={Locale.Chat.ChatToolMenu.MultimodalTools}"),
     );
     const uploadActionMarkupEnd = chat.indexOf(
-      'aria-label="会话工具"',
+      "aria-label={Locale.Chat.ChatToolMenu.SessionTools}",
       uploadActionMarkupStart,
     );
     const uploadActionMarkup = chat.slice(
@@ -7393,7 +7436,7 @@ describe("Gemini visual migration shell", () => {
       /onClick=\{\(event\) => \{[\s\S]*if \(props\.disabled\) return;[\s\S]*void props\.onClick\(event\);/,
     );
     expect(handleUploadAttachmentsBlock).toMatch(
-      /if \(attachmentSlotsFull\) \{[\s\S]*showToast\("附件已满：最多 3 张图片、5 个文件"\);[\s\S]*return;[\s\S]*\}[\s\S]*uploadAttachments\(/,
+      /if \(attachmentSlotsFull\) \{[\s\S]*showToast\(Locale\.Chat\.Attachments\.Full\);[\s\S]*return;[\s\S]*\}[\s\S]*uploadAttachments\(/,
     );
     expect(uploadActionMarkup).toMatch(
       /onClick=\{\(\) => \{[\s\S]*if \(props\.attachmentSlotsFull\) return;[\s\S]*props\.uploadAttachments\(\);[\s\S]*completeMobileAction\(\);/,
@@ -7416,13 +7459,15 @@ describe("Gemini visual migration shell", () => {
     expect(fullIndicatorMarkup).toContain('role="status"');
     expect(fullIndicatorMarkup).toContain('aria-live="polite"');
     expect(fullIndicatorMarkup).toContain(
-      'aria-label="附件已满：最多 3 张图片、5 个文件"',
+      "aria-label={Locale.Chat.Attachments.Full}",
     );
     expect(fullIndicatorMarkup).toContain(
-      'title="附件已满：最多 3 张图片、5 个文件"',
+      "title={Locale.Chat.Attachments.Full}",
     );
     expect(fullIndicatorMarkup).toContain("<AttachmentIcon />");
-    expect(fullIndicatorMarkup).toContain("<span>已满</span>");
+    expect(fullIndicatorMarkup).toContain(
+      "<span>{Locale.Chat.Attachments.FullShort}</span>",
+    );
     expect(fullIndicatorMarkup).not.toContain("onClick");
     expect(fullIndicatorMarkup).not.toContain("handleUploadAttachments");
     expect(attachFullItemBlock).toMatch(/width:\s*58px;/);
@@ -7978,7 +8023,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("function ClearContextDivider(_, ref)");
     expect(chat).toContain("ref={ref}");
     expect(chat).toMatch(
-      /aria-label=\{`\$\{Locale\.Context\.Clear\}，\$\{Locale\.Context\.Revert\}`\}/,
+      /aria-label=\{Locale\.Chat\.Accessibility\.CombinedLabels\(\s*\[\s*Locale\.Context\.Clear,\s*Locale\.Context\.Revert,?\s*\]\s*\)\}/,
     );
     expect(chat).toContain("title={Locale.Context.Revert}");
     expect(chat).toContain('styles["clear-context-status"]');
@@ -8410,7 +8455,9 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toContain("ConfirmIcon");
     expect(markdown).toContain("const [copied, setCopied] = useState(false)");
     expect(markdown).toContain("copyResetTimerRef");
-    expect(markdown).toContain("const codeCopyLabel = codeLanguage");
+    expect(markdown).toContain(
+      "const codeCopyLabel = Locale.Markdown.CopyCode(codeLanguage, copied)",
+    );
     expect(markdown).toContain("aria-label={codeCopyLabel}");
     expect(markdown).toContain('aria-live="polite"');
     expect(markdown).toContain('aria-atomic="true"');
@@ -9436,7 +9483,9 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toContain(
       '<MarkdownMediaCard kind="audio" href={href}>',
     );
-    expect(markdown).toContain('const mediaAriaLabel = `${typeLabel}附件：${mediaLabel}`;');
+    expect(markdown).toContain(
+      "const mediaAriaLabel = Locale.Markdown.MediaAttachment(",
+    );
     expect(markdown).toContain('className="markdown-media-header"');
     expect(markdown).toContain('className="markdown-media-type"');
     expect(markdown).toContain('className="markdown-media-name"');
@@ -10450,7 +10499,7 @@ describe("Gemini visual migration shell", () => {
       /const syncTableScrollHint = useCallback\(\(\) => \{[\s\S]*const tableShell = tableScrollRef\.current;[\s\S]*const maxScrollLeft = Math\.max\([\s\S]*tableShell\.scrollWidth - tableShell\.clientWidth[\s\S]*start: tableShell\.scrollLeft > 1,[\s\S]*end: maxScrollLeft - tableShell\.scrollLeft > 1,/,
     );
     expect(markdown).toMatch(
-      /className="markdown-table-scroll-shell"[\s\S]*data-overflow-start=\{tableScrollHint\.start \? "true" : "false"\}[\s\S]*data-overflow-end=\{tableScrollHint\.end \? "true" : "false"\}[\s\S]*className="markdown-table-scroll-viewport"[\s\S]*tabIndex=\{0\}[\s\S]*role="region"[\s\S]*aria-label="Markdown 表格，可横向滚动"[\s\S]*onScroll=\{syncTableScrollHint\}/,
+      /className="markdown-table-scroll-shell"[\s\S]*data-overflow-start=\{tableScrollHint\.start \? "true" : "false"\}[\s\S]*data-overflow-end=\{tableScrollHint\.end \? "true" : "false"\}[\s\S]*className="markdown-table-scroll-viewport"[\s\S]*tabIndex=\{0\}[\s\S]*role="region"[\s\S]*aria-label=\{Locale\.Markdown\.ScrollableTable\}[\s\S]*onScroll=\{syncTableScrollHint\}/,
     );
     expect(markdown).toMatch(
       /typeof ResizeObserver === "undefined"[\s\S]*const tableResizeObserver = new ResizeObserver\(\(\) => \{[\s\S]*syncTableScrollHint\(\);[\s\S]*tableResizeObserver\.observe\(tableShell\)/,
@@ -12568,11 +12617,17 @@ describe("Gemini visual migration shell", () => {
     ];
 
     expect(imageEditor).toContain('role="toolbar"');
-    expect(imageEditor).toContain('aria-label="图片编辑工具"');
+    expect(imageEditor).toContain(
+      "aria-label={Locale.ImageEditor.Toolbar}",
+    );
     expect(imageEditor).toContain('role="group"');
-    expect(imageEditor).toContain('aria-label="绘图工具"');
-    expect(imageEditor).toContain('aria-label="颜色"');
-    expect(imageEditor).toContain('aria-label="笔刷大小"');
+    expect(imageEditor).toContain(
+      "aria-label={Locale.ImageEditor.DrawingTools}",
+    );
+    expect(imageEditor).toContain("aria-label={Locale.ImageEditor.Color}");
+    expect(imageEditor).toContain(
+      "aria-label={Locale.ImageEditor.BrushSize}",
+    );
     expect(imageEditor).toContain('aria-pressed={selectedTool === DrawingTool.Brush}');
     expect(imageEditor).toContain('aria-pressed={color === c}');
     expect(imageEditor).toContain('aria-pressed={brushSize === s}');
@@ -16184,7 +16239,9 @@ describe("Gemini visual migration shell", () => {
     expect(updateAnnouncement).toContain(
       'aria-labelledby="update-announcement-title"',
     );
-    expect(updateAnnouncement).toContain('text="我知道了"');
+    expect(updateAnnouncement).toContain(
+      "text={Locale.UpdateAnnouncement.Acknowledge}",
+    );
     expect(updateAnnouncement).toContain("onClick={onConfirm}");
     expect(updateAnnouncementStyles).toContain("@keyframes updateAnnouncementMaskIn");
     expect(updateAnnouncementStyles).toContain("@keyframes updateAnnouncementPanelIn");
@@ -16569,7 +16626,7 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chat).toContain("const mobileModelDetail = desktopModelDetail;");
     expect(chat).toMatch(
-      /aria-label=\{`选择模型：\$\{headerCurrentModelName\}，\$\{mobileModelDetail\}`\}/,
+      /aria-label=\{Locale\.Chat\.ModelMenu\.SelectModel\(\s*headerCurrentModelName,\s*mobileModelDetail,\s*\)\}/,
     );
     expect(chat).toContain('styles["chat-mobile-model-title-meta"]');
     expect(mobileModelTitleBlock).toMatch(/flex-direction:\s*column;/);
@@ -18614,14 +18671,16 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /onClick=\{\(event\) => \{[\s\S]*if \(event\.target === event\.currentTarget\) \{[\s\S]*closeImagePreview\(\);[\s\S]*\}[\s\S]*\}\}/,
     );
-    expect(chat).toContain('aria-label="关闭预览"');
+    expect(chat).toContain(
+      "aria-label={Locale.ImageActions.ClosePreview}",
+    );
     expect(chat).toContain("aria-label={previewImageActionLabels.download}");
     expect(chat).toContain("title={previewImageActionLabels.download}");
     expect(chat).toContain("aria-label={previewImageDialogLabel}");
     expect(chat).not.toContain('aria-label="图片预览"');
     expect(chat).toContain("alt={previewImageAlt}");
     expect(chat).toMatch(
-      /aria-label="关闭预览"[\s\S]*onClick=\{closeImagePreview\}/,
+      /aria-label=\{Locale\.ImageActions\.ClosePreview\}[\s\S]*onClick=\{closeImagePreview\}/,
     );
     expect(imagePreviewMaskBlock).toMatch(/position:\s*fixed;/);
     expect(imagePreviewMaskBlock).toMatch(/inset:\s*0;/);
@@ -20198,7 +20257,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).not.toContain('role={dragActive ? "status" : undefined}');
     expect(chat).not.toContain('aria-live={dragActive ? "polite" : undefined}');
     expect(chat).toMatch(
-      /className=\{styles\["chat-dropzone-live-status"\]\}[\s\S]*role="status"[\s\S]*aria-live="polite"[\s\S]*aria-atomic="true"[\s\S]*isDropzonePreviewActive[\s\S]*dropzonePayloadSummary\?\.text[\s\S]*"拖拽文件或图片到此处上传"[\s\S]*dropzonePayloadSummary\?\.hint[\s\S]*: ""/,
+      /className=\{styles\["chat-dropzone-live-status"\]\}[\s\S]*role="status"[\s\S]*aria-live="polite"[\s\S]*aria-atomic="true"[\s\S]*isDropzonePreviewActive[\s\S]*Locale\.Chat\.Attachments\.LiveStatus\([\s\S]*dropzonePayloadSummary\?\.text[\s\S]*Locale\.Chat\.Attachments\.DropTitle[\s\S]*dropzonePayloadSummary\?\.hint[\s\S]*Locale\.Chat\.Attachments\.Drag\.AddHint[\s\S]*: ""/,
     );
     expect(chat).toContain('aria-atomic="true"');
     expect(chat).toContain("aria-hidden={!isDropzonePreviewActive}");
@@ -20694,7 +20753,9 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toContain(
       "Locale.Chat.TokenInfo.TokenCount(tokenInfo.count)",
     );
-    expect(markdown).toContain("const tokenInfoLabel = tokenInfo");
+    expect(markdown).toContain(
+      "const tokenInfoLabel = Locale.Chat.TokenInfo.Label(",
+    );
     expect(markdown).toContain("aria-label={tokenInfoLabel}");
     expect(markdown).not.toContain('aria-label="Token 信息"');
     expect(markdown).toContain("aria-pressed={showTokenDelay}");

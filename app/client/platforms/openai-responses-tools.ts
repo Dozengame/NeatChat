@@ -6,6 +6,7 @@ import {
 import type { ChatMessageTool } from "@/app/store";
 import type { FunctionToolItem } from "@/app/store/plugin";
 import { fetch as tauriFetch } from "@/app/utils/stream";
+import Locale from "@/app/locales";
 import type { ResponsesRequestPayload } from "./openai-responses-builder";
 
 export type ResponsesFunctionTool = {
@@ -146,7 +147,7 @@ export function extractOpenAIResponsesText(response: any) {
   const sources = Array.from(citations.entries())
     .map(([url, title]) => `- [${title}](${url})`)
     .join("\n");
-  return `${text}\n\n来源：\n${sources}`;
+  return `${text}\n\n${Locale.Chat.SourcesHeading}:\n${sources}`;
 }
 
 function isResponsesFunctionCall(

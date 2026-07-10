@@ -195,7 +195,7 @@ function parseResponsesSSE(text: string) {
     json.type === "response.in_progress" ||
     json.type === "response.reasoning_summary_part.added"
   ) {
-    return "<think>\n正在推理...";
+    return "<think>\n" + Locale.NewChat.Thinking;
   }
 
   if (json.type === "response.error" && json.error) {
@@ -664,7 +664,7 @@ export class ChatGPTApi implements LLMApi {
               ) {
                 if (!isInThinking) {
                   isInThinking = true;
-                  return "<think>\n正在推理...";
+                  return "<think>\n" + Locale.NewChat.Thinking;
                 }
                 return;
               }
@@ -794,6 +794,7 @@ export class ChatGPTApi implements LLMApi {
             getOpenAIImageGenerationProgressContent({
               model: modelConfig.model,
               phase: "generating",
+              copy: Locale.Chat.ImageGeneration.Progress,
             }),
             "",
           );
@@ -830,6 +831,7 @@ export class ChatGPTApi implements LLMApi {
             getOpenAIImageGenerationProgressContent({
               model: modelConfig.model,
               phase: "saving",
+              copy: Locale.Chat.ImageGeneration.Progress,
             }),
             "",
           );

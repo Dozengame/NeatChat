@@ -11,6 +11,7 @@ import {
 } from "../app/utils/file";
 import { isVisionModel } from "../app/utils";
 import { OPENAI_GPT_56_MODELS } from "../app/constant";
+import Locale from "../app/locales";
 
 function dragTransferFromFiles(files: File[]) {
   return {
@@ -87,46 +88,51 @@ describe("attachment file type support", () => {
   test("summarizes dragged attachments by remaining slots", () => {
     const png = new File(["image"], "gemini.png", { type: "image/png" });
     const note = new File(["notes"], "notes.txt", { type: "text/plain" });
+    const dragCopy = Locale.Chat.Attachments.Drag;
 
     expect(getDraggedAttachmentSummary(dragTransferFromFiles([png, note]), 0, 0))
       .toEqual({
-        text: "将添加 1 张图片、1 个文件",
-        hint: "释放后添加到输入框 · 最多3张图片、5个文件",
+        text: dragCopy.WillAdd(
+          [dragCopy.ImageCount(1), dragCopy.FileCount(1)],
+          false,
+        ),
+        hint: dragCopy.AddHint,
         willAdd: true,
       });
     expect(getDraggedAttachmentSummary(dragTransferFromFiles([png, note]), 3, 5))
       .toEqual({
-        text: "附件数量已达上限",
-        hint: "释放后不会添加新附件",
+        text: dragCopy.Limit,
+        hint: dragCopy.BlockedHint,
         willAdd: false,
       });
     expect(getDraggedAttachmentSummary(dragTransferFromFiles([png, note]), 3, 0))
       .toEqual({
-        text: "将添加 1 个文件，其余会自动忽略",
-        hint: "释放后添加到输入框 · 最多3张图片、5个文件",
+        text: dragCopy.WillAdd([dragCopy.FileCount(1)], true),
+        hint: dragCopy.AddHint,
         willAdd: true,
       });
   });
 
   test("summarizes empty-mime dragged images using the real extension fallback", () => {
     const pastedPng = new File(["image"], "pasted.png", { type: "" });
+    const dragCopy = Locale.Chat.Attachments.Drag;
 
     expect(getDraggedAttachmentSummary(dragTransferFromFiles([pastedPng]), 0, 0))
       .toEqual({
-        text: "将添加 1 张图片",
-        hint: "释放后添加到输入框 · 最多3张图片、5个文件",
+        text: dragCopy.WillAdd([dragCopy.ImageCount(1)], false),
+        hint: dragCopy.AddHint,
         willAdd: true,
       });
     expect(getDraggedAttachmentSummary(dragTransferFromItems([pastedPng]), 0, 0))
       .toEqual({
-        text: "将添加 1 张图片",
-        hint: "释放后添加到输入框 · 最多3张图片、5个文件",
+        text: dragCopy.WillAdd([dragCopy.ImageCount(1)], false),
+        hint: dragCopy.AddHint,
         willAdd: true,
       });
     expect(getDraggedAttachmentSummary(dragTransferFromFiles([pastedPng]), 0, 5))
       .toEqual({
-        text: "将添加 1 张图片",
-        hint: "释放后添加到输入框 · 最多3张图片、5个文件",
+        text: dragCopy.WillAdd([dragCopy.ImageCount(1)], false),
+        hint: dragCopy.AddHint,
         willAdd: true,
       });
   });

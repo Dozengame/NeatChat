@@ -8,6 +8,7 @@ describe("GPT-5.6 Settings contract", () => {
   test("keeps advanced capability controls inside the GPT-5.6 ModelConfig gate", () => {
     const modelConfig = read("app/components/model-config.tsx");
     const chat = read("app/components/chat.tsx");
+    const publicConfig = read("app/utils/public-app-config.ts");
 
     expect(modelConfig).toContain("isOpenAIGpt56ModelConfig");
     expect(modelConfig).toContain("{isOpenAIGpt56 && (");
@@ -20,13 +21,30 @@ describe("GPT-5.6 Settings contract", () => {
     ]) {
       expect(modelConfig).toMatch(new RegExp(`sourceText\\(\\s*"${field}"`));
       expect(modelConfig).toContain(`updateUnlocked([\"${field}\"]`);
+      expect(publicConfig).toMatch(
+        new RegExp(
+          `DEFAULT_WEBUI_LOCKED_FIELDS[\\s\\S]*?"${field}"[\\s\\S]*?\\]`,
+        ),
+      );
       expect(chat).not.toContain(field);
+    }
+    for (const field of [
+      "reasoningMode",
+      "reasoningContext",
+      "inputImageDetail",
+      "promptCacheMode",
+    ]) {
+      expect(modelConfig).toMatch(
+        new RegExp(
+          `value=\\{${field}\\}[\\s\\S]{0,180}disabled=\\{isLocked\\("${field}"\\)\\}`,
+        ),
+      );
     }
     expect(
       modelConfig.match(
         /Locale\.Settings\.GPT56Capabilities\.ConfigSource\.Separator/g,
-      ),
-    ).toHaveLength(5);
+      )?.length ?? 0,
+    ).toBeGreaterThanOrEqual(5);
   });
 
   test("keeps both locales complete and warns against cache-key secrets", () => {

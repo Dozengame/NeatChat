@@ -1,6 +1,7 @@
 import { readFileSync } from "fs";
 
 import { DEFAULT_MODELS, ServiceProvider } from "../app/constant";
+import Locale from "../app/locales";
 import {
   OPENAI_IMAGE_REQUEST_TIMEOUT_MS,
   VERCEL_HOBBY_MAX_DURATION_SECONDS,
@@ -183,24 +184,45 @@ describe("OpenAI image generation models", () => {
   });
 
   test("describes image generation progress phases", () => {
+    const progressCopy = Locale.Chat.ImageGeneration.Progress;
     expect(
       getOpenAIImageGenerationProgressContent({
         model: "gpt-image-2",
         phase: "preparing",
+        copy: progressCopy,
       }),
-    ).toContain("正在准备图片生成请求");
+    ).toContain(progressCopy.Preparing);
     expect(
       getOpenAIImageGenerationProgressContent({
         model: "gpt-image-2",
         phase: "generating",
+        copy: progressCopy,
       }),
-    ).toContain("正在生成图片");
+    ).toContain(progressCopy.Generating);
     expect(
       getOpenAIImageGenerationProgressContent({
         model: "gpt-image-2",
         phase: "saving",
+        copy: progressCopy,
       }),
-    ).toContain("正在保存图片");
+    ).toContain(progressCopy.Saving);
+  });
+
+  test("uses the caller-provided progress copy", () => {
+    const copy = {
+      Model: (model: string) => ` model=${model}`,
+      Preparing: "prepare",
+      Generating: "generate",
+      Saving: "save",
+    };
+
+    expect(
+      getOpenAIImageGenerationProgressContent({
+        model: "gpt-image-2",
+        phase: "saving",
+        copy,
+      }),
+    ).toBe("save model=gpt-image-2");
   });
 
   test("uses a Vercel Hobby-compatible timeout for image generation requests", () => {

@@ -18,7 +18,7 @@ import dynamic from "next/dynamic";
 import { Path, SlotID } from "../constant";
 import { ErrorBoundary } from "./error";
 
-import { getISOLang, getLang } from "../locales";
+import Locale, { getISOLang, getLang } from "../locales";
 
 import {
   HashRouter as Router,
@@ -323,7 +323,7 @@ function ScreenContent(props: {
         <button
           type="button"
           className={styles["sidebar-backdrop"]}
-          aria-label="关闭侧边栏"
+          aria-label={Locale.UI.CloseSidebar}
           aria-controls="mobile-sidebar-drawer"
           aria-expanded={isMobileDrawerOpen}
           onClick={closeMobileSidebar}

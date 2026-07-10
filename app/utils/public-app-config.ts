@@ -105,6 +105,11 @@ const DEFAULT_WEBUI_LOCKED_FIELDS = [
   "apiKey",
   "temperature",
   "textVerbosity",
+  "reasoningMode",
+  "reasoningContext",
+  "inputImageDetail",
+  "promptCacheMode",
+  "promptCacheKey",
 ];
 
 const PROVIDER_NAMES = new Map(

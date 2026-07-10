@@ -20,6 +20,7 @@ import React, {
 import { IconButton } from "./button";
 import clsx from "clsx";
 import { useMobileScreen } from "../utils/screen";
+import Locale from "../locales";
 
 type ActivationEvent = MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>;
 
@@ -411,7 +412,7 @@ export function Selector<T>(props: {
               ref={inputRef}
               type="text"
               aria-label="Search models"
-              placeholder="搜索模型"
+              placeholder={Locale.UI.SearchModels}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
             />

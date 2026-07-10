@@ -67,6 +67,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { Markdown } from "../app/components/markdown";
 import { copyToClipboard } from "../app/utils";
 import { showToast } from "../app/components/ui-lib-actions";
+import Locale from "../app/locales";
 
 describe("Markdown file attachments", () => {
   beforeEach(() => {
@@ -84,7 +85,12 @@ describe("Markdown file attachments", () => {
     );
 
     const attachment = screen.getByRole("button", {
-      name: "文件附件：Gemini-UX-audit.pdf，application/pdf，24.00 KB。点击复制文件内容。",
+      name: Locale.FileAttachment.Label(
+        "Gemini-UX-audit.pdf",
+        "application/pdf",
+        "24.00 KB",
+        true,
+      ),
     });
 
     expect(attachment).toHaveAttribute("tabindex", "0");
@@ -96,7 +102,7 @@ describe("Markdown file attachments", () => {
 
     fireEvent.click(attachment);
 
-    expect(showToast).toHaveBeenCalledWith("文件内容已复制到剪贴板");
+    expect(showToast).toHaveBeenCalledWith(Locale.Markdown.FileCopied);
     expect(copyToClipboard).toHaveBeenCalledWith("第一行内容\n第二行内容");
   });
 
@@ -128,18 +134,24 @@ describe("Markdown file attachments", () => {
     expect(audioFrame?.tagName).toBe("SPAN");
     expect(videoFrame?.tagName).toBe("SPAN");
     expect(container.querySelector("figure.markdown-media-frame")).toBeNull();
-    expect(audioHeader).toHaveTextContent("音频");
+    expect(audioHeader).toHaveTextContent(Locale.Markdown.Audio);
     expect(audioHeader).toHaveTextContent("listen");
-    expect(videoHeader).toHaveTextContent("视频");
+    expect(videoHeader).toHaveTextContent(Locale.Markdown.Video);
     expect(videoHeader).toHaveTextContent("watch");
     expect(audioPlayer).toHaveAttribute(
       "src",
       "https://example.com/clip.MP3?sig=1#t=2",
     );
     expect(audioPlayer).toHaveAttribute("controls");
-    expect(audioPlayer).toHaveAttribute("aria-label", "音频附件：listen");
+    expect(audioPlayer).toHaveAttribute(
+      "aria-label",
+      Locale.Markdown.MediaAttachment(Locale.Markdown.Audio, "listen"),
+    );
     expect(videoPlayer).toHaveAttribute("controls");
-    expect(videoPlayer).toHaveAttribute("aria-label", "视频附件：watch");
+    expect(videoPlayer).toHaveAttribute(
+      "aria-label",
+      Locale.Markdown.MediaAttachment(Locale.Markdown.Video, "watch"),
+    );
     expect(videoSource).toHaveAttribute(
       "src",
       "https://example.com/clip.MP4?sig=1#t=1",
@@ -149,12 +161,12 @@ describe("Markdown file attachments", () => {
       "href",
       "https://example.com/clip.MP3?sig=1#t=2",
     );
-    expect(openLinks[0]).toHaveTextContent("打开原文件");
+    expect(openLinks[0]).toHaveTextContent(Locale.Markdown.OpenOriginal);
     expect(openLinks[1]).toHaveAttribute(
       "href",
       "https://example.com/clip.MP4?sig=1#t=1",
     );
-    expect(openLinks[1]).toHaveTextContent("打开原文件");
+    expect(openLinks[1]).toHaveTextContent(Locale.Markdown.OpenOriginal);
     expect(container.querySelector(".markdown-video-player")).not.toHaveAttribute(
       "width",
     );
@@ -181,8 +193,12 @@ describe("Markdown file attachments", () => {
     const fallbacks = container.querySelectorAll(".markdown-media-fallback");
     expect(fallbacks).toHaveLength(2);
     expect(fallbacks[0]).toHaveAttribute("role", "status");
-    expect(fallbacks[0]).toHaveTextContent("音频暂时无法预览");
-    expect(fallbacks[1]).toHaveTextContent("视频暂时无法预览");
+    expect(fallbacks[0]).toHaveTextContent(
+      Locale.Markdown.MediaFallback(Locale.Markdown.Audio),
+    );
+    expect(fallbacks[1]).toHaveTextContent(
+      Locale.Markdown.MediaFallback(Locale.Markdown.Video),
+    );
     expect(container.querySelector(".markdown-audio-player")).toBeNull();
     expect(container.querySelector(".markdown-video-player")).toBeNull();
   });
@@ -207,10 +223,14 @@ describe("Markdown image actions", () => {
     );
 
     fireEvent.click(
-      screen.getByRole("button", { name: "预览 generated sunrise" }),
+      screen.getByRole("button", {
+        name: Locale.ImageActions.PreviewWithLabel("generated sunrise"),
+      }),
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "下载 generated sunrise 原图" }),
+      screen.getByRole("button", {
+        name: Locale.ImageActions.DownloadWithLabel("generated sunrise"),
+      }),
     );
 
     expect(onPreviewImage).toHaveBeenCalledWith(

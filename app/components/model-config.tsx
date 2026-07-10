@@ -66,9 +66,9 @@ const REASONING_LABELS: Record<OpenAIChatReasoningEffort, string> = {
 };
 
 const TEXT_VERBOSITY_LABELS: Record<OpenAIResponsesTextVerbosity, string> = {
-  low: "简洁",
-  medium: "适中",
-  high: "详细",
+  low: Locale.Settings.TextVerbosity.Low,
+  medium: Locale.Settings.TextVerbosity.Medium,
+  high: Locale.Settings.TextVerbosity.High,
 };
 
 const REASONING_MODE_LABELS: Record<OpenAIResponsesReasoningMode, string> = {
@@ -135,6 +135,10 @@ function useModelConfigListView(props: {
       ? `${text}${sourceLocale.Separator}${sourceLocale.Locked}`
       : text;
   };
+  const withSourceText = (description: string, field: string) =>
+    `${description}${
+      Locale.Settings.GPT56Capabilities.ConfigSource.Separator
+    }${sourceText(field)}`;
   const updateUnlocked = (
     fields: string[],
     updater: (config: ModelConfig) => void,
@@ -266,9 +270,12 @@ function useModelConfigListView(props: {
 
       {isOpenAIImageGeneration ? (
         <>
-          <ListItem title="图像尺寸" subTitle={sourceText("size")}>
+          <ListItem
+            title={Locale.Settings.ImageGeneration.Size}
+            subTitle={sourceText("size")}
+          >
             <Select
-              aria-label="图像尺寸"
+              aria-label={Locale.Settings.ImageGeneration.Size}
               value={props.modelConfig.size}
               onChange={(e) => {
                 updateUnlocked(["size"], (config) => {
@@ -284,9 +291,12 @@ function useModelConfigListView(props: {
             </Select>
           </ListItem>
           {imageQualityOptions.length > 0 && (
-            <ListItem title="图像质量" subTitle={sourceText("quality")}>
+            <ListItem
+              title={Locale.Settings.ImageGeneration.Quality}
+              subTitle={sourceText("quality")}
+            >
               <Select
-                aria-label="图像质量"
+                aria-label={Locale.Settings.ImageGeneration.Quality}
                 value={props.modelConfig.quality}
                 onChange={(e) => {
                   updateUnlocked(["quality"], (config) => {
@@ -330,9 +340,10 @@ function useModelConfigListView(props: {
         <>
           <ListItem
             title={Locale.Settings.ReasoningEffort.Title}
-            subTitle={`${
-              Locale.Settings.ReasoningEffort.SubTitle
-            }。${sourceText("reasoningEffort")}`}
+            subTitle={withSourceText(
+              Locale.Settings.ReasoningEffort.SubTitle,
+              "reasoningEffort",
+            )}
           >
             <Select
               aria-label={Locale.Settings.ReasoningEffort.Title}
@@ -358,13 +369,14 @@ function useModelConfigListView(props: {
             </Select>
           </ListItem>
           <ListItem
-            title="回答详细程度 (text.verbosity)"
-            subTitle={`控制 Responses API 的回答详略。${sourceText(
+            title={Locale.Settings.TextVerbosity.Title}
+            subTitle={withSourceText(
+              Locale.Settings.TextVerbosity.SubTitle,
               "textVerbosity",
-            )}`}
+            )}
           >
             <Select
-              aria-label="回答详细程度 (text.verbosity)"
+              aria-label={Locale.Settings.TextVerbosity.Title}
               value={textVerbosity}
               disabled={isLocked("textVerbosity")}
               onChange={(e) => {
@@ -544,9 +556,10 @@ function useModelConfigListView(props: {
         <>
           <ListItem
             title={Locale.Settings.Temperature.Title}
-            subTitle={`${Locale.Settings.Temperature.SubTitle}。${sourceText(
+            subTitle={withSourceText(
+              Locale.Settings.Temperature.SubTitle,
               "temperature",
-            )}`}
+            )}
           >
             <InputRange
               aria={Locale.Settings.Temperature.Title}
@@ -566,9 +579,7 @@ function useModelConfigListView(props: {
           </ListItem>
           <ListItem
             title={Locale.Settings.TopP.Title}
-            subTitle={`${Locale.Settings.TopP.SubTitle}。${sourceText(
-              "top_p",
-            )}`}
+            subTitle={withSourceText(Locale.Settings.TopP.SubTitle, "top_p")}
           >
             <InputRange
               aria={Locale.Settings.TopP.Title}
@@ -591,9 +602,10 @@ function useModelConfigListView(props: {
       {!isOpenAIImageGeneration && (
         <ListItem
           title={Locale.Settings.MaxTokens.Title}
-          subTitle={`${Locale.Settings.MaxTokens.SubTitle}。${sourceText(
+          subTitle={withSourceText(
+            Locale.Settings.MaxTokens.SubTitle,
             "max_output_tokens",
-          )}`}
+          )}
         >
           <input
             aria-label={Locale.Settings.MaxTokens.Title}
@@ -670,9 +682,10 @@ function useModelConfigListView(props: {
 
           <ListItem
             title={Locale.Settings.InjectSystemPrompts.Title}
-            subTitle={`${
-              Locale.Settings.InjectSystemPrompts.SubTitle
-            }。${sourceText("enableInjectSystemPrompts")}`}
+            subTitle={withSourceText(
+              Locale.Settings.InjectSystemPrompts.SubTitle,
+              "enableInjectSystemPrompts",
+            )}
           >
             <input
               aria-label={Locale.Settings.InjectSystemPrompts.Title}
@@ -688,9 +701,10 @@ function useModelConfigListView(props: {
 
           <ListItem
             title={Locale.Settings.InputTemplate.Title}
-            subTitle={`${Locale.Settings.InputTemplate.SubTitle}。${sourceText(
+            subTitle={withSourceText(
+              Locale.Settings.InputTemplate.SubTitle,
               "template",
-            )}`}
+            )}
           >
             <input
               aria-label={Locale.Settings.InputTemplate.Title}
@@ -710,9 +724,10 @@ function useModelConfigListView(props: {
         <>
           <ListItem
             title={Locale.Settings.HistoryCount.Title}
-            subTitle={`${Locale.Settings.HistoryCount.SubTitle}。${sourceText(
+            subTitle={withSourceText(
+              Locale.Settings.HistoryCount.SubTitle,
               "historyMessageCount",
-            )}`}
+            )}
           >
             <InputRange
               aria={Locale.Settings.HistoryCount.Title}
@@ -731,9 +746,10 @@ function useModelConfigListView(props: {
 
           <ListItem
             title={Locale.Settings.CompressThreshold.Title}
-            subTitle={`${
-              Locale.Settings.CompressThreshold.SubTitle
-            }。${sourceText("compressMessageLengthThreshold")}`}
+            subTitle={withSourceText(
+              Locale.Settings.CompressThreshold.SubTitle,
+              "compressMessageLengthThreshold",
+            )}
           >
             <input
               aria-label={Locale.Settings.CompressThreshold.Title}
@@ -755,7 +771,7 @@ function useModelConfigListView(props: {
 
           <ListItem
             title={Locale.Memory.Title}
-            subTitle={`${Locale.Memory.Send}。${sourceText("sendMemory")}`}
+            subTitle={withSourceText(Locale.Memory.Send, "sendMemory")}
           >
             <input
               aria-label={Locale.Memory.Title}

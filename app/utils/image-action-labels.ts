@@ -1,30 +1,32 @@
-export function getImageActionLabels(label?: string) {
-  const imageLabel = label?.trim() || "图片";
+import Locale from "../locales";
 
-  if (imageLabel === "图片") {
+export function getImageActionLabels(label?: string) {
+  const imageLabel = label?.trim() || Locale.ImageActions.Image;
+
+  if (imageLabel === Locale.ImageActions.Image) {
     return {
-      preview: "预览图片",
-      download: "下载图片原图",
+      preview: Locale.ImageActions.Preview,
+      download: Locale.ImageActions.Download,
     };
   }
 
   return {
-    preview: `预览 ${imageLabel}`,
-    download: `下载 ${imageLabel} 原图`,
+    preview: Locale.ImageActions.PreviewWithLabel(imageLabel),
+    download: Locale.ImageActions.DownloadWithLabel(imageLabel),
   };
 }
 
 export function getImagePreviewAlt(label?: string) {
-  return label?.trim() || "图片预览";
+  return label?.trim() || Locale.ImageActions.PreviewAlt;
 }
 
 export function getImagePreviewDialogLabel(label?: string) {
   const imageLabel = label?.trim();
-  return imageLabel && imageLabel !== "图片"
-    ? `图片预览：${imageLabel}`
-    : "图片预览";
+  return imageLabel && imageLabel !== Locale.ImageActions.Image
+    ? Locale.ImageActions.PreviewDialogWithLabel(imageLabel)
+    : Locale.ImageActions.PreviewDialog;
 }
 
 export function getMessageImageLabel(index: number, total: number) {
-  return total > 1 ? `第 ${index + 1} 张图片` : "图片";
+  return Locale.ImageActions.Message(index + 1, total);
 }

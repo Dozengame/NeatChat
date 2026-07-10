@@ -86,6 +86,12 @@ const cn = {
       "生成一张产品海报",
       "分析这份文件",
     ] as string[],
+    EmptySuggestionTitles: [
+      "总结文本",
+      "规划日程",
+      "创意绘图",
+      "分析文档",
+    ] as string[],
     Input: (submitKey: string) => {
       var inputHints = `${submitKey} 发送`;
       if (submitKey === String(SubmitKey.Enter)) {
@@ -113,6 +119,124 @@ const cn = {
     TokenInfo: {
       TokenCount: (count: number) => `${count} Tokens`,
       FirstDelay: (delay: number) => `首字延迟: ${delay}ms`,
+      Label: (details?: string) =>
+        details ? `Token 信息，${details}` : "Token 信息",
+    },
+    SourcesHeading: "来源",
+    ChatToolMenu: {
+      MultimodalTools: "多模态工具",
+      AddContent: "添加内容",
+      FilesAndImages: "文件和图片",
+      Capacity: "3 图 · 5 文件",
+      Full: "已满",
+      UploadAttachment: "上传附件",
+      AttachmentFull: "附件已满：最多 3 张图片、5 个文件",
+      ImageGeneration: "图片生成",
+      DisableImageGeneration: "关闭图片生成",
+      SessionTools: "会话工具",
+      Session: "会话",
+      ModelsAndSettings: "模型和设置",
+      Close: "关闭对话工具",
+      Open: "打开对话工具",
+      MenuLabel: "对话工具菜单",
+    },
+    Attachments: {
+      TextConverted: "文本过长，已自动转换为文件附件",
+      ContentTruncated: (limit: number) =>
+        `文件内容过大，已截断至 ${limit} 字符`,
+      AddedFiles: (count: number) => `已添加 ${count} 个文件`,
+      MaxFiles: "最多只能上传5个文件，已保留前5个",
+      FileSlotsFull: "最多只能上传5个文件",
+      AddedImages: (count: number) => `已添加 ${count} 张图片`,
+      MaxImages: "最多只能上传3张图片，已保留前3张",
+      ImageSlotsFull: "最多只能上传3张图片",
+      FileTooLarge: (name: string) => `文件 ${name} 超过 15MB 限制，已忽略`,
+      DragReadFailed: "读取拖拽附件失败",
+      PasteReadFailed: "读取粘贴附件失败",
+      FileReadFailed: "读取文件失败",
+      LongTextConverted: "已将长文本转为附件",
+      InputTextFile: (timestamp?: string) =>
+        `输入文本${timestamp ? `_${timestamp}` : ""}.txt`,
+      LongTextFile: "长文本.txt",
+      PastedTextFile: "粘贴的文本.txt",
+      LongTextMessage: "我发送了一个长文本文件，内容已自动转换为附件。",
+      JoinMessages: (messages: string[]) => messages.join("，"),
+      LiveStatus: (text: string, hint: string) => `${text}，${hint}。`,
+      Full: "附件已满：最多 3 张图片、5 个文件",
+      DropTitle: "拖拽文件或图片到此处上传",
+      DropDetect: "检测拖拽附件",
+      Preview: "附件预览",
+      AddMore: "继续添加附件",
+      FullShort: "已满",
+      EditImage: (index: number) => `编辑第 ${index} 张图片附件`,
+      DeleteImage: (index: number) => `删除第 ${index} 张图片附件`,
+      EditFile: (index: number, name: string) =>
+        `编辑第 ${index} 个文件附件：${name}`,
+      EditFileContent: (name: string) => `编辑文件内容: ${name}`,
+      DeleteFile: (index: number, name: string) =>
+        `删除第 ${index} 个文件附件：${name}`,
+      Drag: {
+        AddHint: "释放后添加到输入框 · 最多3张图片、5个文件",
+        BlockedHint: "释放后不会添加新附件",
+        ImageLimit: "图片已达 3 张上限",
+        FileLimit: "文件已达 5 个上限",
+        Limit: "附件数量已达上限",
+        Detect: "释放后识别附件",
+        ImageCount: (count: number) => `${count} 张图片`,
+        FileCount: (count: number) => `${count} 个文件`,
+        WillAdd: (parts: string[], overflow: boolean) =>
+          overflow
+            ? `将添加 ${parts.join("、")}，其余会自动忽略`
+            : `将添加 ${parts.join("、")}`,
+      },
+    },
+    ImageGeneration: {
+      NotEnabled: "图片生成未启用",
+      EnableFailed: "图片生成启用失败",
+      Enabled: "已启用图片生成",
+      Disabled: "已关闭图片生成",
+      Failed: "图片生成失败",
+      ModeEnabled: "图片生成模式已开启",
+      ModeLabel: "图片生成",
+      Task: "图片生成任务",
+      Submitting: "正在提交到 jimeng-mcp",
+      QueryTimeout: "结果查询超时，请稍后重试",
+      SubmitOrQueryFailed: "任务提交或查询失败，请稍后重试",
+      Progress: {
+        Model: (model: string) => (model ? `\n\n模型：${model}` : ""),
+        Preparing: "正在准备图片生成请求...",
+        Generating: "正在生成图片，请稍候...",
+        Saving: "图片已生成，正在保存图片...",
+      },
+    },
+    ModelMenu: {
+      SelectModel: (model: string, detail: string) =>
+        `选择模型：${model}，${detail}`,
+      SelectModelAndParams: "选择模型和参数",
+      Close: "关闭模型选择",
+      ModelAndReasoning: "模型和思考等级",
+      AvailableModels: "可选模型",
+      Empty: "暂无可用模型",
+      ReasoningEffort: "思考等级",
+      ReasoningOptions: "思考等级选项",
+      ImageSize: "图片尺寸",
+      ImageSizeOptions: "图片尺寸选项",
+      GeneratedImageSize: "生成图片尺寸",
+      ImageQuality: "图片清晰度",
+      ImageQualityOptions: "图片清晰度选项",
+      CurrentInputMode: "当前输入模式",
+      SelectedReasoning: (label: string) => `思考等级：${label}`,
+    },
+    Accessibility: {
+      PromptSuggestions: "提示词建议",
+      ChatMessages: "聊天消息",
+      SuggestedQuestions: "建议问题",
+      MessageList: "会话消息列表",
+      UserMessage: (index: number) => `用户消息 ${index}`,
+      AssistantMessage: (index: number) => `助手消息 ${index}`,
+      MessageActions: (label: string) => `${label} 操作`,
+      CombinedLabels: (labels: string[]) => labels.join("，"),
+      ActionLabel: (group: string, action: string) => `${group}：${action}`,
     },
   },
   Export: {
@@ -175,6 +299,28 @@ const cn = {
     Title: "设置",
     SubTitle: "所有设置选项",
     ShowPassword: "显示密码",
+    Sections: {
+      General: {
+        Title: "常规偏好",
+        Description: "输入方式、主题、语言和字体。",
+      },
+      Chat: {
+        Title: "对话体验",
+        Description: "控制聊天标题、预览气泡、Artifacts、代码阅读和会话工具。",
+      },
+      Data: {
+        Title: "数据",
+        Description: "云端同步、本地导入导出、面具和提示词。",
+      },
+      Model: {
+        Title: "模型",
+        Description: "访问密码、服务来源、模型参数和压缩设置。",
+      },
+      Advanced: {
+        Title: "高级偏好",
+        Description: "重置和清除操作。",
+      },
+    },
 
     Danger: {
       Reset: {
@@ -621,6 +767,23 @@ const cn = {
     },
 
     Model: "模型 (model)",
+    ImageGeneration: {
+      Size: "图像尺寸",
+      Quality: "图像质量",
+      Auto: "自动",
+      Low: "低清晰度",
+      Medium: "标准清晰度",
+      High: "高清晰度",
+      Standard: "标准",
+      HD: "高清",
+    },
+    TextVerbosity: {
+      Title: "回答详细程度 (text.verbosity)",
+      SubTitle: "控制 Responses API 的回答详略",
+      Low: "简洁",
+      Medium: "适中",
+      High: "详细",
+    },
     CompressModel: {
       Title: "对话摘要模型",
       SubTitle: "用于压缩历史记录、生成对话标题的模型",
@@ -786,6 +949,70 @@ const cn = {
       Title: "启用快捷键",
       SubTitle: "是否在对话框中显示快捷键按钮",
     },
+  },
+  ImageActions: {
+    Image: "图片",
+    Preview: "预览图片",
+    Download: "下载图片原图",
+    PreviewWithLabel: (label: string) => `预览 ${label}`,
+    DownloadWithLabel: (label: string) => `下载 ${label} 原图`,
+    PreviewAlt: "图片预览",
+    PreviewDialog: "图片预览",
+    PreviewDialogWithLabel: (label: string) => `图片预览：${label}`,
+    Message: (index: number, total: number) =>
+      total > 1 ? `第 ${index} 张图片` : "图片",
+    OpenedOriginal: "无法直接保存图片，已打开原图",
+    ClosePreview: "关闭预览",
+  },
+  ImageEditor: {
+    Title: "编辑图片",
+    Undo: "撤销",
+    Redo: "重做",
+    Toolbar: "图片编辑工具",
+    DrawingTools: "绘图工具",
+    Brush: "画笔工具",
+    Eraser: "橡皮擦",
+    Line: "直线工具",
+    Arrow: "箭头工具",
+    Rectangle: "矩形工具",
+    Circle: "圆形工具",
+    Color: "颜色",
+    BrushSize: "笔刷大小",
+    ChooseColor: (color: string) => `选择颜色 ${color}`,
+    ChooseBrushSize: (size: number) => `选择笔刷大小 ${size}`,
+  },
+  Markdown: {
+    CopyCode: (language: string, copied: boolean) =>
+      copied
+        ? `已复制${language ? ` ${language}` : ""}代码`
+        : `复制${language ? ` ${language}` : ""}代码`,
+    WrapCode: (language: string, enabled: boolean) =>
+      `${enabled ? "关闭" : "开启"}${
+        language ? ` ${language}` : ""
+      }代码自动换行`,
+    ScrollableTable: "Markdown 表格，可横向滚动",
+    Audio: "音频",
+    Video: "视频",
+    MediaAttachment: (type: string, label: string) => `${type}附件：${label}`,
+    MediaFallback: (type: string) => `${type}暂时无法预览，可打开原文件查看。`,
+    OpenOriginal: "打开原文件",
+    UnknownType: "未知类型",
+    FileCopied: "文件内容已复制到剪贴板",
+    FileCopyFailed: "复制文件内容失败",
+    FileNotFound: "无法找到文件内容",
+    FileLoadFailed: "文件附件加载失败",
+  },
+  FileAttachment: {
+    Label: (name: string, type: string, size: string, interactive: boolean) =>
+      `文件附件：${name}，${type}，${size}。${
+        interactive ? "点击复制文件内容。" : ""
+      }`,
+    Meta: (type: string, size: string) => `类型 ${type}，大小 ${size}`,
+  },
+  UpdateAnnouncement: {
+    Title: (date: string) => `${date} 更新内容`,
+    SectionTitle: "更新",
+    Acknowledge: "我知道了",
   },
   Store: {
     DefaultTopic: "新的聊天",
@@ -1024,6 +1251,10 @@ const cn = {
     Config: "配置",
     Search: "搜索",
     All: "全部",
+    CloseSidebar: "关闭侧边栏",
+    ExpandSidebar: "展开栏",
+    CollapseSidebar: "折叠栏",
+    SearchModels: "搜索模型",
   },
   Exporter: {
     Description: {

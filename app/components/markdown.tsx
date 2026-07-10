@@ -413,20 +413,8 @@ export function PreCode(props: { children: any }) {
     };
   }, []);
 
-  const codeCopyLabel = codeLanguage
-    ? copied
-      ? `已复制 ${codeLanguage} 代码`
-      : `复制 ${codeLanguage} 代码`
-    : copied
-    ? "已复制代码"
-    : "复制代码";
-  const codeWrapLabel = codeLanguage
-    ? isCodeWrapped
-      ? `关闭自动换行 ${codeLanguage} 代码`
-      : `自动换行 ${codeLanguage} 代码`
-    : isCodeWrapped
-    ? "关闭自动换行代码"
-    : "自动换行代码";
+  const codeCopyLabel = Locale.Markdown.CopyCode(codeLanguage, copied);
+  const codeWrapLabel = Locale.Markdown.WrapCode(codeLanguage, isCodeWrapped);
   const wrapState = isCodeWrapped ? "wrapped" : "scroll";
 
   return (
@@ -686,7 +674,7 @@ function MarkdownTable({
         className="markdown-table-scroll-viewport"
         tabIndex={0}
         role="region"
-        aria-label="Markdown 表格，可横向滚动"
+        aria-label={Locale.Markdown.ScrollableTable}
         onScroll={syncTableScrollHint}
       >
         <table {...tableProps} />
@@ -973,11 +961,12 @@ function MarkdownMediaCard({
   children: React.ReactNode;
 }) {
   const [hasError, setHasError] = useState(false);
-  const typeLabel = kind === "audio" ? "音频" : "视频";
+  const typeLabel =
+    kind === "audio" ? Locale.Markdown.Audio : Locale.Markdown.Video;
   const mediaLabel =
     getReactTextContent(children).trim() || getMediaFileName(href) || href;
-  const mediaAriaLabel = `${typeLabel}附件：${mediaLabel}`;
-  const fallbackText = `${typeLabel}暂时无法预览，可打开原文件查看。`;
+  const mediaAriaLabel = Locale.Markdown.MediaAttachment(typeLabel, mediaLabel);
+  const fallbackText = Locale.Markdown.MediaFallback(typeLabel);
 
   return (
     <span
@@ -1029,7 +1018,7 @@ function MarkdownMediaCard({
           target="_blank"
           rel="noopener noreferrer"
         >
-          打开原文件
+          {Locale.Markdown.OpenOriginal}
         </a>
       </span>
     </span>
@@ -1181,7 +1170,8 @@ function MarkDownContentInner(
                 href.slice(fileAttachmentHrefPrefix.length),
               );
               const fileName = params.get("name") || "";
-              const fileType = params.get("type") || "未知类型";
+              const fileType =
+                params.get("type") || Locale.Markdown.UnknownType;
               const fileSize = parseFloat(params.get("size") || "0");
 
               // 忽略链接文本，直接使用 FileAttachment 组件
@@ -1193,7 +1183,7 @@ function MarkDownContentInner(
                   onClick={() => {
                     try {
                       // 点击时显示文件内容
-                      showToast("文件内容已复制到剪贴板");
+                      showToast(Locale.Markdown.FileCopied);
                       // 使用更安全的方式查找文件内容
                       const fileMarker = `文件名: ${fileName}\n类型: ${fileType}\n大小: ${(
                         fileSize / 1024
@@ -1215,18 +1205,18 @@ function MarkDownContentInner(
                         );
                         copyToClipboard(fileContent);
                       } else {
-                        copyToClipboard("无法找到文件内容");
+                        copyToClipboard(Locale.Markdown.FileNotFound);
                       }
                     } catch (error) {
                       console.error("复制文件内容时出错:", error);
-                      showToast("复制文件内容失败");
+                      showToast(Locale.Markdown.FileCopyFailed);
                     }
                   }}
                 />
               );
             } catch (error) {
               console.error("解析文件附件链接出错:", error);
-              return <span>文件附件加载失败</span>;
+              return <span>{Locale.Markdown.FileLoadFailed}</span>;
             }
           }
 
@@ -1404,9 +1394,9 @@ export function Markdown(
   const tokenCountText = tokenInfo
     ? Locale.Chat.TokenInfo.TokenCount(tokenInfo.count)
     : "";
-  const tokenInfoLabel = tokenInfo
-    ? ["Token 信息", tokenCountText, tokenDelayText].filter(Boolean).join("，")
-    : "Token 信息";
+  const tokenInfoLabel = Locale.Chat.TokenInfo.Label(
+    [tokenCountText, tokenDelayText].filter(Boolean).join(", "),
+  );
 
   // 初始化消息发送时间
   useLayoutEffect(() => {

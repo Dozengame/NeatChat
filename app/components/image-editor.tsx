@@ -410,14 +410,14 @@ function useImageEditorView(props: {
   return (
     <div className="modal-mask">
       <Modal
-        title={props.title ?? "编辑图片"}
+        title={props.title ?? Locale.ImageEditor.Title}
         onClose={props.onClose}
         actions={[
           <IconButton
             key="undo"
             icon={<ReturnIcon />}
             bordered
-            text="撤销"
+            text={Locale.ImageEditor.Undo}
             onClick={undo}
             disabled={history.length <= 1}
           />,
@@ -425,7 +425,7 @@ function useImageEditorView(props: {
             key="redo"
             icon={<FlippedIcon icon={<ReturnIcon />} />}
             bordered
-            text="重做"
+            text={Locale.ImageEditor.Redo}
             onClick={redo}
             disabled={redoStack.length === 0}
           />,
@@ -450,19 +450,19 @@ function useImageEditorView(props: {
           <div
             className={styles["tools-container"]}
             role="toolbar"
-            aria-label="图片编辑工具"
+            aria-label={Locale.ImageEditor.Toolbar}
           >
             <div
               className={styles["tools-selector"]}
               role="group"
-              aria-label="绘图工具"
+              aria-label={Locale.ImageEditor.DrawingTools}
             >
               <button
                 className={`${styles["tool-option"]} ${
                   selectedTool === DrawingTool.Brush ? styles["selected"] : ""
                 }`}
                 type="button"
-                aria-label="画笔工具"
+                aria-label={Locale.ImageEditor.Brush}
                 aria-pressed={selectedTool === DrawingTool.Brush}
                 onClick={() => {
                   if (selectedTool === DrawingTool.Eraser) {
@@ -470,7 +470,7 @@ function useImageEditorView(props: {
                   }
                   setSelectedTool(DrawingTool.Brush);
                 }}
-                title="画笔工具"
+                title={Locale.ImageEditor.Brush}
               >
                 ✏️
               </button>
@@ -479,7 +479,7 @@ function useImageEditorView(props: {
                   selectedTool === DrawingTool.Eraser ? styles["selected"] : ""
                 }`}
                 type="button"
-                aria-label="橡皮擦"
+                aria-label={Locale.ImageEditor.Eraser}
                 aria-pressed={selectedTool === DrawingTool.Eraser}
                 onClick={() => {
                   if (selectedTool !== DrawingTool.Eraser) {
@@ -488,7 +488,7 @@ function useImageEditorView(props: {
                   setSelectedTool(DrawingTool.Eraser);
                   setBrushSize(20); // 设置为最粗的笔刷粗细
                 }}
-                title="橡皮擦"
+                title={Locale.ImageEditor.Eraser}
               >
                 🧼
               </button>
@@ -497,7 +497,7 @@ function useImageEditorView(props: {
                   selectedTool === DrawingTool.Line ? styles["selected"] : ""
                 }`}
                 type="button"
-                aria-label="直线工具"
+                aria-label={Locale.ImageEditor.Line}
                 aria-pressed={selectedTool === DrawingTool.Line}
                 onClick={() => {
                   if (selectedTool === DrawingTool.Eraser) {
@@ -505,7 +505,7 @@ function useImageEditorView(props: {
                   }
                   setSelectedTool(DrawingTool.Line);
                 }}
-                title="直线工具"
+                title={Locale.ImageEditor.Line}
               >
                 ⁄
               </button>
@@ -514,7 +514,7 @@ function useImageEditorView(props: {
                   selectedTool === DrawingTool.Arrow ? styles["selected"] : ""
                 }`}
                 type="button"
-                aria-label="箭头工具"
+                aria-label={Locale.ImageEditor.Arrow}
                 aria-pressed={selectedTool === DrawingTool.Arrow}
                 onClick={() => {
                   if (selectedTool === DrawingTool.Eraser) {
@@ -522,7 +522,7 @@ function useImageEditorView(props: {
                   }
                   setSelectedTool(DrawingTool.Arrow);
                 }}
-                title="箭头工具"
+                title={Locale.ImageEditor.Arrow}
               >
                 →
               </button>
@@ -533,7 +533,7 @@ function useImageEditorView(props: {
                     : ""
                 }`}
                 type="button"
-                aria-label="矩形工具"
+                aria-label={Locale.ImageEditor.Rectangle}
                 aria-pressed={selectedTool === DrawingTool.Rectangle}
                 onClick={() => {
                   if (selectedTool === DrawingTool.Eraser) {
@@ -541,7 +541,7 @@ function useImageEditorView(props: {
                   }
                   setSelectedTool(DrawingTool.Rectangle);
                 }}
-                title="矩形工具"
+                title={Locale.ImageEditor.Rectangle}
               >
                 □
               </button>
@@ -550,7 +550,7 @@ function useImageEditorView(props: {
                   selectedTool === DrawingTool.Circle ? styles["selected"] : ""
                 }`}
                 type="button"
-                aria-label="圆形工具"
+                aria-label={Locale.ImageEditor.Circle}
                 aria-pressed={selectedTool === DrawingTool.Circle}
                 onClick={() => {
                   if (selectedTool === DrawingTool.Eraser) {
@@ -558,7 +558,7 @@ function useImageEditorView(props: {
                   }
                   setSelectedTool(DrawingTool.Circle);
                 }}
-                title="圆形工具"
+                title={Locale.ImageEditor.Circle}
               >
                 ○
               </button>
@@ -567,7 +567,7 @@ function useImageEditorView(props: {
             <div
               className={styles["color-picker"]}
               role="group"
-              aria-label="颜色"
+              aria-label={Locale.ImageEditor.Color}
             >
               {DRAWING_COLORS.map((c) => (
                 <button
@@ -577,7 +577,7 @@ function useImageEditorView(props: {
                   }`}
                   style={{ backgroundColor: c }}
                   type="button"
-                  aria-label={`选择颜色 ${c}`}
+                  aria-label={Locale.ImageEditor.ChooseColor(c)}
                   aria-pressed={color === c}
                   onClick={() => setColor(c)}
                 />
@@ -587,7 +587,7 @@ function useImageEditorView(props: {
             <div
               className={styles["brush-size-picker"]}
               role="group"
-              aria-label="笔刷大小"
+              aria-label={Locale.ImageEditor.BrushSize}
             >
               {BRUSH_SIZES.map((s) => (
                 <button
@@ -596,7 +596,7 @@ function useImageEditorView(props: {
                     brushSize === s ? styles["selected"] : ""
                   }`}
                   type="button"
-                  aria-label={`选择笔刷大小 ${s}`}
+                  aria-label={Locale.ImageEditor.ChooseBrushSize(s)}
                   aria-pressed={brushSize === s}
                   onClick={() => setBrushSize(s)}
                   style={

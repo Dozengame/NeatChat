@@ -85,6 +85,13 @@ export type OpenAIImageGenerationRequestPayload =
   | DalleRequestPayload
   | GptImage2RequestPayload;
 
+export type OpenAIImageGenerationProgressCopy = {
+  Model: (model: string) => string;
+  Preparing: string;
+  Generating: string;
+  Saving: string;
+};
+
 export type OpenAIImageInputFile = {
   blob: Blob;
   filename?: string;
@@ -162,18 +169,18 @@ export function getOpenAIImageOutputContentType(
 export function getOpenAIImageGenerationProgressContent(params: {
   model?: string;
   phase?: "preparing" | "generating" | "saving";
+  copy: OpenAIImageGenerationProgressCopy;
 }) {
-  const model = params.model?.trim();
-  const modelLine = model ? `\n\n模型：${model}` : "";
+  const modelLine = params.copy.Model(params.model?.trim() ?? "");
 
   switch (params.phase) {
     case "saving":
-      return `图片已生成，正在保存图片...${modelLine}`;
+      return `${params.copy.Saving}${modelLine}`;
     case "generating":
-      return `正在生成图片，请稍候...${modelLine}`;
+      return `${params.copy.Generating}${modelLine}`;
     case "preparing":
     default:
-      return `正在准备图片生成请求...${modelLine}`;
+      return `${params.copy.Preparing}${modelLine}`;
   }
 }
 

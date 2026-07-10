@@ -28,7 +28,10 @@ import {
   buildPublicAppConfig,
   publicConfigHeaders,
 } from "../app/config/public";
-import { deriveAllowedModels } from "../app/utils/public-app-config";
+import {
+  deriveAllowedModels,
+  resolveLockedFields,
+} from "../app/utils/public-app-config";
 import { resolveServerModelConfig } from "../app/utils/server-model-defaults";
 import { parseUpdateAnnouncementJson } from "../app/utils/update-announcement";
 
@@ -350,6 +353,43 @@ describe("OpenAI Responses config", () => {
       promptCacheMode: "explicit",
       promptCacheKey: "project-neatchat",
     });
+    expect(publicConfig.forced).toMatchObject({
+      reasoningMode: "pro",
+      reasoningContext: "current_turn",
+      inputImageDetail: "original",
+      promptCacheMode: "explicit",
+      promptCacheKey: "project-neatchat",
+    });
+  });
+
+  test("locks the five GPT-5.6 capability fields but not reasoning effort by default", () => {
+    process.env.CUSTOM_MODELS = "-all,gpt-5.6-terra@openai";
+    process.env.DEFAULT_MODEL = "gpt-5.6-terra";
+    process.env.OPENAI_REASONING_MODE = "pro";
+    process.env.OPENAI_REASONING_CONTEXT = "current_turn";
+    process.env.OPENAI_INPUT_IMAGE_DETAIL = "original";
+    process.env.OPENAI_PROMPT_CACHE_MODE = "explicit";
+    process.env.OPENAI_PROMPT_CACHE_KEY = "project-neatchat";
+    process.env.WEBUI_LOCKED_FIELDS = "";
+
+    const capabilityFields = [
+      "reasoningMode",
+      "reasoningContext",
+      "inputImageDetail",
+      "promptCacheMode",
+      "promptCacheKey",
+    ];
+    const publicConfig = buildPublicAppConfig(
+      new Date("2026-07-10T00:00:00.000Z"),
+    );
+
+    expect(resolveLockedFields({ webuiLockedFields: "" })).toEqual(
+      expect.arrayContaining(capabilityFields),
+    );
+    expect(publicConfig.lockedFields).toEqual(
+      expect.arrayContaining(capabilityFields),
+    );
+    expect(publicConfig.lockedFields).not.toContain("reasoningEffort");
     expect(publicConfig.forced).toMatchObject({
       reasoningMode: "pro",
       reasoningContext: "current_turn",

@@ -202,8 +202,12 @@ export function SideBarHeader(props: {
             type="button"
             className={clsx("clickable", styles["sidebar-toggle-button"])}
             onClick={onToggle}
-            aria-label={shouldNarrow ? "展开栏" : "折叠栏"}
-            title={shouldNarrow ? "展开栏" : "折叠栏"}
+            aria-label={
+              shouldNarrow ? Locale.UI.ExpandSidebar : Locale.UI.CollapseSidebar
+            }
+            title={
+              shouldNarrow ? Locale.UI.ExpandSidebar : Locale.UI.CollapseSidebar
+            }
           >
             <MenuIcon />
           </button>

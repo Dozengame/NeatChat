@@ -49,6 +49,7 @@ jest.mock("next/dynamic", () => {
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { PreCode } from "../app/components/markdown";
 import { copyToClipboard } from "../app/utils";
+import Locale from "../app/locales";
 
 function renderCodeBlock(className: string) {
   render(
@@ -76,8 +77,10 @@ describe("PreCode language labels", () => {
 
     expect(screen.getByText(label)).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: `复制 ${label} 代码` }),
-    ).toHaveAttribute("title", `复制 ${label} 代码`);
+      screen.getByRole("button", {
+        name: Locale.Markdown.CopyCode(label, false),
+      }),
+    ).toHaveAttribute("title", Locale.Markdown.CopyCode(label, false));
   });
 
   test("renders qualified fence info as a short readable label", () => {
@@ -85,8 +88,13 @@ describe("PreCode language labels", () => {
 
     expect(screen.getByText("JSON MCP")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "复制 JSON MCP 代码" }),
-    ).toHaveAttribute("title", "复制 JSON MCP 代码");
+      screen.getByRole("button", {
+        name: Locale.Markdown.CopyCode("JSON MCP", false),
+      }),
+    ).toHaveAttribute(
+      "title",
+      Locale.Markdown.CopyCode("JSON MCP", false),
+    );
     expect(screen.queryByText(/clientId/i)).not.toBeInTheDocument();
   });
 
@@ -114,7 +122,7 @@ describe("PreCode language labels", () => {
     expect(pre).not.toHaveClass("markdown-code-block-wrap");
 
     const wrapButton = screen.getByRole("button", {
-      name: "自动换行 JSON 代码",
+      name: Locale.Markdown.WrapCode("JSON", false),
     });
     expect(wrapButton).toHaveAttribute("aria-pressed", "false");
     expect(wrapButton).toHaveAttribute("data-wrap-state", "scroll");
@@ -126,7 +134,11 @@ describe("PreCode language labels", () => {
     expect(wrapButton).toHaveAttribute("aria-pressed", "true");
     expect(wrapButton).toHaveAttribute("data-wrap-state", "wrapped");
 
-    fireEvent.click(screen.getByRole("button", { name: "复制 JSON 代码" }));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: Locale.Markdown.CopyCode("JSON", false),
+      }),
+    );
 
     expect(copyToClipboard).toHaveBeenCalledWith('{"tool": true}');
   });
@@ -135,12 +147,15 @@ describe("PreCode language labels", () => {
     renderCodeBlock("language-typescript");
 
     const copyButton = screen.getByRole("button", {
-      name: "复制 TypeScript 代码",
+      name: Locale.Markdown.CopyCode("TypeScript", false),
     });
 
     expect(copyButton).toHaveAttribute("aria-live", "polite");
     expect(copyButton).toHaveAttribute("aria-atomic", "true");
-    expect(copyButton).toHaveAttribute("title", "复制 TypeScript 代码");
+    expect(copyButton).toHaveAttribute(
+      "title",
+      Locale.Markdown.CopyCode("TypeScript", false),
+    );
   });
 
   test("keeps copied feedback in a dedicated hidden status", () => {
@@ -148,7 +163,7 @@ describe("PreCode language labels", () => {
     renderCodeBlock("language-typescript");
 
     const copyButton = screen.getByRole("button", {
-      name: "复制 TypeScript 代码",
+      name: Locale.Markdown.CopyCode("TypeScript", false),
     });
     const status = screen.getByRole("status");
 
@@ -160,7 +175,9 @@ describe("PreCode language labels", () => {
 
     fireEvent.click(copyButton);
 
-    expect(status).toHaveTextContent("已复制 TypeScript 代码");
+    expect(status).toHaveTextContent(
+      Locale.Markdown.CopyCode("TypeScript", true),
+    );
 
     act(() => {
       jest.advanceTimersByTime(1400);
@@ -174,25 +191,34 @@ describe("PreCode language labels", () => {
     renderCodeBlock("language-typescript");
 
     const copyButton = screen.getByRole("button", {
-      name: "复制 TypeScript 代码",
+      name: Locale.Markdown.CopyCode("TypeScript", false),
     });
 
     fireEvent.click(copyButton);
 
     expect(copyToClipboard).toHaveBeenCalledTimes(1);
     expect(
-      screen.getByRole("button", { name: "已复制 TypeScript 代码" }),
+      screen.getByRole("button", {
+        name: Locale.Markdown.CopyCode("TypeScript", true),
+      }),
     ).toHaveAttribute("data-copy-state", "copied");
     expect(
-      screen.getByRole("button", { name: "已复制 TypeScript 代码" }),
-    ).toHaveAttribute("title", "已复制 TypeScript 代码");
+      screen.getByRole("button", {
+        name: Locale.Markdown.CopyCode("TypeScript", true),
+      }),
+    ).toHaveAttribute(
+      "title",
+      Locale.Markdown.CopyCode("TypeScript", true),
+    );
 
     act(() => {
       jest.advanceTimersByTime(1400);
     });
 
     expect(
-      screen.getByRole("button", { name: "复制 TypeScript 代码" }),
+      screen.getByRole("button", {
+        name: Locale.Markdown.CopyCode("TypeScript", false),
+      }),
     ).toHaveAttribute("data-copy-state", "idle");
   });
 });

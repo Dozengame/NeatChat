@@ -254,6 +254,95 @@ describe("applyPublicAppConfig", () => {
     });
   });
 
+  test("replaces stale GPT-5.6 capability overrides when the admin locks them", () => {
+    const overriddenSession = session(12345, false) as any;
+    overriddenSession.mask.modelConfig.model = "gpt-5.6-terra";
+    Object.assign(overriddenSession.mask.modelConfig, {
+      reasoningMode: "standard",
+      reasoningContext: "all_turns",
+      inputImageDetail: "low",
+      promptCacheMode: "implicit",
+      promptCacheKey: "stale-conversation-key",
+    });
+    useAppConfig.setState({
+      modelConfig: {
+        ...DEFAULT_CONFIG.modelConfig,
+        model: "gpt-5.6-terra" as any,
+        reasoningMode: "standard",
+        reasoningContext: "all_turns",
+        inputImageDetail: "low",
+        promptCacheMode: "implicit",
+        promptCacheKey: "stale-global-key",
+      },
+      modelConfigMeta: {},
+    });
+    useChatStore.setState({
+      sessions: [overriddenSession],
+      temporarySession: { ...overriddenSession, id: "temporary" },
+      currentSessionIndex: 0,
+    } as any);
+
+    const capabilityFields = [
+      "reasoningMode",
+      "reasoningContext",
+      "inputImageDetail",
+      "promptCacheMode",
+      "promptCacheKey",
+    ];
+    applyPublicAppConfig(
+      publicConfig({
+        defaults: {
+          model: "gpt-5.6-terra",
+          providerName: "OpenAI",
+          reasoningMode: "pro",
+          reasoningContext: "current_turn",
+          inputImageDetail: "original",
+          promptCacheMode: "explicit",
+          promptCacheKey: "admin-key",
+        } as any,
+        forced: {
+          model: "gpt-5.6-terra",
+          providerName: "OpenAI",
+          reasoningMode: "pro",
+          reasoningContext: "current_turn",
+          inputImageDetail: "original",
+          promptCacheMode: "explicit",
+          promptCacheKey: "admin-key",
+        },
+        allowedModels: ["gpt-5.6-terra@OpenAI"],
+        lockedFields: [
+          "customModels",
+          "baseUrl",
+          "apiKey",
+          ...capabilityFields,
+        ],
+      }),
+    );
+
+    for (const modelConfig of [
+      useAppConfig.getState().modelConfig,
+      useChatStore.getState().sessions[0].mask.modelConfig,
+      useChatStore.getState().temporarySession!.mask.modelConfig,
+    ]) {
+      expect(modelConfig).toMatchObject({
+        reasoningMode: "pro",
+        reasoningContext: "current_turn",
+        inputImageDetail: "original",
+        promptCacheMode: "explicit",
+        promptCacheKey: "admin-key",
+      });
+    }
+    for (const field of capabilityFields) {
+      expect(useAppConfig.getState().modelConfigMeta?.[field]).toMatchObject({
+        source: "admin_forced",
+        locked: true,
+      });
+      expect(
+        useChatStore.getState().temporarySession!.mask.modelConfigMeta?.[field],
+      ).toMatchObject({ source: "admin_forced", locked: true });
+    }
+  });
+
   test("hydrates missing GPT-5.6 capability fields in old unsynced sessions", () => {
     const persistedSession = session(12345, false) as any;
     persistedSession.mask.modelConfig.model = "gpt-5.6-terra";

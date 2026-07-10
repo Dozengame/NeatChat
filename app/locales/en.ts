@@ -87,6 +87,12 @@ const en: LocaleType = {
       "Create a product poster",
       "Analyze this file",
     ] as string[],
+    EmptySuggestionTitles: [
+      "Summarize text",
+      "Plan schedule",
+      "Creative poster",
+      "Analyze document",
+    ] as string[],
     Input: (submitKey: string) => {
       var inputHints = `${submitKey} to send`;
       if (submitKey === String(SubmitKey.Enter)) {
@@ -114,6 +120,131 @@ const en: LocaleType = {
     TokenInfo: {
       TokenCount: (count: number) => `${count} Tokens`,
       FirstDelay: (delay: number) => `First Response: ${delay}ms`,
+      Label: (details?: string) =>
+        details ? `Token info, ${details}` : "Token info",
+    },
+    SourcesHeading: "Sources",
+    ChatToolMenu: {
+      MultimodalTools: "Multimodal tools",
+      AddContent: "Add",
+      FilesAndImages: "Files & images",
+      Capacity: "3 img · 5 files",
+      Full: "Full",
+      UploadAttachment: "Upload attachment",
+      AttachmentFull: "Attachments full: up to 3 images and 5 files",
+      ImageGeneration: "Image generation",
+      DisableImageGeneration: "Turn off image generation",
+      SessionTools: "Conversation tools",
+      Session: "Conversation",
+      ModelsAndSettings: "Models and settings",
+      Close: "Close conversation tools",
+      Open: "Open conversation tools",
+      MenuLabel: "Conversation tools menu",
+    },
+    Attachments: {
+      TextConverted: "Long text was converted to a file attachment",
+      ContentTruncated: (limit: number) =>
+        `File content was truncated to ${limit} characters`,
+      AddedFiles: (count: number) =>
+        `Added ${count} ${count === 1 ? "file" : "files"}`,
+      MaxFiles: "You can upload up to 5 files; only the first 5 were kept",
+      FileSlotsFull: "You can upload up to 5 files",
+      AddedImages: (count: number) =>
+        `Added ${count} ${count === 1 ? "image" : "images"}`,
+      MaxImages: "You can upload up to 3 images; only the first 3 were kept",
+      ImageSlotsFull: "You can upload up to 3 images",
+      FileTooLarge: (name: string) =>
+        `File ${name} exceeds the 15 MB limit and was ignored`,
+      DragReadFailed: "Failed to read dropped attachments",
+      PasteReadFailed: "Failed to read pasted attachments",
+      FileReadFailed: "Failed to read file",
+      LongTextConverted: "Long text was converted to an attachment",
+      InputTextFile: (timestamp?: string) =>
+        `Input text${timestamp ? `_${timestamp}` : ""}.txt`,
+      LongTextFile: "Long text.txt",
+      PastedTextFile: "Pasted text.txt",
+      LongTextMessage:
+        "I sent a long text file. Its content was converted to an attachment.",
+      JoinMessages: (messages: string[]) => messages.join(", "),
+      LiveStatus: (text: string, hint: string) => `${text}, ${hint}.`,
+      Full: "Attachments full: up to 3 images and 5 files",
+      DropTitle: "Drop files or images here to upload",
+      DropDetect: "Detect dropped attachments",
+      Preview: "Attachment preview",
+      AddMore: "Add more attachments",
+      FullShort: "Full",
+      EditImage: (index: number) => `Edit image attachment ${index}`,
+      DeleteImage: (index: number) => `Delete image attachment ${index}`,
+      EditFile: (index: number, name: string) =>
+        `Edit file attachment ${index}: ${name}`,
+      EditFileContent: (name: string) => `Edit file content: ${name}`,
+      DeleteFile: (index: number, name: string) =>
+        `Delete file attachment ${index}: ${name}`,
+      Drag: {
+        AddHint: "Release to add · up to 3 images and 5 files",
+        BlockedHint: "Release will not add new attachments",
+        ImageLimit: "The 3-image limit has been reached",
+        FileLimit: "The 5-file limit has been reached",
+        Limit: "Attachment limit reached",
+        Detect: "Release to detect attachments",
+        ImageCount: (count: number) =>
+          `${count} ${count === 1 ? "image" : "images"}`,
+        FileCount: (count: number) =>
+          `${count} ${count === 1 ? "file" : "files"}`,
+        WillAdd: (parts: string[], overflow: boolean) =>
+          overflow
+            ? `Will add ${parts.join(" and ")}; the rest will be ignored`
+            : `Will add ${parts.join(" and ")}`,
+      },
+    },
+    ImageGeneration: {
+      NotEnabled: "Image generation is not enabled",
+      EnableFailed: "Failed to enable image generation",
+      Enabled: "Image generation enabled",
+      Disabled: "Image generation disabled",
+      Failed: "Image generation failed",
+      ModeEnabled: "Image generation mode is enabled",
+      ModeLabel: "Image generation",
+      Task: "Image generation task",
+      Submitting: "Submitting to jimeng-mcp",
+      QueryTimeout: "Result query timed out. Please try again later",
+      SubmitOrQueryFailed:
+        "Task submission or result query failed. Please try again later",
+      Progress: {
+        Model: (model: string) => (model ? `\n\nModel: ${model}` : ""),
+        Preparing: "Preparing the image generation request...",
+        Generating: "Generating the image. Please wait...",
+        Saving: "Image generated. Saving the image...",
+      },
+    },
+    ModelMenu: {
+      SelectModel: (model: string, detail: string) =>
+        `Select model: ${model}, ${detail}`,
+      SelectModelAndParams: "Select model and parameters",
+      Close: "Close model selector",
+      ModelAndReasoning: "Model and reasoning effort",
+      AvailableModels: "Available models",
+      Empty: "No models available",
+      ReasoningEffort: "Reasoning effort",
+      ReasoningOptions: "Reasoning effort options",
+      ImageSize: "Image size",
+      ImageSizeOptions: "Image size options",
+      GeneratedImageSize: "Generated image size",
+      ImageQuality: "Image quality",
+      ImageQualityOptions: "Image quality options",
+      CurrentInputMode: "Current input mode",
+      SelectedReasoning: (label: string) => `Reasoning effort: ${label}`,
+    },
+    Accessibility: {
+      PromptSuggestions: "Prompt suggestions",
+      ChatMessages: "Chat messages",
+      SuggestedQuestions: "Suggested questions",
+      MessageList: "Conversation message list",
+      UserMessage: (index: number) => `User message ${index}`,
+      AssistantMessage: (index: number) => `Assistant message ${index}`,
+      MessageActions: (label: string) => `${label} actions`,
+      CombinedLabels: (labels: string[]) => labels.join(", "),
+      ActionLabel: (group: string, action: string) => `${group}: ${action}`,
     },
   },
   Export: {
@@ -177,6 +308,30 @@ const en: LocaleType = {
     Title: "Settings",
     SubTitle: "All Settings",
     ShowPassword: "ShowPassword",
+    Sections: {
+      General: {
+        Title: "General preferences",
+        Description: "Input, theme, language, and font.",
+      },
+      Chat: {
+        Title: "Chat experience",
+        Description:
+          "Manage titles, preview bubbles, Artifacts, code reading, and conversation tools.",
+      },
+      Data: {
+        Title: "Data",
+        Description: "Cloud sync, local import/export, masks, and prompts.",
+      },
+      Model: {
+        Title: "Model",
+        Description:
+          "Access code, providers, model parameters, and compression.",
+      },
+      Advanced: {
+        Title: "Advanced preferences",
+        Description: "Reset and clear actions.",
+      },
+    },
     Danger: {
       Reset: {
         Title: "Reset All Settings",
@@ -290,7 +445,7 @@ const en: LocaleType = {
 
       LocalState: "Local Data",
       Overview: (overview: any) => {
-        return `${overview.chat} chats，${overview.message} messages，${overview.prompt} prompts，${overview.mask} masks`;
+        return `${overview.chat} chats, ${overview.message} messages, ${overview.prompt} prompts, ${overview.mask} masks`;
       },
       ImportFailed: "Failed to import from file",
     },
@@ -625,6 +780,23 @@ const en: LocaleType = {
     },
 
     Model: "Model",
+    ImageGeneration: {
+      Size: "Image Size",
+      Quality: "Image Quality",
+      Auto: "Auto",
+      Low: "Low",
+      Medium: "Medium",
+      High: "High",
+      Standard: "Standard",
+      HD: "HD",
+    },
+    TextVerbosity: {
+      Title: "Response Detail (text.verbosity)",
+      SubTitle: "Controls response detail in the Responses API",
+      Low: "Concise",
+      Medium: "Balanced",
+      High: "Detailed",
+    },
     CompressModel: {
       Title: "Summary Model",
       SubTitle: "Model used to compress history and generate title",
@@ -797,6 +969,72 @@ const en: LocaleType = {
       Title: "Enable Shortcuts",
       SubTitle: "Show shortcuts button in chat",
     },
+  },
+  ImageActions: {
+    Image: "Image",
+    Preview: "Preview image",
+    Download: "Download original image",
+    PreviewWithLabel: (label: string) => `Preview ${label}`,
+    DownloadWithLabel: (label: string) => `Download original ${label}`,
+    PreviewAlt: "Image preview",
+    PreviewDialog: "Image preview",
+    PreviewDialogWithLabel: (label: string) => `Image preview: ${label}`,
+    Message: (index: number, total: number) =>
+      total > 1 ? `Image ${index} of ${total}` : "Image",
+    OpenedOriginal: "Could not save the image directly; opened the original",
+    ClosePreview: "Close preview",
+  },
+  ImageEditor: {
+    Title: "Edit image",
+    Undo: "Undo",
+    Redo: "Redo",
+    Toolbar: "Image editing tools",
+    DrawingTools: "Drawing tools",
+    Brush: "Brush tool",
+    Eraser: "Eraser",
+    Line: "Line tool",
+    Arrow: "Arrow tool",
+    Rectangle: "Rectangle tool",
+    Circle: "Circle tool",
+    Color: "Color",
+    BrushSize: "Brush size",
+    ChooseColor: (color: string) => `Choose color ${color}`,
+    ChooseBrushSize: (size: number) => `Choose brush size ${size}`,
+  },
+  Markdown: {
+    CopyCode: (language: string, copied: boolean) =>
+      copied
+        ? `Copied${language ? ` ${language}` : ""} code`
+        : `Copy${language ? ` ${language}` : ""} code`,
+    WrapCode: (language: string, enabled: boolean) =>
+      `${enabled ? "Disable" : "Enable"} wrapping for${
+        language ? ` ${language}` : ""
+      } code`,
+    ScrollableTable: "Markdown table, horizontally scrollable",
+    Audio: "Audio",
+    Video: "Video",
+    MediaAttachment: (type: string, label: string) =>
+      `${type} attachment: ${label}`,
+    MediaFallback: (type: string) =>
+      `${type} cannot be previewed right now. Open the original file instead.`,
+    OpenOriginal: "Open original file",
+    UnknownType: "Unknown type",
+    FileCopied: "File content copied to clipboard",
+    FileCopyFailed: "Failed to copy file content",
+    FileNotFound: "File content could not be found",
+    FileLoadFailed: "Failed to load file attachment",
+  },
+  FileAttachment: {
+    Label: (name: string, type: string, size: string, interactive: boolean) =>
+      `File attachment: ${name}, ${type}, ${size}.${
+        interactive ? " Press to copy file content." : ""
+      }`,
+    Meta: (type: string, size: string) => `Type ${type}, size ${size}`,
+  },
+  UpdateAnnouncement: {
+    Title: (date: string) => `${date} Update`,
+    SectionTitle: "Update",
+    Acknowledge: "Got it",
   },
   Store: {
     DefaultTopic: "New Conversation",
@@ -1014,7 +1252,7 @@ const en: LocaleType = {
       SourceLabel: "Mermaid source",
     },
     NotShow: "Never Show Again",
-    ConfirmNoShow: "Confirm to disable？You can enable it in settings later.",
+    ConfirmNoShow: "Confirm to disable? You can enable it in settings later.",
     Thinking: "Thinking...",
     Think: "Deep Thought",
     ThinkingTime: (seconds: number) => ` (took ${seconds} seconds)`,
@@ -1033,6 +1271,10 @@ const en: LocaleType = {
     Config: "Config",
     Search: "Search",
     All: "All",
+    CloseSidebar: "Close sidebar",
+    ExpandSidebar: "Expand sidebar",
+    CollapseSidebar: "Collapse sidebar",
+    SearchModels: "Search models",
   },
   Exporter: {
     Description: {

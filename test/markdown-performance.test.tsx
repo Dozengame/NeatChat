@@ -41,6 +41,7 @@ jest.mock("next/dynamic", () => {
 import { fireEvent, render, screen } from "@testing-library/react";
 import { encode } from "../app/utils/token";
 import { Markdown } from "../app/components/markdown";
+import Locale from "../app/locales";
 
 describe("Markdown performance", () => {
   beforeEach(() => {
@@ -93,47 +94,53 @@ describe("Markdown performance", () => {
 
   test("presents token info as a toggled metadata chip", () => {
     window.localStorage.setItem("first_char_delay_m2", "512");
+    const tokenCountText = Locale.Chat.TokenInfo.TokenCount(11);
+    const tokenDelayText = Locale.Chat.TokenInfo.FirstDelay(512);
+    const tokenInfoLabel = Locale.Chat.TokenInfo.Label(
+      [tokenCountText, tokenDelayText].join(", "),
+    );
 
     render(
       <Markdown content="hello world" messageId="m2" streaming={false} />,
     );
 
     const tokenChip = screen.getByRole("button", {
-      name: "Token 信息，11 Tokens，First Response: 512ms",
+      name: tokenInfoLabel,
     });
 
-    expect(tokenChip.textContent).toBe("11 Tokens");
-    expect(tokenChip.getAttribute("aria-label")).toBe(
-      "Token 信息，11 Tokens，First Response: 512ms",
-    );
+    expect(tokenChip.textContent).toBe(tokenCountText);
+    expect(tokenChip.getAttribute("aria-label")).toBe(tokenInfoLabel);
     expect(tokenChip.getAttribute("aria-pressed")).toBe("false");
     expect(tokenChip.getAttribute("data-token-info-expanded")).toBe("false");
     expect(encode).toHaveBeenCalledWith("hello world");
 
     fireEvent.mouseEnter(tokenChip);
-    expect(tokenChip.textContent).toContain("512ms");
+    expect(tokenChip.textContent).toBe(tokenDelayText);
     expect(tokenChip.getAttribute("aria-pressed")).toBe("true");
     expect(tokenChip.getAttribute("data-token-info-expanded")).toBe("true");
 
     fireEvent.mouseLeave(tokenChip);
-    expect(tokenChip.textContent).toBe("11 Tokens");
+    expect(tokenChip.textContent).toBe(tokenCountText);
     expect(tokenChip.getAttribute("aria-pressed")).toBe("false");
 
     fireEvent.click(tokenChip);
-    expect(tokenChip.textContent).toContain("512ms");
+    expect(tokenChip.textContent).toBe(tokenDelayText);
     expect(tokenChip.getAttribute("aria-pressed")).toBe("true");
   });
 
   test("includes token count in the metadata chip accessible name without latency", () => {
+    const tokenCountText = Locale.Chat.TokenInfo.TokenCount(11);
+    const tokenInfoLabel = Locale.Chat.TokenInfo.Label(tokenCountText);
+
     render(
       <Markdown content="hello world" messageId="m3" streaming={false} />,
     );
 
     const tokenChip = screen.getByRole("button", {
-      name: "Token 信息，11 Tokens",
+      name: tokenInfoLabel,
     });
 
-    expect(tokenChip.textContent).toBe("11 Tokens");
+    expect(tokenChip.textContent).toBe(tokenCountText);
     expect(tokenChip.getAttribute("aria-pressed")).toBe("false");
     expect(tokenChip.getAttribute("data-token-info-expanded")).toBe("false");
   });

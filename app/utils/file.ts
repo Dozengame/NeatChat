@@ -4,6 +4,7 @@
 
 import React from "react";
 import { showToast, showModal } from "../components/ui-lib-actions";
+import Locale from "../locales";
 
 /**
  * 读取文件为文本
@@ -1255,8 +1256,8 @@ export function isAttachmentImage(file: File) {
   );
 }
 
-const DRAG_ATTACHMENT_ADD_HINT = "释放后添加到输入框 · 最多3张图片、5个文件";
-const DRAG_ATTACHMENT_BLOCKED_HINT = "释放后不会添加新附件";
+const DRAG_ATTACHMENT_ADD_HINT = Locale.Chat.Attachments.Drag.AddHint;
+const DRAG_ATTACHMENT_BLOCKED_HINT = Locale.Chat.Attachments.Drag.BlockedHint;
 
 type DraggedAttachmentEntry = {
   file?: File;
@@ -1306,13 +1307,15 @@ function getDraggedAttachmentLimitText(
   const blockedParts: string[] = [];
 
   if (imageCount > 0 && remainingImageSlots <= 0) {
-    blockedParts.push("图片已达 3 张上限");
+    blockedParts.push(Locale.Chat.Attachments.Drag.ImageLimit);
   }
   if (fileCount > 0 && remainingFileSlots <= 0) {
-    blockedParts.push("文件已达 5 个上限");
+    blockedParts.push(Locale.Chat.Attachments.Drag.FileLimit);
   }
 
-  return blockedParts.length === 1 ? blockedParts[0] : "附件数量已达上限";
+  return blockedParts.length === 1
+    ? blockedParts[0]
+    : Locale.Chat.Attachments.Drag.Limit;
 }
 
 export function getDraggedAttachmentSummary(
@@ -1324,7 +1327,7 @@ export function getDraggedAttachmentSummary(
 
   if (draggedEntries.length === 0) {
     return {
-      text: "释放后识别附件",
+      text: Locale.Chat.Attachments.Drag.Detect,
       hint: DRAG_ATTACHMENT_ADD_HINT,
       willAdd: true,
     };
@@ -1341,10 +1344,14 @@ export function getDraggedAttachmentSummary(
   const acceptedParts: string[] = [];
 
   if (acceptedImageCount > 0) {
-    acceptedParts.push(`${acceptedImageCount} 张图片`);
+    acceptedParts.push(
+      Locale.Chat.Attachments.Drag.ImageCount(acceptedImageCount),
+    );
   }
   if (acceptedFileCount > 0) {
-    acceptedParts.push(`${acceptedFileCount} 个文件`);
+    acceptedParts.push(
+      Locale.Chat.Attachments.Drag.FileCount(acceptedFileCount),
+    );
   }
   if (acceptedParts.length === 0) {
     return {
@@ -1363,9 +1370,7 @@ export function getDraggedAttachmentSummary(
     imageCount > remainingImageSlots || fileCount > remainingFileSlots;
 
   return {
-    text: hasOverflow
-      ? `将添加 ${acceptedParts.join("、")}，其余会自动忽略`
-      : `将添加 ${acceptedParts.join("、")}`,
+    text: Locale.Chat.Attachments.Drag.WillAdd(acceptedParts, hasOverflow),
     hint: DRAG_ATTACHMENT_ADD_HINT,
     willAdd: true,
   };
