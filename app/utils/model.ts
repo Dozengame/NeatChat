@@ -223,5 +223,18 @@ export function isModelAvailableInServer(
     return false;
   }
 
-  return matchingModels.some((model) => model.available === false);
+  if (matchingModels.some((model) => model.available === false)) {
+    return true;
+  }
+
+  let modelsAvailableByDefault = true;
+  for (const customModel of customModels.split(",")) {
+    if (customModel === "all" || customModel === "+all") {
+      modelsAvailableByDefault = true;
+    } else if (customModel === "-all") {
+      modelsAvailableByDefault = false;
+    }
+  }
+
+  return !modelsAvailableByDefault;
 }

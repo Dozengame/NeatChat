@@ -1,38 +1,67 @@
-export const OPENAI_RESPONSES_DEFAULT_MODEL = "gpt-5.5";
+export const OPENAI_RESPONSES_DEFAULT_MODEL = "gpt-5.6-terra";
 export const OPENAI_RESPONSES_DEFAULT_TEMPERATURE = 1;
 export const OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT = "low";
 export const OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY = "medium";
 export const OPENAI_RESPONSES_DEFAULT_COMPRESS_MESSAGE_LENGTH_THRESHOLD = 1000;
+export const OPENAI_GPT_56_MAX_OUTPUT_TOKENS = 128000;
+const OPENAI_RESPONSES_FALLBACK_MAX_OUTPUT_TOKENS = 512000;
 const OPENAI_RESPONSES_REASONING_MAX_OUTPUT_TOKENS = {
   none: 10000,
   low: 10000,
   medium: 20000,
   high: 30000,
   xhigh: 30000,
+  max: 30000,
 } as const;
 
-export type OpenAIResponsesReasoningEffort =
-  | "none"
-  | "low"
-  | "medium"
-  | "high"
-  | "xhigh";
+export const OPENAI_RESPONSES_REASONING_EFFORTS = [
+  "none",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+  "max",
+] as const;
 
-export type OpenAIChatReasoningEffort = Extract<
-  OpenAIResponsesReasoningEffort,
-  "low" | "medium" | "high"
->;
+const OPENAI_RESPONSES_LEGACY_REASONING_EFFORTS = [
+  "low",
+  "medium",
+  "high",
+] as const;
+
+export type OpenAIResponsesReasoningEffort =
+  (typeof OPENAI_RESPONSES_REASONING_EFFORTS)[number];
+
+export type OpenAIChatReasoningEffort = OpenAIResponsesReasoningEffort;
 
 export type OpenAIResponsesTextVerbosity = "low" | "medium" | "high";
 export type OpenAIResponsesWebSearchMode = "auto" | "required";
 
-const REASONING_EFFORTS = new Set(["none", "low", "medium", "high", "xhigh"]);
+const REASONING_EFFORTS = new Set<string>(OPENAI_RESPONSES_REASONING_EFFORTS);
 
 const TEXT_VERBOSITIES = new Set(["low", "medium", "high"]);
 
 const OPENAI_PROVIDER_NAMES = new Set(["openai", "chatgpt"]);
 
-export function parseOpenAIMaxOutputTokens(value?: string) {
+export function isGpt56Model(model?: string) {
+  return /^gpt-5\.6(?:[-.]|$)/.test(model?.trim().toLowerCase() ?? "");
+}
+
+export function getOpenAIResponsesMaxOutputTokensLimit(model?: string) {
+  return isGpt56Model(model)
+    ? OPENAI_GPT_56_MAX_OUTPUT_TOKENS
+    : OPENAI_RESPONSES_FALLBACK_MAX_OUTPUT_TOKENS;
+}
+
+export function clampOpenAIResponsesMaxOutputTokens(
+  value: number,
+  model?: string,
+) {
+  const limit = getOpenAIResponsesMaxOutputTokensLimit(model);
+  return Math.floor(Math.min(limit, Math.max(0, value)));
+}
+
+export function parseOpenAIMaxOutputTokens(value?: string, model?: string) {
   const normalized = value?.trim().toLowerCase();
   if (!normalized) {
     return undefined;
@@ -43,12 +72,52 @@ export function parseOpenAIMaxOutputTokens(value?: string) {
     return undefined;
   }
 
-  return Math.floor(Math.min(512000, Math.max(0, maxOutputTokens)));
+  return clampOpenAIResponsesMaxOutputTokens(maxOutputTokens, model);
 }
 
-export function parseOpenAIResponsesReasoningEffort(value?: string) {
+export function isOpenAIResponsesReasoningEffort(
+  value?: string,
+): value is OpenAIResponsesReasoningEffort {
+  return !!value && REASONING_EFFORTS.has(value);
+}
+
+export function getOpenAIResponsesReasoningEfforts(model?: string) {
+  return isGpt56Model(model)
+    ? OPENAI_RESPONSES_REASONING_EFFORTS
+    : OPENAI_RESPONSES_LEGACY_REASONING_EFFORTS;
+}
+
+export function isOpenAIResponsesReasoningEffortForModel(
+  value: string | undefined,
+  model?: string,
+): value is OpenAIResponsesReasoningEffort {
+  return (
+    isOpenAIResponsesReasoningEffort(value) &&
+    getOpenAIResponsesReasoningEfforts(model).some(
+      (supportedEffort) => supportedEffort === value,
+    )
+  );
+}
+
+export function normalizeOpenAIResponsesReasoningEffort(
+  value: string | undefined,
+  model?: string,
+) {
+  return isOpenAIResponsesReasoningEffortForModel(value, model)
+    ? value
+    : OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT;
+}
+
+export function parseOpenAIResponsesReasoningEffort(
+  value?: string,
+  model?: string,
+) {
   const normalized = value?.trim().toLowerCase();
-  if (normalized && REASONING_EFFORTS.has(normalized)) {
+  if (
+    model
+      ? isOpenAIResponsesReasoningEffortForModel(normalized, model)
+      : isOpenAIResponsesReasoningEffort(normalized)
+  ) {
     return normalized as OpenAIResponsesReasoningEffort;
   }
 
@@ -111,6 +180,27 @@ export function isOpenAIGpt5OrNewerModelConfig(params: {
   );
 }
 
+export function applyOpenAIResponsesModelConstraints(config: {
+  model?: string;
+  providerName?: string;
+  reasoningEffort?: OpenAIResponsesReasoningEffort;
+  max_output_tokens?: number;
+}) {
+  if (typeof config.max_output_tokens === "number") {
+    config.max_output_tokens = clampOpenAIResponsesMaxOutputTokens(
+      config.max_output_tokens,
+      config.model,
+    );
+  }
+
+  if (isOpenAIGpt5OrNewerModelConfig(config)) {
+    config.reasoningEffort = normalizeOpenAIResponsesReasoningEffort(
+      config.reasoningEffort,
+      config.model,
+    );
+  }
+}
+
 export function shouldUseOpenAIResponses(params: {
   enabled?: boolean;
   model?: string;
@@ -145,7 +235,7 @@ export function supportsOpenAIResponsesWebSearch(params: {
 
   return (
     (!providerName || OPENAI_PROVIDER_NAMES.has(providerName)) &&
-    (/^gpt-5\.(4|5)(?:[-.]|$)/.test(normalizedModel) ||
+    (/^gpt-5\.(4|5|6)(?:[-.]|$)/.test(normalizedModel) ||
       /^gpt-4\.1(?:[-.]|$)/.test(normalizedModel))
   );
 }

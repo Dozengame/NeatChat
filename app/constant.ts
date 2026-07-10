@@ -264,6 +264,10 @@ Latex block: $$e=mc^2$$
 
 export const KnowledgeCutOffDate: Record<string, string> = {
   default: "2021-09",
+  "gpt-5.6": "2026-02-16",
+  "gpt-5.6-sol": "2026-02-16",
+  "gpt-5.6-terra": "2026-02-16",
+  "gpt-5.6-luna": "2026-02-16",
   "gpt-5.5": "2025-12-01",
   "gpt-5.4": "2025-08-31",
   "gpt-5.4-mini": "2025-08-31",
@@ -302,7 +306,14 @@ export const DEFAULT_TTS_VOICES = [
   "shimmer",
 ];
 
-const openaiModels = [
+export const OPENAI_GPT_56_MODELS = [
+  "gpt-5.6",
+  "gpt-5.6-sol",
+  "gpt-5.6-terra",
+  "gpt-5.6-luna",
+] as const;
+
+const sharedOpenAIAzureModels = [
   "gpt-5.5",
   "gpt-5.4",
   "gpt-5.4-mini",
@@ -429,7 +440,18 @@ const chatglmModels = [
 
 let seq = 1000; // 内置的模型序号生成器从1000开始
 export const DEFAULT_MODELS = [
-  ...openaiModels.map((name) => ({
+  ...OPENAI_GPT_56_MODELS.map((name) => ({
+    name,
+    available: true,
+    sorted: seq++,
+    provider: {
+      id: "openai",
+      providerName: "OpenAI",
+      providerType: "openai",
+      sorted: 1,
+    },
+  })),
+  ...sharedOpenAIAzureModels.map((name) => ({
     name,
     available: true,
     sorted: seq++, // Global sequence sort(index)
@@ -451,7 +473,7 @@ export const DEFAULT_MODELS = [
       sorted: 1,
     },
   })),
-  ...openaiModels.map((name) => ({
+  ...sharedOpenAIAzureModels.map((name) => ({
     name,
     available: true,
     sorted: seq++,

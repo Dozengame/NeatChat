@@ -10,6 +10,7 @@ import {
   replaceAttachmentImageAtIndex,
 } from "../app/utils/file";
 import { isVisionModel } from "../app/utils";
+import { OPENAI_GPT_56_MODELS } from "../app/constant";
 
 function dragTransferFromFiles(files: File[]) {
   return {
@@ -133,6 +134,13 @@ describe("attachment file type support", () => {
   test("treats gpt-5.5 as image-input capable", () => {
     expect(isVisionModel("gpt-5.5")).toBe(true);
   });
+
+  test.each(OPENAI_GPT_56_MODELS)(
+    "treats %s as image-input capable",
+    (model) => {
+      expect(isVisionModel(model)).toBe(true);
+    },
+  );
 
   test("extracts pasted images from html and data-url text", () => {
     const dataUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB";

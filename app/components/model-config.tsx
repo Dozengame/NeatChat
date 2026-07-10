@@ -16,9 +16,13 @@ import { groupBy } from "lodash-es";
 import styles from "./model-config.module.scss";
 import { getModelProvider } from "../utils/model";
 import {
+  applyOpenAIResponsesModelConstraints,
   getMaxOutputTokensForReasoningEffort,
+  getOpenAIResponsesReasoningEfforts,
+  getOpenAIResponsesMaxOutputTokensLimit,
   isOpenAIGpt5OrNewerModelConfig,
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
+  normalizeOpenAIResponsesReasoningEffort,
   OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY,
 } from "../utils/openai-responses";
 import {
@@ -47,9 +51,12 @@ const SOURCE_LABELS: Record<ConfigSource, string> = {
 };
 
 const REASONING_LABELS: Record<OpenAIChatReasoningEffort, string> = {
+  none: Locale.Settings.ReasoningEffort.None,
   low: Locale.Settings.ReasoningEffort.Low,
   medium: Locale.Settings.ReasoningEffort.Medium,
   high: Locale.Settings.ReasoningEffort.High,
+  xhigh: Locale.Settings.ReasoningEffort.XHigh,
+  max: Locale.Settings.ReasoningEffort.Max,
 };
 
 const TEXT_VERBOSITY_LABELS: Record<OpenAIResponsesTextVerbosity, string> = {
@@ -128,8 +135,14 @@ function useModelConfigListView(props: {
     : isDalle3Model
     ? DALLE3_IMAGE_QUALITIES
     : [];
-  const reasoningEffort = (props.modelConfig.reasoningEffort ??
-    OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT) as OpenAIChatReasoningEffort;
+  const reasoningEffortOptions = getOpenAIResponsesReasoningEfforts(
+    props.modelConfig.model,
+  );
+  const reasoningEffort = normalizeOpenAIResponsesReasoningEffort(
+    props.modelConfig.reasoningEffort ??
+      OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
+    props.modelConfig.model,
+  );
   const getReasoningMaxOutputTokens = (effort: OpenAIChatReasoningEffort) =>
     accessStore.openaiMaxOutputTokens ??
     getMaxOutputTokensForReasoningEffort(effort);
@@ -137,6 +150,9 @@ function useModelConfigListView(props: {
     typeof accessStore.openaiMaxOutputTokens === "number";
   const maxOutputTokensValue =
     accessStore.openaiMaxOutputTokens ?? props.modelConfig.max_output_tokens;
+  const maxOutputTokensLimit = getOpenAIResponsesMaxOutputTokensLimit(
+    props.modelConfig.model,
+  );
   const textVerbosity = (props.modelConfig.textVerbosity ||
     accessStore.openaiTextVerbosity ||
     OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY) as OpenAIResponsesTextVerbosity;
@@ -157,6 +173,7 @@ function useModelConfigListView(props: {
             updateUnlocked(["model", "providerName"], (config) => {
               config.model = ModalConfigValidator.model(model);
               config.providerName = providerName as ServiceProvider;
+              applyOpenAIResponsesModelConstraints(config);
               applyOpenAIImageGenerationDefaults(config);
               if (
                 isOpenAIGpt5OrNewerModelConfig({
@@ -274,7 +291,7 @@ function useModelConfigListView(props: {
                 });
               }}
             >
-              {(["low", "medium", "high"] as const).map((effort) => (
+              {reasoningEffortOptions.map((effort) => (
                 <option value={effort} key={effort}>
                   {REASONING_LABELS[effort]}
                 </option>
@@ -366,8 +383,8 @@ function useModelConfigListView(props: {
             aria-label={Locale.Settings.MaxTokens.Title}
             type="number"
             min={1024}
-            max={512000}
-            value={maxOutputTokensValue}
+            max={maxOutputTokensLimit}
+            value={Math.min(maxOutputTokensValue, maxOutputTokensLimit)}
             disabled={forcedMaxOutputTokens || isLocked("max_output_tokens")}
             onChange={(e) => {
               if (forcedMaxOutputTokens || isLocked("max_output_tokens"))
@@ -376,6 +393,7 @@ function useModelConfigListView(props: {
                 config.max_output_tokens =
                   ModalConfigValidator.max_output_tokens(
                     e.currentTarget.valueAsNumber,
+                    config.model,
                   );
               });
             }}

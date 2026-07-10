@@ -9,12 +9,18 @@ import {
   applyPublicAppConfig,
   sanitizeAccessPersistedState,
 } from "../app/store/access";
-import { DEFAULT_CONFIG, useAppConfig } from "../app/store/config";
+import {
+  DEFAULT_CONFIG,
+  ModalConfigValidator,
+  useAppConfig,
+} from "../app/store/config";
 import { useChatStore } from "../app/store/chat";
 import { ServiceProvider } from "../app/constant";
 import type { PublicAppConfig } from "../app/utils/public-app-config";
 
-function publicConfig(overrides: Partial<PublicAppConfig> = {}): PublicAppConfig {
+function publicConfig(
+  overrides: Partial<PublicAppConfig> = {},
+): PublicAppConfig {
   const base: PublicAppConfig = {
     schemaVersion: 1,
     configVersion: "v1",
@@ -201,6 +207,114 @@ describe("applyPublicAppConfig", () => {
     const current = useChatStore.getState().temporarySession!;
     expect(current.mask.modelConfig.model).toBe("gpt-image-2");
     expect(current.mask.modelConfig.providerName).toBe("OpenAI");
+  });
+
+  test("moves a disallowed GPT-5.4 session to Terra while preserving allowed Luna", () => {
+    const oldSession = session(512000, false) as any;
+    oldSession.mask.modelConfig.model = "gpt-5.4";
+    const lunaSession = session(30000, false) as any;
+    lunaSession.id = "s2";
+    lunaSession.mask.modelConfig.model = "gpt-5.6-luna";
+
+    useChatStore.setState({
+      sessions: [oldSession, lunaSession],
+      temporarySession: undefined,
+      currentSessionIndex: 0,
+    } as any);
+
+    applyPublicAppConfig(
+      publicConfig({
+        defaults: {
+          model: "gpt-5.6-terra",
+          providerName: "OpenAI",
+        },
+        forced: {
+          model: "gpt-5.6-terra",
+          providerName: "OpenAI",
+        },
+        allowedModels: [
+          "gpt-5.6@OpenAI",
+          "gpt-5.6-sol@OpenAI",
+          "gpt-5.6-terra@OpenAI",
+          "gpt-5.6-luna@OpenAI",
+        ],
+        lockedFields: ["customModels", "baseUrl", "apiKey"],
+        legacy: {
+          customModels:
+            "-all,gpt-5.6@openai,gpt-5.6-sol@openai,gpt-5.6-terra@openai,gpt-5.6-luna@openai",
+          defaultModel: "gpt-5.6-terra",
+        },
+      }),
+    );
+
+    expect(useChatStore.getState().sessions[0].mask.modelConfig.model).toBe(
+      "gpt-5.6-terra",
+    );
+    expect(
+      useChatStore.getState().sessions[0].mask.modelConfig.max_output_tokens,
+    ).toBe(128000);
+    expect(useChatStore.getState().sessions[1].mask.modelConfig.model).toBe(
+      "gpt-5.6-luna",
+    );
+    expect(
+      useChatStore.getState().sessions[1].mask.modelConfig.max_output_tokens,
+    ).toBe(30000);
+  });
+
+  test.each(["gpt-5.6", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"])(
+    "caps %s max_output_tokens at 128K in the config validator",
+    (model) => {
+      expect(ModalConfigValidator.max_output_tokens(512000, model)).toBe(
+        128000,
+      );
+    },
+  );
+
+  test("reapplies GPT-5.6 constraints when the public config snapshot is unchanged", () => {
+    const unchangedConfig = publicConfig({
+      defaults: {
+        model: "gpt-5.6-terra",
+        providerName: "OpenAI",
+        max_output_tokens: 128000,
+      },
+      forced: {
+        model: "gpt-5.6-terra",
+        providerName: "OpenAI",
+      },
+      allowedModels: ["gpt-5.6-terra@OpenAI"],
+      legacy: {
+        customModels: "-all,gpt-5.6-terra@openai",
+        defaultModel: "gpt-5.6-terra",
+      },
+    });
+    const staleSession = session(512000, false) as any;
+    staleSession.mask.modelConfig.model = "gpt-5.4";
+
+    useAppConfig.setState({
+      modelConfig: {
+        ...DEFAULT_CONFIG.modelConfig,
+        model: "gpt-5.4" as any,
+        max_output_tokens: 512000,
+      },
+      modelConfigMeta: {},
+      serverConfigSnapshot: unchangedConfig,
+    });
+    useChatStore.setState({
+      sessions: [staleSession],
+      temporarySession: undefined,
+      currentSessionIndex: 0,
+    } as any);
+
+    applyPublicAppConfig(unchangedConfig);
+
+    expect(useAppConfig.getState().modelConfig).toMatchObject({
+      model: "gpt-5.6-terra",
+      max_output_tokens: 128000,
+    });
+    expect(useChatStore.getState().sessions[0].mask.modelConfig).toMatchObject({
+      model: "gpt-5.6-terra",
+      max_output_tokens: 128000,
+    });
   });
 
   test("forces max_output_tokens when admin sets a numeric value", () => {

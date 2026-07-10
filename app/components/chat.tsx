@@ -122,8 +122,12 @@ import { getClientConfig } from "../config/client";
 import { useAllModels } from "../utils/hooks";
 import { MultimodalContent } from "../client/types";
 import {
+  applyOpenAIResponsesModelConstraints,
   getMaxOutputTokensForReasoningEffort,
+  getOpenAIResponsesReasoningEfforts,
+  clampOpenAIResponsesMaxOutputTokens,
   isOpenAIGpt5OrNewerModelConfig,
+  normalizeOpenAIResponsesReasoningEffort,
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
   OpenAIChatReasoningEffort,
 } from "../utils/openai-responses";
@@ -183,16 +187,21 @@ const localStorage = safeLocalStorage();
 
 const ttsPlayer = createTTSPlayer();
 const reasoningLabels: Record<OpenAIChatReasoningEffort, string> = {
-  low: "标准",
-  medium: "进阶",
-  high: "深入",
+  none: Locale.Settings.ReasoningEffort.None,
+  low: Locale.Settings.ReasoningEffort.Low,
+  medium: Locale.Settings.ReasoningEffort.Medium,
+  high: Locale.Settings.ReasoningEffort.High,
+  xhigh: Locale.Settings.ReasoningEffort.XHigh,
+  max: Locale.Settings.ReasoningEffort.Max,
 };
 const reasoningDescriptions: Record<OpenAIChatReasoningEffort, string> = {
-  low: "最适合回答大多数问题",
-  medium: "更稳妥处理复杂任务",
-  high: "用于高难度推理",
+  none: Locale.Settings.ReasoningEffort.NoneDescription,
+  low: Locale.Settings.ReasoningEffort.LowDescription,
+  medium: Locale.Settings.ReasoningEffort.MediumDescription,
+  high: Locale.Settings.ReasoningEffort.HighDescription,
+  xhigh: Locale.Settings.ReasoningEffort.XHighDescription,
+  max: Locale.Settings.ReasoningEffort.MaxDescription,
 };
-const reasoningEfforts: OpenAIChatReasoningEffort[] = ["low", "medium", "high"];
 const imageQualityLabels: Record<OpenAIImageQuality, string> = {
   auto: "自动",
   low: "低清晰度",
@@ -1347,6 +1356,7 @@ function useChatActionsView(props: ChatActionsProps) {
         session.mask.modelConfig.model = nextModel.name;
         session.mask.modelConfig.providerName = nextModel?.provider
           ?.providerName as ServiceProvider;
+        applyOpenAIResponsesModelConstraints(session.mask.modelConfig);
         applyOpenAIImageGenerationDefaults(session.mask.modelConfig);
         session.mask.modelConfigMeta = {
           ...(session.mask.modelConfigMeta ?? {}),
@@ -1628,6 +1638,9 @@ function useChatActionsView(props: ChatActionsProps) {
                     session.mask.modelConfig.model = model as ModelType;
                     session.mask.modelConfig.providerName =
                       providerName as ServiceProvider;
+                    applyOpenAIResponsesModelConstraints(
+                      session.mask.modelConfig,
+                    );
                     applyOpenAIImageGenerationDefaults(
                       session.mask.modelConfig,
                     );
@@ -1800,9 +1813,13 @@ function ChatInputReasoningAction() {
   const currentModel = session.mask.modelConfig.model;
   const currentProviderName =
     session.mask.modelConfig?.providerName || ServiceProvider.OpenAI;
-  const currentReasoningEffort =
+  const currentReasoningEffort = normalizeOpenAIResponsesReasoningEffort(
     session.mask.modelConfig?.reasoningEffort ??
-    (OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT as OpenAIChatReasoningEffort);
+      OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
+    currentModel,
+  );
+  const currentReasoningEfforts =
+    getOpenAIResponsesReasoningEfforts(currentModel);
   const [showReasoningSelectorModal, setShowReasoningSelectorModal] =
     useState(false);
   const reasoningLocked =
@@ -1813,8 +1830,11 @@ function ChatInputReasoningAction() {
     providerName: currentProviderName,
   });
   const getReasoningMaxOutputTokens = (effort: OpenAIChatReasoningEffort) =>
-    accessStore.openaiMaxOutputTokens ??
-    getMaxOutputTokensForReasoningEffort(effort);
+    clampOpenAIResponsesMaxOutputTokens(
+      accessStore.openaiMaxOutputTokens ??
+        getMaxOutputTokensForReasoningEffort(effort),
+      currentModel,
+    );
 
   if (!showReasoningSelector) return null;
 
@@ -1873,7 +1893,7 @@ function ChatInputReasoningAction() {
       {showReasoningSelectorModal && (
         <Selector
           defaultSelectedValue={currentReasoningEffort}
-          items={reasoningEfforts.map((effort) => ({
+          items={currentReasoningEfforts.map((effort) => ({
             title: reasoningLabels[effort],
             value: effort,
             icon: <BrainIcon />,
@@ -2851,9 +2871,13 @@ function useChatInnerView() {
     );
     return model?.displayName ?? headerCurrentModel;
   }, [headerAvailableModels, headerCurrentModel, headerCurrentProviderName]);
-  const headerCurrentReasoningEffort =
+  const headerCurrentReasoningEffort = normalizeOpenAIResponsesReasoningEffort(
     session.mask.modelConfig?.reasoningEffort ??
-    (OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT as OpenAIChatReasoningEffort);
+      OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
+    headerCurrentModel,
+  );
+  const headerReasoningEfforts =
+    getOpenAIResponsesReasoningEfforts(headerCurrentModel);
   const headerReasoningLocked =
     accessStore.lockedFields?.includes("reasoningEffort") ||
     session.mask.modelConfigMeta?.reasoningEffort?.locked;
@@ -2895,8 +2919,11 @@ function useChatInnerView() {
   const getHeaderReasoningMaxOutputTokens = (
     effort: OpenAIChatReasoningEffort,
   ) =>
-    accessStore.openaiMaxOutputTokens ??
-    getMaxOutputTokensForReasoningEffort(effort);
+    clampOpenAIResponsesMaxOutputTokens(
+      accessStore.openaiMaxOutputTokens ??
+        getMaxOutputTokensForReasoningEffort(effort),
+      headerCurrentModel,
+    );
   const selectHeaderModel = (selected: string) => {
     if (headerModelLocked) {
       showToast("该项已由管理员锁定");
@@ -2906,6 +2933,7 @@ function useChatInnerView() {
     chatStore.updateTargetSession(session, (session) => {
       session.mask.modelConfig.model = model as ModelType;
       session.mask.modelConfig.providerName = providerName as ServiceProvider;
+      applyOpenAIResponsesModelConstraints(session.mask.modelConfig);
       applyOpenAIImageGenerationDefaults(session.mask.modelConfig);
       session.mask.modelConfigMeta = {
         ...(session.mask.modelConfigMeta ?? {}),
@@ -4822,7 +4850,7 @@ function useChatInnerView() {
                     role="listbox"
                     aria-label="思考等级选项"
                   >
-                    {reasoningEfforts.map((effort) => {
+                    {headerReasoningEfforts.map((effort) => {
                       const selected = effort === headerCurrentReasoningEffort;
                       return (
                         <button

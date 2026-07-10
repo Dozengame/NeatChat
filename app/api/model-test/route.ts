@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSideConfig } from "@/app/config/server";
 import { ModelProvider, OPENAI_BASE_URL, OpenaiPath } from "@/app/constant";
 import { ModelTestResult } from "@/app/utils/model-test";
+import { buildOpenAIModelTestRequest } from "@/app/utils/openai-model-test";
 import {
   checkCurrentRequestAccessUsage,
   usageErrorResponse,
@@ -14,7 +15,7 @@ const MODEL_TEST_MAX_MODELS = 1;
 // 测试单个模型
 async function testModel(
   req: NextRequest,
-  model: string,
+  requestBody: ReturnType<typeof buildOpenAIModelTestRequest>,
   serverConfig: ReturnType<typeof getServerSideConfig>,
   apiKey: string,
   timeoutSeconds: number = 5,
@@ -43,20 +44,6 @@ async function testModel(
     const url = baseUrl.toLowerCase().endsWith(`/${OpenaiPath.ResponsesPath}`)
       ? baseUrl
       : `${baseUrl}/${OpenaiPath.ResponsesPath}`;
-
-    // 构建请求体
-    const requestBody = {
-      model,
-      input: "Hello!",
-      max_output_tokens: serverConfig.openaiMaxOutputTokens ?? 16,
-      reasoning: {
-        effort: serverConfig.openaiReasoningEffort,
-      },
-      text: {
-        verbosity: serverConfig.openaiTextVerbosity,
-      },
-      stream: false,
-    };
 
     // 发送请求
     const response = await withUsageAccounting(
@@ -145,17 +132,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const modelRequests = models.map((model) =>
+      buildOpenAIModelTestRequest(String(model), serverConfig),
+    );
     const usageCheck = await checkCurrentRequestAccessUsage(req, {
-      estimatedTokens: (serverConfig.openaiMaxOutputTokens ?? 16) + 2,
+      estimatedTokens:
+        Math.max(...modelRequests.map((request) => request.max_output_tokens)) +
+        2,
     });
     if (!usageCheck.allowed) {
       return usageErrorResponse(usageCheck);
     }
 
     const testEntries = await Promise.all(
-      models.map(async (model) => [
-        model,
-        await testModel(req, model, serverConfig, apiKey, timeoutSeconds),
+      modelRequests.map(async (requestBody) => [
+        requestBody.model,
+        await testModel(req, requestBody, serverConfig, apiKey, timeoutSeconds),
       ]),
     );
     const results = Object.fromEntries(testEntries) as Record<

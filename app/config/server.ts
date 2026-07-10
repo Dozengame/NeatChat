@@ -213,9 +213,11 @@ export const getServerSideConfig = () => {
     OPENAI_RESPONSES_DEFAULT_TEMPERATURE;
   const openaiReasoningEffort = parseOpenAIResponsesReasoningEffort(
     process.env.OPENAI_REASONING_EFFORT,
+    defaultModel,
   );
   const openaiMaxOutputTokens = parseOpenAIMaxOutputTokens(
     process.env.OPENAI_MAX_OUTPUT_TOKENS,
+    defaultModel,
   );
   const openaiTextVerbosity = parseOpenAIResponsesTextVerbosity(
     process.env.OPENAI_TEXT_VERBOSITY,

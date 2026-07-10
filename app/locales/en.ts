@@ -638,9 +638,18 @@ const en: LocaleType = {
     ReasoningEffort: {
       Title: "Reasoning Effort",
       SubTitle: "Used by GPT-5.x and newer models",
+      None: "Fast",
       Low: "Standard",
       Medium: "Advanced",
       High: "Deep",
+      XHigh: "Extra Deep",
+      Max: "Maximum",
+      NoneDescription: "Uses no extra reasoning and prioritizes speed",
+      LowDescription: "Best for most questions",
+      MediumDescription: "Handles complex tasks more carefully",
+      HighDescription: "For difficult reasoning tasks",
+      XHighDescription: "For tasks needing more exploration and verification",
+      MaxDescription: "For the hardest quality-first tasks",
     },
     MaxTokens: {
       Title: "Max Output Tokens",

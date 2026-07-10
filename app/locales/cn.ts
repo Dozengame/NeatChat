@@ -634,9 +634,18 @@ const cn = {
     ReasoningEffort: {
       Title: "思考深度",
       SubTitle: "适用于 GPT-5.x 及以上模型",
+      None: "快速",
       Low: "标准",
       Medium: "进阶",
       High: "深入",
+      XHigh: "极深",
+      Max: "最大",
+      NoneDescription: "不使用额外推理，优先速度",
+      LowDescription: "最适合回答大多数问题",
+      MediumDescription: "更稳妥处理复杂任务",
+      HighDescription: "用于高难度推理",
+      XHighDescription: "用于需要更多探索和校验的任务",
+      MaxDescription: "用于最困难且质量优先的任务",
     },
     MaxTokens: {
       Title: "输出上限 (max_output_tokens)",

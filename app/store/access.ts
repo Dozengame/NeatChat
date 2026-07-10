@@ -35,10 +35,17 @@ import {
   type PublicAppConfig,
 } from "../utils/public-app-config";
 import {
+  applyOpenAIResponsesModelConstraints,
+  OPENAI_RESPONSES_DEFAULT_MODEL,
+} from "../utils/openai-responses";
+import {
   getAccessCodeValidationServerId,
   isAccessCodeValidationCurrent,
 } from "../utils/access-code-validation";
-import { applyChatStateUpdate, getRegisteredChatStore } from "./chat-state-link";
+import {
+  applyChatStateUpdate,
+  getRegisteredChatStore,
+} from "./chat-state-link";
 
 let isFetchingConfig = false;
 let hasFetchedConfig = false;
@@ -213,7 +220,7 @@ function getServerModelConfig(publicConfig: PublicAppConfig) {
     providerName:
       publicConfig.forced.providerName ?? publicConfig.defaults.providerName,
     allowedModels: publicConfig.allowedModels,
-    fallbackModelRef: "gpt-5.5@OpenAI",
+    fallbackModelRef: `${OPENAI_RESPONSES_DEFAULT_MODEL}@OpenAI`,
   });
   const [model, providerName] = splitModelRef(modelRef);
 
@@ -288,15 +295,6 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
   hasFetchedConfig = true;
 
   const oldSnapshot = useAppConfig.getState().serverConfigSnapshot;
-  if (
-    oldSnapshot?.configHash === publicConfig.configHash &&
-    oldSnapshot?.configVersion === publicConfig.configVersion &&
-    oldSnapshot?.deploymentId === publicConfig.deploymentId
-  ) {
-    useAccessStore.setState(() => publicConfigToAccessState(publicConfig));
-    return;
-  }
-
   const serverModelConfig = getServerModelConfig(publicConfig);
 
   useAppConfig.setState((state) => {
@@ -389,6 +387,8 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
       );
     }
 
+    applyOpenAIResponsesModelConstraints(modelConfig);
+
     return {
       customModels: publicConfig.legacy.customModels,
       serverConfigSnapshot: publicConfig,
@@ -479,6 +479,8 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
           true,
         );
       }
+
+      applyOpenAIResponsesModelConstraints(modelConfig);
 
       return {
         ...session,
@@ -725,7 +727,11 @@ export const useAccessStore = createPersistStore(
           "Content-Type": "application/json",
           Accept: "application/json",
           ...(get().accessCode
-            ? { Authorization: `Bearer ${ACCESS_CODE_PREFIX}${get().accessCode}` }
+            ? {
+                Authorization: `Bearer ${ACCESS_CODE_PREFIX}${
+                  get().accessCode
+                }`,
+              }
             : {}),
         },
       })

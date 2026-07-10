@@ -25,6 +25,7 @@ import { createPersistStore } from "../utils/store";
 import type { Voice } from "rt-client";
 import {
   getMaxOutputTokensForReasoningEffort,
+  getOpenAIResponsesMaxOutputTokensLimit,
   OPENAI_RESPONSES_DEFAULT_MODEL,
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
   OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY,
@@ -306,8 +307,13 @@ export const ModalConfigValidator = {
   model(x: string) {
     return x as ModelType;
   },
-  max_output_tokens(x: number) {
-    return limitNumber(x, 0, 512000, 1024);
+  max_output_tokens(x: number, model?: string) {
+    return limitNumber(
+      x,
+      0,
+      getOpenAIResponsesMaxOutputTokensLimit(model),
+      1024,
+    );
   },
   compressMessageLengthThreshold(x: number) {
     return limitNumber(x, 500, 4000, 1000);

@@ -2,7 +2,9 @@ import { DEFAULT_MODELS, ServiceProvider } from "../constant";
 import { getModelProvider } from "./model";
 import {
   getMaxOutputTokensForReasoningEffort,
+  isOpenAIResponsesReasoningEffort,
   isOpenAIGpt5OrNewerModelConfig,
+  normalizeOpenAIResponsesReasoningEffort,
   OpenAIChatReasoningEffort,
 } from "./openai-responses";
 
@@ -51,18 +53,21 @@ export function resolveServerModelConfig(config: ServerModelDefaults) {
     | undefined;
 
   if (
-    reasoningEffort &&
-    ["low", "medium", "high"].includes(reasoningEffort) &&
+    isOpenAIResponsesReasoningEffort(reasoningEffort) &&
     isOpenAIGpt5OrNewerModelConfig({
       model: modelConfig.model,
       providerName: modelConfig.providerName,
     })
   ) {
-    modelConfig.reasoningEffort = reasoningEffort;
+    const normalizedReasoningEffort = normalizeOpenAIResponsesReasoningEffort(
+      reasoningEffort,
+      modelConfig.model,
+    );
+    modelConfig.reasoningEffort = normalizedReasoningEffort;
     modelConfig.max_output_tokens =
       typeof config.openaiMaxOutputTokens === "number"
         ? config.openaiMaxOutputTokens
-        : getMaxOutputTokensForReasoningEffort(reasoningEffort);
+        : getMaxOutputTokensForReasoningEffort(normalizedReasoningEffort);
   }
 
   return modelConfig;

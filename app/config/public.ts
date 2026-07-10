@@ -1,7 +1,10 @@
 import { getServerSideConfig } from "./server";
 import { DEFAULT_INPUT_TEMPLATE, ServiceProvider } from "../constant";
 import {
+  clampOpenAIResponsesMaxOutputTokens,
   getMaxOutputTokensForReasoningEffort,
+  normalizeOpenAIResponsesReasoningEffort,
+  OPENAI_RESPONSES_DEFAULT_MODEL,
   type OpenAIResponsesReasoningEffort,
 } from "../utils/openai-responses";
 import {
@@ -45,20 +48,29 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
       typeof serverConfig.openaiMaxOutputTokens === "number",
   });
   const [requestedModel, requestedProviderName] = splitModelRef(
-    serverConfig.defaultModel || "gpt-5.5@OpenAI",
+    serverConfig.defaultModel || `${OPENAI_RESPONSES_DEFAULT_MODEL}@OpenAI`,
   );
   const forcedModelRef = resolveAllowedModelRef({
     model: requestedModel,
     providerName: requestedProviderName || ServiceProvider.OpenAI,
     allowedModels,
-    fallbackModelRef: "gpt-5.5@OpenAI",
+    fallbackModelRef: `${OPENAI_RESPONSES_DEFAULT_MODEL}@OpenAI`,
   });
   const [model, providerName] = splitModelRef(forcedModelRef);
-  const reasoningEffort =
-    serverConfig.openaiReasoningEffort as OpenAIResponsesReasoningEffort;
-  const defaultMaxOutputTokens =
+  const reasoningEffort = normalizeOpenAIResponsesReasoningEffort(
+    serverConfig.openaiReasoningEffort,
+    model,
+  ) as OpenAIResponsesReasoningEffort;
+  const effectiveMaxOutputTokens =
     typeof serverConfig.openaiMaxOutputTokens === "number"
-      ? serverConfig.openaiMaxOutputTokens
+      ? clampOpenAIResponsesMaxOutputTokens(
+          serverConfig.openaiMaxOutputTokens,
+          model,
+        )
+      : undefined;
+  const defaultMaxOutputTokens =
+    typeof effectiveMaxOutputTokens === "number"
+      ? effectiveMaxOutputTokens
       : getMaxOutputTokensForReasoningEffort(reasoningEffort);
 
   const hashInput = {
@@ -89,8 +101,8 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
       temperature: serverConfig.defaultTemperature,
       ...(lockedFields.includes("reasoningEffort") ? { reasoningEffort } : {}),
       textVerbosity: serverConfig.openaiTextVerbosity,
-      ...(typeof serverConfig.openaiMaxOutputTokens === "number"
-        ? { max_output_tokens: serverConfig.openaiMaxOutputTokens }
+      ...(typeof effectiveMaxOutputTokens === "number"
+        ? { max_output_tokens: effectiveMaxOutputTokens }
         : {}),
     },
     allowedModels,
@@ -110,7 +122,7 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
       defaultModel: serverConfig.defaultModel,
       defaultTemperature: serverConfig.defaultTemperature,
       openaiReasoningEffort: serverConfig.openaiReasoningEffort,
-      openaiMaxOutputTokens: serverConfig.openaiMaxOutputTokens,
+      openaiMaxOutputTokens: effectiveMaxOutputTokens,
       openaiTextVerbosity: serverConfig.openaiTextVerbosity,
       compressMessageLengthThreshold:
         serverConfig.openaiCompressMessageLengthThreshold,

@@ -3,7 +3,10 @@ import {
   parseDefaultTemperature,
 } from "../app/config/server";
 import {
+  applyOpenAIResponsesModelConstraints,
   getMaxOutputTokensForReasoningEffort,
+  getOpenAIResponsesReasoningEfforts,
+  isGpt56Model,
   isOpenAIGpt5OrNewerModelConfig,
   isGpt5OrNewerModel,
   parseOpenAICompressMessageLengthThreshold,
@@ -15,6 +18,7 @@ import {
   shouldUseOpenAIResponses,
   supportsOpenAIResponsesWebSearch,
 } from "../app/utils/openai-responses";
+import { OPENAI_GPT_56_MODELS } from "../app/constant";
 import {
   buildPublicAppConfig,
   publicConfigHeaders,
@@ -58,6 +62,37 @@ describe("OpenAI Responses config", () => {
     expect(isGpt5OrNewerModel("gpt-6")).toBe(true);
     expect(isGpt5OrNewerModel("gpt-4o")).toBe(false);
     expect(isGpt5OrNewerModel("o1-preview")).toBe(false);
+  });
+
+  test.each(OPENAI_GPT_56_MODELS)("detects %s as GPT-5.6", (model) => {
+    expect(isGpt56Model(model)).toBe(true);
+    expect(getOpenAIResponsesReasoningEfforts(model)).toEqual([
+      "none",
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
+    ]);
+  });
+
+  test("keeps pre-5.6 model constraints when switching away from GPT-5.6", () => {
+    const modelConfig = {
+      model: "gpt-5.5",
+      providerName: "OpenAI",
+      reasoningEffort: "max" as const,
+      max_output_tokens: 512000,
+    };
+
+    applyOpenAIResponsesModelConstraints(modelConfig);
+
+    expect(getOpenAIResponsesReasoningEfforts(modelConfig.model)).toEqual([
+      "low",
+      "medium",
+      "high",
+    ]);
+    expect(modelConfig.reasoningEffort).toBe("low");
+    expect(modelConfig.max_output_tokens).toBe(512000);
   });
 
   test("uses Responses for OpenAI and keeps Azure separate", () => {
@@ -114,6 +149,24 @@ describe("OpenAI Responses config", () => {
     ).toBe(false);
   });
 
+  test.each(OPENAI_GPT_56_MODELS)(
+    "enables hosted web search for %s only on OpenAI",
+    (model) => {
+      expect(
+        supportsOpenAIResponsesWebSearch({
+          model,
+          providerName: "OpenAI",
+        }),
+      ).toBe(true);
+      expect(
+        supportsOpenAIResponsesWebSearch({
+          model,
+          providerName: "Azure",
+        }),
+      ).toBe(false);
+    },
+  );
+
   test("requires web search for time-sensitive user requests", () => {
     expect(shouldRequireOpenAIResponsesWebSearch("今天有什么大新闻")).toBe(
       true,
@@ -142,9 +195,9 @@ describe("OpenAI Responses config", () => {
       "这段附件内容本身不决定是否搜索。",
     ].join("\n");
 
-    expect(
-      shouldRequireOpenAIResponsesWebSearch(pastedAttachmentText),
-    ).toBe(false);
+    expect(shouldRequireOpenAIResponsesWebSearch(pastedAttachmentText)).toBe(
+      false,
+    );
     expect(shouldEnableOpenAIResponsesWebSearch(pastedAttachmentText)).toBe(
       false,
     );
@@ -184,22 +237,35 @@ describe("OpenAI Responses config", () => {
   });
 
   test("falls back to recommended Responses settings", () => {
+    expect(parseOpenAIResponsesReasoningEffort("none")).toBe("none");
     expect(parseOpenAIResponsesReasoningEffort("xhigh")).toBe("xhigh");
+    expect(parseOpenAIResponsesReasoningEffort("max")).toBe("max");
+    expect(parseOpenAIResponsesReasoningEffort("max", "gpt-5.5")).toBe("low");
+    expect(parseOpenAIResponsesReasoningEffort("max", "gpt-5.6-terra")).toBe(
+      "max",
+    );
     expect(parseOpenAIResponsesReasoningEffort("bad")).toBe("low");
     expect(parseOpenAIResponsesTextVerbosity("low")).toBe("low");
     expect(parseOpenAIResponsesTextVerbosity("bad")).toBe("medium");
   });
 
   test("maps reasoning effort to enough output budget", () => {
+    expect(getMaxOutputTokensForReasoningEffort("none")).toBe(10000);
     expect(getMaxOutputTokensForReasoningEffort("low")).toBe(10000);
     expect(getMaxOutputTokensForReasoningEffort("medium")).toBe(20000);
     expect(getMaxOutputTokensForReasoningEffort("high")).toBe(30000);
+    expect(getMaxOutputTokensForReasoningEffort("xhigh")).toBe(30000);
+    expect(getMaxOutputTokensForReasoningEffort("max")).toBe(30000);
   });
 
   test("parses max_output_tokens overrides", () => {
     expect(parseOpenAIMaxOutputTokens()).toBeUndefined();
     expect(parseOpenAIMaxOutputTokens("abc")).toBeUndefined();
     expect(parseOpenAIMaxOutputTokens("20000")).toBe(20000);
+    for (const model of OPENAI_GPT_56_MODELS) {
+      expect(parseOpenAIMaxOutputTokens("512000", model)).toBe(128000);
+    }
+    expect(parseOpenAIMaxOutputTokens("512000", "gpt-5.5")).toBe(512000);
     expect(parseOpenAIMaxOutputTokens("-1")).toBe(0);
   });
 
@@ -211,7 +277,7 @@ describe("OpenAI Responses config", () => {
     expect(parseOpenAICompressMessageLengthThreshold("9999")).toBe(4000);
   });
 
-  test("uses GPT-5.5 Responses defaults", () => {
+  test("uses GPT-5.6 Terra Responses defaults", () => {
     process.env.DEFAULT_MODEL = "";
     process.env.OPENAI_TEMPERATURE = "";
     process.env.OPENAI_REASONING_EFFORT = "";
@@ -221,7 +287,7 @@ describe("OpenAI Responses config", () => {
 
     const config = getServerSideConfig();
 
-    expect(config.defaultModel).toBe("gpt-5.5");
+    expect(config.defaultModel).toBe("gpt-5.6-terra");
     expect(config.defaultTemperature).toBe(1);
     expect(config.openaiReasoningEffort).toBe("low");
     expect(config.openaiMaxOutputTokens).toBeUndefined();
@@ -281,6 +347,19 @@ describe("OpenAI Responses config", () => {
     expect(allowedModels).toEqual(
       expect.arrayContaining(["gpt-5.4@OpenAI", "gpt-image-2@OpenAI"]),
     );
+
+    expect(
+      deriveAllowedModels({
+        customModels:
+          "-all,gpt-5.6@openai,gpt-5.6-sol@openai,gpt-5.6-terra@openai,gpt-5.6-luna@openai,gpt-image-2@openai",
+      }),
+    ).toEqual([
+      "gpt-5.6@OpenAI",
+      "gpt-5.6-sol@OpenAI",
+      "gpt-5.6-terra@OpenAI",
+      "gpt-5.6-luna@OpenAI",
+      "gpt-image-2@OpenAI",
+    ]);
   });
 
   test("builds public config without secrets and no-store headers", async () => {
@@ -318,6 +397,21 @@ describe("OpenAI Responses config", () => {
     expect(headers["Cache-Control"]).toContain("no-store");
     expect(headers.Pragma).toBe("no-cache");
     expect(headers.Expires).toBe("0");
+  });
+
+  test("reclamps max_output_tokens after the allowlist falls back to Terra", () => {
+    process.env.CUSTOM_MODELS = "-all,gpt-5.6-terra@openai";
+    process.env.DEFAULT_MODEL = "gpt-5.4";
+    process.env.OPENAI_MAX_OUTPUT_TOKENS = "512000";
+
+    const publicConfig = buildPublicAppConfig(
+      new Date("2026-07-10T00:00:00.000Z"),
+    );
+
+    expect(publicConfig.defaults.model).toBe("gpt-5.6-terra");
+    expect(publicConfig.defaults.max_output_tokens).toBe(128000);
+    expect(publicConfig.forced.max_output_tokens).toBe(128000);
+    expect(publicConfig.legacy.openaiMaxOutputTokens).toBe(128000);
   });
 
   test("uses Vercel deployment id before git commit for public config identity", async () => {
@@ -466,6 +560,35 @@ describe("OpenAI Responses config", () => {
       providerName: "OpenAI",
       reasoningEffort: "medium",
       max_output_tokens: 12000,
+    });
+  });
+
+  test.each(["none", "xhigh", "max"] as const)(
+    "preserves GPT-5.6 reasoning effort %s in server model defaults",
+    (reasoningEffort) => {
+      expect(
+        resolveServerModelConfig({
+          defaultModel: "gpt-5.6-terra",
+          openaiReasoningEffort: reasoningEffort,
+        }),
+      ).toMatchObject({
+        model: "gpt-5.6-terra",
+        providerName: "OpenAI",
+        reasoningEffort,
+      });
+    },
+  );
+
+  test("keeps GPT-5.5 on the legacy reasoning effort set", () => {
+    expect(
+      resolveServerModelConfig({
+        defaultModel: "gpt-5.5",
+        openaiReasoningEffort: "max",
+      }),
+    ).toMatchObject({
+      model: "gpt-5.5",
+      providerName: "OpenAI",
+      reasoningEffort: "low",
     });
   });
 });

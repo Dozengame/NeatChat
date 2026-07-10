@@ -1,4 +1,5 @@
 import { buildOpenAIResponsesPayload } from "../app/client/platforms/openai-responses-builder";
+import { OPENAI_GPT_56_MODELS } from "../app/constant";
 import { DEFAULT_CONFIG } from "../app/store/config";
 import { ServiceProvider } from "../app/constant";
 import { shouldEnableOpenAIResponsesWebSearch } from "../app/utils/openai-responses";
@@ -289,5 +290,36 @@ describe("buildOpenAIResponsesPayload", () => {
 
     expect(payload.temperature).toBeUndefined();
     expect(payload.top_p).toBeUndefined();
+  });
+
+  test.each(OPENAI_GPT_56_MODELS)(
+    "preserves max reasoning for %s and clamps output to 128K",
+    (model) => {
+      const payload = buildOpenAIResponsesPayload({
+        messages: [{ role: "user", content: "Hello" }],
+        modelConfig: {
+          ...modelConfig,
+          model: model as any,
+          reasoningEffort: "max",
+          max_output_tokens: 512000,
+        },
+      }) as any;
+
+      expect(payload.reasoning.effort).toBe("max");
+      expect(payload.max_output_tokens).toBe(128000);
+    },
+  );
+
+  test("normalizes an unsupported GPT-5.5 max effort to low", () => {
+    const payload = buildOpenAIResponsesPayload({
+      messages: [{ role: "user", content: "Hello" }],
+      modelConfig: {
+        ...modelConfig,
+        model: "gpt-5.5" as any,
+        reasoningEffort: "max",
+      },
+    }) as any;
+
+    expect(payload.reasoning.effort).toBe("low");
   });
 });

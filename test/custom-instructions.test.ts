@@ -75,9 +75,9 @@ describe("custom instructions", () => {
     await useChatStore.getState().onUserInput("Hello");
 
     const messages = getSentMessages();
-    expect(messages.some((m: any) => m.content === "Do not include this.")).toBe(
-      false,
-    );
+    expect(
+      messages.some((m: any) => m.content === "Do not include this."),
+    ).toBe(false);
   });
 
   test("queues visible messages before async prompt preparation finishes", async () => {
@@ -160,6 +160,28 @@ describe("custom instructions", () => {
         expect.objectContaining({
           role: "system",
           content: "Always answer with concise bullet points.",
+        }),
+      ]),
+    );
+  });
+
+  test("injects the official GPT-5.6 knowledge cutoff", async () => {
+    useAppConfig.setState({
+      modelConfig: {
+        ...DEFAULT_CONFIG.modelConfig,
+        model: "gpt-5.6-terra" as any,
+        providerName: "OpenAI" as any,
+        enableInjectSystemPrompts: true,
+      },
+    });
+
+    await useChatStore.getState().onUserInput("Hello");
+
+    expect(getSentMessages()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: "system",
+          content: expect.stringContaining("Knowledge cutoff: 2026-02-16"),
         }),
       ]),
     );

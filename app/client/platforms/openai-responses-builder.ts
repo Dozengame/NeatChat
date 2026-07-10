@@ -1,7 +1,9 @@
 import type { ChatOptions, MultimodalContent } from "../types";
 import type { ModelConfig } from "@/app/store";
 import {
+  clampOpenAIResponsesMaxOutputTokens,
   isOpenAIGpt5OrNewerModelConfig,
+  normalizeOpenAIResponsesReasoningEffort,
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
   OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY,
   supportsOpenAIResponsesSampling,
@@ -228,7 +230,10 @@ export function buildOpenAIResponsesPayload(params: {
   }
 
   if (params.modelConfig.max_output_tokens > 0) {
-    payload.max_output_tokens = params.modelConfig.max_output_tokens;
+    payload.max_output_tokens = clampOpenAIResponsesMaxOutputTokens(
+      params.modelConfig.max_output_tokens,
+      params.modelConfig.model,
+    );
   }
 
   if (
@@ -238,8 +243,11 @@ export function buildOpenAIResponsesPayload(params: {
     })
   ) {
     payload.reasoning = {
-      effort: (params.modelConfig.reasoningEffort ||
-        OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT) as OpenAIResponsesReasoningEffort,
+      effort: normalizeOpenAIResponsesReasoningEffort(
+        params.modelConfig.reasoningEffort ||
+          OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
+        params.modelConfig.model,
+      ) as OpenAIResponsesReasoningEffort,
       summary: params.reasoningSummary,
     };
     if (params.store === false) {
