@@ -384,6 +384,7 @@ const en: LocaleType = {
       Empty: "No models available",
       ReasoningEffort: "Reasoning effort",
       ReasoningOptions: "Reasoning effort options",
+      BackToModels: "Back to model list",
       ImageSize: "Image size",
       ImageSizeOptions: "Image size options",
       GeneratedImageSize: "Generated image size",

@@ -113,8 +113,9 @@ describe("GPT-5.6 Settings contract", () => {
     expect(modelConfig).toContain("visibleReasoningEffortOptions.map");
     expect(modelConfig).toContain("!reasoningEffortOptions.some(");
     expect(chat).toContain("visibleCurrentReasoningEfforts.map");
-    expect(chat).toContain("visibleHeaderReasoningEfforts.map");
-    expect(chat).toContain("aria-disabled={disabled}");
+    expect(chat).toContain("efforts={visibleHeaderReasoningEfforts}");
+    expect(chat).toContain("allowedEfforts={headerReasoningEfforts}");
+    expect(chat).toContain("locked={!!headerReasoningLocked}");
     expect(publicConfig).toContain("reasoningEffortAllowlist?");
     expect(envTemplate).toContain("WEBUI_ALLOWED_REASONING_EFFORTS=");
     expect(envTemplate).toContain("gpt-5.6-sol=");

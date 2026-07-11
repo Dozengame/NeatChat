@@ -203,6 +203,7 @@ describe("Gemini visual migration shell", () => {
   test("keeps the Gemini-style empty state hooks and the existing tool menu entry points", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
+    const reasoningRail = read("app/components/reasoning-effort-rail.tsx");
     const sendIconSvg = read("app/icons/send-white.svg");
     const home = read("app/components/home.tsx");
     const newChat = read("app/components/new-chat.tsx");
@@ -1781,14 +1782,19 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /setTimeout\(\(\) => \{[\s\S]*requestAnimationFrame\([\s\S]*\(\) => modelSelectorButtonRef\.current\?\.focus\(\),?[\s\S]*\);[\s\S]*\}, 0\);/,
     );
-    expect(chat).toMatch(
-      /const getModelMenuControls = useCallback\(\(\) => \{[\s\S]*modelMenuRef\.current\?\.querySelectorAll<HTMLButtonElement>\(\s*'\[role="option"\], button\[aria-controls\]',\s*\)[\s\S]*filter\(\(control\) => !control\.disabled && control\.offsetParent !== null\);[\s\S]*\}, \[\]\);/,
-    );
+    expect(chat).toContain("querySelectorAll<HTMLElement>");
+    expect(chat).toContain('[role="option"], [role="slider"]');
+    expect(chat).toContain('[data-model-menu-control="true"]');
+    expect(chat).toContain("control instanceof HTMLButtonElement");
+    expect(chat).toContain("control.offsetParent !== null");
     expect(chat).toMatch(
       /const focusModelMenuControl = useCallback\(\s*\(key: string\) => \{[\s\S]*case "ArrowDown":[\s\S]*case "ArrowUp":[\s\S]*case "Home":[\s\S]*case "End":[\s\S]*nextControl\.focus\(\);[\s\S]*nextControl\.scrollIntoView\(\{ block: "nearest" \}\);[\s\S]*\},\s*\[getModelMenuControls\],\s*\);/,
     );
-    expect(chat).toMatch(
-      /const focusInitialModelMenuControl = useCallback\(\(\) => \{[\s\S]*if \(controls\.length === 0\) \{[\s\S]*modelMenuRef\.current\?\.focus\(\{ preventScroll: true \}\);[\s\S]*return;[\s\S]*\}[\s\S]*const selectedControl = controls\.find\([\s\S]*control\.getAttribute\("aria-selected"\) === "true"[\s\S]*const nextControl = selectedControl \?\? controls\[0\];[\s\S]*nextControl\.focus\(\{ preventScroll: true \}\);[\s\S]*nextControl\.scrollIntoView\(\{ block: "nearest" \}\);[\s\S]*\},\s*\[getModelMenuControls\],\s*\);/,
+    expect(chat).toContain(
+      'control.getAttribute("role") === "slider"',
+    );
+    expect(chat).toContain(
+      "const nextControl = selectedControl ?? sliderControl ?? controls[0];",
     );
     expect(chat).toMatch(
       /const trapModelMenuTab = useCallback\(\s*\(event: React\.KeyboardEvent<HTMLElement>\) => \{[\s\S]*const controls = getModelMenuControls\(\);[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);[\s\S]*if \(controls\.length === 0\) \{[\s\S]*modelMenuRef\.current\?\.focus\(\{ preventScroll: true \}\);[\s\S]*return;[\s\S]*\}[\s\S]*const nextIndex = event\.shiftKey[\s\S]*currentIndex <= 0[\s\S]*controls\.length - 1[\s\S]*currentIndex \+ 1[\s\S]*nextControl\.focus\(\{ preventScroll: true \}\);[\s\S]*nextControl\.scrollIntoView\(\{ block: "nearest" \}\);[\s\S]*\},\s*\[getModelMenuControls\],\s*\);/,
@@ -1818,18 +1824,31 @@ describe("Gemini visual migration shell", () => {
     expect(modelMenuArrowGuardIndex).toBeGreaterThan(
       modelMenuModifierGuardIndex,
     );
-    expect(chat).toMatch(
-      /useEffect\(\(\) => \{[\s\S]*if \(modelMenuFocusFrameRef\.current !== null\) \{[\s\S]*cancelAnimationFrame\(modelMenuFocusFrameRef\.current\);[\s\S]*modelMenuFocusFrameRef\.current = null;[\s\S]*\}[\s\S]*if \(!showMobileModelSelector\) return;[\s\S]*modelMenuFocusFrameRef\.current = requestAnimationFrame\(\(\) => \{[\s\S]*modelMenuFocusFrameRef\.current = requestAnimationFrame\(\(\) => \{[\s\S]*modelMenuFocusFrameRef\.current = null;[\s\S]*focusInitialModelMenuControl\(\);[\s\S]*\}\);[\s\S]*\}\);[\s\S]*return \(\) => \{[\s\S]*if \(modelMenuFocusFrameRef\.current !== null\) \{[\s\S]*cancelAnimationFrame\(modelMenuFocusFrameRef\.current\);[\s\S]*modelMenuFocusFrameRef\.current = null;[\s\S]*\}[\s\S]*\};[\s\S]*\}, \[focusInitialModelMenuControl, showMobileModelSelector\]\);/,
+    expect(chat).toContain(
+      "modelMenuFocusFrameRef.current = requestAnimationFrame(() => {",
     );
+    expect(chat).toContain("focusInitialModelMenuControl();");
+    expect(chat).toContain(
+      "[focusInitialModelMenuControl, showMobileModelSelector]",
+    );
+    expect(chat).toContain('expandedMobileModelSection !== "reasoning"');
+    expect(chat).toContain(
+      '?.querySelector<HTMLElement>(\'[role="slider"]\')',
+    );
+    expect(chat).toContain("?.focus({ preventScroll: true });");
     expect(chat).toContain("ref={modelSelectorButtonRef}");
     expect(chat).toContain("aria-expanded={showMobileModelSelector}");
     expect(chat).toContain('aria-controls="chat-model-menu"');
-    expect(chat).toMatch(
-      /className=\{styles\["chat-input-model-button"\]\}[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.SelectModel\(\s*headerCurrentModelName,\s*currentModelDetail,\s*\)\}[\s\S]*title=\{`\$\{headerCurrentModelName\} · \$\{currentModelDetail\}`\}[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*aria-controls="chat-model-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showMobileModelSelector\}/,
+    expect(chat).toContain('styles["chat-input-model-button-open"]');
+    expect(chat).toContain("Locale.Chat.ModelMenu.SelectModel(");
+    expect(chat).toContain(
+      "title={`${headerCurrentModelName} · ${currentModelDetail}`}",
     );
+    expect(chat).toContain("onKeyDown={handleModelMenuKeyDown}");
+    expect(chat).toContain('aria-haspopup="dialog"');
     expect(chat).not.toContain("showEmptyComposerModelSelect");
     expect(
-      chat.match(/className=\{styles\["chat-input-model-button"\]\}/g),
+      chat.match(/styles\["chat-input-model-button"\]/g) ?? [],
     ).toHaveLength(1);
     expect(chat.match(/aria-controls="chat-model-menu"/g)).toHaveLength(1);
     expect(selectHeaderModelBlock).toContain("closeMobileModelSelector();");
@@ -1849,8 +1868,15 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /id="chat-model-menu"[\s\S]*ref=\{modelMenuRef\}[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*tabIndex=\{-1\}[\s\S]*role="dialog"[\s\S]*aria-modal="true"/,
     );
-    expect(chat).toMatch(
-      /if \(!showMobileModelSelector\) return;[\s\S]*const closeModelSelectorOnEscape = \(event: KeyboardEvent\) =>[\s\S]*event\.key === "Escape"[\s\S]*closeMobileModelSelector\(\);[\s\S]*restoreModelSelectorFocus\(\);[\s\S]*window\.addEventListener\("keydown", closeModelSelectorOnEscape\);[\s\S]*window\.removeEventListener\("keydown", closeModelSelectorOnEscape\);/,
+    expect(chat).toContain(
+      "const closeModelSelectorOnEscape = (event: KeyboardEvent) =>",
+    );
+    expect(chat).toContain('if (event.key === "Escape")');
+    expect(chat).toContain(
+      'window.addEventListener("keydown", closeModelSelectorOnEscape);',
+    );
+    expect(chat).toContain(
+      'window.removeEventListener("keydown", closeModelSelectorOnEscape)',
     );
     expect(chat).toMatch(
       /aria-label=\{Locale\.Chat\.ModelMenu\.Close\}[\s\S]*onClick=\{\(\) => \{[\s\S]*closeMobileModelSelector\(\);[\s\S]*restoreModelSelectorFocus\(\);[\s\S]*\}\}/,
@@ -1859,24 +1885,25 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain(
       "aria-label={Locale.Chat.ModelMenu.AvailableModels}",
     );
-    expect(chat).toContain(
-      "aria-label={Locale.Chat.ModelMenu.ReasoningOptions}",
-    );
+    expect(chat).toContain("ariaLabel={Locale.Chat.ModelMenu.ReasoningOptions}");
     expect(chat).toContain(
       "aria-label={Locale.Chat.ModelMenu.ImageSizeOptions}",
     );
     expect(chat).toContain(
       "aria-label={Locale.Chat.ModelMenu.ImageQualityOptions}",
     );
-    expect(chat).toMatch(
-      /className=\{styles\["chat-mobile-reasoning-head"\]\}[\s\S]*aria-expanded=\{isReasoningSectionExpanded\}[\s\S]*aria-controls="chat-mobile-reasoning-options"[\s\S]*id="chat-mobile-reasoning-options"[\s\S]*role="listbox"[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.ReasoningOptions\}/,
-    );
-    expect(chat).toMatch(
-      /className=\{styles\["chat-mobile-reasoning-head"\]\}[\s\S]*aria-expanded=\{isImageSizeSectionExpanded\}[\s\S]*aria-controls="chat-mobile-image-size-options"[\s\S]*id="chat-mobile-image-size-options"[\s\S]*role="listbox"[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.ImageSizeOptions\}/,
-    );
-    expect(chat).toMatch(
-      /className=\{styles\["chat-mobile-reasoning-head"\]\}[\s\S]*aria-expanded=\{isImageQualitySectionExpanded\}[\s\S]*aria-controls="chat-mobile-image-quality-options"[\s\S]*id="chat-mobile-image-quality-options"[\s\S]*role="listbox"[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.ImageQualityOptions\}/,
-    );
+    expect(chat).toContain("<ReasoningEffortRail");
+    expect(chat).toContain('id="chat-mobile-reasoning-options"');
+    expect(chat).toContain("efforts={visibleHeaderReasoningEfforts}");
+    expect(chat).toContain("allowedEfforts={headerReasoningEfforts}");
+    expect(reasoningRail).toContain('role="slider"');
+    expect(reasoningRail).toContain("aria-valuetext={labels[displayValue]}");
+    expect(chat).toContain("aria-expanded={isImageSizeSectionExpanded}");
+    expect(chat).toContain('aria-controls="chat-mobile-image-size-options"');
+    expect(chat).toContain('id="chat-mobile-image-size-options"');
+    expect(chat).toContain("aria-expanded={isImageQualitySectionExpanded}");
+    expect(chat).toContain('aria-controls="chat-mobile-image-quality-options"');
+    expect(chat).toContain('id="chat-mobile-image-quality-options"');
     expect(chat).toContain('role="option"');
     expect(chat).toContain("aria-selected={selected}");
     expect(chat).toContain("Locale.Chat.ChatToolMenu.Open");
@@ -3464,13 +3491,13 @@ describe("Gemini visual migration shell", () => {
       darkDesktopModelMenuTokenMap,
     );
     expect(mobileModelMenuBlock).toMatch(
-      /width:\s*min\(320px,\s*calc\(100vw - 48px\)\);/,
+      /width:\s*min\(var\(--chat-model-menu-composer-width, 360px\),\s*calc\(100vw - 24px\)\);/,
     );
     expect(mobileModelMenuBlock).toMatch(
-      /top:\s*calc\(env\(safe-area-inset-top\) \+ 60px\);/,
+      /top:\s*var\(--chat-model-menu-composer-top,\s*calc\(env\(safe-area-inset-top\) \+ 60px\)\);/,
     );
     expect(mobileModelMenuBlock).toMatch(
-      /max-height:\s*min\(640px,\s*calc\(100vh - 96px\)\);/,
+      /max-height:\s*var\(--chat-model-menu-composer-max-height,\s*min\(420px, 68dvh\)\);/,
     );
     expect(mobileModelMenuBlock).toMatch(/padding:\s*12px;/);
     expect(mobileModelMenuBlock).toMatch(
@@ -3754,8 +3781,14 @@ describe("Gemini visual migration shell", () => {
     expect(tabletModelCollapsedInputPanelBlock).toMatch(
       /padding:\s*14px 204px 14px 6px;/,
     );
-    expect(chat).toContain("const aboveSpace = buttonRect.top - 10 - viewportPadding;");
-    expect(chat).toContain("const openBelow = belowSpace >= 260 || belowSpace >= aboveSpace;");
+    expect(chat).toContain(
+      "const aboveSpace = composerRect.top - gap - viewportPadding;",
+    );
+    expect(chat).toContain(
+      "const openBelow = aboveSpace < preferredHeight && belowSpace > aboveSpace;",
+    );
+    expect(chat).toContain('button.closest("label")?.getBoundingClientRect()');
+    expect(chat).toContain("composerRect.left + composerRect.width / 2");
     expect(chat).toContain('"--chat-model-menu-composer-max-height"');
     expect(chatStyles).toContain(
       "max-height: var(--chat-model-menu-composer-max-height, 420px);",
@@ -16926,9 +16959,20 @@ describe("Gemini visual migration shell", () => {
     expect(chat).not.toContain('styles["chat-desktop-model-title"]');
     expect(composerModelButtonBlock).toMatch(/right:\s*66px;/);
     expect(composerModelButtonBlock).toMatch(
-      /max-width:\s*min\(128px,\s*26%\);/,
+      /width:\s*fit-content;/,
+    );
+    expect(composerModelButtonBlock).toMatch(
+      /min-width:\s*min\(144px,\s*calc\(100% - 280px\)\);/,
+    );
+    expect(composerModelButtonBlock).toMatch(
+      /max-width:\s*min\(220px,\s*calc\(100% - 280px\)\);/,
     );
     expect(composerModelButtonBlock).toMatch(/bottom:\s*13px;/);
+    expect(chat).toContain('styles["chat-input-model-detail"]');
+    expect(chat).toContain("{currentModelDetail}");
+    expect(chat).toContain("<ReasoningEffortRail");
+    expect(chat).toContain("efforts={visibleHeaderReasoningEfforts}");
+    expect(chat).toContain("allowedEfforts={headerReasoningEfforts}");
 
     expect(chatEmptySuggestionsBlock).toMatch(/display:\s*grid;/);
     expect(chatEmptySuggestionsBlock).toMatch(

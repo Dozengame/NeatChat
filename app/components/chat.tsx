@@ -189,6 +189,7 @@ import {
 } from "./chat-render";
 
 import { ImageEditor } from "./image-editor";
+import { ReasoningEffortRail } from "./reasoning-effort-rail";
 
 const localStorage = safeLocalStorage();
 
@@ -2393,26 +2394,40 @@ function useChatInnerView() {
     useState<React.CSSProperties | undefined>(undefined);
   const modelSelectorButtonRef = useRef<HTMLButtonElement>(null);
   const modelMenuRef = useRef<HTMLDivElement>(null);
+  const reasoningSectionButtonRef = useRef<HTMLButtonElement>(null);
   const modelMenuFocusFrameRef = useRef<number | null>(null);
   const getComposerModelMenuStyle = (button: HTMLButtonElement) => {
-    const viewportPadding = 16;
-    const menuWidth = Math.min(380, window.innerWidth - viewportPadding * 2);
+    const viewportPadding = isCompactScreen ? 12 : 16;
+    const gap = isCompactScreen ? 10 : 12;
+    const menuWidth = Math.min(
+      isCompactScreen ? 360 : 380,
+      window.innerWidth - viewportPadding * 2,
+    );
     const buttonRect = button.getBoundingClientRect();
+    const composerRect =
+      button.closest("label")?.getBoundingClientRect() ?? buttonRect;
+    const anchorCenter = isCompactScreen
+      ? composerRect.left + composerRect.width / 2
+      : buttonRect.left + buttonRect.width / 2;
     const left = Math.max(
       viewportPadding,
       Math.min(
-        buttonRect.right - menuWidth,
+        anchorCenter - menuWidth / 2,
         window.innerWidth - menuWidth - viewportPadding,
       ),
     );
-    const belowTop = buttonRect.bottom + 10;
+    const belowTop = composerRect.bottom + gap;
     const belowSpace = window.innerHeight - belowTop - viewportPadding;
-    const aboveSpace = buttonRect.top - 10 - viewportPadding;
-    const openBelow = belowSpace >= 260 || belowSpace >= aboveSpace;
+    const aboveSpace = composerRect.top - gap - viewportPadding;
+    const preferredHeight = isCompactScreen ? 230 : 250;
+    const openBelow = aboveSpace < preferredHeight && belowSpace > aboveSpace;
+    const maximumHeight = isCompactScreen
+      ? Math.min(420, window.innerHeight * 0.68)
+      : 420;
     const availableHeight = Math.max(
       0,
       Math.min(
-        420,
+        maximumHeight,
         openBelow ? belowSpace : aboveSpace,
         window.innerHeight - viewportPadding * 2,
       ),
@@ -2423,12 +2438,12 @@ function useChatInnerView() {
       "--chat-model-menu-composer-top": openBelow ? `${belowTop}px` : "auto",
       "--chat-model-menu-composer-bottom": openBelow
         ? "auto"
-        : `${window.innerHeight - buttonRect.top + 10}px`,
+        : `${window.innerHeight - composerRect.top + gap}px`,
       "--chat-model-menu-composer-width": `${menuWidth}px`,
       "--chat-model-menu-composer-max-height": `${availableHeight}px`,
       "--chat-model-menu-composer-origin": openBelow
-        ? "top right"
-        : "bottom right",
+        ? "top center"
+        : "bottom center",
       "--chat-model-menu-composer-shift": openBelow ? "8px" : "-8px",
     } as React.CSSProperties;
   };
@@ -2443,10 +2458,14 @@ function useChatInnerView() {
   }, []);
   const getModelMenuControls = useCallback(() => {
     return Array.from(
-      modelMenuRef.current?.querySelectorAll<HTMLButtonElement>(
-        '[role="option"], button[aria-controls]',
+      modelMenuRef.current?.querySelectorAll<HTMLElement>(
+        '[role="option"], [role="slider"], button[aria-controls], [data-model-menu-control="true"]',
       ) ?? [],
-    ).filter((control) => !control.disabled && control.offsetParent !== null);
+    ).filter(
+      (control) =>
+        (!(control instanceof HTMLButtonElement) || !control.disabled) &&
+        control.offsetParent !== null,
+    );
   }, []);
   const focusModelMenuControl = useCallback(
     (key: string) => {
@@ -2497,7 +2516,10 @@ function useChatInnerView() {
     const selectedControl = controls.find(
       (control) => control.getAttribute("aria-selected") === "true",
     );
-    const nextControl = selectedControl ?? controls[0];
+    const sliderControl = controls.find(
+      (control) => control.getAttribute("role") === "slider",
+    );
+    const nextControl = selectedControl ?? sliderControl ?? controls[0];
     nextControl.focus({ preventScroll: true });
     nextControl.scrollIntoView({ block: "nearest" });
   }, [getModelMenuControls]);
@@ -2566,6 +2588,16 @@ function useChatInnerView() {
       }
     };
   }, [focusInitialModelMenuControl, showMobileModelSelector]);
+  useEffect(() => {
+    if (expandedMobileModelSection !== "reasoning") return;
+
+    const frame = requestAnimationFrame(() => {
+      modelMenuRef.current
+        ?.querySelector<HTMLElement>('[role="slider"]')
+        ?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [expandedMobileModelSection]);
   useEffect(() => {
     if (!showMobileModelSelector) return;
 
@@ -4487,16 +4519,44 @@ function useChatInnerView() {
             : styles["chat-desktop-model-menu"],
           {
             [styles["chat-model-menu-visible"]]: showMobileModelSelector,
-            [styles["chat-desktop-model-menu-composer"]]: !isCompactScreen,
+            [styles["chat-desktop-model-menu-composer"]]: true,
+            [styles["chat-model-menu-reasoning"]]:
+              isReasoningSectionExpanded,
           },
         )}
-        style={!isCompactScreen ? composerModelMenuStyle : undefined}
+        style={composerModelMenuStyle}
         onKeyDown={handleModelMenuKeyDown}
         tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label={Locale.Chat.ModelMenu.ModelAndReasoning}
       >
+        {isReasoningSectionExpanded ? (
+          <ReasoningEffortRail
+            id="chat-mobile-reasoning-options"
+            ariaLabel={Locale.Chat.ModelMenu.ReasoningOptions}
+            title={Locale.Chat.ModelMenu.ReasoningEffort}
+            backLabel={Locale.Chat.ModelMenu.BackToModels}
+            efforts={visibleHeaderReasoningEfforts}
+            allowedEfforts={headerReasoningEfforts}
+            value={headerCurrentReasoningEffort}
+            locked={!!headerReasoningLocked}
+            lockedLabel={Locale.Settings.GPT56Capabilities.ConfigSource.Locked}
+            labels={reasoningLabels}
+            descriptions={reasoningDescriptions}
+            onChange={selectHeaderReasoningEffort}
+            onBack={() => {
+              setExpandedMobileModelSection(null);
+              requestAnimationFrame(() =>
+                reasoningSectionButtonRef.current?.focus(),
+              );
+            }}
+            onLockedAttempt={() =>
+              selectHeaderReasoningEffort(headerCurrentReasoningEffort)
+            }
+          />
+        ) : (
+          <>
         <div
           className={styles["chat-mobile-model-list"]}
           role="listbox"
@@ -4551,6 +4611,7 @@ function useChatInnerView() {
               <div className={styles["chat-mobile-model-section"]}>
                 <button
                   type="button"
+                  ref={reasoningSectionButtonRef}
                   className={styles["chat-mobile-reasoning-head"]}
                   aria-expanded={isReasoningSectionExpanded}
                   aria-controls="chat-mobile-reasoning-options"
@@ -4563,56 +4624,9 @@ function useChatInnerView() {
                     </small>
                   </span>
                   <span className={styles["chat-mobile-reasoning-caret"]}>
-                    {isReasoningSectionExpanded ? "⌃" : "⌄"}
+                    ›
                   </span>
                 </button>
-                {isReasoningSectionExpanded && (
-                  <div
-                    id="chat-mobile-reasoning-options"
-                    className={styles["chat-mobile-reasoning-list"]}
-                    role="listbox"
-                    aria-label={Locale.Chat.ModelMenu.ReasoningOptions}
-                  >
-                    {visibleHeaderReasoningEfforts.map((effort) => {
-                      const selected = effort === headerCurrentReasoningEffort;
-                      const disabled = !headerReasoningEfforts.some(
-                        (allowedEffort) => allowedEffort === effort,
-                      );
-                      return (
-                        <button
-                          type="button"
-                          key={effort}
-                          className={clsx(
-                            styles["chat-mobile-reasoning-option"],
-                            {
-                              [styles["chat-mobile-reasoning-option-selected"]]:
-                                selected,
-                            },
-                          )}
-                          role="option"
-                          aria-selected={selected}
-                          aria-disabled={disabled}
-                          disabled={disabled}
-                          onClick={() => selectHeaderReasoningEffort(effort)}
-                        >
-                          <span className={styles["chat-mobile-menu-check"]}>
-                            {selected ? "✓" : ""}
-                          </span>
-                          <span className={styles["chat-mobile-model-copy"]}>
-                            <span className={styles["chat-mobile-model-name"]}>
-                              {reasoningLabels[effort]}
-                            </span>
-                            <span
-                              className={styles["chat-mobile-model-provider"]}
-                            >
-                              {reasoningDescriptions[effort]}
-                            </span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             )}
             {showHeaderImageControls && (
@@ -4761,6 +4775,8 @@ function useChatInnerView() {
                 )}
               </>
             )}
+          </>
+        )}
           </>
         )}
       </div>
@@ -5288,6 +5304,8 @@ function useChatInnerView() {
                   [styles["chat-input-panel-inner-reasoning"]]:
                     showInputReasoningAction,
                   [styles["chat-input-panel-inner-status"]]: showInputStatusRow,
+                  [styles["chat-input-panel-inner-model-open"]]:
+                    showMobileModelSelector,
                 })}
                 htmlFor="chat-input"
               >
@@ -5332,7 +5350,10 @@ function useChatInnerView() {
                 <button
                   type="button"
                   ref={modelSelectorButtonRef}
-                  className={styles["chat-input-model-button"]}
+                  className={clsx(styles["chat-input-model-button"], {
+                    [styles["chat-input-model-button-open"]]:
+                      showMobileModelSelector,
+                  })}
                   aria-label={Locale.Chat.ModelMenu.SelectModel(
                     headerCurrentModelName,
                     currentModelDetail,
@@ -5355,6 +5376,10 @@ function useChatInnerView() {
                 >
                   <span className={styles["chat-input-model-name"]}>
                     {headerCurrentModelName}
+                  </span>
+                  <span className={styles["chat-input-model-separator"]}>·</span>
+                  <span className={styles["chat-input-model-detail"]}>
+                    {currentModelDetail}
                   </span>
                   <span className={styles["chat-input-model-arrow"]}>⌄</span>
                 </button>

@@ -369,6 +369,7 @@ const cn = {
       Empty: "暂无可用模型",
       ReasoningEffort: "思考等级",
       ReasoningOptions: "思考等级选项",
+      BackToModels: "返回模型列表",
       ImageSize: "图片尺寸",
       ImageSizeOptions: "图片尺寸选项",
       GeneratedImageSize: "生成图片尺寸",
