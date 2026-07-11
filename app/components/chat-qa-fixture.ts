@@ -128,8 +128,28 @@ echo "Done."
   - [ ] 子任务 4.1：移动端窄屏不能挤压正文。
   - [x] 子任务 4.2：完成态不能让图标和文本错位。
 
-<details>
+## 数学公式
+
+行内公式：爱因斯坦质能方程 \\(E = mc^2\\)。
+
+\\[
+x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}
+\\]
+
+\\[
+\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}
+\\]
+
+\\[
+A = \\begin{bmatrix} 1 & 2 & 3 \\\\ 4 & 5 & 6 \\\\ 7 & 8 & 9 \\end{bmatrix}
+\\]
+
+<details open>
 <summary>折叠内容</summary>
+
+### 折叠区域标题
+
+这里可以放置普通文本、列表和代码：
 
 - 第一层列表内容
   - 第二层列表内容
@@ -137,6 +157,10 @@ echo "Done."
 - 长链接测试：https://example.com/neatchat/markdown-stress/very/long/path/that/should/wrap/without/forcing/horizontal/page/overflow?source=codex_qa&theme=both
 
 > details 内的引用内容，用于检查普通折叠块内部引用、列表、链接和长文本的混排节奏。
+
+\`\`\`javascript
+console.log("这是折叠面板内的代码");
+\`\`\`
 
 </details>
 

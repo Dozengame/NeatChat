@@ -96,6 +96,26 @@ describe("Markdown raw HTML sanitization contract", () => {
         expect.arrayContaining(["className", expect.any(RegExp)]),
       ]),
     );
+    expect(markdownSanitizeSchema.attributes?.code).not.toEqual(
+      expect.arrayContaining([
+        expect.arrayContaining(["math-inline", "math-display"]),
+      ]),
+    );
+    expect(markdownSanitizeSchema.attributes?.div).toEqual(
+      expect.arrayContaining([
+        expect.arrayContaining(["className", "math", "math-display"]),
+      ]),
+    );
+    expect(markdownSanitizeSchema.attributes?.span).toEqual(
+      expect.arrayContaining([
+        expect.arrayContaining([
+          "className",
+          "thinking-loader",
+          "math",
+          "math-inline",
+        ]),
+      ]),
+    );
     expect(markdownSanitizeSchema.attributes?.details).toEqual(
       expect.arrayContaining([
         "open",

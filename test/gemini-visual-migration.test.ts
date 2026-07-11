@@ -17031,7 +17031,7 @@ describe("Gemini visual migration shell", () => {
       "| Surface | Expected behavior | QA focus |",
       "第二段继续描述这个步骤",
       "- [x] 已完成的任务列表项",
-      "<details>",
+      "<details open>",
       "[音频预览](/codex-qa/neatchat-stress-audio.mp3)",
       "[视频预览](/codex-qa/neatchat-stress-video.mp4)",
       "End of markdown stress test content.",
@@ -17236,6 +17236,13 @@ describe("Gemini visual migration shell", () => {
     expect(qaFixture).toContain("第二段继续描述这个步骤");
     expect(qaFixture).toContain("- [x] 已完成的任务列表项");
     expect(qaFixture).toContain("- [ ] 待确认的任务列表项");
+    expect(qaFixture).toContain("## 数学公式");
+    expect(qaFixture).toContain("\\\\frac{-b \\\\pm \\\\sqrt");
+    expect(qaFixture).toContain("<details open>");
+    expect(qaFixture).toContain("折叠区域标题");
+    expect(qaFixture).toContain(
+      'console.log("这是折叠面板内的代码");',
+    );
     expect(qaFixture).toContain("details 内的引用内容");
     expect(qaFixture).toContain("连续内容后续段落");
     expect(qaFixture).toContain(
@@ -17283,12 +17290,12 @@ describe("Gemini visual migration shell", () => {
     expect(detailsOpenSummaryBlock).toMatch(
       /background:\s*var\(--markdown-details-summary-background\);/,
     );
-    expect(detailsContentBlock).toMatch(/padding-left:\s*0;/);
+    expect(detailsContentBlock).not.toMatch(/padding-left:/);
     expect(detailsContentBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(tableCellBlock).toMatch(/vertical-align:\s*top;/);
     expect(tableCellBlock).toMatch(/overflow-wrap:\s*anywhere;/);
     expect(imageOnlyParagraphBlock).toMatch(
-      /margin:\s*14px 0 var\(--markdown-block-gap\);/,
+      /margin:\s*14px auto var\(--markdown-block-gap\);/,
     );
     expect(imageOnlyParagraphBlock).toMatch(/line-height:\s*1\.65;/);
     expect(imageOnlyFrameBlock).toMatch(/display:\s*flex;/);

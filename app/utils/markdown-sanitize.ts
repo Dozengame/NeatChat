@@ -12,7 +12,11 @@ export const markdownSanitizeSchema: RehypeSanitizeSchema = {
     ...defaultSchema.attributes,
     code: [
       ...(defaultSchema.attributes?.code ?? []),
-      ["className", /^language-./, "math-inline", "math-display"],
+      ["className", /^language-./],
+    ],
+    div: [
+      ...(defaultSchema.attributes?.div ?? []),
+      ["className", "math", "math-display"],
     ],
     details: [
       ...(defaultSchema.attributes?.details ?? []),
@@ -25,7 +29,7 @@ export const markdownSanitizeSchema: RehypeSanitizeSchema = {
     ],
     span: [
       ...(defaultSchema.attributes?.span ?? []),
-      ["className", "thinking-loader"],
+      ["className", "thinking-loader", "math", "math-inline"],
     ],
   },
   protocols: {

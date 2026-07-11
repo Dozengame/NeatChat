@@ -11,7 +11,12 @@ describe("Markdown sanitization runtime", () => {
     const container = document.createElement("div");
     container.innerHTML = html;
 
-    expect(container.querySelector("script, iframe, object, svg")).toBeNull();
+    expect(container.querySelector("script, iframe, object")).toBeNull();
+    expect(
+      Array.from(container.querySelectorAll("svg")).every((svg) =>
+        Boolean(svg.closest(".katex")),
+      ),
+    ).toBe(true);
     expect(container.querySelector("[onclick]")).toBeNull();
     const details = container.querySelectorAll("details");
     expect(details).toHaveLength(3);
@@ -26,5 +31,40 @@ describe("Markdown sanitization runtime", () => {
       "src",
       "data:image/png;base64,AA==",
     );
+  });
+
+  test("preserves math markers through sanitization and renders them with KaTeX", () => {
+    const html = execFileSync(
+      path.join(process.cwd(), "node_modules/.bin/tsx"),
+      [path.join(process.cwd(), "test/fixtures/markdown-sanitize-runtime.tsx")],
+      { encoding: "utf8" },
+    );
+    const container = document.createElement("div");
+    container.innerHTML = html;
+
+    expect(container.querySelectorAll(".math-inline > .katex")).toHaveLength(1);
+    expect(
+      container.querySelectorAll(".math-display > .katex-display"),
+    ).toHaveLength(3);
+    expect(
+      Array.from(
+        container.querySelectorAll('annotation[encoding="application/x-tex"]'),
+      ).map((annotation) => annotation.textContent),
+    ).toEqual([
+      "E = mc^2",
+      String.raw`x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}`,
+      String.raw`\sum_{i=1}^{n} i = \frac{n(n+1)}{2}`,
+      String.raw`A = \begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \\ 7 & 8 & 9 \end{bmatrix}`,
+    ]);
+
+    const codeBlocks = container.querySelectorAll("code");
+    expect(codeBlocks).toHaveLength(2);
+    expect(
+      Array.from(codeBlocks).every((code) => !code.querySelector(".katex")),
+    ).toBe(true);
+    expect(Array.from(codeBlocks).map((code) => code.textContent)).toEqual([
+      "$E = mc^2$",
+      "<span>$E = mc^2$</span>\n",
+    ]);
   });
 });

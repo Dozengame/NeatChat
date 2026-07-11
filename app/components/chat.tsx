@@ -4406,85 +4406,88 @@ function useChatInnerView() {
               </button>
             )}
           </div>
-          {showDesktopModelControls && (
-            <div
-              className={clsx(
-                "window-actions",
-                styles["chat-desktop-header-actions"],
-              )}
-            >
+          <div className={styles["chat-desktop-header-cluster"]}>
+            {promptToast}
+            {showDesktopModelControls && (
               <div
                 className={clsx(
-                  "window-action-button",
-                  styles["chat-desktop-header-action"],
+                  "window-actions",
+                  styles["chat-desktop-header-actions"],
                 )}
               >
-                <IconButton
-                  icon={<ReloadIcon />}
-                  bordered
-                  title={Locale.Chat.Actions.RefreshTitle}
-                  aria={Locale.Chat.Actions.RefreshTitle}
-                  onClick={() => {
-                    showToast(Locale.Chat.Actions.RefreshToast);
-                    chatStore.summarizeSession(true, session);
-                  }}
-                />
-              </div>
-              <div
-                className={clsx(
-                  "window-action-button",
-                  styles["chat-desktop-header-action"],
-                )}
-              >
-                <IconButton
-                  icon={<RenameIcon />}
-                  bordered
-                  title={Locale.Chat.EditMessage.Title}
-                  aria={Locale.Chat.EditMessage.Title}
-                  onClick={() => setIsEditingMessage(true)}
-                />
-              </div>
-              <div
-                className={clsx(
-                  "window-action-button",
-                  styles["chat-desktop-header-action"],
-                  styles["chat-desktop-header-action-export"],
-                )}
-              >
-                <IconButton
-                  icon={<ExportIcon />}
-                  bordered
-                  title={Locale.Chat.Actions.Export}
-                  aria={Locale.Chat.Actions.Export}
-                  onClick={() => {
-                    setShowExport(true);
-                  }}
-                />
-              </div>
-              {showMaxIcon && (
                 <div
                   className={clsx(
                     "window-action-button",
                     styles["chat-desktop-header-action"],
-                    styles["chat-desktop-header-action-fullscreen"],
                   )}
                 >
                   <IconButton
-                    icon={config.tightBorder ? <MinIcon /> : <MaxIcon />}
+                    icon={<ReloadIcon />}
                     bordered
-                    title={Locale.Chat.Actions.FullScreen}
-                    aria={Locale.Chat.Actions.FullScreen}
+                    title={Locale.Chat.Actions.RefreshTitle}
+                    aria={Locale.Chat.Actions.RefreshTitle}
                     onClick={() => {
-                      config.update(
-                        (config) => (config.tightBorder = !config.tightBorder),
-                      );
+                      showToast(Locale.Chat.Actions.RefreshToast);
+                      chatStore.summarizeSession(true, session);
                     }}
                   />
                 </div>
-              )}
-            </div>
-          )}
-          {promptToast}
+                <div
+                  className={clsx(
+                    "window-action-button",
+                    styles["chat-desktop-header-action"],
+                  )}
+                >
+                  <IconButton
+                    icon={<RenameIcon />}
+                    bordered
+                    title={Locale.Chat.EditMessage.Title}
+                    aria={Locale.Chat.EditMessage.Title}
+                    onClick={() => setIsEditingMessage(true)}
+                  />
+                </div>
+                <div
+                  className={clsx(
+                    "window-action-button",
+                    styles["chat-desktop-header-action"],
+                    styles["chat-desktop-header-action-export"],
+                  )}
+                >
+                  <IconButton
+                    icon={<ExportIcon />}
+                    bordered
+                    title={Locale.Chat.Actions.Export}
+                    aria={Locale.Chat.Actions.Export}
+                    onClick={() => {
+                      setShowExport(true);
+                    }}
+                  />
+                </div>
+                {showMaxIcon && (
+                  <div
+                    className={clsx(
+                      "window-action-button",
+                      styles["chat-desktop-header-action"],
+                      styles["chat-desktop-header-action-fullscreen"],
+                    )}
+                  >
+                    <IconButton
+                      icon={config.tightBorder ? <MinIcon /> : <MaxIcon />}
+                      bordered
+                      title={Locale.Chat.Actions.FullScreen}
+                      aria={Locale.Chat.Actions.FullScreen}
+                      onClick={() => {
+                        config.update(
+                          (config) =>
+                            (config.tightBorder = !config.tightBorder),
+                        );
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       ) : null}
 
