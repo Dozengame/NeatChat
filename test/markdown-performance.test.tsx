@@ -168,18 +168,18 @@ describe("Markdown performance", () => {
     expect(tokenChip.getAttribute("aria-pressed")).toBe("true");
   });
 
-  test("includes token count in the metadata chip accessible name without latency", () => {
+  test("renders token count as static metadata without latency", () => {
     const tokenCountText = Locale.Chat.TokenInfo.TokenCount(11);
     const tokenInfoLabel = Locale.Chat.TokenInfo.Label(tokenCountText);
 
     render(<Markdown content="hello world" messageId="m3" streaming={false} />);
 
-    const tokenChip = screen.getByRole("button", {
-      name: tokenInfoLabel,
-    });
+    const tokenChip = screen.getByLabelText(tokenInfoLabel);
 
     expect(tokenChip.textContent).toBe(tokenCountText);
-    expect(tokenChip.getAttribute("aria-pressed")).toBe("false");
-    expect(tokenChip.getAttribute("data-token-info-expanded")).toBe("false");
+    expect(tokenChip.tagName).toBe("SPAN");
+    expect(tokenChip.classList.contains("token-info-static")).toBe(true);
+    expect(tokenChip.getAttribute("aria-pressed")).toBeNull();
+    expect(tokenChip.getAttribute("data-token-info-expanded")).toBeNull();
   });
 });

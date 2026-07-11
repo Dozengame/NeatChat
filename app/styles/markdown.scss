@@ -126,7 +126,7 @@ summary,
   );
   --markdown-blockquote-background: color-mix(
     in srgb,
-    var(--surface-soft) 76%,
+    var(--surface-soft) 86%,
     transparent
   );
   --markdown-blockquote-ring-color: color-mix(
@@ -331,12 +331,12 @@ summary,
   );
   --markdown-mermaid-frame-border-color: color-mix(
     in srgb,
-    var(--black-50) 10%,
+    var(--black-50) 14%,
     transparent
   );
   --markdown-mermaid-frame-background: color-mix(
     in srgb,
-    var(--surface-elevated) 90%,
+    var(--surface-elevated) 94%,
     transparent
   );
   --markdown-mermaid-frame-shadow-color: color-mix(
@@ -366,12 +366,12 @@ summary,
   );
   --markdown-artifact-frame-border-color: color-mix(
     in srgb,
-    var(--black-50) 10%,
+    var(--black-50) 14%,
     transparent
   );
   --markdown-artifact-frame-background: color-mix(
     in srgb,
-    var(--surface-elevated) 90%,
+    var(--surface-elevated) 94%,
     transparent
   );
   --markdown-artifact-frame-shadow-color: color-mix(
@@ -775,12 +775,12 @@ summary,
   );
   --markdown-table-shell-border-color: color-mix(
     in srgb,
-    var(--black-50) 12%,
+    var(--black-50) 16%,
     transparent
   );
   --markdown-table-shell-background: color-mix(
     in srgb,
-    var(--surface-elevated) 72%,
+    var(--surface-elevated) 84%,
     transparent
   );
   --markdown-table-edge-surface: color-mix(
@@ -790,12 +790,12 @@ summary,
   );
   --markdown-table-header-background: color-mix(
     in srgb,
-    var(--surface-soft) 76%,
+    var(--surface-soft) 88%,
     transparent
   );
   --markdown-table-cell-border-color: color-mix(
     in srgb,
-    var(--black-50) 12%,
+    var(--black-50) 16%,
     transparent
   );
   --markdown-table-scrollbar-thumb-color: color-mix(
@@ -1091,8 +1091,8 @@ summary,
   );
   --markdown-blockquote-background: color-mix(
     in srgb,
-    var(--surface-soft) 72%,
-    transparent
+    var(--surface-elevated) 70%,
+    var(--surface-soft)
   );
   --markdown-blockquote-ring-color: color-mix(
     in srgb,
@@ -1296,12 +1296,12 @@ summary,
   );
   --markdown-mermaid-frame-border-color: color-mix(
     in srgb,
-    var(--black) 10%,
+    var(--black) 14%,
     transparent
   );
   --markdown-mermaid-frame-background: color-mix(
     in srgb,
-    var(--surface-elevated) 84%,
+    var(--surface-elevated) 90%,
     var(--surface)
   );
   --markdown-mermaid-frame-shadow-color: color-mix(
@@ -1331,12 +1331,12 @@ summary,
   );
   --markdown-artifact-frame-border-color: color-mix(
     in srgb,
-    var(--black) 10%,
+    var(--black) 14%,
     transparent
   );
   --markdown-artifact-frame-background: color-mix(
     in srgb,
-    var(--surface-elevated) 84%,
+    var(--surface-elevated) 90%,
     var(--surface)
   );
   --markdown-artifact-frame-shadow-color: color-mix(
@@ -1453,7 +1453,7 @@ summary,
   );
   --markdown-code-block-background: color-mix(
     in srgb,
-    var(--surface-elevated) 72%,
+    var(--surface-elevated) 82%,
     var(--surface-soft)
   );
   --markdown-code-block-border-color: color-mix(
@@ -1740,13 +1740,13 @@ summary,
   );
   --markdown-table-shell-border-color: color-mix(
     in srgb,
-    var(--black) 10%,
+    var(--black) 14%,
     transparent
   );
   --markdown-table-shell-background: color-mix(
     in srgb,
-    var(--surface-elevated) 62%,
-    transparent
+    var(--surface-elevated) 70%,
+    var(--surface)
   );
   --markdown-table-edge-surface: color-mix(
     in srgb,
@@ -1755,12 +1755,12 @@ summary,
   );
   --markdown-table-header-background: color-mix(
     in srgb,
-    var(--surface-soft) 66%,
-    transparent
+    var(--surface-soft) 76%,
+    var(--surface-elevated)
   );
   --markdown-table-cell-border-color: color-mix(
     in srgb,
-    var(--black) 10%,
+    var(--black) 14%,
     transparent
   );
   --markdown-table-scrollbar-thumb-color: color-mix(
@@ -1936,8 +1936,10 @@ summary,
 }
 
 .markdown-body {
-  --markdown-reading-max-width: 780px;
-  --markdown-reading-surface-max-width: var(--markdown-reading-max-width);
+  --markdown-prose-max-width: 780px;
+  --markdown-data-max-width: 920px;
+  --markdown-reading-max-width: var(--markdown-prose-max-width);
+  --markdown-reading-surface-max-width: var(--markdown-prose-max-width);
   --markdown-prose-line-height: 1.72;
   --markdown-block-gap: 16px;
   --markdown-heading-gap: 22px;
@@ -1955,8 +1957,8 @@ summary,
   --markdown-task-checkbox-offset: calc(
     -1 * (var(--markdown-list-indent) - 0.24em)
   );
-  --markdown-code-block-max-width: min(100%, var(--markdown-reading-surface-max-width));
-  --markdown-table-shell-max-width: min(100%, var(--markdown-reading-surface-max-width));
+  --markdown-code-block-max-width: min(100%, var(--markdown-data-max-width));
+  --markdown-table-shell-max-width: min(100%, var(--markdown-data-max-width));
   --markdown-table-cell-padding-y: 8px;
   --markdown-table-cell-padding-x: 14px;
   --markdown-table-cell-line-height: 1.48;
@@ -2316,7 +2318,7 @@ summary,
   margin: 0.67em 0;
   font-weight: var(--base-text-weight-semibold, 600);
   padding-bottom: 0;
-  font-size: 1.55em;
+  font-size: 1.6em;
   border-bottom: 0;
 }
 
@@ -2412,7 +2414,8 @@ summary,
   overflow: hidden;
 
   &:focus-visible {
-    outline: none;
+    outline: var(--focus-ring);
+    outline-offset: -3px;
     box-shadow: var(--focus-ring-shadow);
   }
 }
@@ -2498,13 +2501,31 @@ summary,
   width: 100%;
 }
 
-.markdown-body .mermaid {
+.markdown-body .markdown-mermaid-figure {
   display: block;
   box-sizing: border-box;
-  width: min(100%, var(--markdown-reading-surface-max-width));
+  width: min(100%, var(--markdown-data-max-width));
   max-width: 100%;
   min-width: 0;
   margin: 12px 0;
+}
+
+.markdown-body .markdown-mermaid-caption,
+.markdown-body .markdown-artifact-preview-caption {
+  margin: 0 0 6px;
+  color: var(--black-50);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.markdown-body .mermaid {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
   padding: 12px;
   border: 1px solid var(--markdown-mermaid-frame-border-color);
   border-radius: 8px;
@@ -2547,11 +2568,29 @@ summary,
   }
 }
 
+.markdown-body .markdown-mermaid-source {
+  margin: 8px 0 0;
+  font-size: 12px;
+
+  > summary {
+    cursor: pointer;
+  }
+
+  > code {
+    display: block;
+    max-height: min(30vh, 240px);
+    margin-top: 8px;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+}
+
 .markdown-body .markdown-mermaid-fallback {
   display: flex;
   box-sizing: border-box;
   flex-direction: column;
-  width: min(100%, var(--markdown-reading-surface-max-width));
+  width: min(100%, var(--markdown-data-max-width));
   max-width: 100%;
   min-width: 0;
   gap: 8px;
@@ -2596,7 +2635,7 @@ summary,
   position: relative;
   isolation: isolate;
   box-sizing: border-box;
-  width: min(100%, var(--markdown-reading-surface-max-width));
+  width: min(100%, var(--markdown-data-max-width));
   max-width: 100%;
   min-width: 0;
   margin: 12px 0;
@@ -3142,6 +3181,12 @@ summary,
   text-align: left;
 }
 
+.markdown-body .katex-display:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: -3px;
+  box-shadow: var(--focus-ring-shadow);
+}
+
 .markdown-body .katex-display > .katex {
   display: inline-block;
   min-width: max-content;
@@ -3471,7 +3516,7 @@ summary,
   font-weight: var(--base-text-weight-semibold, 600);
   padding-left: 12px;
   padding-bottom: 0;
-  font-size: 1.28em;
+  font-size: 1.3em;
   border-bottom: 0;
 
   &::before {
@@ -3501,7 +3546,7 @@ summary,
 
 .markdown-body h3 {
   font-weight: var(--base-text-weight-semibold, 600);
-  font-size: 1.12em;
+  font-size: 1.13em;
 }
 
 .markdown-body h4 {
@@ -3511,12 +3556,12 @@ summary,
 
 .markdown-body h5 {
   font-weight: var(--base-text-weight-semibold, 600);
-  font-size: 0.875em;
+  font-size: 1em;
 }
 
 .markdown-body h6 {
   font-weight: var(--base-text-weight-semibold, 600);
-  font-size: 0.85em;
+  font-size: 0.95em;
   color: var(--color-fg-muted);
 }
 
@@ -4066,7 +4111,7 @@ summary,
   padding: 0.12em 0.36em;
   margin: 0;
   max-width: 100%;
-  font-size: 85%;
+  font-size: 90%;
   line-height: 1.55;
   white-space: break-spaces;
   overflow-wrap: anywhere;
@@ -4124,7 +4169,7 @@ summary,
 }
 
 .markdown-body samp {
-  font-size: 85%;
+  font-size: 90%;
 }
 
 .markdown-body pre code {
@@ -4164,10 +4209,11 @@ summary,
   --markdown-code-action-rail-width: 106px;
   --markdown-code-action-inset: 12px;
   --markdown-code-action-size: 34px;
+  --markdown-code-content-end-padding: 16px;
   --markdown-code-labeled-padding-top: 52px;
   --markdown-code-fold-overlay-offset: 68px;
   padding: var(--markdown-code-block-padding-y)
-    var(--markdown-code-action-rail-width)
+    var(--markdown-code-content-end-padding)
     var(--markdown-code-block-padding-y)
     var(--markdown-code-block-padding-start);
   box-sizing: border-box;
@@ -4177,7 +4223,7 @@ summary,
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
-  font-size: 85%;
+  font-size: 0.9em;
   line-height: 1.6;
   border-radius: var(--markdown-code-block-radius);
   direction: ltr;
@@ -4210,7 +4256,7 @@ summary,
   pointer-events: none;
 }
 
-.markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child)) {
+.markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .markdown-mermaid-figure:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child)) {
   border-color: var(--markdown-code-streaming-border-color);
   box-shadow:
     0 0 0 1px var(--markdown-code-streaming-border-color),
@@ -4255,7 +4301,7 @@ summary,
   display: flex;
   justify-content: center;
   margin: calc(-1 * var(--markdown-code-fold-overlay-offset))
-    calc(-1 * var(--markdown-code-action-rail-width))
+    calc(-1 * var(--markdown-code-content-end-padding))
     calc(-1 * var(--markdown-code-block-padding-y))
     calc(-1 * var(--markdown-code-block-padding-start));
   padding: 36px var(--markdown-code-block-padding-start) 12px;
@@ -4306,7 +4352,8 @@ summary,
     }
 
     &:focus-visible {
-      outline: none;
+      outline: var(--focus-ring);
+      outline-offset: 2px;
       box-shadow:
         var(--focus-ring-shadow),
         0 1px 2px var(--markdown-code-fold-button-shadow-color),
@@ -4542,7 +4589,7 @@ summary,
   max-width: min(100%, var(--markdown-reading-surface-max-width));
   margin-top: 22px;
   padding: 12px 14px;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.55;
   color: var(--markdown-footnotes-color);
   background: var(--markdown-footnotes-background);
@@ -4597,6 +4644,28 @@ summary,
 
 .markdown-body .footnotes .data-footnote-backref g-emoji {
   font-family: monospace;
+}
+
+.markdown-body
+  > :where(
+    p,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    blockquote,
+    ul,
+    ol,
+    dl,
+    details,
+    hr,
+    .footnotes
+  ) {
+  box-sizing: border-box;
+  width: min(100%, var(--markdown-prose-max-width));
+  margin-inline: auto;
 }
 
 .markdown-body .pl-c {
@@ -4962,7 +5031,8 @@ summary,
     }
 
     &:focus-visible {
-      outline: none;
+      outline: var(--focus-ring);
+      outline-offset: 2px;
       box-shadow:
         var(--focus-ring-shadow),
         0 1px 2px var(--markdown-token-info-hover-key-shadow-color),
@@ -4971,6 +5041,15 @@ summary,
 
     &:active {
       transform: translateY(0);
+    }
+
+    &.token-info-static {
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
+      cursor: default;
+      opacity: 0.72;
+      pointer-events: none;
     }
   }
 }
@@ -5000,10 +5079,21 @@ summary,
       0 1px 2px var(--markdown-token-info-hover-key-shadow-color),
       0 10px 24px var(--markdown-token-info-hover-shadow-color);
   }
+
+  &.token-info-static {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    cursor: default;
+    opacity: 0.72;
+    pointer-events: none;
+  }
 }
 
 @media only screen and (max-width: 600px) {
   .markdown-body {
+    --markdown-prose-max-width: 100%;
+    --markdown-data-max-width: 100%;
     --markdown-reading-surface-max-width: 100%;
     --markdown-prose-line-height: 1.62;
     --markdown-block-gap: 14px;
@@ -5154,10 +5244,11 @@ summary,
     );
     --markdown-code-action-rail-width: 78px;
     --markdown-code-action-inset: 8px;
-    --markdown-code-action-size: 30px;
+    --markdown-code-action-size: 36px;
+    --markdown-code-content-end-padding: 12px;
     --markdown-code-labeled-padding-top: 42px;
     --markdown-code-fold-overlay-offset: 58px;
-    font-size: 0.88em;
+    font-size: 0.9em;
     line-height: 1.58;
   }
 
@@ -5226,7 +5317,7 @@ summary,
     left: 8px;
   }
 
-  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child)) {
+  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .markdown-mermaid-figure:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child)) {
     box-shadow:
       0 0 0 1px var(--markdown-code-streaming-border-color),
       0 8px 22px var(--markdown-code-streaming-shadow-color);
@@ -5322,7 +5413,8 @@ summary,
     );
     --markdown-code-action-rail-width: 72px;
     --markdown-code-action-inset: 7px;
-    --markdown-code-action-size: 28px;
+    --markdown-code-action-size: 34px;
+    --markdown-code-content-end-padding: 10px;
     --markdown-code-labeled-padding-top: 38px;
     --markdown-code-fold-overlay-offset: 54px;
   }
@@ -5348,8 +5440,8 @@ summary,
   .markdown-body[data-streaming="true"] > .markdown-artifact-preview:last-child::after,
   .markdown-body[data-streaming="true"] > p:last-child > .markdown-image-frame:only-child::after,
   .markdown-body[data-streaming="true"] > p:last-child > .markdown-media-frame:only-child::after,
-  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child)),
-  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))::after,
+  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .markdown-mermaid-figure:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child)),
+  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .markdown-mermaid-figure:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))::after,
   .markdown-body-container .token-info {
     animation: none !important;
     transform: none !important;
@@ -5377,7 +5469,7 @@ summary,
     opacity: 0.72;
   }
 
-  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))::after {
+  .markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .markdown-mermaid-figure:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))::after {
     opacity: 0.72;
   }
 

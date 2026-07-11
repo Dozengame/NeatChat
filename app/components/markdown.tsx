@@ -73,7 +73,7 @@ function Details({
   node: _node,
   ...props
 }: React.DetailsHTMLAttributes<HTMLDetailsElement> & { node?: unknown }) {
-  return <details {...props} open />;
+  return <details {...props} />;
 }
 
 function Summary({
@@ -81,6 +81,70 @@ function Summary({
   ...props
 }: React.HTMLAttributes<HTMLElement> & { node?: unknown }) {
   return <summary {...props} />;
+}
+
+function MarkdownSpan({
+  node: _node,
+  className,
+  ...spanProps
+}: React.HTMLAttributes<HTMLSpanElement> & { node?: unknown }) {
+  const formulaRef = useRef<HTMLSpanElement>(null);
+  const isDisplayFormula = className?.split(/\s+/).includes("katex-display");
+  const [formulaIsScrollable, setFormulaIsScrollable] = useState(false);
+
+  const syncFormulaOverflow = useCallback(() => {
+    const formula = formulaRef.current;
+    const nextIsScrollable = Boolean(
+      formula && formula.scrollWidth - formula.clientWidth > 1,
+    );
+    setFormulaIsScrollable((current) =>
+      current === nextIsScrollable ? current : nextIsScrollable,
+    );
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isDisplayFormula) return;
+    const frame = requestAnimationFrame(syncFormulaOverflow);
+    return () => cancelAnimationFrame(frame);
+  }, [isDisplayFormula, spanProps.children, syncFormulaOverflow]);
+
+  useEffect(() => {
+    if (!isDisplayFormula) return;
+    const formula = formulaRef.current;
+    if (!formula || typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", syncFormulaOverflow);
+      return () => window.removeEventListener("resize", syncFormulaOverflow);
+    }
+
+    const resizeObserver = new ResizeObserver(syncFormulaOverflow);
+    resizeObserver.observe(formula);
+    if (formula.firstElementChild) {
+      resizeObserver.observe(formula.firstElementChild);
+    }
+    window.addEventListener("resize", syncFormulaOverflow);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", syncFormulaOverflow);
+    };
+  }, [isDisplayFormula, syncFormulaOverflow]);
+
+  if (!isDisplayFormula) {
+    return <span {...spanProps} className={className} />;
+  }
+
+  return (
+    <span
+      {...spanProps}
+      className={className}
+      ref={formulaRef}
+      data-scrollable={formulaIsScrollable ? "true" : "false"}
+      tabIndex={formulaIsScrollable ? 0 : undefined}
+      role={formulaIsScrollable ? "region" : undefined}
+      aria-label={
+        formulaIsScrollable ? Locale.Markdown.ScrollableFormula : undefined
+      }
+    />
+  );
 }
 
 function formatCodeLanguage(language: string) {
@@ -465,48 +529,50 @@ export function PreCode(props: { children: any }) {
             {codeLanguage}
           </span>
         )}
-        <button
-          type="button"
-          className="wrap-code-button"
-          aria-label={codeWrapLabel}
-          aria-pressed={isCodeWrapped}
-          title={codeWrapLabel}
-          data-wrap-state={wrapState}
-          onClick={() => {
-            setUserWrapCode((current) => !(current ?? shouldWrapCodeBlock));
-          }}
-        >
-          <ReturnIcon />
-        </button>
-        <button
-          type="button"
-          className="copy-code-button"
-          aria-label={codeCopyLabel}
-          aria-live="polite"
-          aria-atomic="true"
-          title={codeCopyLabel}
-          data-copy-state={copied ? "copied" : "idle"}
-          onClick={() => {
-            if (ref.current) {
-              const codeElement = ref.current.querySelector("code");
-              copyToClipboard(
-                codeElement?.innerText ?? codeElement?.textContent ?? "",
-              );
-              setCopied(true);
+        <span className="markdown-code-actions">
+          <button
+            type="button"
+            className="wrap-code-button"
+            aria-label={codeWrapLabel}
+            aria-pressed={isCodeWrapped}
+            title={codeWrapLabel}
+            data-wrap-state={wrapState}
+            onClick={() => {
+              setUserWrapCode((current) => !(current ?? shouldWrapCodeBlock));
+            }}
+          >
+            <ReturnIcon />
+          </button>
+          <button
+            type="button"
+            className="copy-code-button"
+            aria-label={codeCopyLabel}
+            aria-live="polite"
+            aria-atomic="true"
+            title={codeCopyLabel}
+            data-copy-state={copied ? "copied" : "idle"}
+            onClick={() => {
+              if (ref.current) {
+                const codeElement = ref.current.querySelector("code");
+                copyToClipboard(
+                  codeElement?.innerText ?? codeElement?.textContent ?? "",
+                );
+                setCopied(true);
 
-              if (copyResetTimerRef.current) {
-                clearTimeout(copyResetTimerRef.current);
+                if (copyResetTimerRef.current) {
+                  clearTimeout(copyResetTimerRef.current);
+                }
+
+                copyResetTimerRef.current = setTimeout(() => {
+                  setCopied(false);
+                  copyResetTimerRef.current = null;
+                }, 1400);
               }
-
-              copyResetTimerRef.current = setTimeout(() => {
-                setCopied(false);
-                copyResetTimerRef.current = null;
-              }, 1400);
-            }
-          }}
-        >
-          {copied ? <ConfirmIcon /> : <CopyIcon />}
-        </button>
+            }}
+          >
+            {copied ? <ConfirmIcon /> : <CopyIcon />}
+          </button>
+        </span>
         <span
           className="copy-code-status"
           role="status"
@@ -534,9 +600,13 @@ export function PreCode(props: { children: any }) {
       )}
       {htmlCode.length > 0 && enableArtifacts && (
         <figure className="markdown-artifact-preview">
+          <figcaption className="markdown-artifact-preview-caption">
+            {Locale.Markdown.HtmlPreview}
+          </figcaption>
           <div className="markdown-artifact-preview-frame">
             <HTMLPreview
               code={htmlCode}
+              accessibleTitle={Locale.Markdown.HtmlPreview}
               autoHeight={!document.fullscreenElement}
               height={!document.fullscreenElement ? 600 : height}
             />
@@ -639,10 +709,12 @@ function MarkdownTable({
     start: false,
     end: false,
   });
+  const [tableIsScrollable, setTableIsScrollable] = useState(false);
 
   const syncTableScrollHint = useCallback(() => {
     const tableShell = tableScrollRef.current;
     if (!tableShell) {
+      setTableIsScrollable(false);
       setTableScrollHint((current) =>
         current.start || current.end ? { start: false, end: false } : current,
       );
@@ -653,11 +725,15 @@ function MarkdownTable({
       0,
       tableShell.scrollWidth - tableShell.clientWidth,
     );
+    const nextIsScrollable = maxScrollLeft > 1;
     const nextHint = {
       start: tableShell.scrollLeft > 1,
       end: maxScrollLeft - tableShell.scrollLeft > 1,
     };
 
+    setTableIsScrollable((current) =>
+      current === nextIsScrollable ? current : nextIsScrollable,
+    );
     setTableScrollHint((current) =>
       current.start === nextHint.start && current.end === nextHint.end
         ? current
@@ -692,15 +768,18 @@ function MarkdownTable({
   return (
     <div
       className="markdown-table-scroll-shell"
+      data-scrollable={tableIsScrollable ? "true" : "false"}
       data-overflow-start={tableScrollHint.start ? "true" : "false"}
       data-overflow-end={tableScrollHint.end ? "true" : "false"}
     >
       <div
         ref={tableScrollRef}
         className="markdown-table-scroll-viewport"
-        tabIndex={0}
-        role="region"
-        aria-label={Locale.Markdown.ScrollableTable}
+        tabIndex={tableIsScrollable ? 0 : undefined}
+        role={tableIsScrollable ? "region" : undefined}
+        aria-label={
+          tableIsScrollable ? Locale.Markdown.ScrollableTable : undefined
+        }
         onScroll={syncTableScrollHint}
       >
         <table {...tableProps} />
@@ -1024,10 +1103,10 @@ function MarkdownMediaCard({
           src={href}
           aria-label={mediaAriaLabel}
           onError={() => setHasError(true)}
-        >
-          <track kind="captions" />
-        </audio>
+        ></audio>
       ) : (
+        // The Markdown media model does not currently carry caption resources.
+        // eslint-disable-next-line jsx-a11y/media-has-caption
         <video
           className="markdown-video-player"
           controls
@@ -1036,7 +1115,6 @@ function MarkdownMediaCard({
           onError={() => setHasError(true)}
         >
           <source src={href} onError={() => setHasError(true)} />
-          <track kind="captions" />
         </video>
       )}
       <span className="markdown-media-footer">
@@ -1355,6 +1433,7 @@ function MarkDownContentInner(
           );
         },
         p: (pProps) => <p {...pProps} dir="auto" />,
+        span: MarkdownSpan,
         details: Details,
         summary: Summary,
       }}
@@ -1435,9 +1514,11 @@ export function Markdown(
   // 添加鼠标悬停状态
   const [isHovering, setIsHovering] = useState(false);
   const tokenFirstCharDelay = tokenInfo?.firstCharDelay;
-  const showTokenDelay = Boolean(tokenFirstCharDelay && isHovering);
-  const tokenDelayText = tokenFirstCharDelay
-    ? Locale.Chat.TokenInfo.FirstDelay(tokenFirstCharDelay)
+  const hasTokenFirstCharDelay =
+    Number.isFinite(tokenFirstCharDelay) && (tokenFirstCharDelay ?? -1) >= 0;
+  const showTokenDelay = hasTokenFirstCharDelay && isHovering;
+  const tokenDelayText = hasTokenFirstCharDelay
+    ? Locale.Chat.TokenInfo.FirstDelay(tokenFirstCharDelay!)
     : "";
   const tokenCountText = tokenInfo
     ? Locale.Chat.TokenInfo.TokenCount(tokenInfo.count)
@@ -1541,24 +1622,30 @@ export function Markdown(
       </div>
 
       {/* Token信息显示 */}
-      {!loading && tokenInfo && (
+      {!loading && tokenInfo && hasTokenFirstCharDelay && (
         <button
           type="button"
           className="token-info"
           aria-label={tokenInfoLabel}
           aria-pressed={showTokenDelay}
           data-token-info-expanded={showTokenDelay ? "true" : "false"}
-          onMouseEnter={() => tokenFirstCharDelay && setIsHovering(true)}
+          onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
           onClick={() => {
             // 点击时切换显示状态
-            if (tokenFirstCharDelay) {
-              setIsHovering(!isHovering);
-            }
+            setIsHovering(!isHovering);
           }}
         >
           {showTokenDelay ? tokenDelayText : tokenCountText}
         </button>
+      )}
+      {!loading && tokenInfo && !hasTokenFirstCharDelay && (
+        <span
+          className="token-info token-info-static"
+          aria-label={tokenInfoLabel}
+        >
+          {tokenCountText}
+        </span>
       )}
     </div>
   );

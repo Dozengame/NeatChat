@@ -1031,16 +1031,13 @@
   --prompt-toast-expanded-border-color: color-mix(in srgb, var(--primary) 24%, transparent);
   --prompt-toast-expanded-shadow-color: color-mix(in srgb, var(--primary) 12%, transparent);
 
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(100% + 8px);
-  bottom: auto;
-  z-index: 999;
+  position: static;
+  flex: 0 1 auto;
+  min-width: 0;
   display: flex;
   justify-content: center;
-  padding: 0 16px;
-  pointer-events: none;
+  padding: 0;
+  pointer-events: auto;
 
   .prompt-toast-inner {
     appearance: none;
@@ -1050,8 +1047,8 @@
     justify-content: center;
     align-items: center;
     gap: 8px;
-    min-height: 36px;
-    max-width: min(420px, 100%);
+    min-height: 34px;
+    max-width: min(320px, 100%);
     font-size: 12px;
     font-weight: 500;
     line-height: 1.2;
@@ -1062,8 +1059,8 @@
     border: 1px solid var(--prompt-toast-border-color);
     box-shadow:
       0 1px 2px var(--prompt-toast-shadow-color),
-      0 10px 26px var(--prompt-toast-shadow-color);
-    padding: 7px 12px;
+      0 6px 16px var(--prompt-toast-shadow-color);
+    padding: 6px 11px;
     border-radius: 999px;
     backdrop-filter: blur(18px);
     cursor: pointer;
@@ -1110,6 +1107,33 @@
       white-space: nowrap;
     }
   }
+}
+
+.chat-mobile-context-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-mobile-context-count {
+  position: absolute;
+  top: -9px;
+  right: -11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border: 2px solid var(--chat-header-surface-background);
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--chat-mobile-context-count-color);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .section-title {
@@ -1594,6 +1618,7 @@
 }
 
 .chat-mobile-header {
+  --chat-mobile-context-count-color: rgb(255, 255, 255);
   --chat-header-surface-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
@@ -2282,7 +2307,7 @@
   --chat-body-background: color-mix(in srgb, var(--surface) 68%, var(--surface-soft));
   --chat-body-bottom-safe-area: calc(132px + env(safe-area-inset-bottom));
   --conversation-max-width: min(920px, 100%);
-  --assistant-message-max-width: min(780px, 100%);
+  --assistant-message-max-width: min(920px, 100%);
   --user-message-max-width: min(560px, 100%);
 
   flex: 1;
@@ -2604,7 +2629,7 @@
 
 .chat-reading-surface {
   box-sizing: border-box;
-  width: min(780px, 100%);
+  width: min(920px, 100%);
   max-width: calc(100% - 32px);
   margin: 14px auto 0;
   display: flex;
@@ -4339,6 +4364,19 @@
   max-width: var(--assistant-message-max-width);
 }
 
+.chat-reading-surface .chat-message-row-assistant > .chat-message-container {
+  width: 100%;
+  max-width: 100%;
+}
+
+.chat-reading-surface
+  .chat-message-row-assistant
+  > .chat-message-container
+  > :is(.chat-message-header, .chat-message-actions) {
+  width: min(780px, 100%);
+  margin-inline: auto;
+}
+
 .chat-message-row-user > .chat-message-container {
   width: fit-content;
   max-width: var(--user-message-max-width);
@@ -5114,6 +5152,7 @@
 }
 
 .chat-reading-surface .chat-message-row-assistant > .chat-message-container > .chat-message-item {
+  width: 100%;
   background-color: transparent;
   border: 0;
   border-radius: 0;

@@ -75,8 +75,8 @@
   --shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
   --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   --composer-shadow: 0 2px 14px rgba(60, 64, 67, 0.12);
-  --focus-ring: 2px solid rgba(49, 94, 248, 0.54);
-  --focus-ring-shadow: 0 0 0 4px rgba(49, 94, 248, 0.14);
+  --focus-ring: 2px solid rgba(49, 94, 248, 0.82);
+  --focus-ring-shadow: 0 0 0 4px rgba(49, 94, 248, 0.2);
 
   /* stroke */
   --border-in-light: 1px solid rgba(60, 64, 67, 0.12);
@@ -121,8 +121,8 @@
   --markdown-code-copy-success-shadow-color: var(--copy-success-shadow-color);
   --markdown-code-copy-success-accent-shadow-color: var(--copy-success-accent-shadow-color);
   --composer-shadow: 0 2px 14px rgba(0, 0, 0, 0.28);
-  --focus-ring: 2px solid rgba(138, 180, 248, 0.72);
-  --focus-ring-shadow: 0 0 0 4px rgba(138, 180, 248, 0.18);
+  --focus-ring: 2px solid rgba(138, 180, 248, 0.82);
+  --focus-ring-shadow: 0 0 0 4px rgba(138, 180, 248, 0.22);
 
   div:not(.no-dark) > svg {
     filter: invert(0.72);
@@ -203,7 +203,7 @@ body {
   justify-content: center;
   align-items: center;
   user-select: none;
-  touch-action: pan-x pan-y;
+  touch-action: pan-x pan-y pinch-zoom;
   overflow: hidden;
 
   @media only screen and (max-width: 600px) {
@@ -211,7 +211,8 @@ body {
   }
 
   *:focus-visible {
-    outline: none;
+    outline: var(--focus-ring);
+    outline-offset: 2px;
   }
 }
 
@@ -959,23 +960,32 @@ div.math {
 pre {
   position: relative;
 
-  &:hover .copy-code-button {
-    pointer-events: all;
-    transform: translateX(var(--markdown-code-scroll-left, 0px));
-    opacity: 0.72;
+  &:hover .markdown-code-actions,
+  &:focus-within .markdown-code-actions {
+    opacity: 1;
   }
 
-  &:hover .wrap-code-button {
-    pointer-events: all;
+  .markdown-code-actions {
+    position: absolute;
+    top: var(--markdown-code-action-inset, 12px);
+    right: var(--markdown-code-action-inset, 12px);
+    z-index: 3;
+    display: inline-flex;
+    gap: 8px;
+    padding-left: 18px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--markdown-code-block-background) 18px
+    );
     transform: translateX(var(--markdown-code-scroll-left, 0px));
-    opacity: 0.72;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity ease 0.18s;
   }
 
   .copy-code-button {
-    position: absolute;
-    right: var(--markdown-code-action-inset, 12px);
-    top: var(--markdown-code-action-inset, 12px);
-    z-index: 3;
+    position: static;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -987,9 +997,9 @@ pre {
     color: var(--markdown-code-copy-button-color);
     border: 1px solid var(--markdown-code-copy-button-border-color);
     border-radius: 999px;
-    transform: translate(var(--markdown-code-scroll-left, 0px), -2px);
-    pointer-events: none;
-    opacity: 0;
+    transform: none;
+    pointer-events: auto;
+    opacity: 0.72;
     transition:
       opacity ease 0.18s,
       transform ease 0.18s,
@@ -1017,11 +1027,10 @@ pre {
     &[data-copy-state="copied"] {
       pointer-events: all;
       opacity: 1;
-      transform: translateY(0);
+      transform: none;
       border-color: var(--markdown-code-copy-success-border-color);
       background-color: var(--markdown-code-copy-success-background);
       color: var(--markdown-code-copy-success-color);
-      transform: translateX(var(--markdown-code-scroll-left, 0px));
       box-shadow:
         0 1px 2px var(--markdown-code-copy-success-shadow-color),
         0 8px 18px var(--markdown-code-copy-success-accent-shadow-color);
@@ -1036,15 +1045,12 @@ pre {
       opacity: 1;
       outline: var(--focus-ring);
       outline-offset: 2px;
-      transform: translateX(var(--markdown-code-scroll-left, 0px));
+      transform: none;
     }
   }
 
   .wrap-code-button {
-    position: absolute;
-    right: calc(var(--markdown-code-action-inset, 12px) + var(--markdown-code-action-size, 34px) + 8px);
-    top: var(--markdown-code-action-inset, 12px);
-    z-index: 3;
+    position: static;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1056,9 +1062,9 @@ pre {
     color: var(--markdown-code-copy-button-color);
     border: 1px solid var(--markdown-code-copy-button-border-color);
     border-radius: 999px;
-    transform: translate(var(--markdown-code-scroll-left, 0px), -2px);
-    pointer-events: none;
-    opacity: 0;
+    transform: none;
+    pointer-events: auto;
+    opacity: 0.72;
     transition:
       opacity ease 0.18s,
       transform ease 0.18s,
@@ -1096,7 +1102,7 @@ pre {
       opacity: 1;
       outline: var(--focus-ring);
       outline-offset: 2px;
-      transform: translateX(var(--markdown-code-scroll-left, 0px));
+      transform: none;
     }
   }
 
@@ -1153,16 +1159,8 @@ pre {
 }
 
 @media (hover: none), (pointer: coarse), (max-width: 600px) {
-  pre .copy-code-button {
-    pointer-events: all;
+  pre .markdown-code-actions {
     opacity: 1;
-    transform: translateX(var(--markdown-code-scroll-left, 0px));
-  }
-
-  pre .wrap-code-button {
-    pointer-events: all;
-    opacity: 1;
-    transform: translateX(var(--markdown-code-scroll-left, 0px));
   }
 }
 

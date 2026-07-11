@@ -189,6 +189,7 @@ describe("Markdown file attachments", () => {
       "src",
       "https://example.com/clip.MP4?sig=1#t=1",
     );
+    expect(container.querySelectorAll("track")).toHaveLength(0);
     expect(openLinks).toHaveLength(2);
     expect(openLinks[0]).toHaveAttribute(
       "href",

@@ -1141,6 +1141,8 @@ const cn = {
         language ? ` ${language}` : ""
       }代码自动换行`,
     ScrollableTable: "Markdown 表格，可横向滚动",
+    ScrollableFormula: "块级公式，可横向滚动",
+    HtmlPreview: "HTML 预览",
     Audio: "音频",
     Video: "视频",
     MediaAttachment: (type: string, label: string) => `${type}附件：${label}`,
@@ -1186,6 +1188,7 @@ const cn = {
   },
   Context: {
     Toast: (x: any) => `包含 ${x} 条预设提示词`,
+    SettingsWithPrompts: (x: number) => `对话设置，包含 ${x} 条预设提示词`,
     Edit: "当前对话设置",
     Add: "新增一条对话",
     Clear: "上下文已清除",
@@ -1375,6 +1378,7 @@ const cn = {
     CodeBlockExpand: "展开完整代码块",
     Mermaid: {
       Preview: "预览 Mermaid 图表",
+      Caption: "Mermaid 图表",
       Unavailable: "图表暂不可用",
       SourceLabel: "Mermaid 源码",
     },

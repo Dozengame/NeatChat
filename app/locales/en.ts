@@ -1168,6 +1168,8 @@ const en: LocaleType = {
         language ? ` ${language}` : ""
       } code`,
     ScrollableTable: "Markdown table, horizontally scrollable",
+    ScrollableFormula: "Display formula, horizontally scrollable",
+    HtmlPreview: "HTML preview",
     Audio: "Audio",
     Video: "Video",
     MediaAttachment: (type: string, label: string) =>
@@ -1216,6 +1218,8 @@ const en: LocaleType = {
   },
   Context: {
     Toast: (x: any) => `With ${x} contextual prompts`,
+    SettingsWithPrompts: (x: number) =>
+      `Chat settings, ${x} contextual prompts`,
     Edit: "Current Chat Settings",
     Add: "Add a Prompt",
     Clear: "Context Cleared",
@@ -1405,6 +1409,7 @@ const en: LocaleType = {
     CodeBlockExpand: "Show full code block",
     Mermaid: {
       Preview: "Preview Mermaid diagram",
+      Caption: "Mermaid diagram",
       Unavailable: "Diagram preview unavailable",
       SourceLabel: "Mermaid source",
     },

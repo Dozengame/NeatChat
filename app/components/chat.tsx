@@ -4323,17 +4323,36 @@ function useChatInnerView() {
           </button>
           <IconButton
             className={styles["chat-mobile-header-button"]}
-            icon={<SettingsIcon />}
+            icon={
+              <span className={styles["chat-mobile-context-icon"]}>
+                <SettingsIcon />
+                {context.length > 0 && (
+                  <span
+                    className={styles["chat-mobile-context-count"]}
+                    aria-hidden="true"
+                  >
+                    {context.length > 99 ? "99+" : context.length}
+                  </span>
+                )}
+              </span>
+            }
             bordered
-            title={Locale.Chat.InputActions.Settings}
-            aria={Locale.Chat.InputActions.Settings}
+            title={
+              context.length > 0
+                ? Locale.Context.SettingsWithPrompts(context.length)
+                : Locale.Chat.InputActions.Settings
+            }
+            aria={
+              context.length > 0
+                ? Locale.Context.SettingsWithPrompts(context.length)
+                : Locale.Chat.InputActions.Settings
+            }
             onClick={(event) => {
               closeMobileModelSelector();
               setShowChatActionMenu(false);
               openPromptModal(event.currentTarget);
             }}
           />
-          {promptToast}
         </div>
       ) : showDesktopChatHeader ? (
         <div

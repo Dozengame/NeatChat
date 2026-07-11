@@ -2200,7 +2200,7 @@ describe("Gemini visual migration shell", () => {
       /--conversation-max-width:\s*min\(920px,\s*100%\);/,
     );
     expect(chatBodyRootBlock).toMatch(
-      /--assistant-message-max-width:\s*min\(780px,\s*100%\);/,
+      /--assistant-message-max-width:\s*min\(920px,\s*100%\);/,
     );
     expect(chatBodyRootBlock).toMatch(
       /--user-message-max-width:\s*min\(560px,\s*100%\);/,
@@ -3151,7 +3151,7 @@ describe("Gemini visual migration shell", () => {
       chatStyles.indexOf(".chat-reading-surface > .chat-message-row-user"),
     ).toBeGreaterThan(chatStyles.indexOf(".chat-message-user"));
     expect(chatStyles).toMatch(
-      /\.chat-reading-surface\s*\{[\s\S]*width:\s*min\(780px,\s*100%\);[\s\S]*max-width:\s*calc\(100% - 32px\);[\s\S]*margin:\s*14px auto 0;[\s\S]*gap:\s*26px;/,
+      /\.chat-reading-surface\s*\{[\s\S]*width:\s*min\(920px,\s*100%\);[\s\S]*max-width:\s*calc\(100% - 32px\);[\s\S]*margin:\s*14px auto 0;[\s\S]*gap:\s*26px;/,
     );
     expect(chatStyles).toMatch(
       /\.chat-reading-surface\s+\.chat-message-row-assistant\s*>\s*\.chat-message-container\s*>\s*\.chat-message-item\s*\{[\s\S]*background-color:\s*transparent;[\s\S]*border:\s*0;[\s\S]*border-radius:\s*0;[\s\S]*padding:\s*0;[\s\S]*box-shadow:\s*none;/,
@@ -3163,7 +3163,7 @@ describe("Gemini visual migration shell", () => {
       /--conversation-max-width:\s*min\(920px,\s*100%\);/,
     );
     expect(chatStyles).toMatch(
-      /--assistant-message-max-width:\s*min\(780px,\s*100%\);/,
+      /--assistant-message-max-width:\s*min\(920px,\s*100%\);/,
     );
     expect(chatStyles).toMatch(
       /--user-message-max-width:\s*min\(560px,\s*100%\);/,
@@ -3307,8 +3307,16 @@ describe("Gemini visual migration shell", () => {
       /:global\(button:hover\),[\s\S]*:global\(button:focus-visible\)[\s\S]*border-color:\s*var\(--chat-header-action-hover-border-color\);/,
     );
     expect(mobileDesktopHeaderActionsBlock).toMatch(/display:\s*none;/);
-    expect(chat).toMatch(
-      /<IconButton\s+className=\{styles\["chat-mobile-header-button"\]\}\s+icon=\{<SettingsIcon \/>\}\s+bordered\s+title=\{Locale\.Chat\.InputActions\.Settings\}\s+aria=\{Locale\.Chat\.InputActions\.Settings\}/,
+    expect(chat).toContain('className={styles["chat-mobile-context-icon"]}');
+    expect(chat).toContain('className={styles["chat-mobile-context-count"]}');
+    expect(chat).toContain("Locale.Context.SettingsWithPrompts(context.length)");
+    expect(chat).toContain('context.length > 99 ? "99+" : context.length');
+    expect(chatStyles).toContain(".chat-mobile-context-count");
+    expect(chatStyles).toMatch(
+      /--chat-mobile-context-count-color:\s*rgb\(255,\s*255,\s*255\);/,
+    );
+    expect(chatStyles).toMatch(
+      /\.chat-mobile-context-count[\s\S]*color:\s*var\(--chat-mobile-context-count-color\);/,
     );
     expect(chat).toMatch(
       /styles\["chat-desktop-header-action"\][\s\S]*<IconButton\s+icon=\{<RenameIcon \/>\}\s+bordered\s+title=\{Locale\.Chat\.EditMessage\.Title\}/,
@@ -4053,6 +4061,10 @@ describe("Gemini visual migration shell", () => {
     expect(globalStyles).toContain("--surface-elevated:");
     expect(globalStyles).toContain("--focus-ring:");
     expect(globalStyles).toContain("--focus-ring-shadow:");
+    expect(globalStyles).toMatch(/touch-action:\s*pan-x pan-y pinch-zoom;/);
+    expect(globalStyles).toMatch(
+      /\*:focus-visible\s*\{[\s\S]*outline:\s*var\(--focus-ring\);[\s\S]*outline-offset:\s*2px;/,
+    );
     expect(globalStyles).toMatch(
       /@mixin dark[\s\S]*--surface-elevated:[\s\S]*--focus-ring:[\s\S]*--focus-ring-shadow:/,
     );
@@ -8308,7 +8320,13 @@ describe("Gemini visual migration shell", () => {
     const globalPreBlock = readCssBlock(globalStyles, "pre");
     const desktopHoverBlock = readCssBlock(
       globalPreBlock,
-      "&:hover .copy-code-button",
+      "&:hover .markdown-code-actions,\n  &:focus-within .markdown-code-actions",
+    );
+    const codeActionsBlock = readCssBlock(
+      globalStyles.slice(
+        globalStyles.indexOf(".markdown-code-actions {\n    position"),
+      ),
+      ".markdown-code-actions",
     );
     const copyButtonStyles = globalStyles.slice(
       globalStyles.indexOf(".copy-code-button {\n    position"),
@@ -8363,7 +8381,7 @@ describe("Gemini visual migration shell", () => {
         globalStyles,
         "@media (hover: none), (pointer: coarse), (max-width: 600px)",
       ),
-      "pre .copy-code-button",
+      "pre .markdown-code-actions",
     );
     const languageLabelBlock = readCssBlock(
       markdownStyles,
@@ -8662,11 +8680,12 @@ describe("Gemini visual migration shell", () => {
     expect(preBlock).toMatch(/--markdown-code-action-rail-width:\s*106px;/);
     expect(preBlock).toMatch(/--markdown-code-action-inset:\s*12px;/);
     expect(preBlock).toMatch(/--markdown-code-action-size:\s*34px;/);
+    expect(preBlock).toMatch(/--markdown-code-content-end-padding:\s*16px;/);
     expect(preBlock).toMatch(/--markdown-code-scroll-left:\s*0px;/);
     expect(preBlock).toMatch(/--markdown-code-labeled-padding-top:\s*52px;/);
     expect(preBlock).toMatch(/--markdown-code-fold-overlay-offset:\s*68px;/);
     expect(preBlock).toMatch(
-      /padding:\s*var\(--markdown-code-block-padding-y\)\s*var\(--markdown-code-action-rail-width\)\s*var\(--markdown-code-block-padding-y\)\s*var\(--markdown-code-block-padding-start\);/,
+      /padding:\s*var\(--markdown-code-block-padding-y\)\s*var\(--markdown-code-content-end-padding\)\s*var\(--markdown-code-block-padding-y\)\s*var\(--markdown-code-block-padding-start\);/,
     );
     expect(preBlock).toMatch(/box-sizing:\s*border-box;/);
     expect(preBlock).toMatch(
@@ -8713,14 +8732,17 @@ describe("Gemini visual migration shell", () => {
       /--markdown-code-action-rail-width:\s*78px;/,
     );
     expect(mobileCodeBlock).toMatch(/--markdown-code-action-inset:\s*8px;/);
-    expect(mobileCodeBlock).toMatch(/--markdown-code-action-size:\s*30px;/);
+    expect(mobileCodeBlock).toMatch(/--markdown-code-action-size:\s*36px;/);
+    expect(mobileCodeBlock).toMatch(
+      /--markdown-code-content-end-padding:\s*12px;/,
+    );
     expect(mobileCodeBlock).toMatch(
       /--markdown-code-labeled-padding-top:\s*42px;/,
     );
     expect(mobileCodeBlock).toMatch(
       /--markdown-code-fold-overlay-offset:\s*58px;/,
     );
-    expect(mobileCodeBlock).toMatch(/font-size:\s*0\.88em;/);
+    expect(mobileCodeBlock).toMatch(/font-size:\s*0\.9em;/);
     expect(mobileCodeBlock).toMatch(/line-height:\s*1\.58;/);
     expect(mobileCodeBlock).not.toMatch(
       /--markdown-code-action-rail-width:\s*106px;/,
@@ -8746,7 +8768,10 @@ describe("Gemini visual migration shell", () => {
     expect(narrowCodeBlock).toMatch(
       /--markdown-code-action-rail-width:\s*72px;/,
     );
-    expect(narrowCodeBlock).toMatch(/--markdown-code-action-size:\s*28px;/);
+    expect(narrowCodeBlock).toMatch(/--markdown-code-action-size:\s*34px;/);
+    expect(narrowCodeBlock).toMatch(
+      /--markdown-code-content-end-padding:\s*10px;/,
+    );
     expect(languageLabelBlock).toMatch(/position:\s*absolute;/);
     expect(languageLabelBlock).toMatch(
       /transform:\s*translateX\(var\(--markdown-code-scroll-left\)\);/,
@@ -8789,7 +8814,7 @@ describe("Gemini visual migration shell", () => {
       /bottom:\s*calc\(-1 \* var\(--markdown-code-block-padding-y\)\);/,
     );
     expect(showHideButtonBlock).toMatch(
-      /margin:\s*calc\(-1 \* var\(--markdown-code-fold-overlay-offset\)\)\s*calc\(-1 \* var\(--markdown-code-action-rail-width\)\)\s*calc\(-1 \* var\(--markdown-code-block-padding-y\)\)\s*calc\(-1 \* var\(--markdown-code-block-padding-start\)\);/,
+      /margin:\s*calc\(-1 \* var\(--markdown-code-fold-overlay-offset\)\)\s*calc\(-1 \* var\(--markdown-code-content-end-padding\)\)\s*calc\(-1 \* var\(--markdown-code-block-padding-y\)\)\s*calc\(-1 \* var\(--markdown-code-block-padding-start\)\);/,
     );
     expect(showHideButtonBlock).toMatch(
       /padding:\s*36px var\(--markdown-code-block-padding-start\) 12px;/,
@@ -8806,18 +8831,15 @@ describe("Gemini visual migration shell", () => {
     expect(copyButtonBlock).toMatch(
       /height:\s*var\(--markdown-code-action-size,\s*34px\);/,
     );
-    expect(copyButtonBlock).toMatch(
-      /right:\s*var\(--markdown-code-action-inset,\s*12px\);/,
+    expect(copyButtonBlock).toMatch(/position:\s*static;/);
+    expect(copyButtonBlock).toMatch(/transform:\s*none;/);
+    expect(copyButtonBlock).toMatch(/pointer-events:\s*auto;/);
+    expect(copyButtonBlock).toMatch(/opacity:\s*0\.72;/);
+    expect(codeActionsBlock).toMatch(/position:\s*absolute;/);
+    expect(codeActionsBlock).toMatch(
+      /transform:\s*translateX\(var\(--markdown-code-scroll-left,\s*0px\)\);/,
     );
-    expect(copyButtonBlock).toMatch(
-      /top:\s*var\(--markdown-code-action-inset,\s*12px\);/,
-    );
-    expect(copyButtonBlock).toMatch(/z-index:\s*3;/);
-    expect(copyButtonBlock).toMatch(
-      /transform:\s*translate\(var\(--markdown-code-scroll-left,\s*0px\),\s*-2px\);/,
-    );
-    expect(copyButtonBlock).toMatch(/pointer-events:\s*none;/);
-    expect(copyButtonBlock).toMatch(/opacity:\s*0;/);
+    expect(codeActionsBlock).toMatch(/pointer-events:\s*none;/);
     expect(copyButtonBlock).toMatch(
       /background-color:\s*var\(--markdown-code-copy-button-background\);/,
     );
@@ -8863,7 +8885,7 @@ describe("Gemini visual migration shell", () => {
     expect(copyButtonStatusBlock).toMatch(/white-space:\s*nowrap;/);
     expect(copyButtonCopiedBlock).toMatch(/pointer-events:\s*all;/);
     expect(copyButtonCopiedBlock).toMatch(/opacity:\s*1;/);
-    expect(copyButtonCopiedBlock).toMatch(/transform:\s*translateY\(0\);/);
+    expect(copyButtonCopiedBlock).toMatch(/transform:\s*none;/);
     expect(copyButtonCopiedBlock).toMatch(
       /border-color:\s*var\(--markdown-code-copy-success-border-color\);/,
     );
@@ -8898,22 +8920,14 @@ describe("Gemini visual migration shell", () => {
         /(?:\brgba?\(|\bhsla?\(|#[\da-fA-F]{3,8}|color-mix\()/,
       );
     }
-    expect(desktopHoverBlock).toMatch(/pointer-events:\s*all;/);
-    expect(desktopHoverBlock).toMatch(/opacity:\s*0\.72;/);
-    expect(desktopHoverBlock).toMatch(
-      /transform:\s*translateX\(var\(--markdown-code-scroll-left,\s*0px\)\);/,
-    );
+    expect(desktopHoverBlock).toMatch(/opacity:\s*1;/);
     expect(focusVisibleBlock).toMatch(/pointer-events:\s*all;/);
     expect(focusVisibleBlock).toMatch(/opacity:\s*1;/);
     expect(focusVisibleBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
     expect(focusVisibleBlock).toMatch(
-      /transform:\s*translateX\(var\(--markdown-code-scroll-left,\s*0px\)\);/,
+      /transform:\s*none;/,
     );
-    expect(touchCopyButtonBlock).toMatch(/pointer-events:\s*all;/);
     expect(touchCopyButtonBlock).toMatch(/opacity:\s*1;/);
-    expect(touchCopyButtonBlock).toMatch(
-      /transform:\s*translateX\(var\(--markdown-code-scroll-left,\s*0px\)\);/,
-    );
     expect(showHideButtonBlock).toMatch(/position:\s*sticky;/);
     expect(showHideButtonBlock).toMatch(
       /bottom:\s*calc\(-1 \* var\(--markdown-code-block-padding-y\)\);/,
@@ -8953,6 +8967,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(showHideActionBlock).toMatch(
       /&:focus-visible[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 10px 24px var\(--markdown-code-fold-hover-shadow-color\);/,
+    );
+    expect(showHideActionBlock).toMatch(
+      /&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);[\s\S]*outline-offset:\s*2px;/,
     );
     expect(darkShowHideButtonBlock).toMatch(
       /background:\s*linear-gradient\(\s*180deg,\s*var\(--markdown-code-fold-scrim-transparent\),\s*var\(--markdown-code-fold-scrim-solid\)\s*58%\s*\);/,
@@ -9350,6 +9367,9 @@ describe("Gemini visual migration shell", () => {
     expect(imagePreviewButtonBlock).toMatch(
       /&:focus-visible[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\);/,
     );
+    expect(imagePreviewButtonBlock).toMatch(
+      /&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);[\s\S]*outline-offset:\s*-3px;/,
+    );
     expect(imagePreviewBlock).toMatch(/max-width:\s*100%;/);
     expect(imagePreviewBlock).toMatch(/border-radius:\s*6px;/);
     expect(imagePreviewBlock).toMatch(/border:\s*0;/);
@@ -9669,6 +9689,14 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body .mermaid",
     );
+    const mermaidFigureBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-mermaid-figure",
+    );
+    const mermaidSourceBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-mermaid-source",
+    );
     const mermaidFallbackBlock = readCssBlock(
       markdownStyles,
       ".markdown-body .markdown-mermaid-fallback",
@@ -9682,7 +9710,7 @@ describe("Gemini visual migration shell", () => {
       ".markdown-body .markdown-mermaid-fallback-code",
     );
     const streamingMermaidFallbackSelector =
-      '.markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))';
+      '.markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .markdown-mermaid-figure:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))';
     const streamingMermaidFallbackBlock = readCssBlock(
       markdownStyles,
       streamingMermaidFallbackSelector,
@@ -9745,9 +9773,12 @@ describe("Gemini visual migration shell", () => {
     expect(mermaid).toContain("setFailedCode(null);");
     expect(mermaid).toContain("setFailedCode(props.code);");
     expect(mermaid).toContain("Locale.NewChat.Mermaid.Preview");
+    expect(mermaid).toContain("Locale.NewChat.Mermaid.Caption");
     expect(mermaid).toContain("Locale.NewChat.Mermaid.Unavailable");
     expect(mermaid).toContain("Locale.NewChat.Mermaid.SourceLabel");
     expect(mermaid).toContain('className="mermaid"');
+    expect(mermaid).toContain('className="markdown-mermaid-figure"');
+    expect(mermaid).toContain('className="markdown-mermaid-source"');
     expect(mermaid).toContain('className="markdown-mermaid-fallback"');
     expect(mermaid).toContain('className="markdown-mermaid-fallback-title"');
     expect(mermaid).toContain('className="markdown-mermaid-fallback-code"');
@@ -9758,10 +9789,12 @@ describe("Gemini visual migration shell", () => {
     expect(mermaid).not.toContain("return null;");
     expect(cnLocale).toContain("Mermaid: {");
     expect(cnLocale).toContain('Preview: "预览 Mermaid 图表"');
+    expect(cnLocale).toContain('Caption: "Mermaid 图表"');
     expect(cnLocale).toContain('Unavailable: "图表暂不可用"');
     expect(cnLocale).toContain('SourceLabel: "Mermaid 源码"');
     expect(enLocale).toContain("Mermaid: {");
     expect(enLocale).toContain('Preview: "Preview Mermaid diagram"');
+    expect(enLocale).toContain('Caption: "Mermaid diagram"');
     expect(enLocale).toContain('Unavailable: "Diagram preview unavailable"');
     expect(enLocale).toContain('SourceLabel: "Mermaid source"');
 
@@ -9776,10 +9809,10 @@ describe("Gemini visual migration shell", () => {
       /rgba\(|#[0-9a-fA-F]{3,8}\b/,
     );
     expect(lightMixinBlock).toMatch(
-      /--markdown-mermaid-frame-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 10%,\s*transparent\s*\);/,
+      /--markdown-mermaid-frame-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 14%,\s*transparent\s*\);/,
     );
     expect(lightMixinBlock).toMatch(
-      /--markdown-mermaid-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*transparent\s*\);/,
+      /--markdown-mermaid-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 94%,\s*transparent\s*\);/,
     );
     expect(lightMixinBlock).toMatch(
       /--markdown-mermaid-fallback-accent-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 82%,\s*transparent\s*\);/,
@@ -9797,10 +9830,10 @@ describe("Gemini visual migration shell", () => {
       lightMermaidTokens["--markdown-mermaid-fallback-code-border-color"],
     ).toBe("color-mix( in srgb, var(--black-50) 12%, transparent )");
     expect(darkMixinBlock).toMatch(
-      /--markdown-mermaid-frame-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
+      /--markdown-mermaid-frame-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 14%,\s*transparent\s*\);/,
     );
     expect(darkMixinBlock).toMatch(
-      /--markdown-mermaid-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--surface\)\s*\);/,
+      /--markdown-mermaid-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--surface\)\s*\);/,
     );
     expect(darkMixinBlock).toMatch(
       /--markdown-mermaid-fallback-accent-color:\s*color-mix\(\s*in srgb,\s*var\(--markdown-link-color\) 90%,\s*transparent\s*\);/,
@@ -9822,13 +9855,14 @@ describe("Gemini visual migration shell", () => {
     expect(mermaidResetBlock).toMatch(/appearance:\s*none;/);
     expect(mermaidResetBlock).toMatch(/font:\s*inherit;/);
     expect(mermaidFrameBlock).toMatch(/display:\s*block;/);
-    expect(mermaidFrameBlock).toMatch(
-      /width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+    expect(mermaidFigureBlock).toMatch(
+      /width:\s*min\(100%,\s*var\(--markdown-data-max-width\)\);/,
     );
+    expect(mermaidFigureBlock).toMatch(/margin:\s*12px 0;/);
     expect(mermaidFrameBlock).toMatch(/max-width:\s*100%;/);
     expect(mermaidFrameBlock).toMatch(/min-width:\s*0;/);
     expect(mermaidFrameBlock).toMatch(/box-sizing:\s*border-box;/);
-    expect(mermaidFrameBlock).toMatch(/margin:\s*12px 0;/);
+    expect(mermaidFrameBlock).toMatch(/margin:\s*0;/);
     expect(mermaidFrameBlock).toMatch(/padding:\s*12px;/);
     expect(mermaidFrameBlock).toMatch(/border-radius:\s*8px;/);
     expect(mermaidFrameBlock).toMatch(
@@ -9865,10 +9899,12 @@ describe("Gemini visual migration shell", () => {
     expect(mermaidFrameBlock).toMatch(
       /svg[\s\S]*max-width:\s*100%;[\s\S]*height:\s*auto;/,
     );
+    expect(mermaidSourceBlock).toMatch(/margin:\s*8px 0 0;/);
+    expect(mermaidSourceBlock).toMatch(/max-height:\s*min\(30vh, 240px\);/);
 
     expect(mermaidFallbackBlock).toMatch(/display:\s*flex;/);
     expect(mermaidFallbackBlock).toMatch(
-      /width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+      /width:\s*min\(100%,\s*var\(--markdown-data-max-width\)\);/,
     );
     expect(mermaidFallbackBlock).toMatch(/max-width:\s*100%;/);
     expect(mermaidFallbackBlock).toMatch(/min-width:\s*0;/);
@@ -10490,10 +10526,10 @@ describe("Gemini visual migration shell", () => {
     });
 
     expect(lightMixinBlock).toMatch(
-      /--markdown-table-shell-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 72%,\s*transparent\s*\);/,
+      /--markdown-table-shell-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 84%,\s*transparent\s*\);/,
     );
     expect(lightMixinBlock).toMatch(
-      /--markdown-table-cell-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
+      /--markdown-table-cell-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 16%,\s*transparent\s*\);/,
     );
     expect(lightMixinBlock).toMatch(
       /--markdown-table-row-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 58%,\s*var\(--surface\)\s*\);/,
@@ -10505,10 +10541,10 @@ describe("Gemini visual migration shell", () => {
       /--markdown-table-row-hover-background:\s*color-mix\(\s*in srgb,\s*var\(--primary\) 7%,\s*var\(--surface-elevated\)\s*\);/,
     );
     expect(darkMixinBlock).toMatch(
-      /--markdown-table-shell-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 62%,\s*transparent\s*\);/,
+      /--markdown-table-shell-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 70%,\s*var\(--surface\)\s*\);/,
     );
     expect(darkMixinBlock).toMatch(
-      /--markdown-table-cell-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
+      /--markdown-table-cell-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 14%,\s*transparent\s*\);/,
     );
     expect(darkMixinBlock).toMatch(
       /--markdown-table-row-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 52%,\s*var\(--surface\)\s*\);/,
@@ -10535,11 +10571,14 @@ describe("Gemini visual migration shell", () => {
 
     expect(markdown).toContain("function MarkdownTable");
     expect(markdown).toContain("const [tableScrollHint, setTableScrollHint]");
+    expect(markdown).toContain(
+      "const [tableIsScrollable, setTableIsScrollable]",
+    );
     expect(markdown).toMatch(
       /const syncTableScrollHint = useCallback\(\(\) => \{[\s\S]*const tableShell = tableScrollRef\.current;[\s\S]*const maxScrollLeft = Math\.max\([\s\S]*tableShell\.scrollWidth - tableShell\.clientWidth[\s\S]*start: tableShell\.scrollLeft > 1,[\s\S]*end: maxScrollLeft - tableShell\.scrollLeft > 1,/,
     );
     expect(markdown).toMatch(
-      /className="markdown-table-scroll-shell"[\s\S]*data-overflow-start=\{tableScrollHint\.start \? "true" : "false"\}[\s\S]*data-overflow-end=\{tableScrollHint\.end \? "true" : "false"\}[\s\S]*className="markdown-table-scroll-viewport"[\s\S]*tabIndex=\{0\}[\s\S]*role="region"[\s\S]*aria-label=\{Locale\.Markdown\.ScrollableTable\}[\s\S]*onScroll=\{syncTableScrollHint\}/,
+      /className="markdown-table-scroll-shell"[\s\S]*data-scrollable=\{tableIsScrollable \? "true" : "false"\}[\s\S]*data-overflow-start=\{tableScrollHint\.start \? "true" : "false"\}[\s\S]*data-overflow-end=\{tableScrollHint\.end \? "true" : "false"\}[\s\S]*className="markdown-table-scroll-viewport"[\s\S]*tabIndex=\{tableIsScrollable \? 0 : undefined\}[\s\S]*role=\{tableIsScrollable \? "region" : undefined\}[\s\S]*tableIsScrollable \? Locale\.Markdown\.ScrollableTable : undefined[\s\S]*onScroll=\{syncTableScrollHint\}/,
     );
     expect(markdown).toMatch(
       /typeof ResizeObserver === "undefined"[\s\S]*const tableResizeObserver = new ResizeObserver\(\(\) => \{[\s\S]*syncTableScrollHint\(\);[\s\S]*tableResizeObserver\.observe\(tableShell\)/,
@@ -10697,6 +10736,12 @@ describe("Gemini visual migration shell", () => {
       "remarkPlugins={[RemarkMath, RemarkGfm, RemarkBreaks]}",
     );
     expect(markdown).toContain("RehypeKatex");
+    expect(markdown).toContain("function MarkdownSpan");
+    expect(markdown).toContain('includes("katex-display")');
+    expect(markdown).toContain("span: MarkdownSpan");
+    expect(markdown).toMatch(
+      /data-scrollable=\{formulaIsScrollable \? "true" : "false"\}[\s\S]*tabIndex=\{formulaIsScrollable \? 0 : undefined\}[\s\S]*role=\{formulaIsScrollable \? "region" : undefined\}[\s\S]*Locale\.Markdown\.ScrollableFormula/,
+    );
     expect(lightMixinBlock).toMatch(
       /--markdown-math-display-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black-50\) 12%,\s*transparent\s*\);/,
     );
@@ -10735,6 +10780,9 @@ describe("Gemini visual migration shell", () => {
     expect(katexDisplayFormulaBlock).toMatch(/display:\s*inline-block;/);
     expect(katexDisplayFormulaBlock).toMatch(/min-width:\s*max-content;/);
     expect(katexDisplayFormulaBlock).toMatch(/max-width:\s*none;/);
+    expect(markdownStyles).toMatch(
+      /\.markdown-body \.katex-display:focus-visible\s*\{[\s\S]*outline:\s*var\(--focus-ring\);[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\);/,
+    );
     expect(markdownStyles).not.toMatch(
       /\.dark\s+\.markdown-body\s+\.katex-display\s*\{/,
     );
@@ -11351,7 +11399,8 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toContain('class="markdown-thinking"');
     expect(markdown).toContain('class="markdown-thinking-summary"');
     expect(markdown).toContain('class="thinking-loader" aria-hidden="true"');
-    expect(markdown).toContain("return <details {...props} open />");
+    expect(markdown).toContain("return <details {...props} />");
+    expect(markdown).toContain('<details open class="markdown-thinking">');
     expect(markdown).toContain("return <summary {...props} />");
     for (const tokenName of thinkingTokenNames) {
       expect(lightMixinBlock).toContain(tokenName);
@@ -12290,13 +12339,13 @@ describe("Gemini visual migration shell", () => {
     expect(stackedHeadingBlock).toMatch(
       /margin-top:\s*var\(--markdown-heading-stack-gap\);/,
     );
-    expect(h1Block).toMatch(/font-size:\s*1\.55em;/);
+    expect(h1Block).toMatch(/font-size:\s*1\.6em;/);
     expect(h1Block).toMatch(/padding-bottom:\s*0;/);
     expect(h1Block).toMatch(/border-bottom:\s*0;/);
     expect(h2Block).toMatch(/position:\s*relative;/);
     expect(h2Block).toMatch(/padding-left:\s*12px;/);
     expect(h2Block).toMatch(/padding-bottom:\s*0;/);
-    expect(h2Block).toMatch(/font-size:\s*1\.28em;/);
+    expect(h2Block).toMatch(/font-size:\s*1\.3em;/);
     expect(h2Block).toMatch(/border-bottom:\s*0;/);
     expect(h2Block).toMatch(/&::before[\s\S]*width:\s*3px;/);
     expect(h2Block).toMatch(
@@ -12309,7 +12358,7 @@ describe("Gemini visual migration shell", () => {
       /(?:\brgba?\(|\bhsla?\(|#[\da-fA-F]{3,8}|color-mix\()/,
     );
     expect(h2AnchorBlock).toMatch(/margin-left:\s*-32px;/);
-    expect(h3Block).toMatch(/font-size:\s*1\.12em;/);
+    expect(h3Block).toMatch(/font-size:\s*1\.13em;/);
     expect(headingCodeBlock).toMatch(/line-height:\s*inherit;/);
     expect(headingCodeBlock).toMatch(/background:\s*transparent;/);
     expect(headingCodeBlock).toMatch(/border:\s*0;/);
@@ -12395,7 +12444,7 @@ describe("Gemini visual migration shell", () => {
     );
     const mermaidBlock = readCssBlock(
       markdownStyles,
-      ".markdown-body .mermaid",
+      ".markdown-body .markdown-mermaid-figure",
     );
     const mermaidFallbackBlock = readCssBlock(
       markdownStyles,
@@ -12451,10 +12500,16 @@ describe("Gemini visual migration shell", () => {
     );
 
     expect(markdownBodyDeclarations).toMatch(
-      /--markdown-reading-max-width:\s*780px;/,
+      /--markdown-prose-max-width:\s*780px;/,
     );
     expect(markdownBodyDeclarations).toMatch(
-      /--markdown-reading-surface-max-width:\s*var\(--markdown-reading-max-width\);/,
+      /--markdown-data-max-width:\s*920px;/,
+    );
+    expect(markdownBodyDeclarations).toMatch(
+      /--markdown-reading-max-width:\s*var\(--markdown-prose-max-width\);/,
+    );
+    expect(markdownBodyDeclarations).toMatch(
+      /--markdown-reading-surface-max-width:\s*var\(--markdown-prose-max-width\);/,
     );
     expect(markdownBodyDeclarations).toMatch(
       /--markdown-prose-line-height:\s*1\.72;/,
@@ -12474,10 +12529,10 @@ describe("Gemini visual migration shell", () => {
       /--markdown-list-item-gap:\s*0\.38em;/,
     );
     expect(markdownBodyDeclarations).toMatch(
-      /--markdown-code-block-max-width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+      /--markdown-code-block-max-width:\s*min\(100%,\s*var\(--markdown-data-max-width\)\);/,
     );
     expect(markdownBodyDeclarations).toMatch(
-      /--markdown-table-shell-max-width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+      /--markdown-table-shell-max-width:\s*min\(100%,\s*var\(--markdown-data-max-width\)\);/,
     );
     expect(markdownBodyBlock).toMatch(
       /line-height:\s*var\(--markdown-prose-line-height\);/,
@@ -12518,18 +12573,24 @@ describe("Gemini visual migration shell", () => {
       /width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
     );
     expect(mermaidBlock).toMatch(
-      /width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+      /width:\s*min\(100%,\s*var\(--markdown-data-max-width\)\);/,
     );
     expect(mermaidFallbackBlock).toMatch(
-      /width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+      /width:\s*min\(100%,\s*var\(--markdown-data-max-width\)\);/,
     );
     expect(artifactPreviewBlock).toMatch(
-      /width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+      /width:\s*min\(100%,\s*var\(--markdown-data-max-width\)\);/,
     );
     expect(detailsBlockquoteBeforeBlock).toMatch(/content:\s*none;/);
     expect(detailsBlockquoteBeforeBlock).toMatch(/display:\s*none;/);
     expect(detailsThinkingBlockquoteBeforeBlock).toMatch(/content:\s*none;/);
     expect(detailsThinkingBlockquoteBeforeBlock).toMatch(/display:\s*none;/);
+    expect(mobileMarkdownBodyBlock).toMatch(
+      /--markdown-prose-max-width:\s*100%;/,
+    );
+    expect(mobileMarkdownBodyBlock).toMatch(
+      /--markdown-data-max-width:\s*100%;/,
+    );
     expect(mobileMarkdownBodyBlock).toMatch(
       /--markdown-reading-surface-max-width:\s*100%;/,
     );
@@ -15402,11 +15463,20 @@ describe("Gemini visual migration shell", () => {
     expect(cnLocale).toContain('ReloadTitle: "重新加载预览"');
     expect(artifactsPreview).toContain("new ResizeObserver");
     expect(artifactsPreview).toContain("parent.postMessage");
+    expect(artifactsPreview).toContain("title: document.title");
+    expect(artifactsPreview).toContain(
+      "event.source !== iframeRef.current?.contentWindow",
+    );
+    expect(artifactsPreview).toContain("event.data.id !== frameId");
+    expect(artifactsPreview).toContain("accessibleTitle?: string;");
+    expect(artifactsPreview).toContain("const [previewId] = useState");
     expect(artifactsPreview).toContain(
       'sandbox="allow-forms allow-modals allow-scripts"',
     );
     expect(artifactsPreview).toContain("srcDoc={srcDoc}");
-    expect(artifactsPreview).toContain("onLoad={handleOnLoad}");
+    expect(artifactsPreview).toContain(
+      "title={`${accessibleTitle} ${previewId}${title ? `: ${title}` : \"\"}`}",
+    );
     expect(artifactsShareButton).toContain("fetch(ApiPath.Artifacts");
     expect(artifactsShareButton).toContain('method: "POST"');
     expect(artifactsShareButton).toContain("upload(getCode())");
@@ -20946,10 +21016,14 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toContain(
       "const tokenFirstCharDelay = tokenInfo?.firstCharDelay",
     );
-    expect(markdown).toContain("const showTokenDelay = Boolean");
-    expect(markdown).toContain("const tokenDelayText = tokenFirstCharDelay");
+    expect(markdown).toContain("const hasTokenFirstCharDelay =");
+    expect(markdown).toContain("Number.isFinite(tokenFirstCharDelay)");
     expect(markdown).toContain(
-      "Locale.Chat.TokenInfo.FirstDelay(tokenFirstCharDelay)",
+      "const showTokenDelay = hasTokenFirstCharDelay && isHovering",
+    );
+    expect(markdown).toContain("const tokenDelayText = hasTokenFirstCharDelay");
+    expect(markdown).toContain(
+      "Locale.Chat.TokenInfo.FirstDelay(tokenFirstCharDelay!)",
     );
     expect(markdown).toContain("const tokenCountText = tokenInfo");
     expect(markdown).toContain(
@@ -20965,6 +21039,8 @@ describe("Gemini visual migration shell", () => {
       'data-token-info-expanded={showTokenDelay ? "true" : "false"}',
     );
     expect(markdown).toMatch(/showTokenDelay\s*\?\s*tokenDelayText/);
+    expect(markdown).toContain('className="token-info token-info-static"');
+    expect(markdown).toContain("!hasTokenFirstCharDelay");
     expect(lightMixinBlock).toMatch(
       /--markdown-token-info-border-color:\s*color-mix\(\s*in srgb,\s*var\(--black\) 10%,\s*transparent\s*\);/,
     );
@@ -21062,11 +21138,15 @@ describe("Gemini visual migration shell", () => {
       /&:hover,\s*&:focus-visible,\s*&\[data-token-info-expanded="true"\][\s\S]*0 1px 2px var\(--markdown-token-info-hover-key-shadow-color\),[\s\S]*0 10px 24px var\(--markdown-token-info-hover-shadow-color\);/,
     );
     expect(tokenInfoBlock).toMatch(/&:focus-visible/);
-    expect(tokenInfoBlock).toMatch(/outline:\s*none;/);
+    expect(tokenInfoBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
+    expect(tokenInfoBlock).toMatch(/outline-offset:\s*2px;/);
     expect(tokenInfoBlock).toMatch(
       /&:focus-visible[\s\S]*var\(--focus-ring-shadow\),[\s\S]*0 1px 2px var\(--markdown-token-info-hover-key-shadow-color\),[\s\S]*0 10px 24px var\(--markdown-token-info-hover-shadow-color\);/,
     );
     expect(tokenInfoBlock).toMatch(/&\[data-token-info-expanded="true"\]/);
+    expect(tokenInfoBlock).toMatch(
+      /&\.token-info-static[\s\S]*background:\s*transparent;[\s\S]*box-shadow:\s*none;[\s\S]*pointer-events:\s*none;/,
+    );
     expect(darkTokenInfoBlock).toMatch(
       /box-shadow:\s*0 1px 2px var\(--markdown-token-info-shadow-color\),[\s\S]*0 8px 18px var\(--markdown-token-info-accent-shadow-color\);/,
     );
@@ -21732,7 +21812,7 @@ describe("Gemini visual migration shell", () => {
       ":root",
     );
     const streamingCodeSelector =
-      '.markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .mermaid:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))';
+      '.markdown-body[data-streaming="true"] > pre.markdown-code-block:is(:last-child, :has(+ .markdown-mermaid-figure:last-child), :has(+ .markdown-mermaid-fallback:last-child), :has(+ .markdown-artifact-preview:last-child))';
     const streamingCodeBlock = readCssBlock(
       markdownStyles,
       streamingCodeSelector,
@@ -21799,7 +21879,9 @@ describe("Gemini visual migration shell", () => {
       "<Mermaid code={mermaidCode} key={mermaidCode} />",
     );
     expect(markdown).toContain("<HTMLPreview");
-    expect(streamingCodeSelector).toContain(":has(+ .mermaid:last-child)");
+    expect(streamingCodeSelector).toContain(
+      ":has(+ .markdown-mermaid-figure:last-child)",
+    );
     expect(streamingCodeSelector).toContain(
       ":has(+ .markdown-mermaid-fallback:last-child)",
     );
@@ -22170,10 +22252,10 @@ describe("Gemini visual migration shell", () => {
       /rgba\(|#[0-9a-fA-F]{3,8}\b/,
     );
     expect(lightMixinBlock).toMatch(
-      /--markdown-artifact-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*transparent\s*\);/,
+      /--markdown-artifact-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 94%,\s*transparent\s*\);/,
     );
     expect(darkMixinBlock).toMatch(
-      /--markdown-artifact-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 84%,\s*var\(--surface\)\s*\);/,
+      /--markdown-artifact-frame-background:\s*color-mix\(\s*in srgb,\s*var\(--surface-elevated\) 90%,\s*var\(--surface\)\s*\);/,
     );
     expect(lightArtifactTokens["--markdown-artifact-iframe-background"]).toBe(
       "color-mix( in srgb, var(--surface-elevated) 96%, transparent )",
@@ -22198,7 +22280,7 @@ describe("Gemini visual migration shell", () => {
 
     expect(artifactPreviewBlock).toMatch(/display:\s*block;/);
     expect(artifactPreviewBlock).toMatch(
-      /width:\s*min\(100%,\s*var\(--markdown-reading-surface-max-width\)\);/,
+      /width:\s*min\(100%,\s*var\(--markdown-data-max-width\)\);/,
     );
     expect(artifactPreviewBlock).toMatch(/max-width:\s*100%;/);
     expect(artifactPreviewBlock).toMatch(/min-width:\s*0;/);
@@ -22369,10 +22451,11 @@ describe("Gemini visual migration shell", () => {
       /\{showPromptModal && (?:\(\s*)?<SessionConfigModel onClose=\{closePromptModal\} \/>(?:\s*\))?\}/,
     );
 
-    expect(promptToastBlock).toMatch(/pointer-events:\s*none;/);
-    expect(promptToastBlock).toMatch(/top:\s*calc\(100% \+ 8px\);/);
-    expect(promptToastBlock).toMatch(/bottom:\s*auto;/);
-    expect(promptToastBlock).toMatch(/padding:\s*0 16px;/);
+    expect(promptToastBlock).toMatch(/position:\s*static;/);
+    expect(promptToastBlock).toMatch(/flex:\s*0 1 auto;/);
+    expect(promptToastBlock).toMatch(/min-width:\s*0;/);
+    expect(promptToastBlock).toMatch(/padding:\s*0;/);
+    expect(promptToastBlock).toMatch(/pointer-events:\s*auto;/);
     expect(promptToastRootDeclarations).toMatch(
       /--prompt-toast-background:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 88%,\s*transparent\);/,
     );
@@ -22388,9 +22471,9 @@ describe("Gemini visual migration shell", () => {
 
     expect(promptToastInnerBlock).toMatch(/appearance:\s*none;/);
     expect(promptToastInnerBlock).toMatch(/pointer-events:\s*auto;/);
-    expect(promptToastInnerBlock).toMatch(/max-width:\s*min\(420px, 100%\);/);
-    expect(promptToastInnerBlock).toMatch(/min-height:\s*36px;/);
-    expect(promptToastInnerBlock).toMatch(/padding:\s*7px 12px;/);
+    expect(promptToastInnerBlock).toMatch(/max-width:\s*min\(320px, 100%\);/);
+    expect(promptToastInnerBlock).toMatch(/min-height:\s*34px;/);
+    expect(promptToastInnerBlock).toMatch(/padding:\s*6px 11px;/);
     expect(promptToastInnerBlock).toMatch(/border-radius:\s*999px;/);
     expect(promptToastInnerBlock).toMatch(
       /background:\s*var\(--prompt-toast-background\);/,
@@ -22403,7 +22486,7 @@ describe("Gemini visual migration shell", () => {
     );
     expect(promptToastInnerBlock).toMatch(/backdrop-filter:\s*blur\(18px\);/);
     expect(promptToastInnerBlock).toMatch(
-      /box-shadow:[\s\S]*0 10px 26px var\(--prompt-toast-shadow-color\)/,
+      /box-shadow:[\s\S]*0 6px 16px var\(--prompt-toast-shadow-color\)/,
     );
     expect(promptToastInnerBlock).toMatch(
       /transition:[\s\S]*transform 0\.16s ease,[\s\S]*background-color 0\.16s ease,[\s\S]*box-shadow 0\.16s ease/,
@@ -25010,7 +25093,7 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toContain("codeElement?.innerText");
     expect(globalStyles).toContain(".wrap-code-button");
     expect(globalStyles).toMatch(
-      /\.wrap-code-button[\s\S]*right:\s*calc\(var\(--markdown-code-action-inset,\s*12px\) \+ var\(--markdown-code-action-size,\s*34px\) \+ 8px\);/,
+      /\.markdown-code-actions[\s\S]*display:\s*inline-flex;[\s\S]*gap:\s*8px;/,
     );
     expect(markdownStyles).toMatch(
       /--markdown-code-action-rail-width:\s*106px;/,

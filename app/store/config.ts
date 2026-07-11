@@ -167,7 +167,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   lastUpdate: Date.now(),
   submitKey: SubmitKey.Enter,
   avatar: "1f603",
-  fontSize: 14,
+  fontSize: 15,
   fontFamily: "",
   theme: Theme.Auto,
   tightBorder: !!config?.isApp,

@@ -62,15 +62,24 @@ export function Mermaid(props: { code: string }) {
   }
 
   return (
-    <button
-      type="button"
-      className="mermaid"
-      ref={ref}
-      onClick={() => viewSvgInNewWindow()}
-      aria-label={Locale.NewChat.Mermaid.Preview}
-      title={Locale.NewChat.Mermaid.Preview}
-    >
-      {props.code}
-    </button>
+    <figure className="markdown-mermaid-figure">
+      <figcaption className="markdown-mermaid-caption">
+        {Locale.NewChat.Mermaid.Caption}
+      </figcaption>
+      <button
+        type="button"
+        className="mermaid"
+        ref={ref}
+        onClick={() => viewSvgInNewWindow()}
+        aria-label={Locale.NewChat.Mermaid.Preview}
+        title={Locale.NewChat.Mermaid.Preview}
+      >
+        {props.code}
+      </button>
+      <details className="markdown-mermaid-source">
+        <summary>{Locale.NewChat.Mermaid.SourceLabel}</summary>
+        <code>{props.code}</code>
+      </details>
+    </figure>
   );
 }

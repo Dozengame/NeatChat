@@ -14,9 +14,19 @@ export const markdownSanitizeSchema: RehypeSanitizeSchema = {
       ...(defaultSchema.attributes?.code ?? []),
       ["className", /^language-./, "math-inline", "math-display"],
     ],
-    details: [["className", "markdown-thinking"]],
-    summary: [["className", "markdown-thinking-summary"]],
-    span: [["className", "thinking-loader"]],
+    details: [
+      ...(defaultSchema.attributes?.details ?? []),
+      "open",
+      ["className", "markdown-thinking"],
+    ],
+    summary: [
+      ...(defaultSchema.attributes?.summary ?? []),
+      ["className", "markdown-thinking-summary"],
+    ],
+    span: [
+      ...(defaultSchema.attributes?.span ?? []),
+      ["className", "thinking-loader"],
+    ],
   },
   protocols: {
     ...defaultSchema.protocols,

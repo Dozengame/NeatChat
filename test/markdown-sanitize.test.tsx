@@ -96,6 +96,12 @@ describe("Markdown raw HTML sanitization contract", () => {
         expect.arrayContaining(["className", expect.any(RegExp)]),
       ]),
     );
+    expect(markdownSanitizeSchema.attributes?.details).toEqual(
+      expect.arrayContaining([
+        "open",
+        expect.arrayContaining(["className", "markdown-thinking"]),
+      ]),
+    );
     expect(markdownSanitizeSchema.protocols?.src).toContain("data");
   });
 
