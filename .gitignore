@@ -62,6 +62,8 @@ stage_m1.sh
 PROJECT.md
 progress.md
 design-qa.md
+AGENTS.md
+CLAUDE.md
 
 # debug/scratch tests generated during iteration (not official test suite)
 test/capture-dropzone.test.ts
