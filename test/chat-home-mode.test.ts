@@ -1,8 +1,10 @@
 import { LLMModel } from "../app/client/types";
 import { ServiceProvider } from "../app/constant";
 import {
+  getComposerModelMenuSection,
   getChatHomeModeForModel,
   getChatHomeModeModels,
+  getImageComposerSummary,
   resolvePreferredChatHomeModel,
 } from "../app/components/chat-home-mode";
 
@@ -73,5 +75,41 @@ describe("new chat home modes", () => {
         model("gpt-image-2", ServiceProvider.Azure),
       ]),
     ).toBeUndefined();
+  });
+
+  test("opens supported conversation models on their parameter page", () => {
+    expect(
+      getComposerModelMenuSection("gpt-5.6-terra", ServiceProvider.OpenAI),
+    ).toBe("reasoning");
+    expect(
+      getComposerModelMenuSection("gpt-image-2", ServiceProvider.OpenAI),
+    ).toBe("image-options");
+    expect(
+      getComposerModelMenuSection("gpt-image-2", ServiceProvider.Azure),
+    ).toBeNull();
+    expect(
+      getComposerModelMenuSection("dall-e-3", ServiceProvider.OpenAI),
+    ).toBe("image-options");
+    expect(getComposerModelMenuSection("dall-e-3", ServiceProvider.Azure)).toBe(
+      "image-options",
+    );
+    expect(
+      getComposerModelMenuSection("claude-4", ServiceProvider.Anthropic),
+    ).toBeNull();
+  });
+
+  test("collapses fully automatic image settings into one localized summary", () => {
+    expect(
+      getImageComposerSummary("auto", "auto", "自动", "自动", "自动"),
+    ).toBe("自动");
+    expect(
+      getImageComposerSummary("1024x1024", "auto", "自动", "1024×1024", "自动"),
+    ).toBe("1024×1024 · 自动");
+    expect(
+      getImageComposerSummary("auto", "high", "Auto", "Auto", "High"),
+    ).toBe("Auto · High");
+    expect(
+      getImageComposerSummary("1024x1024", undefined, "Auto", "1024×1024"),
+    ).toBe("1024×1024");
   });
 });

@@ -4,7 +4,7 @@
   --reasoning-rail-track-height: 28px;
   --reasoning-rail-fill: linear-gradient(90deg, #10baf1 0%, #0879ef 100%);
   --reasoning-rail-track: color-mix(in srgb, var(--black-50) 18%, transparent);
-  --reasoning-rail-stop: color-mix(in srgb, var(--black-50) 74%, transparent);
+  --reasoning-rail-stop: color-mix(in srgb, var(--black-50) 30%, transparent);
   --reasoning-rail-text: var(--black);
   --reasoning-rail-muted: var(--black-50);
   --reasoning-rail-card: color-mix(
@@ -185,8 +185,8 @@
   position: absolute;
   top: 50%;
   left: var(--reasoning-rail-stop-position);
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   background: var(--reasoning-rail-stop);
   transform: translate(-50%, -50%);
@@ -197,11 +197,11 @@
 }
 
 .stopCurrentOnly {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border: 1px solid currentColor;
   background: transparent;
-  opacity: 0.58;
+  opacity: 0.38;
 }
 
 .thumb {
@@ -278,7 +278,7 @@
 
 :global(.dark) .panel {
   --reasoning-rail-track: color-mix(in srgb, var(--black) 13%, transparent);
-  --reasoning-rail-stop: color-mix(in srgb, var(--black-50) 78%, transparent);
+  --reasoning-rail-stop: color-mix(in srgb, var(--black-50) 34%, transparent);
   --reasoning-rail-text: var(--black);
   --reasoning-rail-muted: color-mix(in srgb, var(--black-50) 82%, transparent);
   --reasoning-rail-card: color-mix(
@@ -294,7 +294,7 @@
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .panel {
     --reasoning-rail-track: color-mix(in srgb, var(--black) 13%, transparent);
-    --reasoning-rail-stop: color-mix(in srgb, var(--black-50) 78%, transparent);
+    --reasoning-rail-stop: color-mix(in srgb, var(--black-50) 34%, transparent);
     --reasoning-rail-text: var(--black);
     --reasoning-rail-muted: color-mix(
       in srgb,

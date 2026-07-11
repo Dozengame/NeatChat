@@ -204,6 +204,9 @@ describe("Gemini visual migration shell", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
     const reasoningRail = read("app/components/reasoning-effort-rail.tsx");
+    const reasoningRailStyles = read(
+      "app/components/reasoning-effort-rail.module.scss",
+    );
     const sendIconSvg = read("app/icons/send-white.svg");
     const home = read("app/components/home.tsx");
     const newChat = read("app/components/new-chat.tsx");
@@ -1565,6 +1568,10 @@ describe("Gemini visual migration shell", () => {
       chat.indexOf("const selectHeaderModel = useCallback("),
       chat.indexOf("const selectHeaderReasoningEffort = ("),
     );
+    const selectComposerModelBlock = chat.slice(
+      chat.indexOf("const selectComposerModel = ("),
+      chat.indexOf("const selectHeaderReasoningEffort = ("),
+    );
     const chatActionsViewBlock = readFunctionBlock(
       chat,
       "function useChatActionsView(props: ChatActionsProps)",
@@ -1831,7 +1838,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain(
       "[focusInitialModelMenuControl, showMobileModelSelector]",
     );
-    expect(chat).toContain('expandedMobileModelSection !== "reasoning"');
+    expect(chat).toContain("if (!showMobileModelSelector) return;");
     expect(chat).toContain(
       '?.querySelector<HTMLElement>(\'[role="slider"]\')',
     );
@@ -1842,7 +1849,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["chat-input-model-button-open"]');
     expect(chat).toContain("Locale.Chat.ModelMenu.SelectModel(");
     expect(chat).toMatch(
-      /title=\{[\s\S]*showEmptyState && emptyComposerMode === "chat"[\s\S]*Locale\.Chat\.ModelMenu\.ReasoningEffort[\s\S]*headerCurrentModelName[\s\S]*currentModelDetail/,
+      /title=\{[\s\S]*showEmptyState && emptyComposerMode === "chat"[\s\S]*Locale\.Chat\.ModelMenu\.ReasoningEffort[\s\S]*showEmptyState && emptyComposerMode === "image"[\s\S]*Locale\.Chat\.ModelMenu\.ImageOptions[\s\S]*headerCurrentModelName[\s\S]*currentModelDetail/,
     );
     expect(chat).toContain('role="tablist"');
     expect(chat).toContain('aria-controls="chat-home-panel"');
@@ -1855,13 +1862,14 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain(
       'resolvePreferredChatHomeModel(\n      "chat",\n      headerAvailableModels,',
     );
-    expect(chat).toContain(
-      '(showEmptyState && emptyComposerMode === "chat") ? (',
-    );
+    expect(chat).toContain("{isReasoningSectionExpanded ? (");
+    expect(chat).toContain(") : isImageOptionsExpanded ? (");
     expect(chat).toContain("<DiscreteOptionRail<OpenAIImageSize>");
     expect(chat).toContain("<DiscreteOptionRail<OpenAIImageQuality>");
     expect(chat).toContain('styles["chat-input-panel-inner-home-image"]');
-    expect(chat).toContain("Locale.Chat.ModelMenu.ModelAndImageOptions");
+    expect(chat).toContain("Locale.Chat.ModelMenu.ImageOptions");
+    expect(chat).toContain("Locale.Chat.ModelMenu.SelectedImageOptions(");
+    expect(chat).toContain("getImageComposerSummary(");
     expect(chat).toContain("onKeyDown={handleModelMenuKeyDown}");
     expect(chat).toContain('aria-haspopup="dialog"');
     expect(chat).not.toContain("showEmptyComposerModelSelect");
@@ -1882,9 +1890,8 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('id="chat-model-menu"');
     expect(chat).toContain('role="dialog"');
     expect(chat).toMatch(
-      /id="chat-model-menu"[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*showEmptyState && emptyComposerMode === "image"[\s\S]*Locale\.Chat\.ModelMenu\.ModelAndImageOptions[\s\S]*Locale\.Chat\.ModelMenu\.ModelAndReasoning/,
+      /id="chat-model-menu"[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*isImageOptionsExpanded[\s\S]*Locale\.Chat\.ModelMenu\.ImageOptions[\s\S]*isReasoningSectionExpanded[\s\S]*Locale\.Chat\.ModelMenu\.ReasoningOptions[\s\S]*Locale\.Chat\.ModelMenu\.SelectModelAndParams/,
     );
-    expect(chat).toContain("Locale.Chat.ModelMenu.ModelAndReasoning");
     expect(chat).toMatch(
       /id="chat-model-menu"[\s\S]*ref=\{modelMenuRef\}[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*tabIndex=\{-1\}[\s\S]*role="dialog"[\s\S]*aria-modal="true"/,
     );
@@ -1907,10 +1914,10 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chat).toContain("ariaLabel={Locale.Chat.ModelMenu.ReasoningOptions}");
     expect(chat).toContain(
-      "aria-label={Locale.Chat.ModelMenu.ImageSizeOptions}",
+      "ariaLabel={Locale.Chat.ModelMenu.ImageSizeOptions}",
     );
     expect(chat).toContain(
-      "aria-label={Locale.Chat.ModelMenu.ImageQualityOptions}",
+      "ariaLabel={Locale.Chat.ModelMenu.ImageQualityOptions}",
     );
     expect(chat).toContain("<ReasoningEffortRail");
     expect(chat).toContain('id="chat-mobile-reasoning-options"');
@@ -1918,12 +1925,39 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("allowedEfforts={headerReasoningEfforts}");
     expect(reasoningRail).toContain('role="slider"');
     expect(reasoningRail).toContain("aria-valuetext={labels[displayValue]}");
-    expect(chat).toContain("aria-expanded={isImageSizeSectionExpanded}");
-    expect(chat).toContain('aria-controls="chat-mobile-image-size-options"');
-    expect(chat).toContain('id="chat-mobile-image-size-options"');
-    expect(chat).toContain("aria-expanded={isImageQualitySectionExpanded}");
-    expect(chat).toContain('aria-controls="chat-mobile-image-quality-options"');
-    expect(chat).toContain('id="chat-mobile-image-quality-options"');
+    expect(reasoningRailStyles).toContain(
+      "--reasoning-rail-stop: color-mix(in srgb, var(--black-50) 30%, transparent);",
+    );
+    expect(reasoningRailStyles).toContain("width: 4px;");
+    expect(reasoningRailStyles).toContain("height: 4px;");
+    expect(
+      reasoningRailStyles.match(
+        /--reasoning-rail-stop: color-mix\(in srgb, var\(--black-50\) 34%, transparent\);/g,
+      ) ?? [],
+    ).toHaveLength(2);
+    expect(chat).toContain('id="chat-image-size-options"');
+    expect(chat).toContain('id="chat-image-quality-options"');
+    expect(chat).not.toContain("isImageSizeSectionExpanded");
+    expect(chat).not.toContain("isImageQualitySectionExpanded");
+    expect(chat).not.toContain('id="chat-mobile-image-size-options"');
+    expect(chat).not.toContain('id="chat-mobile-image-quality-options"');
+    expect(chat).toContain(
+      'setExpandedMobileModelSection("image-options")',
+    );
+    expect(chat).toContain("selectComposerModel(model, selected)");
+    expect(chat).toContain("if (selected) {");
+    expect(selectComposerModelBlock.indexOf("if (selected) {")).toBeLessThan(
+      selectComposerModelBlock.indexOf("selectHeaderModel("),
+    );
+    expect(
+      selectComposerModelBlock.slice(
+        selectComposerModelBlock.indexOf("if (selected) {"),
+        selectComposerModelBlock.indexOf("const keepMenuOpen"),
+      ),
+    ).not.toContain("selectHeaderModel(");
+    expect(chatStyles).toMatch(
+      /\.chat-input-model-button-home-image \.chat-input-model-detail\s*\{[\s\S]*flex:\s*1 1 auto;[\s\S]*overflow:\s*hidden;[\s\S]*text-overflow:\s*ellipsis;/,
+    );
     expect(chat).toContain('role="option"');
     expect(chat).toContain("aria-selected={selected}");
     expect(chat).toContain("Locale.Chat.ChatToolMenu.Open");

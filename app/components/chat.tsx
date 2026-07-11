@@ -195,8 +195,12 @@ import {
 } from "./reasoning-effort-rail";
 import {
   ChatHomeMode,
+  ChatHomeModel,
+  ComposerModelMenuSection,
+  getComposerModelMenuSection,
   getChatHomeModeForModel,
   getChatHomeModeModels,
+  getImageComposerSummary,
   resolvePreferredChatHomeModel,
 } from "./chat-home-mode";
 
@@ -231,8 +235,6 @@ const getImageQualityLabel = (quality: OpenAIImageQuality) =>
   imageQualityLabels[quality] ?? quality;
 const getImageSizeLabel = (size: OpenAIImageSize) =>
   size === "auto" ? Locale.Settings.ImageGeneration.Auto : size;
-type MobileModelAdvancedSection = "reasoning" | "image-size" | "image-quality";
-
 const CHAT_BODY_BOTTOM_SAFE_AREA_BASE = 150;
 const CHAT_BODY_BOTTOM_SAFE_AREA_MOBILE_BASE = 118;
 const CHAT_SCROLL_BOTTOM_CLEARANCE = 66;
@@ -2400,12 +2402,11 @@ function useChatInnerView() {
   const accessStore = useAccessStore();
   const [showMobileModelSelector, setShowMobileModelSelector] = useState(false);
   const [expandedMobileModelSection, setExpandedMobileModelSection] =
-    useState<MobileModelAdvancedSection | null>(null);
+    useState<ComposerModelMenuSection | null>(null);
   const [composerModelMenuStyle, setComposerModelMenuStyle] =
     useState<React.CSSProperties | undefined>(undefined);
   const modelSelectorButtonRef = useRef<HTMLButtonElement>(null);
   const modelMenuRef = useRef<HTMLDivElement>(null);
-  const reasoningSectionButtonRef = useRef<HTMLButtonElement>(null);
   const lastHomeChatModelRef = useRef<string>();
   const lastHomeImageModelRef = useRef<string>();
   const homeModeInitializedRef = useRef(false);
@@ -2603,15 +2604,23 @@ function useChatInnerView() {
     };
   }, [focusInitialModelMenuControl, showMobileModelSelector]);
   useEffect(() => {
-    if (expandedMobileModelSection !== "reasoning") return;
+    if (!showMobileModelSelector) return;
 
     const frame = requestAnimationFrame(() => {
-      modelMenuRef.current
-        ?.querySelector<HTMLElement>('[role="slider"]')
-        ?.focus({ preventScroll: true });
+      if (expandedMobileModelSection) {
+        modelMenuRef.current
+          ?.querySelector<HTMLElement>('[role="slider"]')
+          ?.focus({ preventScroll: true });
+      } else {
+        focusInitialModelMenuControl();
+      }
     });
     return () => cancelAnimationFrame(frame);
-  }, [expandedMobileModelSection]);
+  }, [
+    expandedMobileModelSection,
+    focusInitialModelMenuControl,
+    showMobileModelSelector,
+  ]);
   useEffect(() => {
     if (!showMobileModelSelector) return;
 
@@ -2631,10 +2640,8 @@ function useChatInnerView() {
     restoreModelSelectorFocus,
     showMobileModelSelector,
   ]);
-  const toggleMobileModelSection = (section: MobileModelAdvancedSection) => {
-    setExpandedMobileModelSection((currentSection) =>
-      currentSection === section ? null : section,
-    );
+  const returnToModelList = () => {
+    setExpandedMobileModelSection(null);
   };
   const headerCurrentModel = session.mask.modelConfig.model;
   const headerCurrentProviderName =
@@ -2737,16 +2744,24 @@ function useChatInnerView() {
   const headerImageQualityLocked =
     accessStore.lockedFields?.includes("quality") ||
     session.mask.modelConfigMeta?.quality?.locked;
+  const isReasoningSectionExpanded = expandedMobileModelSection === "reasoning";
+  const isImageOptionsExpanded = expandedMobileModelSection === "image-options";
+  const currentModelMenuSection = getComposerModelMenuSection(
+    headerCurrentModel,
+    headerCurrentProviderName,
+  );
+  const imageComposerSummary = getImageComposerSummary(
+    headerCurrentSize,
+    headerImageQualitys.length > 0 ? headerCurrentQuality : undefined,
+    Locale.Settings.ImageGeneration.Auto,
+    getImageSizeLabel(headerCurrentSize),
+    getImageQualityLabel(headerCurrentQuality),
+  );
   const currentModelDetail = showHeaderImageControls
-    ? `${headerCurrentSize} · ${getImageQualityLabel(headerCurrentQuality)}`
+    ? imageComposerSummary
     : showHeaderReasoningControl
     ? reasoningLabels[headerCurrentReasoningEffort]
     : headerCurrentProviderName;
-  const isReasoningSectionExpanded = expandedMobileModelSection === "reasoning";
-  const isImageSizeSectionExpanded =
-    expandedMobileModelSection === "image-size";
-  const isImageQualitySectionExpanded =
-    expandedMobileModelSection === "image-quality";
   const getHeaderReasoningMaxOutputTokens = (
     effort: OpenAIChatReasoningEffort,
   ) =>
@@ -2804,6 +2819,28 @@ function useChatInnerView() {
       session,
     ],
   );
+  const selectComposerModel = (
+    model: ChatHomeModel,
+    selected: boolean,
+  ) => {
+    const providerName = model.provider?.providerName;
+    const nextSection = getComposerModelMenuSection(model.name, providerName);
+    if (selected) {
+      if (nextSection) {
+        setExpandedMobileModelSection(nextSection);
+      } else {
+        closeMobileModelSelector();
+        restoreModelSelectorFocus();
+      }
+      return;
+    }
+    const keepMenuOpen = nextSection !== null;
+    const changed = selectHeaderModel(`${model.name}@${providerName}`, {
+      closeMenu: !keepMenuOpen,
+      restoreFocus: !keepMenuOpen,
+    });
+    if (changed && nextSection) setExpandedMobileModelSection(nextSection);
+  };
   const selectHeaderReasoningEffort = (
     reasoningEffort: OpenAIChatReasoningEffort,
   ) => {
@@ -4702,10 +4739,7 @@ function useChatInnerView() {
             [styles["chat-model-menu-visible"]]: showMobileModelSelector,
             [styles["chat-desktop-model-menu-composer"]]: true,
             [styles["chat-model-menu-reasoning"]]:
-              isReasoningSectionExpanded ||
-              (showEmptyState && emptyComposerMode === "chat"),
-            [styles["chat-model-menu-image-rails"]]:
-              showEmptyState && emptyComposerMode === "image",
+              isReasoningSectionExpanded || isImageOptionsExpanded,
           },
         )}
         style={composerModelMenuStyle}
@@ -4714,13 +4748,14 @@ function useChatInnerView() {
         role="dialog"
         aria-modal="true"
         aria-label={
-          showEmptyState && emptyComposerMode === "image"
-            ? Locale.Chat.ModelMenu.ModelAndImageOptions
-            : Locale.Chat.ModelMenu.ModelAndReasoning
+          isImageOptionsExpanded
+            ? Locale.Chat.ModelMenu.ImageOptions
+            : isReasoningSectionExpanded
+            ? Locale.Chat.ModelMenu.ReasoningOptions
+            : Locale.Chat.ModelMenu.SelectModelAndParams
         }
       >
-        {isReasoningSectionExpanded ||
-        (showEmptyState && emptyComposerMode === "chat") ? (
+        {isReasoningSectionExpanded ? (
           <ReasoningEffortRail
             id="chat-mobile-reasoning-options"
             ariaLabel={Locale.Chat.ModelMenu.ReasoningOptions}
@@ -4736,295 +4771,154 @@ function useChatInnerView() {
             labels={reasoningLabels}
             descriptions={reasoningDescriptions}
             onChange={selectHeaderReasoningEffort}
-            onBack={
-              showEmptyState
-                ? undefined
-                : () => {
-                    setExpandedMobileModelSection(null);
-                    requestAnimationFrame(() =>
-                      reasoningSectionButtonRef.current?.focus(),
-                    );
-                  }
-            }
+            onBack={showEmptyState ? undefined : returnToModelList}
             onLockedAttempt={() =>
               selectHeaderReasoningEffort(headerCurrentReasoningEffort)
             }
           />
+        ) : isImageOptionsExpanded ? (
+          <div className={styles["chat-image-option-rails"]}>
+            <DiscreteOptionRail<OpenAIImageSize>
+              id="chat-image-size-options"
+              ariaLabel={Locale.Chat.ModelMenu.ImageSizeOptions}
+              title={Locale.Chat.ModelMenu.ImageSize}
+              backLabel={
+                showEmptyState ? undefined : Locale.Chat.ModelMenu.BackToModels
+              }
+              options={headerImageSizes}
+              allowedOptions={headerImageSizes}
+              value={headerCurrentSize}
+              locked={!!headerImageSizeLocked}
+              lockedLabel={
+                Locale.Settings.GPT56Capabilities.ConfigSource.Locked
+              }
+              labels={headerImageSizeLabels}
+              descriptions={headerImageSizeDescriptions}
+              emphasizeHighest={false}
+              onChange={selectHeaderImageSize}
+              onBack={showEmptyState ? undefined : returnToModelList}
+              onLockedAttempt={() => selectHeaderImageSize(headerCurrentSize)}
+            />
+            {headerImageQualitys.length > 0 && (
+              <DiscreteOptionRail<OpenAIImageQuality>
+                id="chat-image-quality-options"
+                ariaLabel={Locale.Chat.ModelMenu.ImageQualityOptions}
+                title={Locale.Chat.ModelMenu.ImageQuality}
+                options={headerImageQualitys}
+                allowedOptions={headerImageQualitys}
+                value={headerCurrentQuality}
+                locked={!!headerImageQualityLocked}
+                lockedLabel={
+                  Locale.Settings.GPT56Capabilities.ConfigSource.Locked
+                }
+                labels={headerImageQualityLabels}
+                descriptions={headerImageQualityDescriptions}
+                emphasizeHighest={false}
+                onChange={selectHeaderImageQuality}
+                onLockedAttempt={() =>
+                  selectHeaderImageQuality(headerCurrentQuality)
+                }
+              />
+            )}
+          </div>
         ) : (
           <>
-        <div
-          className={styles["chat-mobile-model-list"]}
-          role="listbox"
-          aria-label={Locale.Chat.ModelMenu.AvailableModels}
-        >
-          {headerModelsForMenu.length === 0 ? (
-            <div className={styles["chat-mobile-model-empty"]}>
-              {showEmptyState && emptyComposerMode === "image"
-                ? Locale.Chat.ModelMenu.ImageModelUnavailable
-                : Locale.Chat.ModelMenu.Empty}
-            </div>
-          ) : (
-            headerModelsForMenu.map((model) => {
-              const providerName = model?.provider?.providerName;
-              const selected =
-                model.name === headerCurrentModel &&
-                providerName === headerCurrentProviderName;
-              return (
-                <button
-                  type="button"
-                  key={`${model.name}@${providerName}`}
-                  className={clsx(styles["chat-mobile-model-option"], {
-                    [styles["chat-mobile-model-option-selected"]]: selected,
-                  })}
-                  role="option"
-                  aria-selected={selected}
-                  onClick={() =>
-                    selectHeaderModel(`${model.name}@${providerName}`, {
-                      closeMenu: !(
-                        showEmptyState && emptyComposerMode === "image"
-                      ),
-                      restoreFocus: !(
-                        showEmptyState && emptyComposerMode === "image"
-                      ),
-                    })
-                  }
-                >
-                  <span className={styles["chat-mobile-menu-check"]}>
-                    {selected ? "✓" : ""}
-                  </span>
-                  <span className={styles["chat-mobile-model-copy"]}>
-                    <span className={styles["chat-mobile-model-name"]}>
-                      {model.displayName || model.name}
-                    </span>
-                    {providerName && (
-                      <span className={styles["chat-mobile-model-provider"]}>
-                        {providerName}
-                      </span>
-                    )}
-                  </span>
-                </button>
-              );
-            })
-          )}
-        </div>
-
-        {(showHeaderReasoningControl || showHeaderImageControls) && (
-          <>
-            <div className={styles["chat-mobile-model-divider"]} />
-            {showHeaderReasoningControl && (
-              <div className={styles["chat-mobile-model-section"]}>
-                <button
-                  type="button"
-                  ref={reasoningSectionButtonRef}
-                  className={styles["chat-mobile-reasoning-head"]}
-                  aria-expanded={isReasoningSectionExpanded}
-                  aria-controls="chat-mobile-reasoning-options"
-                  onClick={() => toggleMobileModelSection("reasoning")}
-                >
-                  <span>
-                    <strong>{Locale.Chat.ModelMenu.ReasoningEffort}</strong>
-                    <small>
-                      {reasoningLabels[headerCurrentReasoningEffort]}
-                    </small>
-                  </span>
-                  <span className={styles["chat-mobile-reasoning-caret"]}>
-                    ›
-                  </span>
-                </button>
-              </div>
-            )}
-            {showHeaderImageControls && (
-              showEmptyState ? (
-                <div className={styles["chat-image-option-rails"]}>
-                  <DiscreteOptionRail<OpenAIImageSize>
-                    id="chat-home-image-size-options"
-                    ariaLabel={Locale.Chat.ModelMenu.ImageSizeOptions}
-                    title={Locale.Chat.ModelMenu.ImageSize}
-                    options={headerImageSizes}
-                    allowedOptions={headerImageSizes}
-                    value={headerCurrentSize}
-                    locked={!!headerImageSizeLocked}
-                    lockedLabel={
-                      Locale.Settings.GPT56Capabilities.ConfigSource.Locked
-                    }
-                    labels={headerImageSizeLabels}
-                    descriptions={headerImageSizeDescriptions}
-                    emphasizeHighest={false}
-                    onChange={selectHeaderImageSize}
-                    onLockedAttempt={() =>
-                      selectHeaderImageSize(headerCurrentSize)
-                    }
-                  />
-                  {headerImageQualitys.length > 0 && (
-                    <DiscreteOptionRail<OpenAIImageQuality>
-                      id="chat-home-image-quality-options"
-                      ariaLabel={Locale.Chat.ModelMenu.ImageQualityOptions}
-                      title={Locale.Chat.ModelMenu.ImageQuality}
-                      options={headerImageQualitys}
-                      allowedOptions={headerImageQualitys}
-                      value={headerCurrentQuality}
-                      locked={!!headerImageQualityLocked}
-                      lockedLabel={
-                        Locale.Settings.GPT56Capabilities.ConfigSource.Locked
-                      }
-                      labels={headerImageQualityLabels}
-                      descriptions={headerImageQualityDescriptions}
-                      onChange={selectHeaderImageQuality}
-                      onLockedAttempt={() =>
-                        selectHeaderImageQuality(headerCurrentQuality)
-                      }
-                    />
-                  )}
+            <div
+              className={styles["chat-mobile-model-list"]}
+              role="listbox"
+              aria-label={Locale.Chat.ModelMenu.AvailableModels}
+            >
+              {headerModelsForMenu.length === 0 ? (
+                <div className={styles["chat-mobile-model-empty"]}>
+                  {showEmptyState && emptyComposerMode === "image"
+                    ? Locale.Chat.ModelMenu.ImageModelUnavailable
+                    : Locale.Chat.ModelMenu.Empty}
                 </div>
               ) : (
-                <>
-                <div className={styles["chat-mobile-model-section"]}>
-                  <button
-                    type="button"
-                    className={styles["chat-mobile-reasoning-head"]}
-                    aria-expanded={isImageSizeSectionExpanded}
-                    aria-controls="chat-mobile-image-size-options"
-                    onClick={() => toggleMobileModelSection("image-size")}
-                  >
-                    <span>
-                      <strong>{Locale.Chat.ModelMenu.ImageSize}</strong>
-                      <small>{headerCurrentSize}</small>
-                    </span>
-                    <span className={styles["chat-mobile-reasoning-caret"]}>
-                      {isImageSizeSectionExpanded ? "⌃" : "⌄"}
-                    </span>
-                  </button>
-                  {isImageSizeSectionExpanded && (
-                    <div
-                      id="chat-mobile-image-size-options"
-                      className={styles["chat-mobile-reasoning-list"]}
-                      role="listbox"
-                      aria-label={Locale.Chat.ModelMenu.ImageSizeOptions}
-                    >
-                      {headerImageSizes.map((size) => {
-                        const selected = size === headerCurrentSize;
-                        return (
-                          <button
-                            type="button"
-                            key={size}
-                            className={clsx(
-                              styles["chat-mobile-reasoning-option"],
-                              {
-                                [styles[
-                                  "chat-mobile-reasoning-option-selected"
-                                ]]: selected,
-                              },
-                            )}
-                            role="option"
-                            aria-selected={selected}
-                            onClick={() =>
-                              selectHeaderImageSize(size as OpenAIImageSize)
-                            }
-                          >
-                            <span className={styles["chat-mobile-menu-check"]}>
-                              {selected ? "✓" : ""}
-                            </span>
-                            <span className={styles["chat-mobile-model-copy"]}>
-                              <span
-                                className={styles["chat-mobile-model-name"]}
-                              >
-                                {size}
-                              </span>
-                              <span
-                                className={styles["chat-mobile-model-provider"]}
-                              >
-                                {Locale.Chat.ModelMenu.GeneratedImageSize}
-                              </span>
-                            </span>
-                          </button>
-                        );
+                headerModelsForMenu.map((model) => {
+                  const providerName = model?.provider?.providerName;
+                  const selected =
+                    model.name === headerCurrentModel &&
+                    providerName === headerCurrentProviderName;
+                  return (
+                    <button
+                      type="button"
+                      key={`${model.name}@${providerName}`}
+                      className={clsx(styles["chat-mobile-model-option"], {
+                        [styles["chat-mobile-model-option-selected"]]: selected,
                       })}
-                    </div>
-                  )}
-                </div>
-                {headerImageQualitys.length > 0 && (
+                      role="option"
+                      aria-selected={selected}
+                      onClick={() => selectComposerModel(model, selected)}
+                    >
+                      <span className={styles["chat-mobile-menu-check"]}>
+                        {selected ? "✓" : ""}
+                      </span>
+                      <span className={styles["chat-mobile-model-copy"]}>
+                        <span className={styles["chat-mobile-model-name"]}>
+                          {model.displayName || model.name}
+                        </span>
+                        {providerName && (
+                          <span
+                            className={styles["chat-mobile-model-provider"]}
+                          >
+                            {providerName}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            {(showHeaderReasoningControl || showHeaderImageControls) && (
+              <>
+                <div className={styles["chat-mobile-model-divider"]} />
+                {showHeaderReasoningControl && (
                   <div className={styles["chat-mobile-model-section"]}>
                     <button
                       type="button"
                       className={styles["chat-mobile-reasoning-head"]}
-                      aria-expanded={isImageQualitySectionExpanded}
-                      aria-controls="chat-mobile-image-quality-options"
-                      onClick={() => toggleMobileModelSection("image-quality")}
+                      aria-controls="chat-mobile-reasoning-options"
+                      onClick={() =>
+                        setExpandedMobileModelSection("reasoning")
+                      }
                     >
                       <span>
-                        <strong>{Locale.Chat.ModelMenu.ImageQuality}</strong>
+                        <strong>{Locale.Chat.ModelMenu.ReasoningEffort}</strong>
                         <small>
-                          {getImageQualityLabel(headerCurrentQuality)}
+                          {reasoningLabels[headerCurrentReasoningEffort]}
                         </small>
                       </span>
                       <span className={styles["chat-mobile-reasoning-caret"]}>
-                        {isImageQualitySectionExpanded ? "⌃" : "⌄"}
+                        ›
                       </span>
                     </button>
-                    {isImageQualitySectionExpanded && (
-                      <div
-                        id="chat-mobile-image-quality-options"
-                        className={styles["chat-mobile-reasoning-list"]}
-                        role="listbox"
-                        aria-label={Locale.Chat.ModelMenu.ImageQualityOptions}
-                      >
-                        {headerImageQualitys.map((quality) => {
-                          const selected = quality === headerCurrentQuality;
-                          return (
-                            <button
-                              type="button"
-                              key={quality}
-                              className={clsx(
-                                styles["chat-mobile-reasoning-option"],
-                                {
-                                  [styles[
-                                    "chat-mobile-reasoning-option-selected"
-                                  ]]: selected,
-                                },
-                              )}
-                              role="option"
-                              aria-selected={selected}
-                              onClick={() =>
-                                selectHeaderImageQuality(
-                                  quality as OpenAIImageQuality,
-                                )
-                              }
-                            >
-                              <span
-                                className={styles["chat-mobile-menu-check"]}
-                              >
-                                {selected ? "✓" : ""}
-                              </span>
-                              <span
-                                className={styles["chat-mobile-model-copy"]}
-                              >
-                                <span
-                                  className={styles["chat-mobile-model-name"]}
-                                >
-                                  {getImageQualityLabel(
-                                    quality as OpenAIImageQuality,
-                                  )}
-                                </span>
-                                <span
-                                  className={
-                                    styles["chat-mobile-model-provider"]
-                                  }
-                                >
-                                  {quality}
-                                </span>
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
                   </div>
                 )}
-                </>
-              )
+                {showHeaderImageControls && (
+                  <div className={styles["chat-mobile-model-section"]}>
+                    <button
+                      type="button"
+                      className={styles["chat-mobile-reasoning-head"]}
+                      aria-controls="chat-image-size-options"
+                      onClick={() =>
+                        setExpandedMobileModelSection("image-options")
+                      }
+                    >
+                      <span>
+                        <strong>{Locale.Chat.ModelMenu.ImageOptions}</strong>
+                        <small>{imageComposerSummary}</small>
+                      </span>
+                      <span className={styles["chat-mobile-reasoning-caret"]}>
+                        ›
+                      </span>
+                    </button>
+                  </div>
+                )}
+              </>
             )}
-          </>
-        )}
           </>
         )}
       </div>
@@ -5655,6 +5549,10 @@ function useChatInnerView() {
                       ? Locale.Chat.ModelMenu.SelectedReasoning(
                           reasoningLabels[headerCurrentReasoningEffort],
                         )
+                      : showEmptyState && emptyComposerMode === "image"
+                      ? Locale.Chat.ModelMenu.SelectedImageOptions(
+                          imageComposerSummary,
+                        )
                       : Locale.Chat.ModelMenu.SelectModel(
                           headerCurrentModelName,
                           currentModelDetail,
@@ -5663,6 +5561,8 @@ function useChatInnerView() {
                   title={
                     showEmptyState && emptyComposerMode === "chat"
                       ? `${Locale.Chat.ModelMenu.ReasoningEffort} · ${reasoningLabels[headerCurrentReasoningEffort]}`
+                      : showEmptyState && emptyComposerMode === "image"
+                      ? `${Locale.Chat.ModelMenu.ImageOptions} · ${imageComposerSummary}`
                       : `${headerCurrentModelName} · ${currentModelDetail}`
                   }
                   onKeyDown={handleModelMenuKeyDown}
@@ -5671,9 +5571,7 @@ function useChatInnerView() {
                     event.stopPropagation();
                     setShowChatActionMenu(false);
                     setExpandedMobileModelSection(
-                      showEmptyState && emptyComposerMode === "chat"
-                        ? "reasoning"
-                        : null,
+                      showMobileModelSelector ? null : currentModelMenuSection,
                     );
                     setComposerModelMenuStyle(
                       getComposerModelMenuStyle(event.currentTarget),
@@ -5684,7 +5582,7 @@ function useChatInnerView() {
                   aria-haspopup="dialog"
                   aria-expanded={showMobileModelSelector}
                 >
-                  {!(showEmptyState && emptyComposerMode === "chat") && (
+                  {!showEmptyState && (
                     <>
                       <span className={styles["chat-input-model-name"]}>
                         {headerCurrentModelName}
@@ -5697,6 +5595,8 @@ function useChatInnerView() {
                   <span className={styles["chat-input-model-detail"]}>
                     {showEmptyState && emptyComposerMode === "chat"
                       ? reasoningLabels[headerCurrentReasoningEffort]
+                      : showEmptyState && emptyComposerMode === "image"
+                      ? imageComposerSummary
                       : currentModelDetail}
                   </span>
                   <span className={styles["chat-input-model-arrow"]}>⌄</span>

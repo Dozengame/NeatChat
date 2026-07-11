@@ -1,12 +1,16 @@
 import { LLMModel } from "../client/types";
 import { ServiceProvider } from "../constant";
-import { isGptImageGenerationModel } from "../utils/openai-image";
+import {
+  isGptImageGenerationModel,
+  isOpenAIImageGenerationModelConfig,
+} from "../utils/openai-image";
 import {
   isOpenAIGpt5OrNewerModelConfig,
   OPENAI_RESPONSES_DEFAULT_MODEL,
 } from "../utils/openai-responses";
 
 export type ChatHomeMode = "chat" | "image";
+export type ComposerModelMenuSection = "reasoning" | "image-options";
 export type ChatHomeModel = Omit<LLMModel, "provider"> & {
   provider?: LLMModel["provider"];
 };
@@ -19,6 +23,34 @@ export function getChatHomeModeForModel(
     ServiceProvider.OpenAI.toLowerCase() && isGptImageGenerationModel(model)
     ? "image"
     : "chat";
+}
+
+export function getComposerModelMenuSection(
+  model?: string,
+  providerName?: string,
+): ComposerModelMenuSection | null {
+  if (isOpenAIImageGenerationModelConfig({ model, providerName })) {
+    return "image-options";
+  }
+
+  return isOpenAIGpt5OrNewerModelConfig({ model, providerName })
+    ? "reasoning"
+    : null;
+}
+
+export function getImageComposerSummary(
+  size: string,
+  quality: string | undefined,
+  autoLabel: string,
+  sizeLabel = size,
+  qualityLabel = quality,
+) {
+  const displayedSize = size === "auto" ? autoLabel : sizeLabel;
+  if (!quality) return displayedSize;
+  if (size === "auto" && quality === "auto") return autoLabel;
+  return [displayedSize, quality === "auto" ? autoLabel : qualityLabel].join(
+    " · ",
+  );
 }
 
 export function isModelEligibleForChatHomeMode(

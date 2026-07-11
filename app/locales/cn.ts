@@ -370,7 +370,7 @@ const cn = {
       SelectModelAndParams: "选择模型和参数",
       Close: "关闭模型选择",
       ModelAndReasoning: "模型和思考等级",
-      ModelAndImageOptions: "模型和图片选项",
+      ImageOptions: "图片选项",
       AvailableModels: "可选模型",
       Empty: "暂无可用模型",
       ChatModelUnavailable: "暂无可用的 GPT-5.x 聊天模型",
@@ -382,7 +382,6 @@ const cn = {
       ImageSizeOptions: "图片尺寸选项",
       ImageSizeDescription: (size: string) =>
         size === "auto" ? "由模型自动选择合适尺寸" : `使用 ${size} 尺寸`,
-      GeneratedImageSize: "生成图片尺寸",
       ImageQuality: "图片清晰度",
       ImageQualityOptions: "图片清晰度选项",
       ImageQualityDescription: (quality: string) =>
@@ -393,6 +392,7 @@ const cn = {
             }清晰度`,
       CurrentInputMode: "当前输入模式",
       SelectedReasoning: (label: string) => `思考等级：${label}`,
+      SelectedImageOptions: (summary: string) => `图片选项：${summary}`,
     },
     Accessibility: {
       PromptSuggestions: "提示词建议",

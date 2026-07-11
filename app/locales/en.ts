@@ -385,7 +385,7 @@ const en: LocaleType = {
       SelectModelAndParams: "Select model and parameters",
       Close: "Close model selector",
       ModelAndReasoning: "Model and reasoning effort",
-      ModelAndImageOptions: "Model and image options",
+      ImageOptions: "Image options",
       AvailableModels: "Available models",
       Empty: "No models available",
       ChatModelUnavailable: "No GPT-5.x chat model is available",
@@ -399,7 +399,6 @@ const en: LocaleType = {
         size === "auto"
           ? "Let the model choose a suitable size"
           : `Use the ${size} preset`,
-      GeneratedImageSize: "Generated image size",
       ImageQuality: "Image quality",
       ImageQualityOptions: "Image quality options",
       ImageQualityDescription: (quality: string) =>
@@ -408,6 +407,7 @@ const en: LocaleType = {
           : `Use ${quality} image quality`,
       CurrentInputMode: "Current input mode",
       SelectedReasoning: (label: string) => `Reasoning effort: ${label}`,
+      SelectedImageOptions: (summary: string) => `Image options: ${summary}`,
     },
     Accessibility: {
       PromptSuggestions: "Prompt suggestions",
