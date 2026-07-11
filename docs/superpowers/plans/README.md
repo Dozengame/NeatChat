@@ -14,6 +14,7 @@ Do not read all iteration files by default. Use `rg` first, then open the smalle
 
 ## Routing
 
+- New-chat `Chat / Image` mode tabs, GPT-5.x reasoning-only composer control, and `gpt-image-x` model/size/quality rails: `iterations/2026-07-12-chat-image-home.md`.
 - English UI localization, default GPT-5.6 administrator locks, and the merged-state review from `081673c8` through `095f97a5`: `iterations/2026-07-10-i18n-admin-lock-review.md`.
 - Composer-only model selection, new-chat draft-state persistence, responsive geometry, and the pending GPT-5.x reasoning visual prototype: `iterations/2026-07-11-composer-model-selector.md`.
 - GPT-5.6 Prompt Cache `disabled` mode and zero-cache-field request semantics: `iterations/2026-07-10-gpt-5-6-prompt-cache-disabled.md`.
