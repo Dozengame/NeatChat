@@ -414,6 +414,14 @@ describe("Gemini visual migration shell", () => {
       mobileStyles,
       ".chat-input-panel.chat-input-panel-empty",
     );
+    const tabletInputPanelInnerBlock = readCssBlock(
+      tabletStyles,
+      ".chat-input-panel-inner",
+    );
+    const tabletModelCollapsedInputPanelBlock = readCssBlock(
+      tabletStyles,
+      ".chat-input-panel-inner-collapsed",
+    );
     const mobileEmptyStatusRowBlock = readCssBlock(
       mobileEmptyInputPanelBlock,
       ".chat-input-status-row",
@@ -853,29 +861,17 @@ describe("Gemini visual migration shell", () => {
     const desktopHeaderRootBlock = readRootDeclarations(desktopHeaderBlock);
     const mobileHeaderBlock = readCssBlock(chatStyles, ".chat-mobile-header");
     const mobileHeaderRootBlock = readRootDeclarations(mobileHeaderBlock);
-    const mobileModelTitleBlock = readCssBlock(
+    const mobileTopicTitleBlock = readCssBlock(
       chatStyles,
-      ".chat-mobile-model-title",
+      ".chat-mobile-topic-title",
     );
-    const mobileModelTitleTextBlock = readCssBlock(
+    const inputModelButtonBlock = readRootCssBlock(
       chatStyles,
-      ".chat-mobile-model-title-text",
+      ".chat-input-model-button",
     );
-    const mobileModelTitleExpandedBlock = readCssBlock(
+    const inputModelButtonExpandedBlock = readCssBlock(
       chatStyles,
-      '.chat-mobile-model-title[aria-expanded="true"]',
-    );
-    const mobileModelTitleFocusBlock = readCssBlock(
-      chatStyles,
-      ".chat-mobile-model-title:focus-visible",
-    );
-    const desktopModelTitleBlock = readCssBlock(
-      chatStyles,
-      ".chat-desktop-model-title",
-    );
-    const desktopModelTitleExpandedBlock = readCssBlock(
-      chatStyles,
-      '.chat-desktop-model-title[aria-expanded="true"]',
+      '.chat-input-model-button[aria-expanded="true"]',
     );
     const mobileModelMenuBlock = readCssBlock(
       chatStyles,
@@ -1016,10 +1012,6 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ":global(.dark) .chat-desktop-model-menu",
     );
-    const darkMobileModelTitleBlock = readCssBlock(
-      chatStyles,
-      ":global(.dark) .chat-mobile-model-title",
-    );
     const darkMobileHeaderButtonBlock = readCssBlock(
       chatStyles,
       ":global(.dark) .chat-mobile-header-button",
@@ -1027,10 +1019,6 @@ describe("Gemini visual migration shell", () => {
     const darkMobileHeaderButtonActiveBlock = readCssBlock(
       darkMobileHeaderButtonBlock,
       "&:active",
-    );
-    const darkDesktopModelTitleBlock = readCssBlock(
-      chatStyles,
-      ":global(.dark) .chat-desktop-model-title",
     );
     const darkDesktopHeaderActionsBlock = readCssBlock(
       chatStyles,
@@ -1572,6 +1560,10 @@ describe("Gemini visual migration shell", () => {
       chat,
       "const handleModelMenuKeyDown = (event: React.KeyboardEvent<HTMLElement>) =>",
     );
+    const selectHeaderModelBlock = readFunctionBlock(
+      chat,
+      "const selectHeaderModel = (selected: string) =>",
+    );
     const chatActionsViewBlock = readFunctionBlock(
       chat,
       "function useChatActionsView(props: ChatActionsProps)",
@@ -1596,7 +1588,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /const showEmptyHero\s*=\s*showEmptyState\s*&&\s*!hasActiveInputContent\s*&&\s*!showChatActionMenu;/,
     );
-    expect(chat).toContain("const showDesktopModelControls = !showEmptyState;");
+    expect(chat).not.toContain("const showDesktopModelControls = !showEmptyState;");
     expect(chat).toContain(
       "const showDesktopChatHeader = !isCompactScreen && !showEmptyState;",
     );
@@ -1726,7 +1718,7 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chat).toContain('styles["chat-desktop-title-stack"]');
     expect(chat).toContain('styles["chat-desktop-header"]');
-    expect(chat).toContain('styles["chat-desktop-model-title"]');
+    expect(chat).not.toContain('styles["chat-desktop-model-title"]');
     expect(chat).toContain('styles["chat-desktop-model-menu"]');
     expect(chat).toContain('styles["chat-desktop-header-actions"]');
     expect(chat).toContain('styles["chat-desktop-header-action"]');
@@ -1745,17 +1737,13 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /<IconButton[\s\S]*icon=\{<ExportIcon \/>\}[\s\S]*title=\{Locale\.Chat\.Actions\.Export\}[\s\S]*aria=\{Locale\.Chat\.Actions\.Export\}/,
     );
-    expect(chat).toMatch(/showMobileModelSelector\s*&&\s*\(/);
-    expect(chat).toContain('styles["chat-mobile-model-menu"]');
-    expect(chat).toContain('styles["chat-mobile-model-title-text"]');
-    expect(chat).toContain('styles["chat-mobile-model-title-meta"]');
-    expect(chat).toContain("const mobileModelDetail = desktopModelDetail;");
     expect(chat).toContain(
-      "title={`${headerCurrentModelName} · ${mobileModelDetail}`}",
+      '[styles["chat-model-menu-visible"]]: showMobileModelSelector',
     );
-    expect(chat).toMatch(
-      /aria-label=\{Locale\.Chat\.ModelMenu\.SelectModel\(\s*headerCurrentModelName,\s*mobileModelDetail,?\s*\)\}/,
-    );
+    expect(chat).toContain('styles["chat-mobile-model-menu"]');
+    expect(chat).not.toContain('styles["chat-mobile-model-title-text"]');
+    expect(chat).not.toContain('styles["chat-mobile-model-title-meta"]');
+    expect(chat).toContain('styles["chat-mobile-topic-title"]');
     expect(chat).toContain('aria-controls="mobile-sidebar-drawer"');
     expect(chat).toContain("const isMobileSidebarOpen =");
     expect(chat).toContain("aria-expanded={isMobileSidebarOpen}");
@@ -1837,16 +1825,17 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("aria-expanded={showMobileModelSelector}");
     expect(chat).toContain('aria-controls="chat-model-menu"');
     expect(chat).toMatch(
-      /className=\{styles\["chat-mobile-model-title"\]\}[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.SelectModel\(\s*headerCurrentModelName,\s*mobileModelDetail,\s*\)\}[\s\S]*title=\{`\$\{headerCurrentModelName\} · \$\{mobileModelDetail\}`\}[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*aria-controls="chat-model-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showMobileModelSelector\}/,
+      /className=\{styles\["chat-input-model-button"\]\}[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.SelectModel\(\s*headerCurrentModelName,\s*currentModelDetail,\s*\)\}[\s\S]*title=\{`\$\{headerCurrentModelName\} · \$\{currentModelDetail\}`\}[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*aria-controls="chat-model-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showMobileModelSelector\}/,
     );
+    expect(chat).not.toContain("showEmptyComposerModelSelect");
+    expect(
+      chat.match(/className=\{styles\["chat-input-model-button"\]\}/g),
+    ).toHaveLength(1);
+    expect(chat.match(/aria-controls="chat-model-menu"/g)).toHaveLength(1);
+    expect(selectHeaderModelBlock).toContain("closeMobileModelSelector();");
+    expect(selectHeaderModelBlock).toContain("restoreModelSelectorFocus();");
     expect(chat).toMatch(
-      /className=\{styles\["chat-desktop-model-title"\]\}[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.SelectModelAndParams\}[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*aria-controls="chat-model-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showMobileModelSelector\}/,
-    );
-    expect(chat).toMatch(
-      /\{showDesktopModelControls && \([\s\S]*className=\{styles\["chat-desktop-model-title"\]\}/,
-    );
-    expect(chat).toMatch(
-      /\{showDesktopModelControls && \([\s\S]*className=\{clsx\([\s\S]*styles\["chat-desktop-header-actions"\]/,
+      /className=\{clsx\([\s\S]*styles\["chat-desktop-header-actions"\]/,
     );
     expect(chat).toContain("aria-label={Locale.Chat.ModelMenu.Close}");
     expect(chat).toContain('id="chat-model-menu"');
@@ -2173,7 +2162,7 @@ describe("Gemini visual migration shell", () => {
       /className=\{styles\["chat-input-send"\]\}[\s\S]*disabled=\{!canSubmitComposer\}[\s\S]*aria=\{Locale\.Chat\.Send\}/,
     );
     expect(inputStatusBlock).toContain(".chat-input");
-    expect(inputStatusBlock).toContain("width: calc(100% - 96px)");
+    expect(inputStatusBlock).toContain("width: 100%");
     expect(chat).toContain('styles["chat-reading-surface"]');
     expect(chat).toContain('styles["chat-scroll-to-bottom"]');
     expect(chat).toMatch(
@@ -2831,7 +2820,7 @@ describe("Gemini visual migration shell", () => {
       /\.chat-scroll-to-bottom,\s*\.chat-scroll-to-bottom:hover,\s*\.chat-scroll-to-bottom:active\s*\{[\s\S]*transform:\s*var\(--chat-scroll-bottom-position-transform\) !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
     );
     expect(reducedMotionBlock).toMatch(
-      /\.chat-desktop-header,\s*\.chat-mobile-header,\s*\.chat-mobile-header-button,\s*\.chat-mobile-model-title,\s*\.chat-desktop-model-title\s*\{[\s\S]*transition-duration:\s*0\.01ms !important;/,
+      /\.chat-desktop-header,\s*\.chat-mobile-header,\s*\.chat-mobile-header-button,\s*\.chat-input-model-button\s*\{[\s\S]*transition-duration:\s*0\.01ms !important;/,
     );
     expect(emptySuggestionTextBlock).not.toMatch(/-webkit-line-clamp/);
     expect(mobileEmptySuggestionBlock).toMatch(/min-height:\s*86px;/);
@@ -3189,7 +3178,7 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chatStyles).toContain(".chat-desktop-title-stack");
     expect(chatStyles).toContain(".chat-desktop-header");
-    expect(chatStyles).toContain(".chat-desktop-model-title");
+    expect(chatStyles).not.toContain(".chat-desktop-model-title");
     expect(chatStyles).toContain(".chat-desktop-model-menu");
     expect(chatStyles).toContain(".chat-desktop-header-actions");
     expect(chatStyles).toContain(".chat-desktop-header-action");
@@ -3432,79 +3421,26 @@ describe("Gemini visual migration shell", () => {
     expect(mobileHeaderButtonBlock).not.toMatch(
       /box-shadow:\s*none\s*!important;/,
     );
-    expect(mobileModelTitleBlock).toMatch(/min-height:\s*40px;/);
-    expect(mobileModelTitleBlock).toMatch(/padding:\s*0 30px;/);
-    expect(mobileModelTitleBlock).toMatch(/flex:\s*1 1 auto;/);
-    expect(mobileModelTitleBlock).toMatch(
+    expect(mobileTopicTitleBlock).toMatch(/min-height:\s*40px;/);
+    expect(mobileTopicTitleBlock).toMatch(/padding:\s*0 12px;/);
+    expect(mobileTopicTitleBlock).toMatch(/flex:\s*1 1 auto;/);
+    expect(mobileTopicTitleBlock).toMatch(
       /max-width:\s*min\(100%,\s*calc\(100% - 104px\)\);/,
     );
-    expect(mobileModelTitleBlock).toMatch(/border-radius:\s*999px;/);
-    expect(mobileModelTitleBlock).toMatch(
-      /color:\s*var\(--chat-model-title-color\);/,
-    );
-    expect(mobileModelTitleBlock).toMatch(
-      /border:\s*1px solid var\(--chat-header-control-border-color\);/,
-    );
-    expect(mobileModelTitleBlock).toMatch(
-      /background:\s*var\(--chat-header-control-background\)\s*!important;/,
-    );
-    expect(mobileModelTitleBlock).toMatch(
-      /box-shadow:\s*0 1px 2px var\(--chat-header-control-shadow-color\)\s*!important;/,
-    );
-    expect(mobileModelTitleBlock).toMatch(/backdrop-filter:\s*blur\(14px\);/);
-    expect(mobileModelTitleBlock).toMatch(
-      /&:hover[\s\S]*background:\s*var\(--chat-model-title-hover-background\)\s*!important;/,
-    );
-    expect(mobileModelTitleBlock).not.toMatch(
-      /background:\s*transparent\s*!important;/,
-    );
-    expect(mobileModelTitleBlock).not.toMatch(
-      /box-shadow:\s*none\s*!important;/,
-    );
-    expect(mobileModelTitleTextBlock).toMatch(/min-width:\s*0;/);
-    expect(mobileModelTitleTextBlock).toMatch(/overflow:\s*hidden;/);
-    expect(mobileModelTitleTextBlock).toMatch(/text-overflow:\s*ellipsis;/);
-    expect(mobileModelTitleTextBlock).toMatch(/white-space:\s*nowrap;/);
-    expect(desktopModelTitleBlock).toMatch(
-      /&:hover[\s\S]*background:\s*var\(--chat-model-title-hover-background\)\s*!important;/,
-    );
-    expect(desktopModelTitleBlock).toMatch(
-      /background:\s*var\(--chat-header-control-background\)\s*!important;/,
-    );
-    expect(desktopModelTitleBlock).toMatch(
-      /box-shadow:\s*0 1px 2px var\(--chat-header-control-shadow-color\)\s*!important;/,
-    );
-    expect(desktopModelTitleBlock).not.toMatch(
-      /background:\s*transparent\s*!important;/,
-    );
-    expect(desktopModelTitleBlock).not.toMatch(
-      /box-shadow:\s*none\s*!important;/,
+    expect(mobileTopicTitleBlock).toMatch(/text-overflow:\s*ellipsis;/);
+    expect(mobileTopicTitleBlock).toMatch(/white-space:\s*nowrap;/);
+    expect(inputModelButtonBlock).toMatch(/right:\s*66px;/);
+    expect(inputModelButtonBlock).toMatch(/bottom:\s*13px;/);
+    expect(inputModelButtonBlock).toMatch(/&:hover[\s\S]*background:/);
+    expect(inputModelButtonBlock).toMatch(
+      /&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);/,
     );
     expect(chatStyles).toMatch(/@media only screen and \(min-width: 901px\)/);
     expect(chatStyles).toContain(".chat-input-action-menu");
     expect(chatStyles).toContain(".chat-input-action-menu-backdrop");
-    expect(chatStyles).toContain(".chat-mobile-model-title[aria-expanded");
-    expect(mobileModelTitleExpandedBlock).toMatch(
-      /border-color:\s*var\(--chat-model-title-expanded-border-color\)\s*!important;/,
-    );
-    expect(mobileModelTitleExpandedBlock).toMatch(
-      /background:\s*var\(--chat-model-title-expanded-background\)\s*!important;/,
-    );
-    expect(mobileModelTitleExpandedBlock).toMatch(
-      /box-shadow:\s*var\(--focus-ring-shadow\)\s*!important;/,
-    );
-    expect(mobileModelTitleFocusBlock).toMatch(
-      /box-shadow:\s*var\(--focus-ring-shadow\)\s*!important;/,
-    );
-    expect(desktopModelTitleExpandedBlock).toMatch(
-      /border-color:\s*var\(--chat-model-title-expanded-border-color\)\s*!important;/,
-    );
-    expect(darkMobileModelTitleBlock).not.toMatch(
-      /(border-color:\s*transparent|background:\s*transparent|box-shadow:\s*none)\s*!important;/,
-    );
-    expect(darkDesktopModelTitleBlock).not.toMatch(
-      /(border-color:\s*transparent|background:\s*transparent|box-shadow:\s*none)\s*!important;/,
-    );
+    expect(chatStyles).toContain('.chat-input-model-button[aria-expanded="true"]');
+    expect(inputModelButtonExpandedBlock).toMatch(/background:\s*color-mix/);
+    expect(inputModelButtonExpandedBlock).toMatch(/color:\s*color-mix/);
     expect(chatStyles).toContain(".chat-mobile-model-menu-backdrop");
     expect(chatStyles).toContain(".chat-mobile-model-menu");
     for (const tokenMap of [
@@ -3635,7 +3571,7 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toContain("outline: var(--focus-ring)");
     expect(chatStyles).toContain("box-shadow: var(--focus-ring-shadow)");
     expect(chatStyles).toContain(".chat-input-action:focus-visible");
-    expect(chatStyles).toContain(".chat-mobile-model-title:focus-visible");
+    expect(chatStyles).toContain(".chat-input-model-button");
     expect(chatStyles).toContain(".chat-input-status-row");
     expect(chatStyles).toContain(".chat-input-mode-chip");
     expect(chatStyles).toContain(
@@ -3795,7 +3731,7 @@ describe("Gemini visual migration shell", () => {
     expect(chatInputPanelRootBlock).not.toMatch(/--border-in-light/);
     expect(inputStatusRowBlock).toMatch(/position:\s*absolute;/);
     expect(inputStatusRowBlock).toMatch(/left:\s*14px;/);
-    expect(inputStatusRowBlock).toMatch(/right:\s*58px;/);
+    expect(inputStatusRowBlock).toMatch(/right:\s*204px;/);
     expect(inputStatusRowBlock).toMatch(/bottom:\s*10px;/);
     expect(inputStatusRowBlock).toMatch(/display:\s*flex;/);
     expect(inputStatusRowBlock).toMatch(/min-width:\s*0;/);
@@ -3811,7 +3747,19 @@ describe("Gemini visual migration shell", () => {
     expect(inputModeChipBlock).toMatch(
       /color:\s*var\(--chat-input-mode-chip-color\);/,
     );
-    expect(mobileStatusRowBlock).toMatch(/right:\s*52px;/);
+    expect(mobileStatusRowBlock).toMatch(/right:\s*148px;/);
+    expect(tabletInputPanelInnerBlock).toMatch(
+      /padding:\s*13px 204px 13px 16px;/,
+    );
+    expect(tabletModelCollapsedInputPanelBlock).toMatch(
+      /padding:\s*14px 204px 14px 6px;/,
+    );
+    expect(chat).toContain("const aboveSpace = buttonRect.top - 10 - viewportPadding;");
+    expect(chat).toContain("const openBelow = belowSpace >= 260 || belowSpace >= aboveSpace;");
+    expect(chat).toContain('"--chat-model-menu-composer-max-height"');
+    expect(chatStyles).toContain(
+      "max-height: var(--chat-model-menu-composer-max-height, 420px);",
+    );
     expect(mobileInputRowFocusBlock).toMatch(
       /border-color:\s*var\(--chat-input-focus-border-color\);/,
     );
@@ -16882,17 +16830,9 @@ describe("Gemini visual migration shell", () => {
       readCssBlock(chatStyles, "@media screen and (max-width: 1180px)"),
       ".chat-empty-suggestion",
     );
-    const mobileModelTitleBlock = readCssBlock(
+    const composerModelButtonBlock = readRootCssBlock(
       chatStyles,
-      ".chat-mobile-model-title",
-    );
-    const mobileModelMetaBlock = readCssBlock(
-      chatStyles,
-      ".chat-mobile-model-title-meta",
-    );
-    const desktopModelMetaBlock = readCssBlock(
-      chatStyles,
-      ".chat-desktop-model-meta",
+      ".chat-input-model-button",
     );
     const compactChatListBlock = readCssBlock(
       homeStyles.slice(homeStyles.lastIndexOf("\n.compact-container {")),
@@ -16976,20 +16916,19 @@ describe("Gemini visual migration shell", () => {
     );
 
     expect(chat).toMatch(
-      /const desktopModelDetail = showHeaderImageControls[\s\S]*: showHeaderReasoningControl[\s\S]*\? reasoningLabels\[headerCurrentReasoningEffort\]/,
+      /const currentModelDetail = showHeaderImageControls[\s\S]*: showHeaderReasoningControl[\s\S]*\? reasoningLabels\[headerCurrentReasoningEffort\]/,
     );
-    expect(chat).toContain("const mobileModelDetail = desktopModelDetail;");
     expect(chat).toMatch(
-      /aria-label=\{Locale\.Chat\.ModelMenu\.SelectModel\(\s*headerCurrentModelName,\s*mobileModelDetail,\s*\)\}/,
+      /aria-label=\{Locale\.Chat\.ModelMenu\.SelectModel\(\s*headerCurrentModelName,\s*currentModelDetail,\s*\)\}/,
     );
-    expect(chat).toContain('styles["chat-mobile-model-title-meta"]');
-    expect(mobileModelTitleBlock).toMatch(/flex-direction:\s*column;/);
-    expect(mobileModelTitleBlock).toMatch(/gap:\s*2px;/);
-    expect(mobileModelMetaBlock).toMatch(/font-size:\s*11px;/);
-    expect(mobileModelMetaBlock).toMatch(
-      /color:\s*var\(--chat-model-title-muted-color\);/,
+    expect(chat).toContain('styles["chat-input-model-button"]');
+    expect(chat).not.toContain('styles["chat-mobile-model-title"]');
+    expect(chat).not.toContain('styles["chat-desktop-model-title"]');
+    expect(composerModelButtonBlock).toMatch(/right:\s*66px;/);
+    expect(composerModelButtonBlock).toMatch(
+      /max-width:\s*min\(128px,\s*26%\);/,
     );
-    expect(desktopModelMetaBlock).not.toMatch(/思考/);
+    expect(composerModelButtonBlock).toMatch(/bottom:\s*13px;/);
 
     expect(chatEmptySuggestionsBlock).toMatch(/display:\s*grid;/);
     expect(chatEmptySuggestionsBlock).toMatch(

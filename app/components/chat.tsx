@@ -220,7 +220,6 @@ const imageQualityLabels: Record<OpenAIImageQuality, string> = {
 const getImageQualityLabel = (quality: OpenAIImageQuality) =>
   imageQualityLabels[quality] ?? quality;
 type MobileModelAdvancedSection = "reasoning" | "image-size" | "image-quality";
-type ModelMenuPlacement = "header" | "empty-composer";
 
 const CHAT_BODY_BOTTOM_SAFE_AREA_BASE = 150;
 const CHAT_BODY_BOTTOM_SAFE_AREA_MOBILE_BASE = 118;
@@ -2390,14 +2389,12 @@ function useChatInnerView() {
   const [showMobileModelSelector, setShowMobileModelSelector] = useState(false);
   const [expandedMobileModelSection, setExpandedMobileModelSection] =
     useState<MobileModelAdvancedSection | null>(null);
-  const [modelMenuPlacement, setModelMenuPlacement] =
-    useState<ModelMenuPlacement>("header");
-  const [emptyComposerModelMenuStyle, setEmptyComposerModelMenuStyle] =
+  const [composerModelMenuStyle, setComposerModelMenuStyle] =
     useState<React.CSSProperties | undefined>(undefined);
   const modelSelectorButtonRef = useRef<HTMLButtonElement>(null);
   const modelMenuRef = useRef<HTMLDivElement>(null);
   const modelMenuFocusFrameRef = useRef<number | null>(null);
-  const getEmptyComposerModelMenuStyle = (button: HTMLButtonElement) => {
+  const getComposerModelMenuStyle = (button: HTMLButtonElement) => {
     const viewportPadding = 16;
     const menuWidth = Math.min(380, window.innerWidth - viewportPadding * 2);
     const buttonRect = button.getBoundingClientRect();
@@ -2410,22 +2407,29 @@ function useChatInnerView() {
     );
     const belowTop = buttonRect.bottom + 10;
     const belowSpace = window.innerHeight - belowTop - viewportPadding;
-    const maxEstimatedMenuHeight = Math.min(
-      320,
-      window.innerHeight - viewportPadding * 2,
+    const aboveSpace = buttonRect.top - 10 - viewportPadding;
+    const openBelow = belowSpace >= 260 || belowSpace >= aboveSpace;
+    const availableHeight = Math.max(
+      0,
+      Math.min(
+        420,
+        openBelow ? belowSpace : aboveSpace,
+        window.innerHeight - viewportPadding * 2,
+      ),
     );
-    const top =
-      belowSpace >= 260
-        ? belowTop
-        : Math.max(
-            viewportPadding,
-            buttonRect.top - maxEstimatedMenuHeight - 10,
-          );
 
     return {
-      "--chat-model-menu-empty-left": `${left}px`,
-      "--chat-model-menu-empty-top": `${Math.max(viewportPadding, top)}px`,
-      "--chat-model-menu-empty-width": `${menuWidth}px`,
+      "--chat-model-menu-composer-left": `${left}px`,
+      "--chat-model-menu-composer-top": openBelow ? `${belowTop}px` : "auto",
+      "--chat-model-menu-composer-bottom": openBelow
+        ? "auto"
+        : `${window.innerHeight - buttonRect.top + 10}px`,
+      "--chat-model-menu-composer-width": `${menuWidth}px`,
+      "--chat-model-menu-composer-max-height": `${availableHeight}px`,
+      "--chat-model-menu-composer-origin": openBelow
+        ? "top right"
+        : "bottom right",
+      "--chat-model-menu-composer-shift": openBelow ? "8px" : "-8px",
     } as React.CSSProperties;
   };
   const closeMobileModelSelector = useCallback(() => {
@@ -2648,12 +2652,11 @@ function useChatInnerView() {
     session.mask.modelConfig?.size ?? ("1024x1024" as OpenAIImageSize);
   const headerCurrentQuality =
     session.mask.modelConfig?.quality ?? ("standard" as OpenAIImageQuality);
-  const desktopModelDetail = showHeaderImageControls
+  const currentModelDetail = showHeaderImageControls
     ? `${headerCurrentSize} · ${getImageQualityLabel(headerCurrentQuality)}`
     : showHeaderReasoningControl
     ? reasoningLabels[headerCurrentReasoningEffort]
     : headerCurrentProviderName;
-  const mobileModelDetail = desktopModelDetail;
   const isReasoningSectionExpanded = expandedMobileModelSection === "reasoning";
   const isImageSizeSectionExpanded =
     expandedMobileModelSection === "image-size";
@@ -2695,6 +2698,7 @@ function useChatInnerView() {
       }
     });
     closeMobileModelSelector();
+    restoreModelSelectorFocus();
     showToast(model);
   };
   const selectHeaderReasoningEffort = (
@@ -2893,9 +2897,7 @@ function useChatInnerView() {
   const showEmptyComposer = showEmptyState && !hasActiveInputContent;
   const showEmptyHero =
     showEmptyState && !hasActiveInputContent && !showChatActionMenu;
-  const showDesktopModelControls = !showEmptyState;
   const showDesktopChatHeader = !isCompactScreen && !showEmptyState;
-  const showEmptyComposerModelSelect = showEmptyComposer && !isCompactScreen;
   const applyEmptySuggestion = useCallback(
     (suggestion: string) => {
       setShowChatActionMenu(false);
@@ -4314,35 +4316,9 @@ function useChatInnerView() {
           >
             <MenuIcon />
           </button>
-          <button
-            type="button"
-            ref={modelSelectorButtonRef}
-            className={styles["chat-mobile-model-title"]}
-            aria-label={Locale.Chat.ModelMenu.SelectModel(
-              headerCurrentModelName,
-              mobileModelDetail,
-            )}
-            title={`${headerCurrentModelName} · ${mobileModelDetail}`}
-            onKeyDown={handleModelMenuKeyDown}
-            onClick={() => {
-              setShowChatActionMenu(false);
-              setExpandedMobileModelSection(null);
-              setModelMenuPlacement("header");
-              setEmptyComposerModelMenuStyle(undefined);
-              setShowMobileModelSelector((open) => !open);
-            }}
-            aria-controls="chat-model-menu"
-            aria-haspopup="dialog"
-            aria-expanded={showMobileModelSelector}
-          >
-            <span className={styles["chat-mobile-model-title-text"]}>
-              {headerCurrentModelName}
-            </span>
-            <span className={styles["chat-mobile-model-title-meta"]}>
-              {mobileModelDetail}
-            </span>
-            <span className={styles["chat-mobile-model-title-arrow"]}>⌄</span>
-          </button>
+          <div className={styles["chat-mobile-topic-title"]}>
+            {!session.topic ? DEFAULT_TOPIC : session.topic}
+          </div>
           <IconButton
             className={styles["chat-mobile-header-button"]}
             icon={
@@ -4398,45 +4374,15 @@ function useChatInnerView() {
             >
               {!session.topic ? DEFAULT_TOPIC : session.topic}
             </button>
-            {showDesktopModelControls && (
-              <button
-                type="button"
-                ref={modelSelectorButtonRef}
-                className={styles["chat-desktop-model-title"]}
-                aria-label={Locale.Chat.ModelMenu.SelectModelAndParams}
-                onKeyDown={handleModelMenuKeyDown}
-                onClick={() => {
-                  setShowChatActionMenu(false);
-                  setExpandedMobileModelSection(null);
-                  setModelMenuPlacement("header");
-                  setEmptyComposerModelMenuStyle(undefined);
-                  setShowMobileModelSelector((open) => !open);
-                }}
-                aria-controls="chat-model-menu"
-                aria-haspopup="dialog"
-                aria-expanded={showMobileModelSelector}
-              >
-                <span className={styles["chat-desktop-model-name"]}>
-                  {headerCurrentModelName}
-                </span>
-                <span className={styles["chat-desktop-model-meta"]}>
-                  {desktopModelDetail}
-                </span>
-                <span className={styles["chat-desktop-model-title-arrow"]}>
-                  ⌄
-                </span>
-              </button>
-            )}
           </div>
           <div className={styles["chat-desktop-header-cluster"]}>
             {promptToast}
-            {showDesktopModelControls && (
-              <div
-                className={clsx(
-                  "window-actions",
-                  styles["chat-desktop-header-actions"],
-                )}
-              >
+            <div
+              className={clsx(
+                "window-actions",
+                styles["chat-desktop-header-actions"],
+              )}
+            >
                 <div
                   className={clsx(
                     "window-action-button",
@@ -4507,8 +4453,7 @@ function useChatInnerView() {
                     />
                   </div>
                 )}
-              </div>
-            )}
+            </div>
           </div>
         </div>
       ) : null}
@@ -4542,15 +4487,10 @@ function useChatInnerView() {
             : styles["chat-desktop-model-menu"],
           {
             [styles["chat-model-menu-visible"]]: showMobileModelSelector,
-            [styles["chat-desktop-model-menu-empty-composer"]]:
-              modelMenuPlacement === "empty-composer" && !isCompactScreen,
+            [styles["chat-desktop-model-menu-composer"]]: !isCompactScreen,
           },
         )}
-        style={
-          modelMenuPlacement === "empty-composer" && !isCompactScreen
-            ? emptyComposerModelMenuStyle
-            : undefined
-        }
+        style={!isCompactScreen ? composerModelMenuStyle : undefined}
         onKeyDown={handleModelMenuKeyDown}
         tabIndex={-1}
         role="dialog"
@@ -5389,38 +5329,35 @@ function useChatInnerView() {
                   }}
                 />
 
-                {showEmptyComposerModelSelect && (
-                  <button
-                    type="button"
-                    ref={modelSelectorButtonRef}
-                    className={styles["chat-input-model-button"]}
-                    aria-label={Locale.Chat.ModelMenu.SelectModel(
-                      headerCurrentModelName,
-                      desktopModelDetail,
-                    )}
-                    title={`${headerCurrentModelName} · ${desktopModelDetail}`}
-                    onKeyDown={handleModelMenuKeyDown}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      setShowChatActionMenu(false);
-                      setExpandedMobileModelSection(null);
-                      setModelMenuPlacement("empty-composer");
-                      setEmptyComposerModelMenuStyle(
-                        getEmptyComposerModelMenuStyle(event.currentTarget),
-                      );
-                      setShowMobileModelSelector((open) => !open);
-                    }}
-                    aria-controls="chat-model-menu"
-                    aria-haspopup="dialog"
-                    aria-expanded={showMobileModelSelector}
-                  >
-                    <span className={styles["chat-input-model-name"]}>
-                      {headerCurrentModelName}
-                    </span>
-                    <span className={styles["chat-input-model-arrow"]}>⌄</span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  ref={modelSelectorButtonRef}
+                  className={styles["chat-input-model-button"]}
+                  aria-label={Locale.Chat.ModelMenu.SelectModel(
+                    headerCurrentModelName,
+                    currentModelDetail,
+                  )}
+                  title={`${headerCurrentModelName} · ${currentModelDetail}`}
+                  onKeyDown={handleModelMenuKeyDown}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setShowChatActionMenu(false);
+                    setExpandedMobileModelSection(null);
+                    setComposerModelMenuStyle(
+                      getComposerModelMenuStyle(event.currentTarget),
+                    );
+                    setShowMobileModelSelector((open) => !open);
+                  }}
+                  aria-controls="chat-model-menu"
+                  aria-haspopup="dialog"
+                  aria-expanded={showMobileModelSelector}
+                >
+                  <span className={styles["chat-input-model-name"]}>
+                    {headerCurrentModelName}
+                  </span>
+                  <span className={styles["chat-input-model-arrow"]}>⌄</span>
+                </button>
 
                 {showInputStatusRow && (
                   <div

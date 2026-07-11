@@ -15,6 +15,7 @@ Do not read all iteration files by default. Use `rg` first, then open the smalle
 ## Routing
 
 - English UI localization, default GPT-5.6 administrator locks, and the merged-state review from `081673c8` through `095f97a5`: `iterations/2026-07-10-i18n-admin-lock-review.md`.
+- Composer-only model selection, new-chat draft-state persistence, responsive geometry, and the pending GPT-5.x reasoning visual prototype: `iterations/2026-07-11-composer-model-selector.md`.
 - GPT-5.6 Prompt Cache `disabled` mode and zero-cache-field request semantics: `iterations/2026-07-10-gpt-5-6-prompt-cache-disabled.md`.
 - GPT-5.6 family defaults, Responses compatibility, capability fields, and native function tools: `iterations/2026-07-10-gpt-5-6-compatibility.md`.
 - Full-stack agent governance, evidence rules, frontend/backend task routing, verification matrices, and local handoff policy: `iterations/2026-07-10-agent-guide.md`.
