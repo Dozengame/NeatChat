@@ -31,6 +31,10 @@
   min-width: 0;
 }
 
+.headingNoBack {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
 .back {
   appearance: none;
   width: 32px;
@@ -317,6 +321,10 @@
 
   .heading {
     grid-template-columns: 34px minmax(0, 1fr) auto;
+  }
+
+  .headingNoBack {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .back {

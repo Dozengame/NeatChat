@@ -1561,9 +1561,9 @@ describe("Gemini visual migration shell", () => {
       chat,
       "const handleModelMenuKeyDown = (event: React.KeyboardEvent<HTMLElement>) =>",
     );
-    const selectHeaderModelBlock = readFunctionBlock(
-      chat,
-      "const selectHeaderModel = (selected: string) =>",
+    const selectHeaderModelBlock = chat.slice(
+      chat.indexOf("const selectHeaderModel = useCallback("),
+      chat.indexOf("const selectHeaderReasoningEffort = ("),
     );
     const chatActionsViewBlock = readFunctionBlock(
       chat,
@@ -1841,9 +1841,27 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('aria-controls="chat-model-menu"');
     expect(chat).toContain('styles["chat-input-model-button-open"]');
     expect(chat).toContain("Locale.Chat.ModelMenu.SelectModel(");
-    expect(chat).toContain(
-      "title={`${headerCurrentModelName} · ${currentModelDetail}`}",
+    expect(chat).toMatch(
+      /title=\{[\s\S]*showEmptyState && emptyComposerMode === "chat"[\s\S]*Locale\.Chat\.ModelMenu\.ReasoningEffort[\s\S]*headerCurrentModelName[\s\S]*currentModelDetail/,
     );
+    expect(chat).toContain('role="tablist"');
+    expect(chat).toContain('aria-controls="chat-home-panel"');
+    expect(chat).toContain('role={showEmptyState ? "tabpanel" : undefined}');
+    expect(chat).toContain("Locale.Chat.HomeMode.Label");
+    expect(chat).toContain('id={`chat-home-mode-${mode}`}');
+    expect(chat).toContain("selectEmptyComposerMode(mode)");
+    expect(chat).toContain("handleEmptyComposerModeKeyDown");
+    expect(chat).toContain("homeModeInitializedRef.current");
+    expect(chat).toContain(
+      'resolvePreferredChatHomeModel(\n      "chat",\n      headerAvailableModels,',
+    );
+    expect(chat).toContain(
+      '(showEmptyState && emptyComposerMode === "chat") ? (',
+    );
+    expect(chat).toContain("<DiscreteOptionRail<OpenAIImageSize>");
+    expect(chat).toContain("<DiscreteOptionRail<OpenAIImageQuality>");
+    expect(chat).toContain('styles["chat-input-panel-inner-home-image"]');
+    expect(chat).toContain("Locale.Chat.ModelMenu.ModelAndImageOptions");
     expect(chat).toContain("onKeyDown={handleModelMenuKeyDown}");
     expect(chat).toContain('aria-haspopup="dialog"');
     expect(chat).not.toContain("showEmptyComposerModelSelect");
@@ -1851,8 +1869,12 @@ describe("Gemini visual migration shell", () => {
       chat.match(/styles\["chat-input-model-button"\]/g) ?? [],
     ).toHaveLength(1);
     expect(chat.match(/aria-controls="chat-model-menu"/g)).toHaveLength(1);
-    expect(selectHeaderModelBlock).toContain("closeMobileModelSelector();");
-    expect(selectHeaderModelBlock).toContain("restoreModelSelectorFocus();");
+    expect(selectHeaderModelBlock).toContain(
+      "if (options.closeMenu !== false) closeMobileModelSelector();",
+    );
+    expect(selectHeaderModelBlock).toContain(
+      "if (options.restoreFocus !== false) restoreModelSelectorFocus();",
+    );
     expect(chat).toMatch(
       /className=\{clsx\([\s\S]*styles\["chat-desktop-header-actions"\]/,
     );
@@ -1860,11 +1882,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('id="chat-model-menu"');
     expect(chat).toContain('role="dialog"');
     expect(chat).toMatch(
-      /id="chat-model-menu"[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.ModelAndReasoning\}/,
+      /id="chat-model-menu"[\s\S]*role="dialog"[\s\S]*aria-modal="true"[\s\S]*showEmptyState && emptyComposerMode === "image"[\s\S]*Locale\.Chat\.ModelMenu\.ModelAndImageOptions[\s\S]*Locale\.Chat\.ModelMenu\.ModelAndReasoning/,
     );
-    expect(chat).toContain(
-      "aria-label={Locale.Chat.ModelMenu.ModelAndReasoning}",
-    );
+    expect(chat).toContain("Locale.Chat.ModelMenu.ModelAndReasoning");
     expect(chat).toMatch(
       /id="chat-model-menu"[\s\S]*ref=\{modelMenuRef\}[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*tabIndex=\{-1\}[\s\S]*role="dialog"[\s\S]*aria-modal="true"/,
     );
@@ -16952,7 +16972,7 @@ describe("Gemini visual migration shell", () => {
       /const currentModelDetail = showHeaderImageControls[\s\S]*: showHeaderReasoningControl[\s\S]*\? reasoningLabels\[headerCurrentReasoningEffort\]/,
     );
     expect(chat).toMatch(
-      /aria-label=\{Locale\.Chat\.ModelMenu\.SelectModel\(\s*headerCurrentModelName,\s*currentModelDetail,\s*\)\}/,
+      /aria-label=\{[\s\S]*showEmptyState && emptyComposerMode === "chat"[\s\S]*Locale\.Chat\.ModelMenu\.SelectedReasoning[\s\S]*Locale\.Chat\.ModelMenu\.SelectModel\([\s\S]*headerCurrentModelName,[\s\S]*currentModelDetail/,
     );
     expect(chat).toContain('styles["chat-input-model-button"]');
     expect(chat).not.toContain('styles["chat-mobile-model-title"]');

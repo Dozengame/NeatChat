@@ -92,6 +92,11 @@ const cn = {
       "创意绘图",
       "分析文档",
     ] as string[],
+    HomeMode: {
+      Label: "新聊天模式",
+      Chat: "聊天",
+      Image: "生图",
+    },
     Input: (submitKey: string) => {
       var inputHints = `${submitKey} 发送`;
       if (submitKey === String(SubmitKey.Enter)) {
@@ -365,16 +370,27 @@ const cn = {
       SelectModelAndParams: "选择模型和参数",
       Close: "关闭模型选择",
       ModelAndReasoning: "模型和思考等级",
+      ModelAndImageOptions: "模型和图片选项",
       AvailableModels: "可选模型",
       Empty: "暂无可用模型",
+      ChatModelUnavailable: "暂无可用的 GPT-5.x 聊天模型",
+      ImageModelUnavailable: "暂无可用的生图模型",
       ReasoningEffort: "思考等级",
       ReasoningOptions: "思考等级选项",
       BackToModels: "返回模型列表",
       ImageSize: "图片尺寸",
       ImageSizeOptions: "图片尺寸选项",
+      ImageSizeDescription: (size: string) =>
+        size === "auto" ? "由模型自动选择合适尺寸" : `使用 ${size} 尺寸`,
       GeneratedImageSize: "生成图片尺寸",
       ImageQuality: "图片清晰度",
       ImageQualityOptions: "图片清晰度选项",
+      ImageQualityDescription: (quality: string) =>
+        quality === "auto"
+          ? "由模型自动平衡速度与细节"
+          : `使用${
+              quality === "high" ? "高" : quality === "medium" ? "中" : "低"
+            }清晰度`,
       CurrentInputMode: "当前输入模式",
       SelectedReasoning: (label: string) => `思考等级：${label}`,
     },

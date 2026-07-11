@@ -159,6 +159,7 @@ describe("English UI localization contract", () => {
     const requiredGroups = [
       "Sections",
       "ChatToolMenu",
+      "HomeMode",
       "Attachments",
       "ImageGeneration",
       "ImageActions",
@@ -176,6 +177,12 @@ describe("English UI localization contract", () => {
     }
     expect(en).not.toContain("chats，");
     expect(en).not.toContain("disable？");
+    expect(cn).toMatch(
+      /HomeMode:\s*\{[\s\S]*Chat: "聊天"[\s\S]*Image: "生图"/,
+    );
+    expect(en).toMatch(
+      /HomeMode:\s*\{[\s\S]*Chat: "Chat"[\s\S]*Image: "Image"/,
+    );
   });
 
   test("keeps reasoning effort labels aligned with API levels", () => {

@@ -93,6 +93,11 @@ const en: LocaleType = {
       "Creative poster",
       "Analyze document",
     ] as string[],
+    HomeMode: {
+      Label: "New chat mode",
+      Chat: "Chat",
+      Image: "Image",
+    },
     Input: (submitKey: string) => {
       var inputHints = `${submitKey} to send`;
       if (submitKey === String(SubmitKey.Enter)) {
@@ -380,16 +385,27 @@ const en: LocaleType = {
       SelectModelAndParams: "Select model and parameters",
       Close: "Close model selector",
       ModelAndReasoning: "Model and reasoning effort",
+      ModelAndImageOptions: "Model and image options",
       AvailableModels: "Available models",
       Empty: "No models available",
+      ChatModelUnavailable: "No GPT-5.x chat model is available",
+      ImageModelUnavailable: "No image model is available",
       ReasoningEffort: "Reasoning effort",
       ReasoningOptions: "Reasoning effort options",
       BackToModels: "Back to model list",
       ImageSize: "Image size",
       ImageSizeOptions: "Image size options",
+      ImageSizeDescription: (size: string) =>
+        size === "auto"
+          ? "Let the model choose a suitable size"
+          : `Use the ${size} preset`,
       GeneratedImageSize: "Generated image size",
       ImageQuality: "Image quality",
       ImageQualityOptions: "Image quality options",
+      ImageQualityDescription: (quality: string) =>
+        quality === "auto"
+          ? "Let the model balance speed and detail"
+          : `Use ${quality} image quality`,
       CurrentInputMode: "Current input mode",
       SelectedReasoning: (label: string) => `Reasoning effort: ${label}`,
     },

@@ -77,72 +77,120 @@ export function getKeyboardReasoningEffort(
   return moveForward ? candidates[0] : candidates[candidates.length - 1];
 }
 
-type ReasoningEffortRailProps = {
+export function getNearestAllowedDiscreteOption<T extends string>(
+  position: number,
+  visibleOptions: readonly T[],
+  allowedOptions: readonly T[],
+) {
+  const allowed = new Set(allowedOptions);
+  const selectable = visibleOptions
+    .map((option, index) => ({ option, index }))
+    .filter(({ option }) => allowed.has(option));
+
+  if (selectable.length === 0) return undefined;
+
+  return selectable.reduce((nearest, candidate) => {
+    const candidateDistance = Math.abs(candidate.index - position);
+    const nearestDistance = Math.abs(nearest.index - position);
+    return candidateDistance < nearestDistance ? candidate : nearest;
+  }).option;
+}
+
+export function getKeyboardDiscreteOption<T extends string>(
+  value: T,
+  key: string,
+  visibleOptions: readonly T[],
+  allowedOptions: readonly T[],
+) {
+  const allowed = new Set(allowedOptions);
+  const selectable = visibleOptions.filter((option) => allowed.has(option));
+  if (selectable.length === 0) return undefined;
+  if (key === "Home") return selectable[0];
+  if (key === "End") return selectable[selectable.length - 1];
+
+  const currentIndex = visibleOptions.indexOf(value);
+  const moveForward = key === "ArrowRight" || key === "ArrowUp";
+  const moveBackward = key === "ArrowLeft" || key === "ArrowDown";
+  if (!moveForward && !moveBackward) return undefined;
+
+  const candidates = selectable.filter((option) => {
+    const index = visibleOptions.indexOf(option);
+    return moveForward ? index > currentIndex : index < currentIndex;
+  });
+
+  if (candidates.length === 0) {
+    return moveForward ? selectable[selectable.length - 1] : selectable[0];
+  }
+  return moveForward ? candidates[0] : candidates[candidates.length - 1];
+}
+
+export type DiscreteOptionRailProps<T extends string> = {
   id: string;
   ariaLabel: string;
   title: string;
-  backLabel: string;
-  efforts: readonly OpenAIChatReasoningEffort[];
-  allowedEfforts: readonly OpenAIChatReasoningEffort[];
-  value: OpenAIChatReasoningEffort;
+  backLabel?: string;
+  options: readonly T[];
+  allowedOptions: readonly T[];
+  value: T;
   locked: boolean;
   lockedLabel: string;
-  labels: Record<OpenAIChatReasoningEffort, string>;
-  descriptions: Record<OpenAIChatReasoningEffort, string>;
-  onChange: (effort: OpenAIChatReasoningEffort) => void;
-  onBack: () => void;
+  labels: Record<T, string>;
+  descriptions: Record<T, string>;
+  emphasizeHighest?: boolean;
+  onChange: (option: T) => void;
+  onBack?: () => void;
   onLockedAttempt: () => void;
 };
 
-export function ReasoningEffortRail({
+export function DiscreteOptionRail<T extends string>({
   id,
   ariaLabel,
   title,
   backLabel,
-  efforts,
-  allowedEfforts,
+  options,
+  allowedOptions,
   value,
   locked,
   lockedLabel,
   labels,
   descriptions,
+  emphasizeHighest = true,
   onChange,
   onBack,
   onLockedAttempt,
-}: ReasoningEffortRailProps) {
+}: DiscreteOptionRailProps<T>) {
   const railRef = useRef<HTMLDivElement>(null);
-  const [dragEffort, setDragEffort] = useState<OpenAIChatReasoningEffort>();
+  const [dragOption, setDragOption] = useState<T>();
   const [dragging, setDragging] = useState(false);
-  const visibleEfforts = useMemo(
-    () => canonicalizeReasoningEfforts(efforts, value),
-    [efforts, value],
+  const visibleOptions = useMemo(
+    () => Array.from(new Set([...options, value])),
+    [options, value],
   );
-  const allowed = useMemo(
-    () => new Set(canonicalizeReasoningEfforts(allowedEfforts)),
-    [allowedEfforts],
+  const allowed = useMemo(() => new Set(allowedOptions), [allowedOptions]);
+  const selectableOptions = useMemo(
+    () => visibleOptions.filter((option) => allowed.has(option)),
+    [allowed, visibleOptions],
   );
-  const selectableEfforts = useMemo(
-    () => visibleEfforts.filter((effort) => allowed.has(effort)),
-    [allowed, visibleEfforts],
-  );
-  const displayValue = dragEffort ?? value;
-  const selectedIndex = Math.max(0, visibleEfforts.indexOf(displayValue));
-  const highestAllowedEffort = selectableEfforts[selectableEfforts.length - 1];
+  const displayValue = dragOption ?? value;
+  const selectedIndex = Math.max(0, visibleOptions.indexOf(displayValue));
+  const highestAllowedOption = selectableOptions[selectableOptions.length - 1];
   const isHighest =
-    selectableEfforts.length > 1 && displayValue === highestAllowedEffort;
+    emphasizeHighest &&
+    selectableOptions.length > 1 &&
+    displayValue === highestAllowedOption;
   const readonly =
-    selectableEfforts.length === 0 ||
-    (selectableEfforts.length === 1 && allowed.has(value));
+    selectableOptions.length === 0 ||
+    (selectableOptions.length === 1 && allowed.has(value));
   const ariaDisabled = locked || readonly;
   const descriptionId = `${id}-description`;
 
   useEffect(() => {
-    setDragEffort(undefined);
-  }, [value, efforts]);
+    setDragOption(undefined);
+  }, [value, options]);
 
   const positionFromPointer = (clientX: number) => {
     const rail = railRef.current;
-    if (!rail || visibleEfforts.length <= 1) return 0;
+    if (!rail || visibleOptions.length <= 1) return 0;
 
     const rect = rail.getBoundingClientRect();
     const computedThumbSize = Number.parseFloat(
@@ -156,14 +204,14 @@ export function ReasoningEffortRail({
       1,
       Math.max(0, (clientX - rect.left - thumbRadius) / usableWidth),
     );
-    return normalized * (visibleEfforts.length - 1);
+    return normalized * (visibleOptions.length - 1);
   };
 
-  const effortFromPointer = (clientX: number) =>
-    getNearestAllowedReasoningEffort(
+  const optionFromPointer = (clientX: number) =>
+    getNearestAllowedDiscreteOption(
       positionFromPointer(clientX),
-      visibleEfforts,
-      selectableEfforts,
+      visibleOptions,
+      selectableOptions,
     );
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -177,7 +225,7 @@ export function ReasoningEffortRail({
 
     event.currentTarget.setPointerCapture(event.pointerId);
     setDragging(true);
-    setDragEffort(effortFromPointer(event.clientX));
+    setDragOption(optionFromPointer(event.clientX));
   };
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -186,7 +234,7 @@ export function ReasoningEffortRail({
     }
     event.preventDefault();
     event.stopPropagation();
-    setDragEffort(effortFromPointer(event.clientX));
+    setDragOption(optionFromPointer(event.clientX));
   };
 
   const finishPointerInteraction = (
@@ -196,21 +244,21 @@ export function ReasoningEffortRail({
     if (!dragging) return;
     event.preventDefault();
     event.stopPropagation();
-    const nextEffort = commit
-      ? effortFromPointer(event.clientX) ?? dragEffort
+    const nextOption = commit
+      ? optionFromPointer(event.clientX) ?? dragOption
       : undefined;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
     setDragging(false);
-    setDragEffort(undefined);
-    if (commit && nextEffort && nextEffort !== value) onChange(nextEffort);
+    setDragOption(undefined);
+    if (commit && nextOption && nextOption !== value) onChange(nextOption);
   };
 
   const handleLostPointerCapture = () => {
     if (!dragging) return;
     setDragging(false);
-    setDragEffort(undefined);
+    setDragOption(undefined);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -232,15 +280,16 @@ export function ReasoningEffortRail({
     }
     if (readonly) return;
 
-    const nextEffort = getKeyboardReasoningEffort(
+    const nextOption = getKeyboardDiscreteOption(
       value,
       event.key,
-      selectableEfforts,
+      visibleOptions,
+      selectableOptions,
     );
-    if (nextEffort && nextEffort !== value) onChange(nextEffort);
+    if (nextOption && nextOption !== value) onChange(nextOption);
   };
 
-  const stopCount = Math.max(visibleEfforts.length, 1);
+  const stopCount = Math.max(visibleOptions.length, 1);
   const activePosition =
     stopCount <= 1 ? 0 : (selectedIndex / (stopCount - 1)) * 100;
 
@@ -253,17 +302,23 @@ export function ReasoningEffortRail({
         [styles.locked]: locked,
       })}
     >
-      <div className={styles.heading}>
-        <button
-          type="button"
-          className={styles.back}
-          onClick={onBack}
-          data-model-menu-control="true"
-          aria-label={backLabel}
-          title={backLabel}
-        >
-          ‹
-        </button>
+      <div
+        className={clsx(styles.heading, {
+          [styles.headingNoBack]: !onBack,
+        })}
+      >
+        {onBack && backLabel && (
+          <button
+            type="button"
+            className={styles.back}
+            onClick={onBack}
+            data-model-menu-control="true"
+            aria-label={backLabel}
+            title={backLabel}
+          >
+            ‹
+          </button>
+        )}
         <div className={styles.copy}>
           <strong>{title}</strong>
           <span id={descriptionId}>{descriptions[displayValue]}</span>
@@ -282,13 +337,14 @@ export function ReasoningEffortRail({
         aria-label={ariaLabel}
         aria-describedby={descriptionId}
         aria-valuemin={0}
-        aria-valuemax={Math.max(0, visibleEfforts.length - 1)}
+        aria-valuemax={Math.max(0, visibleOptions.length - 1)}
         aria-valuenow={selectedIndex}
         aria-valuetext={labels[displayValue]}
         aria-disabled={ariaDisabled}
         data-model-menu-control="true"
         data-effort={displayValue}
-        data-stop-count={visibleEfforts.length}
+        data-option={displayValue}
+        data-stop-count={visibleOptions.length}
         data-highest={isHighest}
         data-locked={locked}
         title={locked ? lockedLabel : labels[displayValue]}
@@ -309,19 +365,19 @@ export function ReasoningEffortRail({
           <span className={styles.fill} />
           <span className={styles.sparkles} />
           <span className={styles.stops}>
-            {visibleEfforts.map((effort, index) => (
+            {visibleOptions.map((option, index) => (
               <span
-                key={effort}
+                key={option}
                 className={clsx(styles.stop, {
-                  [styles.stopSelected]: effort === displayValue,
-                  [styles.stopCurrentOnly]: !allowed.has(effort),
+                  [styles.stopSelected]: option === displayValue,
+                  [styles.stopCurrentOnly]: !allowed.has(option),
                 })}
                 style={
                   {
                     "--reasoning-rail-stop-position":
-                      visibleEfforts.length <= 1
+                      visibleOptions.length <= 1
                         ? "0%"
-                        : `${(index / (visibleEfforts.length - 1)) * 100}%`,
+                        : `${(index / (visibleOptions.length - 1)) * 100}%`,
                   } as React.CSSProperties
                 }
               />
@@ -333,5 +389,38 @@ export function ReasoningEffortRail({
         </span>
       </div>
     </section>
+  );
+}
+
+type ReasoningEffortRailProps = {
+  id: string;
+  ariaLabel: string;
+  title: string;
+  backLabel?: string;
+  efforts: readonly OpenAIChatReasoningEffort[];
+  allowedEfforts: readonly OpenAIChatReasoningEffort[];
+  value: OpenAIChatReasoningEffort;
+  locked: boolean;
+  lockedLabel: string;
+  labels: Record<OpenAIChatReasoningEffort, string>;
+  descriptions: Record<OpenAIChatReasoningEffort, string>;
+  onChange: (effort: OpenAIChatReasoningEffort) => void;
+  onBack?: () => void;
+  onLockedAttempt: () => void;
+};
+
+export function ReasoningEffortRail({
+  efforts,
+  allowedEfforts,
+  value,
+  ...props
+}: ReasoningEffortRailProps) {
+  return (
+    <DiscreteOptionRail
+      {...props}
+      options={canonicalizeReasoningEfforts(efforts, value)}
+      allowedOptions={canonicalizeReasoningEfforts(allowedEfforts)}
+      value={value}
+    />
   );
 }
