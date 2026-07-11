@@ -346,6 +346,11 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ".chat-input-panel-inner",
     );
+    const chatInputBlock = readRootCssBlock(chatStyles, ".chat-input");
+    const chatInputFocusVisibleBlock = readCssBlock(
+      chatInputBlock,
+      "&:focus-visible",
+    );
     const inputPanelFocusMenuButtonBlock = readCssBlock(
       chatStyles,
       ".chat-input-panel:focus-within .chat-input-menu-button",
@@ -3747,6 +3752,8 @@ describe("Gemini visual migration shell", () => {
     expect(inputPanelInnerBlock).toMatch(/box-sizing:\s*border-box;/);
     expect(inputPanelInnerBlock).toMatch(/min-width:\s*0;/);
     expect(inputPanelInnerBlock).toMatch(/max-width:\s*100%;/);
+    expect(chatInputFocusVisibleBlock).toMatch(/outline:\s*none;/);
+    expect(chatInputFocusVisibleBlock).toMatch(/outline-offset:\s*0;/);
     expect(inputPanelInnerFocusBlock).toMatch(
       /border-color:\s*var\(--chat-input-focus-border-color\) !important;/,
     );
@@ -5494,9 +5501,13 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /ref=\{chatInputMenuButtonRef\}[\s\S]*aria-controls="chat-input-action-menu"[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showChatActionMenu\}/,
     );
-    expect(chat).toMatch(
-      /className=\{clsx\(styles\["chat-input-menu-button"\][\s\S]*onClick=\{\(\) => \{[\s\S]*expandInput\(\);[\s\S]*setShowChatActionMenu\(\(open\) => !open\);[\s\S]*\}\}/,
+    const menuButtonClickHandler = chat.match(
+      /className=\{clsx\(styles\["chat-input-menu-button"\][\s\S]*?onClick=\{\(\) => \{([\s\S]*?)\}\}[\s\S]*?aria-label=/,
+    )?.[1];
+    expect(menuButtonClickHandler).toContain(
+      "setShowChatActionMenu((open) => !open);",
     );
+    expect(menuButtonClickHandler).not.toContain("expandInput()");
     for (const tokenName of tokenNames) {
       expect(rootTokens[tokenName]).not.toBe("");
       expect(darkTokens[tokenName]).not.toBe("");

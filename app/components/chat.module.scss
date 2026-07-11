@@ -5626,6 +5626,11 @@
   box-sizing: border-box;
   min-height: 28px;
   max-height: 30vh;
+
+  &:focus-visible {
+    outline: none;
+    outline-offset: 0;
+  }
 }
 
 .chat-input-status-row {

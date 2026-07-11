@@ -44,3 +44,12 @@
 - Browser boundary: `domSnapshot()` remains unreliable in this Browser runtime, so evidence used DOM evaluate metrics, screenshots, and console logs. The only console error entries were stale `Event` logs from `09:17`/`09:23`; the QA reference time was `10:05`, and no current warn/error entries were produced by this slice.
 - Dev server note: after final `yarn build`, `/api/config` returned HTML 500; restarting `yarn dev` restored JSON 200. The replacement dev server was left running for local testing.
 - Screenshots: `/tmp/neatchat-image-generation-toggle-desktop-1440.png`, `/tmp/neatchat-image-generation-toggle-mobile-390.png`.
+
+## 2026-07-11 Composer Geometry And Focus Follow-up
+
+- Root causes: the conversation-tools trigger called `expandInput()` before toggling the menu, changing the empty composer from its compact pill state; the global `body *:focus-visible` selector had higher specificity than `.chat-input`, so it restored a rectangular textarea outline despite the local `outline: none` declaration.
+- Product change: the menu trigger now only toggles the menu. Input expansion still occurs for input/content actions that actually require it. `.chat-input:focus-visible` explicitly suppresses the textarea outline while the existing rounded composer focus border/ring remains.
+- Preserved semantics: upload/image-generation actions, menu keyboard navigation and focus trap, model selection, input expansion after typing/content, attachments, provider/store/API/auth/persistence, and responsive behavior are unchanged.
+- Verification: the visual contract passed `84/84`; ESLint, TypeScript, `git diff --check`, and production build passed. The expected existing Edge Runtime static-generation warning remained.
+- Browser boundary and QA: the real local chat route was access-code gated and was not bypassed. A temporary static DOM using freshly compiled `globals.scss` and `chat.module.scss` verified in Chrome that the composer stayed `706x62px` with a `999px` radius before and after the menu opened, the menu displayed at `320px`, textarea computed `outline-style` was `none`, the rounded outer focus treatment remained, and the page had no horizontal overflow. Temporary QA files and tab were removed.
+- Status: local and uncommitted; no push, PR, deploy, or remote configuration change.

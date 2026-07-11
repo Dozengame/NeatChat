@@ -5299,7 +5299,6 @@ function useChatInnerView() {
                 })}
                 onKeyDown={handleChatActionMenuKeyDown}
                 onClick={() => {
-                  expandInput();
                   setShowChatActionMenu((open) => !open);
                 }}
                 aria-label={
