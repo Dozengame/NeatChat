@@ -7,6 +7,7 @@ import type {
   OpenAIResponsesPromptCacheMode,
   OpenAIResponsesReasoningContext,
   OpenAIResponsesReasoningEffort,
+  OpenAIResponsesReasoningEffortAllowlist,
   OpenAIResponsesReasoningMode,
   OpenAIResponsesTextVerbosity,
 } from "./openai-responses";
@@ -76,6 +77,7 @@ export type PublicAppConfig = {
     max_output_tokens?: number;
   };
   allowedModels: string[];
+  reasoningEffortAllowlist?: OpenAIResponsesReasoningEffortAllowlist;
   lockedFields: string[];
   serverFlags: {
     needCode: boolean;

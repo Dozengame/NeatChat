@@ -81,6 +81,7 @@ declare global {
       WEBUI_CONFIG_VERSION?: string; // public config version
       WEBUI_LOCKED_FIELDS?: string; // comma separated locked fields
       WEBUI_ALLOWED_MODELS?: string; // comma separated model@Provider list
+      WEBUI_ALLOWED_REASONING_EFFORTS?: string; // global CSV or semicolon-delimited per-model UI allowlist
       WEBUI_ANNOUNCEMENT_JSON?: string; // public update announcement shown after a new build
 
       VERCEL?: string;
@@ -328,6 +329,7 @@ export const getServerSideConfig = () => {
     webuiConfigVersion: process.env.WEBUI_CONFIG_VERSION?.trim() || undefined,
     webuiLockedFields: process.env.WEBUI_LOCKED_FIELDS,
     webuiAllowedModels: process.env.WEBUI_ALLOWED_MODELS,
+    webuiAllowedReasoningEfforts: process.env.WEBUI_ALLOWED_REASONING_EFFORTS,
 
     isStability,
     stabilityUrl: process.env.STABILITY_URL,

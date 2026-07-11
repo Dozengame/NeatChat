@@ -124,10 +124,11 @@ import { useAllModels } from "../utils/hooks";
 import { MultimodalContent } from "../client/types";
 import {
   applyOpenAIResponsesModelConstraints,
+  filterOpenAIResponsesReasoningEfforts,
   getMaxOutputTokensForReasoningEffort,
-  getOpenAIResponsesReasoningEfforts,
   clampOpenAIResponsesMaxOutputTokens,
   isOpenAIGpt5OrNewerModelConfig,
+  includeCurrentOpenAIResponsesReasoningEffort,
   normalizeOpenAIResponsesReasoningEffort,
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
   OpenAIChatReasoningEffort,
@@ -1503,17 +1504,26 @@ function ChatInputReasoningAction() {
       OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
     currentModel,
   );
-  const currentReasoningEfforts =
-    getOpenAIResponsesReasoningEfforts(currentModel);
+  const currentReasoningEfforts = filterOpenAIResponsesReasoningEfforts(
+    currentModel,
+    accessStore.serverConfigSnapshot?.reasoningEffortAllowlist,
+  );
+  const visibleCurrentReasoningEfforts =
+    includeCurrentOpenAIResponsesReasoningEffort(
+      currentReasoningEfforts,
+      currentReasoningEffort,
+    );
   const [showReasoningSelectorModal, setShowReasoningSelectorModal] =
     useState(false);
   const reasoningLocked =
     accessStore.lockedFields?.includes("reasoningEffort") ||
     session.mask.modelConfigMeta?.reasoningEffort?.locked;
-  const showReasoningSelector = isOpenAIGpt5OrNewerModelConfig({
-    model: currentModel,
-    providerName: currentProviderName,
-  });
+  const showReasoningSelector =
+    visibleCurrentReasoningEfforts.length > 0 &&
+    isOpenAIGpt5OrNewerModelConfig({
+      model: currentModel,
+      providerName: currentProviderName,
+    });
   const getReasoningMaxOutputTokens = (effort: OpenAIChatReasoningEffort) =>
     clampOpenAIResponsesMaxOutputTokens(
       accessStore.openaiMaxOutputTokens ??
@@ -1566,7 +1576,7 @@ function ChatInputReasoningAction() {
           event.preventDefault();
           openReasoningSelector();
         }}
-        disabled={reasoningLocked}
+        disabled={reasoningLocked || currentReasoningEfforts.length === 0}
         aria-label={Locale.Chat.ModelMenu.SelectedReasoning(
           reasoningLabels[currentReasoningEffort],
         )}
@@ -1580,9 +1590,12 @@ function ChatInputReasoningAction() {
       {showReasoningSelectorModal && (
         <Selector
           defaultSelectedValue={currentReasoningEffort}
-          items={currentReasoningEfforts.map((effort) => ({
+          items={visibleCurrentReasoningEfforts.map((effort) => ({
             title: reasoningLabels[effort],
             value: effort,
+            disable: !currentReasoningEfforts.some(
+              (allowedEffort) => allowedEffort === effort,
+            ),
             icon: <BrainIcon />,
           }))}
           onClose={() => setShowReasoningSelectorModal(false)}
@@ -2597,15 +2610,24 @@ function useChatInnerView() {
       OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
     headerCurrentModel,
   );
-  const headerReasoningEfforts =
-    getOpenAIResponsesReasoningEfforts(headerCurrentModel);
+  const headerReasoningEfforts = filterOpenAIResponsesReasoningEfforts(
+    headerCurrentModel,
+    accessStore.serverConfigSnapshot?.reasoningEffortAllowlist,
+  );
+  const visibleHeaderReasoningEfforts =
+    includeCurrentOpenAIResponsesReasoningEffort(
+      headerReasoningEfforts,
+      headerCurrentReasoningEffort,
+    );
   const headerReasoningLocked =
     accessStore.lockedFields?.includes("reasoningEffort") ||
     session.mask.modelConfigMeta?.reasoningEffort?.locked;
-  const showHeaderReasoningControl = isOpenAIGpt5OrNewerModelConfig({
-    model: headerCurrentModel,
-    providerName: headerCurrentProviderName,
-  });
+  const showHeaderReasoningControl =
+    visibleHeaderReasoningEfforts.length > 0 &&
+    isOpenAIGpt5OrNewerModelConfig({
+      model: headerCurrentModel,
+      providerName: headerCurrentProviderName,
+    });
   const showHeaderImageControls = isOpenAIImageGenerationModelConfig({
     model: headerCurrentModel,
     providerName: headerCurrentProviderName,
@@ -4611,8 +4633,11 @@ function useChatInnerView() {
                     role="listbox"
                     aria-label={Locale.Chat.ModelMenu.ReasoningOptions}
                   >
-                    {headerReasoningEfforts.map((effort) => {
+                    {visibleHeaderReasoningEfforts.map((effort) => {
                       const selected = effort === headerCurrentReasoningEffort;
+                      const disabled = !headerReasoningEfforts.some(
+                        (allowedEffort) => allowedEffort === effort,
+                      );
                       return (
                         <button
                           type="button"
@@ -4626,6 +4651,8 @@ function useChatInnerView() {
                           )}
                           role="option"
                           aria-selected={selected}
+                          aria-disabled={disabled}
+                          disabled={disabled}
                           onClick={() => selectHeaderReasoningEffort(effort)}
                         >
                           <span className={styles["chat-mobile-menu-check"]}>

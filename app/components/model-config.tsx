@@ -17,9 +17,10 @@ import styles from "./model-config.module.scss";
 import { getModelProvider } from "../utils/model";
 import {
   applyOpenAIResponsesModelConstraints,
+  filterOpenAIResponsesReasoningEfforts,
   getMaxOutputTokensForReasoningEffort,
-  getOpenAIResponsesReasoningEfforts,
   getOpenAIResponsesMaxOutputTokensLimit,
+  includeCurrentOpenAIResponsesReasoningEffort,
   isOpenAIGpt56ModelConfig,
   isOpenAIGpt5OrNewerModelConfig,
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
@@ -183,14 +184,20 @@ function useModelConfigListView(props: {
     : isDalle3Model
     ? DALLE3_IMAGE_QUALITIES
     : [];
-  const reasoningEffortOptions = getOpenAIResponsesReasoningEfforts(
+  const reasoningEffortOptions = filterOpenAIResponsesReasoningEfforts(
     props.modelConfig.model,
+    accessStore.serverConfigSnapshot?.reasoningEffortAllowlist,
   );
   const reasoningEffort = normalizeOpenAIResponsesReasoningEffort(
     props.modelConfig.reasoningEffort ??
       OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
     props.modelConfig.model,
   );
+  const visibleReasoningEffortOptions =
+    includeCurrentOpenAIResponsesReasoningEffort(
+      reasoningEffortOptions,
+      reasoningEffort,
+    );
   const getReasoningMaxOutputTokens = (effort: OpenAIChatReasoningEffort) =>
     accessStore.openaiMaxOutputTokens ??
     getMaxOutputTokensForReasoningEffort(effort);
@@ -338,36 +345,49 @@ function useModelConfigListView(props: {
         </>
       ) : isOpenAIGpt5OrNewer ? (
         <>
-          <ListItem
-            title={Locale.Settings.ReasoningEffort.Title}
-            subTitle={withSourceText(
-              Locale.Settings.ReasoningEffort.SubTitle,
-              "reasoningEffort",
-            )}
-          >
-            <Select
-              aria-label={Locale.Settings.ReasoningEffort.Title}
-              value={reasoningEffort}
-              disabled={isLocked("reasoningEffort")}
-              onChange={(e) => {
-                updateUnlocked(["reasoningEffort"], (config) => {
-                  const effort = e.currentTarget
-                    .value as OpenAIChatReasoningEffort;
-                  config.reasoningEffort = effort;
-                  if (!isLocked("max_output_tokens")) {
-                    config.max_output_tokens =
-                      getReasoningMaxOutputTokens(effort);
-                  }
-                });
-              }}
+          {visibleReasoningEffortOptions.length > 0 && (
+            <ListItem
+              title={Locale.Settings.ReasoningEffort.Title}
+              subTitle={withSourceText(
+                Locale.Settings.ReasoningEffort.SubTitle,
+                "reasoningEffort",
+              )}
             >
-              {reasoningEffortOptions.map((effort) => (
-                <option value={effort} key={effort}>
-                  {REASONING_LABELS[effort]}
-                </option>
-              ))}
-            </Select>
-          </ListItem>
+              <Select
+                aria-label={Locale.Settings.ReasoningEffort.Title}
+                value={reasoningEffort}
+                disabled={
+                  isLocked("reasoningEffort") ||
+                  reasoningEffortOptions.length === 0
+                }
+                onChange={(e) => {
+                  updateUnlocked(["reasoningEffort"], (config) => {
+                    const effort = e.currentTarget
+                      .value as OpenAIChatReasoningEffort;
+                    config.reasoningEffort = effort;
+                    if (!isLocked("max_output_tokens")) {
+                      config.max_output_tokens =
+                        getReasoningMaxOutputTokens(effort);
+                    }
+                  });
+                }}
+              >
+                {visibleReasoningEffortOptions.map((effort) => (
+                  <option
+                    value={effort}
+                    key={effort}
+                    disabled={
+                      !reasoningEffortOptions.some(
+                        (allowedEffort) => allowedEffort === effort,
+                      )
+                    }
+                  >
+                    {REASONING_LABELS[effort]}
+                  </option>
+                ))}
+              </Select>
+            </ListItem>
+          )}
           <ListItem
             title={Locale.Settings.TextVerbosity.Title}
             subTitle={withSourceText(

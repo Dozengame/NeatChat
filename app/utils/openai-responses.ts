@@ -39,6 +39,11 @@ const OPENAI_RESPONSES_LEGACY_REASONING_EFFORTS = [
 export type OpenAIResponsesReasoningEffort =
   (typeof OPENAI_RESPONSES_REASONING_EFFORTS)[number];
 
+export type OpenAIResponsesReasoningEffortAllowlist = {
+  default?: OpenAIResponsesReasoningEffort[];
+  models: Record<string, OpenAIResponsesReasoningEffort[]>;
+};
+
 export type OpenAIChatReasoningEffort = OpenAIResponsesReasoningEffort;
 
 export type OpenAIResponsesTextVerbosity = "low" | "medium" | "high";
@@ -110,6 +115,109 @@ export function getOpenAIResponsesReasoningEfforts(model?: string) {
   return isGpt56Model(model)
     ? OPENAI_RESPONSES_REASONING_EFFORTS
     : OPENAI_RESPONSES_LEGACY_REASONING_EFFORTS;
+}
+
+function parseOpenAIResponsesReasoningEffortList(value: string) {
+  const requestedEfforts = new Set(
+    value
+      .split(",")
+      .map((effort) => effort.trim().toLowerCase())
+      .filter(isOpenAIResponsesReasoningEffort),
+  );
+  const allowedEfforts = OPENAI_RESPONSES_REASONING_EFFORTS.filter((effort) =>
+    requestedEfforts.has(effort),
+  );
+
+  return allowedEfforts;
+}
+
+export function normalizeReasoningEffortModelKey(model?: string) {
+  const normalized = model?.trim().toLowerCase().split("@")[0];
+  return normalized === "gpt-5.6" ? "gpt-5.6-sol" : normalized;
+}
+
+export function parseOpenAIResponsesReasoningEffortAllowlist(
+  value?: string,
+): OpenAIResponsesReasoningEffortAllowlist | undefined {
+  const normalized = value?.trim();
+  if (!normalized) {
+    return undefined;
+  }
+
+  if (!normalized.includes("=")) {
+    return {
+      default: parseOpenAIResponsesReasoningEffortList(normalized),
+      models: {},
+    };
+  }
+
+  const allowlist: OpenAIResponsesReasoningEffortAllowlist = { models: {} };
+  let parsedClause = false;
+
+  for (const clause of normalized.split(";")) {
+    const separatorIndex = clause.indexOf("=");
+    if (separatorIndex <= 0) continue;
+
+    const rawModel = clause.slice(0, separatorIndex).trim().toLowerCase();
+    const efforts = parseOpenAIResponsesReasoningEffortList(
+      clause.slice(separatorIndex + 1),
+    );
+    if (rawModel === "*" || rawModel === "default") {
+      allowlist.default = efforts;
+      parsedClause = true;
+      continue;
+    }
+
+    const model = normalizeReasoningEffortModelKey(rawModel);
+    if (!model) continue;
+    allowlist.models[model] = efforts;
+    parsedClause = true;
+  }
+
+  return parsedClause ? allowlist : { default: [], models: {} };
+}
+
+export function getConfiguredOpenAIResponsesReasoningEfforts(
+  model: string | undefined,
+  allowlist?: OpenAIResponsesReasoningEffortAllowlist,
+) {
+  if (!allowlist) return undefined;
+
+  const modelKey = normalizeReasoningEffortModelKey(model);
+  return modelKey &&
+    Object.prototype.hasOwnProperty.call(allowlist.models, modelKey)
+    ? allowlist.models[modelKey]
+    : allowlist.default;
+}
+
+export function filterOpenAIResponsesReasoningEfforts(
+  model: string | undefined,
+  allowlist?:
+    | OpenAIResponsesReasoningEffortAllowlist
+    | readonly OpenAIResponsesReasoningEffort[],
+) {
+  const supportedEfforts = getOpenAIResponsesReasoningEfforts(model);
+  const allowedEfforts = !allowlist
+    ? undefined
+    : "models" in allowlist
+    ? getConfiguredOpenAIResponsesReasoningEfforts(model, allowlist)
+    : allowlist;
+  if (!allowedEfforts) {
+    return supportedEfforts;
+  }
+
+  return supportedEfforts.filter((effort) =>
+    allowedEfforts.some((allowedEffort) => allowedEffort === effort),
+  );
+}
+
+export function includeCurrentOpenAIResponsesReasoningEffort(
+  allowedEfforts: readonly OpenAIResponsesReasoningEffort[],
+  currentEffort: OpenAIResponsesReasoningEffort,
+) {
+  return allowedEfforts.some((effort) => effort === currentEffort)
+    ? allowedEfforts
+    : [currentEffort, ...allowedEfforts];
 }
 
 export function isOpenAIResponsesReasoningEffortForModel(

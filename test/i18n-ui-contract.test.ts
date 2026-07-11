@@ -178,6 +178,34 @@ describe("English UI localization contract", () => {
     expect(en).not.toContain("disable？");
   });
 
+  test("keeps reasoning effort labels aligned with API levels", () => {
+    const cn = read("app/locales/cn.ts");
+    const en = read("app/locales/en.ts");
+
+    for (const label of [
+      'None: "快速"',
+      'Low: "低"',
+      'Medium: "中"',
+      'High: "高"',
+      'XHigh: "极高"',
+      'Max: "MAX"',
+    ]) {
+      expect(cn).toContain(label);
+    }
+    for (const label of [
+      'None: "Fast"',
+      'Low: "Low"',
+      'Medium: "Medium"',
+      'High: "High"',
+      'XHigh: "Extra High"',
+      'Max: "Max"',
+    ]) {
+      expect(en).toContain(label);
+    }
+    expect(cn).not.toContain('Ultra: "Ultra"');
+    expect(en).not.toContain('Ultra: "Ultra"');
+  });
+
   test("maps stable public error codes through the active locale", () => {
     const openAIClient = read("app/client/platforms/openai.ts");
 

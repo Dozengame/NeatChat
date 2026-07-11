@@ -68,7 +68,7 @@ describe("GPT-5.6 Settings contract", () => {
     expect(cn).toContain('Disabled: "关闭"');
     expect(en).toContain('Disabled: "Disabled"');
     expect(modelConfig).toContain(
-      'disabled: Locale.Settings.GPT56Capabilities.PromptCacheMode.Disabled',
+      "disabled: Locale.Settings.GPT56Capabilities.PromptCacheMode.Disabled",
     );
     expect(modelConfig).toContain(
       '(["disabled", "implicit", "explicit"] as const)',
@@ -90,5 +90,34 @@ describe("GPT-5.6 Settings contract", () => {
     ).toHaveLength(4);
     expect(styles).toContain(".gpt56-capability-select");
     expect(styles).toContain("clamp(104px, 31vw, 148px)");
+  });
+
+  test("filters every reasoning effort selector through the public allowlist", () => {
+    const modelConfig = read("app/components/model-config.tsx");
+    const chat = read("app/components/chat.tsx");
+    const publicConfig = read("app/utils/public-app-config.ts");
+    const envTemplate = read(".env.template");
+
+    expect(
+      modelConfig.match(/filterOpenAIResponsesReasoningEfforts\(/g) ?? [],
+    ).toHaveLength(1);
+    expect(
+      chat.match(/filterOpenAIResponsesReasoningEfforts\(/g) ?? [],
+    ).toHaveLength(2);
+    expect(modelConfig).toContain(
+      "accessStore.serverConfigSnapshot?.reasoningEffortAllowlist",
+    );
+    expect(chat).toContain(
+      "accessStore.serverConfigSnapshot?.reasoningEffortAllowlist",
+    );
+    expect(modelConfig).toContain("visibleReasoningEffortOptions.map");
+    expect(modelConfig).toContain("!reasoningEffortOptions.some(");
+    expect(chat).toContain("visibleCurrentReasoningEfforts.map");
+    expect(chat).toContain("visibleHeaderReasoningEfforts.map");
+    expect(chat).toContain("aria-disabled={disabled}");
+    expect(publicConfig).toContain("reasoningEffortAllowlist?");
+    expect(envTemplate).toContain("WEBUI_ALLOWED_REASONING_EFFORTS=");
+    expect(envTemplate).toContain("gpt-5.6-sol=");
+    expect(envTemplate).toContain("不支持产品级 Ultra");
   });
 });

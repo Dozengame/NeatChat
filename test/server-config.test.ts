@@ -4,8 +4,10 @@ import {
 } from "../app/config/server";
 import {
   applyOpenAIResponsesModelConstraints,
+  filterOpenAIResponsesReasoningEfforts,
   getMaxOutputTokensForReasoningEffort,
   getOpenAIResponsesReasoningEfforts,
+  includeCurrentOpenAIResponsesReasoningEffort,
   isGpt56Model,
   isOpenAIGpt5OrNewerModelConfig,
   isGpt5OrNewerModel,
@@ -16,6 +18,7 @@ import {
   parseOpenAIResponsesPromptCacheMode,
   parseOpenAIResponsesReasoningContext,
   parseOpenAIResponsesReasoningEffort,
+  parseOpenAIResponsesReasoningEffortAllowlist,
   parseOpenAIResponsesReasoningMode,
   parseOpenAIResponsesTextVerbosity,
   shouldEnableOpenAIResponsesWebSearch,
@@ -82,6 +85,68 @@ describe("OpenAI Responses config", () => {
       "xhigh",
       "max",
     ]);
+  });
+
+  test("parses a canonical reasoning effort UI allowlist", () => {
+    expect(parseOpenAIResponsesReasoningEffortAllowlist()).toBeUndefined();
+    expect(parseOpenAIResponsesReasoningEffortAllowlist("   ")).toBeUndefined();
+    expect(
+      parseOpenAIResponsesReasoningEffortAllowlist(
+        " MAX, medium,invalid,medium, HIGH ",
+      ),
+    ).toEqual({ default: ["medium", "high", "max"], models: {} });
+    expect(
+      parseOpenAIResponsesReasoningEffortAllowlist("invalid,unknown"),
+    ).toEqual({ default: [], models: {} });
+    expect(
+      parseOpenAIResponsesReasoningEffortAllowlist(
+        "*=low,medium;gpt-5.6=medium,high,xhigh,max;gpt-5.6-terra=none,low;gpt-5.6-luna=low,bad",
+      ),
+    ).toEqual({
+      default: ["low", "medium"],
+      models: {
+        "gpt-5.6-sol": ["medium", "high", "xhigh", "max"],
+        "gpt-5.6-terra": ["none", "low"],
+        "gpt-5.6-luna": ["low"],
+      },
+    });
+  });
+
+  test("intersects the reasoning effort UI allowlist with model support", () => {
+    const allowed = ["none", "high", "max"] as const;
+
+    expect(
+      filterOpenAIResponsesReasoningEfforts("gpt-5.6-terra", allowed),
+    ).toEqual(["none", "high", "max"]);
+    expect(filterOpenAIResponsesReasoningEfforts("gpt-5.5", allowed)).toEqual([
+      "high",
+    ]);
+    expect(filterOpenAIResponsesReasoningEfforts("gpt-5.5")).toEqual([
+      "low",
+      "medium",
+      "high",
+    ]);
+    expect(
+      includeCurrentOpenAIResponsesReasoningEffort(["medium"], "high"),
+    ).toEqual(["high", "medium"]);
+
+    const scoped = parseOpenAIResponsesReasoningEffortAllowlist(
+      "*=low,medium;gpt-5.6-sol=high,xhigh,max;gpt-5.6-terra=none,low",
+    );
+    expect(filterOpenAIResponsesReasoningEfforts("gpt-5.6", scoped)).toEqual([
+      "high",
+      "xhigh",
+      "max",
+    ]);
+    expect(
+      filterOpenAIResponsesReasoningEfforts("gpt-5.6-sol", scoped),
+    ).toEqual(["high", "xhigh", "max"]);
+    expect(
+      filterOpenAIResponsesReasoningEfforts("gpt-5.6-terra", scoped),
+    ).toEqual(["none", "low"]);
+    expect(
+      filterOpenAIResponsesReasoningEfforts("gpt-5.6-luna", scoped),
+    ).toEqual(["low", "medium"]);
   });
 
   test("keeps pre-5.6 model constraints when switching away from GPT-5.6", () => {
@@ -359,6 +424,60 @@ describe("OpenAI Responses config", () => {
       inputImageDetail: "original",
       promptCacheMode: "explicit",
       promptCacheKey: "project-neatchat",
+    });
+  });
+
+  test("publishes a reasoning effort UI allowlist and keeps the default visible", () => {
+    process.env.CUSTOM_MODELS = "-all,gpt-5.6-terra@openai";
+    process.env.DEFAULT_MODEL = "gpt-5.6-terra";
+    process.env.OPENAI_REASONING_EFFORT = "medium";
+    process.env.WEBUI_ALLOWED_REASONING_EFFORTS = "max,medium,bad,max";
+
+    const configured = buildPublicAppConfig(
+      new Date("2026-07-11T00:00:00.000Z"),
+    );
+    const configuredHash = configured.configHash;
+
+    expect(configured.reasoningEffortAllowlist).toEqual({
+      default: ["medium", "max"],
+      models: {},
+    });
+    expect(configured.lockedFields).not.toContain("reasoningEffort");
+
+    process.env.WEBUI_ALLOWED_REASONING_EFFORTS = "high";
+    const changed = buildPublicAppConfig(new Date("2026-07-11T00:00:00.000Z"));
+    expect(changed.reasoningEffortAllowlist).toEqual({
+      default: ["high"],
+      models: { "gpt-5.6-terra": ["medium", "high"] },
+    });
+    expect(changed.configHash).not.toBe(configuredHash);
+
+    process.env.WEBUI_ALLOWED_REASONING_EFFORTS = "";
+    expect(
+      buildPublicAppConfig(new Date("2026-07-11T00:00:00.000Z"))
+        .reasoningEffortAllowlist,
+    ).toBeUndefined();
+  });
+
+  test("publishes model-specific reasoning effort UI restrictions", () => {
+    process.env.CUSTOM_MODELS =
+      "-all,gpt-5.6-sol@openai,gpt-5.6-terra@openai,gpt-5.6-luna@openai";
+    process.env.DEFAULT_MODEL = "gpt-5.6-terra";
+    process.env.OPENAI_REASONING_EFFORT = "medium";
+    process.env.WEBUI_ALLOWED_REASONING_EFFORTS =
+      "*=low;gpt-5.6=high,xhigh,max;gpt-5.6-terra=none,low;gpt-5.6-luna=low,medium";
+
+    const publicConfig = buildPublicAppConfig(
+      new Date("2026-07-11T00:00:00.000Z"),
+    );
+
+    expect(publicConfig.reasoningEffortAllowlist).toEqual({
+      default: ["low"],
+      models: {
+        "gpt-5.6-sol": ["high", "xhigh", "max"],
+        "gpt-5.6-terra": ["none", "low", "medium"],
+        "gpt-5.6-luna": ["low", "medium"],
+      },
     });
   });
 

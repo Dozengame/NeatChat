@@ -191,3 +191,11 @@ yarn build
 - Git integration: local `dev` was fast-forwarded from `0280cb3d` to `524d338a`, then pushed without force; local and remote `dev` were verified at the same full SHA.
 - Post-merge verification on `dev`: all 37 Jest suites and 375 tests passed; `yarn lint`, `npx tsc --noEmit --pretty false`, `git diff --check origin/dev..dev`, and `yarn build` passed. The build retained only the known Edge Runtime static-generation notice, and lint also emitted the existing TypeScript parser support notice.
 - Git boundary: local `.env`, root `AGENTS.md`, and `docs/superpowers/plans/` stayed ignored; only `origin/dev` was pushed, with no deployment or remote-history rewrite.
+
+## 2026-07-11 Reasoning Effort UI Allowlist
+
+- Added optional `WEBUI_ALLOWED_REASONING_EFFORTS` as a frontend policy. The original comma-separated global syntax remains compatible; scoped syntax uses `*=...;model=...`, exact model rules win, and `gpt-5.6` shares the canonical Sol rule. Blank input preserves the complete API-supported list, invalid-only scopes fail closed, and output order is canonical.
+- Official OpenAI guidance publishes one GPT-5.6 family-wide API set—`none/low/medium/high/xhigh/max`—rather than different Sol/Terra/Luna subsets. Scoped rules are administrator display policy, not a claim about model capabilities. Codex/ChatGPT Work Light corresponds to Low; Ultra is subagent orchestration and is intentionally absent from the Responses wire type.
+- Public config exposes `reasoningEffortAllowlist` and includes it in `configHash`. If a restricted default model omits `OPENAI_REASONING_EFFORT`, public config creates an exact canonical model override instead of widening the global fallback. `reasoningEffort` remains unlocked by default.
+- Settings, composer, and header share the same filter. Persisted values outside policy remain selected but disabled current-only entries. Chinese labels are `快速/低/中/高/极高/MAX`; English labels are `Fast/Low/Medium/High/Extra High/Max`.
+- Verification passed four targeted suites (`88/88`), focused ESLint, TypeScript, `git diff --check`, production build, scoped `/api/config` runtime inspection, and independent review. The real local Chat route remained access-code gated and was not bypassed.

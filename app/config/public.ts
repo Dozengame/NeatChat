@@ -2,9 +2,13 @@ import { getServerSideConfig } from "./server";
 import { DEFAULT_INPUT_TEMPLATE, ServiceProvider } from "../constant";
 import {
   clampOpenAIResponsesMaxOutputTokens,
+  getConfiguredOpenAIResponsesReasoningEfforts,
   getMaxOutputTokensForReasoningEffort,
   normalizeOpenAIResponsesReasoningEffort,
+  normalizeReasoningEffortModelKey,
+  OPENAI_RESPONSES_REASONING_EFFORTS,
   OPENAI_RESPONSES_DEFAULT_MODEL,
+  parseOpenAIResponsesReasoningEffortAllowlist,
   type OpenAIResponsesReasoningEffort,
 } from "../utils/openai-responses";
 import {
@@ -61,6 +65,32 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
     serverConfig.openaiReasoningEffort,
     model,
   ) as OpenAIResponsesReasoningEffort;
+  const configuredReasoningEfforts =
+    parseOpenAIResponsesReasoningEffortAllowlist(
+      serverConfig.webuiAllowedReasoningEfforts,
+    );
+  const configuredDefaultModelEfforts =
+    getConfiguredOpenAIResponsesReasoningEfforts(
+      model,
+      configuredReasoningEfforts,
+    );
+  if (
+    configuredReasoningEfforts &&
+    configuredDefaultModelEfforts &&
+    !configuredDefaultModelEfforts.some((effort) => effort === reasoningEffort)
+  ) {
+    const defaultModelKey = normalizeReasoningEffortModelKey(model);
+    const mergedEfforts = OPENAI_RESPONSES_REASONING_EFFORTS.filter(
+      (effort) =>
+        effort === reasoningEffort ||
+        configuredDefaultModelEfforts.some(
+          (configuredEffort) => configuredEffort === effort,
+        ),
+    );
+    if (defaultModelKey) {
+      configuredReasoningEfforts.models[defaultModelKey] = mergedEfforts;
+    }
+  }
   const effectiveMaxOutputTokens =
     typeof serverConfig.openaiMaxOutputTokens === "number"
       ? clampOpenAIResponsesMaxOutputTokens(
@@ -126,6 +156,7 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
         : {}),
     },
     allowedModels,
+    reasoningEffortAllowlist: configuredReasoningEfforts,
     lockedFields,
     serverFlags: {
       needCode: serverConfig.needCode,
