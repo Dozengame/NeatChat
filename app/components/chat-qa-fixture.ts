@@ -100,13 +100,49 @@ echo "Done."
 
 ## 表格
 
+### Normal table
+
+| 项目 | 状态 |
+| --- | ---: |
+| 标题与正文同轨 | 通过 |
+| 默认列起始对齐 | 通过 |
+
+### Wide table 与显式对齐
+
 | Surface | Expected behavior | QA focus | Extra long validation note |
-| --- | --- | --- | --- |
+| :--- | :---: | ---: | --- |
 | Code block | GitHub-like card with line numbers | Copy excludes gutter | Keep language label, gutter, fold control, and copy button readable on mobile and desktop. |
 | Table | Horizontal overflow stays contained | No page overflow | A deliberately longer table cell checks the edge fade, keyboard focus region, and wrapping behavior. |
 | Quote | Soft rail and readable text | Light and dark comfort | Mixed Chinese and English text should remain calm without clipped glyphs or forced page width. |
 
+### Strict compact cell list
+
+| 类型 | 内容 |
+| --- | --- |
+| 严格列表 | - 项目 A<br>- 项目 B<br>- 项目 C |
+| 保持原文 | 前缀<br>- 不应转换 |
+
 表格说明：这段说明紧跟在表格之后，用于检查表格、段落和后续内容之间的节奏。
+
+### Normal code
+
+\`\`\`text
+short line
+\`\`\`
+
+### Wide code
+
+\`\`\`typescript
+const deliberatelyWideMarkdownSurfaceProbe = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+\`\`\`
+
+## 连续分割线
+
+---
+
+---
+
+---
 
 ## 步骤与列表
 

@@ -15,6 +15,12 @@ type HTMLPreviewProps = {
   autoHeight?: boolean;
   height?: number | string;
   onLoad?: (title?: string) => void;
+  onLayoutMetrics?: (metrics: HTMLPreviewLayoutMetrics) => void;
+};
+
+export type HTMLPreviewLayoutMetrics = {
+  scrollWidth: number;
+  clientWidth: number;
 };
 
 export type HTMLPreviewHander = {
@@ -29,6 +35,7 @@ export const HTMLPreview = forwardRef<HTMLPreviewHander, HTMLPreviewProps>(
       code,
       height: configuredHeight,
       onLoad,
+      onLayoutMetrics,
     } = props;
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const loadedFrameRef = useRef<string | null>(null);
@@ -51,9 +58,22 @@ export const HTMLPreview = forwardRef<HTMLPreviewHander, HTMLPreviewProps>(
         const nextHeight = Number(event.data.height);
         const nextTitle =
           typeof event.data.title === "string" ? event.data.title.trim() : "";
+        const nextScrollWidth = Number(event.data.scrollWidth);
+        const nextClientWidth = Number(event.data.clientWidth);
 
         if (Number.isFinite(nextHeight) && nextHeight > 0) {
           setIframeHeight(nextHeight);
+        }
+        if (
+          Number.isFinite(nextScrollWidth) &&
+          nextScrollWidth > 0 &&
+          Number.isFinite(nextClientWidth) &&
+          nextClientWidth > 0
+        ) {
+          onLayoutMetrics?.({
+            scrollWidth: nextScrollWidth,
+            clientWidth: nextClientWidth,
+          });
         }
         setTitle(nextTitle);
         if (loadedFrameRef.current !== frameId) {
@@ -65,7 +85,7 @@ export const HTMLPreview = forwardRef<HTMLPreviewHander, HTMLPreviewProps>(
       return () => {
         window.removeEventListener("message", handleMessage);
       };
-    }, [accessibleTitle, frameId, onLoad]);
+    }, [accessibleTitle, frameId, onLayoutMetrics, onLoad]);
 
     useImperativeHandle(ref, () => ({
       reload: () => {
@@ -85,7 +105,7 @@ export const HTMLPreview = forwardRef<HTMLPreviewHander, HTMLPreviewProps>(
     }, [autoHeight, configuredHeight, iframeHeight]);
 
     const srcDoc = useMemo(() => {
-      const script = `<script>window.addEventListener("DOMContentLoaded", () => new ResizeObserver((entries) => parent.postMessage({id: '${frameId}', height: entries[0].target.clientHeight, title: document.title}, '*')).observe(document.body))</script>`;
+      const script = `<script>window.addEventListener("DOMContentLoaded", () => { const body = document.body; const root = document.documentElement; const report = () => parent.postMessage({id: '${frameId}', height: body.clientHeight, title: document.title, scrollWidth: Math.max(body.scrollWidth, root.scrollWidth), clientWidth: window.innerWidth}, '*'); const observer = new ResizeObserver(report); observer.observe(body); observer.observe(root); window.addEventListener('load', report, { once: true }); report(); })</script>`;
       if (code.includes("<!DOCTYPE html>")) {
         return code.replace("<!DOCTYPE html>", "<!DOCTYPE html>" + script);
       }

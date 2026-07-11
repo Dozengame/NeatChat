@@ -38,6 +38,7 @@ import {
   markdownSanitizeSchema,
 } from "../utils/markdown-sanitize";
 import { ATTACHMENT_WIRE_LABELS } from "../utils/attachment-wire";
+import { shouldPromoteMarkdownSurface } from "../utils/markdown-surface-width";
 
 export { isSafeMarkdownImageSource, markdownSanitizeSchema };
 
@@ -361,10 +362,55 @@ function splitChildrenIntoLines(
   return lines;
 }
 
+function MarkdownArtifactPreview({
+  htmlCode,
+  viewportHeight,
+}: {
+  htmlCode: string;
+  viewportHeight: number;
+}) {
+  const [isWide, setIsWide] = useState(false);
+  const syncWidth = useCallback(
+    (metrics: { scrollWidth: number; clientWidth: number }) => {
+      setIsWide(
+        (current) =>
+          current ||
+          shouldPromoteMarkdownSurface(
+            metrics.scrollWidth,
+            metrics.clientWidth,
+          ),
+      );
+    },
+    [],
+  );
+  const autoHeight = !document.fullscreenElement;
+
+  return (
+    <figure
+      className="markdown-artifact-preview"
+      data-markdown-width={isWide ? "wide" : "normal"}
+    >
+      <figcaption className="markdown-artifact-preview-caption">
+        {Locale.Markdown.HtmlPreview}
+      </figcaption>
+      <div className="markdown-artifact-preview-frame">
+        <HTMLPreview
+          code={htmlCode}
+          accessibleTitle={Locale.Markdown.HtmlPreview}
+          autoHeight={autoHeight}
+          height={autoHeight ? 600 : viewportHeight}
+          onLayoutMetrics={syncWidth}
+        />
+      </div>
+    </figure>
+  );
+}
+
 export function PreCode(props: { children: any }) {
   const ref = useRef<HTMLPreElement>(null);
   const [mermaidCode, setMermaidCode] = useState("");
   const [htmlCode, setHtmlCode] = useState("");
+  const [codeIsWide, setCodeIsWide] = useState(false);
   const [copied, setCopied] = useState(false);
   const [userWrapCode, setUserWrapCode] = useState<boolean | null>(null);
   const [codeScrollHint, setCodeScrollHint] = useState({
@@ -393,6 +439,14 @@ export function PreCode(props: { children: any }) {
       0,
       codeScroller.scrollWidth - codeScroller.clientWidth,
     );
+    setCodeIsWide(
+      (current) =>
+        current ||
+        shouldPromoteMarkdownSurface(
+          codeScroller.scrollWidth,
+          codeScroller.clientWidth,
+        ),
+    );
     const nextHint = {
       start: codeScroller.scrollLeft > 1,
       end: maxScrollLeft - codeScroller.scrollLeft > 1,
@@ -408,9 +462,7 @@ export function PreCode(props: { children: any }) {
   const renderArtifacts = useDebouncedCallback(() => {
     if (!ref.current) return;
     const mermaidDom = ref.current.querySelector("code.language-mermaid");
-    if (mermaidDom) {
-      setMermaidCode((mermaidDom as HTMLElement).innerText);
-    }
+    setMermaidCode(mermaidDom ? (mermaidDom as HTMLElement).innerText : "");
     const htmlDom = ref.current.querySelector("code.language-html");
     const refText = ref.current.querySelector("code")?.innerText;
     if (htmlDom) {
@@ -421,6 +473,8 @@ export function PreCode(props: { children: any }) {
       refText?.startsWith("<?xml")
     ) {
       setHtmlCode(refText);
+    } else {
+      setHtmlCode("");
     }
   }, 600);
 
@@ -432,6 +486,10 @@ export function PreCode(props: { children: any }) {
   const codeLanguage = getCodeLanguage(props.children);
   const shouldWrapCodeBlock = shouldWrapCodeLanguage(rawCodeLanguage);
   const isCodeWrapped = userWrapCode ?? shouldWrapCodeBlock;
+  const codeContentKey = useMemo(
+    () => `${rawCodeLanguage}\u0000${getNormalizedCodeText(props.children)}`,
+    [props.children, rawCodeLanguage],
+  );
   const codeLineNumbers = useMemo(
     () => (streaming ? "" : getCodeLineNumbers(props.children)),
     [props.children, streaming],
@@ -446,6 +504,10 @@ export function PreCode(props: { children: any }) {
   }, [rawCodeLanguage]);
 
   useLayoutEffect(() => {
+    setCodeIsWide(false);
+  }, [codeContentKey]);
+
+  useLayoutEffect(() => {
     if (streaming) return;
     const scrollHintFrame = requestAnimationFrame(() => {
       if (isCodeWrapped && ref.current) {
@@ -454,7 +516,7 @@ export function PreCode(props: { children: any }) {
       syncCodeScrollHint();
     });
     return () => cancelAnimationFrame(scrollHintFrame);
-  }, [isCodeWrapped, props.children, streaming, syncCodeScrollHint]);
+  }, [codeContentKey, isCodeWrapped, streaming, syncCodeScrollHint]);
 
   useEffect(() => {
     if (streaming) return;
@@ -504,6 +566,7 @@ export function PreCode(props: { children: any }) {
   const codeCopyLabel = Locale.Markdown.CopyCode(codeLanguage, copied);
   const codeWrapLabel = Locale.Markdown.WrapCode(codeLanguage, isCodeWrapped);
   const wrapState = isCodeWrapped ? "wrapped" : "scroll";
+  const codeSurfaceWidth = !isCodeWrapped && codeIsWide ? "wide" : "normal";
 
   return (
     <>
@@ -517,6 +580,7 @@ export function PreCode(props: { children: any }) {
         data-overflow-start={codeScrollHint.start ? "true" : "false"}
         data-overflow-end={codeScrollHint.end ? "true" : "false"}
         data-wrap-state={wrapState}
+        data-markdown-width={codeSurfaceWidth}
         data-line-numbers={codeLineNumbers}
         data-line-count={codeLineCount}
         onScroll={syncCodeScrollHint}
@@ -599,19 +663,11 @@ export function PreCode(props: { children: any }) {
         <Mermaid code={mermaidCode} key={mermaidCode} />
       )}
       {htmlCode.length > 0 && enableArtifacts && (
-        <figure className="markdown-artifact-preview">
-          <figcaption className="markdown-artifact-preview-caption">
-            {Locale.Markdown.HtmlPreview}
-          </figcaption>
-          <div className="markdown-artifact-preview-frame">
-            <HTMLPreview
-              code={htmlCode}
-              accessibleTitle={Locale.Markdown.HtmlPreview}
-              autoHeight={!document.fullscreenElement}
-              height={!document.fullscreenElement ? 600 : height}
-            />
-          </div>
-        </figure>
+        <MarkdownArtifactPreview
+          key={htmlCode}
+          htmlCode={htmlCode}
+          viewportHeight={height}
+        />
       )}
     </>
   );
@@ -700,16 +756,152 @@ export function CustomCode(props: {
   );
 }
 
-function MarkdownTable({
+export function MarkdownTableHeader({
+  node: _node,
+  isHeader: _isHeader,
+  scope,
+  ...headerProps
+}: React.ThHTMLAttributes<HTMLTableCellElement> & {
+  node?: unknown;
+  isHeader?: boolean;
+}) {
+  return <th {...headerProps} scope={scope ?? "col"} />;
+}
+
+function parseCompactTableCellList(children: React.ReactNode) {
+  const parts = React.Children.toArray(children);
+  if (parts.length < 3 || parts.length % 2 === 0) return null;
+
+  const items: string[] = [];
+  for (let index = 0; index < parts.length; index += 1) {
+    const part = parts[index];
+    if (index % 2 === 1) {
+      if (!React.isValidElement(part) || part.type !== "br") return null;
+      continue;
+    }
+
+    if (typeof part !== "string") return null;
+    const match = part.match(/^\s*-\s+(\S(?:[\s\S]*\S)?)\s*$/);
+    if (!match) return null;
+    items.push(match[1]);
+  }
+
+  return items.length > 1 ? items : null;
+}
+
+export function MarkdownTableCell({
+  node: _node,
+  isHeader: _isHeader,
+  children,
+  ...cellProps
+}: React.TdHTMLAttributes<HTMLTableCellElement> & {
+  node?: unknown;
+  isHeader?: boolean;
+}) {
+  const compactListItems = parseCompactTableCellList(children);
+
+  return (
+    <td {...cellProps}>
+      {compactListItems ? (
+        <ul className="markdown-table-cell-list">
+          {compactListItems.map((item, index) => (
+            <li key={`${item}-${index}`}>{item}</li>
+          ))}
+        </ul>
+      ) : (
+        children
+      )}
+    </td>
+  );
+}
+
+function getMarkdownTableHeaderSummary(children: React.ReactNode) {
+  const headers: string[] = [];
+
+  const visit = (node: React.ReactNode) => {
+    if (headers.length >= 4 || !React.isValidElement(node)) return;
+    if (node.type === "th" || node.type === MarkdownTableHeader) {
+      const text = getReactTextContent(
+        (node.props as { children?: React.ReactNode }).children,
+      ).trim();
+      if (text) headers.push(text);
+      return;
+    }
+    React.Children.forEach(
+      (node.props as { children?: React.ReactNode }).children,
+      visit,
+    );
+  };
+
+  React.Children.forEach(children, visit);
+  return headers.join(", ");
+}
+
+function getMarkdownTableContentKey(node: React.ReactNode): string {
+  if (node == null || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") {
+    return `text:${String(node).length}:${String(node)}`;
+  }
+  if (Array.isArray(node)) {
+    return `[${node.map(getMarkdownTableContentKey).join("|")}]`;
+  }
+  if (!React.isValidElement(node)) return typeof node;
+
+  const props = node.props as {
+    children?: React.ReactNode;
+    className?: string;
+    colSpan?: number;
+    rowSpan?: number;
+    style?: React.CSSProperties;
+  };
+  let elementType = "element";
+  if (typeof node.type === "string") {
+    elementType = node.type;
+  } else if (node.type === MarkdownTableHeader) {
+    elementType = "th";
+  } else if (node.type === MarkdownTableCell) {
+    elementType = "td";
+  } else if (typeof node.type === "function") {
+    const componentType = node.type as {
+      displayName?: string;
+      name?: string;
+    };
+    elementType =
+      componentType.displayName || componentType.name || "component";
+  }
+
+  return [
+    `<${elementType}`,
+    `class=${props.className ?? ""}`,
+    `align=${String(props.style?.textAlign ?? "")}`,
+    `colSpan=${props.colSpan ?? ""}`,
+    `rowSpan=${props.rowSpan ?? ""}>`,
+    getMarkdownTableContentKey(props.children),
+    `</${elementType}>`,
+  ].join("|");
+}
+
+export function MarkdownTable({
   node: _node,
   ...tableProps
 }: React.TableHTMLAttributes<HTMLTableElement> & { node?: unknown }) {
   const tableScrollRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
   const [tableScrollHint, setTableScrollHint] = useState({
     start: false,
     end: false,
   });
   const [tableIsScrollable, setTableIsScrollable] = useState(false);
+  const [tableIsWide, setTableIsWide] = useState(false);
+  const [tableHintDismissed, setTableHintDismissed] = useState(false);
+  const tableHeaderSummary = useMemo(
+    () => getMarkdownTableHeaderSummary(tableProps.children),
+    [tableProps.children],
+  );
+  const tableContentKey = useMemo(
+    () => getMarkdownTableContentKey(tableProps.children),
+    [tableProps.children],
+  );
 
   const syncTableScrollHint = useCallback(() => {
     const tableShell = tableScrollRef.current;
@@ -734,6 +926,20 @@ function MarkdownTable({
     setTableIsScrollable((current) =>
       current === nextIsScrollable ? current : nextIsScrollable,
     );
+    if (!nextIsScrollable) {
+      setTableHintDismissed(false);
+    }
+    const table = tableRef.current;
+    if (table) {
+      setTableIsWide(
+        (current) =>
+          current ||
+          shouldPromoteMarkdownSurface(
+            table.scrollWidth,
+            tableShell.clientWidth,
+          ),
+      );
+    }
     setTableScrollHint((current) =>
       current.start === nextHint.start && current.end === nextHint.end
         ? current
@@ -742,9 +948,11 @@ function MarkdownTable({
   }, []);
 
   useLayoutEffect(() => {
+    setTableIsWide(false);
+    setTableHintDismissed(false);
     const scrollHintFrame = requestAnimationFrame(syncTableScrollHint);
     return () => cancelAnimationFrame(scrollHintFrame);
-  }, [tableProps.children, syncTableScrollHint]);
+  }, [syncTableScrollHint, tableContentKey]);
 
   useEffect(() => {
     const tableShell = tableScrollRef.current;
@@ -757,6 +965,9 @@ function MarkdownTable({
       syncTableScrollHint();
     });
     tableResizeObserver.observe(tableShell);
+    if (tableRef.current) {
+      tableResizeObserver.observe(tableRef.current);
+    }
     window.addEventListener("resize", syncTableScrollHint);
 
     return () => {
@@ -768,7 +979,11 @@ function MarkdownTable({
   return (
     <div
       className="markdown-table-scroll-shell"
+      data-markdown-width={tableIsWide ? "wide" : "normal"}
       data-scrollable={tableIsScrollable ? "true" : "false"}
+      data-scroll-hint={
+        tableIsScrollable && !tableHintDismissed ? "true" : "false"
+      }
       data-overflow-start={tableScrollHint.start ? "true" : "false"}
       data-overflow-end={tableScrollHint.end ? "true" : "false"}
     >
@@ -778,11 +993,18 @@ function MarkdownTable({
         tabIndex={tableIsScrollable ? 0 : undefined}
         role={tableIsScrollable ? "region" : undefined}
         aria-label={
-          tableIsScrollable ? Locale.Markdown.ScrollableTable : undefined
+          tableIsScrollable
+            ? Locale.Markdown.ScrollableTable(tableHeaderSummary)
+            : undefined
         }
-        onScroll={syncTableScrollHint}
+        onScroll={() => {
+          if (Math.abs(tableScrollRef.current?.scrollLeft ?? 0) > 1) {
+            setTableHintDismissed(true);
+          }
+          syncTableScrollHint();
+        }}
       >
-        <table {...tableProps} />
+        <table {...tableProps} ref={tableRef} />
       </div>
       {tableScrollHint.start && (
         <span
@@ -795,6 +1017,11 @@ function MarkdownTable({
           aria-hidden="true"
           className="markdown-table-scroll-fade markdown-table-scroll-fade-end"
         />
+      )}
+      {tableIsScrollable && !tableHintDismissed && (
+        <div className="markdown-table-scroll-hint" aria-hidden="true">
+          {Locale.Markdown.ScrollableTableHint}
+        </div>
       )}
     </div>
   );
@@ -1373,6 +1600,8 @@ function MarkDownContentInner(
         pre: PreCode,
         code: CustomCode,
         table: MarkdownTable,
+        th: MarkdownTableHeader,
+        td: MarkdownTableCell,
         img: (imgProps) => {
           const candidateSrc =
             typeof imgProps.src === "string" ? imgProps.src.trim() : "";

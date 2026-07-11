@@ -52,13 +52,19 @@ jest.mock("next/dynamic", () => {
     };
 });
 
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { PreCode } from "../app/components/markdown";
 import { copyToClipboard } from "../app/utils";
 import Locale from "../app/locales";
 
 function renderCodeBlock(className: string) {
-  render(
+  return render(
     <PreCode>
       <code className={className}>{'{"tool": true}'}</code>
     </PreCode>,
@@ -144,6 +150,48 @@ describe("PreCode language labels", () => {
     );
 
     expect(copyToClipboard).toHaveBeenCalledWith('{"tool": true}');
+  });
+
+  test("promotes overflowing code once and restores that width after wrapping", async () => {
+    const view = renderCodeBlock("language-json");
+
+    const pre = document.querySelector("pre") as HTMLPreElement;
+    Object.defineProperties(pre, {
+      clientWidth: { configurable: true, value: 780 },
+      scrollWidth: { configurable: true, value: 900 },
+    });
+    fireEvent(window, new Event("resize"));
+
+    await waitFor(() =>
+      expect(pre).toHaveAttribute("data-markdown-width", "wide"),
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: Locale.Markdown.WrapCode("JSON", false),
+      }),
+    );
+    expect(pre).toHaveAttribute("data-markdown-width", "normal");
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: Locale.Markdown.WrapCode("JSON", true),
+      }),
+    );
+    expect(pre).toHaveAttribute("data-markdown-width", "wide");
+
+    Object.defineProperties(pre, {
+      clientWidth: { configurable: true, value: 780 },
+      scrollWidth: { configurable: true, value: 780 },
+    });
+    view.rerender(
+      <PreCode>
+        <code className="language-json">{'{"short": true}'}</code>
+      </PreCode>,
+    );
+    await waitFor(() =>
+      expect(pre).toHaveAttribute("data-markdown-width", "normal"),
+    );
   });
 
   test("exposes copy feedback through a polite live button label", () => {

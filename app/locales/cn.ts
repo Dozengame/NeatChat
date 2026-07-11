@@ -1140,7 +1140,11 @@ const cn = {
       `${enabled ? "关闭" : "开启"}${
         language ? ` ${language}` : ""
       }代码自动换行`,
-    ScrollableTable: "Markdown 表格，可横向滚动",
+    ScrollableTable: (headers: string) =>
+      headers
+        ? `Markdown 表格（${headers}），可横向滚动`
+        : "Markdown 表格，可横向滚动",
+    ScrollableTableHint: "横向滑动查看更多列",
     ScrollableFormula: "块级公式，可横向滚动",
     HtmlPreview: "HTML 预览",
     Audio: "音频",

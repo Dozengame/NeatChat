@@ -223,8 +223,8 @@ type ModelMenuPlacement = "header" | "empty-composer";
 
 const CHAT_BODY_BOTTOM_SAFE_AREA_BASE = 150;
 const CHAT_BODY_BOTTOM_SAFE_AREA_MOBILE_BASE = 118;
-const CHAT_SCROLL_BOTTOM_CLEARANCE = 54;
-const CHAT_SCROLL_BOTTOM_MOBILE_CLEARANCE = 50;
+const CHAT_SCROLL_BOTTOM_CLEARANCE = 66;
+const CHAT_SCROLL_BOTTOM_MOBILE_CLEARANCE = 60;
 type ChatQaFixture = typeof import("./chat-qa-fixture");
 
 async function loadChatQaFixture(

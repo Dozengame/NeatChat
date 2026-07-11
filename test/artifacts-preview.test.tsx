@@ -9,12 +9,14 @@ jest.mock("nanoid", () => ({
 describe("HTMLPreview accessibility and message boundary", () => {
   test("uses unique stable titles and accepts metadata only from its own frame", async () => {
     const onLoad = jest.fn();
+    const onLayoutMetrics = jest.fn();
     render(
       <>
         <HTMLPreview
           code="<!DOCTYPE html><title>Report</title><main>One</main>"
           accessibleTitle="HTML preview"
           onLoad={onLoad}
+          onLayoutMetrics={onLayoutMetrics}
         />
         <HTMLPreview code="<main>Two</main>" accessibleTitle="HTML preview" />
       </>,
@@ -28,6 +30,10 @@ describe("HTMLPreview accessibility and message boundary", () => {
 
     const srcDoc = frames[0].getAttribute("srcdoc") ?? "";
     expect(srcDoc).toContain("title: document.title");
+    expect(srcDoc).toContain("height: body.clientHeight");
+    expect(srcDoc).not.toContain("height: Math.max(");
+    expect(srcDoc).toContain("scrollWidth:");
+    expect(srcDoc).toContain("clientWidth: window.innerWidth");
     const frameId = srcDoc.match(/id: '([^']+)'/)?.[1];
     expect(frameId).toBeTruthy();
 
@@ -40,11 +46,18 @@ describe("HTMLPreview accessibility and message boundary", () => {
       );
     });
     expect(onLoad).not.toHaveBeenCalled();
+    expect(onLayoutMetrics).not.toHaveBeenCalled();
 
     act(() => {
       window.dispatchEvent(
         new MessageEvent("message", {
-          data: { id: frameId, height: 180, title: "Report" },
+          data: {
+            id: frameId,
+            height: 180,
+            title: "Report",
+            scrollWidth: 840,
+            clientWidth: 780,
+          },
           source: (frames[0] as HTMLIFrameElement).contentWindow,
         }),
       );
@@ -53,12 +66,22 @@ describe("HTMLPreview accessibility and message boundary", () => {
     await waitFor(() => {
       expect(frames[0].getAttribute("title")).toMatch(/: Report$/);
       expect(onLoad).toHaveBeenCalledWith("Report");
+      expect(onLayoutMetrics).toHaveBeenCalledWith({
+        scrollWidth: 840,
+        clientWidth: 780,
+      });
     });
 
     act(() => {
       window.dispatchEvent(
         new MessageEvent("message", {
-          data: { id: frameId, height: 220, title: "Report" },
+          data: {
+            id: frameId,
+            height: 220,
+            title: "Report",
+            scrollWidth: 840,
+            clientWidth: 780,
+          },
           source: (frames[0] as HTMLIFrameElement).contentWindow,
         }),
       );

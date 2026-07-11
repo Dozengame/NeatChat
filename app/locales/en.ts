@@ -1167,7 +1167,11 @@ const en: LocaleType = {
       `${enabled ? "Disable" : "Enable"} wrapping for${
         language ? ` ${language}` : ""
       } code`,
-    ScrollableTable: "Markdown table, horizontally scrollable",
+    ScrollableTable: (headers: string) =>
+      headers
+        ? `Markdown table (${headers}), horizontally scrollable`
+        : "Markdown table, horizontally scrollable",
+    ScrollableTableHint: "Swipe horizontally to see more columns",
     ScrollableFormula: "Display formula, horizontally scrollable",
     HtmlPreview: "HTML preview",
     Audio: "Audio",

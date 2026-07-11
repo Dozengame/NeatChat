@@ -1,23 +1,54 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import mermaid from "mermaid";
 import { showImageModal } from "./ui-lib-actions";
 import Locale from "../locales";
+import { shouldPromoteMarkdownSurface } from "../utils/markdown-surface-width";
 
 export function Mermaid(props: { code: string }) {
+  const figureRef = useRef<HTMLElement>(null);
   const ref = useRef<HTMLButtonElement>(null);
   const [failedCode, setFailedCode] = useState<string | null>(null);
+  const [isWide, setIsWide] = useState(false);
   const hasError = failedCode === props.code;
+
+  const syncDiagramWidth = useCallback(() => {
+    const figure = figureRef.current;
+    const svg = ref.current?.querySelector("svg");
+    if (!figure || !svg) return;
+
+    const viewBoxWidth =
+      svg.viewBox?.baseVal?.width ||
+      Number(svg.getAttribute("viewBox")?.trim().split(/\s+/)[2]);
+    if (!Number.isFinite(viewBoxWidth)) return;
+
+    setIsWide(
+      (current) =>
+        current ||
+        shouldPromoteMarkdownSurface(viewBoxWidth, figure.clientWidth),
+    );
+  }, []);
 
   useEffect(() => {
     let disposed = false;
+    let diagramResizeObserver: ResizeObserver | null = null;
     setFailedCode(null);
 
     if (props.code && ref.current) {
       mermaid
         .run({
           nodes: [ref.current],
+        })
+        .then(() => {
+          if (disposed) return;
+          syncDiagramWidth();
+
+          if (typeof ResizeObserver !== "undefined" && figureRef.current) {
+            diagramResizeObserver = new ResizeObserver(syncDiagramWidth);
+            diagramResizeObserver.observe(figureRef.current);
+          }
+          window.addEventListener("resize", syncDiagramWidth);
         })
         .catch((error) => {
           if (disposed) return;
@@ -31,8 +62,10 @@ export function Mermaid(props: { code: string }) {
 
     return () => {
       disposed = true;
+      diagramResizeObserver?.disconnect();
+      window.removeEventListener("resize", syncDiagramWidth);
     };
-  }, [props.code]);
+  }, [props.code, syncDiagramWidth]);
 
   function viewSvgInNewWindow() {
     const svg = ref.current?.querySelector("svg");
@@ -46,6 +79,7 @@ export function Mermaid(props: { code: string }) {
     return (
       <div
         className="markdown-mermaid-fallback"
+        data-markdown-width="normal"
         role="status"
         aria-live="polite"
       >
@@ -62,7 +96,11 @@ export function Mermaid(props: { code: string }) {
   }
 
   return (
-    <figure className="markdown-mermaid-figure">
+    <figure
+      ref={figureRef}
+      className="markdown-mermaid-figure"
+      data-markdown-width={isWide ? "wide" : "normal"}
+    >
       <figcaption className="markdown-mermaid-caption">
         {Locale.NewChat.Mermaid.Caption}
       </figcaption>

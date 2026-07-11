@@ -835,7 +835,12 @@ summary,
   );
   --markdown-table-row-hover-background: color-mix(
     in srgb,
-    var(--primary) 7%,
+    var(--black-50) 4%,
+    var(--surface-elevated)
+  );
+  --markdown-table-row-focus-background: color-mix(
+    in srgb,
+    var(--primary) 6%,
     var(--surface-elevated)
   );
   --markdown-csv-border-color: color-mix(
@@ -1800,7 +1805,12 @@ summary,
   );
   --markdown-table-row-hover-background: color-mix(
     in srgb,
-    var(--markdown-link-color) 12%,
+    var(--black) 6%,
+    var(--surface-soft)
+  );
+  --markdown-table-row-focus-background: color-mix(
+    in srgb,
+    var(--markdown-link-color) 8%,
     var(--surface-soft)
   );
   --markdown-csv-border-color: color-mix(
@@ -2509,9 +2519,22 @@ summary,
   margin: 12px 0;
 }
 
-.markdown-body .markdown-mermaid-caption,
-.markdown-body .markdown-artifact-preview-caption {
+.markdown-body .markdown-mermaid-caption {
   margin: 0 0 6px;
+  color: var(--black-50);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.markdown-body .markdown-artifact-preview-caption {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 8px 11px;
+  border: 1px solid var(--markdown-artifact-frame-border-color);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: var(--markdown-artifact-frame-background);
   color: var(--black-50);
   font-size: 12px;
   font-weight: 600;
@@ -2643,19 +2666,17 @@ summary,
 .markdown-body .markdown-artifact-preview-frame {
   overflow: hidden;
   border: 1px solid var(--markdown-artifact-frame-border-color);
-  border-radius: 8px;
+  border-radius: 0 0 8px 8px;
   background: var(--markdown-artifact-frame-background);
   box-shadow: 0 8px 24px var(--markdown-artifact-frame-shadow-color);
   transition:
     border-color 0.16s ease,
-    box-shadow 0.16s ease,
-    transform 0.16s ease;
+    box-shadow 0.16s ease;
 
   &:hover,
   &:focus-within {
     border-color: var(--markdown-artifact-frame-hover-border-color);
     box-shadow: 0 10px 26px var(--markdown-artifact-frame-hover-shadow-color);
-    transform: translateY(-1px);
   }
 
   &:focus-within {
@@ -2674,7 +2695,6 @@ summary,
       box-shadow:
         var(--focus-ring-shadow),
         0 10px 26px var(--markdown-artifact-frame-hover-shadow-color);
-      transform: translateY(-1px);
     }
   }
 
@@ -2685,6 +2705,12 @@ summary,
     border: 0;
     background: var(--markdown-artifact-iframe-background);
   }
+}
+
+.markdown-body
+  .markdown-artifact-preview:is(:hover, :focus-within)
+  :is(.markdown-artifact-preview-caption, .markdown-artifact-preview-frame) {
+  border-color: var(--markdown-artifact-frame-hover-border-color);
 }
 
 .markdown-body img.markdown-image-preview {
@@ -2945,12 +2971,11 @@ summary,
   }
 
   .markdown-body .markdown-artifact-preview-frame {
-    border-radius: 8px;
-    transform: none;
+    border-radius: 0 0 8px 8px;
 
     &:hover,
     &:focus-within {
-      transform: none;
+      border-color: var(--markdown-artifact-frame-hover-border-color);
     }
 
     > iframe {
@@ -3046,6 +3071,14 @@ summary,
   border-radius: 999px;
 }
 
+.markdown-body hr:has(+ hr) {
+  margin-bottom: 10px;
+}
+
+.markdown-body hr + hr {
+  margin-top: 10px;
+}
+
 .markdown-body input {
   font: inherit;
   margin: 0;
@@ -3115,6 +3148,7 @@ summary,
 
 .markdown-table-scroll-shell {
   --markdown-table-shell-radius: 14px;
+  --markdown-table-hint-height: 0px;
   position: relative;
   width: 100%;
   max-width: var(--markdown-table-shell-max-width);
@@ -3201,11 +3235,10 @@ summary,
 .markdown-table-scroll-fade {
   position: absolute;
   top: 0;
-  bottom: 0;
+  bottom: var(--markdown-table-hint-height);
   z-index: 2;
   width: 28px;
   min-width: 28px;
-  min-height: 100%;
   pointer-events: none;
 }
 
@@ -3225,6 +3258,34 @@ summary,
     var(--markdown-table-edge-surface) 0%,
     transparent 100%
   );
+}
+
+.markdown-table-scroll-hint {
+  display: none;
+}
+
+.markdown-body
+  :is(
+    pre.markdown-code-block,
+    .markdown-table-scroll-shell,
+    .markdown-mermaid-figure,
+    .markdown-mermaid-fallback,
+    .markdown-artifact-preview
+  )[data-markdown-width="normal"] {
+  width: min(100%, var(--markdown-prose-max-width));
+  margin-inline: auto;
+}
+
+.markdown-body
+  :is(
+    pre.markdown-code-block,
+    .markdown-table-scroll-shell,
+    .markdown-mermaid-figure,
+    .markdown-mermaid-fallback,
+    .markdown-artifact-preview
+  )[data-markdown-width="wide"] {
+  width: min(100%, var(--markdown-data-max-width));
+  margin-inline: auto;
 }
 
 .markdown-body table {
@@ -3985,6 +4046,7 @@ summary,
     var(--markdown-table-cell-padding-x);
   line-height: var(--markdown-table-cell-line-height);
   vertical-align: top;
+  text-align: start;
   overflow-wrap: anywhere;
   /* R4: Only horizontal separators – borderless columns */
   border: none;
@@ -4000,8 +4062,32 @@ summary,
   background-color: var(--markdown-table-row-hover-background);
 }
 
-.markdown-body table tr:nth-child(2n):not(:hover) {
+.markdown-body table tr:focus-within {
+  background-color: var(--markdown-table-row-focus-background);
+}
+
+.markdown-body table tr:nth-child(2n):not(:hover):not(:focus-within) {
   background-color: var(--markdown-table-row-alt-background);
+}
+
+.markdown-body table > :last-child > tr:last-child > :is(th, td),
+.markdown-body table > tr:last-child > :is(th, td) {
+  border-bottom: 0;
+}
+
+.markdown-body .markdown-table-cell-list {
+  margin: 0;
+  padding-inline-start: 1.25em;
+  line-height: inherit;
+}
+
+.markdown-body .markdown-table-cell-list > li {
+  margin: 0;
+  padding: 0;
+}
+
+.markdown-body .markdown-table-cell-list > li + li {
+  margin-top: 0.2em;
 }
 
 .markdown-body table img {
@@ -5282,13 +5368,33 @@ summary,
     --markdown-table-focus-shadow-size: 0 0 0 2px;
   }
 
+  .markdown-table-scroll-shell[data-scroll-hint="true"] {
+    --markdown-table-hint-height: 30px;
+  }
+
   .markdown-table-scroll-viewport {
     scroll-padding-inline: 10px;
   }
 
   .markdown-table-scroll-fade {
-    width: 22px;
-    min-width: 22px;
+    width: 30px;
+    min-width: 30px;
+  }
+
+  .markdown-table-scroll-hint {
+    display: flex;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--markdown-table-hint-height);
+    padding: 6px 10px;
+    border-top: 1px solid var(--markdown-table-cell-border-color);
+    background: var(--markdown-table-header-background);
+    color: var(--color-fg-muted);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: center;
   }
 
   .markdown-body table th,

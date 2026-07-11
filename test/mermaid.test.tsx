@@ -54,4 +54,26 @@ describe("Mermaid diagram rendering", () => {
     await waitFor(() => expect(runMermaid).toHaveBeenCalledTimes(1));
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
+
+  test("promotes a diagram whose rendered viewBox exceeds the prose track", async () => {
+    runMermaid.mockImplementationOnce(async (options) => {
+      const nodes = (options as { nodes: HTMLElement[] }).nodes;
+      const button = nodes[0] as HTMLButtonElement;
+      const figure = button.closest("figure") as HTMLElement;
+      Object.defineProperty(figure, "clientWidth", {
+        configurable: true,
+        value: 780,
+      });
+      button.innerHTML = '<svg viewBox="0 0 860 420"></svg>';
+    });
+
+    render(<Mermaid code="graph LR; A-->B" />);
+
+    await waitFor(() =>
+      expect(document.querySelector("figure")).toHaveAttribute(
+        "data-markdown-width",
+        "wide",
+      ),
+    );
+  });
 });
