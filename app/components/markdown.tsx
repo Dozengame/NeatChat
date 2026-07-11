@@ -6,6 +6,7 @@ import RehypeKatex from "rehype-katex";
 import RemarkGfm from "remark-gfm";
 import RehypeRaw from "rehype-raw";
 import RehypeHighlight from "rehype-highlight";
+import RehypeSanitize from "rehype-sanitize";
 import React, {
   createContext,
   useContext,
@@ -32,6 +33,13 @@ import { FileAttachment } from "./file-attachment";
 import { encode } from "../utils/token";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
+import {
+  isSafeMarkdownImageSource,
+  markdownSanitizeSchema,
+} from "../utils/markdown-sanitize";
+import { ATTACHMENT_WIRE_LABELS } from "../utils/attachment-wire";
+
+export { isSafeMarkdownImageSource, markdownSanitizeSchema };
 
 const Mermaid = dynamic(async () => (await import("./mermaid")).Mermaid, {
   loading: () => null,
@@ -47,7 +55,19 @@ const HTMLPreview = dynamic(
 const MarkdownFeatureContext = createContext({
   enableArtifacts: true,
   enableCodeFold: true,
+  streaming: false,
 });
+
+const REHYPE_HIGHLIGHT_PLUGIN: [
+  typeof RehypeHighlight,
+  { detect: boolean; ignoreMissing: boolean },
+] = [
+  RehypeHighlight,
+  {
+    detect: false,
+    ignoreMissing: true,
+  },
+];
 
 function Details({
   node: _node,
@@ -342,18 +362,19 @@ export function PreCode(props: { children: any }) {
 
   const config = useAppConfig();
   const features = useContext(MarkdownFeatureContext);
+  const streaming = features.streaming;
   const enableArtifacts = features.enableArtifacts && config.enableArtifacts;
   const rawCodeLanguage = getRawCodeLanguage(props.children);
   const codeLanguage = getCodeLanguage(props.children);
   const shouldWrapCodeBlock = shouldWrapCodeLanguage(rawCodeLanguage);
   const isCodeWrapped = userWrapCode ?? shouldWrapCodeBlock;
   const codeLineNumbers = useMemo(
-    () => getCodeLineNumbers(props.children),
-    [props.children],
+    () => (streaming ? "" : getCodeLineNumbers(props.children)),
+    [props.children, streaming],
   );
   const codeLineCount = useMemo(
-    () => getCodeLineCount(props.children),
-    [props.children],
+    () => (streaming ? undefined : getCodeLineCount(props.children)),
+    [props.children, streaming],
   );
 
   useEffect(() => {
@@ -361,6 +382,7 @@ export function PreCode(props: { children: any }) {
   }, [rawCodeLanguage]);
 
   useLayoutEffect(() => {
+    if (streaming) return;
     const scrollHintFrame = requestAnimationFrame(() => {
       if (isCodeWrapped && ref.current) {
         ref.current.scrollLeft = 0;
@@ -368,15 +390,17 @@ export function PreCode(props: { children: any }) {
       syncCodeScrollHint();
     });
     return () => cancelAnimationFrame(scrollHintFrame);
-  }, [isCodeWrapped, props.children, syncCodeScrollHint]);
+  }, [isCodeWrapped, props.children, streaming, syncCodeScrollHint]);
 
   useEffect(() => {
+    if (streaming) return;
     if (!ref.current) return;
     const timer = setTimeout(renderArtifacts, 1);
     return () => clearTimeout(timer);
-  }, [props.children, renderArtifacts]);
+  }, [props.children, renderArtifacts, streaming]);
 
   useEffect(() => {
+    if (streaming) return;
     const codeScroller = getCodeScrollElement() ?? ref.current;
     if (!codeScroller) {
       window.addEventListener("resize", syncCodeScrollHint);
@@ -403,7 +427,7 @@ export function PreCode(props: { children: any }) {
       codeScroller.removeEventListener("scroll", syncCodeScrollHint);
       window.removeEventListener("resize", syncCodeScrollHint);
     };
-  }, [getCodeScrollElement, props.children, syncCodeScrollHint]);
+  }, [getCodeScrollElement, props.children, streaming, syncCodeScrollHint]);
 
   useEffect(() => {
     return () => {
@@ -531,6 +555,7 @@ export function CustomCode(props: {
   const config = useAppConfig();
   const features = useContext(MarkdownFeatureContext);
   const enableCodeFold = features.enableCodeFold && config.enableCodeFold;
+  const streaming = features.streaming;
 
   const codeBlockId = useId();
   const ref = useRef<HTMLPreElement>(null);
@@ -538,21 +563,22 @@ export function CustomCode(props: {
   const [showToggle, setShowToggle] = useState(false);
 
   useLayoutEffect(() => {
+    if (streaming) return;
     if (ref.current && !props.inline) {
       const codeHeight = ref.current.scrollHeight;
       setShowToggle(codeHeight > 400);
       ref.current.scrollTop = ref.current.scrollHeight;
     }
-  }, [props.children, props.inline]);
+  }, [props.children, props.inline, streaming]);
 
   const toggleCollapsed = () => {
     setCollapsed((collapsed) => !collapsed);
   };
 
   const lines = useMemo(() => {
-    if (props.inline) return null;
+    if (props.inline || streaming) return null;
     return splitChildrenIntoLines(props.children);
-  }, [props.children, props.inline]);
+  }, [props.children, props.inline, streaming]);
 
   const showMoreButton =
     !props.inline && showToggle && enableCodeFold && collapsed;
@@ -891,6 +917,8 @@ type DetectedFileAttachment = {
   fileType: string;
   fileSize: number;
   content: string;
+  startIndex: number;
+  endIndex: number;
 };
 
 const fileAttachmentHrefPrefix = "#neatchat-file-attachment?";
@@ -1026,21 +1054,55 @@ function MarkdownMediaCard({
 }
 
 function detectFileAttachments(content: string): DetectedFileAttachment[] {
-  const fileRegex =
-    /文件名: (.+?)\n类型: (.+?)\n大小: (.+?) KB\n\n([\s\S]+?)(?=\n\n---|$)/g;
-  let match;
+  const escapePattern = (value: string) =>
+    value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const currentLabels = Locale.Chat.Attachments.FileMetadata;
+  const labelSets = [
+    [currentLabels.Name, currentLabels.Type, currentLabels.Size],
+    [
+      ATTACHMENT_WIRE_LABELS.name,
+      ATTACHMENT_WIRE_LABELS.type,
+      ATTACHMENT_WIRE_LABELS.size,
+    ],
+    ["File name", "Type", "Size"],
+  ].filter(
+    (labels, index, allLabels) =>
+      allLabels.findIndex(
+        (candidate) => candidate.join("\u0000") === labels.join("\u0000"),
+      ) === index,
+  );
   const files: DetectedFileAttachment[] = [];
 
-  while ((match = fileRegex.exec(content)) !== null) {
-    files.push({
-      fileName: match[1],
-      fileType: match[2],
-      fileSize: parseFloat(match[3]) * 1024,
-      content: match[4],
-    });
-  }
+  labelSets.forEach(([nameLabel, typeLabel, sizeLabel]) => {
+    const fileRegex = new RegExp(
+      `${escapePattern(nameLabel)}: (.+?)\\n${escapePattern(
+        typeLabel,
+      )}: (.+?)\\n${escapePattern(
+        sizeLabel,
+      )}: (.+?) KB\\n\\n([\\s\\S]+?)(?=\\n\\n---|$)`,
+      "g",
+    );
+    let match: RegExpExecArray | null;
+    while ((match = fileRegex.exec(content)) !== null) {
+      files.push({
+        fileName: match[1],
+        fileType: match[2],
+        fileSize: parseFloat(match[3]) * 1024,
+        content: match[4],
+        startIndex: match.index,
+        endIndex: fileRegex.lastIndex,
+      });
+    }
+  });
 
-  return files;
+  return files
+    .sort((left, right) => left.startIndex - right.startIndex)
+    .filter(
+      (file, index, allFiles) =>
+        allFiles.findIndex(
+          (candidate) => candidate.startIndex === file.startIndex,
+        ) === index,
+    );
 }
 
 function replaceFileAttachments(content: string) {
@@ -1052,26 +1114,18 @@ function replaceFileAttachments(content: string) {
 
   let newContent = content;
 
-  files.forEach((file) => {
-    const fileMarker = `文件名: ${file.fileName}\n类型: ${
-      file.fileType
-    }\n大小: ${(file.fileSize / 1024).toFixed(2)} KB\n\n`;
-    const replacement = `[📄 ${file.fileName}](${createFileAttachmentHref(
-      file,
-    )})`;
-    const startIndex = newContent.indexOf(fileMarker);
-
-    if (startIndex >= 0) {
-      const contentStart = startIndex + fileMarker.length;
-      let contentEnd = newContent.indexOf("\n\n---\n\n", contentStart);
-      if (contentEnd < 0) contentEnd = newContent.length;
-
+  files
+    .slice()
+    .sort((left, right) => right.startIndex - left.startIndex)
+    .forEach((file) => {
+      const replacement = `[📄 ${file.fileName}](${createFileAttachmentHref(
+        file,
+      )})`;
       newContent =
-        newContent.substring(0, startIndex) +
+        newContent.substring(0, file.startIndex) +
         replacement +
-        newContent.substring(contentEnd);
-    }
-  });
+        newContent.substring(file.endIndex);
+    });
 
   return newContent;
 }
@@ -1079,9 +1133,10 @@ function replaceFileAttachments(content: string) {
 function MarkDownContentInner(
   props: {
     content: string;
+    streaming?: boolean;
   } & MarkdownImageActionProps,
 ) {
-  const { content } = props;
+  const { content, streaming = false } = props;
   const escapedContent = useMemo(() => {
     // 检查是否是 base64 图像数据
     try {
@@ -1143,14 +1198,9 @@ function MarkDownContentInner(
       remarkPlugins={[RemarkMath, RemarkGfm, RemarkBreaks]}
       rehypePlugins={[
         RehypeRaw,
+        [RehypeSanitize, markdownSanitizeSchema],
         RehypeKatex,
-        [
-          RehypeHighlight,
-          {
-            detect: false,
-            ignoreMissing: true,
-          },
-        ],
+        ...(!streaming ? [REHYPE_HIGHLIGHT_PLUGIN] : []),
       ]}
       components={{
         // 添加自定义组件处理
@@ -1184,26 +1234,17 @@ function MarkDownContentInner(
                     try {
                       // 点击时显示文件内容
                       showToast(Locale.Markdown.FileCopied);
-                      // 使用更安全的方式查找文件内容
-                      const fileMarker = `文件名: ${fileName}\n类型: ${fileType}\n大小: ${(
-                        fileSize / 1024
-                      ).toFixed(2)} KB\n\n`;
-                      const startIndex = props.content.indexOf(fileMarker);
+                      const detectedFile = detectFileAttachments(
+                        props.content,
+                      ).find(
+                        (file) =>
+                          file.fileName === fileName &&
+                          file.fileType === fileType &&
+                          Math.abs(file.fileSize - fileSize) < 1,
+                      );
 
-                      if (startIndex >= 0) {
-                        const contentStart =
-                          props.content.indexOf("\n\n", startIndex) + 2;
-                        let contentEnd = props.content.indexOf(
-                          "\n\n---\n\n",
-                          contentStart,
-                        );
-                        if (contentEnd < 0) contentEnd = props.content.length;
-
-                        const fileContent = props.content.substring(
-                          contentStart,
-                          contentEnd,
-                        );
-                        copyToClipboard(fileContent);
+                      if (detectedFile) {
+                        copyToClipboard(detectedFile.content);
                       } else {
                         copyToClipboard(Locale.Markdown.FileNotFound);
                       }
@@ -1255,10 +1296,17 @@ function MarkDownContentInner(
         code: CustomCode,
         table: MarkdownTable,
         img: (imgProps) => {
-          const src =
+          const candidateSrc =
             typeof imgProps.src === "string" ? imgProps.src.trim() : "";
+          const src = isSafeMarkdownImageSource(candidateSrc)
+            ? candidateSrc
+            : "";
           const alt = typeof imgProps.alt === "string" ? imgProps.alt : "";
           const imageActionLabels = getImageActionLabels(alt);
+
+          if (!src) {
+            return <span>{alt}</span>;
+          }
 
           if (!src || (!props.onPreviewImage && !props.onDownloadImage)) {
             return (
@@ -1378,8 +1426,8 @@ export function Markdown(
     }
   }, [content, isUser, messageId, streaming]);
   const markdownFeatures = useMemo(
-    () => ({ enableArtifacts, enableCodeFold }),
-    [enableArtifacts, enableCodeFold],
+    () => ({ enableArtifacts, enableCodeFold, streaming: !!streaming }),
+    [enableArtifacts, enableCodeFold, streaming],
   );
   const messageStartTimeRef = useRef<number | null>(null);
   const firstCharReceivedTimeRef = useRef<number | null>(null);
@@ -1484,6 +1532,7 @@ export function Markdown(
           <MarkdownFeatureContext.Provider value={markdownFeatures}>
             <MarkdownContent
               content={content}
+              streaming={streaming}
               onPreviewImage={onPreviewImage}
               onDownloadImage={onDownloadImage}
             />

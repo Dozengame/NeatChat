@@ -11,6 +11,7 @@ import {
   buildOpenAIImageGenerationPayload,
   createOpenAIImageTimeoutError,
   getOpenAIImageGenerationProgressContent,
+  getOpenAIImageErrorMessage,
   getOpenAIImageOutputContentType,
   isOpenAIImageGenerationModelConfig,
   parseOpenAIImageResponsePayload,
@@ -263,6 +264,19 @@ describe("OpenAI image generation models", () => {
         message: "An error occurred with your deployment",
       },
     });
+  });
+
+  test("localizes access-restricted image errors without exposing machine codes", () => {
+    expect(
+      getOpenAIImageErrorMessage({
+        status: 429,
+        payload: {
+          code: "access_restricted",
+          msg: "access_restricted",
+        },
+        accessRestrictedMessage: Locale.Error.AccessRestricted,
+      }),
+    ).toBe(Locale.Error.AccessRestricted);
   });
 
   test("keeps DALL-E 3 payload compatible with the existing image path", () => {

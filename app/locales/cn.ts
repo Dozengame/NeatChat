@@ -160,6 +160,11 @@ const cn = {
       LongTextFile: "长文本.txt",
       PastedTextFile: "粘贴的文本.txt",
       LongTextMessage: "我发送了一个长文本文件，内容已自动转换为附件。",
+      FileMetadata: {
+        Name: "文件名",
+        Type: "类型",
+        Size: "大小",
+      },
       JoinMessages: (messages: string[]) => messages.join("，"),
       LiveStatus: (text: string, hint: string) => `${text}，${hint}。`,
       Full: "附件已满：最多 3 张图片、5 个文件",
@@ -175,6 +180,123 @@ const cn = {
       EditFileContent: (name: string) => `编辑文件内容: ${name}`,
       DeleteFile: (index: number, name: string) =>
         `删除第 ${index} 个文件附件：${name}`,
+      Reader: {
+        UnknownError: "未知错误",
+        UnsupportedFileType: "不支持的文件类型",
+        UnsupportedFile: (name: string) => `${name || "该文件"} 类型不支持`,
+        PastedFileName: "粘贴的文件.txt",
+        ReadFailed: (name: string, error: string) =>
+          `读取文件 ${name} 失败：${error}`,
+        NoFilesRead: "没有成功读取任何文件",
+        TextFileType: "文本文件",
+        ContentTruncated: (length: number) =>
+          `[文件过大，已截断。原文件大小：${length} 字符]`,
+        ImageLoadFailed: "图片加载失败",
+        Legacy: {
+          Title: (name: string) => `检测到旧版 ${name} 文档`,
+          Description: (extension: string) =>
+            `您上传的是旧版 ${extension} 格式文件，无法完全解析其内容。`,
+          ConvertIntro: "为获得最佳效果，请按照以下步骤转换文件：",
+          OpenWith: (app: string) => `使用 ${app} 打开文件`,
+          SaveAs: "点击“文件” > “另存为”",
+          ChooseFormat: (format: string) => `选择“${format}”格式`,
+          SaveAndUpload: "保存并上传新文件",
+          PartialTextAttempt: "将尝试提取部分文本内容，但效果可能不理想。",
+          PartialTableAttempt: "将尝试提取表格内容，但效果可能不理想。",
+          Warning: (extension: string, target: string) =>
+            `【注意】此文件为旧版 ${extension} 格式，文本提取可能不完整。为获得最佳效果，请将文件转换为 ${target} 格式后再上传。`,
+          CannotFullyRead: (extension: string, target: string) =>
+            `【无法读取】此文件为旧版 ${extension} 格式，无法完全解析其内容。请将文件转换为 ${target} 格式后再上传，或复制文件内容后直接粘贴。`,
+          CannotRead: (extension: string, target: string) =>
+            `【无法读取】此文件为旧版 ${extension} 格式，无法解析其内容。请将文件转换为 ${target} 格式后再上传，或复制文件内容后直接粘贴。`,
+          FormatErrorTitle: "文件格式错误",
+          FormatErrorDescription: "无法读取此文件，可能是格式不正确或已损坏。",
+          ConvertDoc: "如果这是 .doc 格式文件，请按照以下步骤转换：",
+          FormatErrorMessage:
+            "文件格式不正确或已损坏。如果是 .doc 格式，请转换为 .docx 格式后再上传。",
+        },
+        Word: {
+          Name: "Word",
+          App: "Microsoft Word 或 WPS",
+          Format: "Word 文档 (.docx)",
+        },
+        PowerPoint: {
+          Name: "PowerPoint",
+          App: "PowerPoint 或 WPS 演示",
+          Format: "PowerPoint 演示文稿 (.pptx)",
+          Slide: (number: number, text: string) =>
+            `--- 幻灯片 ${number} ---\n${text}`,
+          Content: (slides: string) => `PowerPoint 演示文稿内容：\n\n${slides}`,
+          ExtractionFailed:
+            "【提取失败】无法从 PowerPoint 文件中提取文本内容。可能是文件格式不支持或不包含文本。",
+          ParseFailed:
+            "【提取失败】无法解析 PowerPoint 文件内容。请尝试将重要内容复制后直接粘贴。",
+        },
+        Pdf: {
+          Content: (pages: number) => `PDF 文档内容（共 ${pages} 页）：\n\n`,
+          UnreadablePage: "[无法解析此页]",
+          BlankPage: "[空白或图像内容]",
+          Page: (number: number, text: string) =>
+            `--- 第 ${number} 页 ---\n${text}\n\n`,
+          Truncated: (processed: number, total: number) =>
+            `\n[文件过大，仅处理了前 ${processed} 页。总页数：${total}]\n`,
+          LimitedTitle: "PDF 内容提取受限",
+          LimitedDescription: "无法从 PDF 提取文本内容，可能是以下原因：",
+          Scanned: "PDF 是扫描版（图像而非文本）",
+          Protected: "PDF 使用了内容保护或加密",
+          Damaged: "PDF 格式特殊或已损坏",
+          Suggestions: "建议：",
+          UseOcr: "使用 OCR 软件处理此 PDF",
+          CopyManually: "手动复制需要的内容后粘贴",
+          UseSmallerFile: "尝试使用较小的 PDF 文件",
+          LimitedContent: (name: string, sizeMb: string, pages: number) =>
+            `【PDF 内容提取受限】\n\n此 PDF 文件（${name}）无法提取文本内容，可能是扫描版或受保护的 PDF。\n\n文件信息：\n- 大小：${sizeMb} MB\n- 页数：${pages} 页\n\n建议使用 OCR 软件处理此文件，或手动复制需要的内容。`,
+          ParseFailedTitle: "PDF 解析失败",
+          ParseFailedDescription: "无法解析 PDF 文件内容。",
+          Error: (message: string) => `错误信息：${message}`,
+          ParseFailedHelp:
+            "请尝试使用其他 PDF 查看器打开文件，然后复制内容后直接粘贴。",
+          ParseFailedContent:
+            "【PDF 解析失败】无法提取 PDF 文件内容。请尝试使用 PDF 查看器打开文件，然后复制内容后直接粘贴。",
+        },
+        Zip: {
+          BinaryFile: (size: number) => `[二进制文件，大小：${size} 字节]`,
+          UnreadableFile: "[无法读取此文件]",
+          Content: (name: string) => `ZIP 文件内容（${name}）：\n`,
+          TotalFiles: (count: number) => `总文件数：${count}`,
+          ShowingFirst: (count: number) => `（仅显示前 ${count} 个文件）`,
+          TextFiles: (count: number) => `\n文本文件数：${count}\n\n`,
+          Truncated: (processed: number, total: number) =>
+            `\n[ZIP 文件过大，仅处理了前 ${processed} 个文件。总文件数：${total}]\n`,
+          LimitedTitle: "ZIP 文件内容提取受限",
+          NoReadableText:
+            "此 ZIP 文件不包含可读取的文本文件，或文件格式不受支持。",
+          SupportedTextOnly:
+            "只能提取常见文本文件的内容，如 .txt、.md、.js、.py 等。",
+          ExtractHelp: "建议解压 ZIP 文件后，单独上传需要的文本文件。",
+          ParseFailedTitle: "ZIP 解析失败",
+          ParseFailedDescription: "无法解析 ZIP 文件内容。",
+          ParseFailedHelp:
+            "请确保上传的是有效的 ZIP 文件，或尝试解压后单独上传文件。",
+          ParseFailedContent:
+            "【ZIP 解析失败】无法提取 ZIP 文件内容。请确保上传的是有效的 ZIP 文件，或尝试解压后单独上传文件。",
+        },
+        Excel: {
+          Name: "Excel",
+          App: "Microsoft Excel 或 WPS 表格",
+          Format: "Excel 工作簿 (.xlsx)",
+          Content: (name: string) => `Excel 表格内容（${name}）：\n\n`,
+          SheetCount: (count: number) => `工作表数量：${count}\n\n`,
+          Sheet: (name: string) => `=== 工作表：${name} ===\n\n`,
+          EmptySheet: "[空工作表]\n\n",
+          ParseFailedTitle: "Excel 解析失败",
+          ParseFailedDescription: "无法解析 Excel 文件内容。",
+          ParseFailedHelp:
+            "请尝试使用 Excel 打开文件，然后复制内容后直接粘贴。",
+          ParseFailedContent:
+            "【Excel 解析失败】无法提取 Excel 文件内容。请尝试使用 Excel 打开文件，然后复制内容后直接粘贴。",
+        },
+      },
       Drag: {
         AddHint: "释放后添加到输入框 · 最多3张图片、5个文件",
         BlockedHint: "释放后不会添加新附件",
@@ -193,6 +315,7 @@ const cn = {
     ImageGeneration: {
       NotEnabled: "图片生成未启用",
       EnableFailed: "图片生成启用失败",
+      DisableFailed: "图片生成关闭失败",
       Enabled: "已启用图片生成",
       Disabled: "已关闭图片生成",
       Failed: "图片生成失败",
@@ -207,6 +330,33 @@ const cn = {
         Preparing: "正在准备图片生成请求...",
         Generating: "正在生成图片，请稍候...",
         Saving: "图片已生成，正在保存图片...",
+      },
+      Display: {
+        Task: "图片生成任务",
+        ToolCall: "工具调用",
+        GenerationType: "生成类型：",
+        OptimizedPrompt: "优化后的 Prompt：",
+        Parameters: "参数：",
+        Progress: "当前进度：",
+        Status: "状态：",
+        Submitting: "正在提交到 jimeng-mcp",
+        PreparingTool: "正在准备执行工具",
+        PreparingSubmission: "正在准备提交到 jimeng-mcp",
+        TextToImage: "文生图",
+        ImageToImage: "图生图",
+        TextToVideo: "文生视频",
+        ImageToVideo: "图生视频",
+        AspectRatio: "画幅：",
+        Resolution: "清晰度：",
+        ModelVersion: "模型版本：",
+        Duration: "时长：",
+        Submitted: "已提交，等待返回状态",
+        Success: "生成成功",
+        Generating: "生成中",
+        Failure: "生成失败",
+        Cancelled: "已取消",
+        Timeout: "查询超时",
+        Unknown: "未知",
       },
     },
     ModelMenu: {

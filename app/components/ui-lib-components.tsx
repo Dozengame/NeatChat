@@ -489,6 +489,7 @@ function FullScreen(props: any) {
 }
 
 export function SimpleSelector<T>(props: {
+  ariaLabel: string;
   items: Array<{
     title: string;
     value: T;
@@ -496,17 +497,75 @@ export function SimpleSelector<T>(props: {
   onClose?: () => void;
   onSelection?: (selection: T[]) => void;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    returnFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    dialogRef.current
+      ?.querySelector<HTMLElement>('[role="button"][tabindex="0"]')
+      ?.focus({ preventScroll: true });
+
+    return () => {
+      const returnFocus = returnFocusRef.current;
+      if (returnFocus?.isConnected) {
+        returnFocus.focus({ preventScroll: true });
+      }
+    };
+  }, []);
+
+  const handleDialogKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      props.onClose?.();
+      return;
+    }
+
+    if (event.key !== "Tab") return;
+    const focusableElements = Array.from(
+      dialogRef.current?.querySelectorAll<HTMLElement>(
+        '[role="button"][tabindex="0"]',
+      ) ?? [],
+    );
+    if (focusableElements.length === 0) {
+      event.preventDefault();
+      dialogRef.current?.focus({ preventScroll: true });
+      return;
+    }
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+    if (event.shiftKey && document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement.focus({ preventScroll: true });
+    } else if (!event.shiftKey && document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus({ preventScroll: true });
+    }
+  };
+
   return (
-    <div className={styles["selector"]}>
+    <div className={styles["selector"]} onKeyDownCapture={handleDialogKeyDown}>
       <button
         type="button"
         aria-label="Close selector"
+        aria-hidden="true"
+        tabIndex={-1}
         onClick={props.onClose}
         style={overlayButtonStyle}
       />
       <div
+        ref={dialogRef}
         className={clsx(styles["selector-content"], styles["simple"])}
         style={{ zIndex: 1 }}
+        role="dialog"
+        aria-modal="true"
+        aria-label={props.ariaLabel}
+        tabIndex={-1}
       >
         <List>
           {props.items.map((item) => (

@@ -525,7 +525,10 @@ describe("access control tiers", () => {
     const body = JSON.parse(await response.text());
 
     expect(response.status).toBe(429);
-    expect(body.msg).toBe("当前访问暂时受限，请稍后再试。");
+    expect(body).toMatchObject({
+      code: "access_restricted",
+      msg: "access_restricted",
+    });
     expect(JSON.stringify(body)).not.toContain("daily_token_limit_exceeded");
   });
 

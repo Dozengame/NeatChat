@@ -3,11 +3,13 @@ import {
   createResponsesRoundCollector,
   executeResponsesFunctionCalls,
   extractOpenAIResponsesText,
+  getOpenAIResponsesStreamError,
   runOpenAIResponsesToolLoop,
   type ResponsesRoundResult,
 } from "../app/client/platforms/openai-responses-tools";
 import fs from "fs";
 import path from "path";
+import Locale from "../app/locales";
 
 const pluginTool = (name: string) => ({
   type: "function",
@@ -35,6 +37,22 @@ const functionCall = (
 });
 
 describe("OpenAI Responses function tools", () => {
+  test("localizes access-restricted Responses stream errors", async () => {
+    const response = {
+      status: 429,
+      clone: () => ({
+        json: async () => ({
+          code: "access_restricted",
+          msg: "access_restricted",
+        }),
+      }),
+    } as unknown as Response;
+
+    await expect(
+      getOpenAIResponsesStreamError(response),
+    ).resolves.toMatchObject({ message: Locale.Error.AccessRestricted });
+  });
+
   test("wires the dedicated runner only through the GPT-5.6 Responses path", () => {
     const source = fs.readFileSync(
       path.join(process.cwd(), "app/client/platforms/openai.ts"),
@@ -243,42 +261,65 @@ describe("OpenAI Responses function tools", () => {
     expect(executors.second).toHaveBeenCalledTimes(1);
   });
 
-  test("turns malformed arguments and tool failures into safe outputs", async () => {
+  test("turns malformed arguments and known tool failures into safe outputs", async () => {
     const onAfterTool = jest.fn();
     const outputs = await executeResponsesFunctionCalls({
       calls: [
         functionCall("call_bad", "tool", "{"),
-        functionCall("call_error", "tool"),
         functionCall("call_missing", "unknown"),
       ],
-      executors: {
-        tool: jest.fn().mockRejectedValue(
-          Object.assign(new Error("Bearer secret-from-message"), {
-            config: { headers: { Authorization: "secret-token" } },
-          }),
-        ),
-      },
+      executors: { tool: jest.fn() },
       signal: new AbortController().signal,
       executedCalls: new Map(),
       onAfterTool,
     });
 
-    expect(outputs).toHaveLength(3);
+    expect(outputs).toHaveLength(2);
     expect(outputs[0].output).toContain("invalid_arguments");
-    expect(outputs[1].output).toContain("Tool execution failed");
-    expect(outputs[2].output).toContain("unknown_function");
-    expect(JSON.stringify(outputs)).not.toContain("secret-token");
-    expect(JSON.stringify(outputs)).not.toContain("secret-from-message");
-    expect(onAfterTool).toHaveBeenCalledTimes(3);
+    expect(outputs[1].output).toContain("unknown_function");
+    expect(onAfterTool).toHaveBeenCalledTimes(2);
   });
 
-  test("does not expose HTTP tool error bodies to the model or UI", async () => {
+  test("treats a rejected executor as an unknown outcome without leaking details", async () => {
+    const onAfterTool = jest.fn();
+    const executedCalls = new Map();
+    const secretError = Object.assign(new Error("Bearer secret-from-message"), {
+      config: { headers: { Authorization: "secret-token" } },
+    });
+
+    await expect(
+      executeResponsesFunctionCalls({
+        calls: [functionCall("call_unknown", "tool")],
+        executors: { tool: jest.fn().mockRejectedValue(secretError) },
+        signal: new AbortController().signal,
+        executedCalls,
+        onAfterTool,
+      }),
+    ).rejects.toThrow(/outcome is unknown/i);
+
+    expect(onAfterTool).toHaveBeenCalledTimes(1);
+    expect(onAfterTool).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "call_unknown",
+        isError: true,
+        errorMsg: expect.stringMatching(/outcome is unknown/i),
+      }),
+    );
+    expect(JSON.stringify(onAfterTool.mock.calls)).not.toContain(
+      "secret-token",
+    );
+    expect(JSON.stringify(onAfterTool.mock.calls)).not.toContain(
+      "secret-from-message",
+    );
+  });
+
+  test("keeps deterministic HTTP 4xx tool failures as safe outputs", async () => {
     const onAfterTool = jest.fn();
     const outputs = await executeResponsesFunctionCalls({
       calls: [functionCall("call_http", "tool")],
       executors: {
         tool: jest.fn(() => ({
-          status: 500,
+          status: 400,
           statusText: "Bearer status-secret",
           data: { token: "body-secret" },
         })),
@@ -288,11 +329,44 @@ describe("OpenAI Responses function tools", () => {
       onAfterTool,
     });
 
-    expect(outputs[0].output).toContain("HTTP 500");
+    expect(outputs[0].output).toContain("HTTP 400");
     expect(JSON.stringify(outputs)).not.toContain("status-secret");
     expect(JSON.stringify(outputs)).not.toContain("body-secret");
     expect(JSON.stringify(onAfterTool.mock.calls)).not.toContain("secret");
   });
+
+  test.each([0, 500, 502, 504])(
+    "treats uncertain HTTP status %s as an unknown outcome",
+    async (status) => {
+      const onAfterTool = jest.fn();
+      const executedCalls = new Map();
+
+      await expect(
+        executeResponsesFunctionCalls({
+          calls: [functionCall("call_http_unknown", "tool")],
+          executors: {
+            tool: jest.fn(() => ({
+              status,
+              statusText: "Bearer status-secret",
+              data: { token: "body-secret" },
+            })),
+          },
+          signal: new AbortController().signal,
+          executedCalls,
+          onAfterTool,
+        }),
+      ).rejects.toThrow(/outcome is unknown/i);
+
+      expect(onAfterTool).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "call_http_unknown",
+          isError: true,
+          errorMsg: expect.stringMatching(/outcome is unknown/i),
+        }),
+      );
+      expect(JSON.stringify(onAfterTool.mock.calls)).not.toContain("secret");
+    },
+  );
 
   test("preflights conflicting call IDs before starting any executor", async () => {
     const first = jest.fn(() => "first");
@@ -578,6 +652,157 @@ describe("OpenAI Responses function tools", () => {
       }),
     );
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  test("stops the loop after an unknown mutation outcome instead of retrying with a new call ID", async () => {
+    const executor = jest
+      .fn()
+      .mockRejectedValue(
+        new Error("Bearer mutation-committed-but-transport-lost"),
+      );
+    const onFinish = jest.fn();
+    const onError = jest.fn();
+    let round = 0;
+    const sendRound = jest.fn(async () => {
+      round += 1;
+      if (round <= 2) {
+        const call = functionCall(`call_${round}`, "mutate");
+        return {
+          id: `resp_${round}`,
+          output: [call],
+          calls: [call],
+          text: "",
+        };
+      }
+      return { id: "resp_done", output: [], calls: [], text: "done" };
+    });
+
+    await runOpenAIResponsesToolLoop({
+      initialPayload: { model: "gpt-5.6-terra", input: "mutate" } as any,
+      executors: { mutate: executor },
+      controller: new AbortController(),
+      sendRound,
+      callbacks: { onFinish, onError },
+    });
+
+    expect(sendRound).toHaveBeenCalledTimes(1);
+    expect(executor).toHaveBeenCalledTimes(1);
+    expect(onFinish).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringMatching(/outcome is unknown/i),
+      }),
+      expect.objectContaining({
+        openaiResponseStored: false,
+        openaiResponsesRecoveryPending: true,
+        openaiResponsesOutput: [
+          functionCall("call_1", "mutate"),
+          expect.objectContaining({
+            type: "function_call_output",
+            call_id: "call_1",
+            output: expect.stringContaining("tool_outcome_unknown"),
+          }),
+        ],
+      }),
+    );
+    expect(JSON.stringify(onError.mock.calls)).not.toContain(
+      "mutation-committed-but-transport-lost",
+    );
+  });
+
+  test("stops the loop after an uncertain HTTP tool response", async () => {
+    const executor = jest.fn(() => ({ status: 502, data: "gateway failed" }));
+    const onFinish = jest.fn();
+    const onError = jest.fn();
+    const sendRound = jest.fn(async () => {
+      const call = functionCall("call_http_unknown", "mutate");
+      return {
+        id: "resp_http_unknown",
+        output: [call],
+        calls: [call],
+        text: "",
+      };
+    });
+
+    await runOpenAIResponsesToolLoop({
+      initialPayload: { model: "gpt-5.6-terra", input: "mutate" } as any,
+      executors: { mutate: executor },
+      controller: new AbortController(),
+      sendRound,
+      callbacks: { onFinish, onError },
+    });
+
+    expect(sendRound).toHaveBeenCalledTimes(1);
+    expect(executor).toHaveBeenCalledTimes(1);
+    expect(onFinish).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringMatching(/unknown/i) }),
+      expect.objectContaining({
+        openaiResponsesRecoveryPending: true,
+        openaiResponsesOutput: expect.arrayContaining([
+          expect.objectContaining({
+            type: "function_call_output",
+            call_id: "call_http_unknown",
+            output: expect.stringContaining("tool_outcome_unknown"),
+          }),
+        ]),
+      }),
+    );
+  });
+
+  test("waits for every started parallel executor before reporting an unknown outcome", async () => {
+    const events: string[] = [];
+    const callUnknown = functionCall("call_unknown", "unknown_tool");
+    const callSuccess = functionCall("call_success", "slow_tool");
+    const sendRound = jest.fn(async () => ({
+      id: "resp_parallel",
+      output: [callUnknown, callSuccess],
+      calls: [callUnknown, callSuccess],
+      text: "",
+    }));
+    const onError = jest.fn(() => events.push("error"));
+
+    await runOpenAIResponsesToolLoop({
+      initialPayload: { model: "gpt-5.6-terra", input: "run" } as any,
+      executors: {
+        unknown_tool: jest.fn(async () => {
+          events.push("unknown-started");
+          throw new Error("transport lost");
+        }),
+        slow_tool: jest.fn(async () => {
+          events.push("slow-started");
+          await Promise.resolve();
+          events.push("slow-finished");
+          return "completed";
+        }),
+      },
+      controller: new AbortController(),
+      sendRound,
+      callbacks: { onError },
+    });
+
+    expect(sendRound).toHaveBeenCalledTimes(1);
+    expect(events).toEqual([
+      "unknown-started",
+      "slow-started",
+      "slow-finished",
+      "error",
+    ]);
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringMatching(/unknown/i) }),
+      expect.objectContaining({
+        openaiResponsesOutput: [
+          callUnknown,
+          callSuccess,
+          expect.objectContaining({ call_id: "call_unknown" }),
+          expect.objectContaining({
+            call_id: "call_success",
+            output: "completed",
+          }),
+        ],
+      }),
+    );
   });
 
   test("persists a stateless-safe trace when a later round fails", async () => {

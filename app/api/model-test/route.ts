@@ -11,6 +11,7 @@ import {
 } from "@/app/api/abuse-control";
 import { auth, authErrorResponse } from "@/app/api/auth";
 import { sanitizeOpenAIResponsesSafetyIdentifier } from "@/app/api/openai-safety";
+import { withAbortTimeout } from "@/app/utils/request-timeout";
 
 const MODEL_TEST_MAX_MODELS = 1;
 
@@ -25,12 +26,7 @@ async function testModel(
   const startTime = Date.now();
 
   try {
-    // 创建AbortController用于超时控制
     const controller = new AbortController();
-    const timeoutId = setTimeout(
-      () => controller.abort(),
-      timeoutSeconds * 1000,
-    );
 
     let baseUrl =
       serverConfig.openaiResponsesUrl ||
@@ -48,28 +44,30 @@ async function testModel(
       : `${baseUrl}/${OpenaiPath.ResponsesPath}`;
 
     // 发送请求
-    const response = await withUsageAccounting(
-      req,
-      await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal,
-        cache: "no-store",
-      }),
-    );
-
-    // 清除超时计时器
-    clearTimeout(timeoutId);
+    const { response, errorData } = await withAbortTimeout({
+      controller,
+      timeoutMs: timeoutSeconds * 1000,
+      operation: async () => {
+        const upstreamResponse = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+          cache: "no-store",
+        });
+        const response = await withUsageAccounting(req, upstreamResponse);
+        const errorData = response.ok ? undefined : await response.json();
+        return { response, errorData };
+      },
+    });
 
     const responseTime = Date.now() - startTime;
 
     // 检查响应
     if (!response.ok) {
-      const errorData = await response.json();
       return {
         success: false,
         message: `测试失败: ${errorData.error?.message || response.statusText}`,

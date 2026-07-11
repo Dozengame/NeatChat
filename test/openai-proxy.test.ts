@@ -91,6 +91,15 @@ describe("OpenAI Responses proxy preprocessing", () => {
       openaiImagesUrl: undefined,
       customModels: "",
       openaiOrgId: undefined,
+      openaiReasoningMode: "pro",
+      openaiReasoningContext: "current_turn",
+      openaiInputImageDetail: "original",
+      openaiPromptCacheMode: "disabled",
+      openaiPromptCacheKey: undefined,
+      defaultTemperature: 0.4,
+      openaiTextVerbosity: "low",
+      openaiMaxOutputTokens: 30_000,
+      webuiLockedFields: "",
       accessControl,
     });
     globalThis.fetch = jest.fn(
@@ -145,4 +154,72 @@ describe("OpenAI Responses proxy preprocessing", () => {
       expect(outbound.safety_identifier).toBeUndefined();
     },
   );
+
+  test("enforces locked GPT-5.6 settings on direct HTTP payloads", async () => {
+    await requestOpenai(
+      makeRequest({
+        model: "gpt-5.6-terra",
+        input: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_image",
+                image_url: "https://example.com/image.png",
+                detail: "low",
+                prompt_cache_breakpoint: { mode: "explicit" },
+              },
+            ],
+          },
+        ],
+        reasoning: {
+          effort: "high",
+          mode: "standard",
+          context: "all_turns",
+        },
+        prompt_cache_options: { mode: "implicit", ttl: "1h" },
+        prompt_cache_key: "attacker-key",
+        temperature: 2,
+        text: {
+          verbosity: "high",
+          format: { type: "text" },
+        },
+        max_output_tokens: 128_000,
+      }),
+    );
+
+    const outbound = JSON.parse(
+      (globalThis.fetch as jest.Mock).mock.calls[0][1].body,
+    );
+    expect(outbound.reasoning).toEqual({
+      effort: "high",
+      mode: "pro",
+      context: "current_turn",
+    });
+    expect(outbound.input[0].content[0].detail).toBe("original");
+    expect(
+      outbound.input[0].content[0].prompt_cache_breakpoint,
+    ).toBeUndefined();
+    expect(outbound.prompt_cache_options).toEqual({
+      mode: "explicit",
+      ttl: "30m",
+    });
+    expect(outbound.prompt_cache_key).toBeUndefined();
+    expect(outbound.temperature).toBeUndefined();
+    expect(outbound.text).toEqual({
+      verbosity: "low",
+      format: { type: "text" },
+    });
+    expect(outbound.max_output_tokens).toBe(30_000);
+  });
+
+  test("rejects invalid JSON instead of forwarding an unprocessed body", async () => {
+    const req = makeRequest({});
+    req.text = jest.fn(async () => "{");
+
+    const response = await requestOpenai(req);
+
+    expect(response.status).toBe(400);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
 });

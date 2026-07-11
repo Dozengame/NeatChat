@@ -36,22 +36,20 @@ const ChatList = dynamic(async () => (await import("./chat-list")).ChatList, {
 const limitSideBarWidth = (x: number) => Math.min(MAX_SIDEBAR_WIDTH, x);
 
 export function useHotKey() {
-  const chatStore = useChatStore();
-
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.altKey || e.ctrlKey) {
         if (e.key === "ArrowUp") {
-          chatStore.nextSession(-1);
+          useChatStore.getState().nextSession(-1);
         } else if (e.key === "ArrowDown") {
-          chatStore.nextSession(1);
+          useChatStore.getState().nextSession(1);
         }
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  });
+  }, []);
 }
 
 export function useDragSideBar() {
@@ -268,11 +266,10 @@ export function SideBar(props: {
   const navigate = useNavigate();
   const location = useLocation();
   const config = useAppConfig();
-  const chatStore = useChatStore();
 
   const startNewChat = () => {
     if (config.dontShowMaskSplashScreen) {
-      chatStore.newSession();
+      useChatStore.getState().newSession();
       navigate(Path.Chat);
     } else {
       navigate(Path.NewChat);

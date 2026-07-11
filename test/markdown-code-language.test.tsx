@@ -25,6 +25,11 @@ jest.mock("remark-gfm", () => jest.fn());
 jest.mock("rehype-katex", () => jest.fn());
 jest.mock("rehype-raw", () => jest.fn());
 jest.mock("rehype-highlight", () => jest.fn());
+jest.mock("rehype-sanitize", () => ({
+  __esModule: true,
+  default: jest.fn(),
+  defaultSchema: { tagNames: [], attributes: {}, protocols: {} },
+}));
 
 jest.mock("../app/icons/copy.svg", () => {
   const React = require("react");
@@ -41,9 +46,10 @@ jest.mock("../app/icons/confirm.svg", () => {
 });
 
 jest.mock("next/dynamic", () => {
-  return () => function DynamicPlaceholder() {
-    return null;
-  };
+  return () =>
+    function DynamicPlaceholder() {
+      return null;
+    };
 });
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
@@ -91,10 +97,7 @@ describe("PreCode language labels", () => {
       screen.getByRole("button", {
         name: Locale.Markdown.CopyCode("JSON MCP", false),
       }),
-    ).toHaveAttribute(
-      "title",
-      Locale.Markdown.CopyCode("JSON MCP", false),
-    );
+    ).toHaveAttribute("title", Locale.Markdown.CopyCode("JSON MCP", false));
     expect(screen.queryByText(/clientId/i)).not.toBeInTheDocument();
   });
 
@@ -206,10 +209,7 @@ describe("PreCode language labels", () => {
       screen.getByRole("button", {
         name: Locale.Markdown.CopyCode("TypeScript", true),
       }),
-    ).toHaveAttribute(
-      "title",
-      Locale.Markdown.CopyCode("TypeScript", true),
-    );
+    ).toHaveAttribute("title", Locale.Markdown.CopyCode("TypeScript", true));
 
     act(() => {
       jest.advanceTimersByTime(1400);

@@ -4,17 +4,10 @@ import {
   IFLYTEK_BASE_URL,
   Iflytek,
   REQUEST_TIMEOUT_MS,
-  } from "@/app/constant";
-import { useAccessStore,
-  useAppConfig,
-  useChatStore } from "@/app/store";
+} from "@/app/constant";
+import { useAccessStore, useAppConfig, useChatStore } from "@/app/store";
 
-import {
-  ChatOptions,
-  LLMApi,
-  LLMModel,
-  SpeechOptions,
-} from "../types";
+import { ChatOptions, LLMApi, LLMModel, SpeechOptions } from "../types";
 import { getHeadersAsync } from "../header-loader";
 import Locale from "../../locales";
 import {
@@ -25,6 +18,11 @@ import { prettyObject } from "@/app/utils/format";
 import { getClientConfig } from "@/app/config/client";
 import { getMessageTextContent } from "@/app/utils";
 import { fetch } from "@/app/utils/stream";
+import {
+  createAbortTimeout,
+  withAbortTimeoutResponse,
+} from "@/app/utils/request-timeout";
+import { getAccessRestrictedPublicErrorMessage } from "@/app/utils/public-error";
 
 import { RequestPayload } from "./openai";
 
@@ -108,13 +106,11 @@ export class SparkApi implements LLMApi {
         headers: await getHeadersAsync(),
       };
 
-      // Make a fetch request
-      const requestTimeoutId = setTimeout(
-        () => controller.abort(),
-        REQUEST_TIMEOUT_MS,
-      );
-
       if (shouldStream) {
+        const cancelRequestTimeout = createAbortTimeout({
+          controller,
+          timeoutMs: REQUEST_TIMEOUT_MS,
+        });
         let responseText = "";
         let remainText = "";
         let finished = false;
@@ -151,11 +147,11 @@ export class SparkApi implements LLMApi {
 
         controller.signal.onabort = finish;
 
-        fetchEventSource(chatPath, {
+        void fetchEventSource(chatPath, {
           fetch: fetch as any,
           ...chatPayload,
           async onopen(res) {
-            clearTimeout(requestTimeoutId);
+            cancelRequestTimeout();
             const contentType = res.headers.get("content-type");
             console.log("[Spark] request response content type: ", contentType);
             responseRes = res;
@@ -173,12 +169,21 @@ export class SparkApi implements LLMApi {
               res.status !== 200
             ) {
               let extraInfo = await res.clone().text();
+              let responsePayload: unknown;
               try {
-                const resJson = await res.clone().json();
-                extraInfo = prettyObject(resJson);
+                responsePayload = await res.clone().json();
+                extraInfo = prettyObject(responsePayload);
               } catch {}
 
-              if (res.status === 401) {
+              const accessRestrictedMessage =
+                getAccessRestrictedPublicErrorMessage({
+                  response: res,
+                  payload: responsePayload,
+                  message: Locale.Error.AccessRestricted,
+                });
+              if (accessRestrictedMessage) {
+                extraInfo = accessRestrictedMessage;
+              } else if (res.status === 401) {
                 extraInfo = Locale.Error.Unauthorized;
               }
 
@@ -214,24 +219,47 @@ export class SparkApi implements LLMApi {
             finish();
           },
           onerror(e) {
-            options.onError?.(e);
             throw e;
           },
           openWhenHidden: true,
-        });
+        })
+          .catch((error) => {
+            if (!finished) {
+              finished = true;
+              options.onError?.(error);
+            }
+          })
+          .finally(cancelRequestTimeout);
       } else {
-        const res = await fetch(chatPath, chatPayload);
-        clearTimeout(requestTimeoutId);
+        const { response: res, body: responseBody } =
+          await withAbortTimeoutResponse({
+            controller,
+            timeoutMs: REQUEST_TIMEOUT_MS,
+            operation: () => fetch(chatPath, chatPayload),
+            consume: async (response) => {
+              const text = await response.text();
+              let payload: unknown;
+              try {
+                payload = JSON.parse(text);
+              } catch {}
+              return { text, payload };
+            },
+          });
 
         if (!res.ok) {
-          const errorText = await res.text();
+          const errorText =
+            getAccessRestrictedPublicErrorMessage({
+              response: res,
+              payload: responseBody.payload,
+              message: Locale.Error.AccessRestricted,
+            }) ?? responseBody.text;
           options.onError?.(
             new Error(`Request failed with status ${res.status}: ${errorText}`),
           );
           return;
         }
 
-        const resJson = await res.json();
+        const resJson = responseBody.payload;
         const message = this.extractMessage(resJson);
         options.onFinish(message, res);
       }

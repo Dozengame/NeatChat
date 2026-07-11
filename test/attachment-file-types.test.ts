@@ -90,51 +90,57 @@ describe("attachment file type support", () => {
     const note = new File(["notes"], "notes.txt", { type: "text/plain" });
     const dragCopy = Locale.Chat.Attachments.Drag;
 
-    expect(getDraggedAttachmentSummary(dragTransferFromFiles([png, note]), 0, 0))
-      .toEqual({
-        text: dragCopy.WillAdd(
-          [dragCopy.ImageCount(1), dragCopy.FileCount(1)],
-          false,
-        ),
-        hint: dragCopy.AddHint,
-        willAdd: true,
-      });
-    expect(getDraggedAttachmentSummary(dragTransferFromFiles([png, note]), 3, 5))
-      .toEqual({
-        text: dragCopy.Limit,
-        hint: dragCopy.BlockedHint,
-        willAdd: false,
-      });
-    expect(getDraggedAttachmentSummary(dragTransferFromFiles([png, note]), 3, 0))
-      .toEqual({
-        text: dragCopy.WillAdd([dragCopy.FileCount(1)], true),
-        hint: dragCopy.AddHint,
-        willAdd: true,
-      });
+    expect(
+      getDraggedAttachmentSummary(dragTransferFromFiles([png, note]), 0, 0),
+    ).toEqual({
+      text: dragCopy.WillAdd(
+        [dragCopy.ImageCount(1), dragCopy.FileCount(1)],
+        false,
+      ),
+      hint: dragCopy.AddHint,
+      willAdd: true,
+    });
+    expect(
+      getDraggedAttachmentSummary(dragTransferFromFiles([png, note]), 3, 5),
+    ).toEqual({
+      text: dragCopy.Limit,
+      hint: dragCopy.BlockedHint,
+      willAdd: false,
+    });
+    expect(
+      getDraggedAttachmentSummary(dragTransferFromFiles([png, note]), 3, 0),
+    ).toEqual({
+      text: dragCopy.WillAdd([dragCopy.FileCount(1)], true),
+      hint: dragCopy.AddHint,
+      willAdd: true,
+    });
   });
 
   test("summarizes empty-mime dragged images using the real extension fallback", () => {
     const pastedPng = new File(["image"], "pasted.png", { type: "" });
     const dragCopy = Locale.Chat.Attachments.Drag;
 
-    expect(getDraggedAttachmentSummary(dragTransferFromFiles([pastedPng]), 0, 0))
-      .toEqual({
-        text: dragCopy.WillAdd([dragCopy.ImageCount(1)], false),
-        hint: dragCopy.AddHint,
-        willAdd: true,
-      });
-    expect(getDraggedAttachmentSummary(dragTransferFromItems([pastedPng]), 0, 0))
-      .toEqual({
-        text: dragCopy.WillAdd([dragCopy.ImageCount(1)], false),
-        hint: dragCopy.AddHint,
-        willAdd: true,
-      });
-    expect(getDraggedAttachmentSummary(dragTransferFromFiles([pastedPng]), 0, 5))
-      .toEqual({
-        text: dragCopy.WillAdd([dragCopy.ImageCount(1)], false),
-        hint: dragCopy.AddHint,
-        willAdd: true,
-      });
+    expect(
+      getDraggedAttachmentSummary(dragTransferFromFiles([pastedPng]), 0, 0),
+    ).toEqual({
+      text: dragCopy.WillAdd([dragCopy.ImageCount(1)], false),
+      hint: dragCopy.AddHint,
+      willAdd: true,
+    });
+    expect(
+      getDraggedAttachmentSummary(dragTransferFromItems([pastedPng]), 0, 0),
+    ).toEqual({
+      text: dragCopy.WillAdd([dragCopy.ImageCount(1)], false),
+      hint: dragCopy.AddHint,
+      willAdd: true,
+    });
+    expect(
+      getDraggedAttachmentSummary(dragTransferFromFiles([pastedPng]), 0, 5),
+    ).toEqual({
+      text: dragCopy.WillAdd([dragCopy.ImageCount(1)], false),
+      hint: dragCopy.AddHint,
+      willAdd: true,
+    });
   });
 
   test("treats gpt-5.5 as image-input capable", () => {
@@ -185,8 +191,7 @@ describe("attachment file type support", () => {
       type: "text/plain",
       lastModified: 2,
     });
-    const dataUrl =
-      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB";
+    const dataUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB";
 
     const payload = getClipboardAttachmentPayload(
       clipboardTransfer({
@@ -201,10 +206,83 @@ describe("attachment file type support", () => {
     expect(payload.imageUrls).toEqual([]);
   });
 
+  test("preserves distinct files with identical metadata from the clipboard file list", () => {
+    const first = new File(["same"], "duplicate.txt", {
+      type: "text/plain",
+      lastModified: 1,
+    });
+    const second = new File(["same"], "duplicate.txt", {
+      type: "text/plain",
+      lastModified: 2,
+    });
+
+    const files = getClipboardAttachmentPayload(
+      clipboardTransfer({ files: [first, second] }),
+    ).files;
+    expect(files).toHaveLength(2);
+    expect(files[0]).toBe(first);
+    expect(files[1]).toBe(second);
+  });
+
+  test("preserves distinct files with identical metadata from clipboard items", () => {
+    const first = new File(["same"], "duplicate.txt", {
+      type: "text/plain",
+      lastModified: 1,
+    });
+    const second = new File(["same"], "duplicate.txt", {
+      type: "text/plain",
+      lastModified: 2,
+    });
+
+    const files = getClipboardAttachmentPayload(
+      clipboardTransfer({ items: [first, second] }),
+    ).files;
+    expect(files).toHaveLength(2);
+    expect(files[0]).toBe(first);
+    expect(files[1]).toBe(second);
+  });
+
+  test("deduplicates clipboard file projections one-to-one", () => {
+    const fileProjection = new File(["same"], "duplicate.txt", {
+      type: "text/plain",
+      lastModified: 1,
+    });
+    const firstItemProjection = new File(["same"], "duplicate.txt", {
+      type: "text/plain",
+      lastModified: 2,
+    });
+    const secondItemProjection = new File(["same"], "duplicate.txt", {
+      type: "text/plain",
+      lastModified: 3,
+    });
+
+    const files = getClipboardAttachmentPayload(
+      clipboardTransfer({
+        files: [fileProjection],
+        items: [firstItemProjection, secondItemProjection],
+      }),
+    ).files;
+    expect(files).toHaveLength(2);
+    expect(files[0]).toBe(fileProjection);
+    expect(files[1]).toBe(secondItemProjection);
+  });
+
+  test("deduplicates the same clipboard File object across both projections", () => {
+    const file = new File(["same"], "duplicate.txt", {
+      type: "text/plain",
+    });
+
+    const files = getClipboardAttachmentPayload(
+      clipboardTransfer({ files: [file], items: [file] }),
+    ).files;
+    expect(files).toHaveLength(1);
+    expect(files[0]).toBe(file);
+  });
+
   test("replaces only the selected attachment image when duplicate urls exist", () => {
-    expect(replaceAttachmentImageAtIndex(["same", "same"], 1, "edited")).toEqual(
-      ["same", "edited"],
-    );
+    expect(
+      replaceAttachmentImageAtIndex(["same", "same"], 1, "edited"),
+    ).toEqual(["same", "edited"]);
   });
 
   test("creates distinct render keys for duplicate attachment values", () => {

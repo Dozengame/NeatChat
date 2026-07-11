@@ -40,12 +40,32 @@
 .compact-container {
   --mobile-sidebar-drawer-width: 304px;
   --mobile-sidebar-drawer-offset: -304px;
-  --mobile-sidebar-drawer-background: color-mix(in srgb, var(--surface-elevated) 82%, transparent);
-  --mobile-sidebar-drawer-border-color: color-mix(in srgb, var(--black) 10%, transparent);
-  --mobile-sidebar-drawer-shadow-color: color-mix(in srgb, var(--black-50) 18%, transparent);
-  --mobile-sidebar-drawer-inset-color: color-mix(in srgb, var(--surface) 64%, transparent);
+  --mobile-sidebar-drawer-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 82%,
+    transparent
+  );
+  --mobile-sidebar-drawer-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --mobile-sidebar-drawer-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 18%,
+    transparent
+  );
+  --mobile-sidebar-drawer-inset-color: color-mix(
+    in srgb,
+    var(--surface) 64%,
+    transparent
+  );
   --mobile-sidebar-drawer-filter: blur(24px) saturate(165%);
-  --mobile-sidebar-backdrop-background: color-mix(in srgb, var(--black) 20%, transparent);
+  --mobile-sidebar-backdrop-background: color-mix(
+    in srgb,
+    var(--black) 20%,
+    transparent
+  );
   --mobile-sidebar-backdrop-filter: blur(8px) saturate(125%);
   --window-width: 100vw;
   --window-height: var(--full-height);
@@ -70,7 +90,9 @@
     backdrop-filter: var(--mobile-sidebar-drawer-filter);
     -webkit-backdrop-filter: var(--mobile-sidebar-drawer-filter);
     border-right: 1px solid var(--mobile-sidebar-drawer-border-color);
-    transition: left 0.2s cubic-bezier(0.2, 0, 0, 1), display 0.2s cubic-bezier(0.2, 0, 0, 1);
+    transition:
+      left 0.2s cubic-bezier(0.2, 0, 0, 1),
+      display 0.2s cubic-bezier(0.2, 0, 0, 1);
     transition-behavior: allow-discrete;
     box-shadow:
       0 28px 80px var(--mobile-sidebar-drawer-shadow-color),
@@ -99,23 +121,63 @@
 }
 
 :global(.dark) .compact-container {
-  --mobile-sidebar-drawer-background: color-mix(in srgb, var(--surface-elevated) 84%, transparent);
-  --mobile-sidebar-drawer-border-color: color-mix(in srgb, var(--black) 10%, transparent);
-  --mobile-sidebar-drawer-shadow-color: color-mix(in srgb, var(--surface) 54%, transparent);
-  --mobile-sidebar-drawer-inset-color: color-mix(in srgb, var(--black) 8%, transparent);
+  --mobile-sidebar-drawer-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 84%,
+    transparent
+  );
+  --mobile-sidebar-drawer-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
+  --mobile-sidebar-drawer-shadow-color: color-mix(
+    in srgb,
+    var(--surface) 54%,
+    transparent
+  );
+  --mobile-sidebar-drawer-inset-color: color-mix(
+    in srgb,
+    var(--black) 8%,
+    transparent
+  );
   --mobile-sidebar-drawer-filter: blur(24px) saturate(150%);
-  --mobile-sidebar-backdrop-background: color-mix(in srgb, var(--surface) 56%, transparent);
+  --mobile-sidebar-backdrop-background: color-mix(
+    in srgb,
+    var(--surface) 56%,
+    transparent
+  );
   --mobile-sidebar-backdrop-filter: blur(10px) saturate(130%);
 }
 
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .compact-container {
-    --mobile-sidebar-drawer-background: color-mix(in srgb, var(--surface-elevated) 84%, transparent);
-    --mobile-sidebar-drawer-border-color: color-mix(in srgb, var(--black) 10%, transparent);
-    --mobile-sidebar-drawer-shadow-color: color-mix(in srgb, var(--surface) 54%, transparent);
-    --mobile-sidebar-drawer-inset-color: color-mix(in srgb, var(--black) 8%, transparent);
+    --mobile-sidebar-drawer-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 84%,
+      transparent
+    );
+    --mobile-sidebar-drawer-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --mobile-sidebar-drawer-shadow-color: color-mix(
+      in srgb,
+      var(--surface) 54%,
+      transparent
+    );
+    --mobile-sidebar-drawer-inset-color: color-mix(
+      in srgb,
+      var(--black) 8%,
+      transparent
+    );
     --mobile-sidebar-drawer-filter: blur(24px) saturate(150%);
-    --mobile-sidebar-backdrop-background: color-mix(in srgb, var(--surface) 56%, transparent);
+    --mobile-sidebar-backdrop-background: color-mix(
+      in srgb,
+      var(--surface) 56%,
+      transparent
+    );
     --mobile-sidebar-backdrop-filter: blur(10px) saturate(130%);
   }
 }
@@ -162,47 +224,143 @@
 }
 
 .sidebar {
-  --sidebar-background: color-mix(in srgb, var(--surface-elevated) 86%, transparent);
+  --sidebar-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 86%,
+    transparent
+  );
   --sidebar-border-color: color-mix(in srgb, var(--black) 10%, transparent);
   --sidebar-drag-background: transparent;
-  --sidebar-drag-hover-background: color-mix(in srgb, var(--black) 1%, transparent);
-  --sidebar-mobile-shadow: 0 16px 48px color-mix(in srgb, var(--black-50) 24%, transparent);
-  --sidebar-item-active-background: color-mix(in srgb, var(--primary) 10%, transparent);
-  --sidebar-item-active-soft-background: color-mix(in srgb, var(--primary) 8%, transparent);
-  --sidebar-item-active-border-color: color-mix(in srgb, var(--primary) 22%, transparent);
-  --sidebar-item-active-muted-color: color-mix(in srgb, var(--primary) 72%, var(--black-50));
+  --sidebar-drag-hover-background: color-mix(
+    in srgb,
+    var(--black) 1%,
+    transparent
+  );
+  --sidebar-mobile-shadow: 0 16px 48px
+    color-mix(in srgb, var(--black-50) 24%, transparent);
+  --sidebar-item-active-background: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    transparent
+  );
+  --sidebar-item-active-soft-background: color-mix(
+    in srgb,
+    var(--primary) 8%,
+    transparent
+  );
+  --sidebar-item-active-border-color: color-mix(
+    in srgb,
+    var(--primary) 22%,
+    transparent
+  );
+  --sidebar-item-active-muted-color: color-mix(
+    in srgb,
+    var(--primary) 72%,
+    var(--black-50)
+  );
   --sidebar-card-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-  --sidebar-card-hover-border-color: color-mix(in srgb, var(--primary) 18%, transparent);
-  --sidebar-card-hover-background: color-mix(in srgb, var(--surface-elevated) 94%, var(--primary) 6%);
-  --sidebar-card-hover-shadow: 0 6px 22px color-mix(in srgb, var(--black-50) 12%, transparent);
+  --sidebar-card-hover-border-color: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
+  --sidebar-card-hover-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 94%,
+    var(--primary) 6%
+  );
+  --sidebar-card-hover-shadow: 0 6px 22px
+    color-mix(in srgb, var(--black-50) 12%, transparent);
   --sidebar-card-focus-background: var(--surface-elevated);
-  --sidebar-action-active-background: color-mix(in srgb, var(--primary) 10%, transparent);
-  --sidebar-action-active-ring-shadow: color-mix(in srgb, var(--primary) 22%, transparent);
-  --sidebar-action-active-drop-shadow: color-mix(in srgb, var(--primary) 12%, transparent);
-  --sidebar-tail-border-color: color-mix(in srgb, var(--black) 10%, transparent);
+  --sidebar-action-active-background: color-mix(
+    in srgb,
+    var(--primary) 10%,
+    transparent
+  );
+  --sidebar-action-active-ring-shadow: color-mix(
+    in srgb,
+    var(--primary) 22%,
+    transparent
+  );
+  --sidebar-action-active-drop-shadow: color-mix(
+    in srgb,
+    var(--primary) 12%,
+    transparent
+  );
+  --sidebar-tail-border-color: color-mix(
+    in srgb,
+    var(--black) 10%,
+    transparent
+  );
   --sidebar-avatar-background: linear-gradient(
     135deg,
     var(--primary),
     color-mix(in srgb, var(--primary) 66%, var(--surface-elevated))
   );
-  --sidebar-avatar-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 22%, transparent);
-  --sidebar-avatar-face-background: color-mix(in srgb, var(--surface-elevated) 88%, var(--primary) 12%);
-  --sidebar-avatar-face-shadow:
-    inset 0 -3px 0 color-mix(in srgb, var(--primary) 12%, transparent),
+  --sidebar-avatar-shadow: 0 10px 24px
+    color-mix(in srgb, var(--primary) 22%, transparent);
+  --sidebar-avatar-face-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 88%,
+    var(--primary) 12%
+  );
+  --sidebar-avatar-face-shadow: inset 0 -3px 0 color-mix(in srgb, var(--primary)
+          12%, transparent),
     0 2px 8px color-mix(in srgb, var(--black-50) 20%, transparent);
   --sidebar-avatar-feature-color: var(--primary);
-  --sidebar-avatar-count-shadow: 0 1px 3px color-mix(in srgb, var(--black) 20%, transparent);
-  --sidebar-mobile-account-background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
-  --sidebar-mobile-account-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-  --sidebar-mobile-account-hover-background: color-mix(in srgb, var(--surface-elevated) 92%, var(--primary) 4%);
-  --sidebar-mobile-account-shadow-color: color-mix(in srgb, var(--black-50) 8%, transparent);
-  --sidebar-mobile-account-focus-shadow-color: color-mix(in srgb, var(--primary) 14%, transparent);
+  --sidebar-avatar-count-shadow: 0 1px 3px
+    color-mix(in srgb, var(--black) 20%, transparent);
+  --sidebar-mobile-account-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 78%,
+    transparent
+  );
+  --sidebar-mobile-account-border-color: color-mix(
+    in srgb,
+    var(--black) 8%,
+    transparent
+  );
+  --sidebar-mobile-account-hover-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 92%,
+    var(--primary) 4%
+  );
+  --sidebar-mobile-account-shadow-color: color-mix(
+    in srgb,
+    var(--black-50) 8%,
+    transparent
+  );
+  --sidebar-mobile-account-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 14%,
+    transparent
+  );
   --sidebar-mobile-account-name-color: var(--black);
-  --sidebar-mobile-account-meta-color: color-mix(in srgb, var(--black-50) 78%, transparent);
-  --sidebar-mobile-account-settings-background: color-mix(in srgb, var(--surface-elevated) 72%, transparent);
-  --sidebar-mobile-account-settings-border-color: color-mix(in srgb, var(--black-50) 12%, transparent);
-  --sidebar-mobile-account-settings-hover-background: color-mix(in srgb, var(--surface-elevated) 88%, var(--primary) 10%);
-  --sidebar-mobile-account-settings-focus-shadow-color: color-mix(in srgb, var(--primary) 18%, transparent);
+  --sidebar-mobile-account-meta-color: color-mix(
+    in srgb,
+    var(--black-50) 78%,
+    transparent
+  );
+  --sidebar-mobile-account-settings-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 72%,
+    transparent
+  );
+  --sidebar-mobile-account-settings-border-color: color-mix(
+    in srgb,
+    var(--black-50) 12%,
+    transparent
+  );
+  --sidebar-mobile-account-settings-hover-background: color-mix(
+    in srgb,
+    var(--surface-elevated) 88%,
+    var(--primary) 10%
+  );
+  --sidebar-mobile-account-settings-focus-shadow-color: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
   --sidebar-mobile-account-settings-icon-color: var(--black);
   --sidebar-on-primary: rgb(255, 255, 255);
 
@@ -259,21 +417,74 @@
   }
 
   :global(.dark) & {
-    --sidebar-background: color-mix(in srgb, var(--surface-elevated) 84%, transparent);
-    --sidebar-mobile-shadow: 0 16px 48px color-mix(in srgb, var(--surface) 44%, transparent);
-    --sidebar-card-hover-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--primary) 14%);
+    --sidebar-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 84%,
+      transparent
+    );
+    --sidebar-mobile-shadow: 0 16px 48px
+      color-mix(in srgb, var(--surface) 44%, transparent);
+    --sidebar-card-hover-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 86%,
+      var(--primary) 14%
+    );
     --sidebar-card-hover-shadow: none;
-    --sidebar-action-active-drop-shadow: color-mix(in srgb, var(--primary) 14%, transparent);
-    --sidebar-mobile-account-background: color-mix(in srgb, var(--surface-elevated) 70%, transparent);
-    --sidebar-mobile-account-border-color: color-mix(in srgb, var(--black) 10%, transparent);
-    --sidebar-mobile-account-hover-background: color-mix(in srgb, var(--surface-elevated) 82%, var(--primary) 12%);
-    --sidebar-mobile-account-shadow-color: color-mix(in srgb, var(--surface) 18%, transparent);
-    --sidebar-mobile-account-focus-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
-    --sidebar-mobile-account-meta-color: color-mix(in srgb, var(--black-50) 82%, transparent);
-    --sidebar-mobile-account-settings-background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
-    --sidebar-mobile-account-settings-border-color: color-mix(in srgb, var(--black) 12%, transparent);
-    --sidebar-mobile-account-settings-hover-background: color-mix(in srgb, var(--surface-elevated) 78%, var(--primary) 16%);
-    --sidebar-mobile-account-settings-focus-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
+    --sidebar-action-active-drop-shadow: color-mix(
+      in srgb,
+      var(--primary) 14%,
+      transparent
+    );
+    --sidebar-mobile-account-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 70%,
+      transparent
+    );
+    --sidebar-mobile-account-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --sidebar-mobile-account-hover-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 82%,
+      var(--primary) 12%
+    );
+    --sidebar-mobile-account-shadow-color: color-mix(
+      in srgb,
+      var(--surface) 18%,
+      transparent
+    );
+    --sidebar-mobile-account-focus-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 24%,
+      transparent
+    );
+    --sidebar-mobile-account-meta-color: color-mix(
+      in srgb,
+      var(--black-50) 82%,
+      transparent
+    );
+    --sidebar-mobile-account-settings-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 78%,
+      transparent
+    );
+    --sidebar-mobile-account-settings-border-color: color-mix(
+      in srgb,
+      var(--black) 12%,
+      transparent
+    );
+    --sidebar-mobile-account-settings-hover-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 78%,
+      var(--primary) 16%
+    );
+    --sidebar-mobile-account-settings-focus-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 24%,
+      transparent
+    );
   }
 
   .sidebar-header-bar {
@@ -305,21 +516,74 @@
 
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .sidebar {
-    --sidebar-background: color-mix(in srgb, var(--surface-elevated) 84%, transparent);
-    --sidebar-mobile-shadow: 0 16px 48px color-mix(in srgb, var(--surface) 44%, transparent);
-    --sidebar-card-hover-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--primary) 14%);
+    --sidebar-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 84%,
+      transparent
+    );
+    --sidebar-mobile-shadow: 0 16px 48px
+      color-mix(in srgb, var(--surface) 44%, transparent);
+    --sidebar-card-hover-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 86%,
+      var(--primary) 14%
+    );
     --sidebar-card-hover-shadow: none;
-    --sidebar-action-active-drop-shadow: color-mix(in srgb, var(--primary) 14%, transparent);
-    --sidebar-mobile-account-background: color-mix(in srgb, var(--surface-elevated) 70%, transparent);
-    --sidebar-mobile-account-border-color: color-mix(in srgb, var(--black) 10%, transparent);
-    --sidebar-mobile-account-hover-background: color-mix(in srgb, var(--surface-elevated) 82%, var(--primary) 12%);
-    --sidebar-mobile-account-shadow-color: color-mix(in srgb, var(--surface) 18%, transparent);
-    --sidebar-mobile-account-focus-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
-    --sidebar-mobile-account-meta-color: color-mix(in srgb, var(--black-50) 82%, transparent);
-    --sidebar-mobile-account-settings-background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
-    --sidebar-mobile-account-settings-border-color: color-mix(in srgb, var(--black) 12%, transparent);
-    --sidebar-mobile-account-settings-hover-background: color-mix(in srgb, var(--surface-elevated) 78%, var(--primary) 16%);
-    --sidebar-mobile-account-settings-focus-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
+    --sidebar-action-active-drop-shadow: color-mix(
+      in srgb,
+      var(--primary) 14%,
+      transparent
+    );
+    --sidebar-mobile-account-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 70%,
+      transparent
+    );
+    --sidebar-mobile-account-border-color: color-mix(
+      in srgb,
+      var(--black) 10%,
+      transparent
+    );
+    --sidebar-mobile-account-hover-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 82%,
+      var(--primary) 12%
+    );
+    --sidebar-mobile-account-shadow-color: color-mix(
+      in srgb,
+      var(--surface) 18%,
+      transparent
+    );
+    --sidebar-mobile-account-focus-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 24%,
+      transparent
+    );
+    --sidebar-mobile-account-meta-color: color-mix(
+      in srgb,
+      var(--black-50) 82%,
+      transparent
+    );
+    --sidebar-mobile-account-settings-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 78%,
+      transparent
+    );
+    --sidebar-mobile-account-settings-border-color: color-mix(
+      in srgb,
+      var(--black) 12%,
+      transparent
+    );
+    --sidebar-mobile-account-settings-hover-background: color-mix(
+      in srgb,
+      var(--surface-elevated) 78%,
+      var(--primary) 16%
+    );
+    --sidebar-mobile-account-settings-focus-shadow-color: color-mix(
+      in srgb,
+      var(--primary) 24%,
+      transparent
+    );
   }
 }
 
@@ -371,7 +635,9 @@
     left: -100%;
     z-index: 1000;
     height: var(--full-height);
-    transition: left 0.2s ease-out, display 0.2s ease-out;
+    transition:
+      left 0.2s ease-out,
+      display 0.2s ease-out;
     transition-behavior: allow-discrete;
     box-shadow: var(--sidebar-mobile-shadow);
 
@@ -396,7 +662,9 @@
       box-shadow:
         0 28px 80px var(--mobile-sidebar-drawer-shadow-color),
         inset -1px 0 0 var(--mobile-sidebar-drawer-inset-color);
-      transition: left 0.2s cubic-bezier(0.2, 0, 0, 1), display 0.2s cubic-bezier(0.2, 0, 0, 1);
+      transition:
+        left 0.2s cubic-bezier(0.2, 0, 0, 1),
+        display 0.2s cubic-bezier(0.2, 0, 0, 1);
       transition-behavior: allow-discrete;
 
       @starting-style {
@@ -529,6 +797,7 @@
 
 .sidebar-body {
   flex: 1;
+  min-height: 0;
   overflow: auto;
   overflow-x: hidden;
   position: relative;
@@ -555,9 +824,11 @@
 .sidebar-body-content {
   position: relative;
   z-index: 1;
+  min-height: 100%;
 }
 
 .chat-item {
+  box-sizing: border-box;
   padding: 8px 40px 8px 12px;
   background-color: transparent;
   border: 1px solid transparent;
@@ -571,6 +842,23 @@
   user-select: none;
   position: relative;
   content-visibility: auto;
+  contain-intrinsic-size: auto 56px;
+}
+
+.chat-item-virtual {
+  margin: 0 !important;
+}
+
+.chat-list-viewport {
+  box-sizing: border-box;
+  height: calc(100vh - 310px);
+  min-height: 240px;
+  max-height: 100%;
+}
+
+.chat-list-virtual-scroll {
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 
 .chat-item-link {
@@ -611,7 +899,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  animation: slide-in ease 0.3s;
 }
 
 .chat-item-delete {
@@ -727,7 +1014,6 @@
   color: var(--black-50);
   font-size: 12px;
   margin-top: 4px;
-  animation: slide-in ease 0.3s;
 }
 
 .sidebar-nav-item {
@@ -1253,7 +1539,12 @@
     background: transparent;
     display: flex;
     align-items: center;
-    content-visibility: visible;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 70px;
+  }
+
+  .chat-list-viewport {
+    height: calc(100dvh - 300px);
   }
 
   .chat-item + .chat-item {
@@ -1465,7 +1756,8 @@
     &:hover,
     &:focus-visible {
       background: var(--sidebar-mobile-account-settings-hover-background);
-      box-shadow: 0 0 0 3px var(--sidebar-mobile-account-settings-focus-shadow-color);
+      box-shadow: 0 0 0 3px
+        var(--sidebar-mobile-account-settings-focus-shadow-color);
     }
 
     svg {

@@ -29,28 +29,37 @@ const jimengText2ImageRequest = [
 ].join("\n");
 
 describe("formatMcpToolResultForChat", () => {
+  test("uses the active English locale for Jimeng progress copy", () => {
+    const formatted = formatJimengMcpRequestForChat(jimengText2ImageRequest);
+
+    expect(formatted).toContain("Image generation task");
+    expect(formatted).toContain("Generation type: Text to image");
+    expect(formatted).toContain("Progress:");
+    expect(formatted).not.toContain("图片生成任务");
+  });
+
   test("turns jimeng MCP request code into a visible generation progress message", () => {
     const formatted = formatJimengMcpRequestForChat(jimengText2ImageRequest);
 
-    expect(formatted).toContain("图片生成任务");
-    expect(formatted).toContain("生成类型：文生图");
-    expect(formatted).toContain("优化后的 Prompt：");
+    expect(formatted).toContain("Image generation task");
+    expect(formatted).toContain("Generation type: Text to image");
+    expect(formatted).toContain("Optimized Prompt:");
     expect(formatted).toContain(
       "A cinematic scene of a cat and dog play-fighting in a yard",
     );
-    expect(formatted).toContain("当前进度：");
-    expect(formatted).toContain("正在提交到 jimeng-mcp");
+    expect(formatted).toContain("Progress:");
+    expect(formatted).toContain("Submitting to jimeng-mcp");
     expect(formatted).not.toContain("```json:mcp");
     expect(formatted).not.toContain('"method"');
   });
 
   test("turns streaming jimeng MCP request fragments into stable progress text", () => {
     const formatted = formatPendingMcpRequestForChat(
-      "```json:mcp:jimeng-mcp\n{\"method\"",
+      '```json:mcp:jimeng-mcp\n{"method"',
     );
 
-    expect(formatted).toContain("图片生成任务");
-    expect(formatted).toContain("正在准备提交到 jimeng-mcp");
+    expect(formatted).toContain("Image generation task");
+    expect(formatted).toContain("Preparing to submit to jimeng-mcp");
     expect(formatted).not.toContain("```json:mcp");
     expect(formatted).not.toContain('"method"');
   });
@@ -58,8 +67,8 @@ describe("formatMcpToolResultForChat", () => {
   test("hides generic MCP request fragments before the client id is complete", () => {
     const formatted = formatPendingMcpRequestForChat("```json:mcp");
 
-    expect(formatted).toContain("工具调用");
-    expect(formatted).toContain("正在准备执行工具");
+    expect(formatted).toContain("Tool call");
+    expect(formatted).toContain("Preparing to run the tool");
     expect(formatted).not.toContain("```json:mcp");
   });
 
@@ -341,9 +350,9 @@ describe("formatMcpToolResultForChat", () => {
       { includeImages: false },
     );
 
-    expect(updatedProgress).toContain("优化后的 Prompt：");
-    expect(updatedProgress).toContain("当前进度：");
-    expect(updatedProgress).toContain("状态：生成中");
+    expect(updatedProgress).toContain("Optimized Prompt:");
+    expect(updatedProgress).toContain("Progress:");
+    expect(updatedProgress).toContain("Status: Generating");
     expect(updatedProgress).not.toContain("原始状态：querying");
     expect(updatedProgress).not.toContain("任务 ID：submit-1");
     expect(updatedProgress).not.toContain("command:");
@@ -365,7 +374,7 @@ describe("formatMcpToolResultForChat", () => {
       { includeImages: true },
     );
 
-    expect(updatedProgress).toContain("状态：生成成功");
+    expect(updatedProgress).toContain("Status: Generation succeeded");
     expect(updatedProgress).toContain(`![generated image 1](${imageUrl})`);
     expect(updatedProgress).not.toContain("public_urls:");
   });

@@ -107,9 +107,19 @@ describe("English UI localization contract", () => {
         'blockedParts.push("图片已达 3 张上限")',
         'blockedParts.push("文件已达 5 个上限")',
         'text: "释放后识别附件"',
-        'acceptedParts.push(`${acceptedImageCount} 张图片`)',
-        'acceptedParts.push(`${acceptedFileCount} 个文件`)',
+        "acceptedParts.push(`${acceptedImageCount} 张图片`)",
+        "acceptedParts.push(`${acceptedFileCount} 个文件`)",
         '? `将添加 ${acceptedParts.join("、")}，其余会自动忽略`',
+        'title: "检测到旧版 Word 文档"',
+        'title: "检测到旧版 PowerPoint 文档"',
+        'title: "检测到旧版 Excel 文档"',
+        'title: "PDF 内容提取受限"',
+        'title: "ZIP 文件内容提取受限"',
+        'throw new Error("不支持的文件类型")',
+        'name: file.name || "粘贴的文件.txt"',
+        'showToast(`${file.name || "该文件"} 类型不支持`)',
+        "showToast(`读取文件 ${file.name} 失败:",
+        'onError(new Error("没有成功读取任何文件"))',
       ],
     ],
     [
@@ -118,6 +128,8 @@ describe("English UI localization contract", () => {
     ],
     ["app/client/platforms/openai-responses-tools.ts", ["来源："]],
     ["app/client/platforms/openai.ts", ["正在推理..."]],
+    ["app/api/auth.ts", ["当前访问暂时受限，请稍后再试。"]],
+    ["app/api/abuse-control.ts", ["当前访问暂时受限，请稍后再试。"]],
     [
       "app/utils/openai-image.ts",
       ["模型：", "正在保存图片", "正在生成图片", "正在准备图片生成请求"],
@@ -131,7 +143,7 @@ describe("English UI localization contract", () => {
         "任务提交或查询失败，请稍后重试",
       ],
     ],
-  ] as Array<[string, string[]]>) (
+  ] as Array<[string, string[]]>)(
     "%s routes production copy through Locale",
     (file, forbidden) => {
       const source = read(file);
@@ -153,6 +165,7 @@ describe("English UI localization contract", () => {
       "ImageEditor",
       "Markdown",
       "FileAttachment",
+      "Reader",
       "UpdateAnnouncement",
     ];
 
@@ -163,5 +176,30 @@ describe("English UI localization contract", () => {
     }
     expect(en).not.toContain("chats，");
     expect(en).not.toContain("disable？");
+  });
+
+  test("maps stable public error codes through the active locale", () => {
+    const openAIClient = read("app/client/platforms/openai.ts");
+
+    expect(openAIClient).toMatch(
+      /isAccessRestrictedPublicError\(res\)[\s\S]*?return Locale\.Error\.AccessRestricted;/,
+    );
+
+    const providerClients = [
+      "alibaba",
+      "baidu",
+      "bytedance",
+      "glm",
+      "google",
+      "iflytek",
+      "moonshot",
+      "tencent",
+      "xai",
+    ];
+    for (const provider of providerClients) {
+      const source = read(`app/client/platforms/${provider}.ts`);
+      expect(source).toContain("getAccessRestrictedPublicErrorMessage");
+      expect(source).toContain("Locale.Error.AccessRestricted");
+    }
   });
 });

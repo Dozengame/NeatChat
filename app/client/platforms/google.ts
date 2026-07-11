@@ -27,6 +27,9 @@ import { preProcessImageContent } from "@/app/utils/chat";
 import { nanoid } from "nanoid";
 import { RequestPayload } from "./openai";
 import { fetch } from "@/app/utils/stream";
+import { withAbortTimeoutResponse } from "@/app/utils/request-timeout";
+import { getAccessRestrictedPublicErrorMessage } from "@/app/utils/public-error";
+import Locale from "../../locales";
 
 export class GeminiProApi implements LLMApi {
   path(path: string, shouldStream = false): string {
@@ -210,12 +213,6 @@ export class GeminiProApi implements LLMApi {
         headers: await getHeadersAsync(),
       };
 
-      // make a fetch request
-      const requestTimeoutId = setTimeout(
-        () => controller.abort(),
-        REQUEST_TIMEOUT_MS,
-      );
-
       if (shouldStream) {
         const [_, funcs] = usePluginStore
           .getState()
@@ -318,9 +315,23 @@ export class GeminiProApi implements LLMApi {
           options,
         );
       } else {
-        const res = await fetch(chatPath, chatPayload);
-        clearTimeout(requestTimeoutId);
-        const resJson = await res.json();
+        const { response: res, body: resJson } = await withAbortTimeoutResponse(
+          {
+            controller,
+            timeoutMs: REQUEST_TIMEOUT_MS,
+            operation: () => fetch(chatPath, chatPayload),
+            consume: (response) => response.json(),
+          },
+        );
+        const accessRestrictedMessage = getAccessRestrictedPublicErrorMessage({
+          response: res,
+          payload: resJson,
+          message: Locale.Error.AccessRestricted,
+        });
+        if (accessRestrictedMessage) {
+          options.onFinish(accessRestrictedMessage, res);
+          return;
+        }
         if (resJson?.promptFeedback?.blockReason) {
           // being blocked
           options.onError?.(

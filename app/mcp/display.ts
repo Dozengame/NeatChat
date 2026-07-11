@@ -1,5 +1,6 @@
 import { JIMENG_MCP_SERVER_ID } from "./jimeng";
 import { extractMcpJson } from "./utils";
+import Locale from "../locales";
 
 const IMAGE_URL_PATTERN =
   /https:\/\/[^\s)"'>]+\.(?:png|jpe?g|webp|gif)(?:\?[^\s)"'>]*)?/gi;
@@ -16,12 +17,17 @@ const ERROR_DETAIL_HEADER_PATTERN =
   /^"?((?:error(?:_code|_message|_reason)?|fail(?:ure)?_reason|message|detail|stderr))"?\s*[:=]\s*$/i;
 const DIAGNOSTIC_BLOCK_BOUNDARY_PATTERN =
   /^"?(?:command|stdout|downloaded_files|public_urls|markdown_images|feishu_delivery|local_file|submit_id|gen_status|result_json)"?\s*[:=]/i;
-const JIMENG_PROGRESS_MARKER = "\n\n当前进度：";
+const JimengDisplay = Locale.Chat.ImageGeneration.Display;
+const JIMENG_PROGRESS_MARKERS = [
+  "\n\n当前进度：",
+  "\n\nProgress:",
+  `\n\n${JimengDisplay.Progress}`,
+];
 const JIMENG_GENERATION_TOOL_LABELS: Record<string, string> = {
-  dreamina_text2image: "文生图",
-  dreamina_image2image: "图生图",
-  dreamina_text2video: "文生视频",
-  dreamina_image2video: "图生视频",
+  dreamina_text2image: JimengDisplay.TextToImage,
+  dreamina_image2image: JimengDisplay.ImageToImage,
+  dreamina_text2video: JimengDisplay.TextToVideo,
+  dreamina_image2video: JimengDisplay.ImageToVideo,
 };
 
 function unique<T>(items: T[]) {
@@ -185,39 +191,45 @@ function getStringArgument(
 
 function getJimengRequestParameterLines(args: Record<string, unknown>) {
   return [
-    ["画幅", getStringArgument(args, "ratio")],
+    [JimengDisplay.AspectRatio, getStringArgument(args, "ratio")],
     [
-      "清晰度",
+      JimengDisplay.Resolution,
       getStringArgument(args, "resolution_type") ??
         getStringArgument(args, "video_resolution"),
     ],
-    ["模型版本", getStringArgument(args, "model_version")],
-    ["时长", getStringArgument(args, "duration")],
+    [JimengDisplay.ModelVersion, getStringArgument(args, "model_version")],
+    [JimengDisplay.Duration, getStringArgument(args, "duration")],
   ]
     .filter(([, value]) => value)
-    .map(([label, value]) => `- ${label}：${value}`);
+    .map(([label, value]) => `- ${label}${value}`);
 }
 
 function getJimengStatusLabel(status?: string) {
   const normalized = status?.toLowerCase();
-  if (!normalized) return "已提交，等待返回状态";
-  if (normalized === "success") return "生成成功";
+  if (!normalized) return JimengDisplay.Submitted;
+  if (normalized === "success") return JimengDisplay.Success;
   if (["querying", "running", "processing", "pending"].includes(normalized)) {
-    return "生成中";
+    return JimengDisplay.Generating;
   }
-  if (["failed", "failure", "error"].includes(normalized)) return "生成失败";
-  if (["cancelled", "canceled"].includes(normalized)) return "已取消";
-  if (normalized === "timeout") return "查询超时";
-  return status ?? "未知";
+  if (["failed", "failure", "error"].includes(normalized)) {
+    return JimengDisplay.Failure;
+  }
+  if (["cancelled", "canceled"].includes(normalized)) {
+    return JimengDisplay.Cancelled;
+  }
+  if (normalized === "timeout") return JimengDisplay.Timeout;
+  return status ?? JimengDisplay.Unknown;
 }
 
 function stripJimengProgressSection(text: string) {
-  const progressIndex = text.indexOf(JIMENG_PROGRESS_MARKER);
-  if (progressIndex < 0) {
+  const progressIndexes = JIMENG_PROGRESS_MARKERS.map((marker) =>
+    text.indexOf(marker),
+  ).filter((index) => index >= 0);
+  if (progressIndexes.length === 0) {
     return text.trim();
   }
 
-  return text.slice(0, progressIndex).trim();
+  return text.slice(0, Math.min(...progressIndexes)).trim();
 }
 
 function normalizeDiagnosticValue(value: string) {
@@ -362,11 +374,15 @@ export function formatJimengMcpRequestForChat(content: string) {
   const parameterLines = getJimengRequestParameterLines(toolCall.arguments);
 
   return [
-    "图片生成任务",
-    `生成类型：${JIMENG_GENERATION_TOOL_LABELS[toolCall.toolName]}`,
-    prompt ? `优化后的 Prompt：\n${prompt}` : "",
-    parameterLines.length > 0 ? `参数：\n${parameterLines.join("\n")}` : "",
-    "当前进度：\n- 状态：正在提交到 jimeng-mcp",
+    JimengDisplay.Task,
+    `${JimengDisplay.GenerationType}${
+      JIMENG_GENERATION_TOOL_LABELS[toolCall.toolName]
+    }`,
+    prompt ? `${JimengDisplay.OptimizedPrompt}\n${prompt}` : "",
+    parameterLines.length > 0
+      ? `${JimengDisplay.Parameters}\n${parameterLines.join("\n")}`
+      : "",
+    `${JimengDisplay.Progress}\n- ${JimengDisplay.Status}${JimengDisplay.Submitting}`,
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -378,12 +394,16 @@ export function formatPendingMcpRequestForChat(content: string) {
   }
 
   if (!content.includes(`json:mcp:${JIMENG_MCP_SERVER_ID}`)) {
-    return ["工具调用", "当前进度：\n- 状态：正在准备执行工具"].join("\n\n");
+    return [
+      JimengDisplay.ToolCall,
+      `${JimengDisplay.Progress}\n- ${JimengDisplay.Status}${JimengDisplay.PreparingTool}`,
+    ].join("\n\n");
   }
 
-  return ["图片生成任务", "当前进度：\n- 状态：正在准备提交到 jimeng-mcp"].join(
-    "\n\n",
-  );
+  return [
+    JimengDisplay.Task,
+    `${JimengDisplay.Progress}\n- ${JimengDisplay.Status}${JimengDisplay.PreparingSubmission}`,
+  ].join("\n\n");
 }
 
 export function mergeJimengProgressWithResult(
@@ -401,13 +421,13 @@ export function mergeJimengProgressWithResult(
     ? getMarkdownImageLines(formattedResult).join("\n")
     : "";
   const progressLines = [
-    `- 状态：${getJimengStatusLabel(genStatus)}`,
+    `- ${JimengDisplay.Status}${getJimengStatusLabel(genStatus)}`,
     ...errorDetails.map((detail) => `- ${detail}`),
   ];
 
   return [
     stripJimengProgressSection(progressText),
-    `当前进度：\n${progressLines.filter(Boolean).join("\n")}`,
+    `${JimengDisplay.Progress}\n${progressLines.filter(Boolean).join("\n")}`,
     imageMarkdown,
   ]
     .filter(Boolean)

@@ -124,6 +124,7 @@ function SettingsSelect<T extends string>(props: {
       </button>
       {showSettingsSelectSheet && (
         <SimpleSelector
+          ariaLabel={props.ariaLabel}
           items={props.options.map((option) => ({
             title: option.label,
             value: option.value,
@@ -223,7 +224,11 @@ function useSettingsView() {
 
   useEffect(() => {
     const keydownEvent = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (
+        e.key === "Escape" &&
+        !e.defaultPrevented &&
+        !document.querySelector('[role="dialog"][aria-modal="true"]')
+      ) {
         navigate(Path.Home);
       }
     };

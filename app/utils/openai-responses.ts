@@ -1,3 +1,5 @@
+import { ATTACHMENT_WIRE_HEADER_PATTERN } from "./attachment-wire";
+
 export const OPENAI_RESPONSES_DEFAULT_MODEL = "gpt-5.6-terra";
 export const OPENAI_RESPONSES_DEFAULT_TEMPERATURE = 1;
 export const OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT = "low";
@@ -336,9 +338,7 @@ function getSearchIntentText(input?: string) {
     return "";
   }
 
-  const attachmentStart = text.search(
-    /(?:^|\n\n)文件名: .+\n类型: .+\n大小: [\d.]+ KB\n\n/,
-  );
+  const attachmentStart = text.search(ATTACHMENT_WIRE_HEADER_PATTERN);
 
   if (attachmentStart < 0) {
     return text;

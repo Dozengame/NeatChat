@@ -4,10 +4,8 @@ import {
   Baidu,
   BAIDU_BASE_URL,
   REQUEST_TIMEOUT_MS,
-  } from "@/app/constant";
-import { useAccessStore,
-  useAppConfig,
-  useChatStore } from "@/app/store";
+} from "@/app/constant";
+import { useAccessStore, useAppConfig, useChatStore } from "@/app/store";
 import { getAccessToken } from "@/app/utils/baidu";
 
 import {
@@ -27,6 +25,11 @@ import { prettyObject } from "@/app/utils/format";
 import { getClientConfig } from "@/app/config/client";
 import { getMessageTextContent } from "@/app/utils";
 import { fetch } from "@/app/utils/stream";
+import {
+  createAbortTimeout,
+  withAbortTimeoutResponse,
+} from "@/app/utils/request-timeout";
+import { getAccessRestrictedPublicErrorMessage } from "@/app/utils/public-error";
 
 export interface OpenAIListModelResponse {
   object: string;
@@ -154,13 +157,11 @@ export class ErnieApi implements LLMApi {
         headers: await getHeadersAsync(),
       };
 
-      // make a fetch request
-      const requestTimeoutId = setTimeout(
-        () => controller.abort(),
-        REQUEST_TIMEOUT_MS,
-      );
-
       if (shouldStream) {
+        const cancelRequestTimeout = createAbortTimeout({
+          controller,
+          timeoutMs: REQUEST_TIMEOUT_MS,
+        });
         let responseText = "";
         let remainText = "";
         let finished = false;
@@ -200,11 +201,11 @@ export class ErnieApi implements LLMApi {
 
         controller.signal.onabort = finish;
 
-        fetchEventSource(chatPath, {
+        void fetchEventSource(chatPath, {
           fetch: fetch as any,
           ...chatPayload,
           async onopen(res) {
-            clearTimeout(requestTimeoutId);
+            cancelRequestTimeout();
             const contentType = res.headers.get("content-type");
             console.log("[Baidu] request response content type: ", contentType);
             responseRes = res;
@@ -222,12 +223,22 @@ export class ErnieApi implements LLMApi {
             ) {
               const responseTexts = [responseText];
               let extraInfo = await res.clone().text();
+              let responsePayload: unknown;
               try {
-                const resJson = await res.clone().json();
-                extraInfo = prettyObject(resJson);
+                responsePayload = await res.clone().json();
+                extraInfo = prettyObject(responsePayload);
               } catch {}
 
-              if (res.status === 401) {
+              const accessRestrictedMessage =
+                getAccessRestrictedPublicErrorMessage({
+                  response: res,
+                  payload: responsePayload,
+                  message: Locale.Error.AccessRestricted,
+                });
+              if (accessRestrictedMessage) {
+                responseTexts.push(accessRestrictedMessage);
+                extraInfo = "";
+              } else if (res.status === 401) {
                 responseTexts.push(Locale.Error.Unauthorized);
               }
 
@@ -259,17 +270,33 @@ export class ErnieApi implements LLMApi {
             finish();
           },
           onerror(e) {
-            options.onError?.(e);
             throw e;
           },
           openWhenHidden: true,
-        });
+        })
+          .catch((error) => {
+            if (!finished) {
+              finished = true;
+              options.onError?.(error);
+            }
+          })
+          .finally(cancelRequestTimeout);
       } else {
-        const res = await fetch(chatPath, chatPayload);
-        clearTimeout(requestTimeoutId);
+        const { response: res, body: resJson } = await withAbortTimeoutResponse(
+          {
+            controller,
+            timeoutMs: REQUEST_TIMEOUT_MS,
+            operation: () => fetch(chatPath, chatPayload),
+            consume: (response) => response.json(),
+          },
+        );
 
-        const resJson = await res.json();
-        const message = resJson?.result;
+        const message =
+          getAccessRestrictedPublicErrorMessage({
+            response: res,
+            payload: resJson,
+            message: Locale.Error.AccessRestricted,
+          }) ?? resJson?.result;
         options.onFinish(message, res);
       }
     } catch (e) {

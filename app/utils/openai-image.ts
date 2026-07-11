@@ -1,4 +1,5 @@
 import { ServiceProvider } from "../constant";
+import { getAccessRestrictedPublicErrorMessage } from "./public-error";
 import type {
   DalleStyle,
   GptImageQuality,
@@ -219,6 +220,45 @@ export function parseOpenAIImageResponsePayload(params: {
       },
     };
   }
+}
+
+export function getOpenAIImageErrorMessage(params: {
+  status: number;
+  payload: unknown;
+  accessRestrictedMessage: string;
+}) {
+  const localizedAccessError = getAccessRestrictedPublicErrorMessage({
+    response: { status: params.status },
+    payload: params.payload,
+    message: params.accessRestrictedMessage,
+  });
+  if (localizedAccessError) return localizedAccessError;
+
+  const payload = params.payload as
+    | {
+        error?: { message?: unknown; code?: unknown };
+        message?: unknown;
+        msg?: unknown;
+        code?: unknown;
+      }
+    | undefined;
+  const detail =
+    typeof payload?.error?.message === "string"
+      ? payload.error.message
+      : typeof payload?.message === "string"
+      ? payload.message
+      : typeof payload?.msg === "string"
+      ? payload.msg
+      : "";
+  const code =
+    typeof payload?.error?.code === "string"
+      ? payload.error.code
+      : typeof payload?.code === "string"
+      ? payload.code
+      : String(params.status);
+  return detail
+    ? `OpenAI image generation failed (${code}): ${detail}`
+    : `OpenAI image generation failed (${code})`;
 }
 
 export function applyOpenAIImageGenerationDefaults<

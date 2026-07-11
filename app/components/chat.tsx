@@ -166,6 +166,7 @@ import {
   replaceAttachmentImageAtIndex,
   uploadAttachments,
 } from "../utils/file";
+import { formatAttachmentForPrompt } from "../utils/attachment-wire";
 import {
   activateMcpClient,
   deactivateMcpClient,
@@ -173,11 +174,15 @@ import {
 } from "../mcp/actions";
 import { createConfigFieldMeta } from "../utils/public-app-config";
 import {
+  createLatestBooleanIntent,
+  type BooleanIntent,
+} from "../utils/latest-boolean-intent";
+import {
   JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
   JIMENG_MCP_SERVER_ID,
 } from "../mcp/jimeng";
 import {
-  getVisibleChatMessages,
+  createVisibleChatMessagesProjector,
   RenderMessage,
   shouldRenderLoadingPreview,
 } from "./chat-render";
@@ -220,402 +225,18 @@ const CHAT_BODY_BOTTOM_SAFE_AREA_BASE = 150;
 const CHAT_BODY_BOTTOM_SAFE_AREA_MOBILE_BASE = 118;
 const CHAT_SCROLL_BOTTOM_CLEARANCE = 54;
 const CHAT_SCROLL_BOTTOM_MOBILE_CLEARANCE = 50;
-const MARKDOWN_STRESS_QA_PARAM = "markdown-stress";
-const MARKDOWN_STRESS_QA_BOUNDARY_PARAM = "streaming_boundary";
-const MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_PARAM = "dropzone_preview";
-const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_PARAM =
-  "attachment_strip_preview";
-const MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX = "codex-qa-markdown-stress";
-type MarkdownStressBoundaryVariant =
-  | "details"
-  | "table"
-  | "artifact"
-  | "image"
-  | "media";
-type MarkdownStressDropzonePreviewVariant = "accepted" | "blocked";
-type MarkdownStressAttachmentStripPreviewVariant =
-  | "populated"
-  | "full"
-  | "overflow";
-const MARKDOWN_STRESS_QA_BOUNDARY_VARIANTS: MarkdownStressBoundaryVariant[] = [
-  "details",
-  "table",
-  "artifact",
-  "image",
-  "media",
-];
-const MARKDOWN_STRESS_QA_CONTENT = `# Markdown 压测示例文档
+type ChatQaFixture = typeof import("./chat-qa-fixture");
 
-这份内容只用于本地 UI QA，覆盖标题、段落、引用、行内代码、列表、表格、代码块、details、长链接和长文本换行。
-
-> 这是一段 blockquote，用于测试引用样式、换行、嵌套、以及长文本渲染效果。
-> 第二行引用内容，包含 **bold**、_italic_、\`inline code\`。
-
-## 引用与行内代码
-
-> 引用第一段：同一行内混合中文、English words、\`inline code\` 和强调文本，用于检查低眩光背景、左侧 rail、段落节奏和换行。
->
-> - 引用内列表第一项：短内容应该保持紧凑。
-> - 引用内列表第二项包含 \`veryLongInlineCodeIdentifierForMarkdownStressWrappingAndCopySafety\`，用于检查超长行内代码不会撑破消息宽度。
->
-> 引用最后一段紧跟列表，用于检查 blockquote 内部多段内容之间的留白是否自然。
-
-### 连续标题层级
-#### 子标题紧跟标题
-
-连续标题后的正文包含 \`veryLongInlineCodeIdentifierForMarkdownStressWrappingAndCopySafety\`、普通链接和中文说明，用于检查标题、段落、行内代码之间的节奏。
-
-## 深度阅读节奏
-
-连续标题后的引用、表格、details 和长行内代码需要在 light/dark 下保持低眩光阅读面，并且 320px 窄屏不能出现页面级横向滚动。
-
-> 深度引用第一段：包含 \`blockquoteStreamingCaretProbe\`、中文说明和 English words，用于检查引用卡片的宽度、文字颜色和 streaming caret 位置。
->
-> - 引用内列表最后一项保留 \`blockquoteStreamingCaretProbeNestedListItem\`，用于检查流式输出停在引用列表末尾时 caret 不会漂到卡片外。
-
-## 代码块
-
-\`\`\`typescript
-type ChatMessage = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  meta?: {
-    markdown: true;
-    language: "zh-CN";
-  };
-};
-
-const renderMessage = (message: ChatMessage) => {
-  return message.content.trim() || "empty";
-};
-\`\`\`
-
-\`\`\`json
-{
-  "name": "stress-test",
-  "type": "markdown",
-  "enabled": true,
-  "items": [1, 2, 3, 4, 5],
-  "meta": {
-    "author": "OpenAI",
-    "language": "zh-CN"
-  }
-}
-\`\`\`
-
-\`\`\`bash
-#!/usr/bin/env bash
-set -e
-
-echo "Start build..."
-yarn install
-yarn build
-echo "Done."
-\`\`\`
-
-## 表格
-
-| Surface | Expected behavior | QA focus | Extra long validation note |
-| --- | --- | --- | --- |
-| Code block | GitHub-like card with line numbers | Copy excludes gutter | Keep language label, gutter, fold control, and copy button readable on mobile and desktop. |
-| Table | Horizontal overflow stays contained | No page overflow | A deliberately longer table cell checks the edge fade, keyboard focus region, and wrapping behavior. |
-| Quote | Soft rail and readable text | Light and dark comfort | Mixed Chinese and English text should remain calm without clipped glyphs or forced page width. |
-
-表格说明：这段说明紧跟在表格之后，用于检查表格、段落和后续内容之间的节奏。
-
-## 步骤与列表
-
-1. 明确完成标准：同一行内包含 \`inline code\`、[列表内长链接](https://example.com/neatchat/markdown-stress/list-item/with/a/very/long/url/that/should/wrap-cleanly?surface=list&viewport=mobile) 和中文说明时，仍然应该自然换行。
-2. 拆分实现步骤：
-   - 桌面和移动端使用同一套列表节奏。
-   - 嵌套内容包含第二段说明，用于检查多段 list item。
-
-   第二段继续描述这个步骤，确保列表项内段落不会产生过大的空白，也不会挤压后续列表。
-3. 验证输出：
-   - 代码块、表格和列表连续出现时保持清晰层级。
-   - 320px 窄屏不出现页面横向滚动。
-
-任务清单：
-
-- [x] 已完成的任务列表项：行首 checkbox 与正文基线对齐。
-- [ ] 待确认的任务列表项：未选状态在 light/dark 下都要清晰。
-- [ ] 未完成任务 4：包含嵌套子任务，检查缩进、checkbox 对齐和文本换行。
-  - [ ] 子任务 4.1：移动端窄屏不能挤压正文。
-  - [x] 子任务 4.2：完成态不能让图标和文本错位。
-
-<details>
-<summary>折叠内容</summary>
-
-- 第一层列表内容
-  - 第二层列表内容
-  - 混合中文和 English text should wrap without clipping.
-- 长链接测试：https://example.com/neatchat/markdown-stress/very/long/path/that/should/wrap/without/forcing/horizontal/page/overflow?source=codex_qa&theme=both
-
-> details 内的引用内容，用于检查普通折叠块内部引用、列表、链接和长文本的混排节奏。
-
-</details>
-
-## 多模态预览
-
-![多模态预览](data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='640'%20height='360'%20viewBox='0%200%20640%20360'%3E%3Crect%20width='640'%20height='360'%20rx='28'%20fill='%23eef4ff'/%3E%3Ccircle%20cx='126'%20cy='116'%20r='48'%20fill='%236d8dff'/%3E%3Crect%20x='210'%20y='82'%20width='330'%20height='28'%20rx='14'%20fill='%236779e6'/%3E%3Crect%20x='210'%20y='132'%20width='250'%20height='20'%20rx='10'%20fill='%2392a7ff'/%3E%3Cpath%20d='M64%20286L222%20182l92%2064%2078-54%20184%2094H64z'%20fill='%23c8d7ff'/%3E%3C/svg%3E)
-
-![图片生成提示词预览](data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='640'%20height='360'%20viewBox='0%200%20640%20360'%3E%3Crect%20width='640'%20height='360'%20rx='28'%20fill='%23f7f7fb'/%3E%3Crect%20x='72'%20y='72'%20width='496'%20height='216'%20rx='18'%20fill='%23dfe7ff'/%3E%3Ccircle%20cx='168'%20cy='144'%20r='42'%20fill='%23799aff'/%3E%3Cpath%20d='M112%20242l92-70%2070%2052%2058-42%20196%2060z'%20fill='%23aebeff'/%3E%3C/svg%3E) 助手善于判断用户意图，当确定需要提供图片时，助手会输出 markdown 图片语法并追加一段较长的中文提示说明，用于验证图片后接长文本时不会挤压 token、按钮或消息边界，也不会产生横向滚动。
-
-[音频预览](/codex-qa/neatchat-stress-audio.mp3)
-
-[视频预览](/codex-qa/neatchat-stress-video.mp4)
-
-连续内容后续段落：媒体、表格、details 和正文连续出现时，视觉节奏应该仍然保持轻量、留白清晰，并且不会让任何按钮、图片或控制条挤出聊天消息边界。
-
-长文本压测：中文内容混排用于验证编码、换行、滚动、折叠、锚点、复制、搜索、高亮、SSR、CSR、分页、虚拟滚动等能力。ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
-
-\`End of markdown stress test content.\`
-`;
-const MARKDOWN_STRESS_QA_BOUNDARY_CONTENT: Record<
-  MarkdownStressBoundaryVariant,
-  string
-> = {
-  details: `# codex-qa-streaming-details
-
-前置段落用于检查 streaming caret 在最终 details 块前的段落节奏。
-
-<details open>
-<summary>流式 details 终点</summary>
-
-- codex-qa-streaming-details
-- 最后一屏应该保留折叠块边界、左侧节奏和底部 caret 空间。
-
-</details>`,
-  table: `# codex-qa-streaming-table
-
-最终内容停在表格，用于检查 streaming caret 与横向滚动容器的距离。
-
-| codex-qa-streaming-table | 状态 | 说明 |
-| --- | --- | --- |
-| final-row | streaming | 表格边界不应挤压消息操作区或页面宽度。 |`,
-  artifact: `# codex-qa-streaming-artifact
-
-最终内容停在 HTML artifact 代码块，用于检查预览卡片与 streaming 状态的边界。
-
-\`\`\`html
-<!doctype html>
-<html>
-  <body>
-    <main aria-label="codex-qa-streaming-artifact">
-      <h1>codex-qa-streaming-artifact</h1>
-      <p>Artifact preview should stay bounded in the message column.</p>
-    </main>
-  </body>
-</html>
-\`\`\``,
-  image: `# codex-qa-streaming-image
-
-最终内容停在图片，用于检查媒体卡片底部空间和流式 caret。
-
-![codex-qa-streaming-image](data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='640'%20height='360'%20viewBox='0%200%20640%20360'%3E%3Crect%20width='640'%20height='360'%20rx='28'%20fill='%23eef4ff'/%3E%3Ccircle%20cx='146'%20cy='126'%20r='52'%20fill='%236d8dff'/%3E%3Cpath%20d='M76%20288l150-100%2088%2068%2076-48%20174%2080H76z'%20fill='%23b8c8ff'/%3E%3Ctext%20x='236'%20y='132'%20font-size='28'%20font-family='Arial'%20fill='%23324152'%3Ecodex-qa-streaming-image%3C/text%3E%3C/svg%3E)`,
-  media: `# codex-qa-streaming-media
-
-最终内容停在真实本地媒体资源，用于检查 audio/video card 的 loading、focus 和底部留白。
-
-[音频预览](/codex-qa/neatchat-stress-audio.mp3)
-
-[视频预览](/codex-qa/neatchat-stress-video.mp4)`,
-};
-const MARKDOWN_STRESS_QA_MESSAGES: RenderMessage[] = [
-  {
-    id: `${MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX}-user`,
-    date: "2026/6/26 00:00:00",
-    role: "user",
-    content: "渲染一份 Markdown 压测示例文档，用于检查聊天内容显示。",
-  },
-  {
-    id: `${MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX}-assistant`,
-    date: "2026/6/26 00:00:01",
-    role: "assistant",
-    model: "gpt-5.4" as ModelType,
-    content: MARKDOWN_STRESS_QA_CONTENT,
-  },
-];
-const MARKDOWN_STRESS_QA_BOUNDARY_MESSAGES: RenderMessage[] =
-  MARKDOWN_STRESS_QA_BOUNDARY_VARIANTS.map((variant) => ({
-    id: `${MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX}-streaming-${variant}`,
-    date: "2026/6/27 00:00:00",
-    role: "assistant",
-    model: "gpt-5.4" as ModelType,
-    streaming: true,
-    content: MARKDOWN_STRESS_QA_BOUNDARY_CONTENT[variant],
-  }));
-const MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_SUMMARIES: Record<
-  MarkdownStressDropzonePreviewVariant,
-  DraggedAttachmentSummary
-> = {
-  accepted: {
-    text: "可添加 2 张图片 · 1 个文件",
-    hint: "释放后添加到输入框 · 最多3张图片、5个文件",
-    willAdd: true,
-  },
-  blocked: {
-    text: "附件已满",
-    hint: "最多3张图片、5个文件 · 请先移除部分附件",
-    willAdd: false,
-  },
-};
-const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_IMAGES: Record<
-  MarkdownStressAttachmentStripPreviewVariant,
-  string[]
-> = {
-  populated: [
-    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%231a73e8'/%3E%3Ccircle%20cx='102'%20cy='104'%20r='36'%20fill='%23d7e3ff'/%3E%3Cpath%20d='M42%20252l92-92%2058%2048%2038-36%2048%2080H42z'%20fill='%23edf2ff'/%3E%3C/svg%3E",
-  ],
-  full: [
-    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%231a73e8'/%3E%3Ccircle%20cx='102'%20cy='104'%20r='36'%20fill='%23d7e3ff'/%3E%3Cpath%20d='M42%20252l92-92%2058%2048%2038-36%2048%2080H42z'%20fill='%23edf2ff'/%3E%3C/svg%3E",
-    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%230b8043'/%3E%3Ccircle%20cx='230'%20cy='94'%20r='34'%20fill='%23c8f7dc'/%3E%3Cpath%20d='M38%20244l86-74%2054%2044%2044-62%2062%2092H38z'%20fill='%23e7f8ee'/%3E%3C/svg%3E",
-    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%23a142f4'/%3E%3Ccircle%20cx='98'%20cy='92'%20r='32'%20fill='%23f1dcff'/%3E%3Cpath%20d='M44%20246l72-72%2046%2040%2048-58%2068%2090H44z'%20fill='%23f7edff'/%3E%3C/svg%3E",
-  ],
-  overflow: [
-    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%231a73e8'/%3E%3Ccircle%20cx='102'%20cy='104'%20r='36'%20fill='%23d7e3ff'/%3E%3Cpath%20d='M42%20252l92-92%2058%2048%2038-36%2048%2080H42z'%20fill='%23edf2ff'/%3E%3C/svg%3E",
-    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%230b8043'/%3E%3Ccircle%20cx='230'%20cy='94'%20r='34'%20fill='%23c8f7dc'/%3E%3Cpath%20d='M38%20244l86-74%2054%2044%2044-62%2062%2092H38z'%20fill='%23e7f8ee'/%3E%3C/svg%3E",
-    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%23a142f4'/%3E%3Ccircle%20cx='98'%20cy='92'%20r='32'%20fill='%23f1dcff'/%3E%3Cpath%20d='M44%20246l72-72%2046%2040%2048-58%2068%2090H44z'%20fill='%23f7edff'/%3E%3C/svg%3E",
-  ],
-};
-const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_FILE_FIXTURES: Record<
-  MarkdownStressAttachmentStripPreviewVariant,
-  Array<Pick<FileInfo, "name" | "type" | "content">>
-> = {
-  populated: [
-    {
-      name: "产品需求摘要.md",
-      type: "text/markdown",
-      content: "# 产品需求摘要\n\n用于验证附件 strip 的普通填充状态。",
-    },
-    {
-      name: "release-checklist.json",
-      type: "application/json",
-      content: '{ "status": "draft", "items": ["qa", "review"] }',
-    },
-  ],
-  full: [
-    {
-      name: "界面压测报告.md",
-      type: "text/markdown",
-      content: "# 界面压测报告\n\n用于验证附件已满状态。",
-    },
-    {
-      name: "markdown-render-fixture.json",
-      type: "application/json",
-      content: '{ "fixture": "markdown-render", "rows": 42 }',
-    },
-    {
-      name: "table-overflow-sample.csv",
-      type: "text/csv",
-      content: "metric,value\nlatency,128\nmemory,452",
-    },
-    {
-      name: "long-code-block.ts",
-      type: "text/typescript",
-      content: "export const fixture = 'long-code-block';",
-    },
-    {
-      name: "qa-notes.txt",
-      type: "text/plain",
-      content: "最多 3 张图片和 5 个文件时显示已满状态。",
-    },
-  ],
-  overflow: [
-    {
-      name: "2026-markdown-performance-benchmark-summary.md",
-      type: "text/markdown",
-      content: "# Markdown Performance Benchmark\n\nOverflow fixture.",
-    },
-    {
-      name: "conversation-export-with-extra-long-file-name.json",
-      type: "application/json",
-      content: '{ "messages": 128, "attachments": true }',
-    },
-    {
-      name: "nested-list-and-table-regression-cases.csv",
-      type: "text/csv",
-      content: "case,result\nnested-list,pass\ntable,pass",
-    },
-    {
-      name: "streaming-code-block-boundary-sample.ts",
-      type: "text/typescript",
-      content: "export function sample() { return 'streaming'; }",
-    },
-  ],
-};
-
-function isMarkdownStressQaEnabled(locationSearch: string) {
-  const params = new URLSearchParams(locationSearch);
-  return params.get("codex_qa") === MARKDOWN_STRESS_QA_PARAM;
-}
-
-function getMarkdownStressQaBoundaryVariant(locationSearch: string) {
-  const params = new URLSearchParams(locationSearch);
-  const variant = params.get(MARKDOWN_STRESS_QA_BOUNDARY_PARAM);
-  if (variant === "all") {
-    return variant;
-  }
-
-  if (
-    MARKDOWN_STRESS_QA_BOUNDARY_VARIANTS.includes(
-      variant as MarkdownStressBoundaryVariant,
-    )
-  ) {
-    return variant as MarkdownStressBoundaryVariant;
-  }
-}
-
-function getMarkdownStressQaDropzonePreviewVariant(locationSearch: string) {
-  const params = new URLSearchParams(locationSearch);
-  const variant = params.get(MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_PARAM);
-  return variant === "accepted" || variant === "blocked" ? variant : undefined;
-}
-
-function getMarkdownStressQaAttachmentStripPreviewVariant(
+async function loadChatQaFixture(
   locationSearch: string,
-) {
-  const params = new URLSearchParams(locationSearch);
-  const variant = params.get(MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_PARAM);
-  return variant === "populated" || variant === "full" || variant === "overflow"
-    ? variant
-    : undefined;
+): Promise<ChatQaFixture | undefined> {
+  if (process.env.NODE_ENV !== "production") {
+    const params = new URLSearchParams(locationSearch);
+    if (params.has("codex_qa")) {
+      return import("./chat-qa-fixture");
+    }
+  }
 }
-
-function createMarkdownStressQaAttachmentStripPreview(
-  variant: MarkdownStressAttachmentStripPreviewVariant,
-): { images: string[]; files: FileInfo[] } {
-  const files = MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_FILE_FIXTURES[
-    variant
-  ].map((fixture) => ({
-    ...fixture,
-    size: new Blob([fixture.content]).size,
-    originalFile: new File([fixture.content], fixture.name, {
-      type: fixture.type,
-    }),
-  }));
-
-  return {
-    images: [...MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_IMAGES[variant]],
-    files,
-  };
-}
-
-function getMarkdownStressQaMessages(locationSearch: string): RenderMessage[] {
-  const boundaryVariant = getMarkdownStressQaBoundaryVariant(locationSearch);
-  if (!boundaryVariant) return MARKDOWN_STRESS_QA_MESSAGES;
-
-  const boundaryMessages =
-    boundaryVariant === "all"
-      ? MARKDOWN_STRESS_QA_BOUNDARY_MESSAGES
-      : MARKDOWN_STRESS_QA_BOUNDARY_MESSAGES.filter((message) =>
-          message.id.endsWith(`-${boundaryVariant}`),
-        );
-
-  return [MARKDOWN_STRESS_QA_MESSAGES[0], ...boundaryMessages];
-}
-
 const stopAll = () => ChatControllerPool.stopAll();
 type ChatActionModalKey = "model" | "plugin" | "size" | "quality" | "style";
 type ChatActionModals = Record<ChatActionModalKey, boolean>;
@@ -906,19 +527,16 @@ export function SessionConfigModel(props: { onClose: () => void }) {
 function PromptToast(props: {
   showToast?: boolean;
   showModal?: boolean;
+  contextLength: number;
   onOpen: (_: HTMLButtonElement) => void;
 }) {
-  const chatStore = useChatStore();
-  const session = chatStore.currentSession();
-  const context = session.mask.context;
-
   return (
     <div className={styles["prompt-toast"]} key="prompt-toast">
-      {props.showToast && context.length > 0 && (
+      {props.showToast && props.contextLength > 0 && (
         <button
           type="button"
           className={clsx(styles["prompt-toast-inner"], "clickable")}
-          aria-label={Locale.Context.Toast(context.length)}
+          aria-label={Locale.Context.Toast(props.contextLength)}
           aria-haspopup="dialog"
           aria-controls="session-config-modal"
           aria-expanded={props.showModal}
@@ -926,7 +544,7 @@ function PromptToast(props: {
         >
           <BrainIcon />
           <span className={styles["prompt-toast-content"]}>
-            {Locale.Context.Toast(context.length)}
+            {Locale.Context.Toast(props.contextLength)}
           </span>
         </button>
       )}
@@ -1113,9 +731,6 @@ export function PromptHints(props: {
 
 const ClearContextDivider = React.forwardRef<HTMLButtonElement>(
   function ClearContextDivider(_, ref) {
-    const chatStore = useChatStore();
-    const session = chatStore.currentSession();
-
     return (
       <button
         type="button"
@@ -1126,12 +741,14 @@ const ClearContextDivider = React.forwardRef<HTMLButtonElement>(
           Locale.Context.Revert,
         ])}
         title={Locale.Context.Revert}
-        onClick={() =>
+        onClick={() => {
+          const chatStore = useChatStore.getState();
+          const session = chatStore.currentSession();
           chatStore.updateTargetSession(
             session,
             (session) => (session.clearContextIndex = undefined),
-          )
-        }
+          );
+        }}
       >
         <span className={styles["clear-context-status"]}>
           <span className={styles["clear-context-mark"]} aria-hidden="true" />
@@ -1222,7 +839,7 @@ export function ChatAction(props: {
 
 function useScrollToBottom(
   scrollRef: RefObject<HTMLDivElement>,
-  detach: boolean = false,
+  shouldAutoScroll: boolean = true,
   scrollSignal?: string,
 ) {
   // for auto-scroll
@@ -1240,10 +857,10 @@ function useScrollToBottom(
 
   // auto scroll
   useLayoutEffect(() => {
-    if (autoScroll && !detach) {
+    if (autoScroll && shouldAutoScroll) {
       scrollDomToBottom();
     }
-  }, [autoScroll, detach, scrollDomToBottom, scrollSignal]);
+  }, [autoScroll, scrollDomToBottom, scrollSignal, shouldAutoScroll]);
 
   return {
     scrollRef,
@@ -1278,6 +895,19 @@ function useChatActionsView(props: ChatActionsProps) {
   const chatStore = useChatStore();
   const pluginStore = usePluginStore();
   const session = chatStore.currentSession();
+  const imageGenerationIntentRef = useRef<
+    ReturnType<typeof createLatestBooleanIntent> | undefined
+  >(undefined);
+  if (!imageGenerationIntentRef.current) {
+    imageGenerationIntentRef.current = createLatestBooleanIntent(
+      props.imageGenerationEnabled,
+    );
+  }
+  const imageGenerationIntent = imageGenerationIntentRef.current;
+  const imageGenerationOperationRef = useRef<Promise<void>>(Promise.resolve());
+  useEffect(() => {
+    imageGenerationIntent.syncCommitted(props.imageGenerationEnabled);
+  }, [imageGenerationIntent, props.imageGenerationEnabled]);
 
   // switch themes
   const theme = config.theme;
@@ -1422,48 +1052,81 @@ function useChatActionsView(props: ChatActionsProps) {
       props.onActionComplete?.();
     }
   };
-  const setImageGenerationMode = async (enabled: boolean) => {
-    if (enabled) {
+  const setImageGenerationMode = async (intent: BooleanIntent) => {
+    const isCurrentIntent = () => imageGenerationIntent.isCurrent(intent.token);
+    const settleFailedIntent = () => {
+      if (!imageGenerationIntent.settle(intent.token, false)) return false;
+      props.setImageGenerationEnabled(imageGenerationIntent.value());
+      return true;
+    };
+    if (!isCurrentIntent()) return false;
+
+    if (intent.value) {
       let mcpEnabled = false;
       try {
         mcpEnabled = await isMcpEnabled();
       } catch (error) {
+        if (!settleFailedIntent()) return false;
         console.warn("[MCP] Failed to check MCP status", error);
         showToast(Locale.Chat.ImageGeneration.NotEnabled);
-        return;
+        return false;
       }
 
+      if (!isCurrentIntent()) return false;
       if (!mcpEnabled) {
+        if (!settleFailedIntent()) return false;
         showToast(Locale.Chat.ImageGeneration.NotEnabled);
-        return;
+        return false;
       }
 
       try {
         await activateMcpClient(JIMENG_MCP_SERVER_ID);
-        chatStore.resetMcpCache();
       } catch (error) {
+        if (!settleFailedIntent()) return false;
         showToast(
           error instanceof Error
             ? error.message
             : Locale.Chat.ImageGeneration.EnableFailed,
         );
-        return;
+        return false;
       }
     } else {
       try {
         await deactivateMcpClient(JIMENG_MCP_SERVER_ID);
       } catch (error) {
+        if (!settleFailedIntent()) return false;
         console.warn("[MCP] Failed to deactivate Jimeng MCP", error);
+        showToast(
+          error instanceof Error
+            ? error.message
+            : Locale.Chat.ImageGeneration.DisableFailed,
+        );
+        return false;
       }
-      chatStore.resetMcpCache();
     }
 
-    props.setImageGenerationEnabled(enabled);
+    imageGenerationIntent.markApplied(intent.value);
+    chatStore.resetMcpCache();
+    if (!isCurrentIntent()) return false;
+    if (!imageGenerationIntent.settle(intent.token, true)) return false;
+
+    props.setImageGenerationEnabled(intent.value);
     showToast(
-      enabled
+      intent.value
         ? Locale.Chat.ImageGeneration.Enabled
         : Locale.Chat.ImageGeneration.Disabled,
     );
+    return true;
+  };
+  const reconcileImageGenerationIntent = (intent: BooleanIntent) => {
+    const operation = imageGenerationOperationRef.current
+      .catch(() => undefined)
+      .then(() => setImageGenerationMode(intent));
+    imageGenerationOperationRef.current = operation.then(
+      () => undefined,
+      () => undefined,
+    );
+    return operation;
   };
   const hasSessionActions =
     couldStop ||
@@ -1523,8 +1186,10 @@ function useChatActionsView(props: ChatActionsProps) {
             active={props.imageGenerationEnabled}
             ariaPressed={props.imageGenerationEnabled}
             onClick={async () => {
-              await setImageGenerationMode(!props.imageGenerationEnabled);
-              completeMobileAction();
+              const intent = imageGenerationIntent.next();
+              if (await reconcileImageGenerationIntent(intent)) {
+                completeMobileAction();
+              }
             }}
             text={
               props.imageGenerationEnabled
@@ -2100,6 +1765,13 @@ function useChatInnerView() {
   const chatStore = useChatStore();
   const session = chatStore.currentSession();
   const updateTargetSession = chatStore.updateTargetSession;
+  const visibleChatMessagesProjectorRef = useRef<
+    ReturnType<typeof createVisibleChatMessagesProjector> | undefined
+  >(undefined);
+  const projectVisibleChatMessages =
+    visibleChatMessagesProjectorRef.current ??
+    (visibleChatMessagesProjectorRef.current =
+      createVisibleChatMessagesProjector());
   const config = useAppConfig();
   const fontSize = config.fontSize;
   const fontFamily = config.fontFamily;
@@ -2118,36 +1790,25 @@ function useChatInnerView() {
   const { submitKey, shouldSubmit } = useSubmitHandler();
   const scrollRef = useRef<HTMLDivElement>(null);
   const readingSurfaceRef = useRef<HTMLDivElement>(null);
-  const isScrolledToBottom = scrollRef?.current
-    ? Math.abs(
-        scrollRef.current.scrollHeight -
-          (scrollRef.current.scrollTop + scrollRef.current.clientHeight),
-      ) <= 1
-    : false;
-  const isAttachWithTop = (() => {
-    const lastMessage = scrollRef.current?.lastElementChild as HTMLElement;
-    // if scrolllRef is not ready or no message, return false
-    if (!scrollRef?.current || !lastMessage) return false;
-    const topDistance =
-      lastMessage!.getBoundingClientRect().top -
-      scrollRef.current.getBoundingClientRect().top;
-    // leave some space for user question
-    return topDistance < 100;
-  })();
-
+  const [hitBottom, setHitBottom] = useState(true);
+  const attachWithTopRef = useRef(false);
   const isTyping = userInput !== "";
 
   // if user is typing, should auto scroll to bottom
   // if user is not typing, should auto scroll to bottom only if already at bottom
+  const lastSessionMessage = session.messages.at(-1);
   const messageScrollSignal = `${session.messages.length}:${
-    session.messages.at(-1)?.id ?? ""
-  }`;
+    lastSessionMessage?.id ?? ""
+  }:${
+    lastSessionMessage ? getMessageTextContent(lastSessionMessage).length : 0
+  }:${lastSessionMessage?.streaming ? 1 : 0}`;
+  const shouldFollowLatestMessage =
+    hitBottom || attachWithTopRef.current || isTyping;
   const { autoScroll, setAutoScroll, scrollDomToBottom } = useScrollToBottom(
     scrollRef,
-    (isScrolledToBottom || isAttachWithTop) && !isTyping,
+    shouldFollowLatestMessage,
     messageScrollSignal,
   );
-  const [hitBottom, setHitBottom] = useState(true);
   const isMobileScreen = useMobileScreen();
   const isCompactScreen = useCompactScreen();
   const syncHitBottomState = useCallback(
@@ -2155,6 +1816,11 @@ function useChatInnerView() {
       const bottomHeight = e.scrollTop + e.clientHeight;
       const isHitBottom =
         bottomHeight >= e.scrollHeight - (isMobileScreen ? 4 : 10);
+      const lastMessage = readingSurfaceRef.current
+        ?.lastElementChild as HTMLElement | null;
+      attachWithTopRef.current = lastMessage
+        ? lastMessage.offsetTop - e.scrollTop < 100
+        : false;
 
       setHitBottom(isHitBottom);
       if (syncAutoScroll) {
@@ -2167,23 +1833,37 @@ function useChatInnerView() {
   );
   const navigate = useNavigate();
   const location = useLocation();
+  const [chatQaFixture, setChatQaFixture] = useState<ChatQaFixture>();
+  useEffect(() => {
+    let active = true;
+    void loadChatQaFixture(location.search).then((fixture) => {
+      if (active) setChatQaFixture(fixture);
+    });
+    return () => {
+      active = false;
+    };
+  }, [location.search]);
   const markdownStressQaEnabled = useMemo(
-    () => isMarkdownStressQaEnabled(location.search),
-    [location.search],
+    () => chatQaFixture?.isMarkdownStressQaEnabled(location.search) ?? false,
+    [chatQaFixture, location.search],
   );
   const markdownStressQaDropzonePreview = useMemo(
     () =>
       markdownStressQaEnabled
-        ? getMarkdownStressQaDropzonePreviewVariant(location.search)
+        ? chatQaFixture?.getMarkdownStressQaDropzonePreviewVariant(
+            location.search,
+          )
         : undefined,
-    [location.search, markdownStressQaEnabled],
+    [chatQaFixture, location.search, markdownStressQaEnabled],
   );
   const markdownStressQaAttachmentStripPreview = useMemo(
     () =>
       markdownStressQaEnabled
-        ? getMarkdownStressQaAttachmentStripPreviewVariant(location.search)
+        ? chatQaFixture?.getMarkdownStressQaAttachmentStripPreviewVariant(
+            location.search,
+          )
         : undefined,
-    [location.search, markdownStressQaEnabled],
+    [chatQaFixture, location.search, markdownStressQaEnabled],
   );
   const [attachImages, setAttachImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -2205,7 +1885,7 @@ function useChatInnerView() {
     useState<DraggedAttachmentSummary | null>(null);
   const dragCounter = useRef(0);
   const dropzonePreviewSummary = markdownStressQaDropzonePreview
-    ? MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_SUMMARIES[
+    ? chatQaFixture?.MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_SUMMARIES[
         markdownStressQaDropzonePreview
       ]
     : null;
@@ -2266,7 +1946,18 @@ function useChatInnerView() {
 
       contentResizeObserver?.disconnect();
     };
-  }, [messageScrollSignal, scrollRef, session.id, syncHitBottomState]);
+  }, [scrollRef, session.id, syncHitBottomState]);
+
+  useEffect(() => {
+    if (typeof ResizeObserver !== "undefined") return;
+    const resizeFrame = requestAnimationFrame(() => {
+      const dom = scrollRef.current;
+      if (dom) {
+        syncHitBottomState(dom);
+      }
+    });
+    return () => cancelAnimationFrame(resizeFrame);
+  }, [messageScrollSignal, session.id, syncHitBottomState]);
 
   // prompt hints
   const promptStore = usePromptStore();
@@ -2276,15 +1967,16 @@ function useChatInnerView() {
   const ignoreInputCollapseUntil = useRef(0);
 
   useEffect(() => {
-    if (!markdownStressQaAttachmentStripPreview) return;
+    if (!markdownStressQaAttachmentStripPreview || !chatQaFixture) return;
 
-    const seededAttachments = createMarkdownStressQaAttachmentStripPreview(
-      markdownStressQaAttachmentStripPreview,
-    );
+    const seededAttachments =
+      chatQaFixture.createMarkdownStressQaAttachmentStripPreview(
+        markdownStressQaAttachmentStripPreview,
+      );
     setAttachImages(seededAttachments.images);
     setAttachedFiles(seededAttachments.files);
     setIsInputExpanded(true);
-  }, [markdownStressQaAttachmentStripPreview]);
+  }, [chatQaFixture, markdownStressQaAttachmentStripPreview]);
 
   const hasActiveInputContent =
     userInput.trim().length > 0 ||
@@ -2373,7 +2065,9 @@ function useChatInnerView() {
       const truncatedText =
         text.length > MAX_FILE_CONTENT_LENGTH
           ? text.substring(0, MAX_FILE_CONTENT_LENGTH) +
-            `\n\n[文件过大，已截断。原文件大小: ${text.length} 字符]`
+            `\n\n${Locale.Chat.Attachments.Reader.ContentTruncated(
+              text.length,
+            )}`
           : text;
 
       // 将长文本转换为文件附件
@@ -2463,12 +2157,7 @@ function useChatInnerView() {
     // 如果有附加文件，将文件信息添加到用户输入
     if (filesToSend.length > 0) {
       const fileInfosText = filesToSend
-        .map(
-          (file) =>
-            `文件名: ${file.name}\n类型: ${file.type}\n大小: ${(
-              file.size / 1024
-            ).toFixed(2)} KB\n\n${file.content}`,
-        )
+        .map(formatAttachmentForPrompt)
         .join("\n\n---\n\n");
 
       finalUserInput = finalUserInput
@@ -3099,12 +2788,13 @@ function useChatInnerView() {
 
   // preview messages
   const renderMessages = useMemo(() => {
-    if (markdownStressQaEnabled) {
-      return getMarkdownStressQaMessages(location.search);
+    if (markdownStressQaEnabled && chatQaFixture) {
+      return chatQaFixture.getMarkdownStressQaMessages(location.search);
     }
 
-    const visibleSessionMessages = getVisibleChatMessages(
+    const visibleSessionMessages = projectVisibleChatMessages(
       session.messages as RenderMessage[],
+      chatStore.messageProjectionRevision,
     );
     const showLoadingPreview = shouldRenderLoadingPreview(
       visibleSessionMessages,
@@ -3140,11 +2830,14 @@ function useChatInnerView() {
           : [],
       );
   }, [
+    chatQaFixture,
     config.sendPreviewBubble,
     context,
     isLoading,
     location.search,
     markdownStressQaEnabled,
+    chatStore.messageProjectionRevision,
+    projectVisibleChatMessages,
     session.messages,
     userInput,
   ]);
@@ -3733,7 +3426,9 @@ function useChatInnerView() {
         const truncatedText =
           text.length > maxLength
             ? text.substring(0, maxLength) +
-              `\n\n[文件过大，已截断。原文件大小: ${text.length} 字符]`
+              `\n\n${Locale.Chat.Attachments.Reader.ContentTruncated(
+                text.length,
+              )}`
             : text;
 
         // 将长文本转为文件附件
@@ -4513,6 +4208,7 @@ function useChatInnerView() {
     <PromptToast
       showToast={!hitBottom}
       showModal={showPromptModal}
+      contextLength={context.length}
       onOpen={openPromptModal}
     />
   );
@@ -5176,9 +4872,11 @@ function useChatInnerView() {
               {(showEmptyState ? [] : messages).map((message, i) => {
                 const isUser = message.role === "user";
                 const isContext = i < context.length;
-                const isMarkdownStressQaMessage = message.id.startsWith(
-                  MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX,
-                );
+                const qaMessageIdPrefix =
+                  chatQaFixture?.MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX;
+                const isMarkdownStressQaMessage =
+                  qaMessageIdPrefix != null &&
+                  message.id.startsWith(qaMessageIdPrefix);
                 const showActions =
                   i > 0 &&
                   !message.streaming &&
@@ -5534,38 +5232,40 @@ function useChatInnerView() {
               aria-modal="true"
               aria-label={Locale.Chat.ChatToolMenu.MenuLabel}
             >
-              <ChatActions
-                uploadAttachments={handleUploadAttachments}
-                setAttachImages={setAttachImages}
-                setUploading={setUploading}
-                attachmentSlotsFull={attachmentSlotsFull}
-                showPromptModal={() =>
-                  openPromptModal(chatInputMenuButtonRef.current)
-                }
-                scrollToBottom={scrollToBottom}
-                hitBottom={hitBottom}
-                uploading={uploading}
-                showPromptHints={() => {
-                  expandInput();
-                  // Click again to close
-                  if (promptHints.length > 0) {
-                    setPromptHints([]);
-                    return;
+              {showChatActionMenu && (
+                <ChatActions
+                  uploadAttachments={handleUploadAttachments}
+                  setAttachImages={setAttachImages}
+                  setUploading={setUploading}
+                  attachmentSlotsFull={attachmentSlotsFull}
+                  showPromptModal={() =>
+                    openPromptModal(chatInputMenuButtonRef.current)
                   }
+                  scrollToBottom={scrollToBottom}
+                  hitBottom={hitBottom}
+                  uploading={uploading}
+                  showPromptHints={() => {
+                    expandInput();
+                    // Click again to close
+                    if (promptHints.length > 0) {
+                      setPromptHints([]);
+                      return;
+                    }
 
-                  inputRef.current?.focus();
-                  setUserInput("/");
-                  onSearch("");
-                }}
-                openShortcutKeyModal={() =>
-                  openShortcutKeyModal(chatInputMenuButtonRef.current)
-                }
-                setUserInput={setUserInput}
-                setShowChatSidePanel={setShowChatSidePanel}
-                imageGenerationEnabled={imageGenerationEnabled}
-                setImageGenerationEnabled={setImageGenerationEnabled}
-                onActionComplete={() => setShowChatActionMenu(false)}
-              />
+                    inputRef.current?.focus();
+                    setUserInput("/");
+                    onSearch("");
+                  }}
+                  openShortcutKeyModal={() =>
+                    openShortcutKeyModal(chatInputMenuButtonRef.current)
+                  }
+                  setUserInput={setUserInput}
+                  setShowChatSidePanel={setShowChatSidePanel}
+                  imageGenerationEnabled={imageGenerationEnabled}
+                  setImageGenerationEnabled={setImageGenerationEnabled}
+                  onActionComplete={() => setShowChatActionMenu(false)}
+                />
+              )}
             </div>
 
             <div className={styles["chat-input-row"]}>
@@ -6212,7 +5912,10 @@ function ChatInner() {
 }
 
 export function Chat() {
-  const chatStore = useChatStore();
-  const session = chatStore.currentSession();
-  return <ChatInner key={session.id}></ChatInner>;
+  const sessionId = useChatStore((state) =>
+    state.currentSessionIndex < 0
+      ? state.temporarySession?.id
+      : state.sessions[state.currentSessionIndex]?.id,
+  );
+  return <ChatInner key={sessionId}></ChatInner>;
 }

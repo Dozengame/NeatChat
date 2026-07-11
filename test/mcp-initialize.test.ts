@@ -2,6 +2,8 @@ jest.mock("fs/promises", () => ({
   readFile: jest.fn(),
   mkdir: jest.fn(),
   writeFile: jest.fn(),
+  rename: jest.fn(),
+  unlink: jest.fn(),
 }));
 
 jest.mock("../app/mcp/client", () => ({
@@ -21,7 +23,13 @@ jest.mock("../app/mcp/config", () => ({
 }));
 
 import fs from "fs/promises";
-import { createClient, listTools } from "../app/mcp/client";
+import {
+  createClient,
+  executeRequest,
+  listTools,
+  removeClient,
+} from "../app/mcp/client";
+import { JIMENG_MCP_SERVER_ID } from "../app/mcp/jimeng";
 import { clientsMap, setInitializeMcpSystemPromise } from "../app/mcp/runtime";
 
 const activeDemoConfig = JSON.stringify({
@@ -35,8 +43,46 @@ const activeDemoConfig = JSON.stringify({
   },
 });
 
+const pausedDemoConfig = JSON.stringify({
+  mcpServers: {
+    demo: {
+      type: "stdio",
+      command: "demo",
+      args: [],
+      status: "paused",
+    },
+  },
+});
+
+const twoActiveClientsConfig = JSON.stringify({
+  mcpServers: {
+    demo: {
+      type: "stdio",
+      command: "demo",
+      args: [],
+      status: "active",
+    },
+    second: {
+      type: "stdio",
+      command: "second",
+      args: [],
+      status: "active",
+    },
+  },
+});
+
+const activeJimengConfig = JSON.stringify({
+  mcpServers: {
+    [JIMENG_MCP_SERVER_ID]: {
+      type: "streamable-http",
+      url: "https://jimeng.example.test/mcp",
+      status: "active",
+    },
+  },
+});
+
 async function flushAsyncWork() {
-  for (let i = 0; i < 5; i += 1) {
+  for (let i = 0; i < 25; i += 1) {
     await Promise.resolve();
   }
 }
@@ -47,6 +93,14 @@ describe("MCP initialization", () => {
     clientsMap.clear();
     setInitializeMcpSystemPromise(null);
     (fs.readFile as jest.Mock).mockResolvedValue(activeDemoConfig);
+    (fs.mkdir as jest.Mock).mockResolvedValue(undefined);
+    (fs.writeFile as jest.Mock).mockResolvedValue(undefined);
+    (fs.rename as jest.Mock).mockResolvedValue(undefined);
+    (fs.unlink as jest.Mock).mockResolvedValue(undefined);
+    (createClient as jest.Mock).mockResolvedValue({ id: "demo-client" });
+    (listTools as jest.Mock).mockResolvedValue({ tools: [] });
+    (executeRequest as jest.Mock).mockResolvedValue({ result: {} });
+    (removeClient as jest.Mock).mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -94,5 +148,397 @@ describe("MCP initialization", () => {
       tools: { tools: [] },
       errorMsg: null,
     });
+  });
+
+  test("serializes activate and lazy execution through one client initialization", async () => {
+    (fs.readFile as jest.Mock).mockResolvedValue(activeJimengConfig);
+    let resolveClient!: (client: { id: string }) => void;
+    (createClient as jest.Mock).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveClient = resolve;
+        }),
+    );
+    const { activateMcpClient, executeMcpAction } = await import(
+      "../app/mcp/actions"
+    );
+
+    const activation = activateMcpClient(JIMENG_MCP_SERVER_ID);
+    await flushAsyncWork();
+    const execution = executeMcpAction(JIMENG_MCP_SERVER_ID, {
+      jsonrpc: "2.0",
+      id: "request-1",
+      method: "tools/call",
+      params: { name: "demo-tool", arguments: {} },
+    });
+    await flushAsyncWork();
+
+    resolveClient({ id: "deferred-client" });
+    const outcomes = await Promise.allSettled([activation, execution]);
+
+    expect(outcomes.map((outcome) => outcome.status)).toEqual([
+      "fulfilled",
+      "fulfilled",
+    ]);
+    expect(createClient).toHaveBeenCalledTimes(1);
+    expect(listTools).toHaveBeenCalledTimes(1);
+    expect(executeRequest).toHaveBeenCalledTimes(1);
+    expect(executeRequest).toHaveBeenCalledWith(
+      { id: "deferred-client" },
+      expect.objectContaining({ id: "request-1", method: "tools/call" }),
+    );
+  });
+
+  test("applies deactivate after an in-flight activation completes", async () => {
+    let resolveClient!: (client: { id: string }) => void;
+    (createClient as jest.Mock).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveClient = resolve;
+        }),
+    );
+    const { activateMcpClient, deactivateMcpClient } = await import(
+      "../app/mcp/actions"
+    );
+
+    const activation = activateMcpClient("demo");
+    await flushAsyncWork();
+    const deactivation = deactivateMcpClient("demo");
+    await flushAsyncWork();
+
+    resolveClient({ id: "deferred-client" });
+    await Promise.all([activation, deactivation]);
+
+    expect(removeClient).toHaveBeenCalledTimes(1);
+    expect(removeClient).toHaveBeenCalledWith({ id: "deferred-client" });
+    expect(clientsMap.has("demo")).toBe(false);
+  });
+
+  test("applies pause after an in-flight activation completes", async () => {
+    let resolveClient!: (client: { id: string }) => void;
+    (createClient as jest.Mock).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveClient = resolve;
+        }),
+    );
+    const { activateMcpClient, pauseMcpServer } = await import(
+      "../app/mcp/actions"
+    );
+
+    const activation = activateMcpClient("demo");
+    await flushAsyncWork();
+    const pause = pauseMcpServer("demo");
+    await flushAsyncWork();
+
+    resolveClient({ id: "deferred-client" });
+    await Promise.all([activation, pause]);
+
+    expect(removeClient).toHaveBeenCalledTimes(1);
+    expect(removeClient).toHaveBeenCalledWith({ id: "deferred-client" });
+    expect(clientsMap.has("demo")).toBe(false);
+  });
+
+  test("does not reactivate a client from a stale snapshot after pause", async () => {
+    let resolvePauseRead!: (config: string) => void;
+    (fs.readFile as jest.Mock)
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolvePauseRead = resolve;
+          }),
+      )
+      .mockResolvedValue(pausedDemoConfig);
+    const { activateMcpClient, pauseMcpServer } = await import(
+      "../app/mcp/actions"
+    );
+
+    const pause = pauseMcpServer("demo");
+    await flushAsyncWork();
+    const activation = activateMcpClient("demo");
+    await flushAsyncWork();
+
+    resolvePauseRead(activeDemoConfig);
+    await pause;
+    await expect(activation).rejects.toThrow("Server demo is paused");
+
+    expect(createClient).not.toHaveBeenCalled();
+    expect(clientsMap.has("demo")).toBe(false);
+  });
+
+  test("serializes config mutations across different clients", async () => {
+    let storedConfig = twoActiveClientsConfig;
+    const temporaryFiles = new Map<string, string>();
+    let releaseFirstWrite!: () => void;
+    const firstWriteGate = new Promise<void>((resolve) => {
+      releaseFirstWrite = resolve;
+    });
+    let writeCount = 0;
+    (fs.readFile as jest.Mock).mockImplementation(async () => storedConfig);
+    (fs.writeFile as jest.Mock).mockImplementation(
+      async (filePath: string, value: string) => {
+        writeCount += 1;
+        if (writeCount === 1) await firstWriteGate;
+        if (filePath.endsWith(".tmp")) {
+          temporaryFiles.set(filePath, value);
+        } else {
+          storedConfig = value;
+        }
+      },
+    );
+    (fs.rename as jest.Mock).mockImplementation(
+      async (from: string, _to: string) => {
+        storedConfig = temporaryFiles.get(from) ?? storedConfig;
+        temporaryFiles.delete(from);
+      },
+    );
+    const { pauseMcpServer } = await import("../app/mcp/actions");
+
+    const pauses = Promise.all([
+      pauseMcpServer("demo"),
+      pauseMcpServer("second"),
+    ]);
+    await flushAsyncWork();
+    releaseFirstWrite();
+    await pauses;
+
+    expect(JSON.parse(storedConfig)).toMatchObject({
+      mcpServers: {
+        demo: { status: "paused" },
+        second: { status: "paused" },
+      },
+    });
+  });
+
+  test("reuses an in-flight activation when the same client is resumed", async () => {
+    let resolveClient!: (client: { id: string }) => void;
+    (createClient as jest.Mock).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveClient = resolve;
+        }),
+    );
+    const { activateMcpClient, resumeMcpServer } = await import(
+      "../app/mcp/actions"
+    );
+
+    const activation = activateMcpClient("demo");
+    await flushAsyncWork();
+    const resume = resumeMcpServer("demo");
+    await flushAsyncWork();
+
+    resolveClient({ id: "deferred-client" });
+    await Promise.all([activation, resume]);
+
+    expect(createClient).toHaveBeenCalledTimes(1);
+    expect(clientsMap.get("demo")?.client).toEqual({ id: "deferred-client" });
+  });
+
+  test("restarts a client only after its in-flight activation settles", async () => {
+    let resolveClient!: (client: { id: string }) => void;
+    (createClient as jest.Mock)
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveClient = resolve;
+          }),
+      )
+      .mockResolvedValueOnce({ id: "restarted-client" });
+    const { activateMcpClient, restartAllClients } = await import(
+      "../app/mcp/actions"
+    );
+
+    const activation = activateMcpClient("demo");
+    await flushAsyncWork();
+    const restart = restartAllClients();
+    await flushAsyncWork();
+
+    resolveClient({ id: "deferred-client" });
+    await Promise.all([activation, restart]);
+
+    expect(removeClient).toHaveBeenCalledTimes(1);
+    expect(removeClient).toHaveBeenCalledWith({ id: "deferred-client" });
+    expect(createClient).toHaveBeenCalledTimes(2);
+    expect(clientsMap.get("demo")?.client).toEqual({ id: "restarted-client" });
+  });
+
+  test("restart honors a pause that was already queued for the client", async () => {
+    let resolvePauseRead!: (config: string) => void;
+    (fs.readFile as jest.Mock)
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolvePauseRead = resolve;
+          }),
+      )
+      .mockResolvedValueOnce(activeDemoConfig)
+      .mockResolvedValue(pausedDemoConfig);
+    const { pauseMcpServer, restartAllClients } = await import(
+      "../app/mcp/actions"
+    );
+
+    const pause = pauseMcpServer("demo");
+    await flushAsyncWork();
+    const restart = restartAllClients();
+    await flushAsyncWork();
+
+    resolvePauseRead(activeDemoConfig);
+    await Promise.all([pause, restart]);
+
+    expect(createClient).not.toHaveBeenCalled();
+    expect(clientsMap.has("demo")).toBe(false);
+  });
+
+  test("waits for an in-flight tool request before deactivating the client", async () => {
+    clientsMap.set("demo", {
+      client: { id: "active-client" } as any,
+      tools: { tools: [] },
+      errorMsg: null,
+    });
+    let resolveExecution!: (result: { result: object }) => void;
+    (executeRequest as jest.Mock).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveExecution = resolve;
+        }),
+    );
+    const { deactivateMcpClient, executeMcpAction } = await import(
+      "../app/mcp/actions"
+    );
+
+    const execution = executeMcpAction("demo", {
+      jsonrpc: "2.0",
+      id: "request-in-flight",
+      method: "tools/call",
+      params: { name: "side-effect", arguments: {} },
+    });
+    await flushAsyncWork();
+    const deactivation = deactivateMcpClient("demo");
+    await flushAsyncWork();
+
+    expect(removeClient).not.toHaveBeenCalled();
+    resolveExecution({ result: {} });
+    await Promise.all([execution, deactivation]);
+
+    expect(removeClient).toHaveBeenCalledWith({ id: "active-client" });
+    expect(clientsMap.has("demo")).toBe(false);
+  });
+
+  test("initializes every configured client when one client already exists", async () => {
+    (fs.readFile as jest.Mock).mockResolvedValue(twoActiveClientsConfig);
+    clientsMap.set("demo", {
+      client: { id: "existing-client" } as any,
+      tools: { tools: [] },
+      errorMsg: null,
+    });
+    const { initializeMcpSystem } = await import("../app/mcp/actions");
+
+    await initializeMcpSystem();
+
+    expect(createClient).toHaveBeenCalledTimes(1);
+    expect(createClient).toHaveBeenCalledWith(
+      "second",
+      expect.objectContaining({ command: "second", status: "active" }),
+    );
+    expect(clientsMap.get("demo")?.client).toEqual({ id: "existing-client" });
+    expect(clientsMap.get("second")?.client).toEqual({ id: "demo-client" });
+  });
+
+  test("replaces an existing active client when its configuration is edited", async () => {
+    clientsMap.set("demo", {
+      client: { id: "old-client" } as any,
+      tools: { tools: [] },
+      errorMsg: null,
+    });
+    (createClient as jest.Mock).mockResolvedValueOnce({ id: "new-client" });
+    const { addMcpServer } = await import("../app/mcp/actions");
+
+    await addMcpServer("demo", {
+      type: "stdio",
+      command: "demo-v2",
+      args: ["--fresh"],
+      env: { DEMO_TOKEN: "rotated" },
+    });
+
+    expect(removeClient).toHaveBeenCalledWith({ id: "old-client" });
+    expect(createClient).toHaveBeenCalledWith(
+      "demo",
+      expect.objectContaining({
+        command: "demo-v2",
+        args: ["--fresh"],
+        env: { DEMO_TOKEN: "rotated" },
+        status: "active",
+      }),
+    );
+    expect(clientsMap.get("demo")?.client).toEqual({ id: "new-client" });
+  });
+
+  test.each([
+    ["pause", "pauseMcpServer"],
+    ["remove", "removeMcpServer"],
+    ["deactivate", "deactivateMcpClient"],
+  ])("detaches the client before a %s close rejection", async (_label, actionName) => {
+    clientsMap.set("demo", {
+      client: { id: "stale-client" } as any,
+      tools: { tools: [] },
+      errorMsg: null,
+    });
+    (removeClient as jest.Mock).mockRejectedValueOnce(
+      new Error("transport already closed"),
+    );
+    const actions = await import("../app/mcp/actions");
+    const action = actions[actionName as keyof typeof actions] as (
+      clientId: string,
+    ) => Promise<unknown>;
+
+    await expect(action("demo")).rejects.toThrow("transport already closed");
+    expect(clientsMap.has("demo")).toBe(false);
+    expect(executeRequest).not.toHaveBeenCalled();
+  });
+
+  test("detaches before a restart close rejection", async () => {
+    clientsMap.set("demo", {
+      client: { id: "stale-client" } as any,
+      tools: { tools: [] },
+      errorMsg: null,
+    });
+    (removeClient as jest.Mock).mockRejectedValueOnce(
+      new Error("transport already closed"),
+    );
+    const { restartAllClients } = await import("../app/mcp/actions");
+
+    await expect(restartAllClients()).rejects.toThrow("transport already closed");
+    expect(clientsMap.has("demo")).toBe(false);
+  });
+
+  test("rejects execution against a paused or removed server even when a stale client is present", async () => {
+    clientsMap.set("demo", {
+      client: { id: "stale-client" } as any,
+      tools: { tools: [] },
+      errorMsg: null,
+    });
+    (fs.readFile as jest.Mock).mockResolvedValueOnce(pausedDemoConfig);
+    const { executeMcpAction } = await import("../app/mcp/actions");
+
+    await expect(
+      executeMcpAction("demo", {
+        jsonrpc: "2.0",
+        id: "paused-request",
+        method: "tools/call",
+      }),
+    ).rejects.toThrow("Server demo is paused");
+    expect(executeRequest).not.toHaveBeenCalled();
+
+    (fs.readFile as jest.Mock).mockResolvedValueOnce(
+      JSON.stringify({ mcpServers: {} }),
+    );
+    await expect(
+      executeMcpAction("demo", {
+        jsonrpc: "2.0",
+        id: "removed-request",
+        method: "tools/call",
+      }),
+    ).rejects.toThrow("Server demo not found");
+    expect(executeRequest).not.toHaveBeenCalled();
   });
 });

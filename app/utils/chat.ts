@@ -11,6 +11,7 @@ import {
 } from "@fortaine/fetch-event-source";
 import { prettyObject } from "./format";
 import { fetch as tauriFetch } from "./stream";
+import { createAbortTimeout } from "./request-timeout";
 
 function compressImage(file: Blob, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -309,12 +310,12 @@ export function stream(
       signal: controller.signal,
       headers,
     };
-    const requestTimeoutId = setTimeout(() => controller.abort(), timeoutMs);
-    fetchEventSource(chatPath, {
+    const cancelRequestTimeout = createAbortTimeout({ controller, timeoutMs });
+    void fetchEventSource(chatPath, {
       fetch: tauriFetch as any,
       ...chatPayload,
       async onopen(res) {
-        clearTimeout(requestTimeoutId);
+        cancelRequestTimeout();
         const contentType = res.headers.get("content-type");
         console.log("[Request] response content type: ", contentType);
         responseRes = res;
@@ -380,11 +381,17 @@ export function stream(
         finish();
       },
       onerror(e) {
-        options?.onError?.(e);
         throw e;
       },
       openWhenHidden: true,
-    });
+    })
+      .catch((error) => {
+        if (!finished) {
+          finished = true;
+          options?.onError?.(error);
+        }
+      })
+      .finally(cancelRequestTimeout);
   }
   console.debug("[ChatAPI] start");
   chatApi(chatPath, headers, requestPayload, tools); // call fetchEventSource

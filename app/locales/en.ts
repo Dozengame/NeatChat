@@ -165,6 +165,11 @@ const en: LocaleType = {
       PastedTextFile: "Pasted text.txt",
       LongTextMessage:
         "I sent a long text file. Its content was converted to an attachment.",
+      FileMetadata: {
+        Name: "File name",
+        Type: "Type",
+        Size: "Size",
+      },
       JoinMessages: (messages: string[]) => messages.join(", "),
       LiveStatus: (text: string, hint: string) => `${text}, ${hint}.`,
       Full: "Attachments full: up to 3 images and 5 files",
@@ -180,6 +185,130 @@ const en: LocaleType = {
       EditFileContent: (name: string) => `Edit file content: ${name}`,
       DeleteFile: (index: number, name: string) =>
         `Delete file attachment ${index}: ${name}`,
+      Reader: {
+        UnknownError: "Unknown error",
+        UnsupportedFileType: "Unsupported file type",
+        UnsupportedFile: (name: string) =>
+          `${name || "This file"} is not a supported file type`,
+        PastedFileName: "Pasted file.txt",
+        ReadFailed: (name: string, error: string) =>
+          `Failed to read ${name}: ${error}`,
+        NoFilesRead: "No files were read successfully",
+        TextFileType: "Text file",
+        ContentTruncated: (length: number) =>
+          `[File truncated. Original length: ${length} characters]`,
+        ImageLoadFailed: "Failed to load image",
+        Legacy: {
+          Title: (name: string) => `Legacy ${name} document detected`,
+          Description: (extension: string) =>
+            `This legacy ${extension} file cannot be parsed completely.`,
+          ConvertIntro: "For best results, convert the file as follows:",
+          OpenWith: (app: string) => `Open the file with ${app}`,
+          SaveAs: "Choose File > Save As",
+          ChooseFormat: (format: string) => `Select ${format}`,
+          SaveAndUpload: "Save and upload the new file",
+          PartialTextAttempt:
+            "NeatChat will try to extract some text, but the result may be incomplete.",
+          PartialTableAttempt:
+            "NeatChat will try to extract the table content, but the result may be incomplete.",
+          Warning: (extension: string, target: string) =>
+            `[Notice] Text extracted from this legacy ${extension} file may be incomplete. Convert it to ${target} and upload it again for best results.`,
+          CannotFullyRead: (extension: string, target: string) =>
+            `[Unable to read] This legacy ${extension} file could not be parsed completely. Convert it to ${target} and upload it again, or paste its content directly.`,
+          CannotRead: (extension: string, target: string) =>
+            `[Unable to read] This legacy ${extension} file could not be parsed. Convert it to ${target} and upload it again, or paste its content directly.`,
+          FormatErrorTitle: "Invalid file format",
+          FormatErrorDescription:
+            "The file could not be read because its format is invalid or it is damaged.",
+          ConvertDoc: "If this is a .doc file, convert it as follows:",
+          FormatErrorMessage:
+            "The file format is invalid or damaged. Convert .doc files to .docx and upload them again.",
+        },
+        Word: {
+          Name: "Word",
+          App: "Microsoft Word or WPS Writer",
+          Format: "Word document (.docx)",
+        },
+        PowerPoint: {
+          Name: "PowerPoint",
+          App: "PowerPoint or WPS Presentation",
+          Format: "PowerPoint presentation (.pptx)",
+          Slide: (number: number, text: string) =>
+            `--- Slide ${number} ---\n${text}`,
+          Content: (slides: string) =>
+            `PowerPoint presentation content:\n\n${slides}`,
+          ExtractionFailed:
+            "[Extraction failed] No text could be extracted from the PowerPoint file. The format may be unsupported or the file may contain no text.",
+          ParseFailed:
+            "[Extraction failed] The PowerPoint file could not be parsed. Copy and paste the important content instead.",
+        },
+        Pdf: {
+          Content: (pages: number) => `PDF content (${pages} pages):\n\n`,
+          UnreadablePage: "[Unable to parse this page]",
+          BlankPage: "[Blank or image-only content]",
+          Page: (number: number, text: string) =>
+            `--- Page ${number} ---\n${text}\n\n`,
+          Truncated: (processed: number, total: number) =>
+            `\n[Large file: processed the first ${processed} of ${total} pages.]\n`,
+          LimitedTitle: "Limited PDF text extraction",
+          LimitedDescription:
+            "Text could not be extracted from the PDF. Possible reasons:",
+          Scanned: "The PDF is scanned and contains images instead of text",
+          Protected: "The PDF is protected or encrypted",
+          Damaged: "The PDF uses an unusual format or is damaged",
+          Suggestions: "Suggestions:",
+          UseOcr: "Process the PDF with OCR software",
+          CopyManually: "Copy and paste the required content manually",
+          UseSmallerFile: "Try a smaller PDF file",
+          LimitedContent: (name: string, sizeMb: string, pages: number) =>
+            `[Limited PDF text extraction]\n\nNo text could be extracted from ${name}; it may be scanned or protected.\n\nFile information:\n- Size: ${sizeMb} MB\n- Pages: ${pages}\n\nUse OCR software or copy and paste the required content manually.`,
+          ParseFailedTitle: "Failed to parse PDF",
+          ParseFailedDescription: "The PDF content could not be parsed.",
+          Error: (message: string) => `Error: ${message}`,
+          ParseFailedHelp:
+            "Open the file in another PDF viewer, then copy and paste its content.",
+          ParseFailedContent:
+            "[Failed to parse PDF] The PDF content could not be extracted. Open it in a PDF viewer, then copy and paste its content.",
+        },
+        Zip: {
+          BinaryFile: (size: number) => `[Binary file, ${size} bytes]`,
+          UnreadableFile: "[Unable to read this file]",
+          Content: (name: string) => `ZIP content (${name}):\n`,
+          TotalFiles: (count: number) => `Total files: ${count}`,
+          ShowingFirst: (count: number) => ` (showing the first ${count})`,
+          TextFiles: (count: number) => `\nText files: ${count}\n\n`,
+          Truncated: (processed: number, total: number) =>
+            `\n[Large ZIP: processed the first ${processed} of ${total} files.]\n`,
+          LimitedTitle: "Limited ZIP text extraction",
+          NoReadableText:
+            "This ZIP contains no readable text files, or its file formats are unsupported.",
+          SupportedTextOnly:
+            "Only common text files such as .txt, .md, .js, and .py can be extracted.",
+          ExtractHelp:
+            "Extract the ZIP and upload the required text files separately.",
+          ParseFailedTitle: "Failed to parse ZIP",
+          ParseFailedDescription: "The ZIP content could not be parsed.",
+          ParseFailedHelp:
+            "Make sure this is a valid ZIP file, or extract it and upload files separately.",
+          ParseFailedContent:
+            "[Failed to parse ZIP] The ZIP content could not be extracted. Make sure it is a valid ZIP file, or extract it and upload files separately.",
+        },
+        Excel: {
+          Name: "Excel",
+          App: "Microsoft Excel or WPS Spreadsheets",
+          Format: "Excel workbook (.xlsx)",
+          Content: (name: string) => `Excel workbook content (${name}):\n\n`,
+          SheetCount: (count: number) => `Worksheets: ${count}\n\n`,
+          Sheet: (name: string) => `=== Worksheet: ${name} ===\n\n`,
+          EmptySheet: "[Empty worksheet]\n\n",
+          ParseFailedTitle: "Failed to parse Excel file",
+          ParseFailedDescription: "The Excel content could not be parsed.",
+          ParseFailedHelp:
+            "Open the file in Excel, then copy and paste its content.",
+          ParseFailedContent:
+            "[Failed to parse Excel file] The Excel content could not be extracted. Open it in Excel, then copy and paste its content.",
+        },
+      },
       Drag: {
         AddHint: "Release to add · up to 3 images and 5 files",
         BlockedHint: "Release will not add new attachments",
@@ -200,6 +329,7 @@ const en: LocaleType = {
     ImageGeneration: {
       NotEnabled: "Image generation is not enabled",
       EnableFailed: "Failed to enable image generation",
+      DisableFailed: "Failed to disable image generation",
       Enabled: "Image generation enabled",
       Disabled: "Image generation disabled",
       Failed: "Image generation failed",
@@ -215,6 +345,33 @@ const en: LocaleType = {
         Preparing: "Preparing the image generation request...",
         Generating: "Generating the image. Please wait...",
         Saving: "Image generated. Saving the image...",
+      },
+      Display: {
+        Task: "Image generation task",
+        ToolCall: "Tool call",
+        GenerationType: "Generation type: ",
+        OptimizedPrompt: "Optimized Prompt:",
+        Parameters: "Parameters:",
+        Progress: "Progress:",
+        Status: "Status: ",
+        Submitting: "Submitting to jimeng-mcp",
+        PreparingTool: "Preparing to run the tool",
+        PreparingSubmission: "Preparing to submit to jimeng-mcp",
+        TextToImage: "Text to image",
+        ImageToImage: "Image to image",
+        TextToVideo: "Text to video",
+        ImageToVideo: "Image to video",
+        AspectRatio: "Aspect ratio: ",
+        Resolution: "Resolution: ",
+        ModelVersion: "Model version: ",
+        Duration: "Duration: ",
+        Submitted: "Submitted; waiting for status",
+        Success: "Generation succeeded",
+        Generating: "Generating",
+        Failure: "Generation failed",
+        Cancelled: "Cancelled",
+        Timeout: "Query timed out",
+        Unknown: "Unknown",
       },
     },
     ModelMenu: {

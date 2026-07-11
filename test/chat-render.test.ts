@@ -1,4 +1,5 @@
 import {
+  createVisibleChatMessagesProjector,
   getVisibleChatMessages,
   RenderMessage,
   shouldRenderLoadingPreview,
@@ -43,5 +44,40 @@ describe("chat render messages", () => {
     ]);
 
     expect(shouldRenderLoadingPreview(visibleMessages, false)).toBe(false);
+  });
+
+  test("reprocesses only the mutable tail during streaming updates", () => {
+    let contentReads = 0;
+    let tailContent = "stream-0";
+    const messages = Array.from({ length: 3000 }, (_, index) => {
+      const nextMessage = message({
+        id: `message-${index}`,
+        role: index % 2 === 0 ? "user" : "assistant",
+      });
+      Object.defineProperty(nextMessage, "content", {
+        configurable: true,
+        enumerable: true,
+        get() {
+          contentReads += 1;
+          return index === 2999 ? tailContent : `content-${index}`;
+        },
+      });
+      return nextMessage;
+    });
+    const project = createVisibleChatMessagesProjector();
+
+    expect(project(messages, 1)).toHaveLength(messages.length);
+    expect(contentReads).toBeGreaterThanOrEqual(messages.length);
+
+    contentReads = 0;
+    tailContent = "stream-1";
+    const projected = project(messages.slice(), 1);
+
+    expect(contentReads).toBeLessThan(20);
+    expect(projected.at(-1)?.content).toBe("stream-1");
+
+    contentReads = 0;
+    project(messages.slice(), 2);
+    expect(contentReads).toBeGreaterThanOrEqual(messages.length);
   });
 });

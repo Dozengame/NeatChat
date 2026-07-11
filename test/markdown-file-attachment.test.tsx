@@ -28,11 +28,17 @@ jest.mock("remark-gfm", () => jest.fn());
 jest.mock("rehype-katex", () => jest.fn());
 jest.mock("rehype-raw", () => jest.fn());
 jest.mock("rehype-highlight", () => jest.fn());
+jest.mock("rehype-sanitize", () => ({
+  __esModule: true,
+  default: jest.fn(),
+  defaultSchema: { tagNames: [], attributes: {}, protocols: {} },
+}));
 
 jest.mock("next/dynamic", () => {
-  return () => function DynamicPlaceholder() {
-    return null;
-  };
+  return () =>
+    function DynamicPlaceholder() {
+      return null;
+    };
 });
 
 jest.mock("../app/icons/file.svg", () => {
@@ -98,12 +104,37 @@ describe("Markdown file attachments", () => {
     expect(screen.getByText("24.00 KB")).toBeInTheDocument();
     expect(screen.getByText("application/pdf")).toBeInTheDocument();
     expect(screen.queryByText(/文件名:/)).not.toBeInTheDocument();
-    expect(document.querySelector('a[href^="file://"]')).not.toBeInTheDocument();
+    expect(
+      document.querySelector('a[href^="file://"]'),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(attachment);
 
     expect(showToast).toHaveBeenCalledWith(Locale.Markdown.FileCopied);
     expect(copyToClipboard).toHaveBeenCalledWith("第一行内容\n第二行内容");
+  });
+
+  test("renders English-locale file metadata without exposing transport labels", () => {
+    render(
+      <Markdown
+        content={
+          "File name: performance.txt\nType: text/plain\nSize: 1.00 KB\n\nprofiling result"
+        }
+      />,
+    );
+
+    const attachment = screen.getByRole("button", {
+      name: Locale.FileAttachment.Label(
+        "performance.txt",
+        "text/plain",
+        "1.00 KB",
+        true,
+      ),
+    });
+    fireEvent.click(attachment);
+
+    expect(screen.queryByText(/File name:/)).not.toBeInTheDocument();
+    expect(copyToClipboard).toHaveBeenCalledWith("profiling result");
   });
 
   test("keeps unsafe javascript links downgraded to text", () => {
@@ -128,7 +159,9 @@ describe("Markdown file attachments", () => {
     const videoHeader = videoFrame?.querySelector(".markdown-media-header");
     const audioPlayer = container.querySelector(".markdown-audio-player");
     const videoPlayer = container.querySelector(".markdown-video-player");
-    const videoSource = container.querySelector(".markdown-video-player source");
+    const videoSource = container.querySelector(
+      ".markdown-video-player source",
+    );
     const openLinks = container.querySelectorAll(".markdown-media-open-link");
 
     expect(audioFrame?.tagName).toBe("SPAN");
@@ -167,9 +200,9 @@ describe("Markdown file attachments", () => {
       "https://example.com/clip.MP4?sig=1#t=1",
     );
     expect(openLinks[1]).toHaveTextContent(Locale.Markdown.OpenOriginal);
-    expect(container.querySelector(".markdown-video-player")).not.toHaveAttribute(
-      "width",
-    );
+    expect(
+      container.querySelector(".markdown-video-player"),
+    ).not.toHaveAttribute("width");
   });
 
   test("shows a readable media fallback when audio or video cannot load", () => {

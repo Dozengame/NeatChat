@@ -5,26 +5,24 @@ import {
   MOONSHOT_BASE_URL,
   Moonshot,
   REQUEST_TIMEOUT_MS,
-  } from "@/app/constant";
+} from "@/app/constant";
 import {
   useAccessStore,
   useAppConfig,
   useChatStore,
   ChatMessageTool,
   usePluginStore,
-  } from "@/app/store";
+} from "@/app/store";
 import { stream } from "@/app/utils/chat";
-import {
-  ChatOptions,
-  LLMApi,
-  LLMModel,
-  SpeechOptions,
-} from "../types";
+import { ChatOptions, LLMApi, LLMModel, SpeechOptions } from "../types";
 import { getHeadersAsync } from "../header-loader";
 import { getClientConfig } from "@/app/config/client";
 import { getMessageTextContent } from "@/app/utils";
 import { RequestPayload } from "./openai";
 import { fetch } from "@/app/utils/stream";
+import { withAbortTimeoutResponse } from "@/app/utils/request-timeout";
+import { getAccessRestrictedPublicErrorMessage } from "@/app/utils/public-error";
+import Locale from "../../locales";
 
 export class MoonshotApi implements LLMApi {
   private disableListModels = true;
@@ -106,12 +104,6 @@ export class MoonshotApi implements LLMApi {
         headers: await getHeadersAsync(),
       };
 
-      // make a fetch request
-      const requestTimeoutId = setTimeout(
-        () => controller.abort(),
-        REQUEST_TIMEOUT_MS,
-      );
-
       if (shouldStream) {
         const [tools, funcs] = usePluginStore
           .getState()
@@ -174,11 +166,21 @@ export class MoonshotApi implements LLMApi {
           options,
         );
       } else {
-        const res = await fetch(chatPath, chatPayload);
-        clearTimeout(requestTimeoutId);
+        const { response: res, body: resJson } = await withAbortTimeoutResponse(
+          {
+            controller,
+            timeoutMs: REQUEST_TIMEOUT_MS,
+            operation: () => fetch(chatPath, chatPayload),
+            consume: (response) => response.json(),
+          },
+        );
 
-        const resJson = await res.json();
-        const message = this.extractMessage(resJson);
+        const message =
+          getAccessRestrictedPublicErrorMessage({
+            response: res,
+            payload: resJson,
+            message: Locale.Error.AccessRestricted,
+          }) ?? this.extractMessage(resJson);
         options.onFinish(message, res);
       }
     } catch (e) {

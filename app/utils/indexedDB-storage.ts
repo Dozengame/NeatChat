@@ -5,6 +5,8 @@ import { safeLocalStorage } from "@/app/utils/storage";
 const localStorage = safeLocalStorage();
 
 class IndexedDBStorage implements StateStorage {
+  constructor(private readonly validateHydration = true) {}
+
   public async getItem(name: string): Promise<string | null> {
     try {
       const value = (await get(name)) || localStorage.getItem(name);
@@ -16,9 +18,11 @@ class IndexedDBStorage implements StateStorage {
 
   public async setItem(name: string, value: string): Promise<void> {
     try {
-      const _value = JSON.parse(value);
-      if (!_value?.state?._hasHydrated) {
-        return;
+      if (this.validateHydration) {
+        const parsedValue = JSON.parse(value);
+        if (!parsedValue?.state?._hasHydrated) {
+          return;
+        }
       }
       await set(name, value);
     } catch (error) {
@@ -44,3 +48,4 @@ class IndexedDBStorage implements StateStorage {
 }
 
 export const indexedDBStorage = new IndexedDBStorage();
+export const rawIndexedDBStorage = new IndexedDBStorage(false);

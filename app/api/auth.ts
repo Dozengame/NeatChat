@@ -7,6 +7,7 @@ import {
   markSystemAccessCodeRequest,
 } from "./abuse-control";
 import { resolveAccessCodeProfile } from "../utils/access-control";
+import { ACCESS_RESTRICTED_ERROR_CODE } from "../utils/public-error";
 
 function parseApiKey(bearToken: string) {
   const token = bearToken.trim().replaceAll("Bearer ", "").trim();
@@ -41,10 +42,10 @@ export function authErrorResponse(authResult: AuthResult) {
     return NextResponse.json({ error: false });
   }
 
-  const publicMessage =
-    authResult.status === 429
-      ? "当前访问暂时受限，请稍后再试。"
-      : authResult.msg;
+  const restricted = authResult.status === 429;
+  const publicMessage = restricted
+    ? ACCESS_RESTRICTED_ERROR_CODE
+    : authResult.msg;
   const headers =
     authResult.status === 429 && authResult.retryAfterSeconds
       ? { "Retry-After": String(authResult.retryAfterSeconds) }
@@ -53,6 +54,7 @@ export function authErrorResponse(authResult: AuthResult) {
   return NextResponse.json(
     {
       error: true,
+      code: restricted ? ACCESS_RESTRICTED_ERROR_CODE : undefined,
       msg: publicMessage,
       retryAfterSeconds: authResult.retryAfterSeconds,
     },

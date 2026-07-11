@@ -16,32 +16,44 @@ jest.mock("../app/store/config", () => ({
   })),
 }));
 
-jest.mock("react-markdown", () => {
-  const React = require("react");
-  return {
-    __esModule: true,
-    default: ({ children }: { children: any }) =>
-      React.createElement("div", null, children),
-  };
-});
+type ReactMarkdownMockProps = {
+  children: React.ReactNode;
+  rehypePlugins?: unknown[];
+};
+
+const mockReactMarkdown = jest.fn(({ children }: ReactMarkdownMockProps) => (
+  <div>{children}</div>
+));
+
+jest.mock("react-markdown", () => ({
+  __esModule: true,
+  default: (props: ReactMarkdownMockProps) => mockReactMarkdown(props),
+}));
 
 jest.mock("remark-math", () => jest.fn());
 jest.mock("remark-breaks", () => jest.fn());
 jest.mock("remark-gfm", () => jest.fn());
 jest.mock("rehype-katex", () => jest.fn());
 jest.mock("rehype-raw", () => jest.fn());
-jest.mock("rehype-highlight", () => jest.fn());
+jest.mock("rehype-highlight", () => ({ __esModule: true, default: jest.fn() }));
+jest.mock("rehype-sanitize", () => ({
+  __esModule: true,
+  default: jest.fn(),
+  defaultSchema: { tagNames: [], attributes: {}, protocols: {} },
+}));
 
 jest.mock("next/dynamic", () => {
-  return () => function DynamicPlaceholder() {
-    return null;
-  };
+  return () =>
+    function DynamicPlaceholder() {
+      return null;
+    };
 });
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { encode } from "../app/utils/token";
 import { Markdown } from "../app/components/markdown";
 import Locale from "../app/locales";
+import RehypeHighlight from "rehype-highlight";
 
 describe("Markdown performance", () => {
   beforeEach(() => {
@@ -64,6 +76,36 @@ describe("Markdown performance", () => {
 
     expect(encode).toHaveBeenCalledTimes(1);
     expect(encode).toHaveBeenCalledWith("hello world");
+  });
+
+  test("defers syntax highlighting until streaming finishes", () => {
+    const { rerender } = render(
+      <Markdown content={"```ts\nconst n = 1;\n```"} streaming />,
+    );
+
+    const streamingPlugins =
+      mockReactMarkdown.mock.calls.at(-1)?.[0].rehypePlugins ?? [];
+    expect(
+      streamingPlugins.some((plugin: unknown) =>
+        Array.isArray(plugin)
+          ? plugin[0] === RehypeHighlight
+          : plugin === RehypeHighlight,
+      ),
+    ).toBe(false);
+
+    rerender(
+      <Markdown content={"```ts\nconst n = 1;\n```"} streaming={false} />,
+    );
+
+    const completedPlugins =
+      mockReactMarkdown.mock.calls.at(-1)?.[0].rehypePlugins ?? [];
+    expect(
+      completedPlugins.some((plugin: unknown) =>
+        Array.isArray(plugin)
+          ? plugin[0] === RehypeHighlight
+          : plugin === RehypeHighlight,
+      ),
+    ).toBe(true);
   });
 
   test("delegates content-change scrolling to the chat container", () => {
@@ -100,9 +142,7 @@ describe("Markdown performance", () => {
       [tokenCountText, tokenDelayText].join(", "),
     );
 
-    render(
-      <Markdown content="hello world" messageId="m2" streaming={false} />,
-    );
+    render(<Markdown content="hello world" messageId="m2" streaming={false} />);
 
     const tokenChip = screen.getByRole("button", {
       name: tokenInfoLabel,
@@ -132,9 +172,7 @@ describe("Markdown performance", () => {
     const tokenCountText = Locale.Chat.TokenInfo.TokenCount(11);
     const tokenInfoLabel = Locale.Chat.TokenInfo.Label(tokenCountText);
 
-    render(
-      <Markdown content="hello world" messageId="m3" streaming={false} />,
-    );
+    render(<Markdown content="hello world" messageId="m3" streaming={false} />);
 
     const tokenChip = screen.getByRole("button", {
       name: tokenInfoLabel,

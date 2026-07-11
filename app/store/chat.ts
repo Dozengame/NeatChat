@@ -10,7 +10,10 @@ import {
   isOpenAIImageGenerationModelConfig,
 } from "../utils/openai-image";
 
-import { indexedDBStorage } from "@/app/utils/indexedDB-storage";
+import {
+  indexedDBStorage,
+  rawIndexedDBStorage,
+} from "@/app/utils/indexedDB-storage";
 import { nanoid } from "nanoid";
 import type { MultimodalContent } from "../client/types";
 import type { ClientApi } from "../client/api";
@@ -66,10 +69,43 @@ import {
 import { JIMENG_MCP_SERVER_ID } from "../mcp/jimeng";
 import { registerChatStore } from "./chat-state-link";
 import { isOpenAIGpt56ModelConfig } from "../utils/openai-responses";
+import { selectOpenAIAllTurnsHistory } from "../utils/openai-history";
+import { createTrailingThrottledJSONStorage } from "../utils/chat-persist-storage";
+import { createStreamUpdateCoalescer } from "../utils/stream-update-coalescer";
 
 const localStorage = safeLocalStorage();
+const chatPersistStorage = createTrailingThrottledJSONStorage<any>(
+  rawIndexedDBStorage,
+  {
+    intervalMs: 1000,
+    shouldPersist: (value) => value.state?._hasHydrated === true,
+  },
+);
+const CHAT_PERSIST_SEMANTIC_DEADLINE_MS = 250;
 const JIMENG_RESULT_POLL_INTERVAL_MS = 3000;
 const JIMENG_RESULT_MAX_POLLS = 40;
+
+function flushChatPersistence() {
+  chatPersistStorage.scheduleFlush(
+    StoreKey.Chat,
+    CHAT_PERSIST_SEMANTIC_DEADLINE_MS,
+  );
+}
+
+function flushChatPersistenceNow() {
+  void chatPersistStorage.flushNow(StoreKey.Chat).catch((error) => {
+    console.error("[Chat] failed to flush persisted state", error);
+  });
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", flushChatPersistenceNow);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      flushChatPersistenceNow();
+    }
+  });
+}
 
 export function createMessage(override: Partial<ChatMessage>): ChatMessage {
   return {
@@ -373,7 +409,30 @@ const DEFAULT_CHAT_STATE = {
   temporarySession: createEmptySession() as ChatSession | undefined,
   currentSessionIndex: TEMPORARY_SESSION_INDEX,
   lastInput: "",
+  sessionListRevision: 0,
+  messageProjectionRevision: 0,
 };
+
+function getSessionListSnapshot(session: ChatSession) {
+  return {
+    id: session.id,
+    topic: session.topic,
+    lastUpdate: session.lastUpdate,
+    messageCount: session.messages.length,
+    avatar: session.mask.avatar,
+    model: session.mask.modelConfig.model,
+  };
+}
+
+function hasSessionListSnapshotChanged(
+  previous: ReturnType<typeof getSessionListSnapshot>,
+  next: ReturnType<typeof getSessionListSnapshot>,
+) {
+  return Object.keys(previous).some(
+    (key) =>
+      previous[key as keyof typeof previous] !== next[key as keyof typeof next],
+  );
+}
 
 export const useChatStore = createPersistStore(
   DEFAULT_CHAT_STATE,
@@ -417,6 +476,8 @@ export const useChatStore = createPersistStore(
         set((state) => ({
           currentSessionIndex: 0,
           sessions: [newSession, ...state.sessions],
+          sessionListRevision: (state.sessionListRevision ?? 0) + 1,
+          messageProjectionRevision: (state.messageProjectionRevision ?? 0) + 1,
         }));
       },
 
@@ -425,6 +486,8 @@ export const useChatStore = createPersistStore(
           sessions: [],
           temporarySession: createEmptySession(),
           currentSessionIndex: TEMPORARY_SESSION_INDEX,
+          sessionListRevision: (get().sessionListRevision ?? 0) + 1,
+          messageProjectionRevision: (get().messageProjectionRevision ?? 0) + 1,
         }));
       },
 
@@ -456,6 +519,7 @@ export const useChatStore = createPersistStore(
           return {
             currentSessionIndex: newIndex,
             sessions: newSessions,
+            sessionListRevision: (state.sessionListRevision ?? 0) + 1,
           };
         });
       },
@@ -466,6 +530,8 @@ export const useChatStore = createPersistStore(
           currentSessionIndex: TEMPORARY_SESSION_INDEX,
           temporarySession: session,
           sessions: pruneEmptySessions(state.sessions),
+          sessionListRevision: (state.sessionListRevision ?? 0) + 1,
+          messageProjectionRevision: (state.messageProjectionRevision ?? 0) + 1,
         }));
       },
 
@@ -519,6 +585,8 @@ export const useChatStore = createPersistStore(
             ? createEmptySession()
             : get().temporarySession,
           sessions,
+          sessionListRevision: (get().sessionListRevision ?? 0) + 1,
+          messageProjectionRevision: (get().messageProjectionRevision ?? 0) + 1,
         }));
 
         showToast(
@@ -526,7 +594,12 @@ export const useChatStore = createPersistStore(
           {
             text: Locale.Home.Revert,
             onClick() {
-              set(() => restoreState);
+              set((state) => ({
+                ...restoreState,
+                sessionListRevision: (state.sessionListRevision ?? 0) + 1,
+                messageProjectionRevision:
+                  (state.messageProjectionRevision ?? 0) + 1,
+              }));
             },
           },
           5000,
@@ -577,6 +650,8 @@ export const useChatStore = createPersistStore(
           currentSessionIndex: 0,
           temporarySession: undefined,
           sessions: [session, ...pruneEmptySessions(state.sessions)],
+          sessionListRevision: (state.sessionListRevision ?? 0) + 1,
+          messageProjectionRevision: (state.messageProjectionRevision ?? 0) + 1,
         }));
 
         return session;
@@ -671,6 +746,7 @@ export const useChatStore = createPersistStore(
             botMessage,
           ]);
         });
+        flushChatPersistence();
 
         // get recent messages after the visible messages are queued
         let recentMessages: ChatMessage[];
@@ -678,6 +754,7 @@ export const useChatStore = createPersistStore(
           recentMessages = await get().getMessagesWithMemory({
             ...options,
             session: promptSession,
+            pendingUserMessage: userMessage,
           });
         } catch (error) {
           const errorMessage =
@@ -700,6 +777,7 @@ export const useChatStore = createPersistStore(
             }
             session.messages = session.messages.concat();
           });
+          flushChatPersistence();
           ChatControllerPool.remove(session.id, botMessage.id ?? messageIndex);
           console.error("[Chat] failed to prepare messages", error);
           return;
@@ -708,6 +786,15 @@ export const useChatStore = createPersistStore(
 
         const { getClientApi } = await import("../client/api");
         const api: ClientApi = getClientApi(modelConfig.providerName);
+        const streamUpdateCoalescer = createStreamUpdateCoalescer(() => {
+          get().updateTargetSession(
+            session,
+            (session) => {
+              session.messages = session.messages.concat();
+            },
+            { renderScope: "tail" },
+          );
+        });
         // make request
         api.llm.chat({
           messages: sendMessages,
@@ -718,11 +805,10 @@ export const useChatStore = createPersistStore(
             if (message) {
               botMessage.content = message;
             }
-            get().updateTargetSession(session, (session) => {
-              session.messages = session.messages.concat();
-            });
+            streamUpdateCoalescer.schedule();
           },
           onFinish(message, _responseRes, metadata) {
+            streamUpdateCoalescer.cancel();
             botMessage.streaming = false;
             const isRecoveryPending =
               metadata?.openaiResponsesRecoveryPending === true;
@@ -757,16 +843,24 @@ export const useChatStore = createPersistStore(
               botMessage.openaiResponsesRecoveryPending = isRecoveryPending;
               botMessage.date = new Date().toLocaleString();
               get().onNewMessage(botMessage, session);
+            } else {
+              get().updateTargetSession(session, (session) => {
+                session.messages = session.messages.concat();
+              });
             }
+            flushChatPersistence();
             ChatControllerPool.remove(session.id, botMessage.id);
           },
           onBeforeTool(tool: ChatMessageTool) {
+            streamUpdateCoalescer.cancel();
             (botMessage.tools = botMessage?.tools || []).push(tool);
             get().updateTargetSession(session, (session) => {
               session.messages = session.messages.concat();
             });
+            flushChatPersistence();
           },
           onAfterTool(tool: ChatMessageTool) {
+            streamUpdateCoalescer.cancel();
             botMessage?.tools?.forEach((t, i, tools) => {
               if (tool.id == t.id) {
                 tools[i] = { ...tool };
@@ -775,8 +869,10 @@ export const useChatStore = createPersistStore(
             get().updateTargetSession(session, (session) => {
               session.messages = session.messages.concat();
             });
+            flushChatPersistence();
           },
           onError(error, metadata) {
+            streamUpdateCoalescer.cancel();
             const isAborted = error.message?.includes?.("aborted");
             botMessage.openaiResponseId = metadata?.openaiResponseId;
             botMessage.openaiResponseStored = metadata?.openaiResponseStored;
@@ -801,6 +897,7 @@ export const useChatStore = createPersistStore(
               }
               session.messages = session.messages.concat();
             });
+            flushChatPersistence();
             ChatControllerPool.remove(
               session.id,
               botMessage.id ?? messageIndex,
@@ -835,6 +932,7 @@ export const useChatStore = createPersistStore(
         mcpClientIds?: string[];
         systemPrompt?: string;
         session?: ChatSession;
+        pendingUserMessage?: ChatMessage;
       }) {
         // 确保MCP状态已初始化
         if (mcpCache.enabled === null) {
@@ -976,14 +1074,7 @@ export const useChatStore = createPersistStore(
           }
         }
 
-        // get recent messages as much as possible
-        const selectedMessageIndexes = new Set<number>();
-        for (
-          let i = totalMessageCount - 1, tokenCount = 0;
-          i >= contextStartIndex &&
-          (preserveAllReasoningTurns || tokenCount < maxTokenThreshold);
-          i -= 1
-        ) {
+        const isEligibleHistoryMessage = (i: number) => {
           const msg = messages[i];
           const isReplayableErrorUser =
             preserveAllReasoningTurns &&
@@ -1002,17 +1093,64 @@ export const useChatStore = createPersistStore(
               !isReplayableErrorUser &&
               !isRequiredReplayMessage)
           ) {
-            continue;
+            return false;
           }
-          tokenCount += estimateTokenLength(getMessageTextContent(msg));
-          selectedMessageIndexes.add(i);
+          return true;
+        };
+
+        let recentHistoryMessages: ChatMessage[];
+        if (preserveAllReasoningTurns) {
+          const segments: Array<{
+            messages: ChatMessage[];
+            pinned: boolean;
+          }> = [];
+          let currentSegment:
+            | { messages: ChatMessage[]; pinned: boolean }
+            | undefined;
+          for (let i = contextStartIndex; i < totalMessageCount; i += 1) {
+            const msg = messages[i];
+            if (msg?.role === "user" || !currentSegment) {
+              currentSegment = { messages: [], pinned: false };
+              segments.push(currentSegment);
+            }
+            if (!isEligibleHistoryMessage(i)) continue;
+            currentSegment.messages.push(msg);
+            currentSegment.pinned ||= requiredReplayMessageIndexes.has(i);
+          }
+
+          recentHistoryMessages = selectOpenAIAllTurnsHistory({
+            model: modelConfig.model,
+            maxOutputTokens: modelConfig.max_output_tokens,
+            fixedMessages: [
+              ...systemPrompts,
+              ...customInstructionPrompts,
+              ...contextPrompts,
+              ...(options?.pendingUserMessage
+                ? [options.pendingUserMessage]
+                : []),
+            ],
+            segments: segments.filter((segment) => segment.messages.length > 0),
+          });
+        } else {
+          // get recent messages as much as possible
+          const selectedMessageIndexes = new Set<number>();
+          for (
+            let i = totalMessageCount - 1, tokenCount = 0;
+            i >= contextStartIndex && tokenCount < maxTokenThreshold;
+            i -= 1
+          ) {
+            if (!isEligibleHistoryMessage(i)) continue;
+            const msg = messages[i];
+            tokenCount += estimateTokenLength(getMessageTextContent(msg));
+            selectedMessageIndexes.add(i);
+          }
+          requiredReplayMessageIndexes.forEach((index) =>
+            selectedMessageIndexes.add(index),
+          );
+          recentHistoryMessages = Array.from(selectedMessageIndexes)
+            .sort((left, right) => left - right)
+            .map((index) => messages[index]);
         }
-        requiredReplayMessageIndexes.forEach((index) =>
-          selectedMessageIndexes.add(index),
-        );
-        const recentHistoryMessages = Array.from(selectedMessageIndexes)
-          .sort((left, right) => left - right)
-          .map((index) => messages[index]);
         // concat all messages
         const recentMessages = [
           ...systemPrompts,
@@ -1034,7 +1172,10 @@ export const useChatStore = createPersistStore(
         const session = sessions.at(sessionIndex);
         const messages = session?.messages;
         updater(messages?.at(messageIndex));
-        set(() => ({ sessions }));
+        set((state) => ({
+          sessions,
+          messageProjectionRevision: (state.messageProjectionRevision ?? 0) + 1,
+        }));
       },
 
       resetSession(session: ChatSession) {
@@ -1202,19 +1343,40 @@ export const useChatStore = createPersistStore(
       updateTargetSession(
         targetSession: ChatSession,
         updater: (session: ChatSession) => void,
+        options?: { renderScope?: "tail" },
       ) {
         const temporarySession = get().temporarySession;
         if (temporarySession?.id === targetSession.id) {
           updater(temporarySession);
-          set(() => ({ temporarySession }));
+          set((state) => ({
+            temporarySession,
+            messageProjectionRevision:
+              options?.renderScope === "tail"
+                ? state.messageProjectionRevision
+                : (state.messageProjectionRevision ?? 0) + 1,
+          }));
           return;
         }
 
         const sessions = get().sessions;
         const index = sessions.findIndex((s) => s.id === targetSession.id);
         if (index < 0) return;
+        const previousListSnapshot = getSessionListSnapshot(sessions[index]);
         updater(sessions[index]);
-        set(() => ({ sessions }));
+        const listMetadataChanged = hasSessionListSnapshotChanged(
+          previousListSnapshot,
+          getSessionListSnapshot(sessions[index]),
+        );
+        set((state) => ({
+          sessions,
+          sessionListRevision: listMetadataChanged
+            ? (state.sessionListRevision ?? 0) + 1
+            : state.sessionListRevision,
+          messageProjectionRevision:
+            options?.renderScope === "tail"
+              ? state.messageProjectionRevision
+              : (state.messageProjectionRevision ?? 0) + 1,
+        }));
       },
       async clearAllData() {
         await indexedDBStorage.clear();
@@ -1378,9 +1540,15 @@ export const useChatStore = createPersistStore(
   },
   {
     name: StoreKey.Chat,
+    storage: chatPersistStorage,
     version: 3.5,
     partialize(state) {
-      const { temporarySession, ...persistedState } = state as any;
+      const {
+        temporarySession,
+        sessionListRevision,
+        messageProjectionRevision,
+        ...persistedState
+      } = state as any;
       const sessions = pruneEmptySessions(persistedState.sessions ?? []);
       const currentSessionIndex =
         typeof persistedState.currentSessionIndex === "number"

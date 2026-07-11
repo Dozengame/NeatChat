@@ -9,6 +9,7 @@ import {
   type AccessCodeProfile,
   type AccessControlConfig,
 } from "@/app/utils/access-control";
+import { ACCESS_RESTRICTED_ERROR_CODE } from "@/app/utils/public-error";
 
 const ACCESS_CODE_HASH_HEADER = "x-neatchat-access-code-hash";
 const ACCESS_CODE_TIER_HEADER = "x-neatchat-access-code-tier";
@@ -611,7 +612,8 @@ export function usageErrorResponse(result: UsageCheckResult) {
   return new Response(
     JSON.stringify({
       error: true,
-      msg: "当前访问暂时受限，请稍后再试。",
+      code: ACCESS_RESTRICTED_ERROR_CODE,
+      msg: ACCESS_RESTRICTED_ERROR_CODE,
       retryAfterSeconds: result.retryAfterSeconds,
     }),
     {

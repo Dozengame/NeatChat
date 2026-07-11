@@ -64,12 +64,15 @@ import {
   getMessageTextContentWithoutThinking,
 } from "@/app/utils";
 import { fetch } from "@/app/utils/stream";
+import { withAbortTimeoutResponse } from "@/app/utils/request-timeout";
+import { isAccessRestrictedPublicError } from "@/app/utils/public-error";
 import {
   OPENAI_IMAGE_REQUEST_TIMEOUT_MS,
   abortOpenAIImageRequest,
   buildOpenAIImageEditFormData,
   buildOpenAIImageGenerationPayload,
   getOpenAIImageGenerationProgressContent,
+  getOpenAIImageErrorMessage,
   getOpenAIImageOutputContentType,
   isGptImageGenerationModel,
   isOpenAIImageGenerationModelConfig,
@@ -140,26 +143,6 @@ async function loadOpenAIImageInput(imageUrl: string, index: number) {
   const dataUrl = await cacheImageToBase64Image(imageUrl);
   const blob = dataUrlToBlob(dataUrl);
   return { blob, filename: getImageFilename(index, blob) };
-}
-
-function getOpenAIErrorMessage(resJson: any, status: number) {
-  const detail =
-    typeof resJson?.error?.message === "string"
-      ? resJson.error.message
-      : typeof resJson?.message === "string"
-      ? resJson.message
-      : typeof resJson?.msg === "string"
-      ? resJson.msg
-      : "";
-  const code =
-    typeof resJson?.error?.code === "string"
-      ? resJson.error.code
-      : typeof resJson?.code === "string"
-      ? resJson.code
-      : String(status);
-  return detail
-    ? `OpenAI image generation failed (${code}): ${detail}`
-    : `OpenAI image generation failed (${code})`;
 }
 
 export interface AzureChatRequestPayload {
@@ -256,6 +239,9 @@ export class ChatGPTApi implements LLMApi {
     },
   ) {
     if (res.error) {
+      if (isAccessRestrictedPublicError(res)) {
+        return Locale.Error.AccessRestricted;
+      }
       if (typeof res.msg === "string" && res.msg.trim()) {
         return res.msg;
       }
@@ -310,15 +296,13 @@ export class ChatGPTApi implements LLMApi {
         headers: await getHeadersAsync(),
       };
 
-      // make a fetch request
-      const requestTimeoutId = setTimeout(
-        () => controller.abort(),
-        REQUEST_TIMEOUT_MS,
-      );
-
-      const res = await fetch(speechPath, speechPayload);
-      clearTimeout(requestTimeoutId);
-      return await res.arrayBuffer();
+      const { body } = await withAbortTimeoutResponse({
+        controller,
+        timeoutMs: REQUEST_TIMEOUT_MS,
+        operation: () => fetch(speechPath, speechPayload),
+        consume: (response) => response.arrayBuffer(),
+      });
+      return body;
     } catch (e) {
       console.log("[Request] failed to make a speech request", e);
       throw e;
@@ -806,25 +790,31 @@ export class ChatGPTApi implements LLMApi {
           : isImageGeneration
           ? OPENAI_IMAGE_REQUEST_TIMEOUT_MS
           : REQUEST_TIMEOUT_MS;
-        const requestTimeoutId = setTimeout(() => {
-          if (isImageGeneration) {
-            abortOpenAIImageRequest(controller, requestTimeoutMs);
-            return;
-          }
-          controller.abort();
-        }, requestTimeoutMs);
-
-        const res = await fetch(chatPath, chatPayload);
-        clearTimeout(requestTimeoutId);
-
-        const resJson = isImageGeneration
-          ? parseOpenAIImageResponsePayload({
-              status: res.status,
-              bodyText: await res.text(),
-            })
-          : await res.json();
+        const { response: res, body: resJson } = await withAbortTimeoutResponse(
+          {
+            controller,
+            timeoutMs: requestTimeoutMs,
+            onTimeout: isImageGeneration
+              ? () => abortOpenAIImageRequest(controller, requestTimeoutMs)
+              : undefined,
+            operation: () => fetch(chatPath, chatPayload),
+            consume: async (response) =>
+              isImageGeneration
+                ? parseOpenAIImageResponsePayload({
+                    status: response.status,
+                    bodyText: await response.text(),
+                  })
+                : response.json(),
+          },
+        );
         if (isImageGeneration && (!res.ok || resJson?.error)) {
-          throw new Error(getOpenAIErrorMessage(resJson, res.status));
+          throw new Error(
+            getOpenAIImageErrorMessage({
+              status: res.status,
+              payload: resJson,
+              accessRestrictedMessage: Locale.Error.AccessRestricted,
+            }),
+          );
         }
         if (isImageGeneration) {
           options.onUpdate?.(
