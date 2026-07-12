@@ -695,6 +695,17 @@ describe("applyPublicAppConfig", () => {
     },
   );
 
+  test.each([
+    ["gpt-5.5", 128000],
+    ["gpt-5-pro", 272000],
+    ["gpt-5.2-chat-latest", 16384],
+    ["gpt-4.1", 512000],
+  ])("caps %s max_output_tokens at its model limit", (model, expected) => {
+    expect(ModalConfigValidator.max_output_tokens(512000, model)).toBe(
+      expected,
+    );
+  });
+
   test("reapplies GPT-5.6 constraints when the public config snapshot is unchanged", () => {
     const unchangedConfig = publicConfig({
       defaults: {

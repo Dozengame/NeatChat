@@ -10,6 +10,7 @@ import { OpenAIChatReasoningEffort } from "../app/utils/openai-responses";
 
 const labels: Record<OpenAIChatReasoningEffort, string> = {
   none: "快速",
+  minimal: "最简",
   low: "低",
   medium: "中",
   high: "高",
@@ -18,6 +19,7 @@ const labels: Record<OpenAIChatReasoningEffort, string> = {
 };
 const descriptions: Record<OpenAIChatReasoningEffort, string> = {
   none: "优先速度",
+  minimal: "使用最少推理",
   low: "适合大多数问题",
   medium: "更稳妥处理复杂任务",
   high: "用于高难度推理",
@@ -54,6 +56,9 @@ describe("ReasoningEffortRail", () => {
     expect(canonicalizeReasoningEfforts(["xhigh", "medium", "medium"])).toEqual(
       ["medium", "xhigh"],
     );
+    expect(
+      canonicalizeReasoningEfforts(["low", "minimal", "none"]),
+    ).toEqual(["none", "minimal", "low"]);
     expect(canonicalizeReasoningEfforts(["medium", "xhigh"], "high")).toEqual([
       "medium",
       "high",

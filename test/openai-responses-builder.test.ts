@@ -353,10 +353,12 @@ describe("buildOpenAIResponsesPayload", () => {
         ...modelConfig,
         model: "gpt-5.5" as any,
         reasoningEffort: "max",
+        max_output_tokens: 512000,
       },
     }) as any;
 
     expect(payload.reasoning.effort).toBe("low");
+    expect(payload.max_output_tokens).toBe(128000);
   });
 
   test("adds the safe GPT-5.6 capability defaults", () => {

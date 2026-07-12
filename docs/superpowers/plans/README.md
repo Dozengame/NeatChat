@@ -14,6 +14,7 @@ Do not read all iteration files by default. Use `rg` first, then open the smalle
 
 ## Routing
 
+- Final merged review from `6c8760f7` through the 2026-07-12 model-selector/config capability release, including default-model hydration, Chat/Image classification, reasoning matrices, override reconciliation, output limits, and final QA: `iterations/2026-07-12-final-model-review.md`.
 - Per-model `OPENAI_REASONING_EFFORT` defaults, scalar compatibility, model-switch resolution, and provider/override boundaries: `iterations/2026-07-12-reasoning-effort-defaults.md`.
 - New-chat `Chat / Image` mode tabs, GPT-5.x reasoning-only composer control, and `gpt-image-x` model/size/quality rails: `iterations/2026-07-12-chat-image-home.md`.
 - English UI localization, default GPT-5.6 administrator locks, and the merged-state review from `081673c8` through `095f97a5`: `iterations/2026-07-10-i18n-admin-lock-review.md`.

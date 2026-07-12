@@ -104,7 +104,7 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
   ) {
     const configuredDefault =
       serverConfig.openaiReasoningEffortDefaults.default;
-    if (configuredDefault) {
+    if (configuredDefault && configuredReasoningEfforts.default) {
       configuredReasoningEfforts.default =
         OPENAI_RESPONSES_REASONING_EFFORTS.filter(
           (effort) =>
@@ -116,6 +116,13 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
     for (const modelKey of Object.keys(
       serverConfig.openaiReasoningEffortDefaults.models,
     )) {
+      const hasExplicitModelAllowlist = Object.prototype.hasOwnProperty.call(
+        configuredReasoningEfforts.models,
+        modelKey,
+      );
+      if (!hasExplicitModelAllowlist && !configuredReasoningEfforts.default) {
+        continue;
+      }
       const modelDefault = getConfiguredOpenAIResponsesReasoningEffort(
         modelKey,
         serverConfig.openaiReasoningEffortDefaults,
@@ -124,7 +131,7 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
         getConfiguredOpenAIResponsesReasoningEfforts(
           modelKey,
           configuredReasoningEfforts,
-        ) ?? [];
+        )!;
       configuredReasoningEfforts.models[modelKey] =
         OPENAI_RESPONSES_REASONING_EFFORTS.filter(
           (effort) =>

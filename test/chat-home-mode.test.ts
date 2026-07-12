@@ -32,7 +32,10 @@ describe("new chat home modes", () => {
     model("gpt-image-3-preview", ServiceProvider.OpenAI),
     model("gpt-image-2", ServiceProvider.OpenAI),
     model("gpt-image-2", ServiceProvider.Azure),
+    model("dall-e-3", ServiceProvider.OpenAI),
+    model("dall-e-3", ServiceProvider.Azure),
     model("gpt-image-disabled", ServiceProvider.OpenAI, false),
+    model("gpt-4.1", ServiceProvider.OpenAI),
     model("claude-4", ServiceProvider.Anthropic),
   ];
 
@@ -44,18 +47,33 @@ describe("new chat home modes", () => {
     expect(getChatHomeModeForModel("gpt-image-2", ServiceProvider.Azure)).toBe(
       "chat",
     );
+    expect(getChatHomeModeForModel("dall-e-3", ServiceProvider.Azure)).toBe(
+      "image",
+    );
     expect(
       getChatHomeModeForModel("gpt-5.6-terra", ServiceProvider.OpenAI),
     ).toBe("chat");
   });
 
-  test("keeps each mode inside its available OpenAI model family", () => {
+  test("keeps supported image models separate from every chat model family", () => {
     expect(
       getChatHomeModeModels(models, "chat").map((item) => item.name),
-    ).toEqual(["gpt-5.6-luna", "gpt-5.6-terra"]);
+    ).toEqual([
+      "gpt-5.6-luna",
+      "gpt-5.6-terra",
+      "gpt-4.1",
+      "claude-4",
+    ]);
     expect(
-      getChatHomeModeModels(models, "image").map((item) => item.name),
-    ).toEqual(["gpt-image-3-preview", "gpt-image-2"]);
+      getChatHomeModeModels(models, "image").map(
+        (item) => `${item.name}@${item.provider?.providerName}`,
+      ),
+    ).toEqual([
+      "gpt-image-3-preview@OpenAI",
+      "gpt-image-2@OpenAI",
+      "dall-e-3@OpenAI",
+      "dall-e-3@Azure",
+    ]);
   });
 
   test("prefers the product defaults and falls back only within the family", () => {
@@ -71,6 +89,18 @@ describe("new chat home modes", () => {
         providerName: ServiceProvider.OpenAI,
       })?.name,
     ).toBe("gpt-5.6-luna");
+    expect(
+      resolvePreferredChatHomeModel("chat", models, {
+        name: "claude-4",
+        providerName: ServiceProvider.Anthropic,
+      })?.name,
+    ).toBe("claude-4");
+    expect(
+      resolvePreferredChatHomeModel("image", models, {
+        name: "dall-e-3",
+        providerName: ServiceProvider.Azure,
+      })?.provider?.providerName,
+    ).toBe(ServiceProvider.Azure);
     expect(
       resolvePreferredChatHomeModel(
         "chat",

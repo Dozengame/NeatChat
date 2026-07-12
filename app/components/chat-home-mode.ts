@@ -1,7 +1,7 @@
 import { LLMModel } from "../client/types";
 import { ServiceProvider } from "../constant";
 import {
-  isGptImageGenerationModel,
+  isOpenAIImageGenerationModel,
   isOpenAIImageGenerationModelConfig,
 } from "../utils/openai-image";
 import {
@@ -19,8 +19,7 @@ export function getChatHomeModeForModel(
   model?: string,
   providerName?: string,
 ): ChatHomeMode {
-  return providerName?.trim().toLowerCase() ===
-    ServiceProvider.OpenAI.toLowerCase() && isGptImageGenerationModel(model)
+  return isOpenAIImageGenerationModelConfig({ model, providerName })
     ? "image"
     : "chat";
 }
@@ -61,17 +60,13 @@ export function isModelEligibleForChatHomeMode(
 
   const providerName = model.provider?.providerName;
   if (mode === "image") {
-    return (
-      providerName?.trim().toLowerCase() ===
-        ServiceProvider.OpenAI.toLowerCase() &&
-      isGptImageGenerationModel(model.name)
-    );
+    return isOpenAIImageGenerationModelConfig({
+      model: model.name,
+      providerName,
+    });
   }
 
-  return isOpenAIGpt5OrNewerModelConfig({
-    model: model.name,
-    providerName,
-  });
+  return !isOpenAIImageGenerationModel(model.name);
 }
 
 export function getChatHomeModeModels(
@@ -87,21 +82,27 @@ export function resolvePreferredChatHomeModel(
   configuredDefault?: { name?: string; providerName?: string },
 ) {
   const eligibleModels = getChatHomeModeModels(models, mode);
+  const configuredModel = configuredDefault?.name
+    ? eligibleModels.find(
+        (model) =>
+          model.name === configuredDefault.name &&
+          model.provider?.providerName?.trim().toLowerCase() ===
+            (configuredDefault.providerName ?? ServiceProvider.OpenAI)
+              .trim()
+              .toLowerCase(),
+      )
+    : undefined;
   const preferredName =
-    mode === "image"
-      ? "gpt-image-2"
-      : configuredDefault?.name ?? OPENAI_RESPONSES_DEFAULT_MODEL;
-  const preferredProviderName =
-    mode === "image"
-      ? ServiceProvider.OpenAI
-      : configuredDefault?.providerName ?? ServiceProvider.OpenAI;
+    mode === "image" ? "gpt-image-2" : OPENAI_RESPONSES_DEFAULT_MODEL;
 
   return (
+    configuredModel ??
     eligibleModels.find(
       (model) =>
         model.name === preferredName &&
         model.provider?.providerName?.trim().toLowerCase() ===
-          preferredProviderName.trim().toLowerCase(),
-    ) ?? eligibleModels[0]
+          ServiceProvider.OpenAI.toLowerCase(),
+    ) ??
+    eligibleModels[0]
   );
 }

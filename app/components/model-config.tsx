@@ -57,6 +57,7 @@ const SOURCE_LABELS: Record<ConfigSource, string> = {
 
 const REASONING_LABELS: Record<OpenAIChatReasoningEffort, string> = {
   none: Locale.Settings.ReasoningEffort.None,
+  minimal: Locale.Settings.ReasoningEffort.Minimal,
   low: Locale.Settings.ReasoningEffort.Low,
   medium: Locale.Settings.ReasoningEffort.Medium,
   high: Locale.Settings.ReasoningEffort.High,

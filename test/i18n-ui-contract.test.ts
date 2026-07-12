@@ -194,6 +194,7 @@ describe("English UI localization contract", () => {
 
     for (const label of [
       'None: "快速"',
+      'Minimal: "最简"',
       'Low: "低"',
       'Medium: "中"',
       'High: "高"',
@@ -204,6 +205,7 @@ describe("English UI localization contract", () => {
     }
     for (const label of [
       'None: "Fast"',
+      'Minimal: "Minimal"',
       'Low: "Low"',
       'Medium: "Medium"',
       'High: "High"',

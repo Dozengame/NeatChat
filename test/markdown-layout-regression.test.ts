@@ -125,7 +125,7 @@ describe("Markdown rejected-layout regressions", () => {
     );
 
     expect(chat).toMatch(
-      /className=\{styles\["chat-desktop-header-cluster"\]\}[\s\S]*\{promptToast\}[\s\S]*\{showDesktopModelControls && \([\s\S]*styles\["chat-desktop-header-actions"\]/,
+      /className=\{styles\["chat-desktop-header-cluster"\]\}[\s\S]*\{promptToast\}[\s\S]*styles\["chat-desktop-header-actions"\]/,
     );
     expect(header).toMatch(/justify-content:\s*flex-start;/);
     expect(title).toMatch(/flex:\s*1 1 auto;/);

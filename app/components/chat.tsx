@@ -210,6 +210,7 @@ const localStorage = safeLocalStorage();
 const ttsPlayer = createTTSPlayer();
 const reasoningLabels: Record<OpenAIChatReasoningEffort, string> = {
   none: Locale.Settings.ReasoningEffort.None,
+  minimal: Locale.Settings.ReasoningEffort.Minimal,
   low: Locale.Settings.ReasoningEffort.Low,
   medium: Locale.Settings.ReasoningEffort.Medium,
   high: Locale.Settings.ReasoningEffort.High,
@@ -218,6 +219,7 @@ const reasoningLabels: Record<OpenAIChatReasoningEffort, string> = {
 };
 const reasoningDescriptions: Record<OpenAIChatReasoningEffort, string> = {
   none: Locale.Settings.ReasoningEffort.NoneDescription,
+  minimal: Locale.Settings.ReasoningEffort.MinimalDescription,
   low: Locale.Settings.ReasoningEffort.LowDescription,
   medium: Locale.Settings.ReasoningEffort.MediumDescription,
   high: Locale.Settings.ReasoningEffort.HighDescription,
