@@ -383,6 +383,7 @@ const en: LocaleType = {
       SelectModel: (model: string, detail: string) =>
         `Select model: ${model}, ${detail}`,
       SelectModelAndParams: "Select model and parameters",
+      SwitchModel: "Switch model",
       Close: "Close model selector",
       ModelAndReasoning: "Model and reasoning effort",
       ImageOptions: "Image options",
@@ -392,7 +393,6 @@ const en: LocaleType = {
       ImageModelUnavailable: "No image model is available",
       ReasoningEffort: "Reasoning effort",
       ReasoningOptions: "Reasoning effort options",
-      BackToModels: "Back to model list",
       ImageSize: "Image size",
       ImageSizeOptions: "Image size options",
       ImageSizeDescription: (size: string) =>

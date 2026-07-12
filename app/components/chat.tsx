@@ -3063,10 +3063,11 @@ function useChatInnerView() {
   const showEmptyHero =
     showEmptyState && !hasActiveInputContent && !showChatActionMenu;
   const showDesktopChatHeader = !isCompactScreen && !showEmptyState;
-  const headerModelsForMenu =
-    showEmptyState && emptyComposerMode === "image"
+  const headerModelsForMenu = showEmptyState
+    ? emptyComposerMode === "image"
       ? headerImageModels
-      : headerAvailableModels;
+      : headerChatModels
+    : headerAvailableModels;
   const selectEmptyComposerMode = (mode: ChatHomeMode) => {
     if (mode === emptyComposerMode) return;
 
@@ -4768,19 +4769,29 @@ function useChatInnerView() {
                 : Locale.Chat.ModelMenu.SelectModelAndParams
             }
           >
-            <div className={styles["chat-model-menu-current-model"]}>
-              {headerCurrentModelName}
+            <div className={styles["chat-model-menu-header"]}>
+              <div className={styles["chat-model-menu-current-model"]}>
+                {headerCurrentModelName}
+              </div>
+              {(isReasoningSectionExpanded || isImageOptionsExpanded) && (
+                <button
+                  type="button"
+                  className={styles["chat-model-menu-switch-model"]}
+                  aria-label={Locale.Chat.ModelMenu.SwitchModel}
+                  title={Locale.Chat.ModelMenu.SwitchModel}
+                  data-model-menu-control="true"
+                  onClick={returnToModelList}
+                >
+                  <ResetIcon />
+                  <span>{Locale.Chat.ModelMenu.SwitchModel}</span>
+                </button>
+              )}
             </div>
             {isReasoningSectionExpanded ? (
               <ReasoningEffortRail
                 id="chat-mobile-reasoning-options"
                 ariaLabel={Locale.Chat.ModelMenu.ReasoningOptions}
                 title={Locale.Chat.ModelMenu.ReasoningEffort}
-                backLabel={
-                  showEmptyState
-                    ? undefined
-                    : Locale.Chat.ModelMenu.BackToModels
-                }
                 efforts={visibleHeaderReasoningEfforts}
                 allowedEfforts={headerReasoningEfforts}
                 value={headerCurrentReasoningEffort}
@@ -4791,7 +4802,6 @@ function useChatInnerView() {
                 labels={reasoningLabels}
                 descriptions={reasoningDescriptions}
                 onChange={selectHeaderReasoningEffort}
-                onBack={showEmptyState ? undefined : returnToModelList}
                 onLockedAttempt={() =>
                   selectHeaderReasoningEffort(headerCurrentReasoningEffort)
                 }
@@ -4802,11 +4812,6 @@ function useChatInnerView() {
                   id="chat-image-size-options"
                   ariaLabel={Locale.Chat.ModelMenu.ImageSizeOptions}
                   title={Locale.Chat.ModelMenu.ImageSize}
-                  backLabel={
-                    showEmptyState
-                      ? undefined
-                      : Locale.Chat.ModelMenu.BackToModels
-                  }
                   options={headerImageSizes}
                   allowedOptions={headerImageSizes}
                   value={headerCurrentSize}
@@ -4818,7 +4823,6 @@ function useChatInnerView() {
                   descriptions={headerImageSizeDescriptions}
                   emphasizeHighest={false}
                   onChange={selectHeaderImageSize}
-                  onBack={showEmptyState ? undefined : returnToModelList}
                   onLockedAttempt={() =>
                     selectHeaderImageSize(headerCurrentSize)
                   }

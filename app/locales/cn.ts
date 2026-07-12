@@ -368,6 +368,7 @@ const cn = {
       SelectModel: (model: string, detail: string) =>
         `选择模型：${model}，${detail}`,
       SelectModelAndParams: "选择模型和参数",
+      SwitchModel: "切换模型",
       Close: "关闭模型选择",
       ModelAndReasoning: "模型和思考等级",
       ImageOptions: "图片选项",
@@ -377,7 +378,6 @@ const cn = {
       ImageModelUnavailable: "暂无可用的生图模型",
       ReasoningEffort: "思考等级",
       ReasoningOptions: "思考等级选项",
-      BackToModels: "返回模型列表",
       ImageSize: "图片尺寸",
       ImageSizeOptions: "图片尺寸选项",
       ImageSizeDescription: (size: string) =>

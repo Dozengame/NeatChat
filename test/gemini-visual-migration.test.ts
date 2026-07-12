@@ -1856,7 +1856,15 @@ describe("Gemini visual migration shell", () => {
       /\{showMobileModelSelector && \(\s*<>\s*<span className=\{styles\["chat-input-model-name"\]\}>/,
     );
     expect(chat).toMatch(
-      /className=\{styles\["chat-model-menu-current-model"\]\}[\s\S]*\{headerCurrentModelName\}/,
+      /className=\{styles\["chat-model-menu-header"\]\}[\s\S]*className=\{styles\["chat-model-menu-current-model"\]\}[\s\S]*\{headerCurrentModelName\}[\s\S]*\(isReasoningSectionExpanded \|\| isImageOptionsExpanded\)[\s\S]*className=\{styles\["chat-model-menu-switch-model"\]\}[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.SwitchModel\}[\s\S]*data-model-menu-control="true"[\s\S]*onClick=\{returnToModelList\}[\s\S]*<ResetIcon \/>[\s\S]*Locale\.Chat\.ModelMenu\.SwitchModel/,
+    );
+    expect(chat).not.toContain("onBack={showEmptyState");
+    expect(chat).not.toContain("Locale.Chat.ModelMenu.BackToModels");
+    expect(chat).not.toMatch(
+      /styles\["chat-model-menu-switch-model"\][\s\S]{0,400}aria-controls=/,
+    );
+    expect(chat).toMatch(
+      /const headerModelsForMenu =\s*showEmptyState\s*\? emptyComposerMode === "image"\s*\? headerImageModels\s*:\s*headerChatModels\s*:\s*headerAvailableModels;/,
     );
     expect(chat).toMatch(
       /aria-label=\{Locale\.Chat\.ModelMenu\.SelectModel\(\s*headerCurrentModelName,\s*currentModelDetail,\s*\)\}/,
@@ -3886,7 +3894,16 @@ describe("Gemini visual migration shell", () => {
       /\.chat-input-panel\.chat-input-panel-empty[\s\S]*\.chat-input-panel-inner-model-open:has\([\s\S]*\.chat-input-model-button-home-chat\.chat-input-model-button-open[\s\S]*\)\s*\{[\s\S]*padding-right:\s*176px;/,
     );
     expect(chatStyles).toMatch(
-      /\.chat-model-menu-current-model\s*\{[\s\S]*display:\s*block;[\s\S]*padding:\s*9px 12px;[\s\S]*border-radius:\s*14px;[\s\S]*background:\s*var\(--surface-elevated\);[\s\S]*overflow-wrap:\s*anywhere;[\s\S]*word-break:\s*break-word;/,
+      /\.chat-model-menu-header\s*\{[\s\S]*display:\s*flex;[\s\S]*padding:\s*9px 12px;[\s\S]*border-radius:\s*14px;[\s\S]*background:\s*var\(--surface-elevated\);/,
+    );
+    expect(chatStyles).toMatch(
+      /\.chat-model-menu-current-model\s*\{[\s\S]*flex:\s*1 1 auto;[\s\S]*min-width:\s*0;[\s\S]*white-space:\s*normal;[\s\S]*overflow-wrap:\s*anywhere;[\s\S]*word-break:\s*break-word;/,
+    );
+    expect(chatStyles).toMatch(
+      /\.chat-model-menu-switch-model\s*\{[\s\S]*display:\s*inline-flex;[\s\S]*min-height:\s*32px;[\s\S]*white-space:\s*nowrap;[\s\S]*&:focus-visible\s*\{[\s\S]*outline:\s*var\(--focus-ring\);/,
+    );
+    expect(chatStyles).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.chat-input-model-button,[\s\S]*\.chat-model-menu-switch-model\s*\{[\s\S]*transition-duration:\s*0\.01ms !important;/,
     );
     expect(mobileStyles).toMatch(
       /\.chat-model-menu-current-model\s*\{[\s\S]*display:\s*block;/,

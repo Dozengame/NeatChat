@@ -27,6 +27,13 @@
 - Independent review first caught pointer-open focus leaving the modal; the final implementation always focuses the slider on drill-in and adds lost-pointer-capture cleanup. Re-review passed.
 - The real local Chat route remained access-code gated; no credentials were entered and the gate was not bypassed. The temporary fixture and CSS were deleted. Final commit: `5231fc17`.
 
+## 2026-07-12 Explicit Switch Affordance
+
+- The prior parameter-first flow left empty GPT-5.x sessions without a visible path to the model list because the Back affordance was suppressed for `showEmptyState`; existing sessions exposed only a small `‹` icon. The popup header now keeps the current model on the left and renders a NeatChat-styled circular-arrow button with localized `切换模型 / Switch model` copy on the right for both reasoning and image parameter views.
+- Activating the new button reuses `returnToModelList()` and the existing model-option focus effect. The rail-level Back props are no longer supplied, so there is one clear switch affordance rather than duplicate navigation. Empty Chat uses `headerChatModels`, empty Image uses `headerImageModels`, and existing conversations retain `headerAvailableModels`.
+- Provider/model writes, constraints, reasoning/image defaults, locked-state feedback, session metadata, persistence, composer anchoring, backdrop/Escape close, and trigger focus restoration remain on the existing shared path.
+- Fresh verification passed `105/105`, `120/120`, and `42/42` targeted test groups, ESLint, TypeScript, `git diff --check`, production build, and real Chrome QA at desktop, `390x844`, and `320x740`. Empty and existing sessions both displayed the labeled top-right switch action; the empty Chat list contained Luna/Terra but not `gpt-image-2`; narrow dialogs stayed inside the viewport with zero page overflow; keyboard switching and Escape focus restoration passed. The reference and implementation were compared in one visual input with no remaining P0/P1/P2 issue.
+
 ## Closed Design History
 
 - Prototype 1: six-stop cyan-to-violet Intelligence Rail; recommended for the clearest combined model/effort control.

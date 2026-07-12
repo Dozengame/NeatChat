@@ -5715,8 +5715,10 @@
   transform: translateY(1px);
 }
 
-.chat-model-menu-current-model {
-  display: block;
+.chat-model-menu-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   margin: 0 0 8px;
   padding: 9px 12px;
   border: 1px solid color-mix(in srgb, var(--black-50) 10%, transparent);
@@ -5724,11 +5726,72 @@
   background: var(--surface-elevated);
   color: color-mix(in srgb, var(--primary) 78%, var(--black));
   box-shadow: 0 4px 12px color-mix(in srgb, var(--black-50) 7%, transparent);
+}
+
+.chat-model-menu-current-model {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 12px;
   font-weight: 600;
   line-height: 1.35;
+  white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.chat-model-menu-switch-model {
+  appearance: none;
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--primary) 24%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: color-mix(in srgb, var(--primary) 82%, var(--black));
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background-color 0.16s ease,
+    color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
+    color: currentColor;
+  }
+
+  svg path {
+    stroke: currentColor !important;
+  }
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--primary) 38%, transparent);
+    background: color-mix(in srgb, var(--primary) 16%, transparent);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    box-shadow: var(--focus-ring-shadow);
+  }
 }
 
 .chat-input-model-button[aria-expanded="true"] {
@@ -8013,7 +8076,8 @@
 @media (prefers-reduced-motion: reduce) {
   .chat-home-mode-indicator,
   .chat-home-mode-tab,
-  .chat-input-model-button {
+  .chat-input-model-button,
+  .chat-model-menu-switch-model {
     transition-duration: 0.01ms !important;
   }
 

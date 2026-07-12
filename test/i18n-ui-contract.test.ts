@@ -159,6 +159,7 @@ describe("English UI localization contract", () => {
     const requiredGroups = [
       "Sections",
       "ChatToolMenu",
+      "ModelMenu",
       "HomeMode",
       "Attachments",
       "ImageGeneration",
@@ -183,6 +184,8 @@ describe("English UI localization contract", () => {
     expect(en).toMatch(
       /HomeMode:\s*\{[\s\S]*Chat: "Chat"[\s\S]*Image: "Image"/,
     );
+    expect(cn).toMatch(/ModelMenu:\s*\{[\s\S]*SwitchModel: "切换模型"/);
+    expect(en).toMatch(/ModelMenu:\s*\{[\s\S]*SwitchModel: "Switch model"/);
   });
 
   test("keeps reasoning effort labels aligned with API levels", () => {
