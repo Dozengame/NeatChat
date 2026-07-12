@@ -1,6 +1,6 @@
 export function createStreamUpdateCoalescer(
   publish: () => void,
-  intervalMs = 50,
+  intervalMs: number | (() => number) = 50,
 ) {
   let hasPublished = false;
   let pendingTimer: ReturnType<typeof setTimeout> | undefined;
@@ -21,7 +21,9 @@ export function createStreamUpdateCoalescer(
         return;
       }
       if (pendingTimer === undefined) {
-        pendingTimer = setTimeout(publishPending, intervalMs);
+        const nextInterval =
+          typeof intervalMs === "function" ? intervalMs() : intervalMs;
+        pendingTimer = setTimeout(publishPending, nextInterval);
       }
     },
     flush() {
@@ -36,4 +38,10 @@ export function createStreamUpdateCoalescer(
       }
     },
   };
+}
+
+export function getStreamUpdateInterval(contentLength: number) {
+  if (contentLength >= 128_000) return 120;
+  if (contentLength >= 64_000) return 80;
+  return 50;
 }

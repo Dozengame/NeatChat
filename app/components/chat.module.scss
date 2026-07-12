@@ -6778,8 +6778,12 @@
   }
 
   .chat-input-model-button {
-    min-width: min(92px, calc(100% - 196px));
-    max-width: min(120px, calc(100% - 196px));
+    min-width: 64px;
+    max-width: 64px;
+  }
+
+  .chat-input-panel-inner-with-model {
+    padding-right: 136px;
   }
 
   .chat-input-model-button-open {

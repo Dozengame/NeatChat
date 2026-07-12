@@ -1414,13 +1414,11 @@ describe("Gemini visual migration shell", () => {
       homeStyles,
       ".sidebar-mobile-account-settings",
     );
-    const sidebarMobileAccountSettingsButtonBlock = readCssBlock(
-      sidebarMobileAccountSettingsBlock,
-      "button",
-    );
+    const sidebarMobileAccountSettingsButtonBlock =
+      sidebarMobileAccountSettingsBlock;
     const sidebarMobileAccountSettingsButtonHoverBlock = readCssBlock(
       sidebarMobileAccountSettingsButtonBlock,
-      "&:hover,\n    &:focus-visible",
+      "&:hover",
     );
     const sidebarMobileAccountSettingsActiveBlock = readCssBlock(
       homeStyles,
@@ -1602,7 +1600,9 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toMatch(
       /@media only screen and \(min-width: 601px\)[\s\S]*\.chat-input-panel\.chat-input-panel-empty:not\(\.chat-input-panel-collapsed\)\s*\{[\s\S]*width:\s*min\(880px, calc\(100% - 48px\)\);[\s\S]*\.chat-input-panel-inner:not\(\.chat-input-panel-inner-collapsed\)\s*\{[\s\S]*border-radius:\s*30px;/,
     );
-    expect(chat).not.toContain("const showDesktopModelControls = !showEmptyState;");
+    expect(chat).not.toContain(
+      "const showDesktopModelControls = !showEmptyState;",
+    );
     expect(chat).toContain(
       "const showDesktopChatHeader = !isCompactScreen && !showEmptyState;",
     );
@@ -1653,7 +1653,7 @@ describe("Gemini visual migration shell", () => {
       /className=\{styles\["chat-input-status-row"\]\}[\s\S]*role="status"[\s\S]*aria-live="polite"[\s\S]*aria-atomic="true"[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.CurrentInputMode\}/,
     );
     expect(chat).toMatch(
-      /className=\{clsx\([\s\S]*styles\["chat-input-mode-chip"\][\s\S]*styles\["chat-input-reasoning"\][\s\S]*\)\}[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.SelectedReasoning\(\s*reasoningLabels\[currentReasoningEffort\],?\s*\)\}[\s\S]*aria-haspopup="listbox"[\s\S]*aria-expanded=\{showReasoningSelectorModal\}/,
+      /className=\{clsx\([\s\S]*styles\["chat-input-mode-chip"\][\s\S]*styles\["chat-input-reasoning"\][\s\S]*\)\}[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.SelectedReasoning\(\s*reasoningLabels\[currentReasoningEffort\],?\s*\)\}[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showReasoningSelectorModal\}/,
     );
     expect(chat).toContain(
       "aria-label={Locale.Chat.ImageGeneration.ModeEnabled}",
@@ -1792,9 +1792,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain(
       "const modelMenuRef = useRef<HTMLDivElement>(null);",
     );
-    expect(chat).toContain(
-      "const modelMenuFocusFrameRef = useRef<number | null>(null);",
-    );
+    expect(chat).not.toContain("modelMenuFocusFrameRef");
     expect(chat).toContain("const restoreModelSelectorFocus = useCallback");
     expect(chat).toMatch(
       /setTimeout\(\(\) => \{[\s\S]*requestAnimationFrame\([\s\S]*\(\) => modelSelectorButtonRef\.current\?\.focus\(\),?[\s\S]*\);[\s\S]*\}, 0\);/,
@@ -1807,9 +1805,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /const focusModelMenuControl = useCallback\(\s*\(key: string\) => \{[\s\S]*case "ArrowDown":[\s\S]*case "ArrowUp":[\s\S]*case "Home":[\s\S]*case "End":[\s\S]*nextControl\.focus\(\);[\s\S]*nextControl\.scrollIntoView\(\{ block: "nearest" \}\);[\s\S]*\},\s*\[getModelMenuControls\],\s*\);/,
     );
-    expect(chat).toContain(
-      'control.getAttribute("role") === "slider"',
-    );
+    expect(chat).toContain('control.getAttribute("role") === "slider"');
     expect(chat).toContain(
       "const nextControl = selectedControl ?? sliderControl ?? controls[0];",
     );
@@ -1841,17 +1837,11 @@ describe("Gemini visual migration shell", () => {
     expect(modelMenuArrowGuardIndex).toBeGreaterThan(
       modelMenuModifierGuardIndex,
     );
-    expect(chat).toContain(
-      "modelMenuFocusFrameRef.current = requestAnimationFrame(() => {",
-    );
     expect(chat).toContain("focusInitialModelMenuControl();");
-    expect(chat).toContain(
-      "[focusInitialModelMenuControl, showMobileModelSelector]",
-    );
+    expect(chat).toContain("const frame = requestAnimationFrame(() => {");
+    expect(chat).toContain("if (expandedMobileModelSection) {");
     expect(chat).toContain("if (!showMobileModelSelector) return;");
-    expect(chat).toContain(
-      '?.querySelector<HTMLElement>(\'[role="slider"]\')',
-    );
+    expect(chat).toContain("?.querySelector<HTMLElement>('[role=\"slider\"]')");
     expect(chat).toContain("?.focus({ preventScroll: true });");
     expect(chat).toContain("ref={modelSelectorButtonRef}");
     expect(chat).toContain("aria-expanded={showMobileModelSelector}");
@@ -1884,7 +1874,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('aria-controls="chat-home-panel"');
     expect(chat).toContain('role={showEmptyState ? "tabpanel" : undefined}');
     expect(chat).toContain("Locale.Chat.HomeMode.Label");
-    expect(chat).toContain('id={`chat-home-mode-${mode}`}');
+    expect(chat).toContain("id={`chat-home-mode-${mode}`}");
     expect(chat).toContain("selectEmptyComposerMode(mode)");
     expect(chat).toContain("handleEmptyComposerModeKeyDown");
     expect(chat).toContain("homeModeInitializedRef.current");
@@ -1955,7 +1945,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain(
       "aria-label={Locale.Chat.ModelMenu.AvailableModels}",
     );
-    expect(chat).toContain("ariaLabel={Locale.Chat.ModelMenu.ReasoningOptions}");
+    expect(chat).toContain(
+      "ariaLabel={Locale.Chat.ModelMenu.ReasoningOptions}",
+    );
     expect(chat).toContain(
       "ariaLabel={Locale.Chat.ModelMenu.ImageSizeOptions}",
     );
@@ -1993,9 +1985,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).not.toContain("isImageQualitySectionExpanded");
     expect(chat).not.toContain('id="chat-mobile-image-size-options"');
     expect(chat).not.toContain('id="chat-mobile-image-quality-options"');
-    expect(chat).toContain(
-      'setExpandedMobileModelSection("image-options")',
-    );
+    expect(chat).toContain('setExpandedMobileModelSection("image-options")');
     expect(chat).toContain("selectComposerModel(model, selected)");
     expect(chat).toContain("if (selected) {");
     expect(selectComposerModelBlock.indexOf("if (selected) {")).toBeLessThan(
@@ -2449,9 +2439,10 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["chat-message-row"]');
     expect(chat).toContain('styles["chat-message-row-user"]');
     expect(chat).toContain('styles["chat-message-row-assistant"]');
-    expect(chat).toMatch(
-      /const messageLabel = isUser\s*\? Locale\.Chat\.Accessibility\.UserMessage\(i \+ 1\)\s*:\s*Locale\.Chat\.Accessibility\.AssistantMessage\(i \+ 1\);/,
-    );
+    expect(chat).toContain("const messageLabel = isUser");
+    expect(chat).toContain("Locale.Chat.Accessibility.UserMessage(");
+    expect(chat).toContain("Locale.Chat.Accessibility.AssistantMessage(");
+    expect(chat).toContain("absoluteMessageIndex + 1");
     expect(chat).toMatch(
       /className=\{clsx\([\s\S]*styles\["chat-message-row"\][\s\S]*\)\}[\s\S]*role="listitem"[\s\S]*aria-label=\{messageLabel\}[\s\S]*aria-busy=\{showTyping \? true : undefined\}/,
     );
@@ -2525,8 +2516,15 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /const getMessageActionId = useCallback\(\s*\(message: ChatMessage, index: number\) => message\.id \?\? index,\s*\[\],?\s*\);/,
     );
-    expect(chat).toMatch(
-      /let lastNonUserMessage: ChatMessage \| undefined;[\s\S]*let lastNonUserMessageIndex = -1;[\s\S]*for \(\s*let messageIndex = messages\.length - 1;[\s\S]*messageIndex >= 0;[\s\S]*messageIndex -= 1[\s\S]*\)[\s\S]*lastNonUserMessage = candidateMessage;[\s\S]*lastNonUserMessageIndex = messageIndex;[\s\S]*break;/,
+    expect(chat).toContain(
+      "const shortcutMessages = shortcutMessagesRef.current;",
+    );
+    expect(chat).toContain("let messageIndex = shortcutMessages.length - 1;");
+    expect(chat).toContain(
+      "const candidateMessage = shortcutMessages[messageIndex];",
+    );
+    expect(chat).toContain(
+      "shortcutMessageWindowStartRef.current + messageIndex;",
     );
     expect(chat).toMatch(
       /void copyMessageContent\([\s\S]*lastNonUserMessage,[\s\S]*getMessageActionId\(lastNonUserMessage, lastNonUserMessageIndex\),[\s\S]*\);/,
@@ -2538,9 +2536,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /return \(\) => \{[\s\S]*if \(messageCopyFeedbackTimerRef\.current\) \{[\s\S]*clearTimeout\(messageCopyFeedbackTimerRef\.current\);[\s\S]*\}[\s\S]*\};/,
     );
-    expect(chat).toMatch(
-      /const messageActionId = getMessageActionId\(message, i\);[\s\S]*const isMessageCopied =[\s\S]*copiedMessageActionId === messageActionId;/,
-    );
+    expect(chat).toContain("const messageActionId = getMessageActionId(");
+    expect(chat).toContain("absoluteMessageIndex,");
+    expect(chat).toContain("copiedMessageActionId === messageActionId");
     expect(chat).toMatch(
       /const messageCopyActionLabel =\s*Locale\.Chat\.Accessibility\.ActionLabel\(\s*messageActionLabel,[\s\S]*isMessageCopied[\s\S]*\? Locale\.Copy\.Success[\s\S]*: Locale\.Chat\.Actions\.Copy,[\s\S]*\);/,
     );
@@ -2674,7 +2672,9 @@ describe("Gemini visual migration shell", () => {
       /id="mobile-sidebar-drawer"[\s\S]*aria-label=\{Locale\.Chat\.Actions\.ChatList\}/,
     );
     expect(sidebar).toMatch(/tabIndex=\{isMobileOpen \? -1 : undefined\}/);
-    expect(sidebar).toMatch(/left:\s*isMobileOpen \? 0 : undefined/);
+    expect(sidebar).not.toMatch(/left:\s*isMobileOpen \? 0 : undefined/);
+    expect(homeStyles).toMatch(/transform:\s*translate3d\(-100%, 0, 0\);/);
+    expect(homeStyles).toMatch(/transition:\s*transform 0\.2s/);
     expect(sidebar).toMatch(/display:\s*isMobileHidden \? "none" : undefined/);
     expect(sidebar).toMatch(
       /<SideBarContainer[\s\S]*isMobileHidden=\{props\.isMobileHidden\}/,
@@ -3458,7 +3458,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).not.toContain(
       'className={styles["chat-mobile-context-count"]}',
     );
-    expect(chat).toContain("Locale.Context.SettingsWithPrompts(context.length)");
+    expect(chat).toContain(
+      "Locale.Context.SettingsWithPrompts(context.length)",
+    );
     expect(chat).not.toContain('context.length > 99 ? "99+" : context.length');
     expect(chatStyles).not.toContain(".chat-mobile-context-count");
     expect(chatStyles).not.toContain("--chat-mobile-context-count-color");
@@ -3574,7 +3576,9 @@ describe("Gemini visual migration shell", () => {
     expect(chatStyles).toMatch(/@media only screen and \(min-width: 901px\)/);
     expect(chatStyles).toContain(".chat-input-action-menu");
     expect(chatStyles).toContain(".chat-input-action-menu-backdrop");
-    expect(chatStyles).toContain('.chat-input-model-button[aria-expanded="true"]');
+    expect(chatStyles).toContain(
+      '.chat-input-model-button[aria-expanded="true"]',
+    );
     expect(inputModelButtonExpandedBlock).toMatch(/background:\s*color-mix/);
     expect(inputModelButtonExpandedBlock).toMatch(/color:\s*color-mix/);
     expect(chatStyles).toContain(".chat-mobile-model-menu-backdrop");
@@ -4245,7 +4249,14 @@ describe("Gemini visual migration shell", () => {
     expect(homeStyles).toContain(
       "--mobile-sidebar-drawer-offset: calc(54px - 100vw);",
     );
-    expect(homeStyles).toContain("left: var(--mobile-sidebar-drawer-offset);");
+    expect(homeStyles).toContain("transform: translate3d(-100%, 0, 0);");
+    expect(homeStyles).toMatch(
+      /transition:\s*transform 0\.2s cubic-bezier\(0\.2, 0, 0, 1\),\s*display 0\.2s cubic-bezier\(0\.2, 0, 0, 1\);/,
+    );
+    expect(homeStyles).toContain("transition-behavior: allow-discrete;");
+    expect(homeStyles).toMatch(
+      /@starting-style\s*\{\s*transform:\s*translate3d\(-100%, 0, 0\);/,
+    );
     expect(homeStyles).toContain(".sidebar-backdrop");
     expect(homeStyles).toContain("z-index: 900");
     expect(homeStyles).toContain("z-index: 1000");
@@ -4336,8 +4347,12 @@ describe("Gemini visual migration shell", () => {
     expect(compactSidebarBackdropBlock).not.toContain(
       "background: rgba(32, 33, 36, 0.28)",
     );
-    expect(homeStyles).toMatch(/\.sidebar-show\s*\{\s*left:\s*0;/);
-    expect(homeStyles).toMatch(/\.sidebar\.sidebar-show\s*\{\s*left:\s*0;/);
+    expect(homeStyles).toMatch(
+      /\.sidebar-show\s*\{\s*transform:\s*translate3d\(0, 0, 0\);/,
+    );
+    expect(homeStyles).toMatch(
+      /\.sidebar\.sidebar-show\s*\{\s*transform:\s*translate3d\(0, 0, 0\);/,
+    );
     expect(homeStyles).toContain("outline: var(--focus-ring)");
     expect(homeStyles).toContain("box-shadow: var(--focus-ring-shadow)");
     expect(homeStyles).toContain(".sidebar-primary-nav");
@@ -4749,19 +4764,19 @@ describe("Gemini visual migration shell", () => {
       /box-shadow:\s*0 0 0 3px\s*var\(--sidebar-mobile-account-settings-focus-shadow-color\);/,
     );
     expect(sidebarMobileAccountSettingsActiveBlock).toMatch(
-      /button,\s*button:hover,\s*button:focus-visible\s*\{[\s\S]*color:\s*var\(--primary\);/,
+      /color:\s*var\(--primary\);/,
     );
     expect(sidebarMobileAccountSettingsActiveBlock).toMatch(
-      /button,\s*button:hover,\s*button:focus-visible\s*\{[\s\S]*background:\s*var\(--sidebar-action-active-background\);/,
+      /background:\s*var\(--sidebar-action-active-background\);/,
     );
     expect(sidebarMobileAccountSettingsActiveBlock).toMatch(
-      /button,\s*button:hover,\s*button:focus-visible\s*\{[\s\S]*border-color:\s*var\(--sidebar-action-active-ring-shadow\);/,
+      /border-color:\s*var\(--sidebar-action-active-ring-shadow\);/,
     );
     expect(sidebarMobileAccountSettingsActiveBlock).toMatch(
-      /button,\s*button:hover,\s*button:focus-visible\s*\{[\s\S]*0 0 0 1px var\(--sidebar-action-active-ring-shadow\),[\s\S]*0 6px 20px var\(--sidebar-action-active-drop-shadow\);/,
+      /0 0 0 1px var\(--sidebar-action-active-ring-shadow\),[\s\S]*0 6px 20px var\(--sidebar-action-active-drop-shadow\);/,
     );
     expect(homeStyles).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.sidebar-mobile-account,[\s\S]*\.sidebar-mobile-account-settings button[\s\S]*transition:\s*none !important;/,
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.sidebar-mobile-account,[\s\S]*\.sidebar-mobile-account-settings[\s\S]*transition:\s*none !important;/,
     );
     expect(homeReducedMotionBlock).toMatch(/\.sidebar-drag,/);
     expect(homeReducedMotionBlock).toMatch(/\.sidebar-drag svg,/);
@@ -8304,7 +8319,7 @@ describe("Gemini visual migration shell", () => {
       /const inputPanelResizeObserver =\s*typeof ResizeObserver !== "undefined" && chatInputPanelRef\.current\s*\? new ResizeObserver\(revealClearContextAfterResize\)\s*: undefined;[\s\S]*inputPanelResizeObserver\?\.observe\(chatInputPanelRef\.current\);[\s\S]*inputPanelResizeObserver\?\.disconnect\(\);/,
     );
     expect(chat).toMatch(
-      /const shouldShowClearContextDivider =\s*i === clearContextIndex - 1;/,
+      /const shouldShowClearContextDivider =\s*absoluteMessageIndex === clearContextAbsoluteIndex - 1;/,
     );
     expect(chat).toMatch(
       /\{shouldShowClearContextDivider && \(\s*<ClearContextDivider ref=\{clearContextDividerRef\} \/>\s*\)\}/,
@@ -9091,9 +9106,7 @@ describe("Gemini visual migration shell", () => {
     expect(focusVisibleBlock).toMatch(/pointer-events:\s*all;/);
     expect(focusVisibleBlock).toMatch(/opacity:\s*1;/);
     expect(focusVisibleBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
-    expect(focusVisibleBlock).toMatch(
-      /transform:\s*none;/,
-    );
+    expect(focusVisibleBlock).toMatch(/transform:\s*none;/);
     expect(touchCopyButtonBlock).toMatch(/opacity:\s*1;/);
     expect(showHideButtonBlock).toMatch(/position:\s*sticky;/);
     expect(showHideButtonBlock).toMatch(
@@ -10771,7 +10784,7 @@ describe("Gemini visual migration shell", () => {
       /typeof ResizeObserver === "undefined"[\s\S]*const tableResizeObserver = new ResizeObserver\(\(\) => \{[\s\S]*syncTableScrollHint\(\);[\s\S]*tableResizeObserver\.observe\(tableShell\);[\s\S]*tableResizeObserver\.observe\(tableRef\.current\)/,
     );
     expect(markdown).toContain("node: _node");
-    expect(markdown).toContain('<table {...tableProps} ref={tableRef} />');
+    expect(markdown).toContain("<table {...tableProps} ref={tableRef} />");
     expect(markdown).toMatch(
       /\{tableScrollHint\.start && \([\s\S]*className="markdown-table-scroll-fade markdown-table-scroll-fade-start"/,
     );
@@ -15679,7 +15692,7 @@ describe("Gemini visual migration shell", () => {
     );
     expect(artifactsPreview).toContain("srcDoc={srcDoc}");
     expect(artifactsPreview).toContain(
-      "title={`${accessibleTitle} ${previewId}${title ? `: ${title}` : \"\"}`}",
+      'title={`${accessibleTitle} ${previewId}${title ? `: ${title}` : ""}`}',
     );
     expect(artifactsShareButton).toContain("fetch(ApiPath.Artifacts");
     expect(artifactsShareButton).toContain('method: "POST"');
@@ -17119,9 +17132,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).not.toContain('styles["chat-mobile-model-title"]');
     expect(chat).not.toContain('styles["chat-desktop-model-title"]');
     expect(composerModelButtonBlock).toMatch(/right:\s*66px;/);
-    expect(composerModelButtonBlock).toMatch(
-      /width:\s*fit-content;/,
-    );
+    expect(composerModelButtonBlock).toMatch(/width:\s*fit-content;/);
     expect(composerModelButtonBlock).toMatch(
       /min-width:\s*min\(144px,\s*calc\(100% - 280px\)\);/,
     );
@@ -17285,9 +17296,13 @@ describe("Gemini visual migration shell", () => {
     expect(qaFixture).toMatch(
       /export function createMarkdownStressQaAttachmentStripPreview\([\s\S]*new File\([\s\S]*fixture\.content[\s\S]*fixture\.name[\s\S]*type:\s*fixture\.type/,
     );
-    expect(qaFixture).toMatch(
-      /if \(!boundaryVariant\) return MARKDOWN_STRESS_QA_MESSAGES;/,
+    expect(qaFixture).toContain(
+      'const MARKDOWN_STRESS_QA_HISTORY_COUNT_PARAM = "history_count";',
     );
+    expect(qaFixture).toMatch(
+      /const defaultMessages = !boundaryVariant[\s\S]*MARKDOWN_STRESS_QA_MESSAGES/,
+    );
+    expect(qaFixture).toMatch(/Math\.min\(\s*240,/);
     expect(qaFixture).toMatch(
       /MARKDOWN_STRESS_QA_BOUNDARY_VARIANTS\.map\(\(variant\) => \(\{[\s\S]*streaming: true[\s\S]*content: MARKDOWN_STRESS_QA_BOUNDARY_CONTENT\[variant\]/,
     );
@@ -17323,11 +17338,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain(
       "onPaste={markdownStressQaEnabled ? undefined : handlePaste}",
     );
+    expect(chat).toContain("const messageRenderStartIndex = msgRenderIndex;");
     expect(chat).toMatch(
-      /const startRenderIndex = markdownStressQaEnabled \? 0 : msgRenderIndex;/,
-    );
-    expect(chat).toMatch(
-      /return renderMessages\.slice\(startRenderIndex, endRenderIndex\);/,
+      /return renderMessages\.slice\(messageRenderStartIndex, endRenderIndex\);/,
     );
     expect(chat).toMatch(
       /const showActions =[\s\S]*!isMarkdownStressQaMessage/,
@@ -17446,9 +17459,7 @@ describe("Gemini visual migration shell", () => {
     expect(qaFixture).toContain("\\\\frac{-b \\\\pm \\\\sqrt");
     expect(qaFixture).toContain("<details open>");
     expect(qaFixture).toContain("折叠区域标题");
-    expect(qaFixture).toContain(
-      'console.log("这是折叠面板内的代码");',
-    );
+    expect(qaFixture).toContain('console.log("这是折叠面板内的代码");');
     expect(qaFixture).toContain("details 内的引用内容");
     expect(qaFixture).toContain("连续内容后续段落");
     expect(qaFixture).toContain(
@@ -18569,8 +18580,8 @@ describe("Gemini visual migration shell", () => {
     expect(uiLibComponents).toContain('aria-label="Close modal"');
     expect(uiLibComponents).toContain("props.action?.onClick?.();");
     expect(uiLibComponents).toContain("props.onClose?.();");
-    expect(uiLibComponents).toContain('aria-label="Close selector"');
-    expect(uiLibComponents).toContain('aria-label="Search models"');
+    expect(uiLibComponents).toContain("aria-label={Locale.UI.CloseSelector}");
+    expect(uiLibComponents).toContain("aria-label={Locale.UI.SearchModels}");
     expect(uiLibComponents).toContain(
       "props.onSelection?.(newSelectedValues);",
     );
@@ -22561,9 +22572,7 @@ describe("Gemini visual migration shell", () => {
       /background:\s*var\(--markdown-artifact-iframe-background\);/,
     );
     expect(mobileArtifactPreviewBlock).toMatch(/width:\s*100%;/);
-    expect(mobileArtifactFrameBlock).toMatch(
-      /border-radius:\s*0 0 8px 8px;/,
-    );
+    expect(mobileArtifactFrameBlock).toMatch(/border-radius:\s*0 0 8px 8px;/);
     expect(mobileArtifactIframeBlock).toMatch(
       /max-height:\s*min\(64vh, 520px\);/,
     );

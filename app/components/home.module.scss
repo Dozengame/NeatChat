@@ -81,7 +81,7 @@
 
   .sidebar {
     position: absolute;
-    left: var(--mobile-sidebar-drawer-offset);
+    left: 0;
     width: var(--mobile-sidebar-drawer-width);
     z-index: 1000;
     height: var(--full-height);
@@ -90,16 +90,18 @@
     backdrop-filter: var(--mobile-sidebar-drawer-filter);
     -webkit-backdrop-filter: var(--mobile-sidebar-drawer-filter);
     border-right: 1px solid var(--mobile-sidebar-drawer-border-color);
+    transform: translate3d(-100%, 0, 0);
     transition:
-      left 0.2s cubic-bezier(0.2, 0, 0, 1),
+      transform 0.2s cubic-bezier(0.2, 0, 0, 1),
       display 0.2s cubic-bezier(0.2, 0, 0, 1);
     transition-behavior: allow-discrete;
+    will-change: transform;
     box-shadow:
       0 28px 80px var(--mobile-sidebar-drawer-shadow-color),
       inset -1px 0 0 var(--mobile-sidebar-drawer-inset-color);
 
     @starting-style {
-      left: var(--mobile-sidebar-drawer-offset);
+      transform: translate3d(-100%, 0, 0);
     }
   }
 
@@ -108,11 +110,11 @@
   }
 
   .sidebar-show {
-    left: 0;
+    transform: translate3d(0, 0, 0);
   }
 
   .sidebar.sidebar-show {
-    left: 0;
+    transform: translate3d(0, 0, 0);
   }
 
   .mobile {
@@ -632,22 +634,24 @@
 
   .sidebar {
     position: absolute;
-    left: -100%;
+    left: 0;
     z-index: 1000;
     height: var(--full-height);
+    transform: translate3d(-100%, 0, 0);
     transition:
-      left 0.2s ease-out,
+      transform 0.2s ease-out,
       display 0.2s ease-out;
     transition-behavior: allow-discrete;
+    will-change: transform;
     box-shadow: var(--sidebar-mobile-shadow);
 
     @starting-style {
-      left: -100%;
+      transform: translate3d(-100%, 0, 0);
     }
   }
 
   .sidebar-show {
-    left: 0;
+    transform: translate3d(0, 0, 0);
   }
 
   .mobile {
@@ -656,28 +660,29 @@
 
   .compact-container {
     .sidebar {
-      left: var(--mobile-sidebar-drawer-offset);
+      left: 0;
       width: var(--mobile-sidebar-drawer-width);
       border-radius: 0 20px 20px 0;
       box-shadow:
         0 28px 80px var(--mobile-sidebar-drawer-shadow-color),
         inset -1px 0 0 var(--mobile-sidebar-drawer-inset-color);
+      transform: translate3d(-100%, 0, 0);
       transition:
-        left 0.2s cubic-bezier(0.2, 0, 0, 1),
+        transform 0.2s cubic-bezier(0.2, 0, 0, 1),
         display 0.2s cubic-bezier(0.2, 0, 0, 1);
       transition-behavior: allow-discrete;
 
       @starting-style {
-        left: var(--mobile-sidebar-drawer-offset);
+        transform: translate3d(-100%, 0, 0);
       }
     }
 
     .sidebar-show {
-      left: 0;
+      transform: translate3d(0, 0, 0);
     }
 
     .sidebar.sidebar-show {
-      left: 0;
+      transform: translate3d(0, 0, 0);
     }
 
     .sidebar-drag {
@@ -1730,9 +1735,31 @@
 
 .sidebar-mobile-account-settings {
   flex: 0 0 auto;
-  color: inherit;
+  width: 44px;
+  height: 44px;
+  color: var(--sidebar-mobile-account-settings-icon-color);
   text-decoration: none;
   border-radius: 999px;
+  border: 1px solid var(--sidebar-mobile-account-settings-border-color);
+  background: var(--sidebar-mobile-account-settings-background);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.1s ease-out;
+
+  &:hover {
+    background: var(--sidebar-mobile-account-settings-hover-background);
+    box-shadow: 0 0 0 3px
+      var(--sidebar-mobile-account-settings-focus-shadow-color);
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
 
   &:focus-visible {
     outline: var(--focus-ring);
@@ -1740,27 +1767,16 @@
     box-shadow: var(--focus-ring-shadow);
   }
 
-  button {
-    width: 40px;
-    height: 40px;
-    padding: 10px;
-    border-radius: 50%;
-    border: 1px solid var(--sidebar-mobile-account-settings-border-color);
-    color: var(--sidebar-mobile-account-settings-icon-color);
-    background: var(--sidebar-mobile-account-settings-background);
-    transition:
-      background-color 0.16s ease,
-      border-color 0.16s ease,
-      box-shadow 0.16s ease;
-
-    &:hover,
-    &:focus-visible {
-      background: var(--sidebar-mobile-account-settings-hover-background);
-      box-shadow: 0 0 0 3px
-        var(--sidebar-mobile-account-settings-focus-shadow-color);
-    }
+  span {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     svg {
+      width: 20px;
+      height: 20px;
       filter: none !important;
       color: currentColor;
     }
@@ -1867,16 +1883,12 @@
 }
 
 .sidebar-settings-link-active.sidebar-mobile-account-settings {
-  button,
-  button:hover,
-  button:focus-visible {
-    color: var(--primary);
-    border-color: var(--sidebar-action-active-ring-shadow);
-    background: var(--sidebar-action-active-background);
-    box-shadow:
-      0 0 0 1px var(--sidebar-action-active-ring-shadow),
-      0 6px 20px var(--sidebar-action-active-drop-shadow);
-  }
+  color: var(--primary);
+  border-color: var(--sidebar-action-active-ring-shadow);
+  background: var(--sidebar-action-active-background);
+  box-shadow:
+    0 0 0 1px var(--sidebar-action-active-ring-shadow),
+    0 6px 20px var(--sidebar-action-active-drop-shadow);
 }
 
 :global(.dark) .sidebar-settings-link-active {
@@ -1901,6 +1913,19 @@
   direction: rtl;
 }
 
+@media (prefers-reduced-transparency: reduce) {
+  .compact-container {
+    --mobile-sidebar-drawer-background: var(--surface-elevated);
+    --mobile-sidebar-drawer-filter: none;
+    --mobile-sidebar-backdrop-background: color-mix(
+      in srgb,
+      var(--black) 64%,
+      transparent
+    );
+    --mobile-sidebar-backdrop-filter: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sidebar,
   .sidebar-drag,
@@ -1908,7 +1933,8 @@
   .narrow-sidebar .chat-item,
   .narrow-sidebar .chat-item-narrow,
   .sidebar-mobile-account,
-  .sidebar-mobile-account-settings button {
+  .sidebar-mobile-account-settings {
     transition: none !important;
+    transform: none !important;
   }
 }

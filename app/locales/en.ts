@@ -1493,6 +1493,8 @@ const en: LocaleType = {
     CloseSidebar: "Close sidebar",
     ExpandSidebar: "Expand sidebar",
     CollapseSidebar: "Collapse sidebar",
+    Selector: "Choose option",
+    CloseSelector: "Close selector",
     SearchModels: "Search models",
   },
   Exporter: {

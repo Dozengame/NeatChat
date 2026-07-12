@@ -666,6 +666,13 @@ div.math {
   overscroll-behavior: contain;
 }
 
+@media (prefers-reduced-transparency: reduce) {
+  .modal-mask {
+    --modal-mask-background: rgb(32 33 36 / 72%);
+    --modal-mask-backdrop-filter: none;
+  }
+}
+
 .dark input[type="number"],
 .dark input[type="text"],
 .dark input[type="password"] {

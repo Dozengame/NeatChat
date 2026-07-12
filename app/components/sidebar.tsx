@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo, Fragment } from "react";
+import React, { useEffect, useRef, Fragment } from "react";
 
 import styles from "./home.module.scss";
 
@@ -25,7 +25,7 @@ import {
 } from "../constant";
 
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { isIOS, useCompactScreen, useMobileScreen } from "../utils";
+import { useCompactScreen } from "../utils";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
 
@@ -135,12 +135,6 @@ export function SideBarContainer(props: {
   isMobileHidden?: boolean;
   isMobileOpen?: boolean;
 }) {
-  const isMobileScreen = useMobileScreen();
-  const isCompactScreen = useCompactScreen();
-  const isIOSMobile = useMemo(
-    () => isIOS() && isMobileScreen,
-    [isMobileScreen],
-  );
   const {
     children,
     className,
@@ -161,10 +155,7 @@ export function SideBarContainer(props: {
         [styles["narrow-sidebar"]]: shouldNarrow,
       })}
       style={{
-        // #3016 disable transition on ios mobile screen
-        transition: isCompactScreen && isIOSMobile ? "none" : undefined,
         display: isMobileHidden ? "none" : undefined,
-        left: isMobileOpen ? 0 : undefined,
       }}
     >
       {children}
@@ -401,11 +392,9 @@ export function SideBar(props: {
                   location.pathname === Path.Settings ? "page" : undefined
                 }
               >
-                <IconButton
-                  aria={Locale.Settings.Title}
-                  icon={<SettingsIcon />}
-                  bordered
-                />
+                <span aria-hidden="true">
+                  <SettingsIcon />
+                </span>
               </Link>
             </div>
           ) : (

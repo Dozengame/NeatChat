@@ -71,7 +71,10 @@ import { registerChatStore } from "./chat-state-link";
 import { isOpenAIGpt56ModelConfig } from "../utils/openai-responses";
 import { selectOpenAIAllTurnsHistory } from "../utils/openai-history";
 import { createTrailingThrottledJSONStorage } from "../utils/chat-persist-storage";
-import { createStreamUpdateCoalescer } from "../utils/stream-update-coalescer";
+import {
+  createStreamUpdateCoalescer,
+  getStreamUpdateInterval,
+} from "../utils/stream-update-coalescer";
 
 const localStorage = safeLocalStorage();
 const chatPersistStorage = createTrailingThrottledJSONStorage<any>(
@@ -786,15 +789,18 @@ export const useChatStore = createPersistStore(
 
         const { getClientApi } = await import("../client/api");
         const api: ClientApi = getClientApi(modelConfig.providerName);
-        const streamUpdateCoalescer = createStreamUpdateCoalescer(() => {
-          get().updateTargetSession(
-            session,
-            (session) => {
-              session.messages = session.messages.concat();
-            },
-            { renderScope: "tail" },
-          );
-        });
+        const streamUpdateCoalescer = createStreamUpdateCoalescer(
+          () => {
+            get().updateTargetSession(
+              session,
+              (session) => {
+                session.messages = session.messages.concat();
+              },
+              { renderScope: "tail" },
+            );
+          },
+          () => getStreamUpdateInterval(botMessage.content.length),
+        );
         // make request
         api.llm.chat({
           messages: sendMessages,

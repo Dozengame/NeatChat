@@ -118,7 +118,6 @@ import { ContextPrompts, MaskAvatar, MaskConfig } from "./mask";
 import { useMaskStore } from "../store/mask";
 import { useChatCommand, useCommand } from "../command";
 import { prettyObject } from "../utils/format";
-import { ExportMessageModal } from "./exporter";
 import { getClientConfig } from "../config/client";
 import { useAllModels } from "../utils/hooks";
 import { MultimodalContent } from "../client/types";
@@ -144,14 +143,12 @@ import {
   normalizeOpenAIImageSize,
 } from "../utils/openai-image";
 
-import { ClientApi } from "../client/api";
 import { createTTSPlayer } from "../utils/audio";
-import { MsEdgeTTS, OUTPUT_FORMAT } from "../utils/ms_edge_tts";
 
 import { isEmpty } from "lodash-es";
 import { getModelProvider } from "../utils/model";
-import { RealtimeChat } from "@/app/components/realtime-chat";
 import clsx from "clsx";
+import { shallow } from "zustand/shallow";
 import {
   type DraggedAttachmentSummary,
   FileInfo,
@@ -189,7 +186,6 @@ import {
   shouldRenderLoadingPreview,
 } from "./chat-render";
 
-import { ImageEditor } from "./image-editor";
 import {
   DiscreteOptionRail,
   ReasoningEffortRail,
@@ -445,6 +441,8 @@ function MessageImagePreview(props: {
           className={props.className}
           src={props.src}
           alt={props.alt ?? ""}
+          loading="lazy"
+          decoding="async"
         />
       </button>
       <button
@@ -467,6 +465,18 @@ function MessageImagePreview(props: {
 const Markdown = dynamic(async () => (await import("./markdown")).Markdown, {
   loading: () => <LoadingIcon />,
 });
+const ExportMessageModal = dynamic(
+  async () => (await import("./exporter")).ExportMessageModal,
+  { loading: () => <LoadingIcon /> },
+);
+const ImageEditor = dynamic(
+  async () => (await import("./image-editor")).ImageEditor,
+  { loading: () => <LoadingIcon /> },
+);
+const RealtimeChat = dynamic(
+  async () => (await import("./realtime-chat")).RealtimeChat,
+  { loading: () => <LoadingIcon /> },
+);
 
 export function SessionConfigModel(props: { onClose: () => void }) {
   const chatStore = useChatStore();
@@ -1607,7 +1617,7 @@ function ChatInputReasoningAction() {
         aria-label={Locale.Chat.ModelMenu.SelectedReasoning(
           reasoningLabels[currentReasoningEffort],
         )}
-        aria-haspopup="listbox"
+        aria-haspopup="dialog"
         aria-expanded={showReasoningSelectorModal}
       >
         <BrainIcon />
@@ -1616,6 +1626,9 @@ function ChatInputReasoningAction() {
       </button>
       {showReasoningSelectorModal && (
         <Selector
+          ariaLabel={Locale.Chat.ModelMenu.SelectedReasoning(
+            reasoningLabels[currentReasoningEffort],
+          )}
           defaultSelectedValue={currentReasoningEffort}
           items={visibleCurrentReasoningEfforts.map((effort) => ({
             title: reasoningLabels[effort],
@@ -1802,8 +1815,28 @@ export function ShortcutKeyModal(props: { onClose: () => void }) {
 }
 
 function useChatInnerView() {
-  const chatStore = useChatStore();
-  const session = chatStore.currentSession();
+  const chatStore = useChatStore((state) => {
+    const session = state.currentSession();
+    const tailMessage = session.messages.at(-1);
+
+    return {
+      session,
+      tailContent: tailMessage ? getMessageTextContent(tailMessage) : "",
+      tailStreaming: tailMessage?.streaming ?? false,
+      messageProjectionRevision: state.messageProjectionRevision,
+      currentSessionIndex: state.currentSessionIndex,
+      lastInput: state.lastInput,
+      updateTargetSession: state.updateTargetSession,
+      newSession: state.newSession,
+      nextSession: state.nextSession,
+      forkSession: state.forkSession,
+      deleteSession: state.deleteSession,
+      setLastInput: state.setLastInput,
+      onUserInput: state.onUserInput,
+      summarizeSession: state.summarizeSession,
+    };
+  }, shallow);
+  const session = chatStore.session;
   const updateTargetSession = chatStore.updateTargetSession;
   const visibleChatMessagesProjectorRef = useRef<
     ReturnType<typeof createVisibleChatMessagesProjector> | undefined
@@ -2432,7 +2465,6 @@ function useChatInnerView() {
   const lastHomeChatModelRef = useRef<string>();
   const lastHomeImageModelRef = useRef<string>();
   const homeModeInitializedRef = useRef(false);
-  const modelMenuFocusFrameRef = useRef<number | null>(null);
   const getComposerModelMenuStyle = useCallback(
     (button: HTMLButtonElement, preferBelowOnDesktop: boolean) => {
       const visualViewport = window.visualViewport;
@@ -2629,27 +2661,6 @@ function useChatInnerView() {
     event.stopPropagation();
     focusModelMenuControl(event.key);
   };
-  useEffect(() => {
-    if (modelMenuFocusFrameRef.current !== null) {
-      cancelAnimationFrame(modelMenuFocusFrameRef.current);
-      modelMenuFocusFrameRef.current = null;
-    }
-    if (!showMobileModelSelector) return;
-
-    modelMenuFocusFrameRef.current = requestAnimationFrame(() => {
-      modelMenuFocusFrameRef.current = requestAnimationFrame(() => {
-        modelMenuFocusFrameRef.current = null;
-        focusInitialModelMenuControl();
-      });
-    });
-
-    return () => {
-      if (modelMenuFocusFrameRef.current !== null) {
-        cancelAnimationFrame(modelMenuFocusFrameRef.current);
-        modelMenuFocusFrameRef.current = null;
-      }
-    };
-  }, [focusInitialModelMenuControl, showMobileModelSelector]);
   useEffect(() => {
     if (!showMobileModelSelector) return;
 
@@ -2968,14 +2979,19 @@ function useChatInnerView() {
       ttsPlayer.stop();
       setSpeechStatus(false);
     } else {
-      var api: ClientApi;
-      api = new ClientApi(ModelProvider.GPT);
+      const [{ ClientApi }, { markdownToTxt }] = await Promise.all([
+        import("../client/api"),
+        import("markdown-to-txt"),
+      ]);
+      const api = new ClientApi(ModelProvider.GPT);
       const config = useAppConfig.getState();
       ttsPlayer.init();
       let audioBuffer: ArrayBuffer;
-      const { markdownToTxt } = require("markdown-to-txt");
       const textContent = markdownToTxt(text);
       if (config.ttsConfig.engine !== DEFAULT_TTS_ENGINE) {
+        const { MsEdgeTTS, OUTPUT_FORMAT } = await import(
+          "../utils/ms_edge_tts"
+        );
         const edgeVoiceName = accessStore.edgeVoiceName();
         const tts = new MsEdgeTTS();
         await tts.setMetadata(
@@ -3019,6 +3035,8 @@ function useChatInnerView() {
     context.push(copiedHello);
   }
 
+  const previewInput = config.sendPreviewBubble ? userInput : "";
+
   // preview messages
   const renderMessages = useMemo(() => {
     if (markdownStressQaEnabled && chatQaFixture) {
@@ -3050,12 +3068,12 @@ function useChatInnerView() {
           : [],
       )
       .concat(
-        userInput.length > 0 && config.sendPreviewBubble
+        previewInput.length > 0
           ? [
               {
                 ...createMessage({
                   role: "user",
-                  content: userInput,
+                  content: previewInput,
                 }),
                 preview: true,
               },
@@ -3064,7 +3082,6 @@ function useChatInnerView() {
       );
   }, [
     chatQaFixture,
-    config.sendPreviewBubble,
     context,
     isLoading,
     location.search,
@@ -3072,12 +3089,16 @@ function useChatInnerView() {
     chatStore.messageProjectionRevision,
     projectVisibleChatMessages,
     session.messages,
-    userInput,
+    previewInput,
   ]);
 
   const [msgRenderIndex, _setMsgRenderIndex] = useState(() =>
     Math.max(0, renderMessages.length - CHAT_PAGE_SIZE),
   );
+  const pendingMessageWindowAnchorRef = useRef<{
+    key: string;
+    top: number;
+  } | null>(null);
   const setMsgRenderIndex = useCallback(
     (newIndex: number) => {
       newIndex = Math.min(renderMessages.length - CHAT_PAGE_SIZE, newIndex);
@@ -3087,14 +3108,35 @@ function useChatInnerView() {
     [renderMessages.length],
   );
 
+  const messageRenderStartIndex = msgRenderIndex;
   const messages = useMemo(() => {
-    const startRenderIndex = markdownStressQaEnabled ? 0 : msgRenderIndex;
     const endRenderIndex = Math.min(
-      startRenderIndex + 3 * CHAT_PAGE_SIZE,
+      messageRenderStartIndex + 3 * CHAT_PAGE_SIZE,
       renderMessages.length,
     );
-    return renderMessages.slice(startRenderIndex, endRenderIndex);
-  }, [markdownStressQaEnabled, msgRenderIndex, renderMessages]);
+    return renderMessages.slice(messageRenderStartIndex, endRenderIndex);
+  }, [messageRenderStartIndex, renderMessages]);
+  const shortcutMessagesRef = useRef(messages);
+  const shortcutMessageWindowStartRef = useRef(messageRenderStartIndex);
+  shortcutMessagesRef.current = messages;
+  shortcutMessageWindowStartRef.current = messageRenderStartIndex;
+  useLayoutEffect(() => {
+    const pendingAnchor = pendingMessageWindowAnchorRef.current;
+    const scrollDom = scrollRef.current;
+    const readingSurface = readingSurfaceRef.current;
+    if (!pendingAnchor || !scrollDom || !readingSurface) return;
+
+    const anchorElement = Array.from(
+      readingSurface.querySelectorAll<HTMLElement>("[data-message-anchor]"),
+    ).find((element) => element.dataset.messageAnchor === pendingAnchor.key);
+    pendingMessageWindowAnchorRef.current = null;
+    if (!anchorElement) return;
+
+    const scrollRect = scrollDom.getBoundingClientRect();
+    const nextAnchorTop =
+      anchorElement.getBoundingClientRect().top - scrollRect.top;
+    scrollDom.scrollTop += nextAnchorTop - pendingAnchor.top;
+  }, [messageRenderStartIndex, messages, scrollRef]);
   const showEmptyState =
     !markdownStressQaEnabled &&
     session.messages.length === 0 &&
@@ -3317,11 +3359,38 @@ function useChatInnerView() {
 
     const prevPageMsgIndex = msgRenderIndex - CHAT_PAGE_SIZE;
     const nextPageMsgIndex = msgRenderIndex + CHAT_PAGE_SIZE;
+    const maxRenderIndex = Math.max(0, renderMessages.length - CHAT_PAGE_SIZE);
+
+    const preserveMessageWindowAnchor = () => {
+      if (pendingMessageWindowAnchorRef.current) return;
+      const scrollRect = e.getBoundingClientRect();
+      const anchorElement = Array.from(
+        readingSurfaceRef.current?.querySelectorAll<HTMLElement>(
+          "[data-message-anchor]",
+        ) ?? [],
+      ).find(
+        (element) => element.getBoundingClientRect().bottom >= scrollRect.top,
+      );
+      const key = anchorElement?.dataset.messageAnchor;
+      if (!anchorElement || !key) return;
+      pendingMessageWindowAnchorRef.current = {
+        key,
+        top: anchorElement.getBoundingClientRect().top - scrollRect.top,
+      };
+    };
 
     if (isTouchTopEdge && !isTouchBottomEdge) {
-      setMsgRenderIndex(prevPageMsgIndex);
+      const targetIndex = Math.max(0, prevPageMsgIndex);
+      if (targetIndex !== msgRenderIndex) {
+        preserveMessageWindowAnchor();
+        setMsgRenderIndex(targetIndex);
+      }
     } else if (isTouchBottomEdge) {
-      setMsgRenderIndex(nextPageMsgIndex);
+      const targetIndex = Math.min(maxRenderIndex, nextPageMsgIndex);
+      if (targetIndex !== msgRenderIndex) {
+        preserveMessageWindowAnchor();
+        setMsgRenderIndex(targetIndex);
+      }
     }
 
     if (
@@ -3447,9 +3516,9 @@ function useChatInnerView() {
   }, [getClearContextBottomInset, scrollRef]);
 
   // clear context index = context length + index in messages
-  const clearContextIndex =
+  const clearContextAbsoluteIndex =
     (session.clearContextIndex ?? -1) >= 0
-      ? session.clearContextIndex! + context.length - msgRenderIndex
+      ? session.clearContextIndex! + context.length
       : -1;
   const clearContextScrollKeyRef = useRef<string | null>(null);
   useLayoutEffect(() => {
@@ -4003,7 +4072,7 @@ function useChatInnerView() {
       ) {
         event.preventDefault();
         setTimeout(() => {
-          chatStore.newSession();
+          useChatStore.getState().newSession();
           navigate(Path.Chat);
         }, 10);
       }
@@ -4032,17 +4101,19 @@ function useChatInnerView() {
         event.key.toLowerCase() === "c"
       ) {
         event.preventDefault();
+        const shortcutMessages = shortcutMessagesRef.current;
         let lastNonUserMessage: ChatMessage | undefined;
         let lastNonUserMessageIndex = -1;
         for (
-          let messageIndex = messages.length - 1;
+          let messageIndex = shortcutMessages.length - 1;
           messageIndex >= 0;
           messageIndex -= 1
         ) {
-          const candidateMessage = messages[messageIndex];
+          const candidateMessage = shortcutMessages[messageIndex];
           if (candidateMessage.role !== "user") {
             lastNonUserMessage = candidateMessage;
-            lastNonUserMessageIndex = messageIndex;
+            lastNonUserMessageIndex =
+              shortcutMessageWindowStartRef.current + messageIndex;
             break;
           }
         }
@@ -4069,14 +4140,7 @@ function useChatInnerView() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [
-    messages,
-    chatStore,
-    navigate,
-    openShortcutKeyModal,
-    copyMessageContent,
-    getMessageActionId,
-  ]);
+  }, [navigate, openShortcutKeyModal, copyMessageContent, getMessageActionId]);
 
   const [showChatSidePanel, setShowChatSidePanel] = useState(false);
 
@@ -5217,15 +5281,16 @@ function useChatInnerView() {
                 aria-atomic="false"
               >
                 {(showEmptyState ? [] : messages).map((message, i) => {
+                  const absoluteMessageIndex = messageRenderStartIndex + i;
                   const isUser = message.role === "user";
-                  const isContext = i < context.length;
+                  const isContext = absoluteMessageIndex < context.length;
                   const qaMessageIdPrefix =
                     chatQaFixture?.MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX;
                   const isMarkdownStressQaMessage =
                     qaMessageIdPrefix != null &&
                     message.id.startsWith(qaMessageIdPrefix);
                   const showActions =
-                    i > 0 &&
+                    absoluteMessageIndex > 0 &&
                     !message.streaming &&
                     !message.preview &&
                     message.content.length > 0 &&
@@ -5240,13 +5305,20 @@ function useChatInnerView() {
                     !isUser && message.streaming && message.content.length > 0;
 
                   const shouldShowClearContextDivider =
-                    i === clearContextIndex - 1;
+                    absoluteMessageIndex === clearContextAbsoluteIndex - 1;
                   const messageLabel = isUser
-                    ? Locale.Chat.Accessibility.UserMessage(i + 1)
-                    : Locale.Chat.Accessibility.AssistantMessage(i + 1);
+                    ? Locale.Chat.Accessibility.UserMessage(
+                        absoluteMessageIndex + 1,
+                      )
+                    : Locale.Chat.Accessibility.AssistantMessage(
+                        absoluteMessageIndex + 1,
+                      );
                   const messageActionLabel =
                     Locale.Chat.Accessibility.MessageActions(messageLabel);
-                  const messageActionId = getMessageActionId(message, i);
+                  const messageActionId = getMessageActionId(
+                    message,
+                    absoluteMessageIndex,
+                  );
                   const isMessageCopied =
                     copiedMessageActionId === messageActionId;
                   const messageCopyActionLabel =
@@ -5282,6 +5354,9 @@ function useChatInnerView() {
                             ? "markdown-stress-qa-message"
                             : undefined
                         }
+                        data-message-anchor={String(
+                          message.id ?? absoluteMessageIndex,
+                        )}
                       >
                         <div className={styles["chat-message-container"]}>
                           <div className={styles["chat-message-header"]}>
@@ -5460,7 +5535,11 @@ function useChatInnerView() {
                                       Locale.Chat.Actions.Delete,
                                     )}
                                     icon={<DeleteIcon />}
-                                    onClick={() => onDelete(message.id ?? i)}
+                                    onClick={() =>
+                                      onDelete(
+                                        message.id ?? absoluteMessageIndex,
+                                      )
+                                    }
                                   />
                                   <ChatAction
                                     text={Locale.Chat.Actions.Pin}

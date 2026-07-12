@@ -346,6 +346,7 @@ export function Select(
 }
 
 export function Selector<T>(props: {
+  ariaLabel?: string;
   items: Array<{
     title: string;
     subTitle?: string;
@@ -369,12 +370,59 @@ export function Selector<T>(props: {
 
   const [searchText, setSearchText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    const keepFocus = () => inputRef.current?.focus();
-    document.addEventListener("click", keepFocus);
-    return () => document.removeEventListener("click", keepFocus);
+    returnFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    const initialFocus =
+      inputRef.current ??
+      dialogRef.current?.querySelector<HTMLElement>(
+        '[role="button"][tabindex="0"]',
+      );
+    initialFocus?.focus({ preventScroll: true });
+
+    return () => {
+      const returnFocus = returnFocusRef.current;
+      if (returnFocus?.isConnected) {
+        returnFocus.focus({ preventScroll: true });
+      }
+    };
   }, []);
+
+  const handleDialogKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      props.onClose?.();
+      return;
+    }
+
+    if (event.key !== "Tab") return;
+    const focusableElements = Array.from(
+      dialogRef.current?.querySelectorAll<HTMLElement>(
+        'input, [role="button"][tabindex="0"]',
+      ) ?? [],
+    );
+    if (focusableElements.length === 0) {
+      event.preventDefault();
+      dialogRef.current?.focus({ preventScroll: true });
+      return;
+    }
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+    if (event.shiftKey && document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement.focus({ preventScroll: true });
+    } else if (!event.shiftKey && document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus({ preventScroll: true });
+    }
+  };
 
   const filteredItems = props.items.filter((item) =>
     item.title.toLowerCase().includes(searchText.toLowerCase()),
@@ -398,20 +446,30 @@ export function Selector<T>(props: {
   const isMobileScreen = useMobileScreen();
 
   return (
-    <div className={styles["selector"]}>
+    <div className={styles["selector"]} onKeyDownCapture={handleDialogKeyDown}>
       <button
         type="button"
-        aria-label="Close selector"
+        aria-label={Locale.UI.CloseSelector}
+        aria-hidden="true"
+        tabIndex={-1}
         onClick={props.onClose}
         style={overlayButtonStyle}
       />
-      <div className={styles["selector-content"]} style={{ zIndex: 1 }}>
+      <div
+        ref={dialogRef}
+        className={styles["selector-content"]}
+        style={{ zIndex: 1 }}
+        role="dialog"
+        aria-modal="true"
+        aria-label={props.ariaLabel ?? Locale.UI.Selector}
+        tabIndex={-1}
+      >
         {props.showSearch !== false && (
           <div className={styles["selector-search"]}>
             <input
               ref={inputRef}
               type="text"
-              aria-label="Search models"
+              aria-label={Locale.UI.SearchModels}
               placeholder={Locale.UI.SearchModels}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}

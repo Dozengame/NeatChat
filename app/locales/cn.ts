@@ -1471,6 +1471,8 @@ const cn = {
     CloseSidebar: "关闭侧边栏",
     ExpandSidebar: "展开栏",
     CollapseSidebar: "折叠栏",
+    Selector: "选择选项",
+    CloseSelector: "关闭选择器",
     SearchModels: "搜索模型",
   },
   Exporter: {

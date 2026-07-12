@@ -367,13 +367,8 @@ function splitChildrenIntoLines(
   return lines;
 }
 
-function MarkdownArtifactPreview({
-  htmlCode,
-  viewportHeight,
-}: {
-  htmlCode: string;
-  viewportHeight: number;
-}) {
+function MarkdownArtifactPreview({ htmlCode }: { htmlCode: string }) {
+  const { height: viewportHeight } = useWindowSize();
   const [isWide, setIsWide] = useState(false);
   const syncWidth = useCallback(
     (metrics: { scrollWidth: number; clientWidth: number }) => {
@@ -423,7 +418,6 @@ export function PreCode(props: { children: any }) {
     end: false,
   });
   const copyResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { height } = useWindowSize();
 
   const getCodeScrollElement = useCallback(() => ref.current, []);
 
@@ -483,10 +477,12 @@ export function PreCode(props: { children: any }) {
     }
   }, 600);
 
-  const config = useAppConfig();
+  const enableArtifactsInConfig = useAppConfig(
+    (state) => state.enableArtifacts,
+  );
   const features = useContext(MarkdownFeatureContext);
   const streaming = features.streaming;
-  const enableArtifacts = features.enableArtifacts && config.enableArtifacts;
+  const enableArtifacts = features.enableArtifacts && enableArtifactsInConfig;
   const rawCodeLanguage = getRawCodeLanguage(props.children);
   const codeLanguage = getCodeLanguage(props.children);
   const shouldWrapCodeBlock = shouldWrapCodeLanguage(rawCodeLanguage);
@@ -547,16 +543,19 @@ export function PreCode(props: { children: any }) {
       if (ref.current && ref.current !== codeScroller) {
         codeResizeObserver.observe(ref.current);
       }
+    } else {
+      window.addEventListener("resize", syncCodeScrollHint);
     }
     codeScroller.addEventListener("scroll", syncCodeScrollHint, {
       passive: true,
     });
-    window.addEventListener("resize", syncCodeScrollHint);
 
     return () => {
       codeResizeObserver?.disconnect();
       codeScroller.removeEventListener("scroll", syncCodeScrollHint);
-      window.removeEventListener("resize", syncCodeScrollHint);
+      if (!codeResizeObserver) {
+        window.removeEventListener("resize", syncCodeScrollHint);
+      }
     };
   }, [getCodeScrollElement, props.children, streaming, syncCodeScrollHint]);
 
@@ -668,11 +667,7 @@ export function PreCode(props: { children: any }) {
         <Mermaid code={mermaidCode} key={mermaidCode} />
       )}
       {htmlCode.length > 0 && enableArtifacts && (
-        <MarkdownArtifactPreview
-          key={htmlCode}
-          htmlCode={htmlCode}
-          viewportHeight={height}
-        />
+        <MarkdownArtifactPreview key={htmlCode} htmlCode={htmlCode} />
       )}
     </>
   );
@@ -1630,7 +1625,13 @@ function MarkDownContentInner(
             return (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img {...imgProps} alt={alt} src={src} />
+                <img
+                  {...imgProps}
+                  alt={alt}
+                  src={src}
+                  loading="lazy"
+                  decoding="async"
+                />
               </>
             );
           }
@@ -1652,6 +1653,8 @@ function MarkDownContentInner(
                   alt={alt}
                   src={src}
                   className="markdown-image-preview"
+                  loading="lazy"
+                  decoding="async"
                 />
               </button>
               {props.onDownloadImage && (

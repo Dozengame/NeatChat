@@ -31,7 +31,6 @@ import { SideBar } from "./sidebar";
 import { useAppConfig } from "../store/config";
 import { AuthPage } from "./auth";
 import { getClientConfig } from "../config/client";
-import { type ClientApi, getClientApi } from "../client/api";
 import { useAccessStore } from "../store/access";
 import clsx from "clsx";
 import { UpdateAnnouncement } from "./update-announcement";
@@ -471,11 +470,6 @@ function useLoadData() {
   const needCode = useAccessStore((state) => state.needCode);
   const clientConfig = useMemo(() => getClientConfig(), []);
 
-  const api: ClientApi = useMemo(
-    () => getClientApi(providerName),
-    [providerName],
-  );
-
   useEffect(() => {
     const accessStore = useAccessStore.getState();
     if (
@@ -488,6 +482,9 @@ function useLoadData() {
 
     let cancelled = false;
     (async () => {
+      const { getClientApi } = await import("../client/api");
+      if (cancelled) return;
+      const api = getClientApi(providerName);
       const models = await api.llm.models();
       if (!cancelled) {
         useAppConfig.getState().mergeModels(models);
@@ -497,7 +494,7 @@ function useLoadData() {
     return () => {
       cancelled = true;
     };
-  }, [accessCodeValidatedAt, api.llm, clientConfig?.isApp, needCode]);
+  }, [accessCodeValidatedAt, clientConfig?.isApp, needCode, providerName]);
 }
 
 export function Home() {

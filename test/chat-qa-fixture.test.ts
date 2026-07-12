@@ -21,6 +21,8 @@ describe("development-only chat QA fixture", () => {
     expect(fixtureSource).toContain("MARKDOWN_STRESS_QA_CONTENT");
     expect(fixtureSource).toContain("Markdown 压测示例文档");
     expect(fixtureSource).toContain("codex-qa-markdown-stress");
+    expect(fixtureSource).toContain('"history_count"');
+    expect(fixtureSource).toMatch(/Math\.min\(\s*240,/);
     expect(fixtureSource).toContain("data:image/png;base64,");
     expect(fixtureSource).not.toContain("data:image/svg+xml");
   });

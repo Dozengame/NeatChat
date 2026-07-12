@@ -1,4 +1,7 @@
-import { createStreamUpdateCoalescer } from "../app/utils/stream-update-coalescer";
+import {
+  createStreamUpdateCoalescer,
+  getStreamUpdateInterval,
+} from "../app/utils/stream-update-coalescer";
 
 describe("stream update coalescer", () => {
   beforeEach(() => {
@@ -51,5 +54,30 @@ describe("stream update coalescer", () => {
 
     expect(publish).toHaveBeenCalledTimes(1);
     expect(jest.getTimerCount()).toBe(0);
+  });
+
+  test("adapts only very long replies while keeping first paint immediate", () => {
+    const publish = jest.fn();
+    let contentLength = 1_000;
+    const coalescer = createStreamUpdateCoalescer(publish, () =>
+      getStreamUpdateInterval(contentLength),
+    );
+
+    coalescer.schedule();
+    expect(publish).toHaveBeenCalledTimes(1);
+
+    contentLength = 70_000;
+    coalescer.schedule();
+    jest.advanceTimersByTime(79);
+    expect(publish).toHaveBeenCalledTimes(1);
+    jest.advanceTimersByTime(1);
+    expect(publish).toHaveBeenCalledTimes(2);
+
+    contentLength = 140_000;
+    coalescer.schedule();
+    jest.advanceTimersByTime(119);
+    expect(publish).toHaveBeenCalledTimes(2);
+    jest.advanceTimersByTime(1);
+    expect(publish).toHaveBeenCalledTimes(3);
   });
 });

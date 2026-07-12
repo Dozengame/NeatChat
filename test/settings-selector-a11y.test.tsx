@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { useRef, useState } from "react";
-import { SimpleSelector } from "../app/components/ui-lib-components";
+import { Selector, SimpleSelector } from "../app/components/ui-lib-components";
 
 function SelectorHarness() {
   const [open, setOpen] = useState(false);
@@ -17,6 +17,28 @@ function SelectorHarness() {
           items={[
             { title: "English", value: "en" },
             { title: "中文", value: "cn" },
+          ]}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
+  );
+}
+
+function SearchableSelectorHarness() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)}>
+        Open model
+      </button>
+      {open && (
+        <Selector
+          ariaLabel="Choose model"
+          items={[
+            { title: "Alpha", value: "alpha" },
+            { title: "Beta", value: "beta" },
           ]}
           onClose={() => setOpen(false)}
         />
@@ -63,5 +85,27 @@ describe("Settings mobile selector accessibility", () => {
 
     expect(documentEscape).not.toHaveBeenCalled();
     document.removeEventListener("keydown", documentEscape);
+  });
+
+  test("gives the searchable selector one focus scope and restores its trigger", () => {
+    render(<SearchableSelectorHarness />);
+    const trigger = screen.getByRole("button", { name: "Open model" });
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    const dialog = screen.getByRole("dialog", { name: "Choose model" });
+    const search = screen.getByRole("textbox", { name: "Search models" });
+    const beta = screen.getByRole("button", { name: "Beta" });
+
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(search).toHaveFocus();
+
+    beta.focus();
+    fireEvent.keyDown(beta, { key: "Tab" });
+    expect(search).toHaveFocus();
+
+    fireEvent.keyDown(search, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Choose model" })).toBeNull();
+    expect(trigger).toHaveFocus();
   });
 });

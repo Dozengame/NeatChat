@@ -7,6 +7,7 @@ const MARKDOWN_STRESS_QA_BOUNDARY_PARAM = "streaming_boundary";
 const MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_PARAM = "dropzone_preview";
 const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_PARAM =
   "attachment_strip_preview";
+const MARKDOWN_STRESS_QA_HISTORY_COUNT_PARAM = "history_count";
 export const MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX = "codex-qa-markdown-stress";
 const QA_PNG_IMAGE =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
@@ -442,14 +443,42 @@ export function getMarkdownStressQaMessages(
   locationSearch: string,
 ): RenderMessage[] {
   const boundaryVariant = getMarkdownStressQaBoundaryVariant(locationSearch);
-  if (!boundaryVariant) return MARKDOWN_STRESS_QA_MESSAGES;
+  const defaultMessages = !boundaryVariant
+    ? MARKDOWN_STRESS_QA_MESSAGES
+    : [
+        MARKDOWN_STRESS_QA_MESSAGES[0],
+        ...(boundaryVariant === "all"
+          ? MARKDOWN_STRESS_QA_BOUNDARY_MESSAGES
+          : MARKDOWN_STRESS_QA_BOUNDARY_MESSAGES.filter((message) =>
+              message.id.endsWith(`-${boundaryVariant}`),
+            )),
+      ];
+  const params = new URLSearchParams(locationSearch);
+  const requestedHistoryCount = Number.parseInt(
+    params.get(MARKDOWN_STRESS_QA_HISTORY_COUNT_PARAM) ?? "",
+    10,
+  );
+  if (!Number.isFinite(requestedHistoryCount)) return defaultMessages;
 
-  const boundaryMessages =
-    boundaryVariant === "all"
-      ? MARKDOWN_STRESS_QA_BOUNDARY_MESSAGES
-      : MARKDOWN_STRESS_QA_BOUNDARY_MESSAGES.filter((message) =>
-          message.id.endsWith(`-${boundaryVariant}`),
-        );
+  const historyCount = Math.min(
+    240,
+    Math.max(defaultMessages.length, requestedHistoryCount),
+  );
+  const historyTemplates = [
+    ...MARKDOWN_STRESS_QA_MESSAGES,
+    ...MARKDOWN_STRESS_QA_BOUNDARY_MESSAGES,
+  ];
 
-  return [MARKDOWN_STRESS_QA_MESSAGES[0], ...boundaryMessages];
+  return Array.from({ length: historyCount }, (_, index) => {
+    const template = historyTemplates[index % historyTemplates.length];
+    return {
+      ...template,
+      id: `${template.id}-history-${index}`,
+      date: new Date(Date.UTC(2026, 6, 13, 0, 0, index)).toISOString(),
+      streaming:
+        index === historyCount - 1 && template.role === "assistant"
+          ? true
+          : undefined,
+    };
+  });
 }
