@@ -203,6 +203,9 @@ describe("Gemini visual migration shell", () => {
   test("keeps the Gemini-style empty state hooks and the existing tool menu entry points", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
+    const composerModelMenuPlacement = read(
+      "app/utils/composer-model-menu-placement.ts",
+    );
     const reasoningRail = read("app/components/reasoning-effort-rail.tsx");
     const reasoningRailStyles = read(
       "app/components/reasoning-effort-rail.module.scss",
@@ -3897,8 +3900,8 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("const visualViewport = window.visualViewport;");
     expect(chat).toContain("visualViewport?.offsetTop ?? 0");
     expect(chat).toContain("visualViewport?.width ?? window.innerWidth");
-    expect(chat).toMatch(
-      /const preferBelow =\s*!isCompactScreen &&\s*preferBelowOnDesktop &&\s*belowSpace >= preferredHeight;\s*const openBelow =\s*preferBelow \|\|\s*\(aboveSpace < preferredHeight && belowSpace > aboveSpace\);/,
+    expect(composerModelMenuPlacement).toMatch(
+      /const preferBelow =\s*!input\.compact &&\s*input\.preferBelowOnDesktop &&\s*belowSpace >= preferredHeight;\s*const openBelow =\s*preferBelow \|\|\s*\(aboveSpace < preferredHeight && belowSpace > aboveSpace\);/,
     );
     expect(chat).toMatch(
       /window\.visualViewport\?\.addEventListener\(\s*"resize",\s*updateModelMenuPlacement\s*\);/,
@@ -3907,7 +3910,22 @@ describe("Gemini visual migration shell", () => {
       /window\.visualViewport\?\.addEventListener\(\s*"scroll",\s*updateModelMenuPlacement\s*\);/,
     );
     expect(chat).toContain('button.closest("label")?.getBoundingClientRect()');
-    expect(chat).toContain("composerRect.left + composerRect.width / 2");
+    expect(chat).toContain("getComposerModelMenuPlacement({");
+    expect(composerModelMenuPlacement).toContain(
+      "composerRect.left + composerRect.width / 2",
+    );
+    expect(composerModelMenuPlacement).not.toContain(
+      "composerRect.top - gap - maxHeight",
+    );
+    expect(composerModelMenuPlacement).toContain(
+      "viewport.layoutHeight - composerRect.top + gap",
+    );
+    expect(chat).toContain(
+      '"--chat-model-menu-composer-top": placement.openBelow',
+    );
+    expect(chat).toContain(
+      '"--chat-model-menu-composer-bottom": placement.openBelow',
+    );
     expect(chat).toContain('"--chat-model-menu-composer-max-height"');
     expect(chatStyles).toContain(
       "max-height: var(--chat-model-menu-composer-max-height, 420px);",

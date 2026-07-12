@@ -28,6 +28,15 @@
 - `corepack yarn build`: passed; `/` is 103 kB and First Load JS is 189 kB.
 - Real in-app Browser QA used the 140-message mixed fixture. Rapid bidirectional scrolling shifted the 45-message window while keeping page height bounded; all images in the window were lazy loaded. Desktop, constrained, mobile, narrow, Light, Dark, model-menu Escape focus restoration, Selector Tab trapping, mobile drawer target geometry, and horizontal overflow checks passed. Console reported zero warnings and zero errors.
 
+### Visual acceptance correction
+
+- The earlier model-menu Browser PASS did not verify the popup-to-composer gap and is superseded for that state. It proved containment, overflow, focus restoration, and Console cleanliness, but missed a visible anchoring regression introduced by `8768d70c`.
+- The deployed tree reproduced a `215px` gap at `1650x941` and `205px` at `390x844`. Above-composer placement subtracted the 420 px available `max-height` even when the rendered panel was only 217–225 px tall.
+- Above placement is bottom-anchored again while preserving `visualViewport` resize/scroll updates, content-aware `max-height`, the existing 10/12 px responsive gap, open/close motion, and focus behavior. A pure placement helper now makes the geometry independently executable.
+- Local Chrome verification measured `12px` at desktop/constrained viewports and `10px` at `390x844` / `320x740`, including Reasoning-to-model-list height changes and the taller Image-options panel. All panels remained inside the viewport with no horizontal overflow; Escape restored trigger focus.
+- `test/composer-model-menu-placement.test.ts` asserts variable-height desktop and compact panels, below-composer empty state, and an offset visual viewport. The visual contract now verifies that Chat consumes the helper and exposes both top/bottom CSS anchors.
+- Final correction verification passed 67 suites / 608 tests, ESLint, TypeScript, `git diff --check`, and production build; `/` remains 103 kB with 189 kB First Load JS.
+
 ## Residual risk
 
 - Safari, Firefox, Edge, Windows High Contrast, and physical touch devices were not available. Current evergreen compatibility is covered by capability checks, CSS fallbacks, forced-colors/contrast/reduced-transparency contracts, and Chromium runtime evidence, but those environments remain an explicit manual-test boundary.

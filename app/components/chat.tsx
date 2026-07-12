@@ -185,6 +185,7 @@ import {
   RenderMessage,
   shouldRenderLoadingPreview,
 } from "./chat-render";
+import { getComposerModelMenuPlacement } from "../utils/composer-model-menu-placement";
 
 import {
   DiscreteOptionRail,
@@ -2472,72 +2473,39 @@ function useChatInnerView() {
       const viewportTop = visualViewport?.offsetTop ?? 0;
       const viewportWidth = visualViewport?.width ?? window.innerWidth;
       const viewportHeight = visualViewport?.height ?? window.innerHeight;
-      const viewportRight = viewportLeft + viewportWidth;
-      const viewportBottom = viewportTop + viewportHeight;
-      const viewportPadding = isCompactScreen ? 12 : 16;
-      const gap = isCompactScreen ? 10 : 12;
-      const menuWidth = Math.min(
-        isCompactScreen ? 360 : 380,
-        Math.max(1, viewportWidth - viewportPadding * 2),
-      );
       const buttonRect = button.getBoundingClientRect();
       const composerRect =
         button.closest("label")?.getBoundingClientRect() ?? buttonRect;
-      const anchorCenter = isCompactScreen
-        ? composerRect.left + composerRect.width / 2
-        : buttonRect.left + buttonRect.width / 2;
-      const left = Math.max(
-        viewportLeft + viewportPadding,
-        Math.min(
-          anchorCenter - menuWidth / 2,
-          viewportRight - menuWidth - viewportPadding,
-        ),
-      );
-      const belowTop = composerRect.bottom + gap;
-      const belowSpace = viewportBottom - belowTop - viewportPadding;
-      const aboveSpace = composerRect.top - gap - viewportTop - viewportPadding;
-      const preferredHeight = isCompactScreen ? 230 : 250;
-      const preferBelow =
-        !isCompactScreen &&
-        preferBelowOnDesktop &&
-        belowSpace >= preferredHeight;
-      const openBelow =
-        preferBelow ||
-        (aboveSpace < preferredHeight && belowSpace > aboveSpace);
-      const maximumHeight = isCompactScreen
-        ? Math.min(420, viewportHeight * 0.68)
-        : 420;
-      const maximumUsableHeight = Math.max(
-        1,
-        viewportHeight - viewportPadding * 2,
-      );
-      const minimumUsableHeight = Math.min(96, maximumUsableHeight);
-      const availableHeight = Math.min(
-        maximumHeight,
-        maximumUsableHeight,
-        Math.max(minimumUsableHeight, openBelow ? belowSpace : aboveSpace),
-      );
-      const preferredTop = openBelow
-        ? belowTop
-        : composerRect.top - gap - availableHeight;
-      const top = Math.max(
-        viewportTop + viewportPadding,
-        Math.min(
-          preferredTop,
-          viewportBottom - viewportPadding - availableHeight,
-        ),
-      );
+      const placement = getComposerModelMenuPlacement({
+        buttonRect,
+        composerRect,
+        compact: isCompactScreen,
+        preferBelowOnDesktop,
+        viewport: {
+          left: viewportLeft,
+          top: viewportTop,
+          width: viewportWidth,
+          height: viewportHeight,
+          layoutHeight: window.innerHeight,
+        },
+      });
 
       return {
-        "--chat-model-menu-composer-left": `${left}px`,
-        "--chat-model-menu-composer-top": `${top}px`,
-        "--chat-model-menu-composer-bottom": "auto",
-        "--chat-model-menu-composer-width": `${menuWidth}px`,
-        "--chat-model-menu-composer-max-height": `${availableHeight}px`,
-        "--chat-model-menu-composer-origin": openBelow
+        "--chat-model-menu-composer-left": `${placement.left}px`,
+        "--chat-model-menu-composer-top": placement.openBelow
+          ? `${placement.top}px`
+          : "auto",
+        "--chat-model-menu-composer-bottom": placement.openBelow
+          ? "auto"
+          : `${placement.bottom}px`,
+        "--chat-model-menu-composer-width": `${placement.width}px`,
+        "--chat-model-menu-composer-max-height": `${placement.maxHeight}px`,
+        "--chat-model-menu-composer-origin": placement.openBelow
           ? "top center"
           : "bottom center",
-        "--chat-model-menu-composer-shift": openBelow ? "8px" : "-8px",
+        "--chat-model-menu-composer-shift": placement.openBelow
+          ? "8px"
+          : "-8px",
       } as React.CSSProperties;
     },
     [isCompactScreen],
