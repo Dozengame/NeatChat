@@ -4755,6 +4755,9 @@ function useChatInnerView() {
                 : Locale.Chat.ModelMenu.SelectModelAndParams
             }
           >
+            <div className={styles["chat-model-menu-current-model"]}>
+              {headerCurrentModelName}
+            </div>
         {isReasoningSectionExpanded ? (
           <ReasoningEffortRail
             id="chat-mobile-reasoning-options"
@@ -5553,27 +5556,10 @@ function useChatInnerView() {
                     [styles["chat-input-model-button-home-image"]]:
                       showEmptyState && emptyComposerMode === "image",
                   })}
-                  aria-label={
-                    showEmptyState && emptyComposerMode === "chat"
-                      ? Locale.Chat.ModelMenu.SelectedReasoning(
-                          reasoningLabels[headerCurrentReasoningEffort],
-                        )
-                      : showEmptyState && emptyComposerMode === "image"
-                      ? Locale.Chat.ModelMenu.SelectedImageOptions(
-                          imageComposerSummary,
-                        )
-                      : Locale.Chat.ModelMenu.SelectModel(
-                          headerCurrentModelName,
-                          currentModelDetail,
-                        )
-                  }
-                  title={
-                    showEmptyState && emptyComposerMode === "chat"
-                      ? `${Locale.Chat.ModelMenu.ReasoningEffort} · ${reasoningLabels[headerCurrentReasoningEffort]}`
-                      : showEmptyState && emptyComposerMode === "image"
-                      ? `${Locale.Chat.ModelMenu.ImageOptions} · ${imageComposerSummary}`
-                      : `${headerCurrentModelName} · ${currentModelDetail}`
-                  }
+                  aria-label={Locale.Chat.ModelMenu.SelectModel(
+                    headerCurrentModelName,
+                    currentModelDetail,
+                  )}
                   onKeyDown={handleModelMenuKeyDown}
                   onClick={(event) => {
                     event.preventDefault();

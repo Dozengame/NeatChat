@@ -1855,9 +1855,14 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /\{showMobileModelSelector && \(\s*<>\s*<span className=\{styles\["chat-input-model-name"\]\}>/,
     );
-    expect(chat).toContain("Locale.Chat.ModelMenu.SelectModel(");
     expect(chat).toMatch(
-      /title=\{[\s\S]*showEmptyState && emptyComposerMode === "chat"[\s\S]*Locale\.Chat\.ModelMenu\.ReasoningEffort[\s\S]*showEmptyState && emptyComposerMode === "image"[\s\S]*Locale\.Chat\.ModelMenu\.ImageOptions[\s\S]*headerCurrentModelName[\s\S]*currentModelDetail/,
+      /className=\{styles\["chat-model-menu-current-model"\]\}[\s\S]*\{headerCurrentModelName\}/,
+    );
+    expect(chat).toMatch(
+      /aria-label=\{Locale\.Chat\.ModelMenu\.SelectModel\(\s*headerCurrentModelName,\s*currentModelDetail,\s*\)\}/,
+    );
+    expect(chat).not.toMatch(
+      /ref=\{modelSelectorButtonRef\}[\s\S]*?title=\{[\s\S]*?headerCurrentModelName/,
     );
     expect(chat).toContain('role="tablist"');
     expect(chat).toContain("data-active-mode={emptyComposerMode}");
@@ -1879,7 +1884,6 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("<DiscreteOptionRail<OpenAIImageQuality>");
     expect(chat).toContain('styles["chat-input-panel-inner-home-image"]');
     expect(chat).toContain("Locale.Chat.ModelMenu.ImageOptions");
-    expect(chat).toContain("Locale.Chat.ModelMenu.SelectedImageOptions(");
     expect(chat).toContain("getImageComposerSummary(");
     expect(chat).toContain("onKeyDown={handleModelMenuKeyDown}");
     expect(chat).toContain('aria-haspopup="dialog"');
@@ -3869,7 +3873,19 @@ describe("Gemini visual migration shell", () => {
       /\.chat-home-mode-tabs\[data-active-mode="image"\][\s\S]*\.chat-home-mode-indicator\s*\{[\s\S]*transform:\s*translateX\(100%\);/,
     );
     expect(chatStyles).toMatch(
-      /@media only screen and \(max-width: 358px\)[\s\S]*\.chat-input-model-button-home-chat\.chat-input-model-button-open,[\s\S]*\.chat-input-model-button-home-image\.chat-input-model-button-open\s*\{[\s\S]*width:\s*112px;[\s\S]*min-width:\s*112px;[\s\S]*max-width:\s*112px;/,
+      /@media only screen and \(max-width: 358px\)[\s\S]*\.chat-input-model-button-open\s*\{[\s\S]*width:\s*112px;[\s\S]*min-width:\s*112px;[\s\S]*max-width:\s*112px;/,
+    );
+    expect(mobileStyles).toMatch(
+      /\.chat-input-model-button-open\s*\{[\s\S]*width:\s*min\(132px, calc\(100% - 196px\)\);[\s\S]*\.chat-input-model-separator,[\s\S]*\.chat-input-model-detail\s*\{[\s\S]*display:\s*none;[\s\S]*\.chat-input-model-name\s*\{[\s\S]*text-overflow:\s*clip;/,
+    );
+    expect(mobileStyles).toMatch(
+      /\.chat-input-panel\.chat-input-panel-empty[\s\S]*\.chat-input-panel-inner-model-open:has\([\s\S]*\.chat-input-model-button-home-chat\.chat-input-model-button-open[\s\S]*\)\s*\{[\s\S]*padding-right:\s*176px;/,
+    );
+    expect(chatStyles).toMatch(
+      /\.chat-model-menu-current-model\s*\{[\s\S]*display:\s*block;[\s\S]*padding:\s*9px 12px;[\s\S]*border-radius:\s*14px;[\s\S]*background:\s*var\(--surface-elevated\);[\s\S]*overflow-wrap:\s*anywhere;[\s\S]*word-break:\s*break-word;/,
+    );
+    expect(mobileStyles).toMatch(
+      /\.chat-model-menu-current-model\s*\{[\s\S]*display:\s*block;/,
     );
     expect(mobileInputRowFocusBlock).toMatch(
       /border-color:\s*var\(--chat-input-focus-border-color\);/,
@@ -17030,7 +17046,7 @@ describe("Gemini visual migration shell", () => {
       /const currentModelDetail = showHeaderImageControls[\s\S]*: showHeaderReasoningControl[\s\S]*\? reasoningLabels\[headerCurrentReasoningEffort\]/,
     );
     expect(chat).toMatch(
-      /aria-label=\{[\s\S]*showEmptyState && emptyComposerMode === "chat"[\s\S]*Locale\.Chat\.ModelMenu\.SelectedReasoning[\s\S]*Locale\.Chat\.ModelMenu\.SelectModel\([\s\S]*headerCurrentModelName,[\s\S]*currentModelDetail/,
+      /aria-label=\{Locale\.Chat\.ModelMenu\.SelectModel\(\s*headerCurrentModelName,\s*currentModelDetail,\s*\)\}/,
     );
     expect(chat).toContain('styles["chat-input-model-button"]');
     expect(chat).not.toContain('styles["chat-mobile-model-title"]');
@@ -17047,7 +17063,7 @@ describe("Gemini visual migration shell", () => {
     );
     expect(composerModelButtonBlock).toMatch(/bottom:\s*13px;/);
     expect(chat).toContain('styles["chat-input-model-detail"]');
-    expect(chat).toContain("{currentModelDetail}");
+    expect(chat).toContain("currentModelDetail,");
     expect(chat).toContain("<ReasoningEffortRail");
     expect(chat).toContain("efforts={visibleHeaderReasoningEfforts}");
     expect(chat).toContain("allowedEfforts={headerReasoningEfforts}");
