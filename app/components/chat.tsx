@@ -123,6 +123,7 @@ import { getClientConfig } from "../config/client";
 import { useAllModels } from "../utils/hooks";
 import { MultimodalContent } from "../client/types";
 import {
+  applyConfiguredOpenAIResponsesReasoningEffortDefault,
   applyOpenAIResponsesModelConstraints,
   filterOpenAIResponsesReasoningEfforts,
   getMaxOutputTokensForReasoningEffort,
@@ -1000,6 +1001,11 @@ function useChatActionsView(props: ChatActionsProps) {
         session.mask.modelConfig.model = nextModel.name;
         session.mask.modelConfig.providerName = nextModel?.provider
           ?.providerName as ServiceProvider;
+        applyConfiguredOpenAIResponsesReasoningEffortDefault({
+          config: session.mask.modelConfig,
+          configMeta: session.mask.modelConfigMeta,
+          defaults: config.serverConfigSnapshot?.reasoningEffortDefaults,
+        });
         applyOpenAIResponsesModelConstraints(session.mask.modelConfig);
         applyOpenAIImageGenerationDefaults(session.mask.modelConfig);
         session.mask.modelConfigMeta = {
@@ -1333,6 +1339,12 @@ function useChatActionsView(props: ChatActionsProps) {
                     session.mask.modelConfig.model = model as ModelType;
                     session.mask.modelConfig.providerName =
                       providerName as ServiceProvider;
+                    applyConfiguredOpenAIResponsesReasoningEffortDefault({
+                      config: session.mask.modelConfig,
+                      configMeta: session.mask.modelConfigMeta,
+                      defaults:
+                        config.serverConfigSnapshot?.reasoningEffortDefaults,
+                    });
                     applyOpenAIResponsesModelConstraints(
                       session.mask.modelConfig,
                     );
@@ -2270,9 +2282,15 @@ function useChatInnerView() {
       if (session.mask.syncGlobalConfig) {
         console.log("[Mask] syncing from global, name = ", session.mask.name);
         session.mask.modelConfig = { ...config.modelConfig };
+        session.mask.modelConfigMeta = { ...(config.modelConfigMeta ?? {}) };
       }
     });
-  }, [updateTargetSession, config.modelConfig, session]);
+  }, [
+    updateTargetSession,
+    config.modelConfig,
+    config.modelConfigMeta,
+    session,
+  ]);
 
   // check if should send message
   const onInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -2784,6 +2802,11 @@ function useChatInnerView() {
       chatStore.updateTargetSession(session, (session) => {
         session.mask.modelConfig.model = model as ModelType;
         session.mask.modelConfig.providerName = providerName as ServiceProvider;
+        applyConfiguredOpenAIResponsesReasoningEffortDefault({
+          config: session.mask.modelConfig,
+          configMeta: session.mask.modelConfigMeta,
+          defaults: config.serverConfigSnapshot?.reasoningEffortDefaults,
+        });
         applyOpenAIResponsesModelConstraints(session.mask.modelConfig);
         applyOpenAIImageGenerationDefaults(session.mask.modelConfig);
         session.mask.modelConfigMeta = {

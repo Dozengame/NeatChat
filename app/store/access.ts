@@ -35,8 +35,11 @@ import {
   type PublicAppConfig,
 } from "../utils/public-app-config";
 import {
+  applyConfiguredOpenAIResponsesReasoningEffortDefault,
   applyOpenAIResponsesModelConstraints,
+  getMaxOutputTokensForReasoningEffort,
   OPENAI_RESPONSES_DEFAULT_MODEL,
+  resolveOpenAIResponsesReasoningEffortDefault,
 } from "../utils/openai-responses";
 import {
   getAccessCodeValidationServerId,
@@ -228,18 +231,27 @@ function getServerModelConfig(publicConfig: PublicAppConfig) {
     fallbackModelRef: `${OPENAI_RESPONSES_DEFAULT_MODEL}@OpenAI`,
   });
   const [model, providerName] = splitModelRef(modelRef);
+  const configuredReasoningEffort =
+    resolveOpenAIResponsesReasoningEffortDefault({
+      model,
+      providerName,
+      defaults: publicConfig.reasoningEffortDefaults,
+    }) ??
+    publicConfig.forced.reasoningEffort ??
+    publicConfig.defaults.reasoningEffort;
+  const configuredMaxOutputTokens =
+    publicConfig.forced.max_output_tokens ??
+    (publicConfig.reasoningEffortDefaults && configuredReasoningEffort
+      ? getMaxOutputTokensForReasoningEffort(configuredReasoningEffort)
+      : publicConfig.defaults.max_output_tokens);
 
   return {
     model,
     providerName,
     temperature:
       publicConfig.forced.temperature ?? publicConfig.defaults.temperature,
-    max_output_tokens:
-      publicConfig.forced.max_output_tokens ??
-      publicConfig.defaults.max_output_tokens,
-    reasoningEffort:
-      publicConfig.forced.reasoningEffort ??
-      publicConfig.defaults.reasoningEffort,
+    max_output_tokens: configuredMaxOutputTokens,
+    reasoningEffort: configuredReasoningEffort,
     reasoningMode:
       publicConfig.forced.reasoningMode ?? publicConfig.defaults.reasoningMode,
     reasoningContext:
@@ -314,6 +326,7 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
   hasFetchedConfig = true;
 
   const oldSnapshot = useAppConfig.getState().serverConfigSnapshot;
+  const oldAccessState = useAccessStore.getState();
   const serverModelConfig = getServerModelConfig(publicConfig);
 
   useAppConfig.setState((state) => {
@@ -406,6 +419,12 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
       );
     }
 
+    applyConfiguredOpenAIResponsesReasoningEffortDefault({
+      config: modelConfig,
+      configMeta: modelConfigMeta,
+      defaults: publicConfig.reasoningEffortDefaults,
+    });
+
     applyOpenAIResponsesModelConstraints(modelConfig);
 
     return {
@@ -464,6 +483,45 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
             continue;
           }
 
+          const fieldSource = modelConfigMeta[field]?.source;
+          const oldServerValue =
+            oldSnapshot?.forced?.[field as keyof PublicAppConfig["forced"]] ??
+            oldSnapshot?.defaults?.[field as keyof PublicAppConfig["defaults"]];
+          const isLegacyInheritedValue =
+            fieldSource === undefined &&
+            ((field === "reasoningEffort" &&
+              (modelConfig.reasoningEffort ===
+                DEFAULT_CONFIG.modelConfig.reasoningEffort ||
+                modelConfig.reasoningEffort ===
+                  oldAccessState.openaiReasoningEffort ||
+                modelConfig.reasoningEffort === oldServerValue)) ||
+              (field === "max_output_tokens" &&
+                (modelConfig.max_output_tokens ===
+                  DEFAULT_CONFIG.modelConfig.max_output_tokens ||
+                  modelConfig.max_output_tokens ===
+                    oldAccessState.openaiMaxOutputTokens ||
+                  modelConfig.max_output_tokens === oldServerValue ||
+                  modelConfig.max_output_tokens ===
+                    getMaxOutputTokensForReasoningEffort(
+                      modelConfig.reasoningEffort,
+                    ))));
+          if (
+            (field === "reasoningEffort" || field === "max_output_tokens") &&
+            (fieldSource === "server_default" ||
+              fieldSource === "fallback" ||
+              isLegacyInheritedValue)
+          ) {
+            if (isLegacyInheritedValue) {
+              modelConfigMeta = setFieldMeta(
+                modelConfigMeta,
+                field,
+                publicConfig,
+                "server_default",
+              );
+            }
+            continue;
+          }
+
           modelConfigMeta = setFieldMeta(
             modelConfigMeta,
             field,
@@ -515,6 +573,12 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
           true,
         );
       }
+
+      applyConfiguredOpenAIResponsesReasoningEffortDefault({
+        config: modelConfig,
+        configMeta: modelConfigMeta,
+        defaults: publicConfig.reasoningEffortDefaults,
+      });
 
       applyOpenAIResponsesModelConstraints(modelConfig);
 

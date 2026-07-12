@@ -44,6 +44,11 @@ export type OpenAIResponsesReasoningEffortAllowlist = {
   models: Record<string, OpenAIResponsesReasoningEffort[]>;
 };
 
+export type OpenAIResponsesReasoningEffortDefaults = {
+  default?: OpenAIResponsesReasoningEffort;
+  models: Record<string, OpenAIResponsesReasoningEffort>;
+};
+
 export type OpenAIChatReasoningEffort = OpenAIResponsesReasoningEffort;
 
 export type OpenAIResponsesTextVerbosity = "low" | "medium" | "high";
@@ -175,6 +180,141 @@ export function parseOpenAIResponsesReasoningEffortAllowlist(
   }
 
   return parsedClause ? allowlist : { default: [], models: {} };
+}
+
+export function parseOpenAIResponsesReasoningEffortDefaults(
+  value?: string,
+): OpenAIResponsesReasoningEffortDefaults | undefined {
+  const normalized = value?.trim();
+  if (!normalized) return undefined;
+
+  if (!normalized.includes("=")) {
+    const effort = normalized.toLowerCase();
+    return isOpenAIResponsesReasoningEffort(effort)
+      ? { default: effort, models: {} }
+      : undefined;
+  }
+
+  const defaults: OpenAIResponsesReasoningEffortDefaults = { models: {} };
+  let parsedClause = false;
+
+  for (const clause of normalized.split(";")) {
+    const separatorIndex = clause.indexOf("=");
+    if (separatorIndex <= 0) continue;
+
+    const rawModel = clause.slice(0, separatorIndex).trim().toLowerCase();
+    const effort = clause
+      .slice(separatorIndex + 1)
+      .trim()
+      .toLowerCase();
+    if (!isOpenAIResponsesReasoningEffort(effort)) continue;
+
+    if (rawModel === "*" || rawModel === "default") {
+      defaults.default = effort;
+      parsedClause = true;
+      continue;
+    }
+
+    const model = normalizeReasoningEffortModelKey(rawModel);
+    if (!model) continue;
+    defaults.models[model] = effort;
+    parsedClause = true;
+  }
+
+  return parsedClause ? defaults : undefined;
+}
+
+export function getConfiguredOpenAIResponsesReasoningEffort(
+  model: string | undefined,
+  defaults?: OpenAIResponsesReasoningEffortDefaults,
+) {
+  const modelKey = normalizeReasoningEffortModelKey(model);
+  const configured =
+    modelKey &&
+    defaults &&
+    Object.prototype.hasOwnProperty.call(defaults.models, modelKey)
+      ? defaults?.models[modelKey]
+      : defaults?.default;
+
+  return normalizeOpenAIResponsesReasoningEffort(configured, model);
+}
+
+export function resolveOpenAIResponsesReasoningEffortDefault(params: {
+  model?: string;
+  providerName?: string;
+  defaults?: OpenAIResponsesReasoningEffortDefaults;
+}) {
+  if (!params.defaults || !isOpenAIGpt5OrNewerModelConfig(params)) {
+    return undefined;
+  }
+
+  return getConfiguredOpenAIResponsesReasoningEffort(
+    params.model,
+    params.defaults,
+  );
+}
+
+type ReasoningDefaultConfigSource =
+  | "server_default"
+  | "user_override"
+  | "conversation_override"
+  | "admin_forced"
+  | "fallback";
+
+type ReasoningDefaultFieldMeta = {
+  source?: ReasoningDefaultConfigSource;
+  locked?: boolean;
+};
+
+export function applyConfiguredOpenAIResponsesReasoningEffortDefault(params: {
+  config: {
+    model?: string;
+    providerName?: string;
+    reasoningEffort?: OpenAIResponsesReasoningEffort;
+    max_output_tokens?: number;
+  };
+  configMeta?: Record<string, ReasoningDefaultFieldMeta | undefined>;
+  defaults?: OpenAIResponsesReasoningEffortDefaults;
+}) {
+  const reasoningEffort = resolveOpenAIResponsesReasoningEffortDefault({
+    ...params.config,
+    defaults: params.defaults,
+  });
+  if (!reasoningEffort) {
+    return { reasoningEffortChanged: false, maxOutputTokensChanged: false };
+  }
+
+  const reasoningMeta = params.configMeta?.reasoningEffort;
+  const reasoningSource = reasoningMeta?.source;
+  if (
+    reasoningMeta?.locked ||
+    reasoningSource === "admin_forced" ||
+    reasoningSource === "user_override" ||
+    reasoningSource === "conversation_override"
+  ) {
+    return { reasoningEffortChanged: false, maxOutputTokensChanged: false };
+  }
+
+  const reasoningEffortChanged =
+    params.config.reasoningEffort !== reasoningEffort;
+  params.config.reasoningEffort = reasoningEffort;
+
+  const maxOutputMeta = params.configMeta?.max_output_tokens;
+  const maxOutputSource = maxOutputMeta?.source;
+  const canUpdateMaxOutputTokens =
+    !maxOutputMeta?.locked &&
+    maxOutputSource !== "admin_forced" &&
+    maxOutputSource !== "user_override" &&
+    maxOutputSource !== "conversation_override";
+  if (!canUpdateMaxOutputTokens) {
+    return { reasoningEffortChanged, maxOutputTokensChanged: false };
+  }
+
+  const maxOutputTokens = getMaxOutputTokensForReasoningEffort(reasoningEffort);
+  const maxOutputTokensChanged =
+    params.config.max_output_tokens !== maxOutputTokens;
+  params.config.max_output_tokens = maxOutputTokens;
+  return { reasoningEffortChanged, maxOutputTokensChanged };
 }
 
 export function getConfiguredOpenAIResponsesReasoningEfforts(

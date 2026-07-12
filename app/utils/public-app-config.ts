@@ -8,6 +8,7 @@ import type {
   OpenAIResponsesReasoningContext,
   OpenAIResponsesReasoningEffort,
   OpenAIResponsesReasoningEffortAllowlist,
+  OpenAIResponsesReasoningEffortDefaults,
   OpenAIResponsesReasoningMode,
   OpenAIResponsesTextVerbosity,
 } from "./openai-responses";
@@ -78,6 +79,7 @@ export type PublicAppConfig = {
   };
   allowedModels: string[];
   reasoningEffortAllowlist?: OpenAIResponsesReasoningEffortAllowlist;
+  reasoningEffortDefaults?: OpenAIResponsesReasoningEffortDefaults;
   lockedFields: string[];
   serverFlags: {
     needCode: boolean;

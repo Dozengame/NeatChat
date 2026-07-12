@@ -8,6 +8,7 @@ jest.mock("../app/client/api", () => ({
 import {
   applyPublicAppConfig,
   sanitizeAccessPersistedState,
+  useAccessStore,
 } from "../app/store/access";
 import {
   DEFAULT_CONFIG,
@@ -162,6 +163,199 @@ describe("applyPublicAppConfig", () => {
     const current = useChatStore.getState().temporarySession!;
     expect(current.mask.modelConfig.reasoningEffort).toBe("high");
     expect(current.mask.modelConfig.max_output_tokens).toBe(30000);
+  });
+
+  test("applies per-model reasoning defaults to server-derived session config", () => {
+    const currentSession = session(20000, false) as any;
+    currentSession.mask.modelConfig.model = "gpt-5.6-luna";
+    currentSession.mask.modelConfig.providerName = "OpenAI";
+    currentSession.mask.modelConfig.reasoningEffort = "medium";
+    currentSession.mask.modelConfigMeta = {
+      model: { source: "conversation_override" },
+      providerName: { source: "conversation_override" },
+      reasoningEffort: { source: "server_default" },
+      max_output_tokens: { source: "server_default" },
+    };
+    useChatStore.setState({ temporarySession: currentSession } as any);
+
+    applyPublicAppConfig(
+      publicConfig({
+        defaults: {
+          model: "gpt-5.6-terra",
+          providerName: "OpenAI",
+          reasoningEffort: "high",
+          max_output_tokens: 30000,
+        },
+        forced: {
+          model: "gpt-5.6-terra",
+          providerName: "OpenAI",
+        },
+        allowedModels: ["gpt-5.6-terra@OpenAI", "gpt-5.6-luna@OpenAI"],
+        lockedFields: [
+          "customModels",
+          "baseUrl",
+          "apiKey",
+          "temperature",
+          "textVerbosity",
+        ],
+        reasoningEffortDefaults: {
+          default: "medium",
+          models: {
+            "gpt-5.6-terra": "high",
+            "gpt-5.6-luna": "xhigh",
+          },
+        },
+      }),
+    );
+
+    const current = useChatStore.getState().temporarySession!;
+    expect(current.mask.modelConfig.model).toBe("gpt-5.6-luna");
+    expect(current.mask.modelConfig.reasoningEffort).toBe("xhigh");
+    expect(current.mask.modelConfig.max_output_tokens).toBe(30000);
+    expect(current.mask.modelConfigMeta?.reasoningEffort?.source).toBe(
+      "server_default",
+    );
+  });
+
+  test("keeps a user-selected global model on its mapped server default", () => {
+    useAppConfig.setState({
+      modelConfig: {
+        ...DEFAULT_CONFIG.modelConfig,
+        model: "gpt-5.6-luna",
+        providerName: ServiceProvider.OpenAI,
+        reasoningEffort: "medium",
+        max_output_tokens: 20000,
+      },
+      modelConfigMeta: {
+        model: { source: "user_override" },
+        providerName: { source: "user_override" },
+        reasoningEffort: { source: "server_default" },
+        max_output_tokens: { source: "server_default" },
+      },
+    } as any);
+    useChatStore.setState({ temporarySession: session(20000, true) } as any);
+
+    applyPublicAppConfig(
+      publicConfig({
+        defaults: {
+          model: "gpt-5.6-terra",
+          providerName: "OpenAI",
+          reasoningEffort: "high",
+          max_output_tokens: 30000,
+        },
+        forced: {
+          model: "gpt-5.6-terra",
+          providerName: "OpenAI",
+        },
+        allowedModels: ["gpt-5.6-terra@OpenAI", "gpt-5.6-luna@OpenAI"],
+        lockedFields: [
+          "customModels",
+          "baseUrl",
+          "apiKey",
+          "temperature",
+          "textVerbosity",
+        ],
+        reasoningEffortDefaults: {
+          default: "medium",
+          models: {
+            "gpt-5.6-terra": "high",
+            "gpt-5.6-luna": "xhigh",
+          },
+        },
+      }),
+    );
+
+    expect(useAppConfig.getState().modelConfig).toMatchObject({
+      model: "gpt-5.6-luna",
+      reasoningEffort: "xhigh",
+      max_output_tokens: 30000,
+    });
+    expect(
+      useChatStore.getState().temporarySession?.mask.modelConfig,
+    ).toMatchObject({
+      model: "gpt-5.6-luna",
+      reasoningEffort: "xhigh",
+      max_output_tokens: 30000,
+    });
+  });
+
+  test("migrates only inherited legacy reasoning values without meta", () => {
+    useAccessStore.setState({
+      openaiReasoningEffort: "low",
+      openaiMaxOutputTokens: undefined,
+    });
+    const inheritedSession = session(10000, false) as any;
+    inheritedSession.mask.modelConfig.model = "gpt-5.6-luna";
+    inheritedSession.mask.modelConfig.providerName = "OpenAI";
+    inheritedSession.mask.modelConfig.reasoningEffort = "low";
+    inheritedSession.mask.modelConfigMeta = {};
+
+    const explicitSession = session(25000, false) as any;
+    explicitSession.id = "s2";
+    explicitSession.mask.modelConfig.model = "gpt-5.6-luna";
+    explicitSession.mask.modelConfig.providerName = "OpenAI";
+    explicitSession.mask.modelConfig.reasoningEffort = "medium";
+    explicitSession.mask.modelConfigMeta = {};
+    useChatStore.setState({
+      temporarySession: inheritedSession,
+      sessions: [explicitSession],
+    } as any);
+
+    applyPublicAppConfig(
+      publicConfig({
+        defaults: {
+          model: "gpt-5.6-terra",
+          providerName: "OpenAI",
+          reasoningEffort: "high",
+          max_output_tokens: 30000,
+        },
+        forced: {
+          model: "gpt-5.6-terra",
+          providerName: "OpenAI",
+        },
+        allowedModels: ["gpt-5.6-terra@OpenAI", "gpt-5.6-luna@OpenAI"],
+        lockedFields: [
+          "customModels",
+          "baseUrl",
+          "apiKey",
+          "temperature",
+          "textVerbosity",
+        ],
+        reasoningEffortDefaults: {
+          default: "medium",
+          models: {
+            "gpt-5.6-terra": "high",
+            "gpt-5.6-luna": "xhigh",
+          },
+        },
+      }),
+    );
+
+    const inherited = useChatStore.getState().temporarySession!;
+    expect(inherited.mask.modelConfig).toMatchObject({
+      model: "gpt-5.6-luna",
+      reasoningEffort: "xhigh",
+      max_output_tokens: 30000,
+    });
+    expect(inherited.mask.modelConfigMeta?.reasoningEffort?.source).toBe(
+      "server_default",
+    );
+    expect(inherited.mask.modelConfigMeta?.max_output_tokens?.source).toBe(
+      "server_default",
+    );
+
+    const explicit = useChatStore.getState().sessions[0];
+    expect(explicit.mask.modelConfig).toMatchObject({
+      model: "gpt-5.6-luna",
+      reasoningEffort: "medium",
+      max_output_tokens: 25000,
+    });
+    expect(explicit.mask.modelConfigMeta?.reasoningEffort?.source).toBe(
+      "conversation_override",
+    );
+    expect(explicit.mask.modelConfigMeta?.max_output_tokens?.source).toBe(
+      "conversation_override",
+    );
   });
 
   test("propagates GPT-5.6 response capability defaults to global and synced sessions", () => {

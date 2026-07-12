@@ -2,6 +2,7 @@ import { getServerSideConfig } from "./server";
 import { DEFAULT_INPUT_TEMPLATE, ServiceProvider } from "../constant";
 import {
   clampOpenAIResponsesMaxOutputTokens,
+  getConfiguredOpenAIResponsesReasoningEffort,
   getConfiguredOpenAIResponsesReasoningEfforts,
   getMaxOutputTokensForReasoningEffort,
   normalizeOpenAIResponsesReasoningEffort,
@@ -9,6 +10,7 @@ import {
   OPENAI_RESPONSES_REASONING_EFFORTS,
   OPENAI_RESPONSES_DEFAULT_MODEL,
   parseOpenAIResponsesReasoningEffortAllowlist,
+  resolveOpenAIResponsesReasoningEffortDefault,
   type OpenAIResponsesReasoningEffort,
 } from "../utils/openai-responses";
 import {
@@ -61,10 +63,15 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
     fallbackModelRef: `${OPENAI_RESPONSES_DEFAULT_MODEL}@OpenAI`,
   });
   const [model, providerName] = splitModelRef(forcedModelRef);
-  const reasoningEffort = normalizeOpenAIResponsesReasoningEffort(
-    serverConfig.openaiReasoningEffort,
+  const reasoningEffort = (resolveOpenAIResponsesReasoningEffortDefault({
     model,
-  ) as OpenAIResponsesReasoningEffort;
+    providerName,
+    defaults: serverConfig.openaiReasoningEffortDefaults,
+  }) ??
+    normalizeOpenAIResponsesReasoningEffort(
+      serverConfig.openaiReasoningEffort,
+      model,
+    )) as OpenAIResponsesReasoningEffort;
   const configuredReasoningEfforts =
     parseOpenAIResponsesReasoningEffortAllowlist(
       serverConfig.webuiAllowedReasoningEfforts,
@@ -89,6 +96,40 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
     );
     if (defaultModelKey) {
       configuredReasoningEfforts.models[defaultModelKey] = mergedEfforts;
+    }
+  }
+  if (
+    configuredReasoningEfforts &&
+    serverConfig.openaiReasoningEffortDefaults
+  ) {
+    const configuredDefault =
+      serverConfig.openaiReasoningEffortDefaults.default;
+    if (configuredDefault) {
+      configuredReasoningEfforts.default =
+        OPENAI_RESPONSES_REASONING_EFFORTS.filter(
+          (effort) =>
+            effort === configuredDefault ||
+            configuredReasoningEfforts.default?.includes(effort),
+        );
+    }
+
+    for (const modelKey of Object.keys(
+      serverConfig.openaiReasoningEffortDefaults.models,
+    )) {
+      const modelDefault = getConfiguredOpenAIResponsesReasoningEffort(
+        modelKey,
+        serverConfig.openaiReasoningEffortDefaults,
+      );
+      const configuredModelEfforts =
+        getConfiguredOpenAIResponsesReasoningEfforts(
+          modelKey,
+          configuredReasoningEfforts,
+        ) ?? [];
+      configuredReasoningEfforts.models[modelKey] =
+        OPENAI_RESPONSES_REASONING_EFFORTS.filter(
+          (effort) =>
+            effort === modelDefault || configuredModelEfforts.includes(effort),
+        );
     }
   }
   const effectiveMaxOutputTokens =
@@ -157,6 +198,7 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
     },
     allowedModels,
     reasoningEffortAllowlist: configuredReasoningEfforts,
+    reasoningEffortDefaults: serverConfig.openaiReasoningEffortDefaults,
     lockedFields,
     serverFlags: {
       needCode: serverConfig.needCode,

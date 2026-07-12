@@ -17,6 +17,7 @@ import styles from "./model-config.module.scss";
 import { getModelProvider } from "../utils/model";
 import {
   applyOpenAIResponsesModelConstraints,
+  applyConfiguredOpenAIResponsesReasoningEffortDefault,
   filterOpenAIResponsesReasoningEfforts,
   getMaxOutputTokensForReasoningEffort,
   getOpenAIResponsesMaxOutputTokensLimit,
@@ -240,20 +241,14 @@ function useModelConfigListView(props: {
             updateUnlocked(["model", "providerName"], (config) => {
               config.model = ModalConfigValidator.model(model);
               config.providerName = providerName as ServiceProvider;
+              applyConfiguredOpenAIResponsesReasoningEffortDefault({
+                config,
+                configMeta: modelConfigMeta,
+                defaults:
+                  accessStore.serverConfigSnapshot?.reasoningEffortDefaults,
+              });
               applyOpenAIResponsesModelConstraints(config);
               applyOpenAIImageGenerationDefaults(config);
-              if (
-                isOpenAIGpt5OrNewerModelConfig({
-                  model: config.model,
-                  providerName: config.providerName,
-                }) &&
-                !isLocked("max_output_tokens")
-              ) {
-                const effort =
-                  config.reasoningEffort ??
-                  OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT;
-                config.max_output_tokens = getReasoningMaxOutputTokens(effort);
-              }
             });
           }}
         >
