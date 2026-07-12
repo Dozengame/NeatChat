@@ -160,6 +160,10 @@ export function DiscreteOptionRail<T extends string>({
   onLockedAttempt,
 }: DiscreteOptionRailProps<T>) {
   const railRef = useRef<HTMLDivElement>(null);
+  const dragGeometryRef = useRef<{
+    left: number;
+    usableWidth: number;
+  }>();
   const [dragOption, setDragOption] = useState<T>();
   const [dragging, setDragging] = useState(false);
   const visibleOptions = useMemo(
@@ -183,14 +187,15 @@ export function DiscreteOptionRail<T extends string>({
     (selectableOptions.length === 1 && allowed.has(value));
   const ariaDisabled = locked || readonly;
   const descriptionId = `${id}-description`;
+  const visibleOptionsKey = visibleOptions.join("\u001f");
 
   useEffect(() => {
     setDragOption(undefined);
-  }, [value, options]);
+  }, [value, visibleOptionsKey]);
 
-  const positionFromPointer = (clientX: number) => {
+  const measureRailGeometry = () => {
     const rail = railRef.current;
-    if (!rail || visibleOptions.length <= 1) return 0;
+    if (!rail) return undefined;
 
     const rect = rail.getBoundingClientRect();
     const computedThumbSize = Number.parseFloat(
@@ -199,10 +204,19 @@ export function DiscreteOptionRail<T extends string>({
     const thumbRadius = Number.isFinite(computedThumbSize)
       ? computedThumbSize / 2
       : 17;
-    const usableWidth = Math.max(1, rect.width - thumbRadius * 2);
+    return {
+      left: rect.left + thumbRadius,
+      usableWidth: Math.max(1, rect.width - thumbRadius * 2),
+    };
+  };
+
+  const positionFromPointer = (clientX: number) => {
+    if (visibleOptions.length <= 1) return 0;
+    const geometry = dragGeometryRef.current ?? measureRailGeometry();
+    if (!geometry) return 0;
     const normalized = Math.min(
       1,
-      Math.max(0, (clientX - rect.left - thumbRadius) / usableWidth),
+      Math.max(0, (clientX - geometry.left) / geometry.usableWidth),
     );
     return normalized * (visibleOptions.length - 1);
   };
@@ -223,6 +237,8 @@ export function DiscreteOptionRail<T extends string>({
     }
     if (readonly) return;
 
+    event.currentTarget.focus({ preventScroll: true });
+    dragGeometryRef.current = measureRailGeometry();
     event.currentTarget.setPointerCapture(event.pointerId);
     setDragging(true);
     setDragOption(optionFromPointer(event.clientX));
@@ -234,7 +250,8 @@ export function DiscreteOptionRail<T extends string>({
     }
     event.preventDefault();
     event.stopPropagation();
-    setDragOption(optionFromPointer(event.clientX));
+    const nextOption = optionFromPointer(event.clientX);
+    setDragOption((current) => (current === nextOption ? current : nextOption));
   };
 
   const finishPointerInteraction = (
@@ -252,6 +269,7 @@ export function DiscreteOptionRail<T extends string>({
     }
     setDragging(false);
     setDragOption(undefined);
+    dragGeometryRef.current = undefined;
     if (commit && nextOption && nextOption !== value) onChange(nextOption);
   };
 
@@ -259,6 +277,7 @@ export function DiscreteOptionRail<T extends string>({
     if (!dragging) return;
     setDragging(false);
     setDragOption(undefined);
+    dragGeometryRef.current = undefined;
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {

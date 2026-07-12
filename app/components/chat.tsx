@@ -1823,6 +1823,7 @@ function useChatInnerView() {
   const [userInput, setUserInput] = useState(
     () => localStorage.getItem(unfinishedInputKey) ?? "",
   );
+  const [isChatInputFocused, setIsChatInputFocused] = useState(false);
   const [isLoading, setIsLoading] = useReducer(
     (_: boolean, next: boolean) => next,
     false,
@@ -2432,63 +2433,85 @@ function useChatInnerView() {
   const lastHomeImageModelRef = useRef<string>();
   const homeModeInitializedRef = useRef(false);
   const modelMenuFocusFrameRef = useRef<number | null>(null);
-  const getComposerModelMenuStyle = (button: HTMLButtonElement) => {
-    const viewportPadding = isCompactScreen ? 12 : 16;
-    const gap = isCompactScreen ? 10 : 12;
-    const menuWidth = Math.min(
-      isCompactScreen ? 360 : 380,
-      window.innerWidth - viewportPadding * 2,
-    );
-    const buttonRect = button.getBoundingClientRect();
-    const composerRect =
-      button.closest("label")?.getBoundingClientRect() ?? buttonRect;
-    const anchorCenter = isCompactScreen
-      ? composerRect.left + composerRect.width / 2
-      : buttonRect.left + buttonRect.width / 2;
-    const left = Math.max(
-      viewportPadding,
-      Math.min(
-        anchorCenter - menuWidth / 2,
-        window.innerWidth - menuWidth - viewportPadding,
-      ),
-    );
-    const belowTop = composerRect.bottom + gap;
-    const belowSpace = window.innerHeight - belowTop - viewportPadding;
-    const aboveSpace = composerRect.top - gap - viewportPadding;
-    const preferredHeight = isCompactScreen ? 230 : 250;
-    const preferBelow =
-      !isCompactScreen && showEmptyComposer && belowSpace >= preferredHeight;
-    const openBelow =
-      preferBelow || (aboveSpace < preferredHeight && belowSpace > aboveSpace);
-    const maximumHeight = isCompactScreen
-      ? Math.min(420, window.innerHeight * 0.68)
-      : 420;
-    const availableHeight = Math.max(
-      0,
-      Math.min(
+  const getComposerModelMenuStyle = useCallback(
+    (button: HTMLButtonElement, preferBelowOnDesktop: boolean) => {
+      const visualViewport = window.visualViewport;
+      const viewportLeft = visualViewport?.offsetLeft ?? 0;
+      const viewportTop = visualViewport?.offsetTop ?? 0;
+      const viewportWidth = visualViewport?.width ?? window.innerWidth;
+      const viewportHeight = visualViewport?.height ?? window.innerHeight;
+      const viewportRight = viewportLeft + viewportWidth;
+      const viewportBottom = viewportTop + viewportHeight;
+      const viewportPadding = isCompactScreen ? 12 : 16;
+      const gap = isCompactScreen ? 10 : 12;
+      const menuWidth = Math.min(
+        isCompactScreen ? 360 : 380,
+        Math.max(1, viewportWidth - viewportPadding * 2),
+      );
+      const buttonRect = button.getBoundingClientRect();
+      const composerRect =
+        button.closest("label")?.getBoundingClientRect() ?? buttonRect;
+      const anchorCenter = isCompactScreen
+        ? composerRect.left + composerRect.width / 2
+        : buttonRect.left + buttonRect.width / 2;
+      const left = Math.max(
+        viewportLeft + viewportPadding,
+        Math.min(
+          anchorCenter - menuWidth / 2,
+          viewportRight - menuWidth - viewportPadding,
+        ),
+      );
+      const belowTop = composerRect.bottom + gap;
+      const belowSpace = viewportBottom - belowTop - viewportPadding;
+      const aboveSpace = composerRect.top - gap - viewportTop - viewportPadding;
+      const preferredHeight = isCompactScreen ? 230 : 250;
+      const preferBelow =
+        !isCompactScreen &&
+        preferBelowOnDesktop &&
+        belowSpace >= preferredHeight;
+      const openBelow =
+        preferBelow ||
+        (aboveSpace < preferredHeight && belowSpace > aboveSpace);
+      const maximumHeight = isCompactScreen
+        ? Math.min(420, viewportHeight * 0.68)
+        : 420;
+      const maximumUsableHeight = Math.max(
+        1,
+        viewportHeight - viewportPadding * 2,
+      );
+      const minimumUsableHeight = Math.min(96, maximumUsableHeight);
+      const availableHeight = Math.min(
         maximumHeight,
-        openBelow ? belowSpace : aboveSpace,
-        window.innerHeight - viewportPadding * 2,
-      ),
-    );
+        maximumUsableHeight,
+        Math.max(minimumUsableHeight, openBelow ? belowSpace : aboveSpace),
+      );
+      const preferredTop = openBelow
+        ? belowTop
+        : composerRect.top - gap - availableHeight;
+      const top = Math.max(
+        viewportTop + viewportPadding,
+        Math.min(
+          preferredTop,
+          viewportBottom - viewportPadding - availableHeight,
+        ),
+      );
 
-    return {
-      "--chat-model-menu-composer-left": `${left}px`,
-      "--chat-model-menu-composer-top": openBelow ? `${belowTop}px` : "auto",
-      "--chat-model-menu-composer-bottom": openBelow
-        ? "auto"
-        : `${window.innerHeight - composerRect.top + gap}px`,
-      "--chat-model-menu-composer-width": `${menuWidth}px`,
-      "--chat-model-menu-composer-max-height": `${availableHeight}px`,
-      "--chat-model-menu-composer-origin": openBelow
-        ? "top center"
-        : "bottom center",
-      "--chat-model-menu-composer-shift": openBelow ? "8px" : "-8px",
-    } as React.CSSProperties;
-  };
+      return {
+        "--chat-model-menu-composer-left": `${left}px`,
+        "--chat-model-menu-composer-top": `${top}px`,
+        "--chat-model-menu-composer-bottom": "auto",
+        "--chat-model-menu-composer-width": `${menuWidth}px`,
+        "--chat-model-menu-composer-max-height": `${availableHeight}px`,
+        "--chat-model-menu-composer-origin": openBelow
+          ? "top center"
+          : "bottom center",
+        "--chat-model-menu-composer-shift": openBelow ? "8px" : "-8px",
+      } as React.CSSProperties;
+    },
+    [isCompactScreen],
+  );
   const closeMobileModelSelector = useCallback(() => {
     setShowMobileModelSelector(false);
-    setExpandedMobileModelSection(null);
   }, []);
   const restoreModelSelectorFocus = useCallback(() => {
     setTimeout(() => {
@@ -2699,15 +2722,25 @@ function useChatInnerView() {
       OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
     headerCurrentModel,
   );
-  const headerReasoningEfforts = filterOpenAIResponsesReasoningEfforts(
-    headerCurrentModel,
-    accessStore.serverConfigSnapshot?.reasoningEffortAllowlist,
+  const headerReasoningEfforts = useMemo(
+    () =>
+      filterOpenAIResponsesReasoningEfforts(
+        headerCurrentModel,
+        accessStore.serverConfigSnapshot?.reasoningEffortAllowlist,
+      ),
+    [
+      accessStore.serverConfigSnapshot?.reasoningEffortAllowlist,
+      headerCurrentModel,
+    ],
   );
-  const visibleHeaderReasoningEfforts =
-    includeCurrentOpenAIResponsesReasoningEffort(
-      headerReasoningEfforts,
-      headerCurrentReasoningEffort,
-    );
+  const visibleHeaderReasoningEfforts = useMemo(
+    () =>
+      includeCurrentOpenAIResponsesReasoningEffort(
+        headerReasoningEfforts,
+        headerCurrentReasoningEffort,
+      ),
+    [headerCurrentReasoningEffort, headerReasoningEfforts],
+  );
   const headerReasoningLocked =
     accessStore.lockedFields?.includes("reasoningEffort") ||
     session.mask.modelConfigMeta?.reasoningEffort?.locked;
@@ -3072,6 +3105,39 @@ function useChatInnerView() {
   const showEmptyHero =
     showEmptyState && !hasActiveInputContent && !showChatActionMenu;
   const showDesktopChatHeader = !isCompactScreen && !showEmptyState;
+  useEffect(() => {
+    if (!showMobileModelSelector) return;
+
+    let updateFrame = 0;
+    const updateModelMenuPlacement = () => {
+      cancelAnimationFrame(updateFrame);
+      updateFrame = requestAnimationFrame(() => {
+        const trigger = modelSelectorButtonRef.current;
+        if (!trigger) return;
+        setComposerModelMenuStyle(
+          getComposerModelMenuStyle(trigger, showEmptyComposer),
+        );
+      });
+    };
+
+    updateModelMenuPlacement();
+    window.addEventListener("resize", updateModelMenuPlacement);
+    window.visualViewport?.addEventListener("resize", updateModelMenuPlacement);
+    window.visualViewport?.addEventListener("scroll", updateModelMenuPlacement);
+
+    return () => {
+      cancelAnimationFrame(updateFrame);
+      window.removeEventListener("resize", updateModelMenuPlacement);
+      window.visualViewport?.removeEventListener(
+        "resize",
+        updateModelMenuPlacement,
+      );
+      window.visualViewport?.removeEventListener(
+        "scroll",
+        updateModelMenuPlacement,
+      );
+    };
+  }, [getComposerModelMenuStyle, showEmptyComposer, showMobileModelSelector]);
   const configuredChatHomeDefault = useMemo(
     () =>
       config.serverConfigSnapshot
@@ -4776,241 +4842,225 @@ function useChatInnerView() {
         </div>
       ) : null}
 
-      {showMobileModelSelector && (
-        <>
-          <button
-            type="button"
-            className={clsx(
-              isCompactScreen
-                ? styles["chat-mobile-model-menu-backdrop"]
-                : styles["chat-desktop-model-menu-backdrop"],
-              styles["chat-model-menu-visible"],
-            )}
-            aria-label={Locale.Chat.ModelMenu.Close}
-            onClick={() => {
-              closeMobileModelSelector();
-              restoreModelSelectorFocus();
-            }}
-          />
-          <div
-            id="chat-model-menu"
-            ref={modelMenuRef}
-            className={clsx(
-              isCompactScreen
-                ? styles["chat-mobile-model-menu"]
-                : styles["chat-desktop-model-menu"],
-              styles["chat-model-menu-visible"],
-              styles["chat-desktop-model-menu-composer"],
-              {
-                [styles["chat-model-menu-reasoning"]]:
-                  isReasoningSectionExpanded || isImageOptionsExpanded,
-              },
-            )}
-            style={composerModelMenuStyle}
-            onKeyDown={handleModelMenuKeyDown}
-            tabIndex={-1}
-            role="dialog"
-            aria-modal="true"
-            aria-label={
-              isImageOptionsExpanded
-                ? Locale.Chat.ModelMenu.ImageOptions
-                : isReasoningSectionExpanded
-                ? Locale.Chat.ModelMenu.ReasoningOptions
-                : Locale.Chat.ModelMenu.SelectModelAndParams
+      <button
+        type="button"
+        className={clsx(
+          isCompactScreen
+            ? styles["chat-mobile-model-menu-backdrop"]
+            : styles["chat-desktop-model-menu-backdrop"],
+          {
+            [styles["chat-model-menu-visible"]]: showMobileModelSelector,
+          },
+        )}
+        aria-label={Locale.Chat.ModelMenu.Close}
+        tabIndex={showMobileModelSelector ? 0 : -1}
+        onClick={() => {
+          closeMobileModelSelector();
+          restoreModelSelectorFocus();
+        }}
+      />
+      <div
+        id="chat-model-menu"
+        ref={modelMenuRef}
+        className={clsx(
+          isCompactScreen
+            ? styles["chat-mobile-model-menu"]
+            : styles["chat-desktop-model-menu"],
+          styles["chat-desktop-model-menu-composer"],
+          {
+            [styles["chat-model-menu-visible"]]: showMobileModelSelector,
+            [styles["chat-model-menu-reasoning"]]:
+              isReasoningSectionExpanded || isImageOptionsExpanded,
+          },
+        )}
+        style={composerModelMenuStyle}
+        onKeyDown={handleModelMenuKeyDown}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal={showMobileModelSelector ? true : undefined}
+        aria-label={
+          isImageOptionsExpanded
+            ? Locale.Chat.ModelMenu.ImageOptions
+            : isReasoningSectionExpanded
+            ? Locale.Chat.ModelMenu.ReasoningOptions
+            : Locale.Chat.ModelMenu.SelectModelAndParams
+        }
+      >
+        {(isReasoningSectionExpanded || isImageOptionsExpanded) && (
+          <div className={styles["chat-model-menu-header"]}>
+            <div className={styles["chat-model-menu-current-model"]}>
+              {headerCurrentModelName}
+            </div>
+            <button
+              type="button"
+              className={styles["chat-model-menu-switch-model"]}
+              aria-label={Locale.Chat.ModelMenu.SwitchModel}
+              title={Locale.Chat.ModelMenu.SwitchModel}
+              data-model-menu-control="true"
+              onClick={returnToModelList}
+            >
+              <ResetIcon />
+              <span>{Locale.Chat.ModelMenu.SwitchModel}</span>
+            </button>
+          </div>
+        )}
+        {isReasoningSectionExpanded ? (
+          <ReasoningEffortRail
+            id="chat-mobile-reasoning-options"
+            ariaLabel={Locale.Chat.ModelMenu.ReasoningOptions}
+            title={Locale.Chat.ModelMenu.ReasoningEffort}
+            efforts={visibleHeaderReasoningEfforts}
+            allowedEfforts={headerReasoningEfforts}
+            value={headerCurrentReasoningEffort}
+            locked={!!headerReasoningLocked}
+            lockedLabel={Locale.Settings.GPT56Capabilities.ConfigSource.Locked}
+            labels={reasoningLabels}
+            descriptions={reasoningDescriptions}
+            onChange={selectHeaderReasoningEffort}
+            onLockedAttempt={() =>
+              selectHeaderReasoningEffort(headerCurrentReasoningEffort)
             }
-          >
-            {(isReasoningSectionExpanded || isImageOptionsExpanded) && (
-              <div className={styles["chat-model-menu-header"]}>
-                <div className={styles["chat-model-menu-current-model"]}>
-                  {headerCurrentModelName}
-                </div>
-                <button
-                  type="button"
-                  className={styles["chat-model-menu-switch-model"]}
-                  aria-label={Locale.Chat.ModelMenu.SwitchModel}
-                  title={Locale.Chat.ModelMenu.SwitchModel}
-                  data-model-menu-control="true"
-                  onClick={returnToModelList}
-                >
-                  <ResetIcon />
-                  <span>{Locale.Chat.ModelMenu.SwitchModel}</span>
-                </button>
-              </div>
-            )}
-            {isReasoningSectionExpanded ? (
-              <ReasoningEffortRail
-                id="chat-mobile-reasoning-options"
-                ariaLabel={Locale.Chat.ModelMenu.ReasoningOptions}
-                title={Locale.Chat.ModelMenu.ReasoningEffort}
-                efforts={visibleHeaderReasoningEfforts}
-                allowedEfforts={headerReasoningEfforts}
-                value={headerCurrentReasoningEffort}
-                locked={!!headerReasoningLocked}
+          />
+        ) : isImageOptionsExpanded ? (
+          <div className={styles["chat-image-option-rails"]}>
+            <DiscreteOptionRail<OpenAIImageSize>
+              id="chat-image-size-options"
+              ariaLabel={Locale.Chat.ModelMenu.ImageSizeOptions}
+              title={Locale.Chat.ModelMenu.ImageSize}
+              options={headerImageSizes}
+              allowedOptions={headerImageSizes}
+              value={headerCurrentSize}
+              locked={!!headerImageSizeLocked}
+              lockedLabel={
+                Locale.Settings.GPT56Capabilities.ConfigSource.Locked
+              }
+              labels={headerImageSizeLabels}
+              descriptions={headerImageSizeDescriptions}
+              emphasizeHighest={false}
+              onChange={selectHeaderImageSize}
+              onLockedAttempt={() => selectHeaderImageSize(headerCurrentSize)}
+            />
+            {headerImageQualitys.length > 0 && (
+              <DiscreteOptionRail<OpenAIImageQuality>
+                id="chat-image-quality-options"
+                ariaLabel={Locale.Chat.ModelMenu.ImageQualityOptions}
+                title={Locale.Chat.ModelMenu.ImageQuality}
+                options={headerImageQualitys}
+                allowedOptions={headerImageQualitys}
+                value={headerCurrentQuality}
+                locked={!!headerImageQualityLocked}
                 lockedLabel={
                   Locale.Settings.GPT56Capabilities.ConfigSource.Locked
                 }
-                labels={reasoningLabels}
-                descriptions={reasoningDescriptions}
-                onChange={selectHeaderReasoningEffort}
+                labels={headerImageQualityLabels}
+                descriptions={headerImageQualityDescriptions}
+                emphasizeHighest={false}
+                onChange={selectHeaderImageQuality}
                 onLockedAttempt={() =>
-                  selectHeaderReasoningEffort(headerCurrentReasoningEffort)
+                  selectHeaderImageQuality(headerCurrentQuality)
                 }
               />
-            ) : isImageOptionsExpanded ? (
-              <div className={styles["chat-image-option-rails"]}>
-                <DiscreteOptionRail<OpenAIImageSize>
-                  id="chat-image-size-options"
-                  ariaLabel={Locale.Chat.ModelMenu.ImageSizeOptions}
-                  title={Locale.Chat.ModelMenu.ImageSize}
-                  options={headerImageSizes}
-                  allowedOptions={headerImageSizes}
-                  value={headerCurrentSize}
-                  locked={!!headerImageSizeLocked}
-                  lockedLabel={
-                    Locale.Settings.GPT56Capabilities.ConfigSource.Locked
-                  }
-                  labels={headerImageSizeLabels}
-                  descriptions={headerImageSizeDescriptions}
-                  emphasizeHighest={false}
-                  onChange={selectHeaderImageSize}
-                  onLockedAttempt={() =>
-                    selectHeaderImageSize(headerCurrentSize)
-                  }
-                />
-                {headerImageQualitys.length > 0 && (
-                  <DiscreteOptionRail<OpenAIImageQuality>
-                    id="chat-image-quality-options"
-                    ariaLabel={Locale.Chat.ModelMenu.ImageQualityOptions}
-                    title={Locale.Chat.ModelMenu.ImageQuality}
-                    options={headerImageQualitys}
-                    allowedOptions={headerImageQualitys}
-                    value={headerCurrentQuality}
-                    locked={!!headerImageQualityLocked}
-                    lockedLabel={
-                      Locale.Settings.GPT56Capabilities.ConfigSource.Locked
-                    }
-                    labels={headerImageQualityLabels}
-                    descriptions={headerImageQualityDescriptions}
-                    emphasizeHighest={false}
-                    onChange={selectHeaderImageQuality}
-                    onLockedAttempt={() =>
-                      selectHeaderImageQuality(headerCurrentQuality)
-                    }
-                  />
-                )}
-              </div>
-            ) : (
-              <>
-                <div
-                  className={styles["chat-mobile-model-list"]}
-                  role="listbox"
-                  aria-label={Locale.Chat.ModelMenu.AvailableModels}
-                >
-                  {headerModelsForMenu.length === 0 ? (
-                    <div className={styles["chat-mobile-model-empty"]}>
-                      {showEmptyState && emptyComposerMode === "image"
-                        ? Locale.Chat.ModelMenu.ImageModelUnavailable
-                        : Locale.Chat.ModelMenu.Empty}
-                    </div>
-                  ) : (
-                    headerModelsForMenu.map((model) => {
-                      const providerName = model?.provider?.providerName;
-                      const selected =
-                        model.name === headerCurrentModel &&
-                        providerName === headerCurrentProviderName;
-                      return (
-                        <button
-                          type="button"
-                          key={`${model.name}@${providerName}`}
-                          className={clsx(styles["chat-mobile-model-option"], {
-                            [styles["chat-mobile-model-option-selected"]]:
-                              selected,
-                          })}
-                          role="option"
-                          aria-selected={selected}
-                          onClick={() => selectComposerModel(model, selected)}
-                        >
-                          <span className={styles["chat-mobile-menu-check"]}>
-                            {selected ? "✓" : ""}
-                          </span>
-                          <span className={styles["chat-mobile-model-copy"]}>
-                            <span className={styles["chat-mobile-model-name"]}>
-                              {model.displayName || model.name}
-                            </span>
-                            {providerName && (
-                              <span
-                                className={styles["chat-mobile-model-provider"]}
-                              >
-                                {providerName}
-                              </span>
-                            )}
-                          </span>
-                        </button>
-                      );
-                    })
-                  )}
+            )}
+          </div>
+        ) : (
+          <>
+            <div
+              className={styles["chat-mobile-model-list"]}
+              role="listbox"
+              aria-label={Locale.Chat.ModelMenu.AvailableModels}
+            >
+              {headerModelsForMenu.length === 0 ? (
+                <div className={styles["chat-mobile-model-empty"]}>
+                  {showEmptyState && emptyComposerMode === "image"
+                    ? Locale.Chat.ModelMenu.ImageModelUnavailable
+                    : Locale.Chat.ModelMenu.Empty}
                 </div>
+              ) : (
+                headerModelsForMenu.map((model) => {
+                  const providerName = model?.provider?.providerName;
+                  const selected =
+                    model.name === headerCurrentModel &&
+                    providerName === headerCurrentProviderName;
+                  return (
+                    <button
+                      type="button"
+                      key={`${model.name}@${providerName}`}
+                      className={clsx(styles["chat-mobile-model-option"], {
+                        [styles["chat-mobile-model-option-selected"]]: selected,
+                      })}
+                      role="option"
+                      aria-selected={selected}
+                      onClick={() => selectComposerModel(model, selected)}
+                    >
+                      <span className={styles["chat-mobile-menu-check"]}>
+                        {selected ? "✓" : ""}
+                      </span>
+                      <span className={styles["chat-mobile-model-copy"]}>
+                        <span className={styles["chat-mobile-model-name"]}>
+                          {model.displayName || model.name}
+                        </span>
+                        {providerName && (
+                          <span
+                            className={styles["chat-mobile-model-provider"]}
+                          >
+                            {providerName}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
 
-                {(showHeaderReasoningControl || showHeaderImageControls) && (
-                  <>
-                    <div className={styles["chat-mobile-model-divider"]} />
-                    {showHeaderReasoningControl && (
-                      <div className={styles["chat-mobile-model-section"]}>
-                        <button
-                          type="button"
-                          className={styles["chat-mobile-reasoning-head"]}
-                          aria-controls="chat-mobile-reasoning-options"
-                          onClick={() =>
-                            setExpandedMobileModelSection("reasoning")
-                          }
-                        >
-                          <span>
-                            <strong>
-                              {Locale.Chat.ModelMenu.ReasoningEffort}
-                            </strong>
-                            <small>
-                              {reasoningLabels[headerCurrentReasoningEffort]}
-                            </small>
-                          </span>
-                          <span
-                            className={styles["chat-mobile-reasoning-caret"]}
-                          >
-                            ›
-                          </span>
-                        </button>
-                      </div>
-                    )}
-                    {showHeaderImageControls && (
-                      <div className={styles["chat-mobile-model-section"]}>
-                        <button
-                          type="button"
-                          className={styles["chat-mobile-reasoning-head"]}
-                          aria-controls="chat-image-size-options"
-                          onClick={() =>
-                            setExpandedMobileModelSection("image-options")
-                          }
-                        >
-                          <span>
-                            <strong>
-                              {Locale.Chat.ModelMenu.ImageOptions}
-                            </strong>
-                            <small>{imageComposerSummary}</small>
-                          </span>
-                          <span
-                            className={styles["chat-mobile-reasoning-caret"]}
-                          >
-                            ›
-                          </span>
-                        </button>
-                      </div>
-                    )}
-                  </>
+            {(showHeaderReasoningControl || showHeaderImageControls) && (
+              <>
+                <div className={styles["chat-mobile-model-divider"]} />
+                {showHeaderReasoningControl && (
+                  <div className={styles["chat-mobile-model-section"]}>
+                    <button
+                      type="button"
+                      className={styles["chat-mobile-reasoning-head"]}
+                      aria-controls="chat-mobile-reasoning-options"
+                      onClick={() => setExpandedMobileModelSection("reasoning")}
+                    >
+                      <span>
+                        <strong>{Locale.Chat.ModelMenu.ReasoningEffort}</strong>
+                        <small>
+                          {reasoningLabels[headerCurrentReasoningEffort]}
+                        </small>
+                      </span>
+                      <span className={styles["chat-mobile-reasoning-caret"]}>
+                        ›
+                      </span>
+                    </button>
+                  </div>
+                )}
+                {showHeaderImageControls && (
+                  <div className={styles["chat-mobile-model-section"]}>
+                    <button
+                      type="button"
+                      className={styles["chat-mobile-reasoning-head"]}
+                      aria-controls="chat-image-size-options"
+                      onClick={() =>
+                        setExpandedMobileModelSection("image-options")
+                      }
+                    >
+                      <span>
+                        <strong>{Locale.Chat.ModelMenu.ImageOptions}</strong>
+                        <small>{imageComposerSummary}</small>
+                      </span>
+                      <span className={styles["chat-mobile-reasoning-caret"]}>
+                        ›
+                      </span>
+                    </button>
+                  </div>
                 )}
               </>
             )}
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
 
       <div className={styles["chat-main"]}>
         <div className={styles["chat-body-container"]}>
@@ -5572,7 +5622,11 @@ function useChatInnerView() {
               )}
             </div>
 
-            <div className={styles["chat-input-row"]}>
+            <div
+              className={clsx(styles["chat-input-row"], {
+                [styles["chat-input-row-focused"]]: isChatInputFocused,
+              })}
+            >
               <button
                 type="button"
                 ref={chatInputMenuButtonRef}
@@ -5596,6 +5650,9 @@ function useChatInnerView() {
               </button>
               <label
                 className={clsx(styles["chat-input-panel-inner"], {
+                  [styles["chat-input-panel-inner-with-model"]]: true,
+                  [styles["chat-input-panel-inner-focused"]]:
+                    isChatInputFocused,
                   [styles["chat-input-panel-inner-collapsed"]]:
                     !shouldExpandChatInput,
                   [styles["chat-input-panel-inner-attach"]]:
@@ -5607,6 +5664,8 @@ function useChatInnerView() {
                     showMobileModelSelector,
                   [styles["chat-input-panel-inner-home-image"]]:
                     showEmptyState && emptyComposerMode === "image",
+                  [styles["chat-input-panel-inner-home-chat"]]:
+                    showEmptyState && emptyComposerMode === "chat",
                 })}
                 htmlFor="chat-input"
               >
@@ -5634,8 +5693,10 @@ function useChatInnerView() {
                   onKeyDown={onInputKeyDown}
                   readOnly={markdownStressQaEnabled}
                   onFocus={() => {
+                    setIsChatInputFocused(true);
                     scrollToBottom();
                   }}
+                  onBlur={() => setIsChatInputFocused(false)}
                   onPointerDown={expandInput}
                   onClick={() => {
                     expandInput();
@@ -5674,7 +5735,10 @@ function useChatInnerView() {
                       showMobileModelSelector ? null : currentModelMenuSection,
                     );
                     setComposerModelMenuStyle(
-                      getComposerModelMenuStyle(event.currentTarget),
+                      getComposerModelMenuStyle(
+                        event.currentTarget,
+                        showEmptyComposer,
+                      ),
                     );
                     setShowMobileModelSelector((open) => !open);
                   }}

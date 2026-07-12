@@ -53,7 +53,7 @@ const HTMLPreview = dynamic(
   },
 );
 
-const MarkdownFeatureContext = createContext({
+export const MarkdownFeatureContext = createContext({
   enableArtifacts: true,
   enableCodeFold: true,
   streaming: false,
@@ -84,13 +84,12 @@ function Summary({
   return <summary {...props} />;
 }
 
-function MarkdownSpan({
+function ScrollableFormulaSpan({
   node: _node,
   className,
   ...spanProps
 }: React.HTMLAttributes<HTMLSpanElement> & { node?: unknown }) {
   const formulaRef = useRef<HTMLSpanElement>(null);
-  const isDisplayFormula = className?.split(/\s+/).includes("katex-display");
   const [formulaIsScrollable, setFormulaIsScrollable] = useState(false);
 
   const syncFormulaOverflow = useCallback(() => {
@@ -104,15 +103,14 @@ function MarkdownSpan({
   }, []);
 
   useLayoutEffect(() => {
-    if (!isDisplayFormula) return;
     const frame = requestAnimationFrame(syncFormulaOverflow);
     return () => cancelAnimationFrame(frame);
-  }, [isDisplayFormula, spanProps.children, syncFormulaOverflow]);
+  }, [spanProps.children, syncFormulaOverflow]);
 
   useEffect(() => {
-    if (!isDisplayFormula) return;
     const formula = formulaRef.current;
     if (!formula || typeof ResizeObserver === "undefined") {
+      syncFormulaOverflow();
       window.addEventListener("resize", syncFormulaOverflow);
       return () => window.removeEventListener("resize", syncFormulaOverflow);
     }
@@ -122,16 +120,10 @@ function MarkdownSpan({
     if (formula.firstElementChild) {
       resizeObserver.observe(formula.firstElementChild);
     }
-    window.addEventListener("resize", syncFormulaOverflow);
     return () => {
       resizeObserver.disconnect();
-      window.removeEventListener("resize", syncFormulaOverflow);
     };
-  }, [isDisplayFormula, syncFormulaOverflow]);
-
-  if (!isDisplayFormula) {
-    return <span {...spanProps} className={className} />;
-  }
+  }, [syncFormulaOverflow]);
 
   return (
     <span
@@ -146,6 +138,19 @@ function MarkdownSpan({
       }
     />
   );
+}
+
+export function MarkdownSpan({
+  node: _node,
+  className,
+  ...spanProps
+}: React.HTMLAttributes<HTMLSpanElement> & { node?: unknown }) {
+  const isDisplayFormula = className?.split(/\s+/).includes("katex-display");
+  if (!isDisplayFormula) {
+    return <span {...spanProps} className={className} />;
+  }
+
+  return <ScrollableFormulaSpan {...spanProps} className={className} />;
 }
 
 function formatCodeLanguage(language: string) {
@@ -885,6 +890,7 @@ export function MarkdownTable({
   node: _node,
   ...tableProps
 }: React.TableHTMLAttributes<HTMLTableElement> & { node?: unknown }) {
+  const { streaming } = useContext(MarkdownFeatureContext);
   const tableScrollRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
   const [tableScrollHint, setTableScrollHint] = useState({
@@ -899,8 +905,11 @@ export function MarkdownTable({
     [tableProps.children],
   );
   const tableContentKey = useMemo(
-    () => getMarkdownTableContentKey(tableProps.children),
-    [tableProps.children],
+    () =>
+      streaming
+        ? "streaming-table"
+        : getMarkdownTableContentKey(tableProps.children),
+    [streaming, tableProps.children],
   );
 
   const syncTableScrollHint = useCallback(() => {
@@ -948,11 +957,13 @@ export function MarkdownTable({
   }, []);
 
   useLayoutEffect(() => {
-    setTableIsWide(false);
-    setTableHintDismissed(false);
+    if (!streaming) {
+      setTableIsWide(false);
+      setTableHintDismissed(false);
+    }
     const scrollHintFrame = requestAnimationFrame(syncTableScrollHint);
     return () => cancelAnimationFrame(scrollHintFrame);
-  }, [syncTableScrollHint, tableContentKey]);
+  }, [streaming, syncTableScrollHint, tableContentKey]);
 
   useEffect(() => {
     const tableShell = tableScrollRef.current;

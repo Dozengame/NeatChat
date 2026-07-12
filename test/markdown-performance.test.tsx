@@ -51,7 +51,7 @@ jest.mock("next/dynamic", () => {
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { encode } from "../app/utils/token";
-import { Markdown } from "../app/components/markdown";
+import { Markdown, MarkdownSpan } from "../app/components/markdown";
 import Locale from "../app/locales";
 import RehypeHighlight from "rehype-highlight";
 
@@ -106,6 +106,41 @@ describe("Markdown performance", () => {
           : plugin === RehypeHighlight,
       ),
     ).toBe(true);
+  });
+
+  test("keeps ordinary highlight spans off the formula measurement path", () => {
+    const originalResizeObserver = global.ResizeObserver;
+    const observe = jest.fn();
+    const disconnect = jest.fn();
+    const resizeObserver = jest.fn(() => ({ observe, disconnect }));
+    Object.defineProperty(global, "ResizeObserver", {
+      configurable: true,
+      value: resizeObserver,
+    });
+
+    const { rerender } = render(
+      <div>
+        {Array.from({ length: 1500 }, (_, index) => (
+          <MarkdownSpan key={index} className="hljs-keyword">
+            token-{index}
+          </MarkdownSpan>
+        ))}
+      </div>,
+    );
+
+    expect(resizeObserver).not.toHaveBeenCalled();
+
+    rerender(
+      <MarkdownSpan className="katex-display">
+        <span>formula</span>
+      </MarkdownSpan>,
+    );
+    expect(resizeObserver).toHaveBeenCalledTimes(1);
+
+    Object.defineProperty(global, "ResizeObserver", {
+      configurable: true,
+      value: originalResizeObserver,
+    });
   });
 
   test("delegates content-change scrolling to the chat container", () => {

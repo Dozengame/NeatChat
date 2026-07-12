@@ -25,7 +25,7 @@
 
 .heading {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) auto;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
   align-items: start;
   gap: 8px;
   min-width: 0;
@@ -37,12 +37,12 @@
 
 .back {
   appearance: none;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin: -5px 0 0 -7px;
+  margin: -6px 0 -6px -7px;
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -56,6 +56,10 @@
   &:hover {
     background: color-mix(in srgb, var(--black-50) 9%, transparent);
     color: var(--reasoning-rail-text);
+  }
+
+  &:active {
+    transform: scale(0.96);
   }
 
   &:focus-visible {
@@ -149,7 +153,17 @@
 
 .sparkles {
   opacity: 0;
-  background-image: radial-gradient(
+  overflow: hidden;
+  transition:
+    width 0.32s cubic-bezier(0.2, 0, 0, 1),
+    opacity 0.2s ease;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: calc(100% + 150px);
+    background-image: radial-gradient(
       circle at 9% 42%,
       rgba(255, 255, 255, 0.9) 0 2px,
       transparent 2.4px
@@ -169,10 +183,9 @@
       rgba(255, 255, 255, 0.42) 0 1.2px,
       transparent 1.8px
     );
-  background-size: 150px 28px;
-  transition:
-    width 0.32s cubic-bezier(0.2, 0, 0, 1),
-    opacity 0.2s ease;
+    background-size: 150px 28px;
+    transform: translate3d(-150px, 0, 0);
+  }
 }
 
 .stops {
@@ -260,7 +273,11 @@
 
   .sparkles {
     opacity: 0.62;
-    animation: reasoning-rail-sparkle 8s linear infinite;
+
+    &::after {
+      animation: reasoning-rail-sparkle 8s linear infinite;
+      will-change: transform;
+    }
   }
 }
 
@@ -329,7 +346,7 @@
   }
 
   .heading {
-    grid-template-columns: 34px minmax(0, 1fr) auto;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
   }
 
   .headingNoBack {
@@ -337,8 +354,8 @@
   }
 
   .back {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
   }
 
   .rail {
@@ -347,10 +364,59 @@
   }
 }
 
+@media (prefers-contrast: more) {
+  .panel {
+    --reasoning-rail-track: var(--black-50);
+    --reasoning-rail-stop: var(--black);
+    --reasoning-rail-muted: var(--black);
+    --reasoning-rail-card: var(--surface-elevated);
+    --reasoning-rail-border: var(--black);
+    box-shadow: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .panel {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+    box-shadow: none;
+  }
+
+  .track {
+    border: 1px solid CanvasText;
+    background: Canvas;
+  }
+
+  .fill {
+    background: Highlight;
+  }
+
+  .sparkles {
+    display: none;
+  }
+
+  .stop {
+    border: 1px solid CanvasText;
+    background: CanvasText;
+  }
+
+  .thumb {
+    border: 2px solid ButtonText;
+    background: ButtonFace;
+    box-shadow: none;
+  }
+
+  .value {
+    color: Highlight;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .value,
   .fill,
   .sparkles,
+  .sparkles::after,
   .thumb {
     animation: none !important;
     transition-duration: 0.01ms !important;
@@ -359,13 +425,17 @@
   .dragging .thumb {
     transform: translate(-50%, -50%);
   }
+
+  .back:active {
+    transform: none;
+  }
 }
 
 @keyframes reasoning-rail-sparkle {
   from {
-    background-position: 0 0;
+    transform: translate3d(-150px, 0, 0);
   }
   to {
-    background-position: 150px 0;
+    transform: translate3d(0, 0, 0);
   }
 }

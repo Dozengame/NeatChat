@@ -48,10 +48,71 @@ import {
 import {
   MarkdownTable,
   MarkdownTableCell,
+  MarkdownFeatureContext,
   MarkdownTableHeader,
 } from "../app/components/markdown";
 
 describe("Markdown table semantics and adaptive width", () => {
+  test("keeps streaming width monotonic without rescanning content on each update", async () => {
+    const renderStreamingTable = (cell: string, streaming: boolean) => (
+      <MarkdownFeatureContext.Provider
+        value={{ enableArtifacts: true, enableCodeFold: true, streaming }}
+      >
+        <MarkdownTable>
+          <tbody>
+            <tr>
+              <MarkdownTableCell>{cell}</MarkdownTableCell>
+            </tr>
+          </tbody>
+        </MarkdownTable>
+      </MarkdownFeatureContext.Provider>
+    );
+    const animationFrameSpy = jest.spyOn(window, "requestAnimationFrame");
+    const view = render(renderStreamingTable("wide streaming cell", true));
+    const shell = document.querySelector(
+      ".markdown-table-scroll-shell",
+    ) as HTMLDivElement;
+    const viewport = shell.querySelector(
+      ".markdown-table-scroll-viewport",
+    ) as HTMLDivElement;
+    const table = shell.querySelector("table") as HTMLTableElement;
+    Object.defineProperties(viewport, {
+      clientWidth: { configurable: true, value: 780 },
+      scrollWidth: { configurable: true, value: 860 },
+    });
+    Object.defineProperty(table, "scrollWidth", {
+      configurable: true,
+      value: 860,
+    });
+    act(() => window.dispatchEvent(new Event("resize")));
+    await waitFor(() =>
+      expect(shell).toHaveAttribute("data-markdown-width", "wide"),
+    );
+
+    const framesBeforeStreamingUpdate = animationFrameSpy.mock.calls.length;
+    view.rerender(
+      renderStreamingTable("wide streaming cell with more tokens", true),
+    );
+    expect(shell).toHaveAttribute("data-markdown-width", "wide");
+    expect(animationFrameSpy).toHaveBeenCalledTimes(
+      framesBeforeStreamingUpdate,
+    );
+
+    Object.defineProperties(viewport, {
+      clientWidth: { configurable: true, value: 780 },
+      scrollWidth: { configurable: true, value: 780 },
+    });
+    Object.defineProperty(table, "scrollWidth", {
+      configurable: true,
+      value: 780,
+    });
+    view.rerender(renderStreamingTable("complete", false));
+    await waitFor(() =>
+      expect(shell).toHaveAttribute("data-markdown-width", "normal"),
+    );
+    animationFrameSpy.mockRestore();
+  });
+
   test("preserves explicit alignment and converts only strict dash-break cells", () => {
     render(
       <MarkdownTable>
