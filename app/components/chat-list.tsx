@@ -58,6 +58,7 @@ type ChatItemProps = {
   narrow?: boolean;
   avatar: string;
   model: string;
+  totalCount?: number;
   onSelect: (index: number) => void;
   onDelete: (index: number) => void | Promise<void>;
   virtualStyle?: CSSProperties;
@@ -91,6 +92,8 @@ function ChatItemBody(props: ChatItemProps & { provided: DraggableProvided }) {
         ...props.provided.draggableProps.style,
       }}
       role="listitem"
+      aria-setsize={props.totalCount}
+      aria-posinset={props.totalCount ? props.index + 1 : undefined}
       aria-current={isCurrentChatItem ? "page" : undefined}
       title={`${props.title}\n${Locale.ChatItem.ChatItemCount(props.count)}`}
     >
@@ -174,6 +177,7 @@ function VirtualChatRow({ data, index, style }: ListChildComponentProps) {
       narrow={rowData.narrow}
       onSelect={rowData.onSelect}
       onDelete={rowData.onDelete}
+      totalCount={rowData.items.length}
       virtualStyle={style}
     />
   );

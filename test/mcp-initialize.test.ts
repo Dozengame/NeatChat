@@ -81,6 +81,16 @@ const activeJimengConfig = JSON.stringify({
   },
 });
 
+const pausedJimengConfig = JSON.stringify({
+  mcpServers: {
+    [JIMENG_MCP_SERVER_ID]: {
+      type: "streamable-http",
+      url: "https://jimeng.example.test/mcp",
+      status: "paused",
+    },
+  },
+});
+
 async function flushAsyncWork() {
   for (let i = 0; i < 25; i += 1) {
     await Promise.resolve();
@@ -187,6 +197,42 @@ describe("MCP initialization", () => {
       { id: "deferred-client" },
       expect.objectContaining({ id: "request-1", method: "tools/call" }),
     );
+  });
+
+  test("temporarily activates the paused built-in Jimeng client for explicit execution", async () => {
+    (fs.readFile as jest.Mock).mockResolvedValue(pausedJimengConfig);
+    const {
+      activateMcpClient,
+      deactivateMcpClient,
+      executeMcpAction,
+    } = await import("../app/mcp/actions");
+
+    await activateMcpClient(JIMENG_MCP_SERVER_ID);
+    await executeMcpAction(JIMENG_MCP_SERVER_ID, {
+      jsonrpc: "2.0",
+      id: "jimeng-request",
+      method: "tools/call",
+      params: { name: "dreamina_text2image", arguments: { poll: 60 } },
+    });
+    await deactivateMcpClient(JIMENG_MCP_SERVER_ID);
+
+    expect(createClient).toHaveBeenCalledTimes(1);
+    expect(createClient).toHaveBeenCalledWith(
+      JIMENG_MCP_SERVER_ID,
+      expect.objectContaining({ status: "active" }),
+    );
+    expect(executeRequest).toHaveBeenCalledWith(
+      { id: "demo-client" },
+      expect.objectContaining({
+        id: "jimeng-request",
+        params: expect.objectContaining({
+          arguments: expect.objectContaining({ poll: 0 }),
+        }),
+      }),
+    );
+    expect(removeClient).toHaveBeenCalledWith({ id: "demo-client" });
+    expect(clientsMap.has(JIMENG_MCP_SERVER_ID)).toBe(false);
+    expect(fs.writeFile).not.toHaveBeenCalled();
   });
 
   test("applies deactivate after an in-flight activation completes", async () => {

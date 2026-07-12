@@ -76,6 +76,18 @@ export function getChatHomeModeModels(
   return models.filter((model) => isModelEligibleForChatHomeMode(model, mode));
 }
 
+export function isChatHomeModeDisabled(options: {
+  mode: ChatHomeMode;
+  activeMode: ChatHomeMode;
+  availableModelCount: number;
+  modelLocked: boolean;
+}) {
+  return (
+    options.mode !== options.activeMode &&
+    (options.modelLocked || options.availableModelCount === 0)
+  );
+}
+
 export function resolvePreferredChatHomeModel(
   mode: ChatHomeMode,
   models: readonly ChatHomeModel[],

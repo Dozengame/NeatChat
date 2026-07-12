@@ -4,6 +4,7 @@ import {
   executeResponsesFunctionCalls,
   extractOpenAIResponsesText,
   getOpenAIResponsesStreamError,
+  hasPendingResponsesToolRecovery,
   runOpenAIResponsesToolLoop,
   type ResponsesRoundResult,
 } from "../app/client/platforms/openai-responses-tools";
@@ -37,6 +38,19 @@ const functionCall = (
 });
 
 describe("OpenAI Responses function tools", () => {
+  test("blocks direct function tools during a pending recovery turn", () => {
+    expect(
+      hasPendingResponsesToolRecovery([
+        { openaiResponsesRecoveryPending: true },
+      ]),
+    ).toBe(true);
+    expect(
+      hasPendingResponsesToolRecovery([
+        { openaiResponsesRecoveryPending: false },
+        {},
+      ]),
+    ).toBe(false);
+  });
   test("localizes access-restricted Responses stream errors", async () => {
     const response = {
       status: 429,
@@ -53,7 +67,7 @@ describe("OpenAI Responses function tools", () => {
     ).resolves.toMatchObject({ message: Locale.Error.AccessRestricted });
   });
 
-  test("wires the dedicated runner only through the GPT-5.6 Responses path", () => {
+  test("routes Responses streaming through the terminal-aware runner", () => {
     const source = fs.readFileSync(
       path.join(process.cwd(), "app/client/platforms/openai.ts"),
       "utf8",
@@ -72,6 +86,8 @@ describe("OpenAI Responses function tools", () => {
     expect(source).toContain("functionTools: responsesFunctionTools");
     expect(source).toContain("runOpenAIResponsesToolLoop");
     expect(source).toContain("sendOpenAIResponsesSseRound");
+    expect(source).toContain("if (useResponses)");
+    expect(source).toContain("hasPendingResponsesToolRecovery");
     expect(source).toContain("options.allowTools === true");
     expect(source).toContain("openaiResponseId: v.openaiResponseId");
     expect(source).toContain("openaiResponsesOutput: v.openaiResponsesOutput");
@@ -197,6 +213,46 @@ describe("OpenAI Responses function tools", () => {
     expect(() =>
       collector.consume({ type: "error", message: "rate limited" }),
     ).toThrow("rate limited");
+  });
+
+  test.each([
+    {
+      label: "error",
+      event: { type: "response.error", error: { message: "bad request" } },
+    },
+    {
+      label: "failed",
+      event: {
+        type: "response.failed",
+        response: { id: "resp_failed", error: { message: "failed" } },
+      },
+    },
+    {
+      label: "incomplete",
+      event: {
+        type: "response.incomplete",
+        response: { id: "resp_incomplete", output: [] },
+      },
+    },
+  ])("settles a no-tool $label terminal as an error", async ({ event }) => {
+    const onFinish = jest.fn();
+    const onError = jest.fn();
+
+    await runOpenAIResponsesToolLoop({
+      initialPayload: { model: "gpt-5.6-terra", input: "Hi" } as any,
+      executors: {},
+      controller: new AbortController(),
+      sendRound: async () => {
+        const collector = createResponsesRoundCollector();
+        collector.consume(event);
+        return collector.complete();
+      },
+      callbacks: { onFinish, onError },
+    });
+
+    expect(onFinish).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError.mock.calls[0][1]).toBeUndefined();
   });
 
   test("rejects conflicting call IDs in one completed response", () => {
@@ -709,6 +765,47 @@ describe("OpenAI Responses function tools", () => {
     expect(JSON.stringify(onError.mock.calls)).not.toContain(
       "mutation-committed-but-transport-lost",
     );
+  });
+
+  test("times out an executor that ignores abort and records an unknown outcome", async () => {
+    jest.useFakeTimers();
+    try {
+      const call = functionCall("call_hung", "mutate");
+      const onError = jest.fn();
+      const running = runOpenAIResponsesToolLoop({
+        initialPayload: { model: "gpt-5.6-terra", input: "mutate" } as any,
+        executors: { mutate: jest.fn(() => new Promise(() => undefined)) },
+        controller: new AbortController(),
+        sendRound: jest.fn(async () => ({
+          id: "resp_hung",
+          output: [call],
+          calls: [call],
+          text: "",
+        })),
+        callbacks: { onError },
+        timeoutMs: 100,
+      });
+
+      await Promise.resolve();
+      await jest.advanceTimersByTimeAsync(100);
+      await running;
+
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "TimeoutError" }),
+        expect.objectContaining({
+          openaiResponsesRecoveryPending: true,
+          openaiResponsesOutput: expect.arrayContaining([
+            expect.objectContaining({
+              call_id: "call_hung",
+              output: expect.stringContaining("tool_outcome_unknown"),
+            }),
+          ]),
+        }),
+      );
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   test("stops the loop after an uncertain HTTP tool response", async () => {

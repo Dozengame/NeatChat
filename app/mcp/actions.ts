@@ -45,6 +45,21 @@ const RETRYABLE_MCP_INITIALIZATION_ERROR_CODES = new Set([
   "EAI_AGAIN",
 ]);
 
+function getExecutableServerConfig(
+  clientId: string,
+  serverConfig: ServerConfig,
+): ServerConfig {
+  if (serverConfig.status !== "paused") {
+    return serverConfig;
+  }
+
+  if (clientId === JIMENG_MCP_SERVER_ID) {
+    return { ...serverConfig, status: "active" };
+  }
+
+  throw new Error(`Server ${clientId} is paused`);
+}
+
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -414,10 +429,10 @@ export async function activateMcpClient(clientId: string) {
     if (!serverConfig) {
       throw new Error(`Server ${clientId} not found`);
     }
-    if (serverConfig.status === "paused") {
-      throw new Error(`Server ${clientId} is paused`);
-    }
-    await initializeSingleClientLocked(clientId, serverConfig);
+    await initializeSingleClientLocked(
+      clientId,
+      getExecutableServerConfig(clientId, serverConfig),
+    );
   });
 
   return getClientsStatus();
@@ -592,9 +607,10 @@ export async function executeMcpAction(
       if (!serverConfig) {
         throw new Error(`Server ${clientId} not found`);
       }
-      if (serverConfig.status === "paused") {
-        throw new Error(`Server ${clientId} is paused`);
-      }
+      const executableServerConfig = getExecutableServerConfig(
+        clientId,
+        serverConfig,
+      );
 
       let client = clientsMap.get(clientId);
       if (!client?.client) {
@@ -603,7 +619,7 @@ export async function executeMcpAction(
           getServerSideConfig().enableMcp &&
           serverConfig
         ) {
-          await initializeSingleClientLocked(clientId, serverConfig);
+          await initializeSingleClientLocked(clientId, executableServerConfig);
           client = clientsMap.get(clientId);
         }
       }

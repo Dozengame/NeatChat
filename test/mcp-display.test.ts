@@ -53,6 +53,31 @@ describe("formatMcpToolResultForChat", () => {
     expect(formatted).not.toContain('"method"');
   });
 
+  test("keeps an optimized prompt that contains a progress heading", () => {
+    const promptWithProgress = [
+      "```json:mcp:jimeng-mcp",
+      JSON.stringify({
+        method: "tools/call",
+        params: {
+          name: "dreamina_text2image",
+          arguments: {
+            prompt: "Opening scene\n\nProgress:\nThe subject crosses the frame",
+          },
+        },
+      }),
+      "```",
+    ].join("\n");
+
+    const progress = formatJimengMcpRequestForChat(promptWithProgress);
+    const merged = mergeJimengProgressWithResult(
+      progress!,
+      "submit_id: submit-1\ngen_status: success",
+    );
+
+    expect(merged).toContain("The subject crosses the frame");
+    expect(merged).toContain("Generation succeeded");
+  });
+
   test("turns streaming jimeng MCP request fragments into stable progress text", () => {
     const formatted = formatPendingMcpRequestForChat(
       '```json:mcp:jimeng-mcp\n{"method"',

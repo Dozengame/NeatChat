@@ -39,6 +39,7 @@ import {
 import {
   adaptPluginToolsForResponses,
   extractOpenAIResponsesText,
+  hasPendingResponsesToolRecovery,
   runOpenAIResponsesToolLoop,
   sendOpenAIResponsesSseRound,
   type PluginFunctionExecutor,
@@ -156,34 +157,6 @@ export interface AzureChatRequestPayload {
   presence_penalty: number;
   frequency_penalty: number;
   top_p: number;
-}
-
-function parseResponsesSSE(text: string) {
-  const json = JSON.parse(text);
-
-  if (
-    json.type === "response.output_text.delta" ||
-    json.type === "response.refusal.delta"
-  ) {
-    return json.delta as string | undefined;
-  }
-
-  if (json.type === "response.reasoning_summary_text.delta") {
-    return json.delta as string | undefined;
-  }
-
-  if (
-    json.type === "response.created" ||
-    json.type === "response.queued" ||
-    json.type === "response.in_progress" ||
-    json.type === "response.reasoning_summary_part.added"
-  ) {
-    return "<think>\n" + Locale.NewChat.Thinking;
-  }
-
-  if (json.type === "response.error" && json.error) {
-    return "```\n" + JSON.stringify(json.error, null, 4) + "\n```";
-  }
 }
 
 export class ChatGPTApi implements LLMApi {
@@ -323,8 +296,6 @@ export class ChatGPTApi implements LLMApi {
       model: options.config.model,
       providerName: options.config.providerName,
     });
-    let openaiResponseId: string | undefined;
-    let openaiResponsesOutput: unknown[] | undefined;
     const useResponses =
       !isImageGeneration &&
       shouldUseOpenAIResponses({
@@ -348,16 +319,18 @@ export class ChatGPTApi implements LLMApi {
     ) {
       const session = useChatStore.getState().currentSession();
       try {
-        const [pluginTools, pluginExecutors] = usePluginStore
-          .getState()
-          .getAsTools(session.mask?.plugin || []);
-        if (Array.isArray(pluginTools) && pluginTools.length > 0) {
-          const adapted = adaptPluginToolsForResponses(
-            pluginTools,
-            pluginExecutors as Record<string, PluginFunctionExecutor>,
-          );
-          responsesFunctionTools = adapted.tools;
-          responsesFunctionExecutors = adapted.executors;
+        if (!hasPendingResponsesToolRecovery(session.messages)) {
+          const [pluginTools, pluginExecutors] = usePluginStore
+            .getState()
+            .getAsTools(session.mask?.plugin || []);
+          if (Array.isArray(pluginTools) && pluginTools.length > 0) {
+            const adapted = adaptPluginToolsForResponses(
+              pluginTools,
+              pluginExecutors as Record<string, PluginFunctionExecutor>,
+            );
+            responsesFunctionTools = adapted.tools;
+            responsesFunctionExecutors = adapted.executors;
+          }
         }
       } catch (error) {
         options.onError?.(
@@ -529,7 +502,7 @@ export class ChatGPTApi implements LLMApi {
         );
       }
       if (shouldStream) {
-        if (useResponses && responsesFunctionTools.length > 0) {
+        if (useResponses) {
           const headers = await getHeadersAsync();
           await runOpenAIResponsesToolLoop({
             initialPayload: requestPayload as ResponsesRequestPayload,
@@ -545,6 +518,7 @@ export class ChatGPTApi implements LLMApi {
                 onUpdate: options.onUpdate,
               }),
             callbacks: options,
+            timeoutMs: OPENAI_RESPONSES_TIMEOUT_MS,
           });
           return;
         }
@@ -609,71 +583,6 @@ export class ChatGPTApi implements LLMApi {
           controller,
           // parseSSE
           (text: string, runTools: ChatMessageTool[]) => {
-            if (useResponses) {
-              const json = JSON.parse(text);
-              if (typeof json.response?.id === "string") {
-                openaiResponseId = json.response.id;
-              }
-              if (Array.isArray(json.response?.output)) {
-                openaiResponsesOutput = json.response.output;
-              }
-              if (
-                json.type === "response.output_text.delta" ||
-                json.type === "response.refusal.delta"
-              ) {
-                const chunk = json.delta as string | undefined;
-                if (!chunk) return;
-                const replace = !hasResponsesOutput;
-                hasResponsesOutput = true;
-                isInThinking = false;
-                return { content: chunk, replace };
-              }
-
-              if (json.type === "response.reasoning_summary_text.delta") {
-                const reasoning = json.delta as string | undefined;
-                if (!reasoning) return;
-                if (!isInThinking) {
-                  isInThinking = true;
-                  return "<think>\n" + reasoning;
-                }
-                return reasoning;
-              }
-
-              if (
-                !hasResponsesOutput &&
-                (json.type === "response.created" ||
-                  json.type === "response.queued" ||
-                  json.type === "response.in_progress" ||
-                  json.type === "response.reasoning_summary_part.added")
-              ) {
-                if (!isInThinking) {
-                  isInThinking = true;
-                  return "<think>\n" + Locale.NewChat.Thinking;
-                }
-                return;
-              }
-
-              if (json.type === "response.completed" && json.response) {
-                const finalText = extractOpenAIResponsesText(json.response);
-                if (finalText) {
-                  return {
-                    content: finalText,
-                    replace: true,
-                  };
-                }
-              }
-
-              if (json.type === "response.error" && json.error) {
-                return {
-                  content:
-                    "```\n" + JSON.stringify(json.error, null, 4) + "\n```",
-                  replace: true,
-                };
-              }
-
-              return parseResponsesSSE(text);
-            }
-
             // console.log("parseSSE", text, runTools);
             const json = JSON.parse(text);
             const choices = json.choices as Array<{
@@ -746,14 +655,7 @@ export class ChatGPTApi implements LLMApi {
             );
           },
           options,
-          useResponses ? OPENAI_RESPONSES_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
-          {
-            getMetadata: () => ({
-              openaiResponseId,
-              openaiResponseStored: storeResponses,
-              openaiResponsesOutput,
-            }),
-          },
+          REQUEST_TIMEOUT_MS,
         );
       } else {
         const multipartPayload =

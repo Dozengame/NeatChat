@@ -127,6 +127,14 @@ export function adaptPluginToolsForResponses(
   return { tools: responsesTools, executors };
 }
 
+export function hasPendingResponsesToolRecovery(
+  messages: readonly { openaiResponsesRecoveryPending?: boolean }[],
+) {
+  return messages.some(
+    (message) => message.openaiResponsesRecoveryPending === true,
+  );
+}
+
 export function extractOpenAIResponsesText(response: any) {
   const outputText =
     typeof response?.output_text === "string"
@@ -305,6 +313,27 @@ function getAbortReason(signal: AbortSignal) {
   return signal.reason instanceof Error ? signal.reason : abortError();
 }
 
+async function executeWithAbort<T>(
+  operation: () => T | Promise<T>,
+  signal: AbortSignal,
+) {
+  if (signal.aborted) throw getAbortReason(signal);
+
+  let removeAbortListener: () => void = () => undefined;
+  const aborted = new Promise<never>((_resolve, reject) => {
+    const rejectAborted = () => reject(getAbortReason(signal));
+    signal.addEventListener("abort", rejectAborted, { once: true });
+    removeAbortListener = () =>
+      signal.removeEventListener("abort", rejectAborted);
+  });
+
+  try {
+    return await Promise.race([Promise.resolve().then(operation), aborted]);
+  } finally {
+    removeAbortListener();
+  }
+}
+
 function callSafely<T extends unknown[]>(
   callback: ((...args: T) => void) | undefined,
   ...args: T
@@ -437,7 +466,10 @@ export async function executeResponsesFunctionCalls(params: {
       }
 
       try {
-        const result = await executor({ ...args }, { signal: params.signal });
+        const result = await executeWithAbort(
+          () => executor({ ...args }, { signal: params.signal }),
+          params.signal,
+        );
         if (params.signal.aborted) throw getAbortReason(params.signal);
         const responseLike = result as {
           status?: number;
@@ -573,6 +605,7 @@ export async function runOpenAIResponsesToolLoop(params: {
   callbacks: ToolCallbacks;
   maxToolRounds?: number;
   maxToolCalls?: number;
+  timeoutMs?: number;
 }) {
   const maxToolRounds = params.maxToolRounds ?? DEFAULT_MAX_TOOL_ROUNDS;
   const maxToolCalls = params.maxToolCalls ?? DEFAULT_MAX_TOOL_CALLS;
@@ -592,6 +625,15 @@ export async function runOpenAIResponsesToolLoop(params: {
   let visibleText = "";
   let activeCalls: ResponsesFunctionCall[] = [];
   let settled = false;
+  const timeoutId =
+    typeof params.timeoutMs === "number" && params.timeoutMs > 0
+      ? setTimeout(() => {
+          if (params.controller.signal.aborted) return;
+          const error = new Error("OpenAI Responses tool loop timed out");
+          error.name = "TimeoutError";
+          params.controller.abort(error);
+        }, params.timeoutMs)
+      : undefined;
 
   const finish = (message: string, metadata?: OpenAIResponsesTraceMetadata) => {
     if (settled) return;
@@ -617,7 +659,7 @@ export async function runOpenAIResponsesToolLoop(params: {
           openaiResponsesRecoveryPending: true,
         }
       : undefined;
-  const closeActiveCalls = (message: string) => {
+  const closeActiveCalls = (message: string, outcomeUnknown = false) => {
     if (activeCalls.length === 0) return;
     const outputCallIds = new Set(
       trace.flatMap((item) =>
@@ -638,7 +680,10 @@ export async function runOpenAIResponsesToolLoop(params: {
         ({
           type: "function_call_output" as const,
           call_id: call.call_id,
-          output: toolErrorOutput("tool_interrupted", message),
+          output: toolErrorOutput(
+            outcomeUnknown ? "tool_outcome_unknown" : "tool_interrupted",
+            message,
+          ),
         } satisfies ResponsesFunctionCallOutput);
       trace.push(output);
       if (!cached) {
@@ -686,6 +731,7 @@ export async function runOpenAIResponsesToolLoop(params: {
           openaiResponseStored: params.initialPayload.store === true,
           openaiResponsesOutput: trace,
         });
+        if (timeoutId !== undefined) clearTimeout(timeoutId);
         return;
       }
 
@@ -748,6 +794,7 @@ export async function runOpenAIResponsesToolLoop(params: {
       wasAborted || outcomeUnknown
         ? TOOL_OUTCOME_UNKNOWN_MESSAGE
         : "Tool call was not completed.",
+      wasAborted || outcomeUnknown,
     );
     const metadata = safeTraceMetadata();
     const abortReason = wasAborted
@@ -755,10 +802,12 @@ export async function runOpenAIResponsesToolLoop(params: {
       : normalizedError;
     if (wasAborted && abortReason.name !== "TimeoutError") {
       finish(visibleText, metadata);
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
       return;
     }
     fail(abortReason, metadata);
   }
+  if (timeoutId !== undefined) clearTimeout(timeoutId);
 }
 
 export async function sendOpenAIResponsesSseRound(params: {

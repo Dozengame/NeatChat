@@ -239,6 +239,8 @@ describe("request timeout lifecycle", () => {
       "utf8",
     );
     expect(sharedStream).toContain("createAbortTimeout");
-    expect(sharedStream).toContain(".finally(cancelRequestTimeout)");
+    expect(sharedStream).toContain("const cancelThisRequestTimeout");
+    expect(sharedStream).toContain(".finally(() => {");
+    expect(sharedStream).toContain("cancelThisRequestTimeout();");
   });
 });

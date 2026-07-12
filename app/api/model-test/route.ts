@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSideConfig } from "@/app/config/server";
-import { ModelProvider, OPENAI_BASE_URL, OpenaiPath } from "@/app/constant";
+import {
+  ACCESS_CODE_PREFIX,
+  ModelProvider,
+  OPENAI_BASE_URL,
+  OpenaiPath,
+} from "@/app/constant";
 import { ModelTestResult } from "@/app/utils/model-test";
 import { buildOpenAIModelTestRequest } from "@/app/utils/openai-model-test";
 import {
@@ -14,6 +19,13 @@ import { sanitizeOpenAIResponsesSafetyIdentifier } from "@/app/api/openai-safety
 import { withAbortTimeout } from "@/app/utils/request-timeout";
 
 const MODEL_TEST_MAX_MODELS = 1;
+
+function getAuthenticatedApiKey(req: NextRequest) {
+  const authorization = req.headers.get("Authorization")?.trim() ?? "";
+  const token = authorization.replace(/^Bearer\s+/i, "").trim();
+  if (!token || token.startsWith(ACCESS_CODE_PREFIX)) return undefined;
+  return token;
+}
 
 // 测试单个模型
 async function testModel(
@@ -123,11 +135,11 @@ export async function POST(req: NextRequest) {
 
     // 获取服务端配置
     const serverConfig = getServerSideConfig();
-    const apiKey = serverConfig.apiKey;
+    const apiKey = getAuthenticatedApiKey(req);
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: "服务端未配置API密钥" },
+        { error: "未配置可用的API密钥" },
         { status: 500 },
       );
     }

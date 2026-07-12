@@ -99,6 +99,12 @@ describe("large chat list rendering", () => {
     expect(
       container.querySelectorAll('[role="listitem"]').length,
     ).toBeLessThanOrEqual(80);
+    const visibleItems = Array.from(
+      container.querySelectorAll('[role="listitem"]'),
+    );
+    expect(visibleItems.length).toBeGreaterThan(0);
+    expect(visibleItems[0]).toHaveAttribute("aria-setsize", "1000");
+    expect(visibleItems[0]).toHaveAttribute("aria-posinset", "1");
     expect(mockDroppable).toHaveBeenCalledWith(
       expect.objectContaining({
         mode: "virtual",

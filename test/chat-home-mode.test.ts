@@ -5,6 +5,7 @@ import {
   getChatHomeModeForModel,
   getChatHomeModeModels,
   getImageComposerSummary,
+  isChatHomeModeDisabled,
   resolvePreferredChatHomeModel,
 } from "../app/components/chat-home-mode";
 
@@ -160,5 +161,32 @@ describe("new chat home modes", () => {
     expect(
       getImageComposerSummary("1024x1024", undefined, "Auto", "1024×1024"),
     ).toBe("1024×1024");
+  });
+
+  test("disables only unavailable or locked mode switches", () => {
+    expect(
+      isChatHomeModeDisabled({
+        mode: "image",
+        activeMode: "chat",
+        availableModelCount: 0,
+        modelLocked: false,
+      }),
+    ).toBe(true);
+    expect(
+      isChatHomeModeDisabled({
+        mode: "image",
+        activeMode: "chat",
+        availableModelCount: 1,
+        modelLocked: true,
+      }),
+    ).toBe(true);
+    expect(
+      isChatHomeModeDisabled({
+        mode: "chat",
+        activeMode: "chat",
+        availableModelCount: 0,
+        modelLocked: true,
+      }),
+    ).toBe(false);
   });
 });

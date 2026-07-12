@@ -223,13 +223,13 @@ function getJimengStatusLabel(status?: string) {
 
 function stripJimengProgressSection(text: string) {
   const progressIndexes = JIMENG_PROGRESS_MARKERS.map((marker) =>
-    text.indexOf(marker),
+    text.lastIndexOf(marker),
   ).filter((index) => index >= 0);
   if (progressIndexes.length === 0) {
     return text.trim();
   }
 
-  return text.slice(0, Math.min(...progressIndexes)).trim();
+  return text.slice(0, Math.max(...progressIndexes)).trim();
 }
 
 function normalizeDiagnosticValue(value: string) {

@@ -2369,6 +2369,13 @@
     outline-offset: 2px;
     box-shadow: var(--focus-ring-shadow);
   }
+
+  &:disabled,
+  &:disabled:hover {
+    color: color-mix(in srgb, var(--black-50) 48%, transparent);
+    background: transparent;
+    cursor: not-allowed;
+  }
 }
 
 .chat-home-mode-tab-selected {

@@ -178,4 +178,3 @@
 - OpenAI GPT-5.6 Sol model: 1,050,000 context window and 128,000 max output: `https://developers.openai.com/api/docs/models/gpt-5.6-sol`.
 - react-markdown security guidance: untrusted HTML with `rehype-raw` should use `rehype-sanitize`: `https://github.com/remarkjs/react-markdown`.
 - rehype-sanitize schema/security guidance: `https://github.com/rehypejs/rehype-sanitize`.
-

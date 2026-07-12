@@ -190,15 +190,15 @@ export function stream(
   let running = false;
   let runTools: any[] = [];
   let responseRes: Response;
+  let animationFrameId: number | undefined;
+  let cancelActiveRequestTimeout: () => void = () => undefined;
 
   // animate response to make it looks smooth
   function animateResponseText() {
     if (finished || controller.signal.aborted) {
       responseText += remainText;
+      remainText = "";
       console.log("[Response Animation] finished");
-      if (responseText?.length === 0) {
-        options.onError?.(new Error("empty response from server"));
-      }
       return;
     }
 
@@ -210,15 +210,34 @@ export function stream(
       options.onUpdate?.(responseText, fetchText);
     }
 
-    requestAnimationFrame(animateResponseText);
+    animationFrameId = requestAnimationFrame(animateResponseText);
   }
 
   // start animaion
   animateResponseText();
 
-  const finish = () => {
+  const stopAnimation = () => {
+    if (animationFrameId !== undefined) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = undefined;
+    }
+    responseText += remainText;
+    remainText = "";
+  };
+
+  const fail = (error: Error) => {
+    if (finished) return;
+    finished = true;
+    stopAnimation();
+    options.onError?.(error);
+  };
+
+  const finish = ({
+    allowTools = true,
+    allowEmpty = false,
+  }: { allowTools?: boolean; allowEmpty?: boolean } = {}) => {
     if (!finished) {
-      if (!running && runTools.length > 0) {
+      if (allowTools && !running && runTools.length > 0) {
         const toolCallMessage = {
           role: "assistant",
           tool_calls: [...runTools],
@@ -273,8 +292,10 @@ export function stream(
               }));
           }),
         ).then((toolCallResult) => {
+          if (finished || controller.signal.aborted) return;
           processToolMessage(requestPayload, toolCallMessage, toolCallResult);
           setTimeout(() => {
+            if (finished || controller.signal.aborted) return;
             // call again
             console.debug("[ChatAPI] restart");
             running = false;
@@ -283,20 +304,38 @@ export function stream(
         });
         return;
       }
-      if (running) {
+      if (allowTools && running) {
         return;
       }
       console.debug("[ChatAPI] end");
+      stopAnimation();
+      const finalMessage = responseText + remainText;
+      if (!allowEmpty && finalMessage.length === 0) {
+        fail(new Error("empty response from server"));
+        return;
+      }
       finished = true;
       options.onFinish(
-        responseText + remainText,
+        finalMessage,
         responseRes,
         responseMetadata?.getMetadata?.(),
       ); // 将res传递给onFinish
     }
   };
 
-  controller.signal.onabort = finish;
+  controller.signal.addEventListener(
+    "abort",
+    () => {
+      cancelActiveRequestTimeout();
+      const reason = controller.signal.reason;
+      if (reason instanceof Error && reason.name === "TimeoutError") {
+        fail(reason);
+        return;
+      }
+      finish({ allowTools: false, allowEmpty: true });
+    },
+    { once: true },
+  );
 
   function chatApi(
     chatPath: string,
@@ -310,12 +349,28 @@ export function stream(
       signal: controller.signal,
       headers,
     };
-    const cancelRequestTimeout = createAbortTimeout({ controller, timeoutMs });
+    let cancelRequestTimeout: () => void = () => undefined;
+    const cancelThisRequestTimeout = () => cancelRequestTimeout();
+    cancelActiveRequestTimeout = cancelThisRequestTimeout;
+    const refreshRequestTimeout = () => {
+      cancelRequestTimeout();
+      cancelRequestTimeout = createAbortTimeout({
+        controller,
+        timeoutMs,
+        onTimeout: () => {
+          if (controller.signal.aborted) return;
+          const error = new Error("Chat stream request timed out");
+          error.name = "TimeoutError";
+          controller.abort(error);
+        },
+      });
+    };
+    refreshRequestTimeout();
     void fetchEventSource(chatPath, {
       fetch: tauriFetch as any,
       ...chatPayload,
       async onopen(res) {
-        cancelRequestTimeout();
+        refreshRequestTimeout();
         const contentType = res.headers.get("content-type");
         console.log("[Request] response content type: ", contentType);
         responseRes = res;
@@ -356,6 +411,7 @@ export function stream(
         }
       },
       onmessage(msg) {
+        refreshRequestTimeout();
         if (msg.data === "[DONE]" || finished) {
           return finish();
         }
@@ -387,11 +443,15 @@ export function stream(
     })
       .catch((error) => {
         if (!finished) {
-          finished = true;
-          options?.onError?.(error);
+          fail(error instanceof Error ? error : new Error(String(error)));
         }
       })
-      .finally(cancelRequestTimeout);
+      .finally(() => {
+        cancelThisRequestTimeout();
+        if (cancelActiveRequestTimeout === cancelThisRequestTimeout) {
+          cancelActiveRequestTimeout = () => undefined;
+        }
+      });
   }
   console.debug("[ChatAPI] start");
   chatApi(chatPath, headers, requestPayload, tools); // call fetchEventSource

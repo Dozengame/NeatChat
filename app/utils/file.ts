@@ -540,6 +540,31 @@ async function readPowerPointFile(file: File): Promise<string> {
  * @param file 要读取的文件
  * @returns 文件内容的Promise
  */
+export async function mapWithConcurrencyLimit<T, R>(
+  values: readonly T[],
+  concurrency: number,
+  mapper: (value: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const workerCount = Math.max(
+    1,
+    Math.min(Math.floor(concurrency) || 1, values.length),
+  );
+  const results = new Array<R>(values.length);
+  let nextIndex = 0;
+
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < values.length) {
+        const index = nextIndex;
+        nextIndex += 1;
+        results[index] = await mapper(values[index], index);
+      }
+    }),
+  );
+
+  return results;
+}
+
 async function readPdfFile(file: File): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -584,8 +609,10 @@ async function readPdfFile(file: File): Promise<string> {
             { length: Math.min(maxPagesToProcess, pdf.numPages) },
             (_, index) => index + 1,
           );
-          const pageResults = await Promise.all(
-            pageNumbers.map(async (i) => {
+          const pageResults = await mapWithConcurrencyLimit(
+            pageNumbers,
+            4,
+            async (i) => {
               let pageText = "";
               let isEmpty = false;
 
@@ -610,7 +637,7 @@ async function readPdfFile(file: File): Promise<string> {
                 text: isEmpty ? copy.BlankPage : pageText,
                 isEmpty,
               };
-            }),
+            },
           );
 
           // 按页码顺序拼接，保持原输出顺序

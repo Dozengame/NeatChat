@@ -291,6 +291,10 @@
   box-shadow: 0 16px 38px color-mix(in srgb, var(--surface) 44%, transparent);
 }
 
+:global(.dark) .highest .value {
+  color: #a77df7;
+}
+
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .panel {
     --reasoning-rail-track: color-mix(in srgb, var(--black) 13%, transparent);
@@ -307,6 +311,11 @@
       var(--surface)
     );
     --reasoning-rail-border: color-mix(in srgb, var(--black) 11%, transparent);
+  }
+
+
+  :global(body:not(.light)) .highest .value {
+    color: #a77df7;
   }
 }
 

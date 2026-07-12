@@ -202,6 +202,7 @@ import {
   getChatHomeModeForModel,
   getChatHomeModeModels,
   getImageComposerSummary,
+  isChatHomeModeDisabled,
   resolvePreferredChatHomeModel,
 } from "./chat-home-mode";
 
@@ -3093,6 +3094,19 @@ function useChatInnerView() {
   const selectEmptyComposerMode = (mode: ChatHomeMode) => {
     if (mode === emptyComposerMode) return;
 
+    const availableModelCount =
+      mode === "chat" ? headerChatModels.length : headerImageModels.length;
+    if (
+      isChatHomeModeDisabled({
+        mode,
+        activeMode: emptyComposerMode,
+        availableModelCount,
+        modelLocked: headerModelLocked,
+      })
+    ) {
+      return;
+    }
+
     const currentModelRef = `${headerCurrentModel}@${headerCurrentProviderName}`;
     if (emptyComposerMode === "chat") {
       lastHomeChatModelRef.current = currentModelRef;
@@ -3195,6 +3209,19 @@ function useChatInnerView() {
         ? "image"
         : undefined;
     if (!nextMode) return;
+
+    const availableModelCount =
+      nextMode === "chat" ? headerChatModels.length : headerImageModels.length;
+    if (
+      isChatHomeModeDisabled({
+        mode: nextMode,
+        activeMode: emptyComposerMode,
+        availableModelCount,
+        modelLocked: headerModelLocked,
+      })
+    ) {
+      return;
+    }
 
     event.preventDefault();
     selectEmptyComposerMode(nextMode);
@@ -5022,6 +5049,16 @@ function useChatInnerView() {
                 />
                 {(["chat", "image"] as const).map((mode) => {
                   const selected = emptyComposerMode === mode;
+                  const availableModelCount =
+                    mode === "chat"
+                      ? headerChatModels.length
+                      : headerImageModels.length;
+                  const disabled = isChatHomeModeDisabled({
+                    mode,
+                    activeMode: emptyComposerMode,
+                    availableModelCount,
+                    modelLocked: headerModelLocked,
+                  });
                   return (
                     <button
                       id={`chat-home-mode-${mode}`}
@@ -5033,6 +5070,7 @@ function useChatInnerView() {
                       role="tab"
                       aria-selected={selected}
                       aria-controls="chat-home-panel"
+                      disabled={disabled}
                       tabIndex={selected ? 0 : -1}
                       onClick={() => selectEmptyComposerMode(mode)}
                       onKeyDown={handleEmptyComposerModeKeyDown}
