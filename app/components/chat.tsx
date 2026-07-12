@@ -2435,7 +2435,11 @@ function useChatInnerView() {
     const belowSpace = window.innerHeight - belowTop - viewportPadding;
     const aboveSpace = composerRect.top - gap - viewportPadding;
     const preferredHeight = isCompactScreen ? 230 : 250;
-    const openBelow = aboveSpace < preferredHeight && belowSpace > aboveSpace;
+    const preferBelow =
+      !isCompactScreen && showEmptyComposer && belowSpace >= preferredHeight;
+    const openBelow =
+      preferBelow ||
+      (aboveSpace < preferredHeight && belowSpace > aboveSpace);
     const maximumHeight = isCompactScreen
       ? Math.min(420, window.innerHeight * 0.68)
       : 420;
@@ -4708,53 +4712,49 @@ function useChatInnerView() {
         </div>
       ) : null}
 
-      {/*
-        We always render the model menu in the DOM to support smooth CSS exit transitions.
-        We toggle its visibility via class name instead of: showMobileModelSelector && (
-      */}
-      <button
-        type="button"
-        className={clsx(
-          isCompactScreen
-            ? styles["chat-mobile-model-menu-backdrop"]
-            : styles["chat-desktop-model-menu-backdrop"],
-          {
-            [styles["chat-model-menu-visible"]]: showMobileModelSelector,
-          },
-        )}
-        aria-label={Locale.Chat.ModelMenu.Close}
-        onClick={() => {
-          closeMobileModelSelector();
-          restoreModelSelectorFocus();
-        }}
-      />
-      <div
-        id="chat-model-menu"
-        ref={modelMenuRef}
-        className={clsx(
-          isCompactScreen
-            ? styles["chat-mobile-model-menu"]
-            : styles["chat-desktop-model-menu"],
-          {
-            [styles["chat-model-menu-visible"]]: showMobileModelSelector,
-            [styles["chat-desktop-model-menu-composer"]]: true,
-            [styles["chat-model-menu-reasoning"]]:
-              isReasoningSectionExpanded || isImageOptionsExpanded,
-          },
-        )}
-        style={composerModelMenuStyle}
-        onKeyDown={handleModelMenuKeyDown}
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-label={
-          isImageOptionsExpanded
-            ? Locale.Chat.ModelMenu.ImageOptions
-            : isReasoningSectionExpanded
-            ? Locale.Chat.ModelMenu.ReasoningOptions
-            : Locale.Chat.ModelMenu.SelectModelAndParams
-        }
-      >
+      {showMobileModelSelector && (
+        <>
+          <button
+            type="button"
+            className={clsx(
+              isCompactScreen
+                ? styles["chat-mobile-model-menu-backdrop"]
+                : styles["chat-desktop-model-menu-backdrop"],
+              styles["chat-model-menu-visible"],
+            )}
+            aria-label={Locale.Chat.ModelMenu.Close}
+            onClick={() => {
+              closeMobileModelSelector();
+              restoreModelSelectorFocus();
+            }}
+          />
+          <div
+            id="chat-model-menu"
+            ref={modelMenuRef}
+            className={clsx(
+              isCompactScreen
+                ? styles["chat-mobile-model-menu"]
+                : styles["chat-desktop-model-menu"],
+              styles["chat-model-menu-visible"],
+              styles["chat-desktop-model-menu-composer"],
+              {
+                [styles["chat-model-menu-reasoning"]]:
+                  isReasoningSectionExpanded || isImageOptionsExpanded,
+              },
+            )}
+            style={composerModelMenuStyle}
+            onKeyDown={handleModelMenuKeyDown}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-label={
+              isImageOptionsExpanded
+                ? Locale.Chat.ModelMenu.ImageOptions
+                : isReasoningSectionExpanded
+                ? Locale.Chat.ModelMenu.ReasoningOptions
+                : Locale.Chat.ModelMenu.SelectModelAndParams
+            }
+          >
         {isReasoningSectionExpanded ? (
           <ReasoningEffortRail
             id="chat-mobile-reasoning-options"
@@ -4921,7 +4921,9 @@ function useChatInnerView() {
             )}
           </>
         )}
-      </div>
+          </div>
+        </>
+      )}
 
       <div className={styles["chat-main"]}>
         <div className={styles["chat-body-container"]}>
@@ -4940,7 +4942,12 @@ function useChatInnerView() {
                 className={styles["chat-home-mode-tabs"]}
                 role="tablist"
                 aria-label={Locale.Chat.HomeMode.Label}
+                data-active-mode={emptyComposerMode}
               >
+                <span
+                  className={styles["chat-home-mode-indicator"]}
+                  aria-hidden="true"
+                />
                 {(["chat", "image"] as const).map((mode) => {
                   const selected = emptyComposerMode === mode;
                   return (
@@ -5521,11 +5528,13 @@ function useChatInnerView() {
                   onFocus={() => {
                     scrollToBottom();
                   }}
+                  onPointerDown={expandInput}
                   onClick={() => {
+                    expandInput();
                     scrollToBottom();
                   }}
                   onPaste={markdownStressQaEnabled ? undefined : handlePaste}
-                  rows={isCompactScreen ? 1 : inputRows}
+                  rows={shouldExpandChatInput ? inputRows : 1}
                   autoFocus={autoFocus}
                   style={{
                     fontSize: config.fontSize,
@@ -5582,7 +5591,7 @@ function useChatInnerView() {
                   aria-haspopup="dialog"
                   aria-expanded={showMobileModelSelector}
                 >
-                  {!showEmptyState && (
+                  {showMobileModelSelector && (
                     <>
                       <span className={styles["chat-input-model-name"]}>
                         {headerCurrentModelName}

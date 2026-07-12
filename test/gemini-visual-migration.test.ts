@@ -1596,6 +1596,12 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /const showEmptyHero\s*=\s*showEmptyState\s*&&\s*!hasActiveInputContent\s*&&\s*!showChatActionMenu;/,
     );
+    expect(chat).toContain(
+      "const showEmptyComposer = showEmptyState && !hasActiveInputContent;",
+    );
+    expect(chatStyles).toMatch(
+      /@media only screen and \(min-width: 601px\)[\s\S]*\.chat-input-panel\.chat-input-panel-empty:not\(\.chat-input-panel-collapsed\)\s*\{[\s\S]*width:\s*min\(880px, calc\(100% - 48px\)\);[\s\S]*\.chat-input-panel-inner:not\(\.chat-input-panel-inner-collapsed\)\s*\{[\s\S]*border-radius:\s*30px;/,
+    );
     expect(chat).not.toContain("const showDesktopModelControls = !showEmptyState;");
     expect(chat).toContain(
       "const showDesktopChatHeader = !isCompactScreen && !showEmptyState;",
@@ -1745,9 +1751,8 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /<IconButton[\s\S]*icon=\{<ExportIcon \/>\}[\s\S]*title=\{Locale\.Chat\.Actions\.Export\}[\s\S]*aria=\{Locale\.Chat\.Actions\.Export\}/,
     );
-    expect(chat).toContain(
-      '[styles["chat-model-menu-visible"]]: showMobileModelSelector',
-    );
+    expect(chat).toContain("{showMobileModelSelector && (");
+    expect(chat).toContain('styles["chat-model-menu-visible"]');
     expect(chat).toContain('styles["chat-mobile-model-menu"]');
     expect(chat).not.toContain('styles["chat-mobile-model-title-text"]');
     expect(chat).not.toContain('styles["chat-mobile-model-title-meta"]');
@@ -1847,11 +1852,17 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("aria-expanded={showMobileModelSelector}");
     expect(chat).toContain('aria-controls="chat-model-menu"');
     expect(chat).toContain('styles["chat-input-model-button-open"]');
+    expect(chat).toMatch(
+      /\{showMobileModelSelector && \(\s*<>\s*<span className=\{styles\["chat-input-model-name"\]\}>/,
+    );
     expect(chat).toContain("Locale.Chat.ModelMenu.SelectModel(");
     expect(chat).toMatch(
       /title=\{[\s\S]*showEmptyState && emptyComposerMode === "chat"[\s\S]*Locale\.Chat\.ModelMenu\.ReasoningEffort[\s\S]*showEmptyState && emptyComposerMode === "image"[\s\S]*Locale\.Chat\.ModelMenu\.ImageOptions[\s\S]*headerCurrentModelName[\s\S]*currentModelDetail/,
     );
     expect(chat).toContain('role="tablist"');
+    expect(chat).toContain("data-active-mode={emptyComposerMode}");
+    expect(chat).toContain('styles["chat-home-mode-indicator"]');
+    expect(chat).toContain('aria-hidden="true"');
     expect(chat).toContain('aria-controls="chat-home-panel"');
     expect(chat).toContain('role={showEmptyState ? "tabpanel" : undefined}');
     expect(chat).toContain("Locale.Chat.HomeMode.Label");
@@ -2232,7 +2243,11 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("setShowChatActionMenu(false)");
     expect(chat).toContain('id="chat-input"');
     expect(chat).toContain("Locale.Chat.MobileInput");
-    expect(chat).toContain("rows={isCompactScreen ? 1 : inputRows}");
+    expect(chat).toContain("rows={shouldExpandChatInput ? inputRows : 1}");
+    expect(chat).toContain("onPointerDown={expandInput}");
+    expect(chat).toMatch(
+      /onClick=\{\(\) => \{\s*expandInput\(\);\s*scrollToBottom\(\);\s*\}\}/,
+    );
     expect(chat).toMatch(
       /className=\{styles\["chat-input"\]\}[\s\S]*aria-label=\{\s*isCompactScreen\s*\?\s*Locale\.Chat\.MobileInput\s*:\s*Locale\.Chat\.Input\(submitKey\)\s*\}/,
     );
@@ -3838,14 +3853,23 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain(
       "const aboveSpace = composerRect.top - gap - viewportPadding;",
     );
-    expect(chat).toContain(
-      "const openBelow = aboveSpace < preferredHeight && belowSpace > aboveSpace;",
+    expect(chat).toMatch(
+      /const preferBelow =\s*!isCompactScreen && showEmptyComposer && belowSpace >= preferredHeight;\s*const openBelow =\s*preferBelow \|\|\s*\(aboveSpace < preferredHeight && belowSpace > aboveSpace\);/,
     );
     expect(chat).toContain('button.closest("label")?.getBoundingClientRect()');
     expect(chat).toContain("composerRect.left + composerRect.width / 2");
     expect(chat).toContain('"--chat-model-menu-composer-max-height"');
     expect(chatStyles).toContain(
       "max-height: var(--chat-model-menu-composer-max-height, 420px);",
+    );
+    expect(chatStyles).toMatch(
+      /\.chat-home-mode-indicator\s*\{[\s\S]*transition:\s*transform 0\.28s cubic-bezier\(0\.22, 1, 0\.36, 1\);/,
+    );
+    expect(chatStyles).toMatch(
+      /\.chat-home-mode-tabs\[data-active-mode="image"\][\s\S]*\.chat-home-mode-indicator\s*\{[\s\S]*transform:\s*translateX\(100%\);/,
+    );
+    expect(chatStyles).toMatch(
+      /@media only screen and \(max-width: 358px\)[\s\S]*\.chat-input-model-button-home-chat\.chat-input-model-button-open,[\s\S]*\.chat-input-model-button-home-image\.chat-input-model-button-open\s*\{[\s\S]*width:\s*112px;[\s\S]*min-width:\s*112px;[\s\S]*max-width:\s*112px;/,
     );
     expect(mobileInputRowFocusBlock).toMatch(
       /border-color:\s*var\(--chat-input-focus-border-color\);/,
