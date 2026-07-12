@@ -2,7 +2,7 @@
 
 ## Scope and acceptance
 
-- Final review baseline: `main=0280cb3d`, `dev=05ff72b0`; merge-base is `main`. The range contains 28 non-merge commits and changes 161 files before this optimization slice.
+- Final review baseline: `main=0280cb3d`, `dev=05ff72b0`; merge-base is `main`. The range contains 29 non-merge commits and changes 161 files before this optimization slice.
 - Primary experience baselines are desktop `1440x1024`, constrained desktop `1056x834`, mobile `390x844`, and narrow mobile `320x740`.
 - Provider/model request semantics, auth/access, MCP/Plugin, persistence schema, deployment, and existing animation intent remain unchanged.
 - Delivery boundary is commit and push to `origin/dev` only. No merge, PR, deploy, paid request, credential change, or `main` write is included.
