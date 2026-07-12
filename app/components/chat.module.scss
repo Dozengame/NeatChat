@@ -5842,13 +5842,6 @@
   justify-content: center;
 }
 
-.chat-input-model-button-home-image .chat-input-model-detail {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .chat-input-panel-inner:has(.chat-input-model-button) {
   padding-right: 300px;
 }

@@ -1993,8 +1993,8 @@ describe("Gemini visual migration shell", () => {
         selectComposerModelBlock.indexOf("const keepMenuOpen"),
       ),
     ).not.toContain("selectHeaderModel(");
-    expect(chatStyles).toMatch(
-      /\.chat-input-model-button-home-image \.chat-input-model-detail\s*\{[\s\S]*flex:\s*1 1 auto;[\s\S]*overflow:\s*hidden;[\s\S]*text-overflow:\s*ellipsis;/,
+    expect(chatStyles).not.toMatch(
+      /\.chat-input-model-button-home-image \.chat-input-model-detail\s*\{/,
     );
     expect(chat).toContain('role="option"');
     expect(chat).toContain("aria-selected={selected}");
