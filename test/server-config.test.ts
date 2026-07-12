@@ -600,6 +600,14 @@ describe("OpenAI Responses config", () => {
 
     process.env.DEFAULT_MODEL = "gpt-5.6-luna";
     const luna = buildPublicAppConfig(new Date("2026-07-12T00:00:00.000Z"));
+    expect(luna.defaults).toMatchObject({
+      model: "gpt-5.6-luna",
+      providerName: "OpenAI",
+    });
+    expect(luna.forced).toMatchObject({
+      model: "gpt-5.6-luna",
+      providerName: "OpenAI",
+    });
     expect(luna.defaults.reasoningEffort).toBe("xhigh");
     expect(luna.legacy.openaiReasoningEffort).toBe("xhigh");
   });

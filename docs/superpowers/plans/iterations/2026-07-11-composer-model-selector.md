@@ -34,6 +34,12 @@
 - Provider/model writes, constraints, reasoning/image defaults, locked-state feedback, session metadata, persistence, composer anchoring, backdrop/Escape close, and trigger focus restoration remain on the existing shared path.
 - Fresh verification passed `105/105`, `120/120`, and `42/42` targeted test groups, ESLint, TypeScript, `git diff --check`, production build, and real Chrome QA at desktop, `390x844`, and `320x740`. Empty and existing sessions both displayed the labeled top-right switch action; the empty Chat list contained Luna/Terra but not `gpt-image-2`; narrow dialogs stayed inside the viewport with zero page overflow; keyboard switching and Escape focus restoration passed. The reference and implementation were compared in one visual input with no remaining P0/P1/P2 issue.
 
+## 2026-07-12 Default And List Regression Follow-up
+
+- Empty-session automatic selection now prefers the effective server `DEFAULT_MODEL` and provider when that pair is eligible. Automatic normalization writes `server_default` or `fallback` metadata and preserves `syncGlobalConfig=true`; only a direct user selection writes `conversation_override` and opts out of global sync.
+- The open composer trigger and parameter-page current-model label are centered within their available lane. The parameter page retains the localized top-right `切换模型 / Switch model` action, while the model-list page removes the redundant current-model header entirely.
+- Local `/api/config` returned `gpt-5.6-luna@OpenAI`; real Chrome cold navigation showed Luna in the new-chat trigger, a centered Luna parameter header, and a Luna/Terra list without the duplicate header. Five targeted suites passed `181/181`; ESLint, TypeScript, `git diff --check`, and the production build passed. The Vercel preview was not used as local-default evidence because its live remote config currently selects Terra. No remote configuration, push, PR, deploy, credential, or paid provider request changed.
+
 ## Closed Design History
 
 - Prototype 1: six-stop cyan-to-violet Intelligence Rail; recommended for the clearest combined model/effort control.

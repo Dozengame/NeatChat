@@ -171,7 +171,10 @@ import {
   deactivateMcpClient,
   isMcpEnabled,
 } from "../mcp/actions";
-import { createConfigFieldMeta } from "../utils/public-app-config";
+import {
+  type ConfigSource,
+  createConfigFieldMeta,
+} from "../utils/public-app-config";
 import {
   createLatestBooleanIntent,
   type BooleanIntent,
@@ -2792,6 +2795,8 @@ function useChatInnerView() {
         closeMenu?: boolean;
         restoreFocus?: boolean;
         announce?: boolean;
+        source?: ConfigSource;
+        syncGlobalConfig?: boolean;
       } = {},
     ) => {
       if (headerModelLocked) {
@@ -2799,6 +2804,7 @@ function useChatInnerView() {
         return false;
       }
       const [model, providerName] = getModelProvider(selected);
+      const source = options.source ?? "conversation_override";
       chatStore.updateTargetSession(session, (session) => {
         session.mask.modelConfig.model = model as ModelType;
         session.mask.modelConfig.providerName = providerName as ServiceProvider;
@@ -2812,15 +2818,15 @@ function useChatInnerView() {
         session.mask.modelConfigMeta = {
           ...(session.mask.modelConfigMeta ?? {}),
           model: createConfigFieldMeta({
-            source: "conversation_override",
+            source,
             publicConfig: config.serverConfigSnapshot,
           }),
           providerName: createConfigFieldMeta({
-            source: "conversation_override",
+            source,
             publicConfig: config.serverConfigSnapshot,
           }),
         };
-        session.mask.syncGlobalConfig = false;
+        session.mask.syncGlobalConfig = options.syncGlobalConfig ?? false;
         if (model !== "gemini-2.0-flash-exp") {
           session.mask.plugin = [];
         }
@@ -3063,6 +3069,20 @@ function useChatInnerView() {
   const showEmptyHero =
     showEmptyState && !hasActiveInputContent && !showChatActionMenu;
   const showDesktopChatHeader = !isCompactScreen && !showEmptyState;
+  const configuredChatHomeDefault = useMemo(
+    () =>
+      config.serverConfigSnapshot
+        ? {
+            name:
+              config.serverConfigSnapshot.forced.model ??
+              config.serverConfigSnapshot.defaults.model,
+            providerName:
+              config.serverConfigSnapshot.forced.providerName ??
+              config.serverConfigSnapshot.defaults.providerName,
+          }
+        : undefined,
+    [config.serverConfigSnapshot],
+  );
   const headerModelsForMenu = showEmptyState
     ? emptyComposerMode === "image"
       ? headerImageModels
@@ -3090,7 +3110,11 @@ function useChatInnerView() {
     );
     const targetModel =
       rememberedModel ??
-      resolvePreferredChatHomeModel(mode, headerAvailableModels);
+      resolvePreferredChatHomeModel(
+        mode,
+        headerAvailableModels,
+        configuredChatHomeDefault,
+      );
 
     if (!targetModel) {
       showToast(
@@ -3134,12 +3158,19 @@ function useChatInnerView() {
     const defaultChatModel = resolvePreferredChatHomeModel(
       "chat",
       headerAvailableModels,
+      configuredChatHomeDefault,
     );
     if (!defaultChatModel) return;
 
     selectHeaderModel(
       `${defaultChatModel.name}@${defaultChatModel.provider?.providerName}`,
-      { closeMenu: false, restoreFocus: false, announce: false },
+      {
+        closeMenu: false,
+        restoreFocus: false,
+        announce: false,
+        source: config.serverConfigSnapshot ? "server_default" : "fallback",
+        syncGlobalConfig: true,
+      },
     );
   }, [
     headerAvailableModels,
@@ -3147,6 +3178,8 @@ function useChatInnerView() {
     headerCurrentModel,
     headerCurrentProviderName,
     headerModelLocked,
+    configuredChatHomeDefault,
+    config.serverConfigSnapshot,
     selectHeaderModel,
     showEmptyState,
   ]);
@@ -4769,11 +4802,11 @@ function useChatInnerView() {
                 : Locale.Chat.ModelMenu.SelectModelAndParams
             }
           >
-            <div className={styles["chat-model-menu-header"]}>
-              <div className={styles["chat-model-menu-current-model"]}>
-                {headerCurrentModelName}
-              </div>
-              {(isReasoningSectionExpanded || isImageOptionsExpanded) && (
+            {(isReasoningSectionExpanded || isImageOptionsExpanded) && (
+              <div className={styles["chat-model-menu-header"]}>
+                <div className={styles["chat-model-menu-current-model"]}>
+                  {headerCurrentModelName}
+                </div>
                 <button
                   type="button"
                   className={styles["chat-model-menu-switch-model"]}
@@ -4785,8 +4818,8 @@ function useChatInnerView() {
                   <ResetIcon />
                   <span>{Locale.Chat.ModelMenu.SwitchModel}</span>
                 </button>
-              )}
-            </div>
+              </div>
+            )}
             {isReasoningSectionExpanded ? (
               <ReasoningEffortRail
                 id="chat-mobile-reasoning-options"

@@ -66,6 +66,25 @@ describe("new chat home modes", () => {
       "gpt-image-2",
     );
     expect(
+      resolvePreferredChatHomeModel("chat", models, {
+        name: "gpt-5.6-luna",
+        providerName: ServiceProvider.OpenAI,
+      })?.name,
+    ).toBe("gpt-5.6-luna");
+    expect(
+      resolvePreferredChatHomeModel(
+        "chat",
+        [
+          model("gpt-5.6-terra", ServiceProvider.OpenAI),
+          model("gpt-5.6-luna", ServiceProvider.OpenAI),
+        ],
+        {
+          name: "gpt-5.6-luna",
+          providerName: ServiceProvider.Azure,
+        },
+      )?.name,
+    ).toBe("gpt-5.6-terra");
+    expect(
       resolvePreferredChatHomeModel("image", [
         model("gpt-image-3-preview", ServiceProvider.OpenAI),
       ])?.name,

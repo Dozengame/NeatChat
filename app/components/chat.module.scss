@@ -5717,7 +5717,7 @@
 
 .chat-model-menu-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
   margin: 0 0 8px;
   padding: 9px 12px;
@@ -5735,6 +5735,7 @@
   font-size: 12px;
   font-weight: 600;
   line-height: 1.35;
+  text-align: center;
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -5809,7 +5810,11 @@
   min-width: min(248px, calc(100% - 280px));
   max-width: min(300px, calc(100% - 280px));
   padding-inline: 14px;
-  justify-content: flex-start;
+  justify-content: center;
+
+  .chat-input-model-name {
+    flex: 0 1 auto;
+  }
 }
 
 .chat-input-model-button-home-chat,
@@ -5827,7 +5832,7 @@
   min-width: min(248px, calc(100% - 280px));
   max-width: min(300px, calc(100% - 280px));
   padding-inline: 14px;
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 .chat-input-model-button-home-image .chat-input-model-detail {

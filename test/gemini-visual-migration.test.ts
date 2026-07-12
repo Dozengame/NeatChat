@@ -1856,7 +1856,7 @@ describe("Gemini visual migration shell", () => {
       /\{showMobileModelSelector && \(\s*<>\s*<span className=\{styles\["chat-input-model-name"\]\}>/,
     );
     expect(chat).toMatch(
-      /className=\{styles\["chat-model-menu-header"\]\}[\s\S]*className=\{styles\["chat-model-menu-current-model"\]\}[\s\S]*\{headerCurrentModelName\}[\s\S]*\(isReasoningSectionExpanded \|\| isImageOptionsExpanded\)[\s\S]*className=\{styles\["chat-model-menu-switch-model"\]\}[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.SwitchModel\}[\s\S]*data-model-menu-control="true"[\s\S]*onClick=\{returnToModelList\}[\s\S]*<ResetIcon \/>[\s\S]*Locale\.Chat\.ModelMenu\.SwitchModel/,
+      /\{\(isReasoningSectionExpanded \|\| isImageOptionsExpanded\) && \(\s*<div className=\{styles\["chat-model-menu-header"\]\}>[\s\S]*className=\{styles\["chat-model-menu-current-model"\]\}[\s\S]*\{headerCurrentModelName\}[\s\S]*className=\{styles\["chat-model-menu-switch-model"\]\}[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.SwitchModel\}[\s\S]*data-model-menu-control="true"[\s\S]*onClick=\{returnToModelList\}[\s\S]*<ResetIcon \/>[\s\S]*Locale\.Chat\.ModelMenu\.SwitchModel/,
     );
     expect(chat).not.toContain("onBack={showEmptyState");
     expect(chat).not.toContain("Locale.Chat.ModelMenu.BackToModels");
@@ -1883,6 +1883,11 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("selectEmptyComposerMode(mode)");
     expect(chat).toContain("handleEmptyComposerModeKeyDown");
     expect(chat).toContain("homeModeInitializedRef.current");
+    expect(chat).toContain("configuredChatHomeDefault");
+    expect(chat).toContain(
+      'source: config.serverConfigSnapshot ? "server_default" : "fallback"',
+    );
+    expect(chat).toContain("syncGlobalConfig: true");
     expect(chat).toContain(
       'resolvePreferredChatHomeModel(\n      "chat",\n      headerAvailableModels,',
     );
@@ -1906,6 +1911,12 @@ describe("Gemini visual migration shell", () => {
     expect(chat.match(/aria-controls="chat-model-menu"/g)).toHaveLength(1);
     expect(selectHeaderModelBlock).toContain(
       "if (options.closeMenu !== false) closeMobileModelSelector();",
+    );
+    expect(selectHeaderModelBlock).toContain(
+      'const source = options.source ?? "conversation_override";',
+    );
+    expect(selectHeaderModelBlock).toContain(
+      "session.mask.syncGlobalConfig = options.syncGlobalConfig ?? false;",
     );
     expect(selectHeaderModelBlock).toContain(
       "if (options.restoreFocus !== false) restoreModelSelectorFocus();",
@@ -3894,10 +3905,13 @@ describe("Gemini visual migration shell", () => {
       /\.chat-input-panel\.chat-input-panel-empty[\s\S]*\.chat-input-panel-inner-model-open:has\([\s\S]*\.chat-input-model-button-home-chat\.chat-input-model-button-open[\s\S]*\)\s*\{[\s\S]*padding-right:\s*176px;/,
     );
     expect(chatStyles).toMatch(
-      /\.chat-model-menu-header\s*\{[\s\S]*display:\s*flex;[\s\S]*padding:\s*9px 12px;[\s\S]*border-radius:\s*14px;[\s\S]*background:\s*var\(--surface-elevated\);/,
+      /\.chat-model-menu-header\s*\{[\s\S]*display:\s*flex;[\s\S]*align-items:\s*center;[\s\S]*padding:\s*9px 12px;[\s\S]*border-radius:\s*14px;[\s\S]*background:\s*var\(--surface-elevated\);/,
     );
     expect(chatStyles).toMatch(
-      /\.chat-model-menu-current-model\s*\{[\s\S]*flex:\s*1 1 auto;[\s\S]*min-width:\s*0;[\s\S]*white-space:\s*normal;[\s\S]*overflow-wrap:\s*anywhere;[\s\S]*word-break:\s*break-word;/,
+      /\.chat-model-menu-current-model\s*\{[\s\S]*flex:\s*1 1 auto;[\s\S]*min-width:\s*0;[\s\S]*text-align:\s*center;[\s\S]*white-space:\s*normal;[\s\S]*overflow-wrap:\s*anywhere;[\s\S]*word-break:\s*break-word;/,
+    );
+    expect(chatStyles).toMatch(
+      /\.chat-input-model-button-open\s*\{[\s\S]*justify-content:\s*center;[\s\S]*\.chat-input-model-name\s*\{[\s\S]*flex:\s*0 1 auto;/,
     );
     expect(chatStyles).toMatch(
       /\.chat-model-menu-switch-model\s*\{[\s\S]*display:\s*inline-flex;[\s\S]*min-height:\s*32px;[\s\S]*white-space:\s*nowrap;[\s\S]*&:focus-visible\s*\{[\s\S]*outline:\s*var\(--focus-ring\);/,

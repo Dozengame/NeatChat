@@ -84,17 +84,24 @@ export function getChatHomeModeModels(
 export function resolvePreferredChatHomeModel(
   mode: ChatHomeMode,
   models: readonly ChatHomeModel[],
+  configuredDefault?: { name?: string; providerName?: string },
 ) {
   const eligibleModels = getChatHomeModeModels(models, mode);
   const preferredName =
-    mode === "image" ? "gpt-image-2" : OPENAI_RESPONSES_DEFAULT_MODEL;
+    mode === "image"
+      ? "gpt-image-2"
+      : configuredDefault?.name ?? OPENAI_RESPONSES_DEFAULT_MODEL;
+  const preferredProviderName =
+    mode === "image"
+      ? ServiceProvider.OpenAI
+      : configuredDefault?.providerName ?? ServiceProvider.OpenAI;
 
   return (
     eligibleModels.find(
       (model) =>
         model.name === preferredName &&
         model.provider?.providerName?.trim().toLowerCase() ===
-          ServiceProvider.OpenAI.toLowerCase(),
+          preferredProviderName.trim().toLowerCase(),
     ) ?? eligibleModels[0]
   );
 }
