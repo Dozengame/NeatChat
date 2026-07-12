@@ -4652,19 +4652,7 @@ function useChatInnerView() {
           </div>
           <IconButton
             className={styles["chat-mobile-header-button"]}
-            icon={
-              <span className={styles["chat-mobile-context-icon"]}>
-                <SettingsIcon />
-                {context.length > 0 && (
-                  <span
-                    className={styles["chat-mobile-context-count"]}
-                    aria-hidden="true"
-                  >
-                    {context.length > 99 ? "99+" : context.length}
-                  </span>
-                )}
-              </span>
-            }
+            icon={<SettingsIcon />}
             bordered
             title={
               context.length > 0

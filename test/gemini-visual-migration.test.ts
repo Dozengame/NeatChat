@@ -3438,17 +3438,16 @@ describe("Gemini visual migration shell", () => {
       /:global\(button:hover\),[\s\S]*:global\(button:focus-visible\)[\s\S]*border-color:\s*var\(--chat-header-action-hover-border-color\);/,
     );
     expect(mobileDesktopHeaderActionsBlock).toMatch(/display:\s*none;/);
-    expect(chat).toContain('className={styles["chat-mobile-context-icon"]}');
-    expect(chat).toContain('className={styles["chat-mobile-context-count"]}');
+    expect(chat).not.toContain(
+      'className={styles["chat-mobile-context-icon"]}',
+    );
+    expect(chat).not.toContain(
+      'className={styles["chat-mobile-context-count"]}',
+    );
     expect(chat).toContain("Locale.Context.SettingsWithPrompts(context.length)");
-    expect(chat).toContain('context.length > 99 ? "99+" : context.length');
-    expect(chatStyles).toContain(".chat-mobile-context-count");
-    expect(chatStyles).toMatch(
-      /--chat-mobile-context-count-color:\s*rgb\(255,\s*255,\s*255\);/,
-    );
-    expect(chatStyles).toMatch(
-      /\.chat-mobile-context-count[\s\S]*color:\s*var\(--chat-mobile-context-count-color\);/,
-    );
+    expect(chat).not.toContain('context.length > 99 ? "99+" : context.length');
+    expect(chatStyles).not.toContain(".chat-mobile-context-count");
+    expect(chatStyles).not.toContain("--chat-mobile-context-count-color");
     expect(chat).toMatch(
       /styles\["chat-desktop-header-action"\][\s\S]*<IconButton\s+icon=\{<RenameIcon \/>\}\s+bordered\s+title=\{Locale\.Chat\.EditMessage\.Title\}/,
     );

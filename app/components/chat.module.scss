@@ -1109,33 +1109,6 @@
   }
 }
 
-.chat-mobile-context-icon {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.chat-mobile-context-count {
-  position: absolute;
-  top: -9px;
-  right: -11px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border: 2px solid var(--chat-header-surface-background);
-  border-radius: 999px;
-  background: var(--primary);
-  color: var(--chat-mobile-context-count-color);
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
 .section-title {
   font-size: 12px;
   font-weight: bold;
@@ -1619,7 +1592,6 @@
 }
 
 .chat-mobile-header {
-  --chat-mobile-context-count-color: rgb(255, 255, 255);
   --chat-header-surface-background: color-mix(
     in srgb,
     var(--surface-elevated) 86%,
