@@ -29,15 +29,12 @@ import {
 } from "../utils/openai-responses";
 import {
   applyOpenAIImageGenerationDefaults,
-  DALLE_IMAGE_COMPATIBLE_SIZES,
-  DALLE3_IMAGE_QUALITIES,
-  DALLE3_IMAGE_SIZES,
   DALLE3_IMAGE_STYLES,
-  GPT_IMAGE_2_QUALITIES,
-  GPT_IMAGE_2_SIZES,
+  getOpenAIImageGenerationOptions,
   isDalle3,
-  isGptImageGenerationModel,
   isOpenAIImageGenerationModelConfig,
+  normalizeOpenAIImageQuality,
+  normalizeOpenAIImageSize,
 } from "../utils/openai-image";
 import type {
   OpenAIChatReasoningEffort,
@@ -172,18 +169,18 @@ function useModelConfigListView(props: {
     model: props.modelConfig.model,
     providerName: props.modelConfig?.providerName,
   });
-  const isGptImageModel = isGptImageGenerationModel(props.modelConfig.model);
   const isDalle3Model = isDalle3(props.modelConfig.model);
-  const imageSizeOptions = isGptImageModel
-    ? GPT_IMAGE_2_SIZES
-    : isDalle3Model
-    ? DALLE3_IMAGE_SIZES
-    : DALLE_IMAGE_COMPATIBLE_SIZES;
-  const imageQualityOptions = isGptImageModel
-    ? GPT_IMAGE_2_QUALITIES
-    : isDalle3Model
-    ? DALLE3_IMAGE_QUALITIES
-    : [];
+  const imageOptions = getOpenAIImageGenerationOptions(props.modelConfig.model);
+  const imageSizeOptions = imageOptions.sizes;
+  const imageQualityOptions = imageOptions.qualities;
+  const currentImageSize = normalizeOpenAIImageSize(
+    props.modelConfig.model,
+    props.modelConfig.size,
+  );
+  const currentImageQuality = normalizeOpenAIImageQuality(
+    props.modelConfig.model,
+    props.modelConfig.quality,
+  );
   const reasoningEffortOptions = filterOpenAIResponsesReasoningEfforts(
     props.modelConfig.model,
     accessStore.serverConfigSnapshot?.reasoningEffortAllowlist,
@@ -283,7 +280,7 @@ function useModelConfigListView(props: {
           >
             <Select
               aria-label={Locale.Settings.ImageGeneration.Size}
-              value={props.modelConfig.size}
+              value={currentImageSize}
               onChange={(e) => {
                 updateUnlocked(["size"], (config) => {
                   config.size = e.currentTarget.value as typeof config.size;
@@ -292,7 +289,7 @@ function useModelConfigListView(props: {
             >
               {imageSizeOptions.map((size) => (
                 <option value={size} key={size}>
-                  {size}
+                  {Locale.Settings.ImageGeneration.SizeOption(size)}
                 </option>
               ))}
             </Select>
@@ -304,7 +301,7 @@ function useModelConfigListView(props: {
             >
               <Select
                 aria-label={Locale.Settings.ImageGeneration.Quality}
-                value={props.modelConfig.quality}
+                value={currentImageQuality}
                 onChange={(e) => {
                   updateUnlocked(["quality"], (config) => {
                     config.quality = e.currentTarget
@@ -314,7 +311,7 @@ function useModelConfigListView(props: {
               >
                 {imageQualityOptions.map((quality) => (
                   <option value={quality} key={quality}>
-                    {quality}
+                    {Locale.Settings.ImageGeneration.QualityOption(quality)}
                   </option>
                 ))}
               </Select>

@@ -398,7 +398,7 @@ const en: LocaleType = {
       ImageSizeDescription: (size: string) =>
         size === "auto"
           ? "Let the model choose a suitable size"
-          : `Use the ${size} preset`,
+          : `Popular size: ${size.replace("x", " × ")}`,
       ImageQuality: "Image quality",
       ImageQualityOptions: "Image quality options",
       ImageQualityDescription: (quality: string) =>
@@ -963,6 +963,40 @@ const en: LocaleType = {
       High: "High",
       Standard: "Standard",
       HD: "HD",
+      SizeLabel: (size: string) =>
+        ({
+          auto: "Auto",
+          "1024x1024": "Square",
+          "1536x1024": "Landscape",
+          "1024x1536": "Portrait",
+          "2048x2048": "2K Square",
+          "2048x1152": "2K Landscape",
+          "3840x2160": "4K Landscape",
+          "2160x3840": "4K Portrait",
+        })[size] ?? size,
+      SizeOption: (size: string) => {
+        const label =
+          {
+            auto: "Auto",
+            "1024x1024": "Square",
+            "1536x1024": "Landscape",
+            "1024x1536": "Portrait",
+            "2048x2048": "2K Square",
+            "2048x1152": "2K Landscape",
+            "3840x2160": "4K Landscape",
+            "2160x3840": "4K Portrait",
+          }[size] ?? size;
+        return size === "auto" ? label : `${label} (${size})`;
+      },
+      QualityOption: (quality: string) =>
+        ({
+          auto: "Auto",
+          low: "Low",
+          medium: "Medium",
+          high: "High",
+          standard: "Standard",
+          hd: "HD",
+        })[quality] ?? quality,
     },
     TextVerbosity: {
       Title: "Response Detail (text.verbosity)",

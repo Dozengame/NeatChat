@@ -13,6 +13,11 @@ import type {
 
 export const VERCEL_HOBBY_MAX_DURATION_SECONDS = 300;
 const GPT_IMAGE_2_MODEL = "gpt-image-2";
+const LEGACY_GPT_IMAGE_MODELS = [
+  "gpt-image-1",
+  "gpt-image-1-mini",
+  "gpt-image-1.5",
+] as const;
 const DALLE_MODEL_PREFIX = "dall-e";
 const GPT_IMAGE_MODEL_PREFIX = "gpt-image";
 
@@ -25,6 +30,13 @@ export const DALLE3_IMAGE_SIZES = [
   "1024x1792",
 ] as const;
 export const DALLE_IMAGE_COMPATIBLE_SIZES = ["1024x1024"] as const;
+
+export const LEGACY_GPT_IMAGE_SIZES = [
+  "auto",
+  "1024x1024",
+  "1536x1024",
+  "1024x1536",
+] as const;
 
 export const DALLE3_IMAGE_QUALITIES = ["standard", "hd"] as const;
 export const DALLE3_IMAGE_STYLES = ["vivid", "natural"] as const;
@@ -40,7 +52,7 @@ export const GPT_IMAGE_2_SIZES = [
   "2160x3840",
 ] as const;
 
-export const GPT_IMAGE_2_QUALITIES = ["auto", "low", "medium", "high"] as const;
+export const GPT_IMAGE_QUALITIES = ["auto", "low", "medium", "high"] as const;
 
 const GPT_IMAGE_2_DEFAULTS = {
   size: "auto" as GptImageSize,
@@ -126,6 +138,73 @@ function isDalleImageGenerationModel(model?: string) {
 
 export function isGptImageGenerationModel(model?: string) {
   return normalizeModel(model).startsWith(GPT_IMAGE_MODEL_PREFIX);
+}
+
+function isModelOrDatedSnapshot(model: string, baseModel: string) {
+  return (
+    model === baseModel ||
+    new RegExp(`^${baseModel.replace(".", "\\.")}-\\d{4}-\\d{2}-\\d{2}$`).test(
+      model,
+    )
+  );
+}
+
+export function isGptImage2(model?: string) {
+  return isModelOrDatedSnapshot(normalizeModel(model), GPT_IMAGE_2_MODEL);
+}
+
+function isLegacyGptImageModel(model?: string) {
+  const normalizedModel = normalizeModel(model);
+  return LEGACY_GPT_IMAGE_MODELS.some((knownModel) =>
+    isModelOrDatedSnapshot(normalizedModel, knownModel),
+  );
+}
+
+export function getOpenAIImageGenerationOptions(model?: string) {
+  if (isGptImageGenerationModel(model)) {
+    return {
+      sizes: isLegacyGptImageModel(model)
+        ? LEGACY_GPT_IMAGE_SIZES
+        : GPT_IMAGE_2_SIZES,
+      qualities: GPT_IMAGE_QUALITIES,
+      styles: [] as readonly DalleStyle[],
+    };
+  }
+
+  if (isDalle3(model)) {
+    return {
+      sizes: DALLE3_IMAGE_SIZES,
+      qualities: DALLE3_IMAGE_QUALITIES,
+      styles: DALLE3_IMAGE_STYLES,
+    };
+  }
+
+  return {
+    sizes: DALLE_IMAGE_COMPATIBLE_SIZES,
+    qualities: [] as readonly OpenAIImageQuality[],
+    styles: [] as readonly DalleStyle[],
+  };
+}
+
+export function normalizeOpenAIImageSize(
+  model: string | undefined,
+  size: OpenAIImageSize | undefined,
+) {
+  const options = getOpenAIImageGenerationOptions(model).sizes;
+  return options.includes(size as never)
+    ? (size as OpenAIImageSize)
+    : (options[0] as OpenAIImageSize);
+}
+
+export function normalizeOpenAIImageQuality(
+  model: string | undefined,
+  quality: OpenAIImageQuality | undefined,
+) {
+  const options = getOpenAIImageGenerationOptions(model).qualities;
+  if (options.length === 0) return undefined;
+  return options.includes(quality as never)
+    ? quality
+    : (options[0] as OpenAIImageQuality);
 }
 
 export function isOpenAIImageGenerationModel(model?: string) {
@@ -311,14 +390,11 @@ export function buildOpenAIImageGenerationPayload(params: {
   config?: OpenAIImageGenerationConfig;
 }): OpenAIImageGenerationRequestPayload {
   if (isGptImageGenerationModel(params.model)) {
-    const size = GPT_IMAGE_2_SIZES.includes(params.config?.size as any)
-      ? params.config?.size
-      : GPT_IMAGE_2_DEFAULTS.size;
-    const quality = GPT_IMAGE_2_QUALITIES.includes(
-      params.config?.quality as any,
-    )
-      ? params.config?.quality
-      : GPT_IMAGE_2_DEFAULTS.quality;
+    const size = normalizeOpenAIImageSize(params.model, params.config?.size);
+    const quality = normalizeOpenAIImageQuality(
+      params.model,
+      params.config?.quality,
+    );
     const background =
       params.config?.background === "opaque" ||
       params.config?.background === "auto"
@@ -407,15 +483,12 @@ export function buildOpenAIImageEditFormData(params: {
   formData.append("n", "1");
   formData.append(
     "size",
-    GPT_IMAGE_2_SIZES.includes(params.config?.size as any)
-      ? params.config?.size ?? GPT_IMAGE_2_DEFAULTS.size
-      : GPT_IMAGE_2_DEFAULTS.size,
+    normalizeOpenAIImageSize(params.model, params.config?.size),
   );
   formData.append(
     "quality",
-    GPT_IMAGE_2_QUALITIES.includes(params.config?.quality as any)
-      ? params.config?.quality ?? GPT_IMAGE_2_DEFAULTS.quality
-      : GPT_IMAGE_2_DEFAULTS.quality,
+    normalizeOpenAIImageQuality(params.model, params.config?.quality) ??
+      GPT_IMAGE_2_DEFAULTS.quality,
   );
   formData.append(
     "background",

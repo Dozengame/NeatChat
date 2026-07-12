@@ -1882,6 +1882,10 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain(") : isImageOptionsExpanded ? (");
     expect(chat).toContain("<DiscreteOptionRail<OpenAIImageSize>");
     expect(chat).toContain("<DiscreteOptionRail<OpenAIImageQuality>");
+    expect(chat).toContain("normalizeOpenAIImageSize(");
+    expect(chat).toContain("normalizeOpenAIImageQuality(");
+    expect(chat).toContain("value={headerCurrentSize}");
+    expect(chat).toContain("value={headerCurrentQuality}");
     expect(chat).toContain('styles["chat-input-panel-inner-home-image"]');
     expect(chat).toContain("Locale.Chat.ModelMenu.ImageOptions");
     expect(chat).toContain("getImageComposerSummary(");

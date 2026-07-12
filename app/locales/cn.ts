@@ -381,12 +381,18 @@ const cn = {
       ImageSize: "图片尺寸",
       ImageSizeOptions: "图片尺寸选项",
       ImageSizeDescription: (size: string) =>
-        size === "auto" ? "由模型自动选择合适尺寸" : `使用 ${size} 尺寸`,
+        size === "auto"
+          ? "由模型自动选择合适尺寸"
+          : `常用尺寸：${size.replace("x", " × ")}`,
       ImageQuality: "图片清晰度",
       ImageQualityOptions: "图片清晰度选项",
       ImageQualityDescription: (quality: string) =>
         quality === "auto"
           ? "由模型自动平衡速度与细节"
+          : quality === "hd"
+          ? "使用高清渲染质量"
+          : quality === "standard"
+          ? "使用标准渲染质量"
           : `使用${
               quality === "high" ? "高" : quality === "medium" ? "中" : "低"
             }清晰度`,
@@ -943,6 +949,40 @@ const cn = {
       High: "高",
       Standard: "标准",
       HD: "高清",
+      SizeLabel: (size: string) =>
+        ({
+          auto: "自动",
+          "1024x1024": "方形 · 1K",
+          "1536x1024": "横向 · 1.5K",
+          "1024x1536": "纵向 · 1.5K",
+          "2048x2048": "方形 · 2K",
+          "2048x1152": "横向 · 2K",
+          "3840x2160": "横向 · 4K",
+          "2160x3840": "纵向 · 4K",
+        })[size] ?? size,
+      SizeOption: (size: string) => {
+        const label =
+          {
+            auto: "自动",
+            "1024x1024": "方形 · 1K",
+            "1536x1024": "横向 · 1.5K",
+            "1024x1536": "纵向 · 1.5K",
+            "2048x2048": "方形 · 2K",
+            "2048x1152": "横向 · 2K",
+            "3840x2160": "横向 · 4K",
+            "2160x3840": "纵向 · 4K",
+          }[size] ?? size;
+        return size === "auto" ? label : `${label}（${size}）`;
+      },
+      QualityOption: (quality: string) =>
+        ({
+          auto: "自动",
+          low: "低",
+          medium: "中",
+          high: "高",
+          standard: "标准",
+          hd: "高清",
+        })[quality] ?? quality,
     },
     TextVerbosity: {
       Title: "回答详细程度 (text.verbosity)",

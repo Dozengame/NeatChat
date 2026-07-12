@@ -72,3 +72,20 @@
 - Measurements: desktop popup-composer gap `12px`, suggestion-card overlap `false`; compact menu edges `16..374` and `16..304`; real Chrome desktop input `1 row → 3 rows`, panel `760x62 → 880x116`, inner `706x62 / 999px → 826x116 / 30px`, with an unchanged `439.65625px` center and zero horizontal overflow; mobile input `1 row / 28px → 2 rows / 56px`. The only real-route Console warning came from Huaban extension HTML-attribute injection, not product code.
 - Follow-up model-name measurements: `390px` new Chat/Image and `320px` new/existing Chat all report `clientWidth = scrollWidth = 89px`; compact detail/separator compute to `display:none`, Desktop detail remains visible, textarea/trigger gap is at least `4px`, trigger/Send gap is at least `4px`, and horizontal overflow is zero. Evidence is under `test-results/composer-model-name-fix-qa/`.
 - Evidence: `test-results/composer-regression-qa/` and ignored root `design-qa.md` (`final result: passed`). No push, PR, deploy, remote configuration, credential entry, or intentional paid model request was performed.
+
+## GPT Image Model-aware Options And Size Labels
+
+### Result
+
+- Image options now come from one model capability resolver shared by the composer, Settings, generation JSON, and edit multipart builders. GPT Image 2 exact/dated snapshots expose `auto` plus the seven documented popular sizes and `auto/low/medium/high`; known legacy GPT Image models retain their smaller size set; DALL-E 3 retains `standard/hd`; DALL-E 2 keeps no editable quality control.
+- Cross-model stale values are normalized before display and request construction. A persisted GPT Image 2 `standard/hd` or DALL-E-only size can no longer be appended as a current-only rail stop while the request silently sends `auto`.
+- Unknown/custom `gpt-image-*` names preserve the previous 2K/4K request compatibility instead of being silently downgraded. Azure GPT Image remains unsupported by the existing provider gate; Azure DALL-E behavior is unchanged.
+- GPT Image 2 popular sizes now separate wire values from presentation. English uses the official meanings (`Square`, `Landscape`, `Portrait`, `2K/4K ...`); Chinese uses the requested product labels (`方形 · 1K`, `横向 · 1.5K`, through `纵向 · 4K`). Settings also shows the exact `WIDTHxHEIGHT`; composer descriptions identify them as common sizes rather than the complete API range.
+- The OpenAI API supports additional valid GPT Image 2 custom resolutions, but this slice intentionally does not add a custom-size input. Existing fixed rails cover only `auto` and the seven documented popular sizes.
+
+### Verification
+
+- Official OpenAI developer docs were checked for GPT Image 2 size/quality constraints and DALL-E quality differences.
+- Final targeted verification passed `5` suites / `147` tests, TypeScript, ESLint, `git diff --check`, production `next build`, and independent read-only semantic review.
+- Real authenticated Chrome verified all eight Chinese size labels/descriptions, exactly four GPT Image 2 quality stops with no `standard/hd`, desktop popup geometry without overflow, and the restored `auto / medium` state. After the known post-build dev-server restart, `/api/config` returned JSON 200 and cold load passed; the only Console entry was Huaban extension attribute-injection noise, not a product error.
+- No paid image generation, credential entry, push, PR, deploy, or remote configuration change was performed.
