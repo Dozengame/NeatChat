@@ -3352,19 +3352,6 @@ function useChatInnerView() {
       document.getElementById(`chat-home-mode-${nextMode}`)?.focus();
     });
   };
-  const applyEmptySuggestion = useCallback(
-    (suggestion: string) => {
-      setShowChatActionMenu(false);
-      setPromptHints([]);
-      expandInput();
-      setUserInput(suggestion);
-      requestAnimationFrame(() => {
-        inputRef.current?.focus();
-      });
-    },
-    [expandInput],
-  );
-
   const onChatBodyScroll = (e: HTMLElement) => {
     const pendingQuickJumpTarget = pendingQuickJumpTargetRef.current;
     if (pendingQuickJumpTarget) {
@@ -5279,72 +5266,6 @@ function useChatInnerView() {
                   <h1 className={styles["chat-empty-title"]}>
                     {Locale.Chat.EmptyTitle}
                   </h1>
-                  <ul
-                    className={styles["chat-empty-suggestions"]}
-                    aria-label={Locale.Chat.Accessibility.SuggestedQuestions}
-                  >
-                    {Locale.Chat.EmptySuggestions.map((suggestion) => (
-                      <li
-                        key={suggestion}
-                        className={styles["chat-empty-suggestion-item"]}
-                      >
-                        <button
-                          type="button"
-                          className={styles["chat-empty-suggestion"]}
-                          onClick={() => applyEmptySuggestion(suggestion)}
-                        >
-                          <div
-                            className={styles["chat-empty-suggestion-header"]}
-                          >
-                            <span
-                              className={styles["chat-empty-suggestion-title"]}
-                            >
-                              {Locale.Chat.EmptySuggestionTitles[
-                                Locale.Chat.EmptySuggestions.indexOf(suggestion)
-                              ] || suggestion}
-                            </span>
-                            <span
-                              className={styles["chat-empty-suggestion-text"]}
-                            >
-                              {suggestion}
-                            </span>
-                          </div>
-                          <div
-                            className={styles["chat-empty-suggestion-footer"]}
-                          >
-                            <div
-                              className={
-                                styles["chat-empty-suggestion-icon-wrapper"]
-                              }
-                            >
-                              {(() => {
-                                const idx =
-                                  Locale.Chat.EmptySuggestions.indexOf(
-                                    suggestion,
-                                  );
-                                const icons = [
-                                  FileIcon,
-                                  AutoIcon,
-                                  StyleIcon,
-                                  BrainIcon,
-                                ];
-                                const IconComponent = icons[idx] || FileIcon;
-                                return <IconComponent />;
-                              })()}
-                            </div>
-                            <span
-                              className={
-                                styles["chat-empty-suggestion-affordance"]
-                              }
-                              aria-hidden="true"
-                            >
-                              →
-                            </span>
-                          </div>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
                 </div>
               )}
               <div

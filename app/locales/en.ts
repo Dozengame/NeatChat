@@ -82,18 +82,6 @@ const en: LocaleType = {
     Rename: "Rename Chat",
     Typing: "Typing…",
     EmptyTitle: "Hello! What would you like to discuss?",
-    EmptySuggestions: [
-      "Summarize this content",
-      "Plan my day",
-      "Create a product poster",
-      "Analyze this file",
-    ] as string[],
-    EmptySuggestionTitles: [
-      "Summarize text",
-      "Plan schedule",
-      "Creative poster",
-      "Analyze document",
-    ] as string[],
     HomeMode: {
       Label: "New chat mode",
       Chat: "Chat",
@@ -413,7 +401,6 @@ const en: LocaleType = {
     Accessibility: {
       PromptSuggestions: "Prompt suggestions",
       ChatMessages: "Chat messages",
-      SuggestedQuestions: "Suggested questions",
       MessageList: "Conversation message list",
       UserMessage: (index: number) => `User message ${index}`,
       AssistantMessage: (index: number) => `Assistant message ${index}`,

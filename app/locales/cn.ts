@@ -81,18 +81,6 @@ const cn = {
     Rename: "重命名对话",
     Typing: "正在输入…",
     EmptyTitle: "你好！想聊点什么？",
-    EmptySuggestions: [
-      "总结这段内容",
-      "帮我规划今天的任务",
-      "生成一张产品海报",
-      "分析这份文件",
-    ] as string[],
-    EmptySuggestionTitles: [
-      "总结文本",
-      "规划日程",
-      "创意绘图",
-      "分析文档",
-    ] as string[],
     HomeMode: {
       Label: "新聊天模式",
       Chat: "聊天",
@@ -404,7 +392,6 @@ const cn = {
     Accessibility: {
       PromptSuggestions: "提示词建议",
       ChatMessages: "聊天消息",
-      SuggestedQuestions: "建议问题",
       MessageList: "会话消息列表",
       UserMessage: (index: number) => `用户消息 ${index}`,
       AssistantMessage: (index: number) => `助手消息 ${index}`,
