@@ -1,6 +1,6 @@
 # Context Prompt Count Regression
 
-Date: 2026-07-13  
+Date: 2026-07-13
 Baseline: `dev=571ee925`
 
 ## Result

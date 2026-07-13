@@ -58,6 +58,16 @@ jest.mock("../app/utils/hooks", () => ({
         providerType: "openai",
       },
     },
+    {
+      name: "gpt-5.2-chat-latest",
+      displayName: "gpt-5.2-chat-latest",
+      available: true,
+      provider: {
+        id: "openai",
+        providerName: "OpenAI",
+        providerType: "openai",
+      },
+    },
   ],
 }));
 
@@ -252,5 +262,35 @@ describe("Summary Model settings", () => {
     expect(select.selectedOptions[0].textContent).toMatch(
       /unavailable|不可用/i,
     );
+  });
+
+  test("hides unsupported Responses controls for GPT chat-latest models", () => {
+    useAccessStore.setState({
+      allowedModels: ["gpt-5.2-chat-latest@OpenAI"],
+      lockedFields: [],
+    });
+
+    render(
+      <Harness
+        clearOverride={jest.fn()}
+        markOverride={jest.fn()}
+        initialConfig={{
+          model: "gpt-5.2-chat-latest" as any,
+          providerName: ServiceProvider.OpenAI,
+        }}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("combobox", { name: /Reasoning Effort|思考深度/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("combobox", {
+        name: /Response Detail|回答详细程度/,
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("slider", { name: /Temperature|随机性/ }),
+    ).not.toBeInTheDocument();
   });
 });

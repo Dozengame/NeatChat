@@ -68,9 +68,9 @@ describe("model-test authenticated credential routing", () => {
         }),
       }),
     );
-    expect(JSON.stringify((global.fetch as jest.Mock).mock.calls)).not.toContain(
-      "server-secret",
-    );
+    expect(
+      JSON.stringify((global.fetch as jest.Mock).mock.calls),
+    ).not.toContain("server-secret");
   });
 
   test("uses the system key injected by auth for an access-code request", async () => {
@@ -90,5 +90,48 @@ describe("model-test authenticated credential routing", () => {
         }),
       }),
     );
+  });
+
+  test("does not return upstream credentials or raw error objects", async () => {
+    global.fetch = jest.fn(async () =>
+      Response.json(
+        {
+          error: {
+            message: "Authorization: Bearer upstream-secret",
+            request_id: "req_model_test_123",
+          },
+          debug: { apiKey: "sk-upstream-secret" },
+        },
+        { status: 400 },
+      ),
+    ) as jest.Mock;
+
+    const response = await POST(makeRequest("user-secret"));
+    const body = await response.json();
+    const result = body.results["gpt-5.6-terra"];
+    const serialized = JSON.stringify(result);
+
+    expect(result.message).toBe(
+      "测试失败 (400) [request_id: req_model_test_123]",
+    );
+    expect(result.error).toEqual({ status: 400 });
+    expect(serialized).not.toContain("upstream-secret");
+    expect(serialized).not.toContain("Authorization");
+    expect(serialized).not.toContain("debug");
+  });
+
+  test("sanitizes rejected request errors", async () => {
+    global.fetch = jest.fn(async () => {
+      throw new Error("Bearer transport-secret");
+    }) as jest.Mock;
+
+    const response = await POST(makeRequest("user-secret"));
+    const body = await response.json();
+    const result = body.results["gpt-5.6-terra"];
+    const serialized = JSON.stringify(result);
+
+    expect(result.message).toBe("测试出错");
+    expect(serialized).not.toContain("transport-secret");
+    expect(serialized).not.toContain("Bearer");
   });
 });

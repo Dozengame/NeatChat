@@ -125,7 +125,7 @@ describe("OpenAI image generation models", () => {
     ).not.toContain("3840x2160");
     expect(
       getOpenAIImageGenerationOptions("gpt-image-3-preview").sizes,
-    ).toContain("3840x2160");
+    ).toEqual(["auto", "1024x1024", "1536x1024", "1024x1536"]);
     expect(getOpenAIImageGenerationOptions("dall-e-3")).toMatchObject({
       sizes: ["1024x1024", "1792x1024", "1024x1792"],
       qualities: ["standard", "hd"],
@@ -137,17 +137,12 @@ describe("OpenAI image generation models", () => {
   });
 
   test("normalizes stale cross-model values before rendering or sending", () => {
-    expect(normalizeOpenAIImageQuality("gpt-image-2", "standard")).toBe(
+    expect(normalizeOpenAIImageQuality("gpt-image-2", "standard")).toBe("auto");
+    expect(normalizeOpenAIImageQuality("dall-e-3", "high")).toBe("standard");
+    expect(normalizeOpenAIImageSize("gpt-image-2", "1792x1024")).toBe("auto");
+    expect(normalizeOpenAIImageSize("dall-e-3", "3840x2160")).toBe("1024x1024");
+    expect(normalizeOpenAIImageSize("gpt-image-3-preview", "3840x2160")).toBe(
       "auto",
-    );
-    expect(normalizeOpenAIImageQuality("dall-e-3", "high")).toBe(
-      "standard",
-    );
-    expect(normalizeOpenAIImageSize("gpt-image-2", "1792x1024")).toBe(
-      "auto",
-    );
-    expect(normalizeOpenAIImageSize("dall-e-3", "3840x2160")).toBe(
-      "1024x1024",
     );
 
     const chatSource = readFileSync("app/components/chat.tsx", "utf8");
@@ -186,12 +181,8 @@ describe("OpenAI image generation models", () => {
   );
 
   test("falls back to the exact API value for unknown dimensions", () => {
-    expect(en.Settings.ImageGeneration.SizeLabel("1600x900")).toBe(
-      "1600x900",
-    );
-    expect(cn.Settings.ImageGeneration.SizeLabel("1600x900")).toBe(
-      "1600x900",
-    );
+    expect(en.Settings.ImageGeneration.SizeLabel("1600x900")).toBe("1600x900");
+    expect(cn.Settings.ImageGeneration.SizeLabel("1600x900")).toBe("1600x900");
   });
 
   test("applies conservative defaults for non-DALL-E 3 DALL-E models", () => {
@@ -228,7 +219,7 @@ describe("OpenAI image generation models", () => {
     expect(payload.style).toBeUndefined();
   });
 
-  test("preserves existing size semantics for unknown gpt-image models", () => {
+  test("uses conservative size semantics for unknown gpt-image models", () => {
     const payload = buildOpenAIImageGenerationPayload({
       model: "gpt-image-custom",
       prompt: "Draw a wide banner",
@@ -236,7 +227,7 @@ describe("OpenAI image generation models", () => {
     }) as any;
 
     expect(payload).toMatchObject({
-      size: "3840x2160",
+      size: "auto",
       quality: "high",
     });
 
@@ -246,6 +237,16 @@ describe("OpenAI image generation models", () => {
       config: { size: "3840x2160", quality: "high" },
     }) as any;
     expect(legacyPayload).toMatchObject({ size: "auto", quality: "high" });
+  });
+
+  test("keeps documented gpt-image-2 snapshot sizes", () => {
+    const payload = buildOpenAIImageGenerationPayload({
+      model: "gpt-image-2-2026-04-21",
+      prompt: "Draw a wide banner",
+      config: { size: "3840x2160", quality: "high" },
+    }) as any;
+
+    expect(payload).toMatchObject({ size: "3840x2160", quality: "high" });
   });
 
   test("keeps valid gpt-image-2 image settings in the request payload", () => {
@@ -392,6 +393,48 @@ describe("OpenAI image generation models", () => {
         accessRestrictedMessage: Locale.Error.AccessRestricted,
       }),
     ).toBe(Locale.Error.AccessRestricted);
+  });
+
+  test.each([
+    "Authorization: Bearer upstream-secret",
+    "Invalid API key provided: sk-proj-upstream-secret",
+    "<html><body>gateway failure</body></html>",
+    "x".repeat(1000),
+  ])("sanitizes unsafe public image error detail", (message) => {
+    const publicMessage = getOpenAIImageErrorMessage({
+      status: 502,
+      payload: {
+        error: {
+          code: "upstream_error",
+          message,
+          request_id: "req_image_123",
+        },
+      },
+      accessRestrictedMessage: Locale.Error.AccessRestricted,
+    });
+
+    expect(publicMessage).toBe(
+      "OpenAI image generation failed (upstream_error) [request_id: req_image_123]",
+    );
+    expect(publicMessage).not.toContain(message);
+  });
+
+  test("does not expose a credential-shaped image error code", () => {
+    const publicMessage = getOpenAIImageErrorMessage({
+      status: 502,
+      payload: {
+        error: {
+          code: "sk-proj-upstream-secret",
+          message: "Invalid request",
+        },
+      },
+      accessRestrictedMessage: Locale.Error.AccessRestricted,
+    });
+
+    expect(publicMessage).toBe(
+      "OpenAI image generation failed (502): Invalid request",
+    );
+    expect(publicMessage).not.toContain("sk-proj-upstream-secret");
   });
 
   test("keeps DALL-E 3 payload compatible with the existing image path", () => {

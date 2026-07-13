@@ -5,7 +5,7 @@ import {
   isOpenAIImageGenerationModelConfig,
 } from "../utils/openai-image";
 import {
-  isOpenAIGpt5OrNewerModelConfig,
+  isOpenAIResponsesReasoningModelConfig,
   OPENAI_RESPONSES_DEFAULT_MODEL,
 } from "../utils/openai-responses";
 
@@ -32,7 +32,7 @@ export function getComposerModelMenuSection(
     return "image-options";
   }
 
-  return isOpenAIGpt5OrNewerModelConfig({ model, providerName })
+  return isOpenAIResponsesReasoningModelConfig({ model, providerName })
     ? "reasoning"
     : null;
 }

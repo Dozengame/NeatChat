@@ -53,6 +53,21 @@ describe("buildOpenAIResponsesPayload", () => {
     expect(payload.temperature).toBe(1);
   });
 
+  test("forces known non-streaming o-series pro models onto the JSON response path", () => {
+    const payload = buildOpenAIResponsesPayload({
+      messages: [{ role: "user", content: "Hello" }],
+      modelConfig: {
+        ...modelConfig,
+        model: "o3-pro-2025-06-10" as any,
+        max_output_tokens: 200000,
+      },
+      stream: true,
+    }) as any;
+
+    expect(payload.stream).toBe(false);
+    expect(payload.max_output_tokens).toBe(100000);
+  });
+
   test("preserves image inputs", () => {
     const payload = buildOpenAIResponsesPayload({
       messages: [
@@ -326,6 +341,107 @@ describe("buildOpenAIResponsesPayload", () => {
 
     expect(payload.temperature).toBeUndefined();
     expect(payload.top_p).toBeUndefined();
+  });
+
+  test.each([
+    ["gpt-4o", 16384],
+    ["gpt-4o-mini-2024-07-18", 16384],
+    ["gpt-4.1", 32768],
+  ])(
+    "clamps %s and omits unsupported reasoning and verbosity",
+    (model, limit) => {
+      const payload = buildOpenAIResponsesPayload({
+        messages: [{ role: "user", content: "Hello" }],
+        modelConfig: {
+          ...modelConfig,
+          model: model as any,
+          max_output_tokens: 128000,
+          reasoningEffort: "high",
+          textVerbosity: "high",
+        },
+      }) as any;
+
+      expect(payload.max_output_tokens).toBe(limit);
+      expect(payload.reasoning).toBeUndefined();
+      expect(payload.text).toBeUndefined();
+    },
+  );
+
+  test("preserves text.format while omitting unsupported GPT-4.1 verbosity", () => {
+    const format = {
+      type: "json_schema",
+      name: "answer",
+      schema: { type: "object" },
+    };
+    const payload = buildOpenAIResponsesPayload({
+      messages: [{ role: "user", content: "Hello" }],
+      modelConfig: {
+        ...modelConfig,
+        model: "gpt-4.1" as any,
+        textVerbosity: "high",
+      },
+      textFormat: format,
+    }) as any;
+
+    expect(payload.text).toEqual({ format });
+  });
+
+  test("keeps o-series reasoning while omitting unsupported verbosity", () => {
+    const payload = buildOpenAIResponsesPayload({
+      messages: [{ role: "user", content: "Hello" }],
+      modelConfig: {
+        ...modelConfig,
+        model: "o3" as any,
+        reasoningEffort: "high",
+        textVerbosity: "high",
+      },
+      store: false,
+    }) as any;
+
+    expect(payload.reasoning).toEqual({ effort: "high" });
+    expect(payload.include).toEqual(["reasoning.encrypted_content"]);
+    expect(payload.text).toBeUndefined();
+  });
+
+  test.each([
+    "gpt-5-chat-latest",
+    "gpt-5.1-chat-latest",
+    "gpt-5.2-chat-latest",
+  ])(
+    "omits reasoning-only fields for the non-reasoning Chat model %s",
+    (model) => {
+      const payload = buildOpenAIResponsesPayload({
+        messages: [{ role: "user", content: "Hello" }],
+        modelConfig: {
+          ...modelConfig,
+          model: model as any,
+          max_output_tokens: 128000,
+          reasoningEffort: "high",
+          textVerbosity: "high",
+        },
+      }) as any;
+
+      expect(payload.max_output_tokens).toBe(16384);
+      expect(payload.reasoning).toBeUndefined();
+      expect(payload.text).toBeUndefined();
+    },
+  );
+
+  test("does not assume capabilities for an unknown future model", () => {
+    const payload = buildOpenAIResponsesPayload({
+      messages: [{ role: "user", content: "Hello" }],
+      modelConfig: {
+        ...modelConfig,
+        model: "gpt-6-preview" as any,
+        max_output_tokens: 128000,
+        reasoningEffort: "high",
+        textVerbosity: "high",
+      },
+    }) as any;
+
+    expect(payload.max_output_tokens).toBe(128000);
+    expect(payload.reasoning).toBeUndefined();
+    expect(payload.text).toBeUndefined();
   });
 
   test.each(OPENAI_GPT_56_MODELS)(

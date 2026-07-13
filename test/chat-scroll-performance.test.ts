@@ -46,6 +46,7 @@ describe("chat scroll performance contract", () => {
 
     expect(chatInner).toContain("accumulateChatScrollDirection(");
     expect(chatInner).toContain("scrollDirectionAccumulatorRef.current");
+    expect(chatInner).toContain("pendingQuickJumpTargetRef.current");
     expect(chatInner).toMatch(
       /useLayoutEffect\(\(\) => \{[\s\S]*lastObservedScrollTopRef\.current = scrollRef\.current\?\.scrollTop \?\? 0;[\s\S]*scrollDirectionAccumulatorRef\.current = 0;[\s\S]*\}, \[session\.id, scrollRef\]\);/,
     );
@@ -54,6 +55,9 @@ describe("chat scroll performance contract", () => {
     );
     expect(chatInner).toMatch(
       /const scrollToBottom = useCallback\(\(\) => \{[\s\S]*setMsgRenderIndex\(renderMessages\.length - CHAT_PAGE_SIZE\);[\s\S]*scrollDomToBottom\(\);/,
+    );
+    expect(chatInner).toMatch(
+      /pendingQuickJumpTarget === null[\s\S]*pendingQuickJumpTarget === "bottom"[\s\S]*msgRenderIndex === maxRenderIndex[\s\S]*isHitBottom/,
     );
     expect(chatInner).toMatch(
       /lastObservedScrollTopRef\.current = nextScrollTop;[\s\S]*scrollDirectionAccumulatorRef\.current = 0;[\s\S]*scrollDom\.scrollTop = nextScrollTop;/,

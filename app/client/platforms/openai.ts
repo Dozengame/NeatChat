@@ -31,6 +31,7 @@ import {
   shouldRequireOpenAIResponsesWebSearch,
   shouldEnableOpenAIResponsesWebSearch,
   isOpenAIGpt56ModelConfig,
+  supportsOpenAIResponsesStreaming,
   supportsOpenAIResponsesWebSearch,
 } from "@/app/utils/openai-responses";
 import {
@@ -301,6 +302,10 @@ export class ChatGPTApi implements LLMApi {
         model: modelConfig.model,
         providerName: modelConfig.providerName,
       });
+    const effectiveStream =
+      useResponses && !supportsOpenAIResponsesStreaming(modelConfig.model)
+        ? false
+        : options.config.stream;
     const storeResponses =
       modelConfig.store ??
       accessStore.serverConfigSnapshot?.defaults.store ??
@@ -309,7 +314,7 @@ export class ChatGPTApi implements LLMApi {
     let responsesFunctionExecutors: Record<string, PluginFunctionExecutor> = {};
     if (
       useResponses &&
-      options.config.stream &&
+      effectiveStream &&
       options.allowTools === true &&
       isOpenAIGpt56ModelConfig({
         model: modelConfig.model,
@@ -432,7 +437,7 @@ export class ChatGPTApi implements LLMApi {
               modelConfig.textVerbosity ??
               (accessStore.openaiTextVerbosity as any),
           },
-          stream: options.config.stream,
+          stream: effectiveStream,
           reasoningSummary: "auto",
           truncation: "disabled",
           store: storeResponses,
@@ -443,7 +448,7 @@ export class ChatGPTApi implements LLMApi {
       } else {
         requestPayload = {
           messages,
-          stream: options.config.stream,
+          stream: effectiveStream,
           model: modelConfig.model,
           temperature: modelConfig.temperature,
           presence_penalty: modelConfig.presence_penalty,
@@ -460,7 +465,7 @@ export class ChatGPTApi implements LLMApi {
       requestPayload,
     );
 
-    const shouldStream = !isImageGeneration && !!options.config.stream;
+    const shouldStream = !isImageGeneration && !!effectiveStream;
     const controller = new AbortController();
     options.onController?.(controller);
 

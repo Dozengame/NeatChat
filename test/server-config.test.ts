@@ -7,6 +7,7 @@ import {
   applyConfiguredOpenAIResponsesReasoningEffortDefault,
   filterOpenAIResponsesReasoningEfforts,
   getMaxOutputTokensForReasoningEffort,
+  getOpenAIResponsesMaxOutputTokensLimit,
   getConfiguredOpenAIResponsesReasoningEffort,
   getOpenAIResponsesReasoningEfforts,
   includeCurrentOpenAIResponsesReasoningEffort,
@@ -27,6 +28,7 @@ import {
   shouldEnableOpenAIResponsesWebSearch,
   shouldRequireOpenAIResponsesWebSearch,
   shouldUseOpenAIResponses,
+  supportsOpenAIResponsesStreaming,
   supportsOpenAIResponsesWebSearch,
 } from "../app/utils/openai-responses";
 import { OPENAI_GPT_56_MODELS } from "../app/constant";
@@ -123,9 +125,7 @@ describe("OpenAI Responses config", () => {
       "high",
       "xhigh",
     ]);
-    expect(getOpenAIResponsesReasoningEfforts("gpt-5-pro")).toEqual([
-      "high",
-    ]);
+    expect(getOpenAIResponsesReasoningEfforts("gpt-5-pro")).toEqual(["high"]);
   });
 
   test("parses a canonical reasoning effort UI allowlist", () => {
@@ -378,37 +378,40 @@ describe("OpenAI Responses config", () => {
   test.each([
     ["claude-4", "Anthropic"],
     ["gpt-5.6-terra", "Azure"],
-  ])("does not reconcile OpenAI reasoning metadata for %s@%s", (model, providerName) => {
-    const config = {
-      model,
-      providerName,
-      reasoningEffort: "max" as const,
-      max_output_tokens: 30000,
-    };
-    const configMeta = {
-      reasoningEffort: { source: "conversation_override" as const },
-      max_output_tokens: { source: "conversation_override" as const },
-    };
+  ])(
+    "does not reconcile OpenAI reasoning metadata for %s@%s",
+    (model, providerName) => {
+      const config = {
+        model,
+        providerName,
+        reasoningEffort: "max" as const,
+        max_output_tokens: 30000,
+      };
+      const configMeta = {
+        reasoningEffort: { source: "conversation_override" as const },
+        max_output_tokens: { source: "conversation_override" as const },
+      };
 
-    expect(
-      applyConfiguredOpenAIResponsesReasoningEffortDefault({
-        config,
-        configMeta,
-        defaults: parseOpenAIResponsesReasoningEffortDefaults("*=medium"),
-      }),
-    ).toEqual({
-      reasoningEffortChanged: false,
-      maxOutputTokensChanged: false,
-    });
-    expect(config).toMatchObject({
-      reasoningEffort: "max",
-      max_output_tokens: 30000,
-    });
-    expect(configMeta).toMatchObject({
-      reasoningEffort: { source: "conversation_override" },
-      max_output_tokens: { source: "conversation_override" },
-    });
-  });
+      expect(
+        applyConfiguredOpenAIResponsesReasoningEffortDefault({
+          config,
+          configMeta,
+          defaults: parseOpenAIResponsesReasoningEffortDefaults("*=medium"),
+        }),
+      ).toEqual({
+        reasoningEffortChanged: false,
+        maxOutputTokensChanged: false,
+      });
+      expect(config).toMatchObject({
+        reasoningEffort: "max",
+        max_output_tokens: 30000,
+      });
+      expect(configMeta).toMatchObject({
+        reasoningEffort: { source: "conversation_override" },
+        max_output_tokens: { source: "conversation_override" },
+      });
+    },
+  );
 
   test("uses Responses for OpenAI and keeps Azure separate", () => {
     expect(
@@ -610,7 +613,7 @@ describe("OpenAI Responses config", () => {
     ]) {
       expect(parseOpenAIMaxOutputTokens("512000", model)).toBe(16384);
     }
-    expect(parseOpenAIMaxOutputTokens("512000", "gpt-4.1")).toBe(512000);
+    expect(parseOpenAIMaxOutputTokens("512000", "gpt-4.1")).toBe(32768);
     expect(parseOpenAIMaxOutputTokens("-1")).toBe(0);
   });
 
@@ -766,12 +769,9 @@ describe("OpenAI Responses config", () => {
     process.env.DEFAULT_MODEL = "gpt-5.6-terra";
     process.env.OPENAI_REASONING_EFFORT =
       "*=medium;gpt-5.6-terra=high;gpt-5.6-luna=xhigh";
-    process.env.WEBUI_ALLOWED_REASONING_EFFORTS =
-      "gpt-5.6-terra=low,high";
+    process.env.WEBUI_ALLOWED_REASONING_EFFORTS = "gpt-5.6-terra=low,high";
 
-    const config = buildPublicAppConfig(
-      new Date("2026-07-12T00:00:00.000Z"),
-    );
+    const config = buildPublicAppConfig(new Date("2026-07-12T00:00:00.000Z"));
     expect(config.reasoningEffortAllowlist).toEqual({
       models: { "gpt-5.6-terra": ["low", "high"] },
     });
@@ -1153,6 +1153,39 @@ describe("OpenAI Responses config", () => {
       reasoningEffort: "medium",
       max_output_tokens: 12000,
     });
+
+    expect(
+      resolveServerModelConfig({
+        defaultModel: "gpt-5.2-chat-latest",
+        openaiReasoningEffort: "high",
+      }),
+    ).toEqual({
+      model: "gpt-5.2-chat-latest",
+      providerName: "OpenAI",
+    });
+  });
+
+  test.each([
+    ["o3", 100000],
+    ["o3-mini-2025-01-31", 100000],
+    ["o3-pro-2025-06-10", 100000],
+    ["o4-mini", 100000],
+    ["o1", 100000],
+    ["o1-pro-2025-03-19", 100000],
+    ["o1-mini", 65536],
+    ["o1-preview-2024-09-12", 32768],
+  ])("uses the documented output limit for %s", (model, expected) => {
+    expect(getOpenAIResponsesMaxOutputTokensLimit(model)).toBe(expected);
+  });
+
+  test("keeps unknown o-series compatible while disabling stream for known pro models", () => {
+    expect(getOpenAIResponsesMaxOutputTokensLimit("o9-custom")).toBe(512000);
+    expect(getOpenAIResponsesMaxOutputTokensLimit("o3-custom")).toBe(512000);
+    expect(supportsOpenAIResponsesStreaming("o1-pro")).toBe(false);
+    expect(supportsOpenAIResponsesStreaming("o3-pro-2025-06-10")).toBe(false);
+    expect(supportsOpenAIResponsesStreaming("o3")).toBe(true);
+    expect(supportsOpenAIResponsesStreaming("o9-custom")).toBe(true);
+    expect(supportsOpenAIResponsesStreaming("o3-pro-custom")).toBe(true);
   });
 
   test.each(["none", "xhigh", "max"] as const)(

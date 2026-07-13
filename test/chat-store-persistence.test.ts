@@ -24,4 +24,16 @@ describe("chat store persistence scheduling", () => {
     const semanticFlushCalls = source.match(/flushChatPersistence\(\);/g);
     expect(semanticFlushCalls?.length).toBeGreaterThanOrEqual(5);
   });
+
+  test("cancels pending chat persistence before clearing storage", () => {
+    const source = chatStoreSource();
+    const clearAllData = source.slice(
+      source.indexOf("async clearAllData()"),
+      source.indexOf("setLastInput", source.indexOf("async clearAllData()")),
+    );
+
+    expect(clearAllData).toMatch(
+      /await chatPersistStorage\.removeItem\(StoreKey\.Chat\);[\s\S]*await indexedDBStorage\.clear\(\);[\s\S]*localStorage\.clear\(\);[\s\S]*location\.reload\(\);/,
+    );
+  });
 });

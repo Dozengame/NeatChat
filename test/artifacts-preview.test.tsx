@@ -88,4 +88,61 @@ describe("HTMLPreview accessibility and message boundary", () => {
     });
     expect(onLoad).toHaveBeenCalledTimes(1);
   });
+
+  test("treats updated code as a new document load", async () => {
+    const onLoad = jest.fn();
+    const view = render(
+      <HTMLPreview
+        code="<!DOCTYPE html><title>First</title>"
+        accessibleTitle="HTML preview"
+        onLoad={onLoad}
+      />,
+    );
+
+    const firstFrame = screen.getByTitle(/^HTML preview /);
+    const firstFrameId = (firstFrame.getAttribute("srcdoc") ?? "").match(
+      /id: '([^']+)'/,
+    )?.[1];
+    expect(firstFrameId).toBeTruthy();
+
+    act(() => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          data: { id: firstFrameId, height: 120, title: "First" },
+          source: (firstFrame as HTMLIFrameElement).contentWindow,
+        }),
+      );
+    });
+    await waitFor(() => expect(onLoad).toHaveBeenCalledWith("First"));
+
+    view.rerender(
+      <HTMLPreview
+        code="<!DOCTYPE html><title>Second</title>"
+        accessibleTitle="HTML preview"
+        onLoad={onLoad}
+      />,
+    );
+
+    const secondFrame = screen.getByTitle(/^HTML preview /);
+    const secondFrameId = (secondFrame.getAttribute("srcdoc") ?? "").match(
+      /id: '([^']+)'/,
+    )?.[1];
+    expect(secondFrameId).toBeTruthy();
+    expect(secondFrameId).not.toBe(firstFrameId);
+
+    act(() => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          data: { id: secondFrameId, height: 140, title: "Second" },
+          source: (secondFrame as HTMLIFrameElement).contentWindow,
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(onLoad).toHaveBeenCalledTimes(2);
+      expect(onLoad).toHaveBeenLastCalledWith("Second");
+      expect(secondFrame.getAttribute("title")).toMatch(/: Second$/);
+    });
+  });
 });

@@ -292,4 +292,84 @@ describe("summarizeSession request config", () => {
       });
     }
   });
+
+  test("trims compression history against the resolved Summary model budget", async () => {
+    useAppConfig.setState((state) => ({
+      serverConfigSnapshot: {
+        ...state.serverConfigSnapshot!,
+        forced: {
+          ...state.serverConfigSnapshot!.forced,
+          max_output_tokens: 100,
+        },
+      },
+    }));
+    const targetSession = session("summary-budget", {
+      historyMessageCount: 2,
+      max_output_tokens: 10000,
+    });
+    targetSession.messages = Array.from({ length: 6 }, (_, index) => ({
+      id: `history-${index}`,
+      role: index % 2 === 0 ? ("user" as const) : ("assistant" as const),
+      content: `${index}-${"x".repeat(400)}`,
+      date: "",
+    }));
+    useChatStore.setState({
+      sessions: [targetSession],
+      currentSessionIndex: 0,
+      temporarySession: undefined,
+    } as any);
+
+    await useChatStore.getState().summarizeSession(true, targetSession);
+
+    expect(chat).toHaveBeenCalledTimes(2);
+    const compressionMessages = chat.mock.calls[1][0].messages;
+    expect(compressionMessages.map((message: any) => message.id)).toEqual([
+      "history-4",
+      "history-5",
+      "summary-session-id",
+    ]);
+    expect(chat.mock.calls[1][0].config.max_output_tokens).toBe(100);
+  });
+
+  test("treats a zero Summary max output value as an unset budget", async () => {
+    useAppConfig.setState((state) => ({
+      serverConfigSnapshot: {
+        ...state.serverConfigSnapshot!,
+        forced: {
+          ...state.serverConfigSnapshot!.forced,
+          max_output_tokens: 0,
+        },
+      },
+    }));
+    const targetSession = session("summary-zero-budget", {
+      historyMessageCount: 2,
+      max_output_tokens: 10000,
+    });
+    targetSession.messages = Array.from({ length: 6 }, (_, index) => ({
+      id: `zero-history-${index}`,
+      role: index % 2 === 0 ? ("user" as const) : ("assistant" as const),
+      content: `${index}-${"x".repeat(400)}`,
+      date: "",
+    }));
+    useChatStore.setState({
+      sessions: [targetSession],
+      currentSessionIndex: 0,
+      temporarySession: undefined,
+    } as any);
+
+    await useChatStore.getState().summarizeSession(true, targetSession);
+
+    expect(chat).toHaveBeenCalledTimes(2);
+    expect(
+      chat.mock.calls[1][0].messages.map((message: any) => message.id),
+    ).toEqual([
+      "zero-history-0",
+      "zero-history-1",
+      "zero-history-2",
+      "zero-history-3",
+      "zero-history-4",
+      "zero-history-5",
+      "summary-session-id",
+    ]);
+  });
 });

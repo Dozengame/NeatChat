@@ -14,6 +14,7 @@ Do not read all iteration files by default. Use `rg` first, then open the smalle
 
 ## Routing
 
+- Final full-stack `main...dev` pre-merge audit at the 35-commit baseline, covering chat/scrolling, OpenAI Responses and model capabilities, MCP partial failure recovery, persistence, file/PDF lifecycle, image options, HTML previews, security redaction, production build, static-export boundary, and desktop/mobile Browser QA: `iterations/2026-07-13-dev-main-final-premerge-review.md`.
 - Summary Model effective `DEFAULT_MODEL` inheritance, per-model `OPENAI_REASONING_EFFORT`, provider-wide request/header authority, target-session isolation, locked/stale Settings states, and responsive sentinel UI: `iterations/2026-07-13-summary-model-defaults.md`.
 - Context-prompt count regression where the rendered `BOT_HELLO` fallback was misreported as a preset prompt in desktop toast and mobile settings labels: `iterations/2026-07-13-context-prompt-count.md`.
 - Markdown same-message TOC anchors under HashRouter and direction-aware chat quick-jump navigation: `iterations/2026-07-13-markdown-anchor-scroll-navigation.md`.

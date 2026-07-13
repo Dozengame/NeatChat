@@ -2413,7 +2413,7 @@ describe("Gemini visual migration shell", () => {
       /const syncHitBottomState = useCallback\(\s*\(e: HTMLElement, syncAutoScroll = false\) => \{[\s\S]*const bottomHeight = e\.scrollTop \+ e\.clientHeight;[\s\S]*setHitTop\(isHitTop\);[\s\S]*setHitBottom\(isHitBottom\);[\s\S]*if \(syncAutoScroll\) \{[\s\S]*setAutoScroll\(isHitBottom\);[\s\S]*\}[\s\S]*return \{ bottomHeight, isHitBottom, isHitTop \};[\s\S]*\},\s*\[isMobileScreen, setAutoScroll\],\s*\);/,
     );
     expect(chat).toMatch(
-      /const onChatBodyScroll = \(e: HTMLElement\) => \{[\s\S]*const \{ bottomHeight \} = syncHitBottomState\(e, true\);/,
+      /const onChatBodyScroll = \(e: HTMLElement\) => \{[\s\S]*const pendingQuickJumpTarget = pendingQuickJumpTargetRef\.current;[\s\S]*const \{ bottomHeight, isHitBottom, isHitTop \} = syncHitBottomState\(\s*e,\s*pendingQuickJumpTarget === null,\s*\);/,
     );
     expect(chat).toMatch(
       /window\.addEventListener\("resize", syncHitBottomAfterResize\);[\s\S]*window\.removeEventListener\("resize", syncHitBottomAfterResize\);[\s\S]*cancelAnimationFrame\(resizeFrame\);/,

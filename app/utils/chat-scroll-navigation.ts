@@ -2,6 +2,24 @@ export type ChatScrollTarget = "top" | "bottom";
 
 export const CHAT_SCROLL_DIRECTION_THRESHOLD = 12;
 
+export function getAnchoredScrollTop(
+  currentScrollTop: number,
+  nextAnchorTop: number,
+  previousAnchorTop: number,
+) {
+  return currentScrollTop + nextAnchorTop - previousAnchorTop;
+}
+
+export function followChatTailAfterResize(
+  container: Pick<HTMLElement, "scrollHeight" | "scrollTo">,
+  shouldFollowTail: boolean,
+) {
+  if (!shouldFollowTail) return false;
+
+  container.scrollTo(0, container.scrollHeight);
+  return true;
+}
+
 export function accumulateChatScrollDirection(
   accumulatedDelta: number,
   scrollDelta: number,

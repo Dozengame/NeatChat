@@ -40,4 +40,80 @@ describe("buildOpenAIModelTestRequest", () => {
       }).max_output_tokens,
     ).toBe(16);
   });
+
+  test.each([
+    ["gpt-4o", 16384],
+    ["gpt-4o-mini", 16384],
+    ["gpt-4.1", 32768],
+    ["gpt-4.1-mini-2025-04-14", 32768],
+  ])("clamps %s to its documented output limit", (model, limit) => {
+    expect(
+      buildOpenAIModelTestRequest(model, {
+        openaiMaxOutputTokens: 128000,
+        openaiReasoningEffort: "high",
+        openaiTextVerbosity: "high",
+      }),
+    ).toEqual({
+      model,
+      input: "Hello!",
+      max_output_tokens: limit,
+      stream: false,
+    });
+  });
+
+  test("keeps reasoning for supported o-series probes without verbosity", () => {
+    expect(
+      buildOpenAIModelTestRequest("o3", {
+        openaiMaxOutputTokens: 10000,
+        openaiReasoningEffort: "high",
+        openaiTextVerbosity: "high",
+      }),
+    ).toEqual({
+      model: "o3",
+      input: "Hello!",
+      max_output_tokens: 10000,
+      reasoning: { effort: "high" },
+      stream: false,
+    });
+  });
+
+  test.each([
+    "gpt-5-chat-latest",
+    "gpt-5.1-chat-latest",
+    "gpt-5.2-chat-latest",
+  ])(
+    "omits reasoning-only fields for the non-reasoning Chat model %s",
+    (model) => {
+      expect(
+        buildOpenAIModelTestRequest(model, {
+          openaiMaxOutputTokens: 128000,
+          openaiReasoningEffort: "high",
+          openaiTextVerbosity: "high",
+        }),
+      ).toEqual({
+        model,
+        input: "Hello!",
+        max_output_tokens: 16384,
+        stream: false,
+      });
+    },
+  );
+
+  test.each(["gpt-custom-local", "gpt-6-preview"])(
+    "does not invent capability fields or narrow output for unknown model %s",
+    (model) => {
+      expect(
+        buildOpenAIModelTestRequest(model, {
+          openaiMaxOutputTokens: 128000,
+          openaiReasoningEffort: "high",
+          openaiTextVerbosity: "high",
+        }),
+      ).toEqual({
+        model,
+        input: "Hello!",
+        max_output_tokens: 128000,
+        stream: false,
+      });
+    },
+  );
 });

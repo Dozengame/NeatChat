@@ -3,7 +3,7 @@ import type { ModelConfig } from "../store/config";
 import {
   clampOpenAIResponsesMaxOutputTokens,
   getMaxOutputTokensForReasoningEffort,
-  isOpenAIGpt5OrNewerModelConfig,
+  isOpenAIResponsesReasoningModelConfig,
   normalizeOpenAIResponsesReasoningEffort,
   OPENAI_RESPONSES_DEFAULT_MODEL,
   resolveOpenAIResponsesReasoningEffortDefault,
@@ -109,7 +109,7 @@ export function resolveSummaryRequestConfig(params: {
     hasSummaryOverride &&
     summaryOverrideAvailable &&
     requestedRef === effectiveRef;
-  const supportsReasoning = isOpenAIGpt5OrNewerModelConfig({
+  const supportsReasoning = isOpenAIResponsesReasoningModelConfig({
     model,
     providerName,
   });

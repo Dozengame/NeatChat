@@ -591,121 +591,137 @@ async function readPdfFile(file: File): Promise<string> {
             }
           }
 
-          // 加载 PDF 文档
-          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-          const pdf = await loadingTask.promise;
-          const copy = AttachmentReader.Pdf;
+          let loadingTask: ReturnType<typeof pdfjsLib.getDocument> | undefined;
+          try {
+            // 加载 PDF 文档
+            loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdf = await loadingTask.promise;
+            const copy = AttachmentReader.Pdf;
 
-          // 提取文本内容
-          let textContent = copy.Content(pdf.numPages);
-          let hasContent = false;
-          let emptyPageCount = 0;
+            // 提取文本内容
+            let textContent = copy.Content(pdf.numPages);
+            let hasContent = false;
+            let emptyPageCount = 0;
 
-          // 为大型文件设置页面限制
-          const isLargeFile = file.size > 50 * 1024 * 1024; // 50MB
-          const maxPagesToProcess = isLargeFile ? 30 : pdf.numPages;
+            // 为大型文件设置页面限制
+            const isLargeFile = file.size > 50 * 1024 * 1024; // 50MB
+            const maxPagesToProcess = isLargeFile ? 30 : pdf.numPages;
 
-          const pageNumbers = Array.from(
-            { length: Math.min(maxPagesToProcess, pdf.numPages) },
-            (_, index) => index + 1,
-          );
-          const pageResults = await mapWithConcurrencyLimit(
-            pageNumbers,
-            4,
-            async (i) => {
-              let pageText = "";
-              let isEmpty = false;
+            const pageNumbers = Array.from(
+              { length: Math.min(maxPagesToProcess, pdf.numPages) },
+              (_, index) => index + 1,
+            );
+            const pageResults = await mapWithConcurrencyLimit(
+              pageNumbers,
+              4,
+              async (i) => {
+                let pageText = "";
+                let isEmpty = false;
 
-              try {
-                // 获取页面
-                const page = await pdf.getPage(i);
+                try {
+                  // 获取页面
+                  const page = await pdf.getPage(i);
 
-                // 提取文本
-                const content = await page.getTextContent();
-                pageText = content.items.map((item: any) => item.str).join(" ");
-                isEmpty = pageText.trim().length === 0;
-              } catch (pageError) {
+                  // 提取文本
+                  const content = await page.getTextContent();
+                  pageText = content.items
+                    .map((item: any) => item.str)
+                    .join(" ");
+                  isEmpty = pageText.trim().length === 0;
+                } catch (pageError) {
+                  return {
+                    pageNumber: i,
+                    text: copy.UnreadablePage,
+                    isEmpty: false,
+                  };
+                }
+
                 return {
                   pageNumber: i,
-                  text: copy.UnreadablePage,
-                  isEmpty: false,
+                  text: isEmpty ? copy.BlankPage : pageText,
+                  isEmpty,
                 };
-              }
+              },
+            );
 
-              return {
-                pageNumber: i,
-                text: isEmpty ? copy.BlankPage : pageText,
-                isEmpty,
-              };
-            },
-          );
-
-          // 按页码顺序拼接，保持原输出顺序
-          for (const pageResult of pageResults) {
-            try {
-              if (
-                !pageResult.isEmpty &&
-                pageResult.text !== copy.UnreadablePage
-              ) {
-                hasContent = true;
-              } else if (pageResult.isEmpty) {
-                emptyPageCount++;
+            // 按页码顺序拼接，保持原输出顺序
+            for (const pageResult of pageResults) {
+              try {
+                if (
+                  !pageResult.isEmpty &&
+                  pageResult.text !== copy.UnreadablePage
+                ) {
+                  hasContent = true;
+                } else if (pageResult.isEmpty) {
+                  emptyPageCount++;
+                }
+                textContent += copy.Page(
+                  pageResult.pageNumber,
+                  pageResult.text,
+                );
+              } catch (pageError) {
+                textContent += copy.Page(
+                  pageResult.pageNumber,
+                  copy.UnreadablePage,
+                );
               }
-              textContent += copy.Page(pageResult.pageNumber, pageResult.text);
-            } catch (pageError) {
-              textContent += copy.Page(
-                pageResult.pageNumber,
-                copy.UnreadablePage,
+            }
+
+            // 如果处理的页面数少于总页数
+            if (maxPagesToProcess < pdf.numPages) {
+              textContent += copy.Truncated(maxPagesToProcess, pdf.numPages);
+            }
+
+            // 检查是否所有页面都是空的
+            if (
+              !hasContent ||
+              emptyPageCount === Math.min(maxPagesToProcess, pdf.numPages)
+            ) {
+              // 显示弹窗提醒
+              showModal({
+                title: copy.LimitedTitle,
+                children: React.createElement(
+                  "div",
+                  null,
+                  React.createElement("p", null, copy.LimitedDescription),
+                  React.createElement(
+                    "ul",
+                    null,
+                    React.createElement("li", null, copy.Scanned),
+                    React.createElement("li", null, copy.Protected),
+                    React.createElement("li", null, copy.Damaged),
+                  ),
+                  React.createElement("p", null, copy.Suggestions),
+                  React.createElement(
+                    "ol",
+                    null,
+                    React.createElement("li", null, copy.UseOcr),
+                    React.createElement("li", null, copy.CopyManually),
+                    React.createElement("li", null, copy.UseSmallerFile),
+                  ),
+                ),
+              });
+
+              resolve(
+                copy.LimitedContent(
+                  file.name,
+                  (file.size / (1024 * 1024)).toFixed(2),
+                  pdf.numPages,
+                ),
               );
+              return;
+            }
+
+            resolve(textContent);
+          } finally {
+            if (loadingTask) {
+              try {
+                await loadingTask.destroy();
+              } catch (cleanupError) {
+                console.warn("释放 PDF 资源失败:", cleanupError);
+              }
             }
           }
-
-          // 如果处理的页面数少于总页数
-          if (maxPagesToProcess < pdf.numPages) {
-            textContent += copy.Truncated(maxPagesToProcess, pdf.numPages);
-          }
-
-          // 检查是否所有页面都是空的
-          if (
-            !hasContent ||
-            emptyPageCount === Math.min(maxPagesToProcess, pdf.numPages)
-          ) {
-            // 显示弹窗提醒
-            showModal({
-              title: copy.LimitedTitle,
-              children: React.createElement(
-                "div",
-                null,
-                React.createElement("p", null, copy.LimitedDescription),
-                React.createElement(
-                  "ul",
-                  null,
-                  React.createElement("li", null, copy.Scanned),
-                  React.createElement("li", null, copy.Protected),
-                  React.createElement("li", null, copy.Damaged),
-                ),
-                React.createElement("p", null, copy.Suggestions),
-                React.createElement(
-                  "ol",
-                  null,
-                  React.createElement("li", null, copy.UseOcr),
-                  React.createElement("li", null, copy.CopyManually),
-                  React.createElement("li", null, copy.UseSmallerFile),
-                ),
-              ),
-            });
-
-            resolve(
-              copy.LimitedContent(
-                file.name,
-                (file.size / (1024 * 1024)).toFixed(2),
-                pdf.numPages,
-              ),
-            );
-            return;
-          }
-
-          resolve(textContent);
         } catch (pdfError: any) {
           console.error("解析 PDF 失败:", pdfError);
 

@@ -24,9 +24,12 @@ import {
   includeCurrentOpenAIResponsesReasoningEffort,
   isOpenAIGpt56ModelConfig,
   isOpenAIGpt5OrNewerModelConfig,
+  isOpenAIResponsesReasoningModelConfig,
+  isOpenAIResponsesTextVerbosityModelConfig,
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
   normalizeOpenAIResponsesReasoningEffort,
   OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY,
+  supportsOpenAIResponsesSampling,
 } from "../utils/openai-responses";
 import {
   applyOpenAIImageGenerationDefaults,
@@ -206,10 +209,28 @@ function useModelConfigListView(props: {
     model: props.modelConfig.model,
     providerName: props.modelConfig?.providerName,
   });
+  const supportsReasoning = isOpenAIResponsesReasoningModelConfig({
+    model: props.modelConfig.model,
+    providerName: props.modelConfig?.providerName,
+  });
+  const supportsTextVerbosity = isOpenAIResponsesTextVerbosityModelConfig({
+    model: props.modelConfig.model,
+    providerName: props.modelConfig?.providerName,
+  });
   const isOpenAIGpt56 = isOpenAIGpt56ModelConfig({
     model: props.modelConfig.model,
     providerName: props.modelConfig?.providerName,
   });
+  const normalizedProviderName = props.modelConfig?.providerName
+    ?.trim()
+    .toLowerCase();
+  const isOpenAIProvider =
+    !normalizedProviderName ||
+    normalizedProviderName === ServiceProvider.OpenAI.toLowerCase() ||
+    normalizedProviderName === "chatgpt";
+  const supportsSamplingControls =
+    !isOpenAIProvider ||
+    supportsOpenAIResponsesSampling(props.modelConfig.model);
   const isOpenAIImageGeneration = isOpenAIImageGenerationModelConfig({
     model: props.modelConfig.model,
     providerName: props.modelConfig?.providerName,
@@ -379,9 +400,9 @@ function useModelConfigListView(props: {
             </ListItem>
           )}
         </>
-      ) : isOpenAIGpt5OrNewer ? (
+      ) : supportsReasoning || supportsTextVerbosity || isOpenAIGpt56 ? (
         <>
-          {visibleReasoningEffortOptions.length > 0 && (
+          {supportsReasoning && visibleReasoningEffortOptions.length > 0 && (
             <ListItem
               title={Locale.Settings.ReasoningEffort.Title}
               subTitle={withSourceText(
@@ -424,32 +445,34 @@ function useModelConfigListView(props: {
               </Select>
             </ListItem>
           )}
-          <ListItem
-            title={Locale.Settings.TextVerbosity.Title}
-            subTitle={withSourceText(
-              Locale.Settings.TextVerbosity.SubTitle,
-              "textVerbosity",
-            )}
-          >
-            <Select
-              aria-label={Locale.Settings.TextVerbosity.Title}
-              value={textVerbosity}
-              disabled={isLocked("textVerbosity")}
-              onChange={(e) => {
-                updateUnlocked(["textVerbosity"], (config) => {
-                  config.textVerbosity = ModalConfigValidator.textVerbosity(
-                    e.currentTarget.value,
-                  );
-                });
-              }}
+          {supportsTextVerbosity && (
+            <ListItem
+              title={Locale.Settings.TextVerbosity.Title}
+              subTitle={withSourceText(
+                Locale.Settings.TextVerbosity.SubTitle,
+                "textVerbosity",
+              )}
             >
-              {(["low", "medium", "high"] as const).map((verbosity) => (
-                <option value={verbosity} key={verbosity}>
-                  {TEXT_VERBOSITY_LABELS[verbosity]}
-                </option>
-              ))}
-            </Select>
-          </ListItem>
+              <Select
+                aria-label={Locale.Settings.TextVerbosity.Title}
+                value={textVerbosity}
+                disabled={isLocked("textVerbosity")}
+                onChange={(e) => {
+                  updateUnlocked(["textVerbosity"], (config) => {
+                    config.textVerbosity = ModalConfigValidator.textVerbosity(
+                      e.currentTarget.value,
+                    );
+                  });
+                }}
+              >
+                {(["low", "medium", "high"] as const).map((verbosity) => (
+                  <option value={verbosity} key={verbosity}>
+                    {TEXT_VERBOSITY_LABELS[verbosity]}
+                  </option>
+                ))}
+              </Select>
+            </ListItem>
+          )}
           {isOpenAIGpt56 && (
             <>
               <ListItem
@@ -608,7 +631,7 @@ function useModelConfigListView(props: {
             </>
           )}
         </>
-      ) : (
+      ) : supportsSamplingControls ? (
         <>
           <ListItem
             title={Locale.Settings.Temperature.Title}
@@ -653,7 +676,7 @@ function useModelConfigListView(props: {
             />
           </ListItem>
         </>
-      )}
+      ) : null}
 
       {!isOpenAIImageGeneration && (
         <ListItem
@@ -688,7 +711,7 @@ function useModelConfigListView(props: {
       {props.modelConfig?.providerName == ServiceProvider.Google ||
       isOpenAIImageGeneration ? null : (
         <>
-          {!isOpenAIGpt5OrNewer && (
+          {!isOpenAIGpt5OrNewer && !supportsReasoning && (
             <>
               <ListItem
                 title={Locale.Settings.PresencePenalty.Title}

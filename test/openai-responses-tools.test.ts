@@ -215,6 +215,57 @@ describe("OpenAI Responses function tools", () => {
     ).toThrow("rate limited");
   });
 
+  test("sanitizes sensitive SSE error events before they reach callbacks", () => {
+    const collector = createResponsesRoundCollector();
+    let publicError: Error | undefined;
+
+    try {
+      collector.consume({
+        type: "error",
+        message: "Authorization: Bearer upstream-secret",
+        request_id: "req_sse_123",
+      });
+    } catch (error) {
+      publicError = error as Error;
+    }
+
+    expect(publicError?.message).toBe(
+      "OpenAI Responses request failed [request_id: req_sse_123]",
+    );
+    expect(publicError?.message).not.toContain("upstream-secret");
+    expect(publicError?.message).not.toContain("Authorization");
+  });
+
+  test("preserves safe HTTP detail and request id without leaking credentials", async () => {
+    const safeResponse = {
+      status: 400,
+      headers: new Headers({ "x-request-id": "req_http_123" }),
+      clone: () => ({
+        json: async () => ({ error: { message: "Invalid tool schema" } }),
+      }),
+    } as unknown as Response;
+    const unsafeResponse = {
+      status: 502,
+      headers: new Headers({ "x-request-id": "req_http_456" }),
+      clone: () => ({
+        json: async () => ({
+          error: { message: "Bearer upstream-secret" },
+        }),
+      }),
+    } as unknown as Response;
+
+    await expect(getOpenAIResponsesStreamError(safeResponse)).resolves.toEqual(
+      new Error(
+        "OpenAI Responses stream failed (400): Invalid tool schema [request_id: req_http_123]",
+      ),
+    );
+    const unsafeError = await getOpenAIResponsesStreamError(unsafeResponse);
+    expect(unsafeError.message).toBe(
+      "OpenAI Responses stream failed (502) [request_id: req_http_456]",
+    );
+    expect(unsafeError.message).not.toContain("upstream-secret");
+  });
+
   test.each([
     {
       label: "error",

@@ -2,6 +2,8 @@ import {
   clampOpenAIResponsesMaxOutputTokens,
   normalizeOpenAIResponsesReasoningEffort,
   parseOpenAIResponsesTextVerbosity,
+  supportsOpenAIResponsesReasoning,
+  supportsOpenAIResponsesTextVerbosity,
 } from "./openai-responses";
 
 export type OpenAIModelTestServerConfig = {
@@ -14,6 +16,10 @@ export function buildOpenAIModelTestRequest(
   model: string,
   serverConfig: OpenAIModelTestServerConfig,
 ) {
+  const textVerbosity = supportsOpenAIResponsesTextVerbosity(model)
+    ? parseOpenAIResponsesTextVerbosity(serverConfig.openaiTextVerbosity)
+    : undefined;
+
   return {
     model,
     input: "Hello!",
@@ -21,17 +27,17 @@ export function buildOpenAIModelTestRequest(
       serverConfig.openaiMaxOutputTokens ?? 16,
       model,
     ),
-    reasoning: {
-      effort: normalizeOpenAIResponsesReasoningEffort(
-        serverConfig.openaiReasoningEffort,
-        model,
-      ),
-    },
-    text: {
-      verbosity: parseOpenAIResponsesTextVerbosity(
-        serverConfig.openaiTextVerbosity,
-      ),
-    },
+    ...(supportsOpenAIResponsesReasoning(model)
+      ? {
+          reasoning: {
+            effort: normalizeOpenAIResponsesReasoningEffort(
+              serverConfig.openaiReasoningEffort,
+              model,
+            ),
+          },
+        }
+      : {}),
+    ...(textVerbosity ? { text: { verbosity: textVerbosity } } : {}),
     stream: false,
   };
 }

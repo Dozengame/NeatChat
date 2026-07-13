@@ -29,9 +29,7 @@ describe("frontend performance and compatibility contracts", () => {
     expect(chat).toContain(
       'querySelectorAll<HTMLElement>("[data-message-anchor]")',
     );
-    expect(chat).toMatch(
-      /scrollDom\.scrollTop \+= nextAnchorTop - pendingAnchor\.top/,
-    );
+    expect(chat).toContain("getAnchoredScrollTop(");
     expect(chat).toContain(
       "const absoluteMessageIndex = messageRenderStartIndex + i",
     );
@@ -68,6 +66,9 @@ describe("frontend performance and compatibility contracts", () => {
     expect(markdown.match(/loading="lazy"/g)?.length).toBeGreaterThanOrEqual(2);
     expect(markdown.match(/decoding="async"/g)?.length).toBeGreaterThanOrEqual(
       2,
+    );
+    expect(chat).toMatch(
+      /messageImages\.map\(\(image, index\)[\s\S]*?key=\{getAttachmentRenderKey\([\s\S]*?"image",[\s\S]*?image,[\s\S]*?index,[\s\S]*?\)\}/,
     );
   });
 

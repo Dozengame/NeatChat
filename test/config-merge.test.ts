@@ -699,7 +699,7 @@ describe("applyPublicAppConfig", () => {
     ["gpt-5.5", 128000],
     ["gpt-5-pro", 272000],
     ["gpt-5.2-chat-latest", 16384],
-    ["gpt-4.1", 512000],
+    ["gpt-4.1", 32768],
   ])("caps %s max_output_tokens at its model limit", (model, expected) => {
     expect(ModalConfigValidator.max_output_tokens(512000, model)).toBe(
       expected,

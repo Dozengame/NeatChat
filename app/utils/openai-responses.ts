@@ -13,6 +13,11 @@ export const OPENAI_RESPONSES_DEFAULT_COMPRESS_MESSAGE_LENGTH_THRESHOLD = 1000;
 export const OPENAI_GPT_56_MAX_OUTPUT_TOKENS = 128000;
 const OPENAI_GPT_5_PRO_MAX_OUTPUT_TOKENS = 272000;
 const OPENAI_GPT_5_CHAT_MAX_OUTPUT_TOKENS = 16384;
+const OPENAI_GPT_4O_MAX_OUTPUT_TOKENS = 16384;
+const OPENAI_GPT_41_MAX_OUTPUT_TOKENS = 32768;
+const OPENAI_O_SERIES_MAX_OUTPUT_TOKENS = 100000;
+const OPENAI_O1_MINI_MAX_OUTPUT_TOKENS = 65536;
+const OPENAI_O1_PREVIEW_MAX_OUTPUT_TOKENS = 32768;
 const OPENAI_RESPONSES_FALLBACK_MAX_OUTPUT_TOKENS = 512000;
 const OPENAI_RESPONSES_REASONING_MAX_OUTPUT_TOKENS = {
   none: 10000,
@@ -116,6 +121,19 @@ export function isGpt56Model(model?: string) {
 
 export function getOpenAIResponsesMaxOutputTokensLimit(model?: string) {
   const normalized = model?.trim().toLowerCase().split("@")[0] ?? "";
+  if (/^o1-preview(?:-\d{4}-\d{2}-\d{2})?$/.test(normalized)) {
+    return OPENAI_O1_PREVIEW_MAX_OUTPUT_TOKENS;
+  }
+  if (/^o1-mini(?:-\d{4}-\d{2}-\d{2})?$/.test(normalized)) {
+    return OPENAI_O1_MINI_MAX_OUTPUT_TOKENS;
+  }
+  if (
+    /^(?:o1(?:-pro)?|o3(?:-(?:mini|pro))?|o4-mini)(?:-\d{4}-\d{2}-\d{2})?$/.test(
+      normalized,
+    )
+  ) {
+    return OPENAI_O_SERIES_MAX_OUTPUT_TOKENS;
+  }
   if (/^gpt-5(?:\.[12])?-chat-latest$/.test(normalized)) {
     return OPENAI_GPT_5_CHAT_MAX_OUTPUT_TOKENS;
   }
@@ -124,6 +142,15 @@ export function getOpenAIResponsesMaxOutputTokensLimit(model?: string) {
   }
   if (/^gpt-5(?:[-.]|$)/.test(normalized)) {
     return OPENAI_GPT_56_MAX_OUTPUT_TOKENS;
+  }
+  if (
+    /^gpt-4o(?:-mini)?(?:-\d{4}-\d{2}-\d{2})?$/.test(normalized) ||
+    normalized === "chatgpt-4o-latest"
+  ) {
+    return OPENAI_GPT_4O_MAX_OUTPUT_TOKENS;
+  }
+  if (/^gpt-4\.1(?:-(?:mini|nano))?(?:-\d{4}-\d{2}-\d{2})?$/.test(normalized)) {
+    return OPENAI_GPT_41_MAX_OUTPUT_TOKENS;
   }
   return OPENAI_RESPONSES_FALLBACK_MAX_OUTPUT_TOKENS;
 }
@@ -315,7 +342,7 @@ export function resolveOpenAIResponsesReasoningEffortDefault(params: {
   providerName?: string;
   defaults?: OpenAIResponsesReasoningEffortDefaults;
 }) {
-  if (!params.defaults || !isOpenAIGpt5OrNewerModelConfig(params)) {
+  if (!params.defaults || !isOpenAIResponsesReasoningModelConfig(params)) {
     return undefined;
   }
 
@@ -347,7 +374,7 @@ export function applyConfiguredOpenAIResponsesReasoningEffortDefault(params: {
   configMeta?: Record<string, ReasoningDefaultFieldMeta | undefined>;
   defaults?: OpenAIResponsesReasoningEffortDefaults;
 }) {
-  if (!isOpenAIGpt5OrNewerModelConfig(params.config)) {
+  if (!isOpenAIResponsesReasoningModelConfig(params.config)) {
     return { reasoningEffortChanged: false, maxOutputTokensChanged: false };
   }
 
@@ -599,6 +626,52 @@ export function isOpenAIGpt5OrNewerModelConfig(params: {
   );
 }
 
+export function supportsOpenAIResponsesReasoning(model?: string) {
+  const normalized = model?.trim().toLowerCase().split("@")[0] ?? "";
+  if (/^gpt-5(?:\.\d+)?-chat-latest$/.test(normalized)) {
+    return false;
+  }
+  return (
+    /^gpt-5(?:[-.]|$)/.test(normalized) ||
+    /^o(?:1|3|4)(?:[-.]|$)/.test(normalized)
+  );
+}
+
+export function supportsOpenAIResponsesTextVerbosity(model?: string) {
+  const normalized = model?.trim().toLowerCase().split("@")[0] ?? "";
+  return (
+    !/^gpt-5(?:\.\d+)?-chat-latest$/.test(normalized) &&
+    /^gpt-5(?:[-.]|$)/.test(normalized)
+  );
+}
+
+export function supportsOpenAIResponsesStreaming(model?: string) {
+  const normalized = model?.trim().toLowerCase().split("@")[0] ?? "";
+  return !/^o(?:1|3)-pro(?:-\d{4}-\d{2}-\d{2})?$/.test(normalized);
+}
+
+export function isOpenAIResponsesReasoningModelConfig(params: {
+  model?: string;
+  providerName?: string;
+}) {
+  const providerName = params.providerName?.trim().toLowerCase();
+  return (
+    (!providerName || OPENAI_PROVIDER_NAMES.has(providerName)) &&
+    supportsOpenAIResponsesReasoning(params.model)
+  );
+}
+
+export function isOpenAIResponsesTextVerbosityModelConfig(params: {
+  model?: string;
+  providerName?: string;
+}) {
+  const providerName = params.providerName?.trim().toLowerCase();
+  return (
+    (!providerName || OPENAI_PROVIDER_NAMES.has(providerName)) &&
+    supportsOpenAIResponsesTextVerbosity(params.model)
+  );
+}
+
 export function isOpenAIGpt56ModelConfig(params: {
   model?: string;
   providerName?: string;
@@ -628,7 +701,7 @@ export function applyOpenAIResponsesModelConstraints(config: {
     );
   }
 
-  if (isOpenAIGpt5OrNewerModelConfig(config)) {
+  if (isOpenAIResponsesReasoningModelConfig(config)) {
     config.reasoningEffort = normalizeOpenAIResponsesReasoningEffort(
       config.reasoningEffort,
       config.model,

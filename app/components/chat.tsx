@@ -84,6 +84,8 @@ import {
 } from "../utils/image-action-labels";
 import {
   accumulateChatScrollDirection,
+  followChatTailAfterResize,
+  getAnchoredScrollTop,
   type ChatScrollTarget,
 } from "../utils/chat-scroll-navigation";
 
@@ -131,7 +133,7 @@ import {
   filterOpenAIResponsesReasoningEfforts,
   getMaxOutputTokensForReasoningEffort,
   clampOpenAIResponsesMaxOutputTokens,
-  isOpenAIGpt5OrNewerModelConfig,
+  isOpenAIResponsesReasoningModelConfig,
   includeCurrentOpenAIResponsesReasoningEffort,
   normalizeOpenAIResponsesReasoningEffort,
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
@@ -1562,7 +1564,7 @@ function ChatInputReasoningAction() {
     session.mask.modelConfigMeta?.reasoningEffort?.locked;
   const showReasoningSelector =
     visibleCurrentReasoningEfforts.length > 0 &&
-    isOpenAIGpt5OrNewerModelConfig({
+    isOpenAIResponsesReasoningModelConfig({
       model: currentModel,
       providerName: currentProviderName,
     });
@@ -1875,6 +1877,7 @@ function useChatInnerView() {
     useState<ChatScrollTarget>("bottom");
   const lastObservedScrollTopRef = useRef(0);
   const scrollDirectionAccumulatorRef = useRef(0);
+  const pendingQuickJumpTargetRef = useRef<ChatScrollTarget | null>(null);
   const msgRenderIndexRef = useRef(0);
   const attachWithTopRef = useRef(false);
   const isTyping = userInput !== "";
@@ -1894,12 +1897,15 @@ function useChatInnerView() {
     shouldFollowLatestMessage,
     messageScrollSignal,
   );
+  const autoScrollRef = useRef(autoScroll);
+  autoScrollRef.current = autoScroll;
   const isMobileScreen = useMobileScreen();
   const isCompactScreen = useCompactScreen();
   useLayoutEffect(() => {
     setHitTop(true);
     setHitBottom(true);
     setQuickJumpTarget("bottom");
+    pendingQuickJumpTargetRef.current = null;
     lastObservedScrollTopRef.current = scrollRef.current?.scrollTop ?? 0;
     scrollDirectionAccumulatorRef.current = 0;
   }, [session.id, scrollRef]);
@@ -1919,6 +1925,7 @@ function useChatInnerView() {
       setHitTop(isHitTop);
       setHitBottom(isHitBottom);
       if (syncAutoScroll) {
+        autoScrollRef.current = isHitBottom;
         setAutoScroll(isHitBottom);
       }
 
@@ -2017,6 +2024,17 @@ function useChatInnerView() {
 
         const dom = scrollRef.current;
         if (dom) {
+          if (autoScrollRef.current) {
+            pendingQuickJumpTargetRef.current = "bottom";
+          }
+          if (followChatTailAfterResize(dom, autoScrollRef.current)) {
+            lastObservedScrollTopRef.current = Math.max(
+              0,
+              dom.scrollHeight - dom.clientHeight,
+            );
+            scrollDirectionAccumulatorRef.current = 0;
+            setQuickJumpTarget("bottom");
+          }
           syncHitBottomState(dom);
         }
       });
@@ -2745,7 +2763,7 @@ function useChatInnerView() {
     session.mask.modelConfigMeta?.reasoningEffort?.locked;
   const showHeaderReasoningControl =
     visibleHeaderReasoningEfforts.length > 0 &&
-    isOpenAIGpt5OrNewerModelConfig({
+    isOpenAIResponsesReasoningModelConfig({
       model: headerCurrentModel,
       providerName: headerCurrentProviderName,
     });
@@ -3125,8 +3143,11 @@ function useChatInnerView() {
     const scrollRect = scrollDom.getBoundingClientRect();
     const nextAnchorTop =
       anchorElement.getBoundingClientRect().top - scrollRect.top;
-    const nextScrollTop =
-      scrollDom.scrollTop + nextAnchorTop - pendingAnchor.top;
+    const nextScrollTop = getAnchoredScrollTop(
+      scrollDom.scrollTop,
+      nextAnchorTop,
+      pendingAnchor.top,
+    );
     lastObservedScrollTopRef.current = nextScrollTop;
     scrollDirectionAccumulatorRef.current = 0;
     scrollDom.scrollTop = nextScrollTop;
@@ -3345,20 +3366,30 @@ function useChatInnerView() {
   );
 
   const onChatBodyScroll = (e: HTMLElement) => {
-    const directionUpdate = accumulateChatScrollDirection(
-      scrollDirectionAccumulatorRef.current,
-      e.scrollTop - lastObservedScrollTopRef.current,
-    );
-    lastObservedScrollTopRef.current = e.scrollTop;
-    scrollDirectionAccumulatorRef.current = directionUpdate.accumulatedDelta;
-    const nextTarget = directionUpdate.target;
-    if (nextTarget) {
-      setQuickJumpTarget((currentTarget) =>
-        currentTarget === nextTarget ? currentTarget : nextTarget,
+    const pendingQuickJumpTarget = pendingQuickJumpTargetRef.current;
+    if (pendingQuickJumpTarget) {
+      lastObservedScrollTopRef.current = e.scrollTop;
+      scrollDirectionAccumulatorRef.current = 0;
+      setQuickJumpTarget(pendingQuickJumpTarget);
+    } else {
+      const directionUpdate = accumulateChatScrollDirection(
+        scrollDirectionAccumulatorRef.current,
+        e.scrollTop - lastObservedScrollTopRef.current,
       );
+      lastObservedScrollTopRef.current = e.scrollTop;
+      scrollDirectionAccumulatorRef.current = directionUpdate.accumulatedDelta;
+      const nextTarget = directionUpdate.target;
+      if (nextTarget) {
+        setQuickJumpTarget((currentTarget) =>
+          currentTarget === nextTarget ? currentTarget : nextTarget,
+        );
+      }
     }
 
-    const { bottomHeight } = syncHitBottomState(e, true);
+    const { bottomHeight, isHitBottom, isHitTop } = syncHitBottomState(
+      e,
+      pendingQuickJumpTarget === null,
+    );
     const edgeThreshold = e.clientHeight;
 
     const isTouchTopEdge = e.scrollTop <= edgeThreshold;
@@ -3401,6 +3432,15 @@ function useChatInnerView() {
     }
 
     if (
+      (pendingQuickJumpTarget === "top" && msgRenderIndex === 0 && isHitTop) ||
+      (pendingQuickJumpTarget === "bottom" &&
+        msgRenderIndex === maxRenderIndex &&
+        isHitBottom)
+    ) {
+      pendingQuickJumpTargetRef.current = null;
+    }
+
+    if (
       isCompactScreen &&
       !hasActiveInputContent &&
       Date.now() > ignoreInputCollapseUntil.current
@@ -3410,6 +3450,8 @@ function useChatInnerView() {
     }
   };
   const scrollToTop = useCallback(() => {
+    autoScrollRef.current = false;
+    pendingQuickJumpTargetRef.current = "top";
     setAutoScroll(false);
     setQuickJumpTarget("top");
     setHitTop(true);
@@ -3422,15 +3464,16 @@ function useChatInnerView() {
     });
   }, [scrollRef, setAutoScroll, setMsgRenderIndex]);
   const scrollToBottom = useCallback(() => {
+    autoScrollRef.current = true;
+    pendingQuickJumpTargetRef.current = "bottom";
     setQuickJumpTarget("bottom");
     setHitTop(false);
     setHitBottom(true);
     setMsgRenderIndex(renderMessages.length - CHAT_PAGE_SIZE);
     scrollDirectionAccumulatorRef.current = 0;
     const scrollDom = scrollRef.current;
-    lastObservedScrollTopRef.current = scrollDom
-      ? Math.max(0, scrollDom.scrollHeight - scrollDom.clientHeight)
-      : lastObservedScrollTopRef.current;
+    lastObservedScrollTopRef.current =
+      scrollDom?.scrollTop ?? lastObservedScrollTopRef.current;
     scrollDomToBottom();
   }, [renderMessages.length, scrollDomToBottom, scrollRef, setMsgRenderIndex]);
   const clearContextDividerRef = useRef<HTMLButtonElement>(null);
@@ -5164,6 +5207,12 @@ function useChatInnerView() {
             style={chatBodyStyle}
             aria-label={Locale.Chat.Accessibility.ChatMessages}
             onScroll={(e) => onChatBodyScroll(e.currentTarget)}
+            onWheel={() => {
+              pendingQuickJumpTargetRef.current = null;
+            }}
+            onTouchStart={() => {
+              pendingQuickJumpTargetRef.current = null;
+            }}
           >
             {showEmptyState && (
               <div
@@ -5520,7 +5569,11 @@ function useChatInnerView() {
                                       className={
                                         styles["chat-message-item-image-multi"]
                                       }
-                                      key={image}
+                                      key={getAttachmentRenderKey(
+                                        "image",
+                                        image,
+                                        index,
+                                      )}
                                       src={image}
                                       alt={imageLabel}
                                       actionLabels={getImageActionLabels(

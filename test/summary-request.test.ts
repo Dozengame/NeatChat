@@ -204,6 +204,32 @@ describe("resolveSummaryRequestConfig", () => {
     expect(result.max_output_tokens).toBe(30000);
   });
 
+  test("does not derive reasoning fields for a GPT chat-latest Summary model", () => {
+    const result = resolveSummaryRequestConfig({
+      targetModelConfig: targetModelConfig(),
+      fallbackModelConfig: targetModelConfig({ max_output_tokens: 4321 }),
+      publicConfig: publicConfig({
+        defaults: {
+          model: "gpt-5.2-chat-latest",
+          providerName: ServiceProvider.OpenAI,
+          reasoningEffort: "high",
+        },
+        forced: {
+          model: "gpt-5.2-chat-latest",
+          providerName: ServiceProvider.OpenAI,
+        },
+        allowedModels: ["gpt-5.2-chat-latest@OpenAI"],
+      }),
+    });
+
+    expect(result).toMatchObject({
+      model: "gpt-5.2-chat-latest",
+      providerName: ServiceProvider.OpenAI,
+      reasoningEffort: undefined,
+      max_output_tokens: 4321,
+    });
+  });
+
   test("uses the fallback output budget for a non-OpenAI default", () => {
     const result = resolveSummaryRequestConfig({
       targetModelConfig: targetModelConfig({

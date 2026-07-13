@@ -17,6 +17,7 @@ import {
 import { auth, authErrorResponse } from "@/app/api/auth";
 import { sanitizeOpenAIResponsesSafetyIdentifier } from "@/app/api/openai-safety";
 import { withAbortTimeout } from "@/app/utils/request-timeout";
+import { getPublicUpstreamErrorMessage } from "@/app/utils/public-error";
 
 const MODEL_TEST_MAX_MODELS = 1;
 
@@ -71,7 +72,15 @@ async function testModel(
           cache: "no-store",
         });
         const response = await withUsageAccounting(req, upstreamResponse);
-        const errorData = response.ok ? undefined : await response.json();
+        let errorData: unknown;
+        if (!response.ok) {
+          try {
+            errorData = await response.json();
+          } catch {
+            // 非 JSON 上游响应不应透传给公开的模型探针结果。
+            errorData = undefined;
+          }
+        }
         return { response, errorData };
       },
     });
@@ -82,9 +91,13 @@ async function testModel(
     if (!response.ok) {
       return {
         success: false,
-        message: `测试失败: ${errorData.error?.message || response.statusText}`,
+        message: getPublicUpstreamErrorMessage({
+          fallback: `测试失败 (${response.status})`,
+          payload: errorData,
+          headers: response.headers,
+        }),
         responseTime,
-        error: errorData,
+        error: { status: response.status },
         timeout: false,
       };
     }
@@ -101,9 +114,14 @@ async function testModel(
 
     return {
       success: false,
-      message: isTimeout ? "请求超时" : `测试出错: ${error.message}`,
+      message: isTimeout
+        ? "请求超时"
+        : getPublicUpstreamErrorMessage({
+            fallback: "测试出错",
+            detail: error?.message,
+          }),
       responseTime,
-      error: error.toString(),
+      error: { type: isTimeout ? "timeout" : "request_error" },
       timeout: isTimeout,
     };
   }

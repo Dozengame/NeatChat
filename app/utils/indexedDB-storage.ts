@@ -25,6 +25,7 @@ class IndexedDBStorage implements StateStorage {
         }
       }
       await set(name, value);
+      localStorage.removeItem(name);
     } catch (error) {
       localStorage.setItem(name, value);
     }
@@ -34,16 +35,18 @@ class IndexedDBStorage implements StateStorage {
     try {
       await del(name);
     } catch (error) {
-      localStorage.removeItem(name);
+      // The local fallback is authoritative while IndexedDB is unavailable.
     }
+    localStorage.removeItem(name);
   }
 
   public async clear(): Promise<void> {
     try {
       await clear();
     } catch (error) {
-      localStorage.clear();
+      // Always clear the fallback even when IndexedDB cannot be reached.
     }
+    localStorage.clear();
   }
 }
 

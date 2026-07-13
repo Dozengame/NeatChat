@@ -59,12 +59,7 @@ describe("new chat home modes", () => {
   test("keeps supported image models separate from every chat model family", () => {
     expect(
       getChatHomeModeModels(models, "chat").map((item) => item.name),
-    ).toEqual([
-      "gpt-5.6-luna",
-      "gpt-5.6-terra",
-      "gpt-4.1",
-      "claude-4",
-    ]);
+    ).toEqual(["gpt-5.6-luna", "gpt-5.6-terra", "gpt-4.1", "claude-4"]);
     expect(
       getChatHomeModeModels(models, "image").map(
         (item) => `${item.name}@${item.provider?.providerName}`,
@@ -146,6 +141,15 @@ describe("new chat home modes", () => {
     expect(
       getComposerModelMenuSection("claude-4", ServiceProvider.Anthropic),
     ).toBeNull();
+    expect(
+      getComposerModelMenuSection(
+        "gpt-5.2-chat-latest",
+        ServiceProvider.OpenAI,
+      ),
+    ).toBeNull();
+    expect(getComposerModelMenuSection("o3", ServiceProvider.OpenAI)).toBe(
+      "reasoning",
+    );
   });
 
   test("collapses fully automatic image settings into one localized summary", () => {

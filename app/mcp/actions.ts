@@ -363,11 +363,18 @@ export async function initializeMcpSystem() {
     try {
       const config = await readMcpConfigFromFile();
       // 初始化所有客户端
-      await Promise.all(
+      const initializationResults = await Promise.allSettled(
         Object.keys(config.mcpServers).map((clientId) =>
           initializeSingleClient(clientId),
         ),
       );
+      const failedInitialization = initializationResults.find(
+        (result): result is PromiseRejectedResult =>
+          result.status === "rejected",
+      );
+      if (failedInitialization) {
+        throw failedInitialization.reason;
+      }
       return config;
     } catch (error) {
       logger.error(`Failed to initialize MCP system: ${error}`);

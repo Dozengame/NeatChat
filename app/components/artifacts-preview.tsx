@@ -40,9 +40,19 @@ export const HTMLPreview = forwardRef<HTMLPreviewHander, HTMLPreviewProps>(
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const loadedFrameRef = useRef<string | null>(null);
     const [previewId] = useState(() => nanoid(6));
-    const [frameId, setFrameId] = useState<string>(() => nanoid());
+    const [reloadRevision, setReloadRevision] = useState(0);
+    const frameId = useMemo(
+      () => `${previewId}-${nanoid(8)}-${reloadRevision}-${code.length}`,
+      [code, previewId, reloadRevision],
+    );
     const [iframeHeight, setIframeHeight] = useState(600);
     const [title, setTitle] = useState("");
+
+    useEffect(() => {
+      loadedFrameRef.current = null;
+      setIframeHeight(600);
+      setTitle("");
+    }, [frameId]);
 
     useEffect(() => {
       const handleMessage = (event: MessageEvent) => {
@@ -89,7 +99,7 @@ export const HTMLPreview = forwardRef<HTMLPreviewHander, HTMLPreviewProps>(
 
     useImperativeHandle(ref, () => ({
       reload: () => {
-        setFrameId(nanoid());
+        setReloadRevision((revision) => revision + 1);
       },
     }));
 

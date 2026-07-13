@@ -6,7 +6,10 @@ import {
 import type { ChatMessageTool } from "@/app/store";
 import type { FunctionToolItem } from "@/app/store/plugin";
 import { fetch as tauriFetch } from "@/app/utils/stream";
-import { getAccessRestrictedPublicErrorMessage } from "@/app/utils/public-error";
+import {
+  getAccessRestrictedPublicErrorMessage,
+  getPublicUpstreamErrorMessage,
+} from "@/app/utils/public-error";
 import Locale from "@/app/locales";
 import type { ResponsesRequestPayload } from "./openai-responses-builder";
 
@@ -192,20 +195,32 @@ export function createResponsesRoundCollector() {
       if (!event || typeof event !== "object") return undefined;
 
       if (event.type === "response.error" || event.type === "error") {
-        const message =
+        const detail =
           typeof event.error?.message === "string"
             ? event.error.message
             : typeof event.message === "string"
             ? event.message
-            : "OpenAI Responses request failed";
-        throw new Error(message);
+            : undefined;
+        throw new Error(
+          getPublicUpstreamErrorMessage({
+            fallback: "OpenAI Responses request failed",
+            payload: event,
+            detail,
+          }),
+        );
       }
       if (event.type === "response.failed") {
-        const message =
+        const detail =
           typeof event.response?.error?.message === "string"
             ? event.response.error.message
-            : "OpenAI Responses request failed";
-        throw new Error(message);
+            : undefined;
+        throw new Error(
+          getPublicUpstreamErrorMessage({
+            fallback: "OpenAI Responses request failed",
+            payload: event.response,
+            detail,
+          }),
+        );
       }
 
       if (
@@ -906,6 +921,10 @@ export async function getOpenAIResponsesStreamError(response: Response) {
   });
   return new Error(
     accessRestrictedMessage ??
-      `OpenAI Responses stream failed (${response.status})`,
+      getPublicUpstreamErrorMessage({
+        fallback: `OpenAI Responses stream failed (${response.status})`,
+        payload,
+        headers: response.headers,
+      }),
   );
 }

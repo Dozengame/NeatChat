@@ -90,6 +90,7 @@ const chatPersistStorage = createTrailingThrottledJSONStorage<any>(
 const CHAT_PERSIST_SEMANTIC_DEADLINE_MS = 250;
 const JIMENG_RESULT_POLL_INTERVAL_MS = 3000;
 const JIMENG_RESULT_MAX_POLLS = 40;
+const MCP_REINITIALIZATION_COOLDOWN_MS = 30_000;
 
 function flushChatPersistence() {
   chatPersistStorage.scheduleFlush(
@@ -291,11 +292,17 @@ function fillTemplateWith(input: string, modelConfig: ModelConfig) {
 // 添加一个缓存变量来存储MCP状态和系统提示
 let mcpCache: {
   enabled: boolean | null;
+  initialized: boolean;
+  retryAfter: number;
   systemPrompt: string;
+  systemPromptLoaded: boolean;
   scopedSystemPrompts: Record<string, string>;
 } = {
   enabled: null,
+  initialized: false,
+  retryAfter: 0,
   systemPrompt: "",
+  systemPromptLoaded: false,
   scopedSystemPrompts: {},
 };
 
@@ -307,10 +314,17 @@ async function getMcpSystemPrompt(
   const scopedClientIds = clientIds?.filter(Boolean).sort() ?? [];
   const scopedKey = scopedClientIds.join(",");
   // 如果已有缓存且不强制刷新，直接返回
-  if (!scopedKey && mcpCache.systemPrompt && !forceRefresh) {
+  if (!scopedKey && mcpCache.systemPromptLoaded && !forceRefresh) {
     return mcpCache.systemPrompt;
   }
-  if (scopedKey && mcpCache.scopedSystemPrompts[scopedKey] && !forceRefresh) {
+  if (
+    scopedKey &&
+    Object.prototype.hasOwnProperty.call(
+      mcpCache.scopedSystemPrompts,
+      scopedKey,
+    ) &&
+    !forceRefresh
+  ) {
     return mcpCache.scopedSystemPrompts[scopedKey];
   }
 
@@ -361,46 +375,62 @@ async function getMcpSystemPrompt(
     mcpCache.scopedSystemPrompts[scopedKey] = prompt;
   } else {
     mcpCache.systemPrompt = prompt;
+    mcpCache.systemPromptLoaded = true;
   }
   return prompt;
 }
 
-// 优化checkMcpEnabledAndPreloadPrompt函数
 async function checkMcpEnabledAndPreloadPrompt(): Promise<boolean> {
-  // 如果已有缓存状态，直接返回
-  if (mcpCache.enabled !== null) {
-    // 如果MCP已启用但系统提示尚未加载，则预加载系统提示
-    if (mcpCache.enabled && !mcpCache.systemPrompt) {
-      getMcpSystemPrompt().catch(console.error);
+  if (mcpCache.enabled === null) {
+    try {
+      mcpCache.enabled = await isMcpEnabled();
+    } catch (error) {
+      console.error("Failed to check MCP availability:", error);
+      return false;
     }
-    return mcpCache.enabled;
   }
 
-  const enabled = await isMcpEnabled();
-  mcpCache.enabled = enabled;
+  if (!mcpCache.enabled) {
+    return false;
+  }
 
-  // 如果启用了MCP，预加载系统提示
-  if (enabled) {
+  if (!mcpCache.initialized && Date.now() >= mcpCache.retryAfter) {
     try {
       await initializeMcpSystem();
-      await getMcpSystemPrompt();
+      mcpCache.initialized = true;
+      mcpCache.retryAfter = 0;
     } catch (error) {
+      mcpCache.initialized = false;
+      mcpCache.retryAfter = Date.now() + MCP_REINITIALIZATION_COOLDOWN_MS;
       console.error("Failed to preload MCP system prompt:", error);
+    }
+
+    try {
+      // A failed server must not hide tools from other clients that initialized.
+      await getMcpSystemPrompt(true);
+    } catch (error) {
+      console.error("Failed to load available MCP tools:", error);
     }
   }
 
-  return enabled;
+  return true;
 }
 
 // 添加一个函数来重置MCP缓存（当配置变更时使用）
 function resetMcpCache() {
   mcpCache = {
     enabled: null,
+    initialized: false,
+    retryAfter: 0,
     systemPrompt: "",
+    systemPromptLoaded: false,
     scopedSystemPrompts: {},
   };
   // 立即开始预加载新的系统提示
-  checkMcpEnabledAndPreloadPrompt();
+  return checkMcpEnabledAndPreloadPrompt().catch((error) => {
+    console.error(error);
+    return false;
+  });
 }
 
 const DEFAULT_CHAT_STATE = {
@@ -936,10 +966,8 @@ export const useChatStore = createPersistStore(
         session?: ChatSession;
         pendingUserMessage?: ChatMessage;
       }) {
-        // 确保MCP状态已初始化
-        if (mcpCache.enabled === null) {
-          await checkMcpEnabledAndPreloadPrompt();
-        }
+        // 每次发送都允许已失败的 MCP 在冷却后恢复，同时保持聊天可用。
+        await checkMcpEnabledAndPreloadPrompt();
 
         const session = options?.session ?? get().currentSession();
         const modelConfig = session.mask.modelConfig;
@@ -962,11 +990,17 @@ export const useChatStore = createPersistStore(
           (session.mask.modelConfig.model.startsWith("gpt-") ||
             session.mask.modelConfig.model.startsWith("chatgpt-"));
 
-        // 直接使用缓存的MCP状态
-        const mcpEnabled = mcpCache.enabled;
-        const mcpSystemPrompt = mcpEnabled
-          ? await getMcpSystemPrompt(false, options?.mcpClientIds)
-          : "";
+        let mcpSystemPrompt = "";
+        if (mcpCache.enabled) {
+          try {
+            mcpSystemPrompt = await getMcpSystemPrompt(
+              false,
+              options?.mcpClientIds,
+            );
+          } catch (error) {
+            console.error("Failed to resolve MCP tools for chat:", error);
+          }
+        }
         const extraSystemPrompt = options?.systemPrompt?.trim() ?? "";
         const composedMcpSystemPrompt = [mcpSystemPrompt, extraSystemPrompt]
           .filter(Boolean)
@@ -991,7 +1025,7 @@ export const useChatStore = createPersistStore(
               }),
             ];
           }
-        } else if (mcpEnabled && composedMcpSystemPrompt) {
+        } else if (composedMcpSystemPrompt) {
           // 只有当MCP启用且有MCP系统提示词时才添加系统消息
           systemPrompts = [
             createMessage({
@@ -1294,8 +1328,13 @@ export const useChatStore = createPersistStore(
           .slice(summarizeIndex);
 
         const historyMsgLength = countMessages(toBeSummarizedMsgs);
+        const summaryOutputBudget =
+          typeof summaryModelConfig.max_output_tokens === "number" &&
+          summaryModelConfig.max_output_tokens > 0
+            ? summaryModelConfig.max_output_tokens
+            : 4000;
 
-        if (historyMsgLength > (modelConfig?.max_output_tokens || 4000)) {
+        if (historyMsgLength > summaryOutputBudget) {
           const n = toBeSummarizedMsgs.length;
           toBeSummarizedMsgs = toBeSummarizedMsgs.slice(
             Math.max(0, n - modelConfig.historyMessageCount),
@@ -1396,6 +1435,7 @@ export const useChatStore = createPersistStore(
         }));
       },
       async clearAllData() {
+        await chatPersistStorage.removeItem(StoreKey.Chat);
         await indexedDBStorage.clear();
         localStorage.clear();
         location.reload();
@@ -1549,7 +1589,7 @@ export const useChatStore = createPersistStore(
       },
       // 添加一个方法用于在MCP配置变更时重置缓存
       resetMcpCache() {
-        resetMcpCache();
+        return resetMcpCache();
       },
     };
 

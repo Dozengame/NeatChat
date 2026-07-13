@@ -1,5 +1,8 @@
 import { ServiceProvider } from "../constant";
-import { getAccessRestrictedPublicErrorMessage } from "./public-error";
+import {
+  getAccessRestrictedPublicErrorMessage,
+  getPublicUpstreamErrorMessage,
+} from "./public-error";
 import type {
   DalleStyle,
   GptImageQuality,
@@ -13,11 +16,6 @@ import type {
 
 export const VERCEL_HOBBY_MAX_DURATION_SECONDS = 300;
 const GPT_IMAGE_2_MODEL = "gpt-image-2";
-const LEGACY_GPT_IMAGE_MODELS = [
-  "gpt-image-1",
-  "gpt-image-1-mini",
-  "gpt-image-1.5",
-] as const;
 const DALLE_MODEL_PREFIX = "dall-e";
 const GPT_IMAGE_MODEL_PREFIX = "gpt-image";
 
@@ -153,19 +151,10 @@ export function isGptImage2(model?: string) {
   return isModelOrDatedSnapshot(normalizeModel(model), GPT_IMAGE_2_MODEL);
 }
 
-function isLegacyGptImageModel(model?: string) {
-  const normalizedModel = normalizeModel(model);
-  return LEGACY_GPT_IMAGE_MODELS.some((knownModel) =>
-    isModelOrDatedSnapshot(normalizedModel, knownModel),
-  );
-}
-
 export function getOpenAIImageGenerationOptions(model?: string) {
   if (isGptImageGenerationModel(model)) {
     return {
-      sizes: isLegacyGptImageModel(model)
-        ? LEGACY_GPT_IMAGE_SIZES
-        : GPT_IMAGE_2_SIZES,
+      sizes: isGptImage2(model) ? GPT_IMAGE_2_SIZES : LEGACY_GPT_IMAGE_SIZES,
       qualities: GPT_IMAGE_QUALITIES,
       styles: [] as readonly DalleStyle[],
     };
@@ -335,9 +324,19 @@ export function getOpenAIImageErrorMessage(params: {
       : typeof payload?.code === "string"
       ? payload.code
       : String(params.status);
-  return detail
-    ? `OpenAI image generation failed (${code}): ${detail}`
-    : `OpenAI image generation failed (${code})`;
+  const normalizedCode = code.trim();
+  const safeCode =
+    /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/.test(normalizedCode) &&
+    !/(?:^sk-|authorization|bearer|api[-_]?key|token|secret)/i.test(
+      normalizedCode,
+    )
+      ? normalizedCode
+      : String(params.status);
+  return getPublicUpstreamErrorMessage({
+    fallback: `OpenAI image generation failed (${safeCode})`,
+    payload: params.payload,
+    detail,
+  });
 }
 
 export function applyOpenAIImageGenerationDefaults<
