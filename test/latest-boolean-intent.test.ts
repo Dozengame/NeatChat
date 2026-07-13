@@ -64,6 +64,9 @@ describe("latest boolean intent", () => {
     expect(source).toContain("reconcileImageGenerationIntent(intent)");
     expect(source).toContain("imageGenerationIntent.isCurrent(intent.token)");
     expect(source).toContain("imageGenerationIntent.markApplied(intent.value)");
+    expect(source).toContain("imageGenerationPending");
+    expect(source).toContain("ariaBusy={imageGenerationPending}");
+    expect(source).toContain("<LoadingButtonIcon />");
     expect(source).toContain(
       "imageGenerationIntent.settle(intent.token, true)",
     );

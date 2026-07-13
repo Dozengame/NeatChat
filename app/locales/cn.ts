@@ -129,6 +129,8 @@ const cn = {
       AttachmentFull: "附件已满：最多 3 张图片、5 个文件",
       ImageGeneration: "图片生成",
       DisableImageGeneration: "关闭图片生成",
+      EnablingImageGeneration: "正在启用图片生成...",
+      DisablingImageGeneration: "正在关闭图片生成...",
       SessionTools: "会话工具",
       Session: "会话",
       ModelsAndSettings: "模型和设置",

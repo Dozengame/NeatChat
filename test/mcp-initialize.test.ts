@@ -105,6 +105,35 @@ const pausedJimengConfig = JSON.stringify({
   },
 });
 
+const currentJimengToolNames = [
+  "dreamina_version",
+  "dreamina_user_credit",
+  "dreamina_text2image",
+  "dreamina_text2video",
+  "dreamina_image2image",
+  "dreamina_image2video",
+  "dreamina_frames2video",
+  "dreamina_image_upscale",
+  "dreamina_multiframe2video",
+  "dreamina_multimodal2video",
+  "dreamina_query_result",
+  "dreamina_list_task",
+  "dreamina_session_list",
+  "dreamina_session_search",
+  "dreamina_session_create",
+  "dreamina_session_rename",
+  "dreamina_session_delete",
+];
+
+function currentJimengTools() {
+  return {
+    tools: currentJimengToolNames.map((name) => ({
+      name,
+      inputSchema: { type: "object", properties: {} },
+    })),
+  };
+}
+
 async function flushAsyncWork() {
   for (let i = 0; i < 25; i += 1) {
     await Promise.resolve();
@@ -203,9 +232,7 @@ describe("MCP initialization", () => {
     const { activateMcpClient, executeMcpAction } = await import(
       "../app/mcp/actions"
     );
-    (listTools as jest.Mock).mockResolvedValueOnce({
-      tools: [{ name: "demo-tool" }],
-    });
+    (listTools as jest.Mock).mockResolvedValueOnce(currentJimengTools());
 
     const activation = activateMcpClient(JIMENG_MCP_SERVER_ID);
     await flushAsyncWork();
@@ -213,7 +240,7 @@ describe("MCP initialization", () => {
       jsonrpc: "2.0",
       id: "request-1",
       method: "tools/call",
-      params: { name: "demo-tool", arguments: {} },
+      params: { name: "dreamina_session_list", arguments: {} },
     });
     await flushAsyncWork();
 
@@ -226,11 +253,90 @@ describe("MCP initialization", () => {
     ]);
     expect(createClient).toHaveBeenCalledTimes(1);
     expect(listTools).toHaveBeenCalledTimes(1);
-    expect(executeRequest).toHaveBeenCalledTimes(1);
-    expect(executeRequest).toHaveBeenCalledWith(
+    expect(executeRequest).toHaveBeenCalledTimes(2);
+    expect(executeRequest).toHaveBeenNthCalledWith(
+      1,
+      { id: "deferred-client" },
+      expect.objectContaining({
+        method: "tools/call",
+        params: { name: "dreamina_version", arguments: {} },
+      }),
+    );
+    expect(executeRequest).toHaveBeenNthCalledWith(
+      2,
       { id: "deferred-client" },
       expect.objectContaining({ id: "request-1", method: "tools/call" }),
     );
+  });
+
+  test("reconnects Jimeng activation and replaces a stale tool snapshot", async () => {
+    (fs.readFile as jest.Mock).mockResolvedValue(pausedJimengConfig);
+    const oldClient = { id: "old-jimeng-client" };
+    clientsMap.set(JIMENG_MCP_SERVER_ID, {
+      client: oldClient as any,
+      tools: {
+        tools: Array.from({ length: 7 }, (_, index) => ({
+          name: `dreamina_old_${index + 1}`,
+        })),
+      },
+      errorMsg: null,
+    });
+    (createClient as jest.Mock).mockResolvedValueOnce({
+      id: "refreshed-jimeng-client",
+    });
+    (listTools as jest.Mock).mockResolvedValueOnce(currentJimengTools());
+    const { activateMcpClient } = await import("../app/mcp/actions");
+
+    await activateMcpClient(JIMENG_MCP_SERVER_ID);
+
+    expect(removeClient).toHaveBeenCalledWith(oldClient);
+    expect(createClient).toHaveBeenCalledTimes(1);
+    expect(listTools).toHaveBeenCalledTimes(1);
+    expect(clientsMap.get(JIMENG_MCP_SERVER_ID)).toMatchObject({
+      client: { id: "refreshed-jimeng-client" },
+      errorMsg: null,
+    });
+    expect(
+      clientsMap
+        .get(JIMENG_MCP_SERVER_ID)
+        ?.tools?.tools.some((tool) => tool.name === "dreamina_version"),
+    ).toBe(true);
+    expect(
+      clientsMap.get(JIMENG_MCP_SERVER_ID)?.tools?.tools,
+    ).toHaveLength(17);
+    expect(executeRequest).toHaveBeenCalledWith(
+      { id: "refreshed-jimeng-client" },
+      {
+        method: "tools/call",
+        params: { name: "dreamina_version", arguments: {} },
+      },
+    );
+    expect(fs.writeFile).not.toHaveBeenCalled();
+  });
+
+  test("rejects an outdated Jimeng tool snapshot after reconnect", async () => {
+    (fs.readFile as jest.Mock).mockResolvedValue(pausedJimengConfig);
+    (createClient as jest.Mock).mockResolvedValueOnce({
+      id: "outdated-jimeng-client",
+    });
+    (listTools as jest.Mock).mockResolvedValueOnce({
+      tools: Array.from({ length: 7 }, (_, index) => ({
+        name: `dreamina_old_${index + 1}`,
+      })),
+    });
+    const { activateMcpClient } = await import("../app/mcp/actions");
+
+    await expect(activateMcpClient(JIMENG_MCP_SERVER_ID)).rejects.toThrow(
+      "expected at least 17 dreamina_* tools, received 7",
+    );
+
+    expect(removeClient).toHaveBeenCalledWith({ id: "outdated-jimeng-client" });
+    expect(executeRequest).not.toHaveBeenCalled();
+    expect(clientsMap.get(JIMENG_MCP_SERVER_ID)).toMatchObject({
+      client: null,
+      tools: null,
+      errorMsg: expect.stringContaining("expected at least 17"),
+    });
   });
 
   test("temporarily activates the paused built-in Jimeng client for explicit execution", async () => {
@@ -241,9 +347,7 @@ describe("MCP initialization", () => {
       executeMcpAction,
       getMcpChatServerStates,
     } = await import("../app/mcp/actions");
-    (listTools as jest.Mock).mockResolvedValueOnce({
-      tools: [{ name: "dreamina_text2image" }],
-    });
+    (listTools as jest.Mock).mockResolvedValueOnce(currentJimengTools());
 
     await expect(getMcpChatServerStates()).resolves.toMatchObject({
       [JIMENG_MCP_SERVER_ID]: { status: "paused" },
@@ -268,7 +372,17 @@ describe("MCP initialization", () => {
       JIMENG_MCP_SERVER_ID,
       expect.objectContaining({ status: "active" }),
     );
-    expect(executeRequest).toHaveBeenCalledWith(
+    expect(executeRequest).toHaveBeenCalledTimes(2);
+    expect(executeRequest).toHaveBeenNthCalledWith(
+      1,
+      { id: "demo-client" },
+      {
+        method: "tools/call",
+        params: { name: "dreamina_version", arguments: {} },
+      },
+    );
+    expect(executeRequest).toHaveBeenNthCalledWith(
+      2,
       { id: "demo-client" },
       expect.objectContaining({
         id: "jimeng-request",

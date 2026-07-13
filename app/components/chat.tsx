@@ -769,6 +769,7 @@ export function ChatAction(props: {
   ariaHasPopup?: React.AriaAttributes["aria-haspopup"];
   ariaExpanded?: boolean;
   ariaPressed?: boolean;
+  ariaBusy?: boolean;
   ariaDescribedBy?: string;
   role?: React.AriaRole;
 }) {
@@ -804,6 +805,7 @@ export function ChatAction(props: {
       aria-haspopup={props.ariaHasPopup}
       aria-expanded={props.ariaExpanded}
       aria-pressed={props.ariaPressed}
+      aria-busy={props.ariaBusy}
       role={props.role}
       disabled={props.disabled}
       onClick={(event) => {
@@ -916,6 +918,10 @@ function useChatActionsView(props: ChatActionsProps) {
   }
   const imageGenerationIntent = imageGenerationIntentRef.current;
   const imageGenerationOperationRef = useRef<Promise<void>>(Promise.resolve());
+  const imageGenerationPendingTokenRef = useRef<number | undefined>(undefined);
+  const [imageGenerationPendingValue, setImageGenerationPendingValue] =
+    useState<boolean | undefined>(undefined);
+  const imageGenerationPending = imageGenerationPendingValue !== undefined;
   useEffect(() => {
     imageGenerationIntent.syncCommitted(props.imageGenerationEnabled);
   }, [imageGenerationIntent, props.imageGenerationEnabled]);
@@ -1121,6 +1127,8 @@ function useChatActionsView(props: ChatActionsProps) {
     return true;
   };
   const reconcileImageGenerationIntent = (intent: BooleanIntent) => {
+    imageGenerationPendingTokenRef.current = intent.token;
+    setImageGenerationPendingValue(intent.value);
     const operation = imageGenerationOperationRef.current
       .catch(() => undefined)
       .then(() => setImageGenerationMode(intent));
@@ -1128,6 +1136,13 @@ function useChatActionsView(props: ChatActionsProps) {
       () => undefined,
       () => undefined,
     );
+    const settlePendingState = () => {
+      if (imageGenerationPendingTokenRef.current === intent.token) {
+        imageGenerationPendingTokenRef.current = undefined;
+        setImageGenerationPendingValue(undefined);
+      }
+    };
+    void operation.then(settlePendingState, settlePendingState);
     return operation;
   };
   const hasSessionActions =
@@ -1188,6 +1203,8 @@ function useChatActionsView(props: ChatActionsProps) {
             <ChatAction
               active={props.imageGenerationEnabled}
               ariaPressed={props.imageGenerationEnabled}
+              ariaBusy={imageGenerationPending}
+              disabled={imageGenerationPending}
               onClick={async () => {
                 const intent = imageGenerationIntent.next();
                 if (await reconcileImageGenerationIntent(intent)) {
@@ -1195,11 +1212,17 @@ function useChatActionsView(props: ChatActionsProps) {
                 }
               }}
               text={
-                props.imageGenerationEnabled
+                imageGenerationPendingValue === true
+                  ? Locale.Chat.ChatToolMenu.EnablingImageGeneration
+                  : imageGenerationPendingValue === false
+                  ? Locale.Chat.ChatToolMenu.DisablingImageGeneration
+                  : props.imageGenerationEnabled
                   ? Locale.Chat.ChatToolMenu.DisableImageGeneration
                   : Locale.Chat.ChatToolMenu.ImageGeneration
               }
-              icon={<ImageIcon />}
+              icon={
+                imageGenerationPending ? <LoadingButtonIcon /> : <ImageIcon />
+              }
             />
           )}
         </div>

@@ -130,6 +130,8 @@ const en: LocaleType = {
       AttachmentFull: "Attachments full: up to 3 images and 5 files",
       ImageGeneration: "Image generation",
       DisableImageGeneration: "Turn off image generation",
+      EnablingImageGeneration: "Enabling image generation...",
+      DisablingImageGeneration: "Turning off image generation...",
       SessionTools: "Conversation tools",
       Session: "Conversation",
       ModelsAndSettings: "Models and settings",

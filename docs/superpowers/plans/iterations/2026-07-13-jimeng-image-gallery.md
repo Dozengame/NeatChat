@@ -71,3 +71,26 @@
 ### Remaining boundary
 
 - No new live or paid Jimeng generation was run. External service success is not claimed; deterministic tests cover parser recovery, exactly-once handoff to `executeMcpAction`, non-execution for rejected inputs, persistence terminal state, and render visibility.
+
+## 2026-07-14 Streamable HTTP tool refresh and image parameter compatibility
+
+### Confirmed cause and contract
+
+- The preset and client already used Streamable HTTP with a Bearer environment template. The integration failure came from the process-global client/tool snapshot: explicit activation reused an existing error-free client, so an old seven-tool connection never reconnected or repeated `tools/list` after the upstream expanded to 17 tools.
+- The failed generation was independently explained by local request construction. `model_version=5.0` and `resolution_type=1k` passed through unchanged even though the current schema only permits `1k` for text-to-image model `3.0`/`3.1`; newer/default image models require `2k` or `4k`.
+- A failed submit/query does not automatically turn off image-generation mode. This preserves retry intent, but the next explicit enable must refresh the actual MCP runtime rather than only toggling UI state or clearing the Chat prompt cache.
+
+### Implemented behavior
+
+- Explicit Jimeng activation runs inside the existing per-client lifecycle lock, detaches any old client, reconnects, refreshes `tools/list`, requires at least 17 discovered `dreamina_*` tools, and calls `dreamina_version`. The exact tool set remains dynamic so a future 18th tool does not require a code allowlist update.
+- A refresh or version-verification failure removes the partially initialized transport and cached tools, records an error runtime, and returns the UI to disabled. It never restores or executes against the stale seven-tool snapshot. Generic MCP activation, authorization tiers, persisted config, and the Jimeng paused-by-default contract are unchanged.
+- All eight generation submit tools discovered in the current schema are normalized to `poll=0`. `dreamina_text2image` keeps explicit `1k` only for model `3.0`/`3.1`; invalid `1k` for newer/default text-to-image, image-to-image, and image-upscale is rewritten to `2k`. Missing resolution and valid current values remain schema-controlled.
+- While activation is pending, the conversation-tool action exposes `aria-busy`, a loading icon, localized enabling/disabling text, and a disabled control. Desktop and mobile only close the menu or show the enabled state after the refresh has actually succeeded.
+
+### Verification and boundaries
+
+- Targeted verification passed 6 suites / 175 tests covering stale-client replacement, outdated seven-tool rejection, version verification, lifecycle serialization, parameter normalization, Chat schema injection/recovery, and UI contracts.
+- The complete Jest suite (`81/81` suites, `835/835` tests), ESLint, TypeScript, `git diff --check`, and the production build passed.
+- A read-only live smoke using the locally configured Secret and the preset endpoint returned exactly 17 `dreamina_*` tools and a successful `dreamina_version` call. No token value was read into output or written to tracked files.
+- Local Chrome QA covered desktop and `390x844`: activation and reactivation visibly entered the busy state, completed with the image-generation mode enabled, mobile closed the menu only after success, horizontal overflow stayed zero, and Console warning/error stayed zero.
+- No image/video generation, account/session mutation, push, PR, deploy, remote configuration change, or credential persistence was performed.

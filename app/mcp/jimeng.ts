@@ -8,7 +8,19 @@ const JIMENG_GENERATION_TOOL_NAMES = new Set([
   "dreamina_image2image",
   "dreamina_text2video",
   "dreamina_image2video",
+  "dreamina_frames2video",
+  "dreamina_image_upscale",
+  "dreamina_multiframe2video",
+  "dreamina_multimodal2video",
 ]);
+
+const JIMENG_IMAGE_GENERATION_TOOL_NAMES = new Set([
+  "dreamina_text2image",
+  "dreamina_image2image",
+  "dreamina_image_upscale",
+]);
+
+const JIMENG_LEGACY_1K_MODEL_VERSIONS = new Set(["3", "3.0", "3.1"]);
 
 export const JIMENG_MCP_SERVER_CONFIG: ServerConfig = {
   type: "streamable-http",
@@ -27,6 +39,7 @@ export const JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT = `
 - 只使用 jimeng-mcp 的工具完成图片或视频生成。
 - 调用工具前，先把用户需求整理成清晰、具体、适合生成模型理解的 prompt，保留主体、动作、风格、构图、光线、比例、材质、文字要求和限制条件。
 - 提交生成任务时不要等待长轮询；生成工具的 poll 必须为 0，拿到 submit_id 后再用 dreamina_query_result 查询。
+- 图片生成默认使用 2k；只有明确选择 3.0 或 3.1 模型时才允许 1k，默认模型和新版模型只能使用 2k 或 4k。始终以当前工具 schema 为准，不要臆造工具名或参数。
 - 没有参考图时，优先根据用户意图选择 text2image 或 text2video。
 - 用户附带图片时，优先判断是否需要 image2image 或 image2video；如果用户只是要求基于图片生成、改图、换风格、扩展、参考角色或参考画面，就使用带图片输入的工具。
 - 用户询问余额、任务状态、历史任务或结果查询时，使用对应查询工具。
@@ -58,12 +71,27 @@ export function normalizeJimengMcpRequest(
     };
   }
 
+  const modelVersion = args.model_version;
+  const normalizedModelVersion =
+    typeof modelVersion === "string" || typeof modelVersion === "number"
+      ? String(modelVersion).trim()
+      : "";
+  const shouldUpgradeLegacyResolution =
+    JIMENG_IMAGE_GENERATION_TOOL_NAMES.has(toolName) &&
+    typeof args.resolution_type === "string" &&
+    args.resolution_type.trim().toLowerCase() === "1k" &&
+    !(
+      toolName === "dreamina_text2image" &&
+      JIMENG_LEGACY_1K_MODEL_VERSIONS.has(normalizedModelVersion)
+    );
+
   return {
     ...request,
     params: {
       ...request.params,
       arguments: {
         ...args,
+        ...(shouldUpgradeLegacyResolution ? { resolution_type: "2k" } : {}),
         poll: 0,
       },
     },

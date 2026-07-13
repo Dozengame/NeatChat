@@ -14,7 +14,7 @@ Do not read all iteration files by default. Use `rg` first, then open the smalle
 
 ## Routing
 
-- Chat 模式 Jimeng MCP 工具 schema、截断 JSON/空白回复恢复、Chat/Image 能力隔离，以及 Jimeng / GPT Image 共用的单图与多图方案图库：`iterations/2026-07-13-jimeng-image-gallery.md`。
+- Chat 模式 Jimeng Streamable HTTP 17-tool 重连刷新、`dreamina_version` 验证、图片参数兼容、截断 JSON/空白回复恢复、Chat/Image 能力隔离，以及 Jimeng / GPT Image 共用的单图与多图方案图库：`iterations/2026-07-13-jimeng-image-gallery.md`。
 - Markdown table slider drag mapping/capture and mobile expanded-empty composer geometry regressions: `iterations/2026-07-13-table-drag-mobile-composer.md`.
 - Markdown 超宽表格的常驻横向滚动控制、应用内全屏阅读、键盘/焦点语义和响应式验收：`iterations/2026-07-13-markdown-wide-table-reading.md`。
 - Complete full-stack `main...dev` pre-merge audit at the 44-commit baseline, covering chat/abort/streaming, all provider terminal states, OpenAI Responses, MCP authorization and original-session recovery, sync/persistence, model locks, Markdown/render identity, security redaction, production build, static-export boundary, and desktop/mobile Browser QA: `iterations/2026-07-13-dev-main-final-premerge-review.md`.

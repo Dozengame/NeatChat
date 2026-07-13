@@ -48,6 +48,13 @@ describe("MCP config", () => {
 
   test("keeps Jimeng MCP out of default chat tool exposure", () => {
     expect(BUILTIN_MCP_CONFIG.mcpServers).toHaveProperty("jimeng-mcp");
+    expect(JIMENG_MCP_SERVER_CONFIG).toMatchObject({
+      type: "streamable-http",
+      url: "https://123.207.69.230/jimeng-mcp",
+      headers: {
+        Authorization: "Bearer ${JIMENG_MCP_TOKEN}",
+      },
+    });
     expect(JIMENG_MCP_SERVER_CONFIG.status).toBe("paused");
     expect(JIMENG_MCP_SERVER_CONFIG.chatDefaultEnabled).toBe(false);
   });
@@ -162,6 +169,114 @@ describe("MCP config", () => {
         },
       },
     });
+  });
+
+  test.each([
+    [undefined, "1k", "2k"],
+    ["5.0", "1k", "2k"],
+    ["4.6", "1K", "2k"],
+    ["3.0", "1k", "1k"],
+    ["3.1", "1k", "1k"],
+    [3, "1k", "1k"],
+    [3.1, "1k", "1k"],
+    ["5.0", "2k", "2k"],
+    ["5.0", "4k", "4k"],
+  ])(
+    "normalizes Jimeng image resolution for model %p from %s to %s",
+    (modelVersion, resolutionType, expectedResolution) => {
+      expect(
+        normalizeJimengMcpRequest({
+          method: "tools/call",
+          params: {
+            name: "dreamina_text2image",
+            arguments: {
+              prompt: "cat",
+              model_version: modelVersion,
+              resolution_type: resolutionType,
+            },
+          },
+        }).params.arguments,
+      ).toMatchObject({
+        model_version: modelVersion,
+        resolution_type: expectedResolution,
+        poll: 0,
+      });
+    },
+  );
+
+  test("does not invent image resolution or rewrite non-image Jimeng tools", () => {
+    expect(
+      normalizeJimengMcpRequest({
+        method: "tools/call",
+        params: {
+          name: "dreamina_image2image",
+          arguments: { prompt: "cat", model_version: "5.0" },
+        },
+      }).params.arguments,
+    ).toEqual({ prompt: "cat", model_version: "5.0", poll: 0 });
+
+    expect(
+      normalizeJimengMcpRequest({
+        method: "tools/call",
+        params: {
+          name: "dreamina_image2image",
+          arguments: {
+            images: ["image"],
+            prompt: "cat",
+            model_version: "3.0",
+            resolution_type: "1k",
+          },
+        },
+      }).params.arguments,
+    ).toMatchObject({ resolution_type: "2k", poll: 0 });
+
+    expect(
+      normalizeJimengMcpRequest({
+        method: "tools/call",
+        params: {
+          name: "dreamina_image_upscale",
+          arguments: { image: "image", resolution_type: "1k" },
+        },
+      }).params.arguments,
+    ).toEqual({ image: "image", resolution_type: "2k", poll: 0 });
+
+    expect(
+      normalizeJimengMcpRequest({
+        method: "tools/call",
+        params: {
+          name: "dreamina_frames2video",
+          arguments: { first: "a", last: "b", prompt: "cat", poll: 30 },
+        },
+      }).params.arguments,
+    ).toMatchObject({ poll: 0 });
+
+    expect(
+      normalizeJimengMcpRequest({
+        method: "tools/call",
+        params: {
+          name: "dreamina_text2video",
+          arguments: {
+            prompt: "cat",
+            model_version: "5.0",
+            resolution_type: "1k",
+          },
+        },
+      }).params.arguments,
+    ).toEqual({
+      prompt: "cat",
+      model_version: "5.0",
+      resolution_type: "1k",
+      poll: 0,
+    });
+
+    const versionRequest = {
+      method: "tools/call" as const,
+      params: {
+        name: "dreamina_version",
+        arguments: { resolution_type: "1k" },
+      },
+    };
+    expect(normalizeJimengMcpRequest(versionRequest)).toEqual(versionRequest);
   });
 
   test("resolves MCP headers from environment variables", () => {

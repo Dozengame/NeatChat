@@ -35,6 +35,8 @@ const logger = new MCPClientLogger("MCP Actions");
 const CONFIG_PATH = path.join(process.cwd(), "app/mcp/mcp_config.json");
 let configWriteSequence = 0;
 const MCP_INITIALIZATION_RETRY_DELAYS_MS = [500, 1500];
+const JIMENG_MINIMUM_DISCOVERED_TOOL_COUNT = 17;
+const JIMENG_VERSION_TOOL_NAME = "dreamina_version";
 const RETRYABLE_MCP_INITIALIZATION_ERROR_CODES = new Set([
   "UND_ERR_CONNECT_TIMEOUT",
   "UND_ERR_HEADERS_TIMEOUT",
@@ -391,6 +393,43 @@ async function detachClient(clientId: string) {
   }
 }
 
+async function verifyJimengClientLocked(clientId: string) {
+  const runtime = clientsMap.get(clientId);
+  if (!runtime?.client || !runtime.tools) {
+    throw new Error("Jimeng MCP client did not finish initialization");
+  }
+
+  const dreaminaTools = runtime.tools.tools.filter(
+    (tool) =>
+      typeof tool.name === "string" && tool.name.startsWith("dreamina_"),
+  );
+  if (dreaminaTools.length < JIMENG_MINIMUM_DISCOVERED_TOOL_COUNT) {
+    throw new Error(
+      `Jimeng MCP tool schema is outdated: expected at least ${JIMENG_MINIMUM_DISCOVERED_TOOL_COUNT} dreamina_* tools, received ${dreaminaTools.length}`,
+    );
+  }
+  if (!dreaminaTools.some((tool) => tool.name === JIMENG_VERSION_TOOL_NAME)) {
+    throw new Error("Jimeng MCP tool schema is missing dreamina_version");
+  }
+
+  const versionResult = await executeRequest(runtime.client, {
+    method: "tools/call",
+    params: { name: JIMENG_VERSION_TOOL_NAME, arguments: {} },
+  });
+  if (
+    versionResult &&
+    typeof versionResult === "object" &&
+    "isError" in versionResult &&
+    versionResult.isError === true
+  ) {
+    throw new Error("Jimeng MCP dreamina_version verification failed");
+  }
+
+  logger.success(
+    `Jimeng MCP verified with ${dreaminaTools.length} discovered tools`,
+  );
+}
+
 // 初始化系统
 export async function initializeMcpSystem() {
   const authResult = await auth();
@@ -481,10 +520,38 @@ export async function activateMcpClient(clientId: string) {
     if (!serverConfig) {
       throw new Error(`Server ${clientId} not found`);
     }
-    await initializeSingleClientLocked(
-      clientId,
-      getExecutableServerConfig(clientId, serverConfig),
-    );
+    const shouldRefreshJimeng = clientId === JIMENG_MCP_SERVER_ID;
+    if (shouldRefreshJimeng) {
+      await detachClient(clientId);
+    }
+
+    try {
+      await initializeSingleClientLocked(
+        clientId,
+        getExecutableServerConfig(clientId, serverConfig),
+      );
+      if (shouldRefreshJimeng) {
+        await verifyJimengClientLocked(clientId);
+      }
+    } catch (error) {
+      if (shouldRefreshJimeng) {
+        try {
+          await detachClient(clientId);
+        } catch (closeError) {
+          logger.error(
+            `Failed to close Jimeng client after verification error: ${formatError(
+              closeError,
+            )}`,
+          );
+        }
+        clientsMap.set(clientId, {
+          client: null,
+          tools: null,
+          errorMsg: error instanceof Error ? error.message : String(error),
+        });
+      }
+      throw error;
+    }
   });
 }
 
