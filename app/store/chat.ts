@@ -363,9 +363,12 @@ async function getMcpSystemPrompt(
   });
 
   // 如果没有活跃的工具，返回空字符串
-  const prompt = hasActiveTools
+  let prompt = hasActiveTools
     ? MCP_SYSTEM_TEMPLATE.replace("{{ MCP_TOOLS }}", toolsStr)
     : "";
+  if (prompt && scopedClientIds.length === 1) {
+    prompt = prompt.replaceAll("{clientId}", scopedClientIds[0]);
+  }
 
   // 更新缓存
   if (scopedKey) {
@@ -1148,6 +1151,14 @@ export const useChatStore = createPersistStore(
           } catch {
             console.error("[MCP] failed to resolve chat tools");
           }
+        }
+        const requiresJimengSchema =
+          options?.mcpClientIds?.includes(JIMENG_MCP_SERVER_ID);
+        const hasJimengSchema = mcpSystemPrompt.includes(
+          `[clientId]\n${JIMENG_MCP_SERVER_ID}\n[tools]\n`,
+        );
+        if (requiresJimengSchema && !hasJimengSchema) {
+          throw new Error(Locale.Chat.ImageGeneration.EnableFailed);
         }
         const extraSystemPrompt = options?.systemPrompt?.trim() ?? "";
         const composedMcpSystemPrompt = [mcpSystemPrompt, extraSystemPrompt]

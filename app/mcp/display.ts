@@ -23,6 +23,11 @@ const JIMENG_PROGRESS_MARKERS = [
   "\n\nProgress:",
   `\n\n${JimengDisplay.Progress}`,
 ];
+const JIMENG_TASK_MARKERS = [
+  "图片生成任务",
+  "Image generation task",
+  JimengDisplay.Task,
+];
 const JIMENG_GENERATION_TOOL_LABELS: Record<string, string> = {
   dreamina_text2image: JimengDisplay.TextToImage,
   dreamina_image2image: JimengDisplay.ImageToImage,
@@ -362,6 +367,26 @@ export function combineMcpToolResults(...results: unknown[]) {
 
 export function hasJimengDisplayableImage(result: unknown) {
   return hasDisplayableImage(removeLocalMediaPaths(resultToText(result)));
+}
+
+export function getJimengGalleryDisplay(content: string) {
+  const images = extractMarkdownImages(content);
+  if (images.length === 0) {
+    return { text: content, images: [] as string[] };
+  }
+
+  const isJimengDisplay =
+    JIMENG_TASK_MARKERS.some((marker) => content.startsWith(marker)) ||
+    JIMENG_PROGRESS_MARKERS.some((marker) => content.includes(marker)) ||
+    Boolean(getLastSubmitId(content) || getLastGenStatus(content));
+  if (!isJimengDisplay) {
+    return { text: content, images: [] as string[] };
+  }
+
+  return {
+    text: removeMarkdownImageLines(content),
+    images: images.map((image) => image.url),
+  };
 }
 
 export function formatJimengMcpRequestForChat(content: string) {

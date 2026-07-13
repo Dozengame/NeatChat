@@ -31,6 +31,10 @@ jest.mock("../app/components/ui-lib-actions", () => ({
 import { DEFAULT_CONFIG, useAppConfig } from "../app/store/config";
 import { createMessage, useChatStore } from "../app/store/chat";
 import Locale from "../app/locales";
+import {
+  JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
+  JIMENG_MCP_SERVER_ID,
+} from "../app/mcp/jimeng";
 
 describe("MCP chat recovery", () => {
   beforeEach(async () => {
@@ -141,6 +145,102 @@ describe("MCP chat recovery", () => {
       );
     } finally {
       nowSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
+    }
+  });
+
+  test("injects the canonical Jimeng tool schema for an explicitly scoped image request", async () => {
+    getAllTools.mockResolvedValue([
+      {
+        clientId: JIMENG_MCP_SERVER_ID,
+        tools: {
+          tools: [
+            {
+              name: "dreamina_text2image",
+              description: "Generate an image from a text prompt",
+              inputSchema: {
+                type: "object",
+                properties: { prompt: { type: "string" } },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+    getMcpChatServerStates.mockResolvedValue({
+      [JIMENG_MCP_SERVER_ID]: {
+        status: "active",
+        chatDefaultEnabled: false,
+      },
+    });
+    await useChatStore.getState().resetMcpCache();
+
+    const messages = await useChatStore.getState().getMessagesWithMemory({
+      mcpClientIds: [JIMENG_MCP_SERVER_ID],
+      systemPrompt: JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
+    });
+    const promptMessages = messages
+      .map((message) =>
+        typeof message.content === "string"
+          ? message.content
+          : JSON.stringify(message.content),
+      )
+      .join("\n");
+
+    expect(promptMessages).toContain(
+      `json:mcp:${JIMENG_MCP_SERVER_ID}`,
+    );
+    expect(promptMessages).toContain('method: "tools/call"');
+    expect(promptMessages).toContain("dreamina_text2image");
+    expect(promptMessages).toContain(
+      JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
+    );
+  });
+
+  test("fails a Jimeng image request locally when its scoped schema is missing", async () => {
+    const consoleErrorSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    getAllTools.mockResolvedValue([
+      {
+        clientId: "demo",
+        tools: {
+          tools: [{ name: "unrelated_tool", inputSchema: { type: "object" } }],
+        },
+      },
+    ]);
+    getMcpChatServerStates.mockResolvedValue({
+      demo: { status: "active", chatDefaultEnabled: true },
+      [JIMENG_MCP_SERVER_ID]: {
+        status: "active",
+        chatDefaultEnabled: false,
+      },
+    });
+    await useChatStore.getState().resetMcpCache();
+
+    try {
+      await useChatStore.getState().onUserInput(
+        "Draw a world map",
+        undefined,
+        false,
+        {
+          mcpClientIds: ["demo", JIMENG_MCP_SERVER_ID],
+          systemPrompt: JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
+        },
+      );
+
+      const messages = useChatStore.getState().currentSession().messages;
+      const assistantMessage = messages.at(-1);
+      expect(chat).not.toHaveBeenCalled();
+      expect(assistantMessage).toMatchObject({
+        role: "assistant",
+        streaming: false,
+        isError: true,
+        content: expect.stringContaining(
+          Locale.Chat.ImageGeneration.EnableFailed,
+        ),
+      });
+    } finally {
       consoleErrorSpy.mockRestore();
     }
   });

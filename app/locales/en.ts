@@ -1177,6 +1177,9 @@ const en: LocaleType = {
   },
   ImageActions: {
     Image: "Image",
+    Gallery: "Image options",
+    ShowGalleryImage: (index: number, total: number) =>
+      `Show image ${index} of ${total}`,
     Preview: "Preview image",
     Download: "Download original image",
     PreviewWithLabel: (label: string) => `Preview ${label}`,

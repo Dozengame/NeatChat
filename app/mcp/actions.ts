@@ -296,16 +296,21 @@ export async function getMcpChatServerStates(): Promise<
 
   for (const [clientId, serverConfig] of Object.entries(config.mcpServers)) {
     const runtime = clientsMap.get(clientId);
-    const status =
-      serverConfig.status === "paused"
-        ? "paused"
-        : runtime?.errorMsg
-        ? "error"
-        : runtime?.client
-        ? "active"
-        : runtime && runtime.errorMsg === null
-        ? "initializing"
-        : "undefined";
+    const hasActiveEphemeralJimengRuntime =
+      clientId === JIMENG_MCP_SERVER_ID &&
+      Boolean(runtime?.client) &&
+      !runtime?.errorMsg;
+    const status = hasActiveEphemeralJimengRuntime
+      ? "active"
+      : serverConfig.status === "paused"
+      ? "paused"
+      : runtime?.errorMsg
+      ? "error"
+      : runtime?.client
+      ? "active"
+      : runtime && runtime.errorMsg === null
+      ? "initializing"
+      : "undefined";
     result[clientId] = {
       status,
       chatDefaultEnabled: serverConfig.chatDefaultEnabled !== false,

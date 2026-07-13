@@ -186,6 +186,7 @@ import {
   JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
   JIMENG_MCP_SERVER_ID,
 } from "../mcp/jimeng";
+import { getJimengGalleryDisplay } from "../mcp/display";
 import {
   createPinnedContextMessage,
   createVisibleChatMessagesProjector,
@@ -200,6 +201,10 @@ import {
   DiscreteOptionRail,
   ReasoningEffortRail,
 } from "./reasoning-effort-rail";
+import {
+  MessageImageGallery,
+  MessageImagePreview,
+} from "./message-image-gallery";
 import {
   ChatHomeMode,
   ChatHomeModel,
@@ -420,56 +425,6 @@ async function downloadImage(src: string) {
     showToast(Locale.ImageActions.OpenedOriginal);
     triggerFileDownload(src, fileName);
   }
-}
-
-function MessageImagePreview(props: {
-  src: string;
-  alt?: string;
-  className: string;
-  actionLabels: ReturnType<typeof getImageActionLabels>;
-  onPreview: (
-    src: string,
-    options?: { trigger?: HTMLButtonElement | null; label?: string },
-  ) => void;
-  onDownload: (src: string) => void | Promise<void>;
-}) {
-  return (
-    <span className={styles["chat-message-image-frame"]}>
-      <button
-        type="button"
-        className={styles["chat-message-image-preview-button"]}
-        aria-label={props.actionLabels.preview}
-        onClick={(event) =>
-          props.onPreview(props.src, {
-            trigger: event.currentTarget,
-            label: props.alt,
-          })
-        }
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          className={props.className}
-          src={props.src}
-          alt={props.alt ?? ""}
-          loading="lazy"
-          decoding="async"
-        />
-      </button>
-      <button
-        type="button"
-        className={styles["chat-message-image-download"]}
-        aria-label={props.actionLabels.download}
-        title={props.actionLabels.download}
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          props.onDownload(props.src);
-        }}
-      >
-        <DownloadIcon />
-      </button>
-    </span>
-  );
 }
 
 const Markdown = dynamic(async () => (await import("./markdown")).Markdown, {
@@ -1224,22 +1179,24 @@ function useChatActionsView(props: ChatActionsProps) {
             }
           />
 
-          <ChatAction
-            active={props.imageGenerationEnabled}
-            ariaPressed={props.imageGenerationEnabled}
-            onClick={async () => {
-              const intent = imageGenerationIntent.next();
-              if (await reconcileImageGenerationIntent(intent)) {
-                completeMobileAction();
+          {!isOpenAIImageGeneration && (
+            <ChatAction
+              active={props.imageGenerationEnabled}
+              ariaPressed={props.imageGenerationEnabled}
+              onClick={async () => {
+                const intent = imageGenerationIntent.next();
+                if (await reconcileImageGenerationIntent(intent)) {
+                  completeMobileAction();
+                }
+              }}
+              text={
+                props.imageGenerationEnabled
+                  ? Locale.Chat.ChatToolMenu.DisableImageGeneration
+                  : Locale.Chat.ChatToolMenu.ImageGeneration
               }
-            }}
-            text={
-              props.imageGenerationEnabled
-                ? Locale.Chat.ChatToolMenu.DisableImageGeneration
-                : Locale.Chat.ChatToolMenu.ImageGeneration
-            }
-            icon={<ImageIcon />}
-          />
+              icon={<ImageIcon />}
+            />
+          )}
         </div>
 
         {hasSessionActions && (
@@ -1952,6 +1909,10 @@ function useChatInnerView() {
     () => chatQaFixture?.isMarkdownStressQaEnabled(location.search) ?? false,
     [chatQaFixture, location.search],
   );
+  const imageGalleryQaEnabled = useMemo(
+    () => chatQaFixture?.isImageGalleryQaEnabled(location.search) ?? false,
+    [chatQaFixture, location.search],
+  );
   const markdownStressQaDropzonePreview = useMemo(
     () =>
       markdownStressQaEnabled
@@ -1985,6 +1946,13 @@ function useChatInnerView() {
     end: false,
   });
   const [imageGenerationEnabled, setImageGenerationEnabled] = useState(false);
+  const showJimengModeUi =
+    imageGenerationEnabled &&
+    !isOpenAIImageGenerationModelConfig({
+      model: session.mask.modelConfig.model,
+      providerName:
+        session.mask.modelConfig.providerName || ServiceProvider.OpenAI,
+    });
   const [dragActive, setDragActive] = useState(false);
   const [dragPayloadSummary, setDragPayloadSummary] =
     useState<DraggedAttachmentSummary | null>(null);
@@ -2098,7 +2066,7 @@ function useChatInnerView() {
     userInput.trim().length > 0 ||
     attachImages.length > 0 ||
     attachedFiles.length > 0 ||
-    imageGenerationEnabled ||
+    showJimengModeUi ||
     promptHints.length > 0;
   const canSubmitComposer =
     !markdownStressQaEnabled &&
@@ -2289,13 +2257,20 @@ function useChatInnerView() {
       return;
     }
 
+    const useJimengForSubmit =
+      imageGenerationEnabled &&
+      !isOpenAIImageGenerationModelConfig({
+        model: session.mask.modelConfig.model,
+        providerName:
+          session.mask.modelConfig.providerName || ServiceProvider.OpenAI,
+      });
     setIsLoading(true);
     chatStore
       .onUserInput(
         finalUserInput,
         attachImages,
         false,
-        imageGenerationEnabled
+        useJimengForSubmit
           ? {
               mcpClientIds: [JIMENG_MCP_SERVER_ID],
               systemPrompt: JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
@@ -3057,6 +3032,10 @@ function useChatInnerView() {
       return chatQaFixture.getMarkdownStressQaMessages(location.search);
     }
 
+    if (imageGalleryQaEnabled && chatQaFixture) {
+      return chatQaFixture.getImageGalleryQaMessages();
+    }
+
     const visibleSessionMessages = projectVisibleChatMessages(
       session.messages as RenderMessage[],
       chatStore.messageProjectionRevision,
@@ -3098,6 +3077,7 @@ function useChatInnerView() {
     chatQaFixture,
     context,
     isLoading,
+    imageGalleryQaEnabled,
     location.search,
     markdownStressQaEnabled,
     chatStore.messageProjectionRevision,
@@ -3161,6 +3141,7 @@ function useChatInnerView() {
   }, [messageRenderStartIndex, messages, scrollRef]);
   const showEmptyState =
     !markdownStressQaEnabled &&
+    !imageGalleryQaEnabled &&
     session.messages.length === 0 &&
     context.length === 1 &&
     getMessageTextContent(context[0]) === BOT_HELLO.content &&
@@ -4751,7 +4732,7 @@ function useChatInnerView() {
   }, [closeImagePreview, previewImage]);
 
   const showInputReasoningAction = false;
-  const showInputStatusRow = showInputReasoningAction || imageGenerationEnabled;
+  const showInputStatusRow = showInputReasoningAction || showJimengModeUi;
   const isMobileSidebarOpen = location.pathname === Path.Home;
   const promptToast = (
     <PromptToast
@@ -5340,7 +5321,16 @@ function useChatInnerView() {
                   const messageCopyStatus = isMessageCopied
                     ? `${messageLabel} ${Locale.Copy.Success}`
                     : "";
-                  const messageImages = getMessageImages(message);
+                  const messageTextContent = getMessageTextContent(message);
+                  const jimengGalleryDisplay = isUser
+                    ? { text: messageTextContent, images: [] as string[] }
+                    : getJimengGalleryDisplay(messageTextContent);
+                  const messageImages = Array.from(
+                    new Set([
+                      ...getMessageImages(message),
+                      ...jimengGalleryDisplay.images,
+                    ]),
+                  );
                   const singleMessageImageLabel = getMessageImageLabel(0, 1);
 
                   return (
@@ -5453,7 +5443,7 @@ function useChatInnerView() {
                           >
                             <Markdown
                               key={message.streaming ? "loading" : "done"}
-                              content={getMessageTextContent(message)}
+                              content={jimengGalleryDisplay.text}
                               loading={isWaiting}
                               fontSize={fontSize}
                               fontFamily={fontFamily}
@@ -5471,53 +5461,29 @@ function useChatInnerView() {
                               onPreviewImage={openMarkdownImagePreview}
                               onDownloadImage={downloadImage}
                             />
-                            {messageImages.length == 1 && (
-                              <MessageImagePreview
-                                className={styles["chat-message-item-image"]}
-                                src={messageImages[0]}
-                                alt={singleMessageImageLabel}
-                                actionLabels={getImageActionLabels(
-                                  singleMessageImageLabel,
+                            {messageImages.length > 0 && (
+                              <div className={styles["chat-message-media"]}>
+                                {messageImages.length === 1 && (
+                                  <MessageImagePreview
+                                    className={
+                                      styles["chat-message-item-image"]
+                                    }
+                                    src={messageImages[0]}
+                                    alt={singleMessageImageLabel}
+                                    actionLabels={getImageActionLabels(
+                                      singleMessageImageLabel,
+                                    )}
+                                    onPreview={openImagePreview}
+                                    onDownload={downloadImage}
+                                  />
                                 )}
-                                onPreview={openImagePreview}
-                                onDownload={downloadImage}
-                              />
-                            )}
-                            {messageImages.length > 1 && (
-                              <div
-                                className={styles["chat-message-item-images"]}
-                                style={
-                                  {
-                                    "--image-count": messageImages.length,
-                                  } as React.CSSProperties
-                                }
-                              >
-                                {messageImages.map((image, index) => {
-                                  const imageLabel = getMessageImageLabel(
-                                    index,
-                                    messageImages.length,
-                                  );
-
-                                  return (
-                                    <MessageImagePreview
-                                      className={
-                                        styles["chat-message-item-image-multi"]
-                                      }
-                                      key={getAttachmentRenderKey(
-                                        "image",
-                                        image,
-                                        index,
-                                      )}
-                                      src={image}
-                                      alt={imageLabel}
-                                      actionLabels={getImageActionLabels(
-                                        imageLabel,
-                                      )}
-                                      onPreview={openImagePreview}
-                                      onDownload={downloadImage}
-                                    />
-                                  );
-                                })}
+                                {messageImages.length > 1 && (
+                                  <MessageImageGallery
+                                    images={messageImages}
+                                    onPreview={openImagePreview}
+                                    onDownload={downloadImage}
+                                  />
+                                )}
                               </div>
                             )}
                           </div>
@@ -5882,7 +5848,7 @@ function useChatInnerView() {
                     aria-label={Locale.Chat.ModelMenu.CurrentInputMode}
                   >
                     {showInputReasoningAction && <ChatInputReasoningAction />}
-                    {imageGenerationEnabled && (
+                    {showJimengModeUi && (
                       <span
                         className={clsx(
                           styles["chat-input-mode-chip"],
@@ -6328,6 +6294,7 @@ function useChatInnerView() {
             width={1600}
             height={1200}
             unoptimized
+            priority
           />
         </dialog>
       )}

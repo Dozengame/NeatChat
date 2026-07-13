@@ -26,5 +26,8 @@ describe("development-only chat QA fixture", () => {
     expect(fixtureSource).toMatch(/Math\.min\(\s*240,/);
     expect(fixtureSource).toContain("data:image/png;base64,");
     expect(fixtureSource).not.toContain("data:image/svg+xml");
+    expect(fixtureSource).toContain('IMAGE_GALLERY_QA_PARAM = "image-gallery"');
+    expect(fixtureSource).toContain("getImageGalleryQaMessages");
+    expect(fixtureSource).toContain('model: "gpt-image-2"');
   });
 });

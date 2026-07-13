@@ -1,16 +1,25 @@
+import type { MultimodalContent } from "../client/types";
 import type { ModelType } from "../store/config";
 import type { DraggedAttachmentSummary, FileInfo } from "../utils/file";
 import type { RenderMessage } from "./chat-render";
 
 const MARKDOWN_STRESS_QA_PARAM = "markdown-stress";
+const IMAGE_GALLERY_QA_PARAM = "image-gallery";
 const MARKDOWN_STRESS_QA_BOUNDARY_PARAM = "streaming_boundary";
 const MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_PARAM = "dropzone_preview";
 const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_PARAM =
   "attachment_strip_preview";
 const MARKDOWN_STRESS_QA_HISTORY_COUNT_PARAM = "history_count";
 export const MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX = "codex-qa-markdown-stress";
+const IMAGE_GALLERY_QA_MESSAGE_ID_PREFIX = "codex-qa-image-gallery";
 const QA_PNG_IMAGE =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+const IMAGE_GALLERY_QA_IMAGES = [
+  "https://picsum.photos/seed/neatchat-coast/1200/800",
+  "https://picsum.photos/seed/neatchat-mountain/1200/800",
+  "https://picsum.photos/seed/neatchat-lake/1200/800",
+  "https://picsum.photos/seed/neatchat-field/1200/800",
+];
 type MarkdownStressBoundaryVariant =
   | "details"
   | "table"
@@ -287,6 +296,30 @@ const MARKDOWN_STRESS_QA_MESSAGES: RenderMessage[] = [
     content: MARKDOWN_STRESS_QA_CONTENT,
   },
 ];
+const IMAGE_GALLERY_QA_MESSAGES: RenderMessage[] = [
+  {
+    id: `${IMAGE_GALLERY_QA_MESSAGE_ID_PREFIX}-user`,
+    date: "2026/7/13 00:00:00",
+    role: "user",
+    content: "生成四个日落风景方案。",
+  },
+  {
+    id: `${IMAGE_GALLERY_QA_MESSAGE_ID_PREFIX}-assistant`,
+    date: "2026/7/13 00:00:01",
+    role: "assistant",
+    model: "gpt-image-2" as ModelType,
+    content: [
+      {
+        type: "text",
+        text: "已生成 4 个图片方案，可从右侧选项切换查看。",
+      },
+      ...IMAGE_GALLERY_QA_IMAGES.map((url) => ({
+        type: "image_url" as const,
+        image_url: { url },
+      })),
+    ] satisfies MultimodalContent[],
+  },
+];
 const MARKDOWN_STRESS_QA_BOUNDARY_MESSAGES: RenderMessage[] =
   MARKDOWN_STRESS_QA_BOUNDARY_VARIANTS.map((variant) => ({
     id: `${MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX}-streaming-${variant}`,
@@ -389,6 +422,15 @@ const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_FILE_FIXTURES: Record<
 export function isMarkdownStressQaEnabled(locationSearch: string) {
   const params = new URLSearchParams(locationSearch);
   return params.get("codex_qa") === MARKDOWN_STRESS_QA_PARAM;
+}
+
+export function isImageGalleryQaEnabled(locationSearch: string) {
+  const params = new URLSearchParams(locationSearch);
+  return params.get("codex_qa") === IMAGE_GALLERY_QA_PARAM;
+}
+
+export function getImageGalleryQaMessages(): RenderMessage[] {
+  return IMAGE_GALLERY_QA_MESSAGES;
 }
 
 function getMarkdownStressQaBoundaryVariant(locationSearch: string) {

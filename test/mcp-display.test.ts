@@ -5,6 +5,7 @@ import {
   formatPendingMcpRequestForChat,
   formatMcpToolResultForChat,
   getJimengQuerySubmitId,
+  getJimengGalleryDisplay,
   hasJimengDisplayableImage,
   mergeJimengProgressWithResult,
   mergeJimengResultIntoReply,
@@ -411,6 +412,32 @@ describe("formatMcpToolResultForChat", () => {
     expect(updatedProgress).toContain("Status: Generation succeeded");
     expect(updatedProgress).toContain(`![generated image 1](${imageUrl})`);
     expect(updatedProgress).not.toContain("public_urls:");
+  });
+
+  test("projects Jimeng markdown images into the shared message gallery", () => {
+    const secondImageUrl =
+      "https://example.com/generated/second-image.webp";
+    const display = getJimengGalleryDisplay(
+      [
+        "Image generation task",
+        "",
+        "Progress:\n- Status: Generation succeeded",
+        "",
+        `![generated image 1](${imageUrl})`,
+        `![generated image 2](${secondImageUrl})`,
+      ].join("\n"),
+    );
+
+    expect(display.images).toEqual([imageUrl, secondImageUrl]);
+    expect(display.text).toContain("Image generation task");
+    expect(display.text).toContain("Generation succeeded");
+    expect(display.text).not.toContain("![generated image");
+
+    const ordinaryMarkdown = `A normal reply\n\n![diagram](${imageUrl})`;
+    expect(getJimengGalleryDisplay(ordinaryMarkdown)).toEqual({
+      text: ordinaryMarkdown,
+      images: [],
+    });
   });
 
   test("keeps jimeng diagnostics when the visible reply omitted them", () => {

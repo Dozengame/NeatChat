@@ -1155,6 +1155,9 @@ const cn = {
   },
   ImageActions: {
     Image: "图片",
+    Gallery: "图片方案",
+    ShowGalleryImage: (index: number, total: number) =>
+      `展示第 ${index} 张图片，共 ${total} 张`,
     Preview: "预览图片",
     Download: "下载图片原图",
     PreviewWithLabel: (label: string) => `预览 ${label}`,

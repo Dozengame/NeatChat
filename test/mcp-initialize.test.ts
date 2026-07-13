@@ -239,12 +239,19 @@ describe("MCP initialization", () => {
       activateMcpClient,
       deactivateMcpClient,
       executeMcpAction,
+      getMcpChatServerStates,
     } = await import("../app/mcp/actions");
     (listTools as jest.Mock).mockResolvedValueOnce({
       tools: [{ name: "dreamina_text2image" }],
     });
 
+    await expect(getMcpChatServerStates()).resolves.toMatchObject({
+      [JIMENG_MCP_SERVER_ID]: { status: "paused" },
+    });
     await activateMcpClient(JIMENG_MCP_SERVER_ID);
+    await expect(getMcpChatServerStates()).resolves.toMatchObject({
+      [JIMENG_MCP_SERVER_ID]: { status: "active" },
+    });
     await executeMcpAction(JIMENG_MCP_SERVER_ID, {
       jsonrpc: "2.0",
       id: "jimeng-request",
@@ -252,6 +259,9 @@ describe("MCP initialization", () => {
       params: { name: "dreamina_text2image", arguments: { poll: 60 } },
     });
     await deactivateMcpClient(JIMENG_MCP_SERVER_ID);
+    await expect(getMcpChatServerStates()).resolves.toMatchObject({
+      [JIMENG_MCP_SERVER_ID]: { status: "paused" },
+    });
 
     expect(createClient).toHaveBeenCalledTimes(1);
     expect(createClient).toHaveBeenCalledWith(
@@ -270,6 +280,20 @@ describe("MCP initialization", () => {
     expect(removeClient).toHaveBeenCalledWith({ id: "demo-client" });
     expect(clientsMap.has(JIMENG_MCP_SERVER_ID)).toBe(false);
     expect(fs.writeFile).not.toHaveBeenCalled();
+  });
+
+  test("keeps a generic paused server paused when a stale runtime remains", async () => {
+    (fs.readFile as jest.Mock).mockResolvedValue(pausedDemoConfig);
+    clientsMap.set("demo", {
+      client: { id: "stale-active-client" } as any,
+      tools: { tools: [{ name: "stale-tool" }] },
+      errorMsg: null,
+    });
+    const { getMcpChatServerStates } = await import("../app/mcp/actions");
+
+    await expect(getMcpChatServerStates()).resolves.toEqual({
+      demo: { status: "paused", chatDefaultEnabled: true },
+    });
   });
 
   test("applies deactivate after an in-flight activation completes", async () => {

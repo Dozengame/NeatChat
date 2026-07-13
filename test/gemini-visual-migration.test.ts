@@ -1542,7 +1542,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain(
       "aria-label={Locale.Chat.ImageGeneration.ModeEnabled}",
     );
-    expect(chat).toContain("{imageGenerationEnabled && (");
+    expect(chat).toContain("{showJimengModeUi && (");
     expect(chat).toContain('styles["chat-multimodal-tray"]');
     expect(chat).toContain('styles["chat-multimodal-section"]');
     expect(chat).toContain('role="dialog"');
@@ -9918,6 +9918,7 @@ describe("Gemini visual migration shell", () => {
 
   test("labels image actions with image-specific context", () => {
     const chat = read("app/components/chat.tsx");
+    const gallery = read("app/components/message-image-gallery.tsx");
     const markdown = read("app/components/markdown.tsx");
 
     expect(chat).toMatch(
@@ -9931,17 +9932,19 @@ describe("Gemini visual migration shell", () => {
     );
     expect(markdown).toContain("aria-label={imageActionLabels.preview}");
     expect(markdown).toContain("aria-label={imageActionLabels.download}");
-    expect(chat).toContain(
+    expect(gallery).toContain(
       "actionLabels: ReturnType<typeof getImageActionLabels>;",
     );
-    expect(chat).toContain("aria-label={props.actionLabels.preview}");
-    expect(chat).toContain("aria-label={props.actionLabels.download}");
-    expect(chat).toContain("const messageImages = getMessageImages(message);");
+    expect(gallery).toContain("aria-label={props.actionLabels.preview}");
+    expect(gallery).toContain("aria-label={props.actionLabels.download}");
+    expect(chat).toMatch(
+      /const messageImages = Array\.from\([\s\S]*\.\.\.getMessageImages\(message\),[\s\S]*\.\.\.jimengGalleryDisplay\.images/,
+    );
     expect(chat).toMatch(
       /const singleMessageImageLabel = getMessageImageLabel\(0, 1\);[\s\S]*src=\{messageImages\[0\]\}[\s\S]*actionLabels=\{getImageActionLabels\(\s*singleMessageImageLabel,\s*\)\}/,
     );
-    expect(chat).toMatch(
-      /const imageLabel = getMessageImageLabel\(\s*index,\s*messageImages\.length,\s*\);[\s\S]*actionLabels=\{getImageActionLabels\(\s*imageLabel,\s*\)\}/,
+    expect(gallery).toMatch(
+      /const selectedLabel = getMessageImageLabel\([\s\S]*safeSelectedIndex,[\s\S]*props\.images\.length,[\s\S]*\);[\s\S]*actionLabels=\{getImageActionLabels\(selectedLabel\)\}/,
     );
   });
 
@@ -18826,6 +18829,7 @@ describe("Gemini visual migration shell", () => {
 
   test("keeps chat image preview overlay focus-restoring and bounded", () => {
     const chat = read("app/components/chat.tsx");
+    const gallery = read("app/components/message-image-gallery.tsx");
     const markdown = read("app/components/markdown.tsx");
     const chatStyles = read("app/components/chat.module.scss");
     const imagePreviewMaskBlock = readCssBlock(
@@ -18935,8 +18939,8 @@ describe("Gemini visual migration shell", () => {
       autoDarkImagePreviewMaskBlock,
     ].join("\n");
 
-    expect(chat).toMatch(
-      /function MessageImagePreview\([\s\S]*onPreview: \(\s*src: string,\s*options\?: \{ trigger\?: HTMLButtonElement \| null; label\?: string \},\s*\) => void;[\s\S]*onClick=\{\(event\) =>\s*props\.onPreview\(props\.src, \{[\s\S]*trigger: event\.currentTarget,[\s\S]*label: props\.alt,[\s\S]*\}\)[\s\S]*\}/,
+    expect(gallery).toMatch(
+      /type ImagePreviewHandler = \(\s*src: string,\s*options\?: \{ trigger\?: HTMLButtonElement \| null; label\?: string \},\s*\) => void;[\s\S]*export function MessageImagePreview\([\s\S]*onClick=\{\(event\) =>\s*props\.onPreview\(props\.src, \{[\s\S]*trigger: event\.currentTarget,[\s\S]*label: props\.alt,[\s\S]*\}\)[\s\S]*\}/,
     );
     expect(chat).toContain(
       "const imagePreviewTriggerRef = useRef<HTMLButtonElement | null>(null);",
@@ -18977,6 +18981,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("aria-label={previewImageDialogLabel}");
     expect(chat).not.toContain('aria-label="图片预览"');
     expect(chat).toContain("alt={previewImageAlt}");
+    expect(chat).toMatch(
+      /className=\{styles\["image-preview-image"\]\}[\s\S]*unoptimized[\s\S]*priority/,
+    );
     expect(chat).toMatch(
       /aria-label=\{Locale\.ImageActions\.ClosePreview\}[\s\S]*onClick=\{closeImagePreview\}/,
     );
@@ -19817,9 +19824,18 @@ describe("Gemini visual migration shell", () => {
     );
   });
 
-  test("keeps chat message image cards theme-aware and touch-safe", () => {
+  test("keeps generated message images in an accessible adaptive gallery", () => {
     const chat = read("app/components/chat.tsx");
+    const gallery = read("app/components/message-image-gallery.tsx");
     const chatStyles = read("app/components/chat.module.scss");
+    const messageMediaBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-media",
+    );
+    const singleMessageImageBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-item-image",
+    );
     const messageImageFrameBlock = readCssBlock(
       chatStyles,
       ".chat-message-image-frame",
@@ -19827,280 +19843,241 @@ describe("Gemini visual migration shell", () => {
     const messageImageFrameRootBlock = readRootDeclarations(
       messageImageFrameBlock,
     );
-    const messageImagePreviewButtonBlock = readCssBlock(
+    const previewButtonBlock = readCssBlock(
       chatStyles,
       ".chat-message-image-preview-button",
     );
-    const messageImagePreviewButtonFocusBlock = readCssBlock(
-      messageImagePreviewButtonBlock,
-      "&:focus-visible",
-    );
-    const messageImageBlock = readCssBlock(
-      chatStyles,
-      ".chat-message-item-image,\n.chat-message-item-image-multi",
-    );
-    const messageImageDownloadStyles = chatStyles.slice(
-      chatStyles.indexOf("\n.chat-message-image-download {"),
-    );
-    const messageImageDownloadBlock = readCssBlock(
-      messageImageDownloadStyles,
-      ".chat-message-image-download",
-    );
-    const messageImageDownloadHoverBlock = readCssBlock(
-      messageImageDownloadBlock,
-      "&:hover",
-    );
-    const messageImageDownloadActiveBlock = readCssBlock(
-      messageImageDownloadBlock,
+    const previewButtonActiveBlock = readCssBlock(
+      previewButtonBlock,
       "&:active",
     );
-    const messageImageDownloadFocusBlock = readCssBlock(
-      messageImageDownloadBlock,
+    const previewButtonFocusBlock = readCssBlock(
+      previewButtonBlock,
       "&:focus-visible",
     );
-    const messageImageDownloadSvgBlock = readCssBlock(
-      messageImageDownloadBlock,
-      "svg",
-    );
-    const messageImageDownloadSvgPathBlock = readCssBlock(
-      messageImageDownloadBlock,
-      "svg path",
-    );
-    const messageImageGridBlock = readCssBlock(
+    const galleryBlock = readCssBlock(chatStyles, ".chat-message-gallery");
+    const galleryOptionsBlock = readCssBlock(
       chatStyles,
-      ".chat-message-item-images",
+      ".chat-message-gallery-options",
     );
-    const darkMessageImageFrameBlock = readCssBlock(
+    const galleryOptionBlock = readCssBlock(
       chatStyles,
-      ":global(.dark) .chat-message-image-frame",
+      ".chat-message-gallery-option",
     );
-    const autoDarkMessageImageFrameSelector =
-      ":global(body:not(.light)) .chat-message-image-frame";
-    const autoDarkMessageImageFrameIndex = chatStyles.indexOf(
-      autoDarkMessageImageFrameSelector,
+    const galleryOptionActiveBlock = readCssBlock(
+      galleryOptionBlock,
+      "&:active",
     );
-    const autoDarkMessageImageMediaIndex = chatStyles.lastIndexOf(
-      "@media (prefers-color-scheme: dark)",
-      autoDarkMessageImageFrameIndex,
+    const galleryOptionFocusBlock = readCssBlock(
+      galleryOptionBlock,
+      "&:focus-visible",
     );
-    const autoDarkMessageImageFrameBlock = readCssBlock(
-      chatStyles.slice(autoDarkMessageImageMediaIndex),
-      autoDarkMessageImageFrameSelector,
+    const galleryOptionSelectedBlock = readCssBlock(
+      galleryOptionBlock,
+      '&[aria-pressed="true"]',
     );
-    const mobileMessageImageMediaIndex = chatStyles.indexOf(
+    const galleryThumbnailBlock = readCssBlock(
+      chatStyles,
+      ".chat-message-gallery-thumbnail",
+    );
+    const imageStylesScope = chatStyles.slice(
+      chatStyles.indexOf("\n.chat-message-media {"),
+      chatStyles.indexOf("\n.image-preview-mask {"),
+    );
+    const mobileGalleryMediaIndex = chatStyles.indexOf(
       "@media only screen and (max-width: 600px)",
-      chatStyles.indexOf(".chat-message-item-image-multi"),
+      chatStyles.indexOf(".chat-message-gallery"),
     );
-    const mobileMessageImageBlock = readCssBlock(
-      chatStyles.slice(mobileMessageImageMediaIndex),
-      ".chat-message-item-image-multi",
+    const mobileGalleryMediaBlock = readCssBlock(
+      chatStyles.slice(mobileGalleryMediaIndex),
+      "@media only screen and (max-width: 600px)",
     );
-    const messageImageResponsiveStyles = chatStyles.slice(
-      chatStyles.indexOf(
-        "\n@media only screen and (max-width: 600px)",
-        chatStyles.indexOf("\n.chat-message-image-download {"),
-      ),
+    const mobileGalleryBlock = readCssBlock(
+      mobileGalleryMediaBlock,
+      ".chat-message-gallery",
     );
-    const tabletMessageImageMediaBlock = readCssBlock(
-      messageImageResponsiveStyles,
-      "@media screen and (min-width: 600px) and (max-width: 767px)",
+    const mobileGalleryOptionsBlock = readCssBlock(
+      mobileGalleryMediaBlock,
+      ".chat-message-gallery-options",
     );
-    const tabletMessageImageBlock = readCssBlock(
-      tabletMessageImageMediaBlock,
-      ".chat-message-item-image-multi",
+    const mobileGalleryOptionBlock = readCssBlock(
+      mobileGalleryMediaBlock,
+      ".chat-message-gallery-option",
     );
-    const tabletSingleMessageImageBlock = readCssBlock(
-      tabletMessageImageMediaBlock,
-      ".chat-message-item-image",
-    );
-    const desktopMessageImageMediaBlock = readCssBlock(
-      messageImageResponsiveStyles,
-      "@media screen and (min-width: 768px)",
-    );
-    const touchMessageImageBlock = readCssBlock(
-      readCssBlock(
-        chatStyles.slice(
-          chatStyles.indexOf("\n.chat-message-image-download {"),
+    const touchGalleryMediaBlock = readCssBlock(
+      chatStyles.slice(
+        chatStyles.indexOf(
+          "@media (hover: none), (pointer: coarse), (max-width: 600px)",
+          chatStyles.indexOf(".chat-message-gallery"),
         ),
-        "@media (hover: none), (pointer: coarse), (max-width: 600px)",
       ),
-      ".chat-message-image-download",
+      "@media (hover: none), (pointer: coarse), (max-width: 600px)",
+    );
+    const touchGalleryOptionBlock = readCssBlock(
+      touchGalleryMediaBlock,
+      ".chat-message-gallery-option",
+    );
+    const darkGalleryOptionBlock = readCssBlock(
+      chatStyles,
+      ":global(.dark) .chat-message-gallery-option",
+    );
+    const autoDarkGalleryOptionBlock = readCssBlock(
+      chatStyles,
+      ":global(body:not(.light)) .chat-message-gallery-option",
     );
     const reducedMotionBlock = readCssBlock(
       chatStyles,
       "@media (prefers-reduced-motion: reduce)",
     );
-    const messageImageTokenNames = [
-      "--chat-message-image-radius",
-      "--chat-message-image-border-color",
-      "--chat-message-image-background",
-      "--chat-message-image-shadow-color",
-      "--chat-message-image-hover-border-color",
-      "--chat-message-image-hover-shadow-color",
-      "--chat-message-image-download-border-color",
-      "--chat-message-image-download-background",
-      "--chat-message-image-download-color",
-      "--chat-message-image-download-shadow-color",
-      "--chat-message-image-download-hover-border-color",
-      "--chat-message-image-download-hover-background",
-      "--chat-message-image-download-hover-shadow-color",
-      "--chat-message-image-download-active-background",
-      "--chat-message-image-download-active-shadow-color",
-      "--chat-message-image-download-focus-shadow-color",
-    ];
-    const lightMessageImageTokens = readCustomProperties(
-      messageImageFrameRootBlock,
-      messageImageTokenNames,
+    const reducedTransparencyBlock = readCssBlock(
+      chatStyles,
+      "@media (prefers-reduced-transparency: reduce)",
     );
-    const darkMessageImageTokens = readCustomProperties(
-      darkMessageImageFrameBlock,
-      messageImageTokenNames,
+    const increasedContrastBlock = readCssBlock(
+      chatStyles,
+      "@media (prefers-contrast: more)",
     );
-    const autoDarkMessageImageTokens = readCustomProperties(
-      autoDarkMessageImageFrameBlock,
-      messageImageTokenNames,
+    const forcedColorsBlock = readCssBlock(
+      chatStyles,
+      "@media (forced-colors: active)",
     );
-    const messageImagePaintScope = [
-      messageImageFrameRootBlock,
-      messageImageBlock,
-      messageImageDownloadBlock,
-      darkMessageImageFrameBlock,
-      autoDarkMessageImageFrameBlock,
-    ].join("\n");
+    const submitStart = chat.indexOf("const doSubmit = (");
+    const submitEnd = chat.indexOf("const onPromptSelect", submitStart);
+    const submitBlock = chat.slice(submitStart, submitEnd);
+    const homeModeStart = chat.indexOf("const selectEmptyComposerMode");
+    const homeModeEnd = chat.indexOf("useEffect(() =>", homeModeStart);
+    const homeModeBlock = chat.slice(homeModeStart, homeModeEnd);
 
+    expect(chat).toContain(
+      'import {\n  MessageImageGallery,\n  MessageImagePreview,\n} from "./message-image-gallery";',
+    );
     expect(chat).toMatch(
-      /function MessageImagePreview\([\s\S]*className=\{styles\["chat-message-image-preview-button"\]\}[\s\S]*props\.onPreview\(props\.src, \{[\s\S]*trigger: event\.currentTarget,[\s\S]*label: props\.alt,[\s\S]*\}\)[\s\S]*className=\{props\.className\}[\s\S]*className=\{styles\["chat-message-image-download"\]\}[\s\S]*aria-label=\{props\.actionLabels\.download\}[\s\S]*title=\{props\.actionLabels\.download\}[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);[\s\S]*props\.onDownload\(props\.src\);/,
+      /messageImages\.length > 0[\s\S]*styles\["chat-message-media"\][\s\S]*messageImages\.length === 1[\s\S]*<MessageImagePreview[\s\S]*messageImages\.length > 1[\s\S]*<MessageImageGallery[\s\S]*images=\{messageImages\}[\s\S]*onPreview=\{openImagePreview\}[\s\S]*onDownload=\{downloadImage\}/,
     );
-    expect(chat).toContain('styles["chat-message-item-image"]');
-    expect(chat).toContain('styles["chat-message-item-image-multi"]');
-    expect(chat).toContain('styles["chat-message-item-images"]');
-    expect(Object.values(lightMessageImageTokens).every(Boolean)).toBeTruthy();
-    expect(Object.values(darkMessageImageTokens).every(Boolean)).toBeTruthy();
-    expect(
-      Object.values(autoDarkMessageImageTokens).every(Boolean),
-    ).toBeTruthy();
-    expect(lightMessageImageTokens["--chat-message-image-radius"]).toBe("8px");
-    expect(
-      lightMessageImageTokens["--chat-message-image-border-color"],
-    ).toContain("var(--black-50)");
-    expect(
-      darkMessageImageTokens["--chat-message-image-border-color"],
-    ).toContain("var(--black)");
-    expect(autoDarkMessageImageTokens).toEqual(darkMessageImageTokens);
-    expect(messageImageBlock).toMatch(
-      /border-radius:\s*var\(--chat-message-image-radius\);/,
+    expect(chat).toMatch(
+      /getJimengGalleryDisplay\(messageTextContent\)[\s\S]*new Set\(\[[\s\S]*\.\.\.getMessageImages\(message\),[\s\S]*\.\.\.jimengGalleryDisplay\.images/,
     );
-    expect(messageImageBlock).toMatch(
-      /border:\s*1px solid var\(--chat-message-image-border-color\);/,
+    expect(chat).toContain("content={jimengGalleryDisplay.text}");
+    expect(chat).not.toContain("chat-message-item-images");
+    expect(chat).not.toContain("chat-message-item-image-multi");
+    expect(chat).not.toContain('"--image-count"');
+
+    expect(submitBlock).toMatch(
+      /const useJimengForSubmit =\s*imageGenerationEnabled &&\s*!isOpenAIImageGenerationModelConfig\(/,
     );
-    expect(messageImageBlock).toMatch(
-      /background:\s*var\(--chat-message-image-background\);/,
+    expect(submitBlock).toMatch(
+      /useJimengForSubmit\s*\?\s*\{[\s\S]*mcpClientIds:\s*\[JIMENG_MCP_SERVER_ID\],[\s\S]*systemPrompt:\s*JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,[\s\S]*\}\s*:\s*undefined/,
     );
-    expect(messageImageBlock).toMatch(
-      /box-shadow:\s*0 8px 24px var\(--chat-message-image-shadow-color\);/,
+    expect(chat).toMatch(
+      /\{!isOpenAIImageGeneration && \([\s\S]*Locale\.Chat\.ChatToolMenu\.ImageGeneration/,
     );
-    expect(messageImageBlock).toMatch(/max-width:\s*100%;/);
-    expect(messageImageBlock).toMatch(/width:\s*100%;/);
-    expect(messageImageFrameRootBlock).toMatch(/box-sizing:\s*border-box;/);
-    expect(messageImageFrameRootBlock).toMatch(/overflow:\s*hidden;/);
-    expect(messageImageFrameRootBlock).not.toMatch(/width:\s*max-content;/);
-    expect(messageImagePreviewButtonBlock).toMatch(/width:\s*100%;/);
-    expect(messageImageFrameBlock).toMatch(
-      /&:hover,\s*&:focus-within[\s\S]*\.chat-message-item-image,[\s\S]*\.chat-message-item-image-multi[\s\S]*border-color:\s*var\(--chat-message-image-hover-border-color\);/,
+    expect(chat).toContain("{showJimengModeUi && (");
+    expect(homeModeBlock).toContain("selectHeaderModel(");
+    expect(homeModeBlock).not.toContain("activateMcpClient");
+    expect(homeModeBlock).not.toContain("JIMENG_MCP_SERVER_ID");
+
+    expect(gallery).toMatch(
+      /export function MessageImageGallery[\s\S]*useState\(0\)[\s\S]*selectedImage[\s\S]*<MessageImagePreview[\s\S]*src=\{selectedImage\}/,
     );
-    expect(messageImageFrameBlock).toMatch(
-      /&:hover,\s*&:focus-within[\s\S]*\.chat-message-item-image,[\s\S]*\.chat-message-item-image-multi[\s\S]*box-shadow:\s*0 10px 28px var\(--chat-message-image-hover-shadow-color\);/,
+    expect(gallery).toContain('role="group"');
+    expect(gallery).toContain("aria-label={Locale.ImageActions.Gallery}");
+    expect(gallery).toContain("aria-pressed={selected}");
+    expect(gallery).toContain("tabIndex={selected ? 0 : -1}");
+    expect(gallery).toContain('alt=""');
+    for (const key of [
+      "ArrowLeft",
+      "ArrowRight",
+      "ArrowUp",
+      "ArrowDown",
+      "Home",
+      "End",
+    ]) {
+      expect(gallery).toContain(`event.key === "${key}"`);
+    }
+
+    expect(messageMediaBlock).toMatch(/width:\s*min\(780px, 100%\);/);
+    expect(messageMediaBlock).toMatch(/margin:\s*12px auto 0;/);
+    expect(singleMessageImageBlock).toMatch(/width:\s*auto;/);
+    expect(singleMessageImageBlock).toMatch(/height:\s*auto;/);
+    expect(singleMessageImageBlock).toMatch(
+      /max-height:\s*min\(52vh, 520px\);/,
     );
-    expect(messageImagePreviewButtonFocusBlock).toMatch(
+    expect(singleMessageImageBlock).toMatch(/object-fit:\s*contain;/);
+    expect(messageImageFrameRootBlock).toMatch(
+      /--chat-message-image-radius:\s*14px;/,
+    );
+    expect(messageImageFrameRootBlock).toMatch(/overflow:\s*visible;/);
+    expect(previewButtonActiveBlock).toMatch(
+      /transform:\s*scale\(0\.99\);/,
+    );
+    expect(previewButtonFocusBlock).toMatch(
       /outline:\s*var\(--focus-ring\);/,
     );
-    expect(messageImagePreviewButtonFocusBlock).toMatch(
-      /box-shadow:\s*var\(--focus-ring-shadow\);/,
+
+    expect(galleryBlock).toMatch(
+      /grid-template-columns:\s*minmax\(0, 1fr\) 72px;/,
     );
-    expect(messageImageDownloadBlock).toMatch(
-      /border:\s*1px solid var\(--chat-message-image-download-border-color\);/,
+    expect(galleryBlock).toMatch(/gap:\s*12px;/);
+    expect(galleryBlock).toMatch(/width:\s*fit-content;/);
+    expect(galleryBlock).toMatch(/max-width:\s*100%;/);
+    expect(galleryOptionsBlock).toMatch(/flex-direction:\s*column;/);
+    expect(galleryOptionsBlock).toMatch(/width:\s*72px;/);
+    expect(galleryOptionsBlock).toMatch(
+      /max-height:\s*min\(52vh, 520px\);/,
     );
-    expect(messageImageDownloadBlock).toMatch(
-      /background:\s*var\(--chat-message-image-download-background\);/,
+    expect(galleryOptionsBlock).toMatch(/overflow-y:\s*auto;/);
+    expect(galleryOptionBlock).toMatch(/width:\s*100%;/);
+    expect(galleryOptionBlock).toMatch(/height:\s*64px;/);
+    expect(galleryOptionBlock).toMatch(/border-radius:\s*10px;/);
+    expect(galleryOptionActiveBlock).toMatch(
+      /transform:\s*scale\(0\.97\);/,
     );
-    expect(messageImageDownloadBlock).toMatch(
-      /color:\s*var\(--chat-message-image-download-color\);/,
-    );
-    expect(messageImageDownloadBlock).toMatch(
-      /box-shadow:\s*0 8px 24px var\(--chat-message-image-download-shadow-color\);/,
-    );
-    expect(messageImageDownloadHoverBlock).toMatch(
-      /border-color:\s*var\(--chat-message-image-download-hover-border-color\);/,
-    );
-    expect(messageImageDownloadHoverBlock).toMatch(
-      /background:\s*var\(--chat-message-image-download-hover-background\);/,
-    );
-    expect(messageImageDownloadHoverBlock).toMatch(
-      /box-shadow:\s*0 12px 28px var\(--chat-message-image-download-hover-shadow-color\);/,
-    );
-    expect(messageImageDownloadActiveBlock).toMatch(
-      /background:\s*var\(--chat-message-image-download-active-background\);/,
-    );
-    expect(messageImageDownloadActiveBlock).toMatch(
-      /box-shadow:\s*0 5px 14px var\(--chat-message-image-download-active-shadow-color\);/,
-    );
-    expect(messageImageDownloadFocusBlock).toMatch(
+    expect(galleryOptionFocusBlock).toMatch(
       /outline:\s*var\(--focus-ring\);/,
     );
-    expect(messageImageDownloadFocusBlock).toMatch(
-      /box-shadow:\s*var\(--focus-ring-shadow\),\s*0 12px 30px var\(--chat-message-image-download-focus-shadow-color\);/,
+    expect(galleryOptionSelectedBlock).toMatch(
+      /border-color:\s*color-mix\(in srgb, var\(--primary\) 72%, transparent\);/,
     );
-    expect(messageImageDownloadSvgBlock).toMatch(/color:\s*inherit;/);
-    expect(messageImageDownloadSvgBlock).toMatch(/filter:\s*none;/);
-    expect(messageImageDownloadSvgPathBlock).toMatch(
-      /stroke:\s*currentColor !important;/,
+    expect(galleryOptionSelectedBlock).toMatch(
+      /0 0 0 2px color-mix\(in srgb, var\(--primary\) 24%, transparent\)/,
     );
-    expect(messageImageGridBlock).toMatch(/max-width:\s*100%;/);
-    expect(messageImageGridBlock).toMatch(/min-width:\s*0;/);
-    expect(mobileMessageImageMediaIndex).toBeGreaterThan(-1);
-    expect(mobileMessageImageBlock).toMatch(
-      /width:\s*min\(100%, \$calc-image-width\);/,
+    expect(galleryThumbnailBlock).toMatch(/width:\s*100%;/);
+    expect(galleryThumbnailBlock).toMatch(/height:\s*100%;/);
+    expect(galleryThumbnailBlock).toMatch(/border-radius:\s*7px;/);
+    expect(galleryThumbnailBlock).toMatch(/object-fit:\s*cover;/);
+
+    expect(mobileGalleryMediaIndex).toBeGreaterThan(-1);
+    expect(mobileGalleryBlock).toMatch(
+      /grid-template-columns:\s*minmax\(0, 1fr\);/,
     );
-    expect(mobileMessageImageBlock).toMatch(
-      /height:\s*min\(60vw, \$calc-image-width\);/,
-    );
-    expect(touchMessageImageBlock).toMatch(/opacity:\s*1;/);
-    expect(touchMessageImageBlock).toMatch(/pointer-events:\s*auto;/);
-    expect(touchMessageImageBlock).toMatch(/transform:\s*none;/);
-    expect(touchMessageImageBlock).toMatch(
-      /&:hover,\s*&:active[\s\S]*transform:\s*none;/,
-    );
-    expect(messageImageResponsiveStyles).toContain(
-      "@media screen and (min-width: 600px) and (max-width: 767px)",
-    );
-    expect(tabletMessageImageMediaBlock).not.toBe("");
-    expect(tabletMessageImageBlock).toMatch(
-      /width:\s*min\(100%, \$calc-image-width\);/,
-    );
-    expect(tabletMessageImageBlock).toMatch(
-      /height:\s*min\(60vw, \$calc-image-width\);/,
-    );
-    expect(tabletMessageImageBlock).toMatch(/max-width:\s*\$calc-image-width;/);
-    expect(tabletMessageImageBlock).toMatch(
-      /max-height:\s*\$calc-image-width;/,
-    );
-    expect(tabletSingleMessageImageBlock).toMatch(
-      /max-width:\s*calc\(100vw \/ 3 \* 2\);/,
-    );
-    expect(messageImageResponsiveStyles).toContain(
-      "@media screen and (min-width: 768px)",
-    );
-    expect(desktopMessageImageMediaBlock).not.toBe("");
-    expect(desktopMessageImageMediaBlock).not.toContain(
-      "@media screen and (min-width: 600px)",
-    );
-    expect(messageImagePaintScope).not.toMatch(/rgba\(\$color:\s*#/);
-    expect(messageImagePaintScope).not.toMatch(/#[0-9a-fA-F]{3,6}/);
+    expect(mobileGalleryBlock).toMatch(/width:\s*100%;/);
+    expect(mobileGalleryOptionsBlock).toMatch(/flex-direction:\s*row;/);
+    expect(mobileGalleryOptionsBlock).toMatch(/max-width:\s*100%;/);
+    expect(mobileGalleryOptionsBlock).toMatch(/overflow-x:\s*auto;/);
+    expect(mobileGalleryOptionsBlock).toMatch(/overflow-y:\s*hidden;/);
+    expect(mobileGalleryOptionBlock).toMatch(/width:\s*56px;/);
+    expect(mobileGalleryOptionBlock).toMatch(/height:\s*56px;/);
+    expect(touchGalleryOptionBlock).toMatch(/min-width:\s*44px;/);
+    expect(touchGalleryOptionBlock).toMatch(/min-height:\s*44px;/);
+
+    expect(darkGalleryOptionBlock).not.toBe("");
+    expect(autoDarkGalleryOptionBlock).not.toBe("");
     expect(reducedMotionBlock).toMatch(
-      /\.chat-message-image-download,\s*\.chat-message-image-download:hover,\s*\.chat-message-image-download:active[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+      /\.chat-message-gallery-option,\s*\.chat-message-gallery-option:active[\s\S]*transform:\s*none !important;[\s\S]*transition-duration:\s*0\.01ms !important;/,
+    );
+    expect(reducedTransparencyBlock).toMatch(
+      /\.chat-message-gallery-option[\s\S]*background:\s*var\(--surface-elevated\);/,
+    );
+    expect(increasedContrastBlock).toMatch(
+      /\.chat-message-gallery-option[\s\S]*border-color:\s*currentColor;/,
+    );
+    expect(forcedColorsBlock).toMatch(
+      /\.chat-message-gallery-option\[aria-pressed="true"\][\s\S]*border-color:\s*Highlight;/,
+    );
+    expect(imageStylesScope).not.toMatch(
+      /repeat\(2|--image-count|--window-width|--sidebar-width|\$calc-image-width|\$image-width|\$max-image-width/,
     );
   });
-
   test("keeps shortcut key modal bounded on compact screens", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");

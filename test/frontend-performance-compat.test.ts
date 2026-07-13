@@ -59,16 +59,20 @@ describe("frontend performance and compatibility contracts", () => {
   });
 
   test("defers history image loading and decoding on both render paths", () => {
-    const chat = readSource("app/components/chat.tsx");
+    const gallery = readSource("app/components/message-image-gallery.tsx");
     const markdown = readSource("app/components/markdown.tsx");
 
-    expect(chat).toMatch(/loading="lazy"[\s\S]*decoding="async"/);
+    expect(gallery.match(/loading="lazy"/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(gallery.match(/decoding="async"/g)?.length).toBeGreaterThanOrEqual(
+      2,
+    );
     expect(markdown.match(/loading="lazy"/g)?.length).toBeGreaterThanOrEqual(2);
     expect(markdown.match(/decoding="async"/g)?.length).toBeGreaterThanOrEqual(
       2,
     );
-    expect(chat).toMatch(
-      /messageImages\.map\(\(image, index\)[\s\S]*?key=\{getAttachmentRenderKey\([\s\S]*?"image",[\s\S]*?image,[\s\S]*?index,[\s\S]*?\)\}/,
+    expect(gallery).toContain("props.images.map((image, index)");
+    expect(gallery).toContain(
+      'key={getAttachmentRenderKey("image", image, index)}',
     );
   });
 
