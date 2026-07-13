@@ -28,7 +28,12 @@ import { nanoid } from "nanoid";
 import { RequestPayload } from "./openai";
 import { fetch } from "@/app/utils/stream";
 import { withAbortTimeoutResponse } from "@/app/utils/request-timeout";
-import { getAccessRestrictedPublicErrorMessage } from "@/app/utils/public-error";
+import {
+  getPublicHttpErrorMessage,
+  getPublicUpstreamErrorMessage,
+  hasUpstreamErrorPayload,
+  readResponsePayload,
+} from "@/app/utils/public-error";
 import Locale from "../../locales";
 import { mergeLLMRequestConfig } from "../request-config";
 
@@ -52,8 +57,6 @@ export class GeminiProApi implements LLMApi {
       baseUrl = "https://" + baseUrl;
     }
 
-    console.log("[Proxy Endpoint] ", baseUrl, path);
-
     let chatPath = [baseUrl, path].join("/");
     if (shouldStream) {
       chatPath += chatPath.includes("?") ? "&alt=sse" : "?alt=sse";
@@ -62,8 +65,6 @@ export class GeminiProApi implements LLMApi {
     return chatPath;
   }
   extractMessage(res: any) {
-    console.log("[Response] gemini-pro response: ", res);
-
     // 处理数组形式的响应（多个块）
     if (Array.isArray(res)) {
       // 合并所有文本块
@@ -319,37 +320,47 @@ export class GeminiProApi implements LLMApi {
           options,
         );
       } else {
-        const { response: res, body: resJson } = await withAbortTimeoutResponse(
-          {
+        const { response: res, body: responseBody } =
+          await withAbortTimeoutResponse({
             controller,
             timeoutMs: REQUEST_TIMEOUT_MS,
             operation: () => fetch(chatPath, chatPayload),
-            consume: (response) => response.json(),
-          },
-        );
-        const accessRestrictedMessage = getAccessRestrictedPublicErrorMessage({
-          response: res,
-          payload: resJson,
-          message: Locale.Error.AccessRestricted,
-        });
-        if (accessRestrictedMessage) {
-          options.onFinish(accessRestrictedMessage, res);
-          return;
+            consume: readResponsePayload,
+          });
+        const resJson = responseBody.payload as any;
+        if (
+          !res.ok ||
+          !responseBody.isJson ||
+          hasUpstreamErrorPayload(resJson)
+        ) {
+          throw new Error(
+            getPublicHttpErrorMessage({
+              response: res,
+              payload: resJson ?? { message: responseBody.text },
+              fallback:
+                res.status === 401
+                  ? Locale.Error.Unauthorized
+                  : Locale.Error.RequestFailed(res.ok ? undefined : res.status),
+              accessRestrictedMessage: Locale.Error.AccessRestricted,
+            }),
+          );
         }
         if (resJson?.promptFeedback?.blockReason) {
-          // being blocked
-          options.onError?.(
-            new Error(
-              "Message is being blocked for reason: " +
-                resJson.promptFeedback.blockReason,
-            ),
+          throw new Error(
+            getPublicUpstreamErrorMessage({
+              fallback: Locale.Error.RequestFailed(),
+              detail: resJson.promptFeedback.blockReason,
+            }),
           );
         }
         const message = apiClient.extractMessage(resJson);
+        if (!message) {
+          throw new Error(Locale.Error.RequestFailed());
+        }
         options.onFinish(message, res);
       }
     } catch (e) {
-      console.log("[Request] failed to make a chat request", e);
+      console.error("[Google] chat request failed");
       options.onError?.(e as Error);
     }
   }

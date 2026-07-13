@@ -21,7 +21,11 @@ import { getMessageTextContent } from "@/app/utils";
 import { RequestPayload } from "./openai";
 import { fetch } from "@/app/utils/stream";
 import { withAbortTimeoutResponse } from "@/app/utils/request-timeout";
-import { getAccessRestrictedPublicErrorMessage } from "@/app/utils/public-error";
+import {
+  getPublicHttpErrorMessage,
+  hasUpstreamErrorPayload,
+  readResponsePayload,
+} from "@/app/utils/public-error";
 import Locale from "../../locales";
 import { mergeLLMRequestConfig } from "../request-config";
 
@@ -49,8 +53,6 @@ export class MoonshotApi implements LLMApi {
     if (!baseUrl.startsWith("http") && !baseUrl.startsWith(ApiPath.Moonshot)) {
       baseUrl = "https://" + baseUrl;
     }
-
-    console.log("[Proxy Endpoint] ", baseUrl, path);
 
     return [baseUrl, path].join("/");
   }
@@ -86,8 +88,6 @@ export class MoonshotApi implements LLMApi {
       top_p: modelConfig.top_p,
       // Provider-specific output limits are intentionally not sent here.
     };
-
-    console.log("[Request] openai payload: ", requestPayload);
 
     const shouldStream = !!options.config.stream;
     const controller = new AbortController();
@@ -167,25 +167,41 @@ export class MoonshotApi implements LLMApi {
           options,
         );
       } else {
-        const { response: res, body: resJson } = await withAbortTimeoutResponse(
-          {
+        const { response: res, body: responseBody } =
+          await withAbortTimeoutResponse({
             controller,
             timeoutMs: REQUEST_TIMEOUT_MS,
             operation: () => fetch(chatPath, chatPayload),
-            consume: (response) => response.json(),
-          },
-        );
+            consume: readResponsePayload,
+          });
+        const resJson = responseBody.payload;
 
-        const message =
-          getAccessRestrictedPublicErrorMessage({
-            response: res,
-            payload: resJson,
-            message: Locale.Error.AccessRestricted,
-          }) ?? this.extractMessage(resJson);
+        if (
+          !res.ok ||
+          !responseBody.isJson ||
+          hasUpstreamErrorPayload(resJson)
+        ) {
+          throw new Error(
+            getPublicHttpErrorMessage({
+              response: res,
+              payload: resJson ?? { message: responseBody.text },
+              fallback:
+                res.status === 401
+                  ? Locale.Error.Unauthorized
+                  : Locale.Error.RequestFailed(res.ok ? undefined : res.status),
+              accessRestrictedMessage: Locale.Error.AccessRestricted,
+            }),
+          );
+        }
+
+        const message = this.extractMessage(resJson);
+        if (!message) {
+          throw new Error(Locale.Error.RequestFailed());
+        }
         options.onFinish(message, res);
       }
     } catch (e) {
-      console.log("[Request] failed to make a chat request", e);
+      console.error("[Moonshot] chat request failed");
       options.onError?.(e as Error);
     }
   }

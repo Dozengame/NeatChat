@@ -73,8 +73,8 @@ export const useSyncStore = createPersistStore(
       try {
         const remoteState = JSON.parse(rawContent) as AppState;
         const localState = getLocalAppState();
-        mergeAppState(localState, remoteState);
-        setLocalAppState(localState);
+        const mergedState = mergeAppState(localState, remoteState);
+        setLocalAppState(mergedState);
         location.reload();
       } catch (e) {
         console.error("[Import]", e);
@@ -89,34 +89,31 @@ export const useSyncStore = createPersistStore(
     },
 
     async sync() {
-      const localState = getLocalAppState();
       const provider = get().provider;
       const config = get()[provider];
       const client = this.getClient();
 
       try {
-        const remoteState = await client.get(config.username);
-        if (!remoteState || remoteState === "") {
+        const remoteContent = await client.get(config.username);
+        const localState = getLocalAppState();
+        if (!remoteContent || remoteContent === "") {
           await client.set(config.username, JSON.stringify(localState));
           console.log(
             "[Sync] Remote state is empty, using local state instead.",
           );
+          this.markSyncTime();
           return;
         } else {
-          const parsedRemoteState = JSON.parse(
-            await client.get(config.username),
-          ) as AppState;
+          const parsedRemoteState = JSON.parse(remoteContent) as AppState;
           mergeAppState(localState, parsedRemoteState);
           setLocalAppState(localState);
+          await client.set(config.username, JSON.stringify(localState));
+          this.markSyncTime();
         }
       } catch (e) {
-        console.log("[Sync] failed to get remote state", e);
+        console.error("[Sync] failed to synchronize state");
         throw e;
       }
-
-      await client.set(config.username, JSON.stringify(localState));
-
-      this.markSyncTime();
     },
 
     async check() {

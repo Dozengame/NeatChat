@@ -9,9 +9,13 @@ import {
   EventStreamContentType,
   fetchEventSource,
 } from "@fortaine/fetch-event-source";
-import { prettyObject } from "./format";
 import { fetch as tauriFetch } from "./stream";
 import { createAbortTimeout } from "./request-timeout";
+import {
+  getPublicHttpErrorMessage,
+  getPublicUpstreamErrorMessage,
+  hasUpstreamErrorPayload,
+} from "./public-error";
 
 function compressImage(file: Blob, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -85,7 +89,7 @@ export async function preProcessImageContent(
         const url = await cacheImageToBase64Image(part?.image_url?.url);
         return { type: part.type, image_url: { url } };
       } catch (error) {
-        console.error("Error processing image URL:", error);
+        console.error("[Image] failed to process image URL");
         return null;
       }
     }),
@@ -229,6 +233,7 @@ export function stream(
     if (finished) return;
     finished = true;
     stopAnimation();
+    if (!controller.signal.aborted) controller.abort(error);
     options.onError?.(error);
   };
 
@@ -277,12 +282,16 @@ export function stream(
                 return content;
               })
               .catch((e) => {
+                const publicError = getPublicUpstreamErrorMessage({
+                  fallback: Locale.Error.RequestFailed(),
+                  detail: e instanceof Error ? e.message : String(e),
+                });
                 options?.onAfterTool?.({
                   ...tool,
                   isError: true,
-                  errorMsg: e.toString(),
+                  errorMsg: publicError,
                 });
-                return e.toString();
+                return publicError;
               })
               .then((content) => ({
                 name: tool.function.name,
@@ -375,38 +384,38 @@ export function stream(
         console.log("[Request] response content type: ", contentType);
         responseRes = res;
 
-        if (contentType?.startsWith("text/plain")) {
-          responseText = await res.clone().text();
-          return finish();
-        }
-
         if (
           !res.ok ||
-          !res.headers
-            .get("content-type")
-            ?.startsWith(EventStreamContentType) ||
-          res.status !== 200
+          (!contentType?.startsWith("text/plain") &&
+            (!contentType?.startsWith(EventStreamContentType) ||
+              res.status !== 200))
         ) {
-          const responseTexts = [responseText];
-          let extraInfo = await res.clone().text();
+          let responsePayload: unknown;
           try {
-            const resJson = await res.clone().json();
-            extraInfo = prettyObject(resJson);
-          } catch {}
-
-          if (res.status === 429) {
-            responseTexts.push(Locale.Error.AccessRestricted);
-            extraInfo = "";
-          } else if (res.status === 401) {
-            responseTexts.push(Locale.Error.Unauthorized);
+            responsePayload = await res.clone().json();
+          } catch {
+            responsePayload = { message: await res.clone().text() };
           }
 
-          if (extraInfo) {
-            responseTexts.push(extraInfo);
-          }
-
-          responseText = responseTexts.join("\n\n");
-
+          fail(
+            new Error(
+              getPublicHttpErrorMessage({
+                response: res,
+                payload: responsePayload,
+                fallback:
+                  res.status === 401
+                    ? Locale.Error.Unauthorized
+                    : Locale.Error.RequestFailed(
+                        res.ok ? undefined : res.status,
+                      ),
+                accessRestrictedMessage: Locale.Error.AccessRestricted,
+              }),
+            ),
+          );
+          return;
+        }
+        if (contentType?.startsWith("text/plain")) {
+          responseText = await res.clone().text();
           return finish();
         }
       },
@@ -417,6 +426,23 @@ export function stream(
         }
         const text = msg.data;
         try {
+          let eventPayload: unknown;
+          try {
+            eventPayload = JSON.parse(text);
+          } catch {}
+          if (hasUpstreamErrorPayload(eventPayload)) {
+            fail(
+              new Error(
+                getPublicHttpErrorMessage({
+                  response: responseRes,
+                  payload: eventPayload,
+                  fallback: Locale.Error.RequestFailed(),
+                  accessRestrictedMessage: Locale.Error.AccessRestricted,
+                }),
+              ),
+            );
+            return;
+          }
           const chunk = parseSSE(msg.data, runTools);
           if (chunk) {
             if (typeof chunk === "string") {
@@ -430,7 +456,7 @@ export function stream(
             }
           }
         } catch (e) {
-          console.error("[Request] parse error", text, msg, e);
+          console.error("[Request] failed to parse a streaming event");
         }
       },
       onclose() {

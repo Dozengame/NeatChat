@@ -406,6 +406,13 @@ export function formatPendingMcpRequestForChat(content: string) {
   ].join("\n\n");
 }
 
+export function formatFailedMcpRequestForChat() {
+  return [
+    JimengDisplay.ToolCall,
+    `${JimengDisplay.Progress}\n- ${JimengDisplay.Status}${JimengDisplay.ToolFailure}`,
+  ].join("\n\n");
+}
+
 export function mergeJimengProgressWithResult(
   progressText: string,
   result: unknown,

@@ -267,6 +267,37 @@ describe("chat trailing-throttled JSON persistence", () => {
     expect(storage.removeItem).toHaveBeenCalledWith("chat");
   });
 
+  test("suspends writes that race with a destructive clear", async () => {
+    let releaseRemove!: () => void;
+    const removing = new Promise<void>((resolve) => {
+      releaseRemove = resolve;
+    });
+    const { storage, values } = createStateStorage();
+    storage.removeItem.mockImplementationOnce(async (name) => {
+      await removing;
+      values.delete(name);
+    });
+    const throttled = createTrailingThrottledJSONStorage<PersistedChat>(
+      storage,
+      { intervalMs: 250 },
+    );
+
+    throttled.setItem("chat", value(1));
+    throttled.suspendWrites("chat");
+    const clear = throttled.removeItem("chat");
+    throttled.setItem("chat", value(2));
+    throttled.scheduleFlush("chat", 1);
+    releaseRemove();
+    await clear;
+    jest.advanceTimersByTime(1000);
+    await throttled.flushNow("chat");
+
+    expect(storage.setItem).not.toHaveBeenCalled();
+    expect(storage.removeItem).toHaveBeenCalledWith("chat");
+    expect(values.has("chat")).toBe(false);
+    await expect(throttled.getItem("chat")).resolves.toBeNull();
+  });
+
   test("recovers after a failed write without poisoning the next write chain", async () => {
     const storage: StateStorage = {
       getItem: jest.fn(async () => null),

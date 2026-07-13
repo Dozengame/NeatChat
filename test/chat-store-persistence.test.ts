@@ -33,7 +33,7 @@ describe("chat store persistence scheduling", () => {
     );
 
     expect(clearAllData).toMatch(
-      /await chatPersistStorage\.removeItem\(StoreKey\.Chat\);[\s\S]*await indexedDBStorage\.clear\(\);[\s\S]*localStorage\.clear\(\);[\s\S]*location\.reload\(\);/,
+      /chatPersistStorage\.suspendWrites\(StoreKey\.Chat\);[\s\S]*ChatControllerPool\.stopAll\(\);[\s\S]*await chatPersistStorage\.removeItem\(StoreKey\.Chat\);[\s\S]*await indexedDBStorage\.clear\(\);[\s\S]*localStorage\.clear\(\);[\s\S]*location\.reload\(\);/,
     );
   });
 });

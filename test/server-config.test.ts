@@ -28,7 +28,10 @@ import {
   shouldEnableOpenAIResponsesWebSearch,
   shouldRequireOpenAIResponsesWebSearch,
   shouldUseOpenAIResponses,
+  supportsOpenAIResponsesReasoning,
+  supportsOpenAIResponsesSampling,
   supportsOpenAIResponsesStreaming,
+  supportsOpenAIResponsesTextVerbosity,
   supportsOpenAIResponsesWebSearch,
 } from "../app/utils/openai-responses";
 import { OPENAI_GPT_56_MODELS } from "../app/constant";
@@ -90,6 +93,21 @@ describe("OpenAI Responses config", () => {
       "xhigh",
       "max",
     ]);
+  });
+
+  test("uses conservative capability fallbacks for unknown GPT-5 suffixes", () => {
+    for (const model of ["gpt-5-custom-local", "gpt-5.6-unknown"]) {
+      expect(supportsOpenAIResponsesReasoning(model)).toBe(false);
+      expect(supportsOpenAIResponsesTextVerbosity(model)).toBe(false);
+      expect(supportsOpenAIResponsesSampling(model)).toBe(true);
+      expect(getOpenAIResponsesMaxOutputTokensLimit(model)).toBe(512000);
+      expect(
+        supportsOpenAIResponsesWebSearch({ model, providerName: "OpenAI" }),
+      ).toBe(false);
+      expect(
+        isOpenAIGpt5OrNewerModelConfig({ model, providerName: "OpenAI" }),
+      ).toBe(false);
+    }
   });
 
   test("uses the official reasoning effort matrix for GPT-5 families", () => {

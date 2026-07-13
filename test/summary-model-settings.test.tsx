@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 
 import { ModelConfigList } from "../app/components/model-config";
 import { ServiceProvider } from "../app/constant";
+import Locale from "../app/locales";
 import { useAccessStore } from "../app/store/access";
 import {
   DEFAULT_CONFIG,
@@ -61,6 +62,36 @@ jest.mock("../app/utils/hooks", () => ({
     {
       name: "gpt-5.2-chat-latest",
       displayName: "gpt-5.2-chat-latest",
+      available: true,
+      provider: {
+        id: "openai",
+        providerName: "OpenAI",
+        providerType: "openai",
+      },
+    },
+    {
+      name: "gpt-4o",
+      displayName: "gpt-4o",
+      available: true,
+      provider: {
+        id: "openai",
+        providerName: "OpenAI",
+        providerType: "openai",
+      },
+    },
+    {
+      name: "gpt-image-2",
+      displayName: "gpt-image-2",
+      available: true,
+      provider: {
+        id: "openai",
+        providerName: "OpenAI",
+        providerType: "openai",
+      },
+    },
+    {
+      name: "dall-e-3",
+      displayName: "dall-e-3",
       available: true,
       provider: {
         id: "openai",
@@ -200,6 +231,70 @@ describe("Summary Model settings", () => {
     expect(select).toBeDisabled();
     expect(select.value).toBe("");
     expect(select.selectedOptions[0].textContent).toMatch(/gpt-5\.6-luna/);
+  });
+
+  test("disables every additive server-backed locked model field", () => {
+    const lockedFields = [
+      "enableInjectSystemPrompts",
+      "template",
+      "historyMessageCount",
+      "sendMemory",
+    ];
+    useAccessStore.setState({ lockedFields });
+    const markOverride = jest.fn();
+
+    render(
+      <Harness
+        clearOverride={jest.fn()}
+        markOverride={markOverride}
+        initialConfig={{ model: "gpt-4o" as any }}
+      />,
+    );
+
+    for (const label of [
+      Locale.Settings.InjectSystemPrompts.Title,
+      Locale.Settings.InputTemplate.Title,
+      Locale.Settings.HistoryCount.Title,
+      Locale.Memory.Title,
+    ]) {
+      expect(screen.getByLabelText(label)).toBeDisabled();
+    }
+
+    fireEvent.change(
+      screen.getByLabelText(Locale.Settings.InputTemplate.Title),
+      {
+        target: { value: "locked" },
+      },
+    );
+    expect(markOverride).not.toHaveBeenCalled();
+  });
+
+  test("does not claim unsupported WEBUI_LOCKED_FIELDS are enforced", () => {
+    useAccessStore.setState({
+      lockedFields: [
+        "top_p",
+        "presence_penalty",
+        "frequency_penalty",
+        "size",
+        "quality",
+        "style",
+      ],
+    });
+
+    render(
+      <Harness
+        clearOverride={jest.fn()}
+        markOverride={jest.fn()}
+        initialConfig={{ model: "gpt-image-2" as any }}
+      />,
+    );
+
+    expect(
+      screen.getByLabelText(Locale.Settings.ImageGeneration.Size),
+    ).not.toBeDisabled();
+    expect(
+      screen.getByLabelText(Locale.Settings.ImageGeneration.Quality),
+    ).not.toBeDisabled();
   });
 
   test("keeps an unavailable persisted override visible until it is cleared", () => {

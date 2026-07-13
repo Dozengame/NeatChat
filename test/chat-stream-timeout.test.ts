@@ -127,4 +127,39 @@ describe("shared chat stream terminal cleanup", () => {
     await jest.advanceTimersByTimeAsync(2_000);
     expect(controller.signal.aborted).toBe(false);
   });
+
+  test("fails once when an SSE error follows partial output", async () => {
+    mockedFetchEventSource.mockImplementation(async (_url, options) => {
+      await options.onopen({
+        ok: true,
+        status: 200,
+        headers: { get: () => "text/event-stream" },
+      });
+      options.onmessage({ data: '{"choices":[{"delta":{"content":"hi"}}]}' });
+      options.onmessage({
+        data: JSON.stringify({
+          error: {
+            message: "Authorization: Bearer upstream-secret",
+            request_id: "req_safe",
+          },
+        }),
+      });
+      options.onmessage({ data: "[DONE]" });
+      options.onclose();
+    });
+    const onError = jest.fn();
+    const onFinish = jest.fn();
+
+    startStream(
+      new AbortController(),
+      { onError, onFinish },
+      () => "partial",
+    );
+    await flushPromises();
+
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError.mock.calls[0][0].message).toContain("request_id: req_safe");
+    expect(onError.mock.calls[0][0].message).not.toContain("upstream-secret");
+    expect(onFinish).not.toHaveBeenCalled();
+  });
 });

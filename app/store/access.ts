@@ -181,7 +181,7 @@ export function sanitizeAccessPersistedState<T extends Record<string, any>>(
   };
 }
 
-const MODEL_CONFIG_FIELDS = [
+export const MODEL_CONFIG_FIELDS = [
   "model",
   "providerName",
   "temperature",

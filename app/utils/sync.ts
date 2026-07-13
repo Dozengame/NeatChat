@@ -4,7 +4,10 @@ import { useAppConfig } from "../store/config";
 import { useMaskStore } from "../store/mask";
 import { usePromptStore } from "../store/prompt";
 import { StoreKey } from "../constant";
-import { merge } from "./merge";
+
+function cloneSyncState<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
 
 type NonFunctionKeys<T> = {
   [K in keyof T]: T[K] extends (...args: any[]) => any ? never : K;
@@ -61,24 +64,31 @@ type StateMerger = {
 // we merge remote state to local state
 const MergeStates: StateMerger = {
   [StoreKey.Chat]: (localState, remoteState) => {
+    const nextState = cloneSyncState(localState);
+    const selectedSessionId =
+      nextState.currentSessionIndex >= 0
+        ? nextState.sessions[nextState.currentSessionIndex]?.id
+        : undefined;
     // merge sessions
     const localSessions: Record<string, ChatSession> = {};
-    localState.sessions.forEach((s) => (localSessions[s.id] = s));
+    nextState.sessions.forEach((s) => (localSessions[s.id] = s));
 
-    remoteState.sessions.forEach((remoteSession) => {
+    (remoteState.sessions ?? []).forEach((remoteSession) => {
       // skip empty chats
       if (remoteSession.messages.length === 0) return;
 
       const localSession = localSessions[remoteSession.id];
       if (!localSession) {
         // if remote session is new, just merge it
-        localState.sessions.push(remoteSession);
+        const detachedSession = cloneSyncState(remoteSession);
+        nextState.sessions.push(detachedSession);
+        localSessions[detachedSession.id] = detachedSession;
       } else {
         // if both have the same session id, merge the messages
         const localMessageIds = new Set(localSession.messages.map((v) => v.id));
         remoteSession.messages.forEach((m) => {
           if (!localMessageIds.has(m.id)) {
-            localSession.messages.push(m);
+            localSession.messages.push(cloneSyncState(m));
           }
         });
 
@@ -90,26 +100,43 @@ const MergeStates: StateMerger = {
     });
 
     // sort local sessions with date field in desc order
-    localState.sessions.sort(
+    nextState.sessions.sort(
       (a, b) =>
         new Date(b.lastUpdate).getTime() - new Date(a.lastUpdate).getTime(),
     );
 
-    return localState;
+    if (selectedSessionId) {
+      const selectedIndex = nextState.sessions.findIndex(
+        (session) => session.id === selectedSessionId,
+      );
+      if (selectedIndex >= 0) {
+        nextState.currentSessionIndex = selectedIndex;
+      }
+    }
+
+    nextState.sessionListRevision = (localState.sessionListRevision ?? 0) + 1;
+    nextState.messageProjectionRevision =
+      (localState.messageProjectionRevision ?? 0) + 1;
+
+    return nextState;
   },
   [StoreKey.Prompt]: (localState, remoteState) => {
-    localState.prompts = {
-      ...remoteState.prompts,
-      ...localState.prompts,
+    return {
+      ...localState,
+      prompts: {
+        ...remoteState.prompts,
+        ...localState.prompts,
+      },
     };
-    return localState;
   },
   [StoreKey.Mask]: (localState, remoteState) => {
-    localState.masks = {
-      ...remoteState.masks,
-      ...localState.masks,
+    return {
+      ...localState,
+      masks: {
+        ...remoteState.masks,
+        ...localState.masks,
+      },
     };
-    return localState;
   },
   [StoreKey.Config]: mergeWithUpdate<AppState[StoreKey.Config]>,
   [StoreKey.Access]: mergeWithUpdate<AppState[StoreKey.Access]>,
@@ -118,7 +145,7 @@ const MergeStates: StateMerger = {
 export function getLocalAppState() {
   const appState = Object.fromEntries(
     Object.entries(LocalStateGetters).map(([key, getter]) => {
-      return [key, getter()];
+      return [key, cloneSyncState(getter())];
     }),
   ) as AppState;
 
@@ -135,8 +162,12 @@ export function mergeAppState(localState: AppState, remoteState: AppState) {
   Object.keys(localState).forEach(<T extends keyof AppState>(k: string) => {
     const key = k as T;
     const localStoreState = localState[key];
-    const remoteStoreState = remoteState[key];
-    MergeStates[key](localStoreState, remoteStoreState);
+    const remoteStoreState = remoteState?.[key];
+    if (!remoteStoreState) return;
+    (localState as any)[key] = MergeStates[key](
+      localStoreState as any,
+      remoteStoreState as any,
+    );
   });
 
   return localState;
@@ -150,13 +181,11 @@ export function mergeWithUpdate<T extends { lastUpdateTime?: number }>(
   remoteState: T,
 ) {
   const localUpdateTime = localState.lastUpdateTime ?? 0;
-  const remoteUpdateTime = localState.lastUpdateTime ?? 1;
+  const remoteUpdateTime = remoteState.lastUpdateTime ?? 0;
 
   if (localUpdateTime < remoteUpdateTime) {
-    merge(remoteState, localState);
-    return { ...remoteState };
+    return { ...localState, ...remoteState };
   } else {
-    merge(localState, remoteState);
-    return { ...localState };
+    return { ...remoteState, ...localState };
   }
 }

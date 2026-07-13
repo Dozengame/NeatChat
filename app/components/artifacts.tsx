@@ -80,6 +80,7 @@ export function Artifacts() {
         {code && (
           <HTMLPreview
             code={code}
+            accessibleTitle={Locale.Markdown.HtmlPreview}
             ref={previewRef}
             autoHeight={false}
             height={"100%"}

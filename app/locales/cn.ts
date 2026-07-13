@@ -10,6 +10,8 @@ const cn = {
       ? "访问密码无效，请重新输入。"
       : "访问密码无效，请重新输入。",
     AccessRestricted: "当前访问暂时受限，请稍后再试。",
+    RequestFailed: (status?: number) =>
+      status ? `请求失败（${status}）。` : "请求失败。",
   },
   Auth: {
     Return: "返回",
@@ -324,6 +326,7 @@ const cn = {
         Preparing: "正在准备图片生成请求...",
         Generating: "正在生成图片，请稍候...",
         Saving: "图片已生成，正在保存图片...",
+        Cancelled: "图片生成已取消",
       },
       Display: {
         Task: "图片生成任务",
@@ -347,6 +350,7 @@ const cn = {
         Submitted: "已提交，等待返回状态",
         Success: "生成成功",
         Generating: "生成中",
+        ToolFailure: "工具调用失败，请重试",
         Failure: "生成失败",
         Cancelled: "已取消",
         Timeout: "查询超时",

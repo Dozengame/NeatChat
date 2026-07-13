@@ -187,7 +187,10 @@ import {
   JIMENG_MCP_SERVER_ID,
 } from "../mcp/jimeng";
 import {
+  createPinnedContextMessage,
   createVisibleChatMessagesProjector,
+  findMessageForRenderSource,
+  getMessageRenderIdentity,
   RenderMessage,
   shouldRenderLoadingPreview,
 } from "./chat-render";
@@ -2480,9 +2483,13 @@ function useChatInnerView() {
   };
 
   const onPinMessage = (message: ChatMessage) => {
-    chatStore.updateTargetSession(session, (session) =>
-      session.mask.context.push(message),
+    const pinnedMessage = createPinnedContextMessage(
+      message,
+      createMessage({}).id,
     );
+    chatStore.updateTargetSession(session, (session) => {
+      session.mask.context.push(pinnedMessage);
+    });
 
     showToast(Locale.Chat.Actions.PinToastContent, {
       text: Locale.Chat.Actions.PinToastAction,
@@ -5281,6 +5288,11 @@ function useChatInnerView() {
                   const absoluteMessageIndex = messageRenderStartIndex + i;
                   const isUser = message.role === "user";
                   const isContext = absoluteMessageIndex < context.length;
+                  const messageRenderIdentity = getMessageRenderIdentity(
+                    message,
+                    absoluteMessageIndex,
+                    context.length,
+                  );
                   const qaMessageIdPrefix =
                     chatQaFixture?.MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX;
                   const isMarkdownStressQaMessage =
@@ -5332,7 +5344,7 @@ function useChatInnerView() {
                   const singleMessageImageLabel = getMessageImageLabel(0, 1);
 
                   return (
-                    <Fragment key={message.id}>
+                    <Fragment key={messageRenderIdentity}>
                       <div
                         className={clsx(
                           styles["chat-message-row"],
@@ -5351,9 +5363,7 @@ function useChatInnerView() {
                             ? "markdown-stress-qa-message"
                             : undefined
                         }
-                        data-message-anchor={String(
-                          message.id ?? absoluteMessageIndex,
-                        )}
+                        data-message-anchor={messageRenderIdentity}
                       >
                         <div className={styles["chat-message-container"]}>
                           <div className={styles["chat-message-header"]}>
@@ -5393,9 +5403,12 @@ function useChatInnerView() {
                                       chatStore.updateTargetSession(
                                         session,
                                         (session) => {
-                                          const m = session.mask.context
-                                            .concat(session.messages)
-                                            .find((m) => m.id === message.id);
+                                          const m = findMessageForRenderSource(
+                                            session.mask.context,
+                                            session.messages,
+                                            message.id,
+                                            isContext,
+                                          );
                                           if (m) {
                                             m.content = newContent;
                                           }

@@ -1,5 +1,8 @@
 import {
+  createPinnedContextMessage,
   createVisibleChatMessagesProjector,
+  findMessageForRenderSource,
+  getMessageRenderIdentity,
   getVisibleChatMessages,
   RenderMessage,
   shouldRenderLoadingPreview,
@@ -16,6 +19,56 @@ function message(override: Partial<RenderMessage>): RenderMessage {
 }
 
 describe("chat render messages", () => {
+  test("keeps message identities stable within their render source", () => {
+    const sharedId = message({ id: "shared" });
+
+    expect(getMessageRenderIdentity(sharedId, 0, 2)).toBe("context:shared");
+    expect(getMessageRenderIdentity(sharedId, 1, 2)).toBe("context:shared");
+    expect(getMessageRenderIdentity(sharedId, 2, 2)).toBe("session:shared");
+    expect(getMessageRenderIdentity(sharedId, 8, 2)).toBe("session:shared");
+  });
+
+  test("uses the absolute index only when legacy data has no message id", () => {
+    const withoutId = {
+      ...message({}),
+      id: undefined,
+    } as unknown as RenderMessage;
+
+    expect(getMessageRenderIdentity(withoutId, 3, 2)).toBe("session:3");
+  });
+
+  test("pins a detached message snapshot with a fresh identity", () => {
+    const original = message({
+      id: "original",
+      content: [
+        { type: "text", text: "hello" },
+        { type: "image_url", image_url: { url: "data:image/png;base64,a" } },
+      ],
+    });
+    const pinned = createPinnedContextMessage(original, "pinned");
+
+    expect(pinned).not.toBe(original);
+    expect(pinned.id).toBe("pinned");
+    expect(pinned.content).toEqual(original.content);
+    expect(pinned.content).not.toBe(original.content);
+  });
+
+  test("edits only the rendered message source when old data shares an id", () => {
+    const contextMessage = message({ id: "shared", content: "context" });
+    const sessionMessage = message({ id: "shared", content: "session" });
+
+    const selected = findMessageForRenderSource(
+      [contextMessage],
+      [sessionMessage],
+      "shared",
+      false,
+    );
+    selected!.content = "edited";
+
+    expect(contextMessage.content).toBe("context");
+    expect(sessionMessage.content).toBe("edited");
+  });
+
   test("does not add a loading preview when a real assistant stream is visible", () => {
     const visibleMessages = getVisibleChatMessages([
       message({ id: "user-1", role: "user", content: "hello" }),

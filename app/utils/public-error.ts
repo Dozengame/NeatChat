@@ -25,6 +25,28 @@ type PublicErrorHeaders = {
   get(name: string): string | null;
 };
 
+export async function readResponsePayload(
+  response: Pick<Response, "text" | "json">,
+) {
+  if (typeof response.text !== "function") {
+    try {
+      return { payload: await response.json(), text: "", isJson: true };
+    } catch {
+      return { payload: undefined, text: "", isJson: false };
+    }
+  }
+
+  const text = await response.text();
+  if (!text.trim()) {
+    return { payload: undefined, text, isJson: false };
+  }
+  try {
+    return { payload: JSON.parse(text), text, isJson: true };
+  } catch {
+    return { payload: undefined, text, isJson: false };
+  }
+}
+
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === "object"
     ? (value as Record<string, unknown>)
@@ -34,7 +56,54 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
 function getPublicErrorDetail(payload: unknown) {
   const value = asRecord(payload);
   const nestedError = asRecord(value?.error);
-  return nestedError?.message ?? value?.message ?? value?.msg;
+  const response = asRecord(value?.Response ?? value?.response);
+  const responseError = asRecord(response?.Error ?? response?.error);
+  const header = asRecord(value?.header ?? value?.Header);
+  return (
+    nestedError?.message ??
+    nestedError?.Message ??
+    responseError?.message ??
+    responseError?.Message ??
+    header?.message ??
+    header?.Message ??
+    value?.error_msg ??
+    value?.message ??
+    value?.Message ??
+    value?.msg
+  );
+}
+
+function isPresentUpstreamError(value: unknown) {
+  if (value === undefined || value === null || value === false || value === 0) {
+    return false;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim();
+    return normalized !== "" && normalized !== "0";
+  }
+  if (typeof value === "object") {
+    return Object.keys(value as Record<string, unknown>).length > 0;
+  }
+  return true;
+}
+
+export function hasUpstreamErrorPayload(payload: unknown) {
+  const value = asRecord(payload);
+  if (!value) return false;
+  if (isPresentUpstreamError(value.error)) return true;
+  if (isPresentUpstreamError(value.error_code)) return true;
+
+  const response = asRecord(value.Response ?? value.response);
+  if (
+    isPresentUpstreamError(response?.Error) ||
+    isPresentUpstreamError(response?.error)
+  ) {
+    return true;
+  }
+
+  const header = asRecord(value.header ?? value.Header);
+  const headerCode = header?.code ?? header?.Code;
+  return isPresentUpstreamError(headerCode);
 }
 
 function sanitizePublicErrorDetail(value: unknown) {
@@ -71,12 +140,22 @@ function getPublicErrorRequestId(
 
   const value = asRecord(payload);
   const nestedError = asRecord(value?.error);
+  const response = asRecord(value?.Response ?? value?.response);
+  const responseError = asRecord(response?.Error ?? response?.error);
   const candidates = [
     headerRequestId,
     nestedError?.request_id,
     nestedError?.requestId,
+    nestedError?.RequestId,
+    responseError?.request_id,
+    responseError?.requestId,
+    responseError?.RequestId,
+    response?.request_id,
+    response?.requestId,
+    response?.RequestId,
     value?.request_id,
     value?.requestId,
+    value?.RequestId,
   ];
   for (const candidate of candidates) {
     const requestId = sanitizePublicRequestId(candidate);
@@ -101,9 +180,22 @@ export function getPublicUpstreamErrorMessage({
     detail ?? getPublicErrorDetail(payload),
   );
   const requestId = getPublicErrorRequestId(payload, headers);
-  return `${fallback}${safeDetail ? `: ${safeDetail}` : ""}${
-    requestId ? ` [request_id: ${requestId}]` : ""
-  }`;
+  const comparableFallback = fallback
+    .trim()
+    .replace(/[.:：。]+$/, "")
+    .toLocaleLowerCase();
+  const comparableDetail = safeDetail?.trim().toLocaleLowerCase();
+  const detailAlreadyContainsFallback =
+    !!comparableDetail &&
+    (comparableDetail === comparableFallback ||
+      comparableDetail.startsWith(`${comparableFallback} (`) ||
+      comparableDetail.startsWith(`${comparableFallback}（`) ||
+      comparableDetail.startsWith(`${comparableFallback}:`) ||
+      comparableDetail.startsWith(`${comparableFallback}：`));
+  const publicMessage = detailAlreadyContainsFallback
+    ? safeDetail
+    : `${fallback}${safeDetail ? `: ${safeDetail}` : ""}`;
+  return `${publicMessage}${requestId ? ` [request_id: ${requestId}]` : ""}`;
 }
 
 export function isAccessRestrictedPublicError(value: unknown) {
@@ -124,7 +216,30 @@ export function getAccessRestrictedPublicErrorMessage({
   payload?: unknown;
   message: string;
 }) {
-  return response.status === 429 || isAccessRestrictedPublicError(payload)
-    ? message
-    : undefined;
+  return isAccessRestrictedPublicError(payload) ? message : undefined;
+}
+
+export function getPublicHttpErrorMessage({
+  response,
+  payload,
+  fallback,
+  accessRestrictedMessage,
+}: {
+  response: Pick<Response, "status" | "headers">;
+  payload?: unknown;
+  fallback: string;
+  accessRestrictedMessage: string;
+}) {
+  return (
+    getAccessRestrictedPublicErrorMessage({
+      response,
+      payload,
+      message: accessRestrictedMessage,
+    }) ??
+    getPublicUpstreamErrorMessage({
+      fallback,
+      payload,
+      headers: response.headers,
+    })
+  );
 }

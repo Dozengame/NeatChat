@@ -229,6 +229,7 @@ export function DiscreteOptionRail<T extends string>({
     );
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.isPrimary === false || event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
     if (locked) {

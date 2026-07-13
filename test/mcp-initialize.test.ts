@@ -6,6 +6,19 @@ jest.mock("fs/promises", () => ({
   unlink: jest.fn(),
 }));
 
+let mockCookieValue: string | undefined;
+let mockServerSideConfig: any = {
+  enableMcp: true,
+  needCode: false,
+  accessControl: { profiles: [] },
+};
+
+jest.mock("next/headers", () => ({
+  cookies: () => ({
+    get: () => (mockCookieValue ? { value: mockCookieValue } : undefined),
+  }),
+}));
+
 jest.mock("../app/mcp/client", () => ({
   createClient: jest.fn(async () => ({ id: "demo-client" })),
   executeRequest: jest.fn(),
@@ -14,7 +27,7 @@ jest.mock("../app/mcp/client", () => ({
 }));
 
 jest.mock("../app/config/server", () => ({
-  getServerSideConfig: jest.fn(() => ({ enableMcp: true })),
+  getServerSideConfig: jest.fn(() => mockServerSideConfig),
 }));
 
 jest.mock("../app/mcp/config", () => ({
@@ -31,6 +44,7 @@ import {
 } from "../app/mcp/client";
 import { JIMENG_MCP_SERVER_ID } from "../app/mcp/jimeng";
 import { clientsMap, setInitializeMcpSystemPromise } from "../app/mcp/runtime";
+import { hashWithSecret } from "../app/utils/hmac";
 
 const activeDemoConfig = JSON.stringify({
   mcpServers: {
@@ -98,6 +112,8 @@ async function flushAsyncWork() {
 }
 
 describe("MCP initialization", () => {
+  const originalAccessSessionSecret = process.env.ACCESS_DEVICE_ID_SECRET;
+
   beforeEach(() => {
     jest.clearAllMocks();
     clientsMap.clear();
@@ -111,10 +127,25 @@ describe("MCP initialization", () => {
     (listTools as jest.Mock).mockResolvedValue({ tools: [] });
     (executeRequest as jest.Mock).mockResolvedValue({ result: {} });
     (removeClient as jest.Mock).mockResolvedValue(undefined);
+    mockCookieValue = undefined;
+    mockServerSideConfig = {
+      enableMcp: true,
+      needCode: false,
+      accessControl: { profiles: [] },
+    };
+    process.env.ACCESS_DEVICE_ID_SECRET = "mcp-auth-test-secret";
   });
 
   afterEach(() => {
     jest.useRealTimers();
+  });
+
+  afterAll(() => {
+    if (originalAccessSessionSecret === undefined) {
+      delete process.env.ACCESS_DEVICE_ID_SECRET;
+    } else {
+      process.env.ACCESS_DEVICE_ID_SECRET = originalAccessSessionSecret;
+    }
   });
 
   test("reuses the same in-flight initialization", async () => {
@@ -172,6 +203,9 @@ describe("MCP initialization", () => {
     const { activateMcpClient, executeMcpAction } = await import(
       "../app/mcp/actions"
     );
+    (listTools as jest.Mock).mockResolvedValueOnce({
+      tools: [{ name: "demo-tool" }],
+    });
 
     const activation = activateMcpClient(JIMENG_MCP_SERVER_ID);
     await flushAsyncWork();
@@ -206,6 +240,9 @@ describe("MCP initialization", () => {
       deactivateMcpClient,
       executeMcpAction,
     } = await import("../app/mcp/actions");
+    (listTools as jest.Mock).mockResolvedValueOnce({
+      tools: [{ name: "dreamina_text2image" }],
+    });
 
     await activateMcpClient(JIMENG_MCP_SERVER_ID);
     await executeMcpAction(JIMENG_MCP_SERVER_ID, {
@@ -438,7 +475,7 @@ describe("MCP initialization", () => {
   test("waits for an in-flight tool request before deactivating the client", async () => {
     clientsMap.set("demo", {
       client: { id: "active-client" } as any,
-      tools: { tools: [] },
+      tools: { tools: [{ name: "side-effect" }] },
       errorMsg: null,
     });
     let resolveExecution!: (result: { result: object }) => void;
@@ -468,6 +505,139 @@ describe("MCP initialization", () => {
 
     expect(removeClient).toHaveBeenCalledWith({ id: "active-client" });
     expect(clientsMap.has("demo")).toBe(false);
+  });
+
+  test("only executes listed tools through the tools/call method", async () => {
+    clientsMap.set("demo", {
+      client: { id: "active-client" } as any,
+      tools: { tools: [{ name: "allowed-tool" }] },
+      errorMsg: null,
+    });
+    const { executeMcpAction } = await import("../app/mcp/actions");
+
+    await expect(
+      executeMcpAction(
+        "demo",
+        {
+          method: "resources/read",
+          params: { name: "allowed-tool", arguments: {} },
+        } as any,
+      ),
+    ).rejects.toThrow("Invalid MCP tool request");
+    await expect(
+      executeMcpAction("demo", {
+        method: "tools/call",
+        params: { name: "unknown-tool", arguments: {} },
+      }),
+    ).rejects.toThrow("MCP tool is not available");
+    await expect(
+      executeMcpAction(
+        "demo",
+        {
+          method: "tools/call",
+          params: { name: "allowed-tool", arguments: [] },
+        } as any,
+      ),
+    ).rejects.toThrow("Invalid MCP tool request");
+
+    expect(executeRequest).not.toHaveBeenCalled();
+  });
+
+  test("separates normal MCP use from administrator management", async () => {
+    const normalHash = "normal-profile-hash";
+    const adminHash = "admin-profile-hash";
+    const profiles = [
+      {
+        tier: "normal",
+        label: "Normal",
+        codeHash: normalHash,
+        dailyTokenLimit: 1000,
+      },
+      {
+        tier: "admin",
+        label: "Admin",
+        codeHash: adminHash,
+        dailyTokenLimit: null,
+      },
+    ];
+    mockServerSideConfig = {
+      enableMcp: true,
+      needCode: true,
+      accessControl: { profiles },
+    };
+    (fs.readFile as jest.Mock).mockResolvedValue(
+      JSON.stringify({
+        mcpServers: {
+          demo: {
+            type: "stdio",
+            command: "/usr/bin/demo",
+            args: ["--secret-path"],
+            env: { DEMO_TOKEN: "secret" },
+            url: "https://internal.example/mcp",
+            headers: { Authorization: "Bearer secret" },
+            status: "active",
+            chatDefaultEnabled: true,
+          },
+        },
+      }),
+    );
+    clientsMap.set("demo", {
+      client: { id: "active-client" } as any,
+      tools: { tools: [{ name: "allowed-tool" }] },
+      errorMsg: null,
+    });
+    const actions = await import("../app/mcp/actions");
+    const cookieFor = (codeHash: string) =>
+      `${codeHash}.${hashWithSecret(codeHash, "mcp-auth-test-secret")}`;
+
+    mockCookieValue = cookieFor(normalHash);
+    await expect(actions.getAllTools()).resolves.toHaveLength(1);
+    await expect(
+      actions.executeMcpAction("demo", {
+        method: "tools/call",
+        params: { name: "allowed-tool", arguments: {} },
+      }),
+    ).resolves.toEqual({ result: {} });
+    const chatState = await actions.getMcpChatServerStates();
+    expect(chatState).toEqual({
+      demo: { status: "active", chatDefaultEnabled: true },
+    });
+    expect(JSON.stringify(chatState)).not.toMatch(
+      /command|args|env|url|headers|Authorization|errorMsg/,
+    );
+    await expect(actions.getMcpConfigFromFile()).rejects.toThrow(
+      "Administrator access",
+    );
+    await expect(
+      actions.addMcpServer("blocked", { command: "blocked" }),
+    ).rejects.toThrow("Administrator access");
+    await expect(actions.pauseMcpServer("demo")).rejects.toThrow(
+      "Administrator access",
+    );
+    await expect(actions.restartAllClients()).rejects.toThrow(
+      "Administrator access",
+    );
+    await expect(actions.activateMcpClient("demo")).rejects.toThrow(
+      "Administrator access",
+    );
+    await expect(actions.deactivateMcpClient("demo")).rejects.toThrow(
+      "Administrator access",
+    );
+
+    mockCookieValue = cookieFor(adminHash);
+    await expect(actions.activateMcpClient("demo")).resolves.toBeUndefined();
+    await expect(actions.getMcpConfigFromFile()).resolves.toMatchObject({
+      mcpServers: { demo: { command: "/usr/bin/demo" } },
+    });
+    await expect(actions.getClientsStatus()).resolves.toMatchObject({
+      demo: { status: "active" },
+    });
+    await expect(actions.deactivateMcpClient("demo")).resolves.toBeUndefined();
+
+    mockCookieValue = `${normalHash}.forged-signature`;
+    await expect(actions.getAllTools()).rejects.toThrow("Unauthorized");
+    mockCookieValue = cookieFor("removed-profile-hash");
+    await expect(actions.getAllTools()).rejects.toThrow("Unauthorized");
   });
 
   test("initializes every configured client when one client already exists", async () => {
@@ -571,6 +741,7 @@ describe("MCP initialization", () => {
         jsonrpc: "2.0",
         id: "paused-request",
         method: "tools/call",
+        params: { name: "demo-tool", arguments: {} },
       }),
     ).rejects.toThrow("Server demo is paused");
     expect(executeRequest).not.toHaveBeenCalled();
@@ -583,6 +754,7 @@ describe("MCP initialization", () => {
         jsonrpc: "2.0",
         id: "removed-request",
         method: "tools/call",
+        params: { name: "demo-tool", arguments: {} },
       }),
     ).rejects.toThrow("Server demo not found");
     expect(executeRequest).not.toHaveBeenCalled();

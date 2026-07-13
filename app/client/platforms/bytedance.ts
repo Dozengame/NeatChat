@@ -20,15 +20,19 @@ import {
   EventStreamContentType,
   fetchEventSource,
 } from "@fortaine/fetch-event-source";
-import { prettyObject } from "@/app/utils/format";
 import { getClientConfig } from "@/app/config/client";
 import { getMessageTextContent } from "@/app/utils";
 import { fetch } from "@/app/utils/stream";
 import {
-  createAbortTimeout,
+  createStreamingRequestLifecycle,
   withAbortTimeoutResponse,
 } from "@/app/utils/request-timeout";
-import { getAccessRestrictedPublicErrorMessage } from "@/app/utils/public-error";
+import {
+  getAccessRestrictedPublicErrorMessage,
+  getPublicHttpErrorMessage,
+  hasUpstreamErrorPayload,
+  readResponsePayload,
+} from "@/app/utils/public-error";
 import { mergeLLMRequestConfig } from "../request-config";
 
 export interface OpenAIListModelResponse {
@@ -75,8 +79,6 @@ export class DoubaoApi implements LLMApi {
     if (!baseUrl.startsWith("http") && !baseUrl.startsWith(ApiPath.ByteDance)) {
       baseUrl = "https://" + baseUrl;
     }
-
-    console.log("[Proxy Endpoint] ", baseUrl, path);
 
     return [baseUrl, path].join("/");
   }
@@ -125,23 +127,24 @@ export class DoubaoApi implements LLMApi {
       };
 
       if (shouldStream) {
-        const cancelRequestTimeout = createAbortTimeout({
-          controller,
-          timeoutMs: REQUEST_TIMEOUT_MS,
-        });
         let responseText = "";
         let remainText = "";
-        let finished = false;
         let responseRes: Response;
+        const lifecycle = createStreamingRequestLifecycle({
+          controller,
+          timeoutMs: REQUEST_TIMEOUT_MS,
+          getMessage: () => responseText + remainText,
+          getResponse: () => responseRes,
+          onFinish: options.onFinish,
+          onError: options.onError,
+        });
 
         // animate response to make it looks smooth
         function animateResponseText() {
-          if (finished || controller.signal.aborted) {
+          if (lifecycle.isSettled() || controller.signal.aborted) {
             responseText += remainText;
+            remainText = "";
             console.log("[Response Animation] finished");
-            if (responseText?.length === 0) {
-              options.onError?.(new Error("empty response from server"));
-            }
             return;
           }
 
@@ -159,75 +162,73 @@ export class DoubaoApi implements LLMApi {
         // start animaion
         animateResponseText();
 
-        const finish = () => {
-          if (!finished) {
-            finished = true;
-            options.onFinish(responseText + remainText, responseRes);
-          }
-        };
-
-        controller.signal.onabort = finish;
-
         void fetchEventSource(chatPath, {
           fetch: fetch as any,
           ...chatPayload,
           async onopen(res) {
-            cancelRequestTimeout();
+            lifecycle.refresh();
             const contentType = res.headers.get("content-type");
             console.log(
               "[ByteDance] request response content type: ",
               contentType,
             );
             responseRes = res;
-            if (contentType?.startsWith("text/plain")) {
-              responseText = await res.clone().text();
-              return finish();
-            }
-
             if (
               !res.ok ||
-              !res.headers
-                .get("content-type")
-                ?.startsWith(EventStreamContentType) ||
-              res.status !== 200
+              (!contentType?.startsWith("text/plain") &&
+                (!contentType?.startsWith(EventStreamContentType) ||
+                  res.status !== 200))
             ) {
-              const responseTexts = [responseText];
-              let extraInfo = await res.clone().text();
               let responsePayload: unknown;
               try {
                 responsePayload = await res.clone().json();
-                extraInfo = prettyObject(responsePayload);
-              } catch {}
-
-              const accessRestrictedMessage =
-                getAccessRestrictedPublicErrorMessage({
-                  response: res,
-                  payload: responsePayload,
-                  message: Locale.Error.AccessRestricted,
-                });
-              if (accessRestrictedMessage) {
-                responseTexts.push(accessRestrictedMessage);
-                extraInfo = "";
-              } else if (res.status === 401) {
-                responseTexts.push(Locale.Error.Unauthorized);
+              } catch {
+                responsePayload = { message: await res.clone().text() };
               }
 
-              if (extraInfo) {
-                responseTexts.push(extraInfo);
-              }
-
-              responseText = responseTexts.join("\n\n");
-
-              return finish();
+              lifecycle.fail(
+                new Error(
+                  getPublicHttpErrorMessage({
+                    response: res,
+                    payload: responsePayload,
+                    fallback:
+                      res.status === 401
+                        ? Locale.Error.Unauthorized
+                        : Locale.Error.RequestFailed(
+                            res.ok ? undefined : res.status,
+                          ),
+                    accessRestrictedMessage: Locale.Error.AccessRestricted,
+                  }),
+                ),
+              );
+              return;
+            }
+            if (contentType?.startsWith("text/plain")) {
+              responseText = await res.clone().text();
+              return lifecycle.finish();
             }
           },
           onmessage(msg) {
-            if (msg.data === "[DONE]" || finished) {
-              return finish();
+            lifecycle.refresh();
+            if (msg.data === "[DONE]" || lifecycle.isSettled()) {
+              return lifecycle.finish();
             }
             const text = msg.data;
             try {
               const json = JSON.parse(text);
+              if (hasUpstreamErrorPayload(json)) {
+                lifecycle.fail(
+                  new Error(
+                    getPublicHttpErrorMessage({
+                      response: responseRes,
+                      payload: json,
+                      fallback: Locale.Error.RequestFailed(),
+                      accessRestrictedMessage: Locale.Error.AccessRestricted,
+                    }),
+                  ),
+                );
+                return;
+              }
               const choices = json.choices as Array<{
                 delta: { content: string };
               }>;
@@ -235,34 +236,47 @@ export class DoubaoApi implements LLMApi {
               if (delta) {
                 remainText += delta;
               }
-            } catch (e) {
-              console.error("[Request] parse error", text, msg);
+            } catch {
+              console.error("[Request] failed to parse a streaming event");
             }
           },
           onclose() {
-            finish();
+            lifecycle.finish();
           },
           onerror(e) {
             throw e;
           },
           openWhenHidden: true,
         })
-          .catch((error) => {
-            if (!finished) {
-              finished = true;
-              options.onError?.(error);
-            }
-          })
-          .finally(cancelRequestTimeout);
+          .catch(lifecycle.fail)
+          .finally(lifecycle.cancel);
       } else {
-        const { response: res, body: resJson } = await withAbortTimeoutResponse(
-          {
+        const { response: res, body: responseBody } =
+          await withAbortTimeoutResponse({
             controller,
             timeoutMs: REQUEST_TIMEOUT_MS,
             operation: () => fetch(chatPath, chatPayload),
-            consume: (response) => response.json(),
-          },
-        );
+            consume: readResponsePayload,
+          });
+        const resJson = responseBody.payload as any;
+
+        if (
+          !res.ok ||
+          !responseBody.isJson ||
+          hasUpstreamErrorPayload(resJson)
+        ) {
+          throw new Error(
+            getPublicHttpErrorMessage({
+              response: res,
+              payload: resJson ?? { message: responseBody.text },
+              fallback:
+                res.status === 401
+                  ? Locale.Error.Unauthorized
+                  : Locale.Error.RequestFailed(res.ok ? undefined : res.status),
+              accessRestrictedMessage: Locale.Error.AccessRestricted,
+            }),
+          );
+        }
 
         const message =
           getAccessRestrictedPublicErrorMessage({
@@ -270,10 +284,13 @@ export class DoubaoApi implements LLMApi {
             payload: resJson,
             message: Locale.Error.AccessRestricted,
           }) ?? this.extractMessage(resJson);
+        if (!message) {
+          throw new Error(Locale.Error.RequestFailed());
+        }
         options.onFinish(message, res);
       }
     } catch (e) {
-      console.log("[Request] failed to make a chat request", e);
+      console.error("[ByteDance] chat request failed");
       options.onError?.(e as Error);
     }
   }

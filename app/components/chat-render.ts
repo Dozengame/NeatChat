@@ -1,5 +1,6 @@
 import type { ChatMessage } from "../store";
 import { getMessageTextContent } from "../utils";
+import { deepClone } from "../utils/clone";
 import { isMcpJson } from "../mcp/utils";
 import {
   formatJimengMcpRequestForChat,
@@ -10,6 +11,36 @@ import {
 } from "../mcp/display";
 
 export type RenderMessage = ChatMessage & { preview?: boolean };
+
+export function createPinnedContextMessage(
+  message: ChatMessage,
+  nextId: string,
+): ChatMessage {
+  return {
+    ...deepClone(message),
+    id: nextId,
+  };
+}
+
+export function getMessageRenderIdentity(
+  message: RenderMessage,
+  absoluteIndex: number,
+  contextLength: number,
+) {
+  const source = absoluteIndex < contextLength ? "context" : "session";
+  return `${source}:${message.id ?? absoluteIndex}`;
+}
+
+export function findMessageForRenderSource(
+  contextMessages: ChatMessage[],
+  sessionMessages: ChatMessage[],
+  messageId: string,
+  isContext: boolean,
+) {
+  return (isContext ? contextMessages : sessionMessages).find(
+    (message) => message.id === messageId,
+  );
+}
 
 type VisibleMessageProjectionState = {
   visibleMessages: RenderMessage[];

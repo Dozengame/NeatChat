@@ -399,6 +399,55 @@ describe("Markdown table semantics and adaptive width", () => {
     });
   });
 
+  test("keeps horizontal reading available but hides full-screen controls while streaming", async () => {
+    const renderTable = (streaming: boolean) => (
+      <MarkdownFeatureContext.Provider
+        value={{ enableArtifacts: true, enableCodeFold: true, streaming }}
+      >
+        <MarkdownTable>
+          <tbody>
+            <tr>
+              <MarkdownTableCell>Streaming wide table</MarkdownTableCell>
+              <MarkdownTableCell>More columns</MarkdownTableCell>
+            </tr>
+          </tbody>
+        </MarkdownTable>
+      </MarkdownFeatureContext.Provider>
+    );
+    const view = render(renderTable(true));
+    const shell = document.querySelector(
+      ".markdown-table-scroll-shell",
+    ) as HTMLDivElement;
+    const viewport = shell.querySelector(
+      ".markdown-table-scroll-viewport",
+    ) as HTMLDivElement;
+    const table = shell.querySelector("table") as HTMLTableElement;
+    Object.defineProperties(viewport, {
+      clientWidth: { configurable: true, value: 600 },
+      scrollWidth: { configurable: true, value: 900 },
+      scrollLeft: { configurable: true, writable: true, value: 0 },
+    });
+    Object.defineProperty(table, "scrollWidth", {
+      configurable: true,
+      value: 900,
+    });
+    act(() => window.dispatchEvent(new Event("resize")));
+
+    expect(
+      await screen.findByRole("slider", {
+        name: /scroll table horizontally/i,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /view table full screen/i }),
+    ).not.toBeInTheDocument();
+
+    view.rerender(renderTable(false));
+    expect(
+      await screen.findByRole("button", { name: /view table full screen/i }),
+    ).toBeInTheDocument();
+  });
+
   test("keeps custom thumb dragging anchored and stops after pointer cancellation", async () => {
     const originalPointerEvent = window.PointerEvent;
     class MockPointerEvent extends MouseEvent {

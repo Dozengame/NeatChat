@@ -41,6 +41,21 @@ describe("buildOpenAIModelTestRequest", () => {
     ).toBe(16);
   });
 
+  test("omits unverified capabilities for an unknown GPT-5-compatible model", () => {
+    expect(
+      buildOpenAIModelTestRequest("gpt-5.6-custom-local", {
+        openaiMaxOutputTokens: 512000,
+        openaiReasoningEffort: "max",
+        openaiTextVerbosity: "high",
+      }),
+    ).toEqual({
+      model: "gpt-5.6-custom-local",
+      input: "Hello!",
+      max_output_tokens: 512000,
+      stream: false,
+    });
+  });
+
   test.each([
     ["gpt-4o", 16384],
     ["gpt-4o-mini", 16384],

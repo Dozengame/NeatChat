@@ -1,5 +1,6 @@
 import {
   combineMcpToolResults,
+  formatFailedMcpRequestForChat,
   formatJimengMcpRequestForChat,
   formatPendingMcpRequestForChat,
   formatMcpToolResultForChat,
@@ -95,6 +96,14 @@ describe("formatMcpToolResultForChat", () => {
     expect(formatted).toContain("Tool call");
     expect(formatted).toContain("Preparing to run the tool");
     expect(formatted).not.toContain("```json:mcp");
+  });
+
+  test("formats a generic MCP failure as a terminal localized status", () => {
+    const formatted = formatFailedMcpRequestForChat();
+
+    expect(formatted).toContain("Tool call");
+    expect(formatted).toContain("Tool call failed. Please retry");
+    expect(formatted).not.toContain("Preparing to run the tool");
   });
 
   test("renders markdown_images as markdown image lines", () => {

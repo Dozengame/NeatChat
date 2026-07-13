@@ -13,13 +13,102 @@ interface AbortTimeoutResponseOptions<T> extends AbortTimeoutOptions {
   consume: (response: Response) => T | Promise<T>;
 }
 
+interface StreamingRequestLifecycleOptions {
+  controller: AbortController;
+  timeoutMs: number;
+  getMessage: () => string;
+  getResponse: () => Response;
+  onFinish: (message: string, response: Response) => void;
+  onError?: (error: Error) => void;
+}
+
+function createTimeoutError(timeoutMs: number) {
+  const error = new Error(`Request timed out after ${timeoutMs} ms`);
+  error.name = "TimeoutError";
+  return error;
+}
+
 export function createAbortTimeout({
   controller,
   timeoutMs,
-  onTimeout = () => controller.abort(),
+  onTimeout = () => controller.abort(createTimeoutError(timeoutMs)),
 }: AbortTimeoutOptions) {
   const timeoutId = setTimeout(onTimeout, timeoutMs);
   return () => clearTimeout(timeoutId);
+}
+
+export function createStreamingRequestLifecycle({
+  controller,
+  timeoutMs,
+  getMessage,
+  getResponse,
+  onFinish,
+  onError,
+}: StreamingRequestLifecycleOptions) {
+  let settled = false;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  const cancelTimer = () => {
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId);
+      timeoutId = undefined;
+    }
+  };
+  const cleanup = () => {
+    cancelTimer();
+    controller.signal.removeEventListener("abort", handleAbort);
+  };
+  const fail = (value: unknown) => {
+    if (settled) return;
+    const error = value instanceof Error ? value : new Error(String(value));
+    settled = true;
+    cleanup();
+    if (!controller.signal.aborted) controller.abort(error);
+    onError?.(error);
+  };
+  const finish = ({ allowEmpty = false } = {}) => {
+    if (settled) return;
+    const message = getMessage();
+    if (!message && !allowEmpty) {
+      fail(new Error("empty response from server"));
+      return;
+    }
+    settled = true;
+    cleanup();
+    onFinish(message, getResponse());
+  };
+  const refresh = () => {
+    if (settled || controller.signal.aborted) return;
+    cancelTimer();
+    timeoutId = setTimeout(() => {
+      if (settled || controller.signal.aborted) return;
+      controller.abort(createTimeoutError(timeoutMs));
+    }, timeoutMs);
+  };
+
+  function handleAbort() {
+    const reason = controller.signal.reason;
+    if (reason instanceof Error && reason.name === "TimeoutError") {
+      fail(reason);
+    } else {
+      finish({ allowEmpty: true });
+    }
+  }
+
+  controller.signal.addEventListener("abort", handleAbort, { once: true });
+  if (controller.signal.aborted) {
+    handleAbort();
+  } else {
+    refresh();
+  }
+
+  return {
+    cancel: cleanup,
+    fail,
+    finish,
+    isSettled: () => settled,
+    refresh,
+  };
 }
 
 function getAbortReason(signal: AbortSignal) {
@@ -55,7 +144,9 @@ export async function withAbortTimeout<T>({
       try {
         timeoutOptions.onTimeout?.();
       } finally {
-        if (!controller.signal.aborted) controller.abort();
+        if (!controller.signal.aborted) {
+          controller.abort(createTimeoutError(timeoutOptions.timeoutMs));
+        }
       }
     },
   });

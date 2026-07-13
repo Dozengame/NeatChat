@@ -132,6 +132,8 @@ describe("DiscreteOptionRail", () => {
       Object.defineProperties(event, {
         clientX: { value: clientX },
         pointerId: { value: 1 },
+        button: { value: 0 },
+        isPrimary: { value: true },
       });
       fireEvent(slider, event);
     };

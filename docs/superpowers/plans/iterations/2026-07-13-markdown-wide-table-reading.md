@@ -1,7 +1,7 @@
 # Markdown Wide Table Reading
 
-Date: 2026-07-13  
-Branch: `dev`  
+Date: 2026-07-13
+Branch: `dev`
 Product commit: `9e9f42d0 fix(markdown): improve wide table reading`
 
 ## Result

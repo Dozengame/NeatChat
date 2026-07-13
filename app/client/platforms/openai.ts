@@ -68,7 +68,13 @@ import {
 } from "@/app/utils";
 import { fetch } from "@/app/utils/stream";
 import { withAbortTimeoutResponse } from "@/app/utils/request-timeout";
-import { isAccessRestrictedPublicError } from "@/app/utils/public-error";
+import {
+  getAccessRestrictedPublicErrorMessage,
+  getPublicUpstreamErrorMessage,
+  hasUpstreamErrorPayload,
+  isAccessRestrictedPublicError,
+  readResponsePayload,
+} from "@/app/utils/public-error";
 import { mergeLLMRequestConfig } from "../request-config";
 import {
   OPENAI_IMAGE_REQUEST_TIMEOUT_MS,
@@ -141,7 +147,7 @@ async function loadOpenAIImageInput(imageUrl: string, index: number) {
       return { blob, filename: getImageFilename(index, blob) };
     }
   } catch (error) {
-    console.warn("[OpenAI Image] failed to load image url directly", error);
+    console.warn("[OpenAI Image] failed to load image url directly");
   }
 
   const dataUrl = await cacheImageToBase64Image(imageUrl);
@@ -202,8 +208,6 @@ export class ChatGPTApi implements LLMApi {
       baseUrl = "https://" + baseUrl;
     }
 
-    console.log("[Proxy Endpoint] ", baseUrl, path);
-
     // try rebuild url, when using cloudflare ai gateway in client
     return cloudflareAIGatewayUrl([baseUrl, path].join("/"));
   }
@@ -218,10 +222,10 @@ export class ChatGPTApi implements LLMApi {
       if (isAccessRestrictedPublicError(res)) {
         return Locale.Error.AccessRestricted;
       }
-      if (typeof res.msg === "string" && res.msg.trim()) {
-        return res.msg;
-      }
-      return "```\n" + JSON.stringify(res, null, 4) + "\n```";
+      return getPublicUpstreamErrorMessage({
+        fallback: Locale.Error.RequestFailed(),
+        payload: res,
+      });
     }
     const responsesText = extractOpenAIResponsesText(res);
     if (responsesText) {
@@ -246,7 +250,7 @@ export class ChatGPTApi implements LLMApi {
         },
       ];
     }
-    return res.choices?.at(0)?.message?.content ?? res;
+    return res.choices?.at(0)?.message?.content ?? "";
   }
 
   async speech(options: SpeechOptions): Promise<ArrayBuffer> {
@@ -257,8 +261,6 @@ export class ChatGPTApi implements LLMApi {
       response_format: options.response_format,
       speed: options.speed,
     };
-
-    console.log("[Request] openai speech payload: ", requestPayload);
 
     const controller = new AbortController();
     options.onController?.(controller);
@@ -280,7 +282,7 @@ export class ChatGPTApi implements LLMApi {
       });
       return body;
     } catch (e) {
-      console.log("[Request] failed to make a speech request", e);
+      console.error("[OpenAI] speech request failed");
       throw e;
     }
   }
@@ -457,13 +459,6 @@ export class ChatGPTApi implements LLMApi {
         };
       }
     }
-
-    console.log(
-      useResponses
-        ? "[Request] openai responses payload: "
-        : "[Request] openai payload: ",
-      requestPayload,
-    );
 
     const shouldStream = !isImageGeneration && !!effectiveStream;
     const controller = new AbortController();
@@ -702,8 +697,8 @@ export class ChatGPTApi implements LLMApi {
           : isImageGeneration
           ? OPENAI_IMAGE_REQUEST_TIMEOUT_MS
           : REQUEST_TIMEOUT_MS;
-        const { response: res, body: resJson } = await withAbortTimeoutResponse(
-          {
+        const { response: res, body: responseBody } =
+          await withAbortTimeoutResponse({
             controller,
             timeoutMs: requestTimeoutMs,
             onTimeout: isImageGeneration
@@ -716,15 +711,54 @@ export class ChatGPTApi implements LLMApi {
                     status: response.status,
                     bodyText: await response.text(),
                   })
-                : response.json(),
-          },
-        );
+                : readResponsePayload(response),
+          });
+        const parsedResponseBody = responseBody as any;
+        const resJson = isImageGeneration
+          ? parsedResponseBody
+          : parsedResponseBody.payload;
         if (isImageGeneration && (!res.ok || resJson?.error)) {
           throw new Error(
             getOpenAIImageErrorMessage({
               status: res.status,
               payload: resJson,
               accessRestrictedMessage: Locale.Error.AccessRestricted,
+            }),
+          );
+        }
+        if (
+          !isImageGeneration &&
+          (!res.ok ||
+            !parsedResponseBody.isJson ||
+            hasUpstreamErrorPayload(resJson))
+        ) {
+          const errorPayload = resJson ?? {
+            message: parsedResponseBody.text as string,
+          };
+          const accessRestrictedMessage = getAccessRestrictedPublicErrorMessage(
+            {
+              response: res,
+              payload: errorPayload,
+              message: Locale.Error.AccessRestricted,
+            },
+          );
+          throw new Error(
+            accessRestrictedMessage ??
+              getPublicUpstreamErrorMessage({
+                fallback: Locale.Error.RequestFailed(
+                  res.ok ? undefined : res.status,
+                ),
+                payload: errorPayload,
+                headers: res.headers,
+              }),
+          );
+        }
+        if (useResponses && resJson?.status === "incomplete") {
+          throw new Error(
+            getPublicUpstreamErrorMessage({
+              fallback: Locale.Error.RequestFailed(),
+              detail: resJson?.incomplete_details?.reason,
+              headers: res.headers,
             }),
           );
         }
@@ -744,6 +778,12 @@ export class ChatGPTApi implements LLMApi {
               ? getOpenAIImageOutputContentType(imageOutputFormat)
               : undefined,
         });
+        if (
+          !isImageGeneration &&
+          (typeof message !== "string" || message.length === 0)
+        ) {
+          throw new Error(Locale.Error.RequestFailed());
+        }
         options.onFinish(
           message,
           res,
@@ -760,7 +800,7 @@ export class ChatGPTApi implements LLMApi {
         );
       }
     } catch (e) {
-      console.log("[Request] failed to make a chat request", e);
+      console.error("[OpenAI] chat request failed");
       options.onError?.(e as Error);
     }
   }
@@ -846,8 +886,6 @@ export class ChatGPTApi implements LLMApi {
     const chatModels = resJson.data?.filter(
       (m) => m.id.startsWith("gpt-") || m.id.startsWith("chatgpt-"),
     );
-    console.log("[Models]", chatModels);
-
     if (!chatModels) {
       return [];
     }

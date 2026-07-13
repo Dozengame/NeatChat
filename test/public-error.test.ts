@@ -1,10 +1,27 @@
 import {
   getAccessRestrictedPublicErrorMessage,
+  hasUpstreamErrorPayload,
   getPublicUpstreamErrorMessage,
   isAccessRestrictedPublicError,
+  readResponsePayload,
 } from "../app/utils/public-error";
 
 describe("public API error localization", () => {
+  test("reads JSON safely without throwing on a proxy HTML response", async () => {
+    await expect(
+      readResponsePayload({
+        text: async () => "<html>bad gateway</html>",
+        json: async () => {
+          throw new Error("should not run");
+        },
+      } as any),
+    ).resolves.toEqual({
+      payload: undefined,
+      text: "<html>bad gateway</html>",
+      isJson: false,
+    });
+  });
+
   test("identifies the stable access restriction code", () => {
     expect(
       isAccessRestrictedPublicError({
@@ -43,6 +60,16 @@ describe("public API error localization", () => {
     ).toBeUndefined();
   });
 
+  test("does not confuse an upstream 429 rate limit with access control", () => {
+    expect(
+      getAccessRestrictedPublicErrorMessage({
+        response: { status: 429 },
+        payload: { error: { message: "rate limit exceeded" } },
+        message: "localized access restriction",
+      }),
+    ).toBeUndefined();
+  });
+
   test("keeps a short actionable detail and a safe request id", () => {
     expect(
       getPublicUpstreamErrorMessage({
@@ -57,6 +84,60 @@ describe("public API error localization", () => {
     ).toBe(
       "Upstream request failed (400): Invalid image size [request_id: req_123-safe]",
     );
+  });
+
+  test.each([
+    ["Request failed.", "Request failed (500)."],
+    ["请求失败。", "请求失败（500）。"],
+  ])(
+    "does not repeat a localized fallback already present in safe detail",
+    (fallback, detail) => {
+      expect(
+        getPublicUpstreamErrorMessage({
+          fallback,
+          detail,
+          payload: { request_id: "req_safe" },
+        }),
+      ).toBe(`${detail} [request_id: req_safe]`);
+    },
+  );
+
+  test.each([
+    [{ error: { message: "failed" } }, "failed"],
+    [
+      { error_code: 336006, error_msg: "invalid message order" },
+      "invalid message order",
+    ],
+    [
+      {
+        Response: {
+          Error: { Code: "InvalidParameter", Message: "invalid model" },
+          RequestId: "req-tencent-1",
+        },
+      },
+      "invalid model [request_id: req-tencent-1]",
+    ],
+    [
+      { header: { code: 10013, message: "invalid request" } },
+      "invalid request",
+    ],
+  ])("detects supported provider-native error envelopes", (payload, detail) => {
+    expect(hasUpstreamErrorPayload(payload)).toBe(true);
+    expect(
+      getPublicUpstreamErrorMessage({ fallback: "Request failed", payload }),
+    ).toBe(`Request failed${detail ? `: ${detail}` : ""}`);
+  });
+
+  test.each([
+    { error: false },
+    { error: "" },
+    { error_code: 0 },
+    { error_code: "0" },
+    { Response: { Error: null } },
+    { Response: { Error: {} } },
+    { header: { code: 0 } },
+  ])("does not flag a successful provider envelope", (payload) => {
+    expect(hasUpstreamErrorPayload(payload)).toBe(false);
   });
 
   test.each([

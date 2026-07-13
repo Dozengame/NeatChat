@@ -238,7 +238,7 @@ describe("English UI localization contract", () => {
     ];
     for (const provider of providerClients) {
       const source = read(`app/client/platforms/${provider}.ts`);
-      expect(source).toContain("getAccessRestrictedPublicErrorMessage");
+      expect(source).toContain("getPublicHttpErrorMessage");
       expect(source).toContain("Locale.Error.AccessRestricted");
     }
   });

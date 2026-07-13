@@ -52,14 +52,14 @@ import { createEmptyMask, Mask } from "./mask";
 import {
   executeMcpAction,
   getAllTools,
-  getMcpConfigFromFile,
-  getClientsStatus,
+  getMcpChatServerStates,
   initializeMcpSystem,
   isMcpEnabled,
 } from "../mcp/actions";
 import { extractMcpJson, isMcpJson } from "../mcp/utils";
 import {
   combineMcpToolResults,
+  formatFailedMcpRequestForChat,
   formatJimengMcpRequestForChat,
   formatMcpToolResultForChat,
   getJimengQuerySubmitId,
@@ -78,6 +78,7 @@ import {
 import { resolveSummaryRequestConfig } from "../utils/summary-request";
 import { useAccessStore } from "./access";
 import { collectModelsWithDefaultModelAndPolicy } from "../utils/model";
+import { getPublicUpstreamErrorMessage } from "../utils/public-error";
 
 const localStorage = safeLocalStorage();
 const chatPersistStorage = createTrailingThrottledJSONStorage<any>(
@@ -100,8 +101,8 @@ function flushChatPersistence() {
 }
 
 function flushChatPersistenceNow() {
-  void chatPersistStorage.flushNow(StoreKey.Chat).catch((error) => {
-    console.error("[Chat] failed to flush persisted state", error);
+  void chatPersistStorage.flushNow(StoreKey.Chat).catch(() => {
+    console.error("[Chat] failed to flush persisted state");
   });
 }
 
@@ -328,10 +329,9 @@ async function getMcpSystemPrompt(
     return mcpCache.scopedSystemPrompts[scopedKey];
   }
 
-  const [tools, clientStatuses, config] = await Promise.all([
+  const [tools, serverStates] = await Promise.all([
     getAllTools(),
-    getClientsStatus(),
-    getMcpConfigFromFile(),
+    getMcpChatServerStates(),
   ]);
   const allowedClientIds =
     scopedClientIds.length > 0 ? new Set(scopedClientIds) : undefined;
@@ -345,12 +345,9 @@ async function getMcpSystemPrompt(
     if (allowedClientIds && !allowedClientIds.has(i.clientId)) return;
 
     // 检查客户端状态，只包含活跃状态的客户端
-    const clientStatus = clientStatuses[i.clientId];
-    if (clientStatus && clientStatus.status === "active") {
-      if (
-        !allowedClientIds &&
-        config.mcpServers[i.clientId]?.chatDefaultEnabled === false
-      ) {
+    const serverState = serverStates[i.clientId];
+    if (serverState && serverState.status === "active") {
+      if (!allowedClientIds && serverState.chatDefaultEnabled === false) {
         return;
       }
 
@@ -384,8 +381,8 @@ async function checkMcpEnabledAndPreloadPrompt(): Promise<boolean> {
   if (mcpCache.enabled === null) {
     try {
       mcpCache.enabled = await isMcpEnabled();
-    } catch (error) {
-      console.error("Failed to check MCP availability:", error);
+    } catch {
+      console.error("[MCP] failed to check availability");
       return false;
     }
   }
@@ -399,17 +396,17 @@ async function checkMcpEnabledAndPreloadPrompt(): Promise<boolean> {
       await initializeMcpSystem();
       mcpCache.initialized = true;
       mcpCache.retryAfter = 0;
-    } catch (error) {
+    } catch {
       mcpCache.initialized = false;
       mcpCache.retryAfter = Date.now() + MCP_REINITIALIZATION_COOLDOWN_MS;
-      console.error("Failed to preload MCP system prompt:", error);
+      console.error("[MCP] failed to initialize chat tools");
     }
 
     try {
       // A failed server must not hide tools from other clients that initialized.
       await getMcpSystemPrompt(true);
-    } catch (error) {
-      console.error("Failed to load available MCP tools:", error);
+    } catch {
+      console.error("[MCP] failed to load available chat tools");
     }
   }
 
@@ -427,8 +424,8 @@ function resetMcpCache() {
     scopedSystemPrompts: {},
   };
   // 立即开始预加载新的系统提示
-  return checkMcpEnabledAndPreloadPrompt().catch((error) => {
-    console.error(error);
+  return checkMcpEnabledAndPreloadPrompt().catch(() => {
+    console.error("[MCP] failed to reset the chat tool cache");
     return false;
   });
 }
@@ -710,10 +707,12 @@ export const useChatStore = createPersistStore(
           mcpClientIds?: string[];
           systemPrompt?: string;
           visibleMcpResult?: string;
+          targetSession?: ChatSession;
         },
       ) {
-        const session = get().ensureCurrentSessionSaved();
-        const modelConfig = session.mask.modelConfig;
+        const session =
+          options?.targetSession ?? get().ensureCurrentSessionSaved();
+        const modelConfig = { ...session.mask.modelConfig };
         const isOpenAIImageGeneration = isOpenAIImageGenerationModelConfig({
           model: modelConfig.model,
           providerName: modelConfig.providerName,
@@ -759,7 +758,7 @@ export const useChatStore = createPersistStore(
           mask: {
             ...session.mask,
             context: session.mask.context.slice(),
-            modelConfig: { ...session.mask.modelConfig },
+            modelConfig: { ...modelConfig },
           },
         };
         const messageIndex = session.messages.length + 1;
@@ -777,6 +776,126 @@ export const useChatStore = createPersistStore(
         });
         flushChatPersistence();
 
+        const requestMessageId = botMessage.id ?? String(messageIndex);
+        const preflightController = new AbortController();
+        let activeController: AbortController | undefined;
+        let activeAbortHandler: (() => void) | undefined;
+        let activeAbortFallback: ReturnType<typeof setTimeout> | undefined;
+        let requestSettled = false;
+        let requestTerminal: "success" | "user-abort" | "error" | undefined;
+        let streamUpdateCoalescer:
+          | ReturnType<typeof createStreamUpdateCoalescer>
+          | undefined;
+
+        const cleanupRequest = () => {
+          if (activeAbortFallback !== undefined) {
+            clearTimeout(activeAbortFallback);
+            activeAbortFallback = undefined;
+          }
+          preflightController.signal.removeEventListener(
+            "abort",
+            handlePreflightAbort,
+          );
+          if (activeController && activeAbortHandler) {
+            activeController.signal.removeEventListener(
+              "abort",
+              activeAbortHandler,
+            );
+          }
+          ChatControllerPool.remove(session.id, requestMessageId);
+        };
+
+        const notifyRequestMutation = () => {
+          get().updateTargetSession(session, (session) => {
+            session.messages = session.messages.concat();
+          });
+          flushChatPersistence();
+        };
+
+        const applyResponseMetadata = (metadata?: any) => {
+          if (!metadata) return false;
+          let changed = false;
+          for (const field of [
+            "openaiResponseId",
+            "openaiResponseStored",
+            "openaiResponsesOutput",
+            "openaiResponsesRecoveryPending",
+          ] as const) {
+            if (Object.prototype.hasOwnProperty.call(metadata, field)) {
+              botMessage[field] = metadata[field];
+              changed = true;
+            }
+          }
+          return changed;
+        };
+
+        const settleRequestFailure = (
+          error: unknown,
+          metadata?: any,
+          userAborted = false,
+        ) => {
+          const metadataChanged = applyResponseMetadata(metadata);
+          if (requestSettled) {
+            if (metadataChanged) notifyRequestMutation();
+            return;
+          }
+          requestSettled = true;
+          requestTerminal = userAborted ? "user-abort" : "error";
+          streamUpdateCoalescer?.cancel();
+          cleanupRequest();
+
+          if (!userAborted) {
+            const detail = error instanceof Error ? error.message : undefined;
+            const publicMessage = getPublicUpstreamErrorMessage({
+              fallback: Locale.Error.RequestFailed(),
+              detail,
+            });
+            botMessage.content +=
+              "\n\n" +
+              prettyObject({
+                error: true,
+                message: publicMessage,
+              });
+          } else if (isOpenAIImageGeneration) {
+            botMessage.content = Locale.Chat.ImageGeneration.Progress.Cancelled;
+          }
+          botMessage.streaming = false;
+          userMessage.isError = !userAborted;
+          botMessage.isError = !userAborted;
+          get().updateTargetSession(session, (session) => {
+            const savedUserMessage = session.messages.find(
+              (message) => message.id === userMessage.id,
+            );
+            if (savedUserMessage) {
+              savedUserMessage.isError = !userAborted;
+            }
+            session.messages = session.messages.concat();
+          });
+          flushChatPersistence();
+        };
+
+        function handlePreflightAbort() {
+          const reason = preflightController.signal.reason;
+          settleRequestFailure(
+            reason instanceof Error
+              ? reason
+              : new DOMException("The request was aborted", "AbortError"),
+            undefined,
+            true,
+          );
+        }
+
+        preflightController.signal.addEventListener(
+          "abort",
+          handlePreflightAbort,
+          { once: true },
+        );
+        ChatControllerPool.addController(
+          session.id,
+          requestMessageId,
+          preflightController,
+        );
+
         // get recent messages after the visible messages are queued
         let recentMessages: ChatMessage[];
         try {
@@ -786,166 +905,195 @@ export const useChatStore = createPersistStore(
             pendingUserMessage: userMessage,
           });
         } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
-          botMessage.content +=
-            "\n\n" +
-            prettyObject({
-              error: true,
-              message: errorMessage,
-            });
-          botMessage.streaming = false;
-          userMessage.isError = true;
-          botMessage.isError = true;
-          get().updateTargetSession(session, (session) => {
-            const savedUserMessage = session.messages.find(
-              (message) => message.id === userMessage.id,
-            );
-            if (savedUserMessage) {
-              savedUserMessage.isError = true;
-            }
-            session.messages = session.messages.concat();
-          });
-          flushChatPersistence();
-          ChatControllerPool.remove(session.id, botMessage.id ?? messageIndex);
-          console.error("[Chat] failed to prepare messages", error);
+          settleRequestFailure(error);
+          console.error("[Chat] failed to prepare messages");
           return;
         }
+        if (requestSettled || preflightController.signal.aborted) return;
         const sendMessages = recentMessages.concat(userMessage);
 
-        const { getClientApi } = await import("../client/api");
-        const api: ClientApi = getClientApi(modelConfig.providerName);
-        const streamUpdateCoalescer = createStreamUpdateCoalescer(
-          () => {
-            get().updateTargetSession(
-              session,
-              (session) => {
-                session.messages = session.messages.concat();
-              },
-              { renderScope: "tail" },
-            );
-          },
-          () => getStreamUpdateInterval(botMessage.content.length),
-        );
-        // make request
-        api.llm.chat({
-          messages: sendMessages,
-          config: { ...modelConfig, stream: true },
-          allowTools: true,
-          onUpdate(message) {
-            botMessage.streaming = true;
-            if (message) {
-              botMessage.content = message;
-            }
-            streamUpdateCoalescer.schedule();
-          },
-          onFinish(message, _responseRes, metadata) {
-            streamUpdateCoalescer.cancel();
-            botMessage.streaming = false;
-            const isRecoveryPending =
-              metadata?.openaiResponsesRecoveryPending === true;
-            if (
-              !isRecoveryPending &&
-              Array.isArray(metadata?.openaiResponsesOutput) &&
-              isOpenAIGpt56ModelConfig(modelConfig)
-            ) {
-              get().updateTargetSession(session, (session) => {
-                session.messages.forEach((message) => {
-                  if (message.openaiResponsesRecoveryPending) {
-                    message.openaiResponsesRecoveryPending = false;
-                  }
-                });
-              });
-            }
-            if (
-              message ||
-              options?.visibleMcpResult ||
-              metadata?.openaiResponsesOutput?.length
-            ) {
-              botMessage.content = options?.visibleMcpResult
-                ? mergeJimengResultIntoReply(
-                    message || "",
-                    options.visibleMcpResult,
-                  )
-                : message;
-              botMessage.openaiResponseId = metadata?.openaiResponseId;
-              botMessage.openaiResponseStored = metadata?.openaiResponseStored;
-              botMessage.openaiResponsesOutput =
-                metadata?.openaiResponsesOutput;
-              botMessage.openaiResponsesRecoveryPending = isRecoveryPending;
-              botMessage.date = new Date().toLocaleString();
-              get().onNewMessage(botMessage, session);
-            } else {
-              get().updateTargetSession(session, (session) => {
-                session.messages = session.messages.concat();
-              });
-            }
-            flushChatPersistence();
-            ChatControllerPool.remove(session.id, botMessage.id);
-          },
-          onBeforeTool(tool: ChatMessageTool) {
-            streamUpdateCoalescer.cancel();
-            (botMessage.tools = botMessage?.tools || []).push(tool);
-            get().updateTargetSession(session, (session) => {
-              session.messages = session.messages.concat();
-            });
-            flushChatPersistence();
-          },
-          onAfterTool(tool: ChatMessageTool) {
-            streamUpdateCoalescer.cancel();
-            botMessage?.tools?.forEach((t, i, tools) => {
-              if (tool.id == t.id) {
-                tools[i] = { ...tool };
-              }
-            });
-            get().updateTargetSession(session, (session) => {
-              session.messages = session.messages.concat();
-            });
-            flushChatPersistence();
-          },
-          onError(error, metadata) {
-            streamUpdateCoalescer.cancel();
-            const isAborted = error.message?.includes?.("aborted");
-            botMessage.openaiResponseId = metadata?.openaiResponseId;
-            botMessage.openaiResponseStored = metadata?.openaiResponseStored;
-            botMessage.openaiResponsesOutput = metadata?.openaiResponsesOutput;
-            botMessage.openaiResponsesRecoveryPending =
-              metadata?.openaiResponsesRecoveryPending === true;
-            botMessage.content +=
-              "\n\n" +
-              prettyObject({
-                error: true,
-                message: error.message,
-              });
-            botMessage.streaming = false;
-            userMessage.isError = !isAborted;
-            botMessage.isError = !isAborted;
-            get().updateTargetSession(session, (session) => {
-              const savedUserMessage = session.messages.find(
-                (message) => message.id === userMessage.id,
+        try {
+          const { getClientApi } = await import("../client/api");
+          if (requestSettled || preflightController.signal.aborted) return;
+          const api: ClientApi = getClientApi(modelConfig.providerName);
+          streamUpdateCoalescer = createStreamUpdateCoalescer(
+            () => {
+              get().updateTargetSession(
+                session,
+                (session) => {
+                  session.messages = session.messages.concat();
+                },
+                { renderScope: "tail", tailMessageId: requestMessageId },
               );
-              if (savedUserMessage) {
-                savedUserMessage.isError = !isAborted;
+            },
+            () => getStreamUpdateInterval(botMessage.content.length),
+          );
+          const request = api.llm.chat({
+            messages: sendMessages,
+            config: { ...modelConfig, stream: true },
+            allowTools: true,
+            onUpdate(message) {
+              if (requestSettled) return;
+              botMessage.streaming = true;
+              if (message) {
+                botMessage.content = message;
               }
-              session.messages = session.messages.concat();
-            });
-            flushChatPersistence();
-            ChatControllerPool.remove(
-              session.id,
-              botMessage.id ?? messageIndex,
-            );
-
-            console.error("[Chat] failed ", error);
-          },
-          onController(controller) {
-            // collect controller for stop/retry
-            ChatControllerPool.addController(
-              session.id,
-              botMessage.id ?? messageIndex,
-              controller,
-            );
-          },
-        });
+              streamUpdateCoalescer.schedule();
+            },
+            onFinish(message, _responseRes, metadata) {
+              if (requestSettled) {
+                const metadataChanged = applyResponseMetadata(metadata);
+                if (requestTerminal === "user-abort") {
+                  streamUpdateCoalescer?.cancel();
+                  if (message || options?.visibleMcpResult) {
+                    botMessage.content = options?.visibleMcpResult
+                      ? mergeJimengResultIntoReply(
+                          message || "",
+                          options.visibleMcpResult,
+                        )
+                      : message;
+                  }
+                  botMessage.streaming = false;
+                  botMessage.date = new Date().toLocaleString();
+                  notifyRequestMutation();
+                } else if (metadataChanged) {
+                  notifyRequestMutation();
+                }
+                cleanupRequest();
+                return;
+              }
+              requestSettled = true;
+              requestTerminal = "success";
+              streamUpdateCoalescer.cancel();
+              botMessage.streaming = false;
+              try {
+                const isRecoveryPending =
+                  metadata?.openaiResponsesRecoveryPending === true;
+                if (
+                  !isRecoveryPending &&
+                  Array.isArray(metadata?.openaiResponsesOutput) &&
+                  isOpenAIGpt56ModelConfig(modelConfig)
+                ) {
+                  get().updateTargetSession(session, (session) => {
+                    session.messages.forEach((message) => {
+                      if (message.openaiResponsesRecoveryPending) {
+                        message.openaiResponsesRecoveryPending = false;
+                      }
+                    });
+                  });
+                }
+                if (
+                  message ||
+                  options?.visibleMcpResult ||
+                  metadata?.openaiResponsesOutput?.length
+                ) {
+                  botMessage.content = options?.visibleMcpResult
+                    ? mergeJimengResultIntoReply(
+                        message || "",
+                        options.visibleMcpResult,
+                      )
+                    : message;
+                  applyResponseMetadata(metadata);
+                  botMessage.date = new Date().toLocaleString();
+                  get().onNewMessage(botMessage, session);
+                } else {
+                  get().updateTargetSession(session, (session) => {
+                    session.messages = session.messages.concat();
+                  });
+                }
+              } finally {
+                cleanupRequest();
+                flushChatPersistence();
+              }
+            },
+            onBeforeTool(tool: ChatMessageTool) {
+              if (requestSettled) return;
+              streamUpdateCoalescer.cancel();
+              (botMessage.tools = botMessage?.tools || []).push(tool);
+              get().updateTargetSession(session, (session) => {
+                session.messages = session.messages.concat();
+              });
+              flushChatPersistence();
+            },
+            onAfterTool(tool: ChatMessageTool) {
+              if (requestSettled) return;
+              streamUpdateCoalescer.cancel();
+              botMessage?.tools?.forEach((t, i, tools) => {
+                if (tool.id == t.id) {
+                  tools[i] = { ...tool };
+                }
+              });
+              get().updateTargetSession(session, (session) => {
+                session.messages = session.messages.concat();
+              });
+              flushChatPersistence();
+            },
+            onError(error, metadata) {
+              const reason = activeController?.signal.reason;
+              const controllerHasAbortReason =
+                activeController?.signal.aborted === true;
+              const isAborted = controllerHasAbortReason
+                ? !(reason instanceof Error) || reason.name === "AbortError"
+                : error?.name === "AbortError";
+              settleRequestFailure(error, metadata, isAborted);
+              if (!isAborted) {
+                console.error("[Chat] request failed");
+              }
+            },
+            onController(controller) {
+              if (requestSettled || preflightController.signal.aborted) {
+                controller.abort(
+                  preflightController.signal.reason ??
+                    new DOMException("The request was aborted", "AbortError"),
+                );
+                return;
+              }
+              preflightController.signal.removeEventListener(
+                "abort",
+                handlePreflightAbort,
+              );
+              activeController = controller;
+              activeAbortHandler = () => {
+                if (activeAbortFallback !== undefined) {
+                  clearTimeout(activeAbortFallback);
+                }
+                const reason = controller.signal.reason;
+                activeAbortFallback = setTimeout(() => {
+                  activeAbortFallback = undefined;
+                  const userAborted =
+                    !(reason instanceof Error) || reason.name === "AbortError";
+                  settleRequestFailure(
+                    reason instanceof Error
+                      ? reason
+                      : new DOMException(
+                          "The request was aborted",
+                          "AbortError",
+                        ),
+                    undefined,
+                    userAborted,
+                  );
+                }, 0);
+              };
+              controller.signal.addEventListener("abort", activeAbortHandler, {
+                once: true,
+              });
+              if (controller.signal.aborted) {
+                activeAbortHandler();
+                return;
+              }
+              ChatControllerPool.addController(
+                session.id,
+                requestMessageId,
+                controller,
+              );
+            },
+          });
+          void Promise.resolve(request).catch((error) => {
+            settleRequestFailure(error);
+          });
+        } catch (error) {
+          settleRequestFailure(error);
+        }
       },
 
       getMemoryPrompt(targetSession?: ChatSession) {
@@ -997,8 +1145,8 @@ export const useChatStore = createPersistStore(
               false,
               options?.mcpClientIds,
             );
-          } catch (error) {
-            console.error("Failed to resolve MCP tools for chat:", error);
+          } catch {
+            console.error("[MCP] failed to resolve chat tools");
           }
         }
         const extraSystemPrompt = options?.systemPrompt?.trim() ?? "";
@@ -1033,13 +1181,6 @@ export const useChatStore = createPersistStore(
               content: composedMcpSystemPrompt,
             }),
           ];
-        }
-
-        if (systemPrompts.length > 0) {
-          console.log(
-            "[Global System Prompt] ",
-            systemPrompts.at(0)?.content ?? "empty",
-          );
         }
 
         const customInstructionPrompts = customInstructions
@@ -1348,13 +1489,6 @@ export const useChatStore = createPersistStore(
 
         const lastSummarizeIndex = session.messages.length;
 
-        console.log(
-          "[Chat History] ",
-          toBeSummarizedMsgs,
-          historyMsgLength,
-          modelConfig.compressMessageLengthThreshold,
-        );
-
         if (
           historyMsgLength > modelConfig.compressMessageLengthThreshold &&
           modelConfig.sendMemory
@@ -1376,15 +1510,14 @@ export const useChatStore = createPersistStore(
             },
             onFinish(message, responseRes) {
               if (responseRes?.status === 200) {
-                console.log("[Memory] ", message);
                 get().updateTargetSession(session, (session) => {
                   session.lastSummarizeIndex = lastSummarizeIndex;
                   session.memoryPrompt = message; // Update the memory prompt for stored it in local storage
                 });
               }
             },
-            onError(err) {
-              console.error("[Summarize] ", err);
+            onError() {
+              console.error("[Summarize] request failed");
             },
           });
         }
@@ -1399,17 +1532,20 @@ export const useChatStore = createPersistStore(
       updateTargetSession(
         targetSession: ChatSession,
         updater: (session: ChatSession) => void,
-        options?: { renderScope?: "tail" },
+        options?: { renderScope?: "tail"; tailMessageId?: string },
       ) {
         const temporarySession = get().temporarySession;
         if (temporarySession?.id === targetSession.id) {
           updater(temporarySession);
+          const isVerifiedTailUpdate =
+            options?.renderScope === "tail" &&
+            options.tailMessageId !== undefined &&
+            temporarySession.messages.at(-1)?.id === options.tailMessageId;
           set((state) => ({
             temporarySession,
-            messageProjectionRevision:
-              options?.renderScope === "tail"
-                ? state.messageProjectionRevision
-                : (state.messageProjectionRevision ?? 0) + 1,
+            messageProjectionRevision: isVerifiedTailUpdate
+              ? state.messageProjectionRevision
+              : (state.messageProjectionRevision ?? 0) + 1,
           }));
           return;
         }
@@ -1419,6 +1555,10 @@ export const useChatStore = createPersistStore(
         if (index < 0) return;
         const previousListSnapshot = getSessionListSnapshot(sessions[index]);
         updater(sessions[index]);
+        const isVerifiedTailUpdate =
+          options?.renderScope === "tail" &&
+          options.tailMessageId !== undefined &&
+          sessions[index].messages.at(-1)?.id === options.tailMessageId;
         const listMetadataChanged = hasSessionListSnapshotChanged(
           previousListSnapshot,
           getSessionListSnapshot(sessions[index]),
@@ -1428,13 +1568,14 @@ export const useChatStore = createPersistStore(
           sessionListRevision: listMetadataChanged
             ? (state.sessionListRevision ?? 0) + 1
             : state.sessionListRevision,
-          messageProjectionRevision:
-            options?.renderScope === "tail"
-              ? state.messageProjectionRevision
-              : (state.messageProjectionRevision ?? 0) + 1,
+          messageProjectionRevision: isVerifiedTailUpdate
+            ? state.messageProjectionRevision
+            : (state.messageProjectionRevision ?? 0) + 1,
         }));
       },
       async clearAllData() {
+        chatPersistStorage.suspendWrites(StoreKey.Chat);
+        ChatControllerPool.stopAll();
         await chatPersistStorage.removeItem(StoreKey.Chat);
         await indexedDBStorage.clear();
         localStorage.clear();
@@ -1455,8 +1596,6 @@ export const useChatStore = createPersistStore(
           try {
             const mcpRequest = extractMcpJson(content);
             if (mcpRequest) {
-              console.debug("[MCP Request]", mcpRequest);
-
               if (mcpRequest.clientId === JIMENG_MCP_SERVER_ID) {
                 const progressText =
                   formatJimengMcpRequestForChat(content) ||
@@ -1488,7 +1627,6 @@ export const useChatStore = createPersistStore(
 
                 executeMcpAction(mcpRequest.clientId, mcpRequest.mcp)
                   .then(async (result) => {
-                    console.log("[MCP Response]", result);
                     let resultForChat = result;
                     let querySubmitId = getJimengQuerySubmitId(resultForChat);
                     updateJimengMessage(
@@ -1519,7 +1657,6 @@ export const useChatStore = createPersistStore(
                           },
                         },
                       );
-                      console.log("[MCP Query Response]", queryResult);
                       resultForChat = combineMcpToolResults(
                         resultForChat,
                         queryResult,
@@ -1550,8 +1687,8 @@ export const useChatStore = createPersistStore(
                       );
                     }
                   })
-                  .catch((error) => {
-                    console.warn("[MCP] Failed to run Jimeng task", error);
+                  .catch(() => {
+                    console.warn("[MCP] failed to run Jimeng task");
                     updateJimengMessage(
                       mergeJimengProgressWithResult(
                         progressText,
@@ -1567,19 +1704,38 @@ export const useChatStore = createPersistStore(
                 return;
               }
 
+              const actionSession = targetSession ?? get().currentSession();
               executeMcpAction(mcpRequest.clientId, mcpRequest.mcp)
                 .then(async (result) => {
-                  console.log("[MCP Response]", result);
                   const formattedResult = formatMcpToolResultForChat(
                     mcpRequest.clientId,
                     result,
                   );
-                  get().onUserInput(formattedResult, [], true);
+                  get().onUserInput(formattedResult, [], true, {
+                    targetSession: actionSession,
+                  });
                 })
-                .catch((error) => showToast("MCP execution failed", error));
+                .catch(() => {
+                  const failureMessage = formatFailedMcpRequestForChat();
+                  get().updateTargetSession(actionSession, (session) => {
+                    const targetMessage = session.messages.find(
+                      (item) => item.id === message.id,
+                    );
+                    if (targetMessage) {
+                      targetMessage.content = failureMessage;
+                      targetMessage.streaming = false;
+                      targetMessage.isError = true;
+                      targetMessage.date = new Date().toLocaleString();
+                    }
+                    session.messages = session.messages.concat();
+                    session.lastUpdate = Date.now();
+                  });
+                  flushChatPersistence();
+                  showToast(Locale.Chat.ImageGeneration.Display.ToolFailure);
+                });
             }
-          } catch (error) {
-            console.error("[Check MCP JSON]", error);
+          } catch {
+            console.error("[MCP] failed to process a tool message");
           }
         }
       },

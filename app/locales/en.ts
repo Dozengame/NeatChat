@@ -11,6 +11,8 @@ const en: LocaleType = {
       ? "Invalid access code. Please enter it again."
       : "Invalid access code. Please enter it again.",
     AccessRestricted: "Access is temporarily limited. Please try again later.",
+    RequestFailed: (status?: number) =>
+      status ? `Request failed (${status}).` : "Request failed.",
   },
   Auth: {
     Return: "Return",
@@ -339,6 +341,7 @@ const en: LocaleType = {
         Preparing: "Preparing the image generation request...",
         Generating: "Generating the image. Please wait...",
         Saving: "Image generated. Saving the image...",
+        Cancelled: "Image generation cancelled",
       },
       Display: {
         Task: "Image generation task",
@@ -362,6 +365,7 @@ const en: LocaleType = {
         Submitted: "Submitted; waiting for status",
         Success: "Generation succeeded",
         Generating: "Generating",
+        ToolFailure: "Tool call failed. Please retry",
         Failure: "Generation failed",
         Cancelled: "Cancelled",
         Timeout: "Query timed out",

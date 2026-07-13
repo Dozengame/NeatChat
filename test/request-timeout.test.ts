@@ -1,5 +1,6 @@
 import {
   createAbortTimeout,
+  createStreamingRequestLifecycle,
   withAbortTimeout,
   withAbortTimeoutResponse,
 } from "../app/utils/request-timeout";
@@ -74,6 +75,7 @@ describe("request timeout lifecycle", () => {
     jest.advanceTimersByTime(1_000);
 
     expect(controller.signal.aborted).toBe(true);
+    expect(controller.signal.reason).toMatchObject({ name: "TimeoutError" });
     cancel();
     expect(jest.getTimerCount()).toBe(0);
   });
@@ -88,7 +90,7 @@ describe("request timeout lifecycle", () => {
 
     jest.advanceTimersByTime(1_000);
 
-    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    await expect(pending).rejects.toMatchObject({ name: "TimeoutError" });
     expect(controller.signal.aborted).toBe(true);
     expect(jest.getTimerCount()).toBe(0);
   });
@@ -105,7 +107,7 @@ describe("request timeout lifecycle", () => {
 
     jest.advanceTimersByTime(1_000);
 
-    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    await expect(pending).rejects.toMatchObject({ name: "TimeoutError" });
     expect(onTimeout).toHaveBeenCalledTimes(1);
     expect(controller.signal.aborted).toBe(true);
   });
@@ -129,7 +131,7 @@ describe("request timeout lifecycle", () => {
     await Promise.resolve();
     jest.advanceTimersByTime(1_000);
 
-    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    await expect(pending).rejects.toMatchObject({ name: "TimeoutError" });
   });
 
   test("keeps the deadline active while the response body is consumed", async () => {
@@ -151,7 +153,7 @@ describe("request timeout lifecycle", () => {
     await Promise.resolve();
     jest.advanceTimersByTime(1_000);
 
-    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    await expect(pending).rejects.toMatchObject({ name: "TimeoutError" });
     expect(controller.signal.aborted).toBe(true);
     expect(jest.getTimerCount()).toBe(0);
   });
@@ -193,6 +195,121 @@ describe("request timeout lifecycle", () => {
     expect(jest.getTimerCount()).toBe(0);
   });
 
+  test("reports an idle stream timeout exactly once", () => {
+    const controller = new AbortController();
+    const onFinish = jest.fn();
+    const onError = jest.fn();
+    const lifecycle = createStreamingRequestLifecycle({
+      controller,
+      timeoutMs: 1_000,
+      getMessage: () => "partial",
+      getResponse: () => ({ status: 200 }) as Response,
+      onFinish,
+      onError,
+    });
+
+    jest.advanceTimersByTime(1_000);
+    lifecycle.finish();
+
+    expect(controller.signal.aborted).toBe(true);
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError.mock.calls[0][0]).toMatchObject({ name: "TimeoutError" });
+    expect(onFinish).not.toHaveBeenCalled();
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  test("refreshes the idle deadline after stream activity", () => {
+    const controller = new AbortController();
+    const onError = jest.fn();
+    const lifecycle = createStreamingRequestLifecycle({
+      controller,
+      timeoutMs: 1_000,
+      getMessage: () => "partial",
+      getResponse: () => ({ status: 200 }) as Response,
+      onFinish: jest.fn(),
+      onError,
+    });
+
+    jest.advanceTimersByTime(900);
+    lifecycle.refresh();
+    jest.advanceTimersByTime(900);
+    expect(onError).not.toHaveBeenCalled();
+
+    jest.advanceTimersByTime(100);
+    expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+  test("treats a user abort as a partial finish and clears the timer", () => {
+    const controller = new AbortController();
+    const response = { status: 200 } as Response;
+    const onFinish = jest.fn();
+    const onError = jest.fn();
+    createStreamingRequestLifecycle({
+      controller,
+      timeoutMs: 1_000,
+      getMessage: () => "partial",
+      getResponse: () => response,
+      onFinish,
+      onError,
+    });
+
+    controller.abort("user stopped");
+
+    expect(onFinish).toHaveBeenCalledWith("partial", response);
+    expect(onError).not.toHaveBeenCalled();
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  test("settles a completed stream once and clears the timer", () => {
+    const controller = new AbortController();
+    const response = { status: 200 } as Response;
+    const onFinish = jest.fn();
+    const onError = jest.fn();
+    const lifecycle = createStreamingRequestLifecycle({
+      controller,
+      timeoutMs: 1_000,
+      getMessage: () => "done",
+      getResponse: () => response,
+      onFinish,
+      onError,
+    });
+
+    lifecycle.finish();
+    lifecycle.finish();
+    jest.runOnlyPendingTimers();
+
+    expect(onFinish).toHaveBeenCalledTimes(1);
+    expect(onFinish).toHaveBeenCalledWith("done", response);
+    expect(onError).not.toHaveBeenCalled();
+    expect(controller.signal.aborted).toBe(false);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  test("aborts the transport when a stream fails without double settlement", () => {
+    const controller = new AbortController();
+    const onFinish = jest.fn();
+    const onError = jest.fn();
+    const lifecycle = createStreamingRequestLifecycle({
+      controller,
+      timeoutMs: 1_000,
+      getMessage: () => "partial",
+      getResponse: () => ({ status: 502 }) as Response,
+      onFinish,
+      onError,
+    });
+    const error = new Error("invalid stream response");
+
+    lifecycle.fail(error);
+    lifecycle.finish();
+
+    expect(controller.signal.aborted).toBe(true);
+    expect(controller.signal.reason).toBe(error);
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledWith(error);
+    expect(onFinish).not.toHaveBeenCalled();
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
   test("provider clients do not create a redundant outer stream timeout", () => {
     const providers = [
       "alibaba",
@@ -230,8 +347,9 @@ describe("request timeout lifecycle", () => {
         path.join(process.cwd(), "app/client/platforms", `${provider}.ts`),
         "utf8",
       );
-      expect(source).toContain("createAbortTimeout");
-      expect(source).toContain(".finally(cancelRequestTimeout)");
+      expect(source).toContain("createStreamingRequestLifecycle");
+      expect(source).toContain("lifecycle.refresh()");
+      expect(source).toContain(".finally(lifecycle.cancel)");
     }
 
     const sharedStream = fs.readFileSync(

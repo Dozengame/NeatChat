@@ -53,6 +53,29 @@ describe("buildOpenAIResponsesPayload", () => {
     expect(payload.temperature).toBe(1);
   });
 
+  test("keeps unknown GPT-5-compatible models on conservative payload fields", () => {
+    const payload = buildOpenAIResponsesPayload({
+      messages: [{ role: "user", content: "Hello" }],
+      modelConfig: {
+        ...modelConfig,
+        model: "gpt-5.6-custom-local" as any,
+        max_output_tokens: 512000,
+        reasoningEffort: "max",
+        textVerbosity: "high",
+        promptCacheMode: "explicit",
+        promptCacheKey: "unknown-model",
+      },
+      stream: true,
+    }) as any;
+
+    expect(payload.max_output_tokens).toBe(512000);
+    expect(payload.reasoning).toBeUndefined();
+    expect(payload.text).toBeUndefined();
+    expect(payload.prompt_cache_options).toBeUndefined();
+    expect(payload.prompt_cache_key).toBeUndefined();
+    expect(payload.temperature).toBe(1);
+  });
+
   test("forces known non-streaming o-series pro models onto the JSON response path", () => {
     const payload = buildOpenAIResponsesPayload({
       messages: [{ role: "user", content: "Hello" }],

@@ -6,7 +6,7 @@ import {
   type ModelConfig,
   type ModelConfigMeta,
 } from "../store/config";
-import { useAccessStore } from "../store/access";
+import { MODEL_CONFIG_FIELDS, useAccessStore } from "../store/access";
 
 import Locale from "../locales";
 import { InputRange } from "./input-range";
@@ -128,9 +128,11 @@ function useModelConfigListView(props: {
   const modelConfigMeta =
     props.modelConfigMeta ?? appConfig.modelConfigMeta ?? {};
   const lockedFields = new Set(accessStore.lockedFields ?? []);
+  const serverConfigurableFields = new Set<string>(MODEL_CONFIG_FIELDS);
   const allowedModels = new Set(accessStore.allowedModels ?? []);
   const isLocked = (field: string) =>
-    modelConfigMeta[field]?.locked || lockedFields.has(field);
+    modelConfigMeta[field]?.locked ||
+    (serverConfigurableFields.has(field) && lockedFields.has(field));
   const sourceText = (field: string) => {
     const source = isLocked(field)
       ? "admin_forced"
@@ -770,6 +772,7 @@ function useModelConfigListView(props: {
               aria-label={Locale.Settings.InjectSystemPrompts.Title}
               type="checkbox"
               checked={props.modelConfig.enableInjectSystemPrompts}
+              disabled={isLocked("enableInjectSystemPrompts")}
               onChange={(e) => {
                 updateUnlocked(["enableInjectSystemPrompts"], (config) => {
                   config.enableInjectSystemPrompts = e.currentTarget.checked;
@@ -789,6 +792,7 @@ function useModelConfigListView(props: {
               aria-label={Locale.Settings.InputTemplate.Title}
               type="text"
               value={props.modelConfig.template}
+              disabled={isLocked("template")}
               onChange={(e) => {
                 updateUnlocked(["template"], (config) => {
                   config.template = e.currentTarget.value;
@@ -815,6 +819,7 @@ function useModelConfigListView(props: {
               min="0"
               max="64"
               step="1"
+              disabled={isLocked("historyMessageCount")}
               onChange={(e) => {
                 updateUnlocked(["historyMessageCount"], (config) => {
                   config.historyMessageCount = e.target.valueAsNumber;
@@ -856,6 +861,7 @@ function useModelConfigListView(props: {
               aria-label={Locale.Memory.Title}
               type="checkbox"
               checked={props.modelConfig.sendMemory}
+              disabled={isLocked("sendMemory")}
               onChange={(e) => {
                 updateUnlocked(["sendMemory"], (config) => {
                   config.sendMemory = e.currentTarget.checked;

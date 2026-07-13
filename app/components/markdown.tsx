@@ -1065,13 +1065,14 @@ export function MarkdownTable({
   );
 
   const openExpandedTable = useCallback(() => {
+    if (streaming) return;
     tableScrollPositionRef.current = tableScrollRef.current?.scrollLeft ?? 0;
     tableIsExpandedRef.current = true;
     setTablePlaceholderHeight(
       tableShellRef.current?.getBoundingClientRect().height ?? 0,
     );
     setTableIsExpanded(true);
-  }, []);
+  }, [streaming]);
 
   const closeExpandedTable = useCallback(() => {
     tableScrollPositionRef.current = tableScrollRef.current?.scrollLeft ?? 0;
@@ -1202,7 +1203,7 @@ export function MarkdownTable({
       data-overflow-start={tableScrollHint.start ? "true" : "false"}
       data-overflow-end={tableScrollHint.end ? "true" : "false"}
     >
-      {(tableIsScrollable || tableIsExpanded) && (
+      {!streaming && (tableIsScrollable || tableIsExpanded) && (
         <div
           className="markdown-table-toolbar"
           role="toolbar"

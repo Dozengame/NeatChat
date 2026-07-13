@@ -14,6 +14,7 @@ type ThrottledStorageOptions<S> = {
 export type FlushablePersistStorage<S> = PersistStorage<S> & {
   scheduleFlush: (name?: string, deadlineMs?: number) => void;
   flushNow: (name?: string) => Promise<void>;
+  suspendWrites: (name: string) => void;
 };
 
 type PendingValue<S> = {
@@ -56,6 +57,18 @@ export function createTrailingThrottledJSONStorage<S>(
   const pendingValues = new Map<string, PendingValue<S>>();
   const writeChains = new Map<string, Promise<void>>();
   const lastSerializedLengths = new Map<string, number>();
+  const suspendedWrites = new Set<string>();
+
+  const cancelPending = (name: string) => {
+    const pending = pendingValues.get(name);
+    if (!pending) return;
+    if (pending.timer !== undefined) {
+      clearTimeout(pending.timer);
+    }
+    pending.cancelIdle?.();
+    pending.idleTimeoutMs = undefined;
+    pendingValues.delete(name);
+  };
 
   const getInterval = (name: string) => {
     const serializedLength = lastSerializedLengths.get(name) ?? 0;
@@ -80,6 +93,11 @@ export function createTrailingThrottledJSONStorage<S>(
   };
 
   const flushOneNow = async (name: string) => {
+    if (suspendedWrites.has(name)) {
+      cancelPending(name);
+      await writeChains.get(name);
+      return;
+    }
     const pending = pendingValues.get(name);
     if (!pending) {
       await writeChains.get(name);
@@ -115,6 +133,7 @@ export function createTrailingThrottledJSONStorage<S>(
   };
 
   const scheduleOne = (name: string, deadlineMs: number) => {
+    if (suspendedWrites.has(name)) return;
     const pending = pendingValues.get(name);
     if (!pending) return;
     if (
@@ -150,12 +169,14 @@ export function createTrailingThrottledJSONStorage<S>(
 
   return {
     async getItem(name) {
+      if (suspendedWrites.has(name)) return null;
       const pending = pendingValues.get(name);
       if (pending) return pending.value;
       const serializedValue = await storage.getItem(name);
       return serializedValue === null ? null : deserialize(serializedValue);
     },
     setItem(name, value) {
+      if (suspendedWrites.has(name)) return;
       if (!shouldPersist(value)) return;
       const currentPending = pendingValues.get(name);
       if (currentPending) {
@@ -171,15 +192,7 @@ export function createTrailingThrottledJSONStorage<S>(
       pendingValues.set(name, pending);
     },
     async removeItem(name) {
-      const pending = pendingValues.get(name);
-      if (pending) {
-        if (pending.timer !== undefined) {
-          clearTimeout(pending.timer);
-        }
-        pending.cancelIdle?.();
-        pending.idleTimeoutMs = undefined;
-        pendingValues.delete(name);
-      }
+      cancelPending(name);
       lastSerializedLengths.delete(name);
       const previousWrite = writeChains.get(name) ?? Promise.resolve();
       const remove = previousWrite
@@ -190,5 +203,9 @@ export function createTrailingThrottledJSONStorage<S>(
     },
     scheduleFlush,
     flushNow,
+    suspendWrites(name) {
+      suspendedWrites.add(name);
+      cancelPending(name);
+    },
   };
 }

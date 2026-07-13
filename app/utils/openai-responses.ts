@@ -114,13 +114,68 @@ const INPUT_IMAGE_DETAILS = new Set(["low", "high", "original", "auto"]);
 const PROMPT_CACHE_MODES = new Set(["disabled", "implicit", "explicit"]);
 
 const OPENAI_PROVIDER_NAMES = new Set(["openai", "chatgpt"]);
+const OPENAI_GPT_56_MODEL_FAMILIES = new Set([
+  "gpt-5.6",
+  "gpt-5.6-sol",
+  "gpt-5.6-terra",
+  "gpt-5.6-luna",
+]);
+const OPENAI_GPT_5_STANDARD_MODEL_FAMILIES = new Set([
+  "gpt-5",
+  "gpt-5.1",
+  "gpt-5.2",
+  "gpt-5.4",
+  "gpt-5.4-mini",
+  "gpt-5.4-nano",
+  "gpt-5.5",
+  ...OPENAI_GPT_56_MODEL_FAMILIES,
+]);
+const OPENAI_GPT_5_PRO_MODEL_FAMILIES = new Set([
+  "gpt-5-pro",
+  "gpt-5.2-pro",
+  "gpt-5.4-pro",
+  "gpt-5.5-pro",
+]);
+const OPENAI_GPT_5_CHAT_MODEL_FAMILIES = new Set([
+  "gpt-5-chat-latest",
+  "gpt-5.1-chat-latest",
+  "gpt-5.2-chat-latest",
+]);
+const OPENAI_O_SERIES_REASONING_MODEL_FAMILIES = new Set([
+  "o1",
+  "o1-pro",
+  "o1-mini",
+  "o1-preview",
+  "o3",
+  "o3-mini",
+  "o3-pro",
+  "o4-mini",
+]);
+
+function normalizeOpenAIModelName(model?: string) {
+  return model?.trim().toLowerCase().split("@")[0] ?? "";
+}
+
+function getOpenAIModelFamily(model?: string) {
+  return normalizeOpenAIModelName(model).replace(/-\d{4}-\d{2}-\d{2}$/, "");
+}
+
+function isKnownOpenAIGpt5Model(model?: string) {
+  const family = getOpenAIModelFamily(model);
+  return (
+    OPENAI_GPT_5_STANDARD_MODEL_FAMILIES.has(family) ||
+    OPENAI_GPT_5_PRO_MODEL_FAMILIES.has(family) ||
+    OPENAI_GPT_5_CHAT_MODEL_FAMILIES.has(family)
+  );
+}
 
 export function isGpt56Model(model?: string) {
-  return /^gpt-5\.6(?:[-.]|$)/.test(model?.trim().toLowerCase() ?? "");
+  return OPENAI_GPT_56_MODEL_FAMILIES.has(getOpenAIModelFamily(model));
 }
 
 export function getOpenAIResponsesMaxOutputTokensLimit(model?: string) {
-  const normalized = model?.trim().toLowerCase().split("@")[0] ?? "";
+  const normalized = normalizeOpenAIModelName(model);
+  const family = getOpenAIModelFamily(normalized);
   if (/^o1-preview(?:-\d{4}-\d{2}-\d{2})?$/.test(normalized)) {
     return OPENAI_O1_PREVIEW_MAX_OUTPUT_TOKENS;
   }
@@ -134,13 +189,16 @@ export function getOpenAIResponsesMaxOutputTokensLimit(model?: string) {
   ) {
     return OPENAI_O_SERIES_MAX_OUTPUT_TOKENS;
   }
-  if (/^gpt-5(?:\.[12])?-chat-latest$/.test(normalized)) {
+  if (OPENAI_GPT_5_CHAT_MODEL_FAMILIES.has(family)) {
     return OPENAI_GPT_5_CHAT_MAX_OUTPUT_TOKENS;
   }
-  if (/^gpt-5-pro(?:[-.]|$)/.test(normalized)) {
+  if (family === "gpt-5-pro") {
     return OPENAI_GPT_5_PRO_MAX_OUTPUT_TOKENS;
   }
-  if (/^gpt-5(?:[-.]|$)/.test(normalized)) {
+  if (
+    OPENAI_GPT_5_STANDARD_MODEL_FAMILIES.has(family) ||
+    OPENAI_GPT_5_PRO_MODEL_FAMILIES.has(family)
+  ) {
     return OPENAI_GPT_56_MAX_OUTPUT_TOKENS;
   }
   if (
@@ -184,25 +242,35 @@ export function isOpenAIResponsesReasoningEffort(
 }
 
 export function getOpenAIResponsesReasoningEfforts(model?: string) {
-  const normalized = model?.trim().toLowerCase().split("@")[0] ?? "";
-  if (isGpt56Model(normalized)) {
+  const family = getOpenAIModelFamily(model);
+  if (OPENAI_GPT_56_MODEL_FAMILIES.has(family)) {
     return OPENAI_RESPONSES_REASONING_EFFORTS.filter(
       (effort) => effort !== "minimal",
     );
   }
-  if (/^gpt-5\.(?:2|4|5)-pro(?:[-.]|$)/.test(normalized)) {
+  if (
+    family === "gpt-5.2-pro" ||
+    family === "gpt-5.4-pro" ||
+    family === "gpt-5.5-pro"
+  ) {
     return OPENAI_RESPONSES_PRO_REASONING_EFFORTS;
   }
-  if (/^gpt-5\.(?:2|4|5)(?:[-.]|$)/.test(normalized)) {
+  if (
+    family === "gpt-5.2" ||
+    family === "gpt-5.4" ||
+    family === "gpt-5.4-mini" ||
+    family === "gpt-5.4-nano" ||
+    family === "gpt-5.5"
+  ) {
     return OPENAI_RESPONSES_GPT52_PLUS_REASONING_EFFORTS;
   }
-  if (/^gpt-5\.1(?:[-.]|$)/.test(normalized)) {
+  if (family === "gpt-5.1") {
     return OPENAI_RESPONSES_GPT51_REASONING_EFFORTS;
   }
-  if (/^gpt-5-pro(?:[-.]|$)/.test(normalized)) {
+  if (family === "gpt-5-pro") {
     return ["high"] as const;
   }
-  if (/^gpt-5(?:[-.]|$)/.test(normalized)) {
+  if (family === "gpt-5") {
     return OPENAI_RESPONSES_GPT5_REASONING_EFFORTS;
   }
   return OPENAI_RESPONSES_LEGACY_REASONING_EFFORTS;
@@ -622,26 +690,24 @@ export function isOpenAIGpt5OrNewerModelConfig(params: {
   const providerName = params.providerName?.trim().toLowerCase();
   return (
     (!providerName || OPENAI_PROVIDER_NAMES.has(providerName)) &&
-    isGpt5OrNewerModel(params.model)
+    isKnownOpenAIGpt5Model(params.model)
   );
 }
 
 export function supportsOpenAIResponsesReasoning(model?: string) {
-  const normalized = model?.trim().toLowerCase().split("@")[0] ?? "";
-  if (/^gpt-5(?:\.\d+)?-chat-latest$/.test(normalized)) {
-    return false;
-  }
+  const family = getOpenAIModelFamily(model);
   return (
-    /^gpt-5(?:[-.]|$)/.test(normalized) ||
-    /^o(?:1|3|4)(?:[-.]|$)/.test(normalized)
+    OPENAI_GPT_5_STANDARD_MODEL_FAMILIES.has(family) ||
+    OPENAI_GPT_5_PRO_MODEL_FAMILIES.has(family) ||
+    OPENAI_O_SERIES_REASONING_MODEL_FAMILIES.has(family)
   );
 }
 
 export function supportsOpenAIResponsesTextVerbosity(model?: string) {
-  const normalized = model?.trim().toLowerCase().split("@")[0] ?? "";
+  const family = getOpenAIModelFamily(model);
   return (
-    !/^gpt-5(?:\.\d+)?-chat-latest$/.test(normalized) &&
-    /^gpt-5(?:[-.]|$)/.test(normalized)
+    OPENAI_GPT_5_STANDARD_MODEL_FAMILIES.has(family) ||
+    OPENAI_GPT_5_PRO_MODEL_FAMILIES.has(family)
   );
 }
 
@@ -736,15 +802,22 @@ export function shouldUseOpenAIResponses(params: {
 }
 
 export function supportsOpenAIResponsesSampling(model?: string) {
-  const normalized = model?.trim().toLowerCase() ?? "";
+  const normalized = normalizeOpenAIModelName(model);
+  const family = getOpenAIModelFamily(normalized);
 
-  if (/^o\d/.test(normalized)) {
+  if (OPENAI_O_SERIES_REASONING_MODEL_FAMILIES.has(family)) {
+    return false;
+  }
+
+  if (OPENAI_GPT_5_CHAT_MODEL_FAMILIES.has(family)) {
     return false;
   }
 
   if (
-    /^gpt-5($|[-.])/.test(normalized) &&
-    !/^gpt-5\.(4|5)($|[-.])/.test(normalized)
+    (OPENAI_GPT_5_STANDARD_MODEL_FAMILIES.has(family) ||
+      OPENAI_GPT_5_PRO_MODEL_FAMILIES.has(family)) &&
+    !family.startsWith("gpt-5.4") &&
+    !family.startsWith("gpt-5.5")
   ) {
     return false;
   }
@@ -757,12 +830,21 @@ export function supportsOpenAIResponsesWebSearch(params: {
   providerName?: string;
 }) {
   const providerName = params.providerName?.trim().toLowerCase();
-  const normalizedModel = params.model?.trim().toLowerCase() ?? "";
+  const family = getOpenAIModelFamily(params.model);
+  const supportsModel =
+    family === "gpt-5.4" ||
+    family === "gpt-5.4-mini" ||
+    family === "gpt-5.4-nano" ||
+    family === "gpt-5.4-pro" ||
+    family === "gpt-5.5" ||
+    family === "gpt-5.5-pro" ||
+    OPENAI_GPT_56_MODEL_FAMILIES.has(family) ||
+    family === "gpt-4.1" ||
+    family === "gpt-4.1-mini" ||
+    family === "gpt-4.1-nano";
 
   return (
-    (!providerName || OPENAI_PROVIDER_NAMES.has(providerName)) &&
-    (/^gpt-5\.(4|5|6)(?:[-.]|$)/.test(normalizedModel) ||
-      /^gpt-4\.1(?:[-.]|$)/.test(normalizedModel))
+    (!providerName || OPENAI_PROVIDER_NAMES.has(providerName)) && supportsModel
   );
 }
 

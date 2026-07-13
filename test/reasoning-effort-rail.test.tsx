@@ -258,6 +258,43 @@ describe("ReasoningEffortRail", () => {
     expect(props.onChange).not.toHaveBeenCalled();
   });
 
+  test.each([
+    ["a secondary mouse button", { button: 2, isPrimary: true }],
+    ["a non-primary pointer", { button: 0, isPrimary: false }],
+  ])("ignores %s", (_label, pointerInit) => {
+    class MockPointerEvent extends MouseEvent {
+      pointerId: number;
+      pointerType: string;
+      isPrimary: boolean;
+
+      constructor(type: string, init: PointerEventInit = {}) {
+        super(type, init);
+        this.pointerId = init.pointerId ?? 0;
+        this.pointerType = init.pointerType ?? "mouse";
+        this.isPrimary = init.isPrimary ?? true;
+      }
+    }
+    window.PointerEvent =
+      MockPointerEvent as unknown as typeof window.PointerEvent;
+    const props = renderRail({ locked: true });
+    const slider = screen.getByRole("slider", { name: "思考等级选项" });
+    const setPointerCapture = jest.fn();
+    Object.defineProperty(slider, "setPointerCapture", {
+      value: setPointerCapture,
+    });
+
+    fireEvent.pointerDown(slider, {
+      pointerId: 3,
+      clientX: 200,
+      ...pointerInit,
+    });
+    fireEvent.pointerUp(slider, { pointerId: 3, clientX: 200 });
+
+    expect(setPointerCapture).not.toHaveBeenCalled();
+    expect(props.onLockedAttempt).not.toHaveBeenCalled();
+    expect(props.onChange).not.toHaveBeenCalled();
+  });
+
   test("provides a keyboard-accessible back action", () => {
     const props = renderRail();
     fireEvent.click(screen.getByRole("button", { name: "返回模型列表" }));
