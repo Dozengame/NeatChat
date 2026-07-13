@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useAppConfig } from "../store/config";
+import { shouldUseCompactLayout } from "./responsive-layout";
 
 export function useWindowSize() {
   const [size, setSize] = useState({
@@ -25,7 +27,6 @@ export function useWindowSize() {
 }
 
 const MOBILE_MAX_WIDTH = 600;
-const COMPACT_MAX_WIDTH = 767;
 
 export function useMobileScreen() {
   const { width } = useWindowSize();
@@ -34,7 +35,27 @@ export function useMobileScreen() {
 }
 
 export function useCompactScreen() {
-  const { width } = useWindowSize();
+  const sidebarWidth = useAppConfig((state) => state.sidebarWidth);
+  const [isCompactScreen, setIsCompactScreen] = useState(() =>
+    typeof window === "undefined"
+      ? false
+      : shouldUseCompactLayout(window.innerWidth, sidebarWidth),
+  );
 
-  return width <= COMPACT_MAX_WIDTH;
+  useEffect(() => {
+    const updateCompactScreen = () => {
+      setIsCompactScreen(
+        shouldUseCompactLayout(window.innerWidth, sidebarWidth),
+      );
+    };
+
+    updateCompactScreen();
+    window.addEventListener("resize", updateCompactScreen);
+
+    return () => {
+      window.removeEventListener("resize", updateCompactScreen);
+    };
+  }, [sidebarWidth]);
+
+  return isCompactScreen;
 }

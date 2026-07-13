@@ -421,16 +421,16 @@ describe("Gemini visual migration shell", () => {
       mobileStyles,
       ".chat-input-panel.chat-input-panel-empty",
     );
-    const mobileExpandedEmptyInputPanelBlock = readCssBlock(
+    const mobileExpandedInputPanelBlock = readCssBlock(
       mobileStyles,
-      ".chat-input-panel.chat-input-panel-empty:not(.chat-input-panel-collapsed)",
+      ".chat-input-panel:not(.chat-input-panel-collapsed)",
     );
-    const mobileExpandedEmptyInputRowBlock = readCssBlock(
-      mobileExpandedEmptyInputPanelBlock,
+    const mobileExpandedInputRowBlock = readCssBlock(
+      mobileExpandedInputPanelBlock,
       ".chat-input-row",
     );
-    const mobileExpandedEmptyMenuButtonBlock = readCssBlock(
-      mobileExpandedEmptyInputPanelBlock,
+    const mobileExpandedMenuButtonBlock = readCssBlock(
+      mobileExpandedInputPanelBlock,
       ".chat-input-menu-button",
     );
     const tabletInputPanelInnerBlock = readCssBlock(
@@ -3719,18 +3719,10 @@ describe("Gemini visual migration shell", () => {
     expect(mobileInputRowFocusBlock).toMatch(
       /box-shadow:[\s\S]*0 8px 22px var\(--chat-input-panel-elevated-shadow-color\),[\s\S]*0 0 0 3px var\(--chat-input-focus-ring-color\);/,
     );
-    expect(mobileExpandedEmptyInputRowBlock).toMatch(
-      /align-items:\s*flex-end;/,
-    );
-    expect(mobileExpandedEmptyInputRowBlock).toMatch(
-      /border-radius:\s*24px;/,
-    );
-    expect(mobileExpandedEmptyInputRowBlock).not.toMatch(
-      /border-radius:\s*999px;/,
-    );
-    expect(mobileExpandedEmptyMenuButtonBlock).toMatch(
-      /margin-bottom:\s*7px;/,
-    );
+    expect(mobileExpandedInputRowBlock).toMatch(/align-items:\s*flex-end;/);
+    expect(mobileExpandedInputRowBlock).toMatch(/border-radius:\s*24px;/);
+    expect(mobileExpandedInputRowBlock).not.toMatch(/border-radius:\s*999px;/);
+    expect(mobileExpandedMenuButtonBlock).toMatch(/margin-bottom:\s*7px;/);
     expect(mobileEmptyStatusRowBlock).toMatch(/width:\s*1px;/);
     expect(mobileEmptyStatusRowBlock).toMatch(/clip-path:\s*inset\(50%\);/);
     expect(tabletCollapsedStatusRowBlock).not.toMatch(/display:\s*none;/);

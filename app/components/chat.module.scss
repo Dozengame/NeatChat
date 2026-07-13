@@ -6268,7 +6268,7 @@
     }
   }
 
-  .chat-input-panel.chat-input-panel-empty:not(.chat-input-panel-collapsed) {
+  .chat-input-panel:not(.chat-input-panel-collapsed) {
     .chat-input-row {
       align-items: flex-end;
       border-radius: 24px;
@@ -6603,6 +6603,17 @@
 
   .chat-input-panel-collapsed {
     padding: 8px 0 calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .chat-input-panel:not(.chat-input-panel-collapsed) {
+    .chat-input-row {
+      align-items: flex-end;
+      border-radius: 24px;
+    }
+
+    .chat-input-menu-button {
+      margin-bottom: 7px;
+    }
   }
 
   .attach-image {
