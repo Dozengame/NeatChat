@@ -1207,6 +1207,13 @@ const cn = {
         ? `Markdown 表格（${headers}），可横向滚动`
         : "Markdown 表格，可横向滚动",
     ScrollableTableHint: "横向滑动查看更多列",
+    TableToolbar: "表格阅读工具",
+    TableScrollbar: "横向滚动表格",
+    TableScrollPosition: (percent: number) => `已滚动 ${percent}%`,
+    ExpandTable: "全屏查看表格",
+    CollapseTable: "退出表格全屏",
+    TableDialog: (headers: string) =>
+      headers ? `全屏表格：${headers}` : "全屏 Markdown 表格",
     ScrollableFormula: "块级公式，可横向滚动",
     HtmlPreview: "HTML 预览",
     Audio: "音频",

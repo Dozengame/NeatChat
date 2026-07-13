@@ -10602,6 +10602,34 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-table-scroll-viewport:focus-visible",
     );
+    const tableToolbarBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-table-toolbar",
+    );
+    const tableToolbarButtonBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-table-toolbar-button",
+    );
+    const tableNativeScrollbarBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-table-scroll-viewport::-webkit-scrollbar",
+    );
+    const tableScrollbarBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-table-scrollbar",
+    );
+    const tableScrollbarThumbBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-table-scrollbar-thumb",
+    );
+    const tableFullscreenDialogBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-table-fullscreen-dialog",
+    );
+    const tableFullscreenShellOverrideBlock = readCssBlock(
+      markdownStyles,
+      '.markdown-body .markdown-table-fullscreen-dialog .markdown-table-scroll-shell[data-expanded="true"]',
+    );
     const tableFadeBlock = readCssBlock(
       markdownStyles,
       ".markdown-table-scroll-fade",
@@ -10804,6 +10832,11 @@ describe("Gemini visual migration shell", () => {
     );
     expect(markdown).toContain("setTableHintDismissed(true)");
     expect(markdown).toContain("Locale.Markdown.ScrollableTableHint");
+    expect(markdown).toContain("Locale.Markdown.ExpandTable");
+    expect(markdown).toContain("Locale.Markdown.CollapseTable");
+    expect(markdown).toContain('className="markdown-table-toolbar"');
+    expect(markdown).toContain('className="markdown-table-fullscreen-dialog"');
+    expect(markdown).toContain('aria-modal="true"');
     expect(markdown).toMatch(
       /typeof ResizeObserver === "undefined"[\s\S]*const tableResizeObserver = new ResizeObserver\(\(\) => \{[\s\S]*syncTableScrollHint\(\);[\s\S]*tableResizeObserver\.observe\(tableShell\);[\s\S]*tableResizeObserver\.observe\(tableRef\.current\)/,
     );
@@ -10849,11 +10882,7 @@ describe("Gemini visual migration shell", () => {
     expect(tableViewportBlock).toMatch(/overflow-y:\s*hidden;/);
     expect(tableViewportBlock).toMatch(/overscroll-behavior-x:\s*contain;/);
     expect(tableViewportBlock).toMatch(/-webkit-overflow-scrolling:\s*touch;/);
-    expect(tableViewportBlock).toMatch(/scrollbar-width:\s*thin;/);
-    expect(tableViewportBlock).toMatch(/scrollbar-gutter:\s*stable;/);
-    expect(tableViewportBlock).toMatch(
-      /scrollbar-color:\s*var\(--markdown-table-scrollbar-thumb-color\)\s+var\(--markdown-table-scrollbar-track-color\);/,
-    );
+    expect(tableViewportBlock).toMatch(/scrollbar-width:\s*none;/);
     expect(tableViewportFocusVisibleBlock).toMatch(
       /outline:\s*var\(--focus-ring\);/,
     );
@@ -10861,10 +10890,38 @@ describe("Gemini visual migration shell", () => {
     expect(tableViewportFocusVisibleBlock).toMatch(
       /box-shadow:\s*var\(--focus-ring-shadow\);/,
     );
+    expect(tableToolbarBlock).toMatch(/display:\s*flex;/);
+    expect(tableToolbarBlock).toMatch(
+      /min-height:\s*var\(--markdown-table-toolbar-height\);/,
+    );
+    expect(tableToolbarButtonBlock).toMatch(/width:\s*34px;/);
+    expect(tableToolbarButtonBlock).toMatch(/height:\s*34px;/);
+    expect(tableNativeScrollbarBlock).toMatch(/height:\s*0;/);
+    expect(tableScrollbarBlock).toMatch(
+      /height:\s*var\(--markdown-table-scrollbar-height\);/,
+    );
+    expect(tableScrollbarBlock).toMatch(
+      /background:\s*var\(--markdown-table-scrollbar-track-color\);/,
+    );
+    expect(tableScrollbarThumbBlock).toMatch(/min-width:\s*40px;/);
+    expect(tableScrollbarThumbBlock).toMatch(
+      /background:\s*var\(--markdown-table-scrollbar-thumb-color\);/,
+    );
+    expect(tableFullscreenDialogBlock).toMatch(/position:\s*fixed;/);
+    expect(tableFullscreenDialogBlock).toMatch(/height:\s*100dvh;/);
+    expect(tableFullscreenDialogBlock).toMatch(/z-index:\s*10000;/);
+    expect(tableFullscreenDialogBlock).toMatch(
+      /overscroll-behavior:\s*contain;/,
+    );
+    expect(tableFullscreenShellOverrideBlock).toMatch(/width:\s*100%;/);
+    expect(tableFullscreenShellOverrideBlock).toMatch(/max-width:\s*none;/);
+    expect(tableFullscreenShellOverrideBlock).toMatch(/margin:\s*0;/);
     expect(tableFadeBlock).toMatch(/position:\s*absolute;/);
-    expect(tableFadeBlock).toMatch(/top:\s*0;/);
     expect(tableFadeBlock).toMatch(
-      /bottom:\s*var\(--markdown-table-hint-height\);/,
+      /top:\s*var\(--markdown-table-toolbar-height\);/,
+    );
+    expect(tableFadeBlock).toMatch(
+      /bottom:\s*calc\(\s*var\(--markdown-table-hint-height\) \+ var\(--markdown-table-scrollbar-height\)\s*\);/,
     );
     expect(tableFadeBlock).toMatch(/pointer-events:\s*none;/);
     expect(tableFadeBlock).toMatch(/width:\s*28px;/);

@@ -38,6 +38,20 @@ jest.mock("next/dynamic", () => {
     };
 });
 
+jest.mock("../app/icons/max.svg", () => {
+  const React = require("react");
+  return function MaxIcon() {
+    return React.createElement("svg", { "aria-hidden": "true" });
+  };
+});
+
+jest.mock("../app/icons/min.svg", () => {
+  const React = require("react");
+  return function MinIcon() {
+    return React.createElement("svg", { "aria-hidden": "true" });
+  };
+});
+
 import {
   act,
   fireEvent,
@@ -219,11 +233,15 @@ describe("Markdown table semantics and adaptive width", () => {
     expect(viewport.getAttribute("aria-label")).toMatch(
       /Feature, State, Notes/,
     );
-    expect(screen.getByText(/see more columns/i)).toBeInTheDocument();
+    expect(
+      shell.querySelector(".markdown-table-scroll-hint"),
+    ).toHaveTextContent(/see more columns/i);
 
     viewport.scrollLeft = 20;
     fireEvent.scroll(viewport);
-    expect(screen.queryByText(/see more columns/i)).not.toBeInTheDocument();
+    expect(
+      shell.querySelector(".markdown-table-scroll-hint"),
+    ).not.toBeInTheDocument();
 
     Object.defineProperties(viewport, {
       clientWidth: { configurable: true, value: 900 },
@@ -241,7 +259,9 @@ describe("Markdown table semantics and adaptive width", () => {
     });
     act(() => window.dispatchEvent(new Event("resize")));
     await waitFor(() => {
-      expect(screen.getByText(/see more columns/i)).toBeInTheDocument();
+      expect(
+        shell.querySelector(".markdown-table-scroll-hint"),
+      ).toHaveTextContent(/see more columns/i);
     });
 
     Object.defineProperties(viewport, {
@@ -270,6 +290,109 @@ describe("Markdown table semantics and adaptive width", () => {
     );
     await waitFor(() => {
       expect(shell).toHaveAttribute("data-markdown-width", "normal");
+    });
+  });
+
+  test("shows overflow-only reading controls and restores focus after full-screen close", async () => {
+    render(
+      <MarkdownTable>
+        <thead>
+          <tr>
+            <MarkdownTableHeader>Device</MarkdownTableHeader>
+            <MarkdownTableHeader>Location</MarkdownTableHeader>
+            <MarkdownTableHeader>Last report</MarkdownTableHeader>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <MarkdownTableCell>DEV-000001</MarkdownTableCell>
+            <MarkdownTableCell>North monitoring station</MarkdownTableCell>
+            <MarkdownTableCell>2026-07-13 08:42:01</MarkdownTableCell>
+          </tr>
+        </tbody>
+      </MarkdownTable>,
+    );
+
+    const initialShell = document.querySelector(
+      ".markdown-table-scroll-shell",
+    ) as HTMLDivElement;
+    const initialViewport = initialShell.querySelector(
+      ".markdown-table-scroll-viewport",
+    ) as HTMLDivElement;
+    const initialTable = initialShell.querySelector("table") as HTMLTableElement;
+    Object.defineProperties(initialViewport, {
+      clientWidth: { configurable: true, value: 780 },
+      scrollWidth: { configurable: true, value: 980 },
+      scrollLeft: { configurable: true, writable: true, value: 0 },
+    });
+    Object.defineProperty(initialTable, "scrollWidth", {
+      configurable: true,
+      value: 980,
+    });
+    act(() => window.dispatchEvent(new Event("resize")));
+
+    const expandButton = await screen.findByRole("button", {
+      name: /view table full screen/i,
+    });
+    expect(screen.getByRole("toolbar", { name: /table reading tools/i })).toBeInTheDocument();
+    expect(expandButton).toHaveAttribute("aria-haspopup", "dialog");
+    const scrollbar = screen.getByRole("slider", {
+      name: /scroll table horizontally/i,
+    });
+    fireEvent.change(scrollbar, { target: { value: "120" } });
+    expect(initialViewport.scrollLeft).toBe(120);
+    expect(scrollbar).toHaveAttribute("aria-valuetext", "60% scrolled");
+    fireEvent.keyDown(scrollbar, { key: "End" });
+    expect(initialViewport.scrollLeft).toBe(200);
+    expect(scrollbar).toHaveAttribute("aria-valuetext", "100% scrolled");
+    fireEvent.keyDown(scrollbar, { key: "Home" });
+    expect(initialViewport.scrollLeft).toBe(0);
+
+    expandButton.focus();
+    fireEvent.click(expandButton);
+    const dialog = await screen.findByRole("dialog", {
+      name: /full-screen table: device, location, last report/i,
+    });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(document.querySelectorAll("table")).toHaveLength(1);
+    const collapseButton = screen.getByRole("button", {
+      name: /exit table full screen/i,
+    });
+    expect(collapseButton).toHaveFocus();
+
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.getByRole("button", { name: /view table full screen/i }),
+    ).toHaveFocus();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /view table full screen/i }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: /exit table full screen/i,
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+
+    const compactViewport = document.querySelector(
+      ".markdown-table-scroll-viewport",
+    ) as HTMLDivElement;
+    Object.defineProperties(compactViewport, {
+      clientWidth: { configurable: true, value: 980 },
+      scrollWidth: { configurable: true, value: 980 },
+    });
+    act(() => window.dispatchEvent(new Event("resize")));
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: /view table full screen/i }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByRole("toolbar")).not.toBeInTheDocument();
     });
   });
 

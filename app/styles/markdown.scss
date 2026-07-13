@@ -3157,6 +3157,8 @@ summary,
 .markdown-table-scroll-shell {
   --markdown-table-shell-radius: 14px;
   --markdown-table-hint-height: 0px;
+  --markdown-table-scrollbar-height: 0px;
+  --markdown-table-toolbar-height: 0px;
   position: relative;
   width: 100%;
   max-width: var(--markdown-table-shell-max-width);
@@ -3181,17 +3183,149 @@ summary,
   box-shadow: var(--markdown-table-focus-shadow-size) var(--markdown-table-focus-shadow-color);
 }
 
+.markdown-table-scroll-shell:is(
+    [data-scrollable="true"],
+    [data-expanded="true"]
+  ) {
+  --markdown-table-scrollbar-height: 18px;
+  --markdown-table-toolbar-height: 42px;
+}
+
+.markdown-table-toolbar {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  min-width: 0;
+  min-height: var(--markdown-table-toolbar-height);
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 6px 4px 12px;
+  border-bottom: 1px solid var(--markdown-table-cell-border-color);
+  background: var(--markdown-table-header-background);
+  color: var(--color-fg-muted);
+}
+
+.markdown-table-toolbar-label {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.markdown-table-toolbar-button {
+  appearance: none;
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-fg-default);
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.markdown-table-toolbar-button:hover {
+  background: var(--markdown-table-row-hover-background);
+}
+
+.markdown-table-toolbar-button:active {
+  background: var(--markdown-table-row-focus-background);
+}
+
+.markdown-table-toolbar-button:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 1px;
+  box-shadow: var(--focus-ring-shadow);
+}
+
+.markdown-table-toolbar-button svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.markdown-table-toolbar-button svg path {
+  stroke: currentColor !important;
+  stroke-opacity: 1 !important;
+}
+
 .markdown-table-scroll-viewport {
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
-  scrollbar-width: thin;
-  scrollbar-gutter: stable;
-  scrollbar-color: var(--markdown-table-scrollbar-thumb-color)
-    var(--markdown-table-scrollbar-track-color);
+  scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+}
+
+.markdown-table-scroll-viewport::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.markdown-table-scrollbar {
+  position: relative;
+  z-index: 4;
+  width: 100%;
+  height: var(--markdown-table-scrollbar-height);
+  min-height: var(--markdown-table-scrollbar-height);
+  box-sizing: border-box;
+  border-top: 1px solid var(--markdown-table-cell-border-color);
+  background: var(--markdown-table-scrollbar-track-color);
+}
+
+.markdown-table-scrollbar-thumb {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  min-width: 40px;
+  border-radius: 999px;
+  background: var(--markdown-table-scrollbar-thumb-color);
+  pointer-events: none;
+  transition:
+    left 0.08s linear,
+    width 0.08s linear,
+    background 0.16s ease;
+}
+
+.markdown-table-scrollbar:hover .markdown-table-scrollbar-thumb,
+.markdown-table-scrollbar:focus-within .markdown-table-scrollbar-thumb {
+  background: var(--markdown-table-focus-border-color);
+}
+
+.markdown-table-scrollbar:focus-within {
+  outline: var(--focus-ring);
+  outline-offset: -2px;
+  box-shadow: var(--focus-ring-shadow);
+}
+
+.markdown-table-scrollbar .markdown-table-scrollbar-control {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: ew-resize;
+  opacity: 0;
 }
 
 .markdown-table-scroll-viewport:focus-visible {
@@ -3242,8 +3376,10 @@ summary,
 
 .markdown-table-scroll-fade {
   position: absolute;
-  top: 0;
-  bottom: var(--markdown-table-hint-height);
+  top: var(--markdown-table-toolbar-height);
+  bottom: calc(
+    var(--markdown-table-hint-height) + var(--markdown-table-scrollbar-height)
+  );
   z-index: 2;
   width: 28px;
   min-width: 28px;
@@ -3272,6 +3408,91 @@ summary,
   display: none;
 }
 
+.markdown-table-fullscreen-placeholder {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--markdown-table-shell-max-width);
+  margin: 0 0 var(--markdown-block-gap);
+}
+
+.markdown-table-fullscreen-placeholder[data-markdown-width="normal"] {
+  width: min(100%, var(--markdown-prose-max-width));
+  margin-inline: auto;
+}
+
+.markdown-table-fullscreen-placeholder[data-markdown-width="wide"] {
+  width: min(100%, var(--markdown-data-max-width));
+  margin-inline: auto;
+}
+
+.markdown-table-fullscreen-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  box-sizing: border-box;
+  align-items: stretch;
+  justify-content: stretch;
+  margin: 0;
+  padding:
+    max(12px, env(safe-area-inset-top))
+    max(12px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom))
+    max(12px, env(safe-area-inset-left));
+  overflow: hidden;
+  overscroll-behavior: contain;
+  border: 0;
+  background: color-mix(in srgb, rgb(32, 33, 36) 56%, transparent);
+  color: var(--color-fg-default);
+  backdrop-filter: blur(10px) saturate(112%);
+  -webkit-backdrop-filter: blur(10px) saturate(112%);
+}
+
+.markdown-table-fullscreen-dialog::backdrop {
+  background: color-mix(in srgb, rgb(32, 33, 36) 56%, transparent);
+  backdrop-filter: blur(10px) saturate(112%);
+  -webkit-backdrop-filter: blur(10px) saturate(112%);
+}
+
+.markdown-table-fullscreen-dialog .markdown-table-scroll-shell[data-expanded="true"] {
+  display: flex;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  margin: 0;
+  border-radius: 16px;
+  background: var(--color-canvas-default);
+  box-shadow: 0 22px 70px color-mix(in srgb, rgb(8, 10, 14) 32%, transparent);
+}
+
+.markdown-table-fullscreen-dialog .markdown-table-scroll-viewport {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+.markdown-table-fullscreen-dialog .markdown-table-scroll-viewport > table > thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .markdown-table-fullscreen-dialog,
+  .markdown-table-fullscreen-dialog::backdrop {
+    background: rgb(32 33 36 / 78%);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
 .markdown-body
   :is(
     pre.markdown-code-block,
@@ -3294,6 +3515,12 @@ summary,
   )[data-markdown-width="wide"] {
   width: min(100%, var(--markdown-data-max-width));
   margin-inline: auto;
+}
+
+.markdown-body .markdown-table-fullscreen-dialog .markdown-table-scroll-shell[data-expanded="true"] {
+  width: 100%;
+  max-width: none;
+  margin: 0;
 }
 
 .markdown-body table {
@@ -5376,6 +5603,54 @@ summary,
     --markdown-table-focus-shadow-size: 0 0 0 2px;
   }
 
+  .markdown-table-scroll-shell:is(
+      [data-scrollable="true"],
+      [data-expanded="true"]
+    ) {
+    --markdown-table-scrollbar-height: 20px;
+    --markdown-table-toolbar-height: 44px;
+  }
+
+  .markdown-table-toolbar {
+    justify-content: flex-end;
+    padding: 0;
+  }
+
+  .markdown-table-toolbar-label {
+    display: none;
+  }
+
+  .markdown-table-toolbar-button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    border-radius: 9px;
+  }
+
+  .markdown-table-scroll-shell[data-expanded="true"]
+    .markdown-table-toolbar {
+    justify-content: space-between;
+    padding-inline-start: 12px;
+  }
+
+  .markdown-table-scroll-shell[data-expanded="true"]
+    .markdown-table-toolbar-label {
+    display: block;
+  }
+
+  .markdown-table-fullscreen-dialog {
+    padding:
+      max(6px, env(safe-area-inset-top))
+      max(6px, env(safe-area-inset-right))
+      max(6px, env(safe-area-inset-bottom))
+      max(6px, env(safe-area-inset-left));
+  }
+
+  .markdown-table-fullscreen-dialog
+    .markdown-table-scroll-shell[data-expanded="true"] {
+    border-radius: 12px;
+  }
+
   .markdown-table-scroll-shell[data-scroll-hint="true"] {
     --markdown-table-hint-height: 30px;
   }
@@ -5546,6 +5821,7 @@ summary,
 @media (prefers-reduced-motion: reduce) {
   .markdown-body pre .show-hide-button button,
   .markdown-table-scroll-shell,
+  .markdown-table-scrollbar-thumb,
   .markdown-table-scroll-fade,
   .markdown-body details:not(.markdown-thinking) > summary,
   .markdown-body details:not(.markdown-thinking) > summary::before,

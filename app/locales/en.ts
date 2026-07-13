@@ -1229,6 +1229,13 @@ const en: LocaleType = {
         ? `Markdown table (${headers}), horizontally scrollable`
         : "Markdown table, horizontally scrollable",
     ScrollableTableHint: "Swipe horizontally to see more columns",
+    TableToolbar: "Table reading tools",
+    TableScrollbar: "Scroll table horizontally",
+    TableScrollPosition: (percent: number) => `${percent}% scrolled`,
+    ExpandTable: "View table full screen",
+    CollapseTable: "Exit table full screen",
+    TableDialog: (headers: string) =>
+      headers ? `Full-screen table: ${headers}` : "Full-screen Markdown table",
     ScrollableFormula: "Display formula, horizontally scrollable",
     HtmlPreview: "HTML preview",
     Audio: "Audio",

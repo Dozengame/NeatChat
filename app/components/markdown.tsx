@@ -25,6 +25,8 @@ import DownloadIcon from "../icons/download.svg";
 import CopyIcon from "../icons/copy.svg";
 import ConfirmIcon from "../icons/confirm.svg";
 import ReturnIcon from "../icons/return.svg";
+import MaxIcon from "../icons/max.svg";
+import MinIcon from "../icons/min.svg";
 import { useDebouncedCallback } from "use-debounce";
 import { showToast } from "./ui-lib-actions";
 
@@ -891,15 +893,31 @@ export function MarkdownTable({
   ...tableProps
 }: React.TableHTMLAttributes<HTMLTableElement> & { node?: unknown }) {
   const { streaming } = useContext(MarkdownFeatureContext);
+  const tableShellRef = useRef<HTMLDivElement>(null);
   const tableScrollRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
+  const tableDialogRef = useRef<HTMLDialogElement>(null);
+  const tableExpandButtonRef = useRef<HTMLButtonElement>(null);
+  const tableCollapseButtonRef = useRef<HTMLButtonElement>(null);
+  const tableScrollPositionRef = useRef(0);
+  const tableIsExpandedRef = useRef(false);
+  const shouldRestoreTableFocusRef = useRef(false);
+  const tableDialogTitleId = useId();
   const [tableScrollHint, setTableScrollHint] = useState({
     start: false,
     end: false,
   });
+  const [tableScrollbar, setTableScrollbar] = useState({
+    max: 0,
+    left: 0,
+    thumbLeft: 0,
+    thumbWidth: 100,
+  });
   const [tableIsScrollable, setTableIsScrollable] = useState(false);
   const [tableIsWide, setTableIsWide] = useState(false);
   const [tableHintDismissed, setTableHintDismissed] = useState(false);
+  const [tableIsExpanded, setTableIsExpanded] = useState(false);
+  const [tablePlaceholderHeight, setTablePlaceholderHeight] = useState(0);
   const tableHeaderSummary = useMemo(
     () => getMarkdownTableHeaderSummary(tableProps.children),
     [tableProps.children],
@@ -916,9 +934,20 @@ export function MarkdownTable({
     const tableShell = tableScrollRef.current;
     if (!tableShell) {
       setTableIsScrollable(false);
+      setTableScrollbar((current) =>
+        current.max ||
+        current.left ||
+        current.thumbLeft ||
+        current.thumbWidth !== 100
+          ? { max: 0, left: 0, thumbLeft: 0, thumbWidth: 100 }
+          : current,
+      );
       setTableScrollHint((current) =>
         current.start || current.end ? { start: false, end: false } : current,
       );
+      return;
+    }
+    if (tableShell.clientWidth <= 0 && tableShell.scrollWidth <= 0) {
       return;
     }
 
@@ -931,13 +960,40 @@ export function MarkdownTable({
       start: tableShell.scrollLeft > 1,
       end: maxScrollLeft - tableShell.scrollLeft > 1,
     };
-
-    setTableIsScrollable((current) =>
-      current === nextIsScrollable ? current : nextIsScrollable,
+    const tableScrollWidth = Math.max(
+      tableShell.clientWidth,
+      tableShell.scrollWidth,
     );
+    const nextScrollbar = {
+      max: maxScrollLeft,
+      left: Math.min(maxScrollLeft, Math.max(0, tableShell.scrollLeft)),
+      thumbLeft:
+        tableScrollWidth > 0
+          ? (Math.max(0, tableShell.scrollLeft) / tableScrollWidth) * 100
+          : 0,
+      thumbWidth:
+        tableScrollWidth > 0
+          ? Math.min(100, (tableShell.clientWidth / tableScrollWidth) * 100)
+          : 100,
+    };
+
+    setTableIsScrollable((current) => {
+      const resolvedIsScrollable = tableIsExpandedRef.current
+        ? current || nextIsScrollable
+        : nextIsScrollable;
+      return current === resolvedIsScrollable ? current : resolvedIsScrollable;
+    });
     if (!nextIsScrollable) {
       setTableHintDismissed(false);
     }
+    setTableScrollbar((current) =>
+      current.max === nextScrollbar.max &&
+      current.left === nextScrollbar.left &&
+      Math.abs(current.thumbLeft - nextScrollbar.thumbLeft) < 0.01 &&
+      Math.abs(current.thumbWidth - nextScrollbar.thumbWidth) < 0.01
+        ? current
+        : nextScrollbar,
+    );
     const table = tableRef.current;
     if (table) {
       setTableIsWide(
@@ -956,6 +1012,91 @@ export function MarkdownTable({
     );
   }, []);
 
+  const scrollTableTo = useCallback(
+    (nextScrollLeft: number) => {
+      const tableViewport = tableScrollRef.current;
+      if (!tableViewport) return;
+      const maxScrollLeft = Math.max(
+        0,
+        tableViewport.scrollWidth - tableViewport.clientWidth,
+      );
+      const resolvedScrollLeft = Math.min(
+        maxScrollLeft,
+        Math.max(0, Math.round(nextScrollLeft)),
+      );
+      tableViewport.scrollLeft = resolvedScrollLeft;
+      tableScrollPositionRef.current = resolvedScrollLeft;
+      if (resolvedScrollLeft > 1) setTableHintDismissed(true);
+      syncTableScrollHint();
+    },
+    [syncTableScrollHint],
+  );
+
+  const scrollTableFromPointer = useCallback(
+    (event: React.PointerEvent<HTMLInputElement>) => {
+      const controlBounds = event.currentTarget.getBoundingClientRect();
+      if (controlBounds.width <= 0) return;
+      const pointerProgress = Math.min(
+        1,
+        Math.max(0, (event.clientX - controlBounds.left) / controlBounds.width),
+      );
+      scrollTableTo(pointerProgress * tableScrollbar.max);
+    },
+    [scrollTableTo, tableScrollbar.max],
+  );
+
+  const openExpandedTable = useCallback(() => {
+    tableScrollPositionRef.current = tableScrollRef.current?.scrollLeft ?? 0;
+    tableIsExpandedRef.current = true;
+    setTablePlaceholderHeight(
+      tableShellRef.current?.getBoundingClientRect().height ?? 0,
+    );
+    setTableIsExpanded(true);
+  }, []);
+
+  const closeExpandedTable = useCallback(() => {
+    tableScrollPositionRef.current = tableScrollRef.current?.scrollLeft ?? 0;
+    tableIsExpandedRef.current = false;
+    shouldRestoreTableFocusRef.current = true;
+    setTableIsExpanded(false);
+  }, []);
+
+  const handleTableDialogKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDialogElement>) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        closeExpandedTable();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+      const dialog = tableDialogRef.current;
+      if (!dialog) return;
+      const focusableElements = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        dialog.focus({ preventScroll: true });
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus({ preventScroll: true });
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus({ preventScroll: true });
+      }
+    },
+    [closeExpandedTable],
+  );
+
   useLayoutEffect(() => {
     if (!streaming) {
       setTableIsWide(false);
@@ -964,6 +1105,46 @@ export function MarkdownTable({
     const scrollHintFrame = requestAnimationFrame(syncTableScrollHint);
     return () => cancelAnimationFrame(scrollHintFrame);
   }, [streaming, syncTableScrollHint, tableContentKey]);
+
+  useLayoutEffect(() => {
+    const tableViewport = tableScrollRef.current;
+    if (tableViewport) {
+      tableViewport.scrollLeft = tableScrollPositionRef.current;
+    }
+    const scrollHintFrame = requestAnimationFrame(syncTableScrollHint);
+    return () => cancelAnimationFrame(scrollHintFrame);
+  }, [tableIsExpanded, syncTableScrollHint]);
+
+  useLayoutEffect(() => {
+    if (!tableIsExpanded) {
+      if (shouldRestoreTableFocusRef.current) {
+        shouldRestoreTableFocusRef.current = false;
+        tableExpandButtonRef.current?.focus({ preventScroll: true });
+      }
+      return;
+    }
+
+    const dialog = tableDialogRef.current;
+    if (!dialog) return;
+    if (!dialog.open) {
+      try {
+        if (typeof dialog.showModal === "function") {
+          dialog.showModal();
+        } else {
+          dialog.setAttribute("open", "");
+        }
+      } catch {
+        dialog.setAttribute("open", "");
+      }
+    }
+    tableCollapseButtonRef.current?.focus({ preventScroll: true });
+
+    return () => {
+      if (dialog.open && typeof dialog.close === "function") {
+        dialog.close();
+      }
+    };
+  }, [tableIsExpanded]);
 
   useEffect(() => {
     const tableShell = tableScrollRef.current;
@@ -985,31 +1166,75 @@ export function MarkdownTable({
       tableResizeObserver.disconnect();
       window.removeEventListener("resize", syncTableScrollHint);
     };
-  }, [syncTableScrollHint]);
+  }, [syncTableScrollHint, tableIsExpanded]);
 
-  return (
+  const tableSurface = (
     <div
+      ref={tableShellRef}
       className="markdown-table-scroll-shell"
       data-markdown-width={tableIsWide ? "wide" : "normal"}
       data-scrollable={tableIsScrollable ? "true" : "false"}
+      data-expanded={tableIsExpanded ? "true" : "false"}
       data-scroll-hint={
-        tableIsScrollable && !tableHintDismissed ? "true" : "false"
+        tableIsScrollable && !tableHintDismissed && !tableIsExpanded
+          ? "true"
+          : "false"
       }
       data-overflow-start={tableScrollHint.start ? "true" : "false"}
       data-overflow-end={tableScrollHint.end ? "true" : "false"}
     >
+      {(tableIsScrollable || tableIsExpanded) && (
+        <div
+          className="markdown-table-toolbar"
+          role="toolbar"
+          aria-label={Locale.Markdown.TableToolbar}
+        >
+          <span
+            id={tableIsExpanded ? tableDialogTitleId : undefined}
+            className="markdown-table-toolbar-label"
+          >
+            {tableIsExpanded
+              ? Locale.Markdown.TableDialog(tableHeaderSummary)
+              : Locale.Markdown.ScrollableTableHint}
+          </span>
+          <button
+            ref={
+              tableIsExpanded ? tableCollapseButtonRef : tableExpandButtonRef
+            }
+            type="button"
+            className="markdown-table-toolbar-button"
+            aria-haspopup={tableIsExpanded ? undefined : "dialog"}
+            aria-expanded={tableIsExpanded ? undefined : false}
+            aria-label={
+              tableIsExpanded
+                ? Locale.Markdown.CollapseTable
+                : Locale.Markdown.ExpandTable
+            }
+            title={
+              tableIsExpanded
+                ? Locale.Markdown.CollapseTable
+                : Locale.Markdown.ExpandTable
+            }
+            onClick={tableIsExpanded ? closeExpandedTable : openExpandedTable}
+          >
+            {tableIsExpanded ? <MinIcon /> : <MaxIcon />}
+          </button>
+        </div>
+      )}
       <div
         ref={tableScrollRef}
         className="markdown-table-scroll-viewport"
-        tabIndex={tableIsScrollable ? 0 : undefined}
-        role={tableIsScrollable ? "region" : undefined}
+        tabIndex={tableScrollbar.max > 1 ? 0 : undefined}
+        role={tableScrollbar.max > 1 ? "region" : undefined}
         aria-label={
-          tableIsScrollable
+          tableScrollbar.max > 1
             ? Locale.Markdown.ScrollableTable(tableHeaderSummary)
             : undefined
         }
         onScroll={() => {
-          if (Math.abs(tableScrollRef.current?.scrollLeft ?? 0) > 1) {
+          tableScrollPositionRef.current =
+            tableScrollRef.current?.scrollLeft ?? 0;
+          if (Math.abs(tableScrollPositionRef.current) > 1) {
             setTableHintDismissed(true);
           }
           syncTableScrollHint();
@@ -1017,6 +1242,83 @@ export function MarkdownTable({
       >
         <table {...tableProps} ref={tableRef} />
       </div>
+      {tableScrollbar.max > 1 && (
+        <div className="markdown-table-scrollbar">
+          <span
+            aria-hidden="true"
+            className="markdown-table-scrollbar-thumb"
+            style={{
+              left: `${tableScrollbar.thumbLeft}%`,
+              width: `${tableScrollbar.thumbWidth}%`,
+            }}
+          />
+          <input
+            className="markdown-table-scrollbar-control"
+            type="range"
+            min={0}
+            max={Math.max(1, tableScrollbar.max)}
+            step={1}
+            value={Math.min(tableScrollbar.left, tableScrollbar.max)}
+            aria-label={Locale.Markdown.TableScrollbar}
+            aria-valuetext={Locale.Markdown.TableScrollPosition(
+              tableScrollbar.max > 0
+                ? Math.round((tableScrollbar.left / tableScrollbar.max) * 100)
+                : 0,
+            )}
+            onChange={(event) =>
+              scrollTableTo(Number(event.currentTarget.value))
+            }
+            onKeyDown={(event) => {
+              const tableViewport = tableScrollRef.current;
+              if (!tableViewport) return;
+              const arrowStep = Math.max(
+                24,
+                Math.round(tableViewport.clientWidth * 0.08),
+              );
+              const pageStep = Math.max(
+                arrowStep,
+                Math.round(tableViewport.clientWidth * 0.8),
+              );
+              let nextScrollLeft: number | undefined;
+
+              if (event.key === "Home") nextScrollLeft = 0;
+              if (event.key === "End") nextScrollLeft = tableScrollbar.max;
+              if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
+                nextScrollLeft = tableScrollbar.left - arrowStep;
+              }
+              if (event.key === "ArrowRight" || event.key === "ArrowUp") {
+                nextScrollLeft = tableScrollbar.left + arrowStep;
+              }
+              if (event.key === "PageDown") {
+                nextScrollLeft = tableScrollbar.left + pageStep;
+              }
+              if (event.key === "PageUp") {
+                nextScrollLeft = tableScrollbar.left - pageStep;
+              }
+              if (nextScrollLeft === undefined) return;
+              event.preventDefault();
+              scrollTableTo(nextScrollLeft);
+            }}
+            onPointerDown={(event) => {
+              event.preventDefault();
+              event.currentTarget.focus({ preventScroll: true });
+              event.currentTarget.setPointerCapture?.(event.pointerId);
+              scrollTableFromPointer(event);
+            }}
+            onPointerMove={(event) => {
+              if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+                scrollTableFromPointer(event);
+              }
+            }}
+            onPointerUp={(event) => {
+              scrollTableFromPointer(event);
+              if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+                event.currentTarget.releasePointerCapture(event.pointerId);
+              }
+            }}
+          />
+        </div>
+      )}
       {tableScrollHint.start && (
         <span
           aria-hidden="true"
@@ -1029,12 +1331,43 @@ export function MarkdownTable({
           className="markdown-table-scroll-fade markdown-table-scroll-fade-end"
         />
       )}
-      {tableIsScrollable && !tableHintDismissed && (
+      {tableIsScrollable && !tableHintDismissed && !tableIsExpanded && (
         <div className="markdown-table-scroll-hint" aria-hidden="true">
           {Locale.Markdown.ScrollableTableHint}
         </div>
       )}
     </div>
+  );
+
+  if (!tableIsExpanded) return tableSurface;
+
+  return (
+    <>
+      <div
+        aria-hidden="true"
+        className="markdown-table-fullscreen-placeholder"
+        data-markdown-width={tableIsWide ? "wide" : "normal"}
+        style={{ height: tablePlaceholderHeight }}
+      />
+      <dialog
+        ref={tableDialogRef}
+        className="markdown-table-fullscreen-dialog"
+        aria-modal="true"
+        aria-labelledby={tableDialogTitleId}
+        onCancel={(event) => {
+          event.preventDefault();
+          closeExpandedTable();
+        }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            closeExpandedTable();
+          }
+        }}
+        onKeyDown={handleTableDialogKeyDown}
+      >
+        {tableSurface}
+      </dialog>
+    </>
   );
 }
 
