@@ -339,9 +339,12 @@ describe("Markdown table semantics and adaptive width", () => {
     const scrollbar = screen.getByRole("slider", {
       name: /scroll table horizontally/i,
     });
-    fireEvent.change(scrollbar, { target: { value: "120" } });
-    expect(initialViewport.scrollLeft).toBe(120);
-    expect(scrollbar).toHaveAttribute("aria-valuetext", "60% scrolled");
+    fireEvent.keyDown(scrollbar, { key: "PageUp" });
+    expect(initialViewport.scrollLeft).toBe(200);
+    expect(scrollbar).toHaveAttribute("aria-valuetext", "100% scrolled");
+    fireEvent.keyDown(scrollbar, { key: "PageDown" });
+    expect(initialViewport.scrollLeft).toBe(0);
+    expect(scrollbar).toHaveAttribute("aria-valuetext", "0% scrolled");
     fireEvent.keyDown(scrollbar, { key: "End" });
     expect(initialViewport.scrollLeft).toBe(200);
     expect(scrollbar).toHaveAttribute("aria-valuetext", "100% scrolled");
@@ -394,6 +397,165 @@ describe("Markdown table semantics and adaptive width", () => {
       ).not.toBeInTheDocument();
       expect(screen.queryByRole("toolbar")).not.toBeInTheDocument();
     });
+  });
+
+  test("keeps custom thumb dragging anchored and stops after pointer cancellation", async () => {
+    const originalPointerEvent = window.PointerEvent;
+    class MockPointerEvent extends MouseEvent {
+      pointerId: number;
+      pointerType: string;
+      isPrimary: boolean;
+
+      constructor(type: string, init: PointerEventInit = {}) {
+        super(type, init);
+        this.pointerId = init.pointerId ?? 0;
+        this.pointerType = init.pointerType ?? "mouse";
+        this.isPrimary = init.isPrimary ?? true;
+      }
+    }
+    window.PointerEvent =
+      MockPointerEvent as unknown as typeof window.PointerEvent;
+
+    render(
+      <MarkdownTable>
+        <thead>
+          <tr>
+            <MarkdownTableHeader>Device</MarkdownTableHeader>
+            <MarkdownTableHeader>Location</MarkdownTableHeader>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <MarkdownTableCell>DEV-000001</MarkdownTableCell>
+            <MarkdownTableCell>North monitoring station</MarkdownTableCell>
+          </tr>
+        </tbody>
+      </MarkdownTable>,
+    );
+
+    const shell = document.querySelector(
+      ".markdown-table-scroll-shell",
+    ) as HTMLDivElement;
+    const viewport = shell.querySelector(
+      ".markdown-table-scroll-viewport",
+    ) as HTMLDivElement;
+    const table = shell.querySelector("table") as HTMLTableElement;
+    Object.defineProperties(viewport, {
+      clientWidth: { configurable: true, value: 780 },
+      scrollWidth: { configurable: true, value: 980 },
+      scrollLeft: { configurable: true, writable: true, value: 60 },
+    });
+    Object.defineProperty(table, "scrollWidth", {
+      configurable: true,
+      value: 980,
+    });
+    act(() => window.dispatchEvent(new Event("resize")));
+
+    const scrollbar = await screen.findByRole("slider", {
+      name: /scroll table horizontally/i,
+    });
+    const thumb = shell.querySelector(
+      ".markdown-table-scrollbar-thumb",
+    ) as HTMLSpanElement;
+    const trackWidth = 1000;
+    const thumbWidth = (780 / 980) * trackWidth;
+    const thumbLeft = (60 / 980) * trackWidth;
+    const thumbCenter = thumbLeft + thumbWidth / 2;
+    const trackRect = {
+      left: 0,
+      right: trackWidth,
+      top: 0,
+      bottom: 18,
+      width: trackWidth,
+      height: 18,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    };
+    const thumbRect = {
+      left: thumbLeft,
+      right: thumbLeft + thumbWidth,
+      top: 5,
+      bottom: 13,
+      width: thumbWidth,
+      height: 8,
+      x: thumbLeft,
+      y: 5,
+      toJSON: () => ({}),
+    };
+    Object.defineProperty(scrollbar, "getBoundingClientRect", {
+      configurable: true,
+      value: jest.fn(() => trackRect),
+    });
+    Object.defineProperty(thumb, "getBoundingClientRect", {
+      configurable: true,
+      value: jest.fn(() => thumbRect),
+    });
+    let capturedPointer: number | null = null;
+    const setPointerCapture = jest.fn((pointerId: number) => {
+      capturedPointer = pointerId;
+    });
+    const hasPointerCapture = jest.fn(
+      (pointerId: number) => capturedPointer === pointerId,
+    );
+    const releasePointerCapture = jest.fn((pointerId: number) => {
+      if (capturedPointer === pointerId) capturedPointer = null;
+    });
+    Object.defineProperties(scrollbar, {
+      setPointerCapture: { configurable: true, value: setPointerCapture },
+      hasPointerCapture: { configurable: true, value: hasPointerCapture },
+      releasePointerCapture: {
+        configurable: true,
+        value: releasePointerCapture,
+      },
+    });
+
+    fireEvent.pointerDown(scrollbar, {
+      pointerId: 7,
+      pointerType: "mouse",
+      button: 0,
+      isPrimary: true,
+      clientX: thumbCenter,
+    });
+    expect(viewport.scrollLeft).toBe(60);
+    expect(setPointerCapture).toHaveBeenCalledWith(7);
+
+    fireEvent.pointerMove(scrollbar, {
+      pointerId: 7,
+      pointerType: "mouse",
+      isPrimary: true,
+      clientX: thumbCenter + 100,
+    });
+    expect(viewport.scrollLeft).toBe(158);
+
+    fireEvent.pointerCancel(scrollbar, { pointerId: 7 });
+    const cancelledScrollLeft = viewport.scrollLeft;
+    fireEvent.pointerMove(scrollbar, {
+      pointerId: 7,
+      pointerType: "mouse",
+      isPrimary: true,
+      clientX: thumbCenter + 150,
+    });
+    expect(viewport.scrollLeft).toBe(cancelledScrollLeft);
+
+    fireEvent.pointerDown(scrollbar, {
+      pointerId: 8,
+      pointerType: "mouse",
+      button: 0,
+      isPrimary: true,
+      clientX: 900,
+    });
+    expect(viewport.scrollLeft).toBe(200);
+    fireEvent.pointerUp(scrollbar, {
+      pointerId: 8,
+      pointerType: "mouse",
+      isPrimary: true,
+      clientX: 900,
+    });
+    expect(releasePointerCapture).toHaveBeenCalledWith(8);
+    expect(scrollbar.tagName).toBe("DIV");
+    expect(scrollbar).not.toHaveAttribute("type", "range");
+    window.PointerEvent = originalPointerEvent;
   });
 
   test("resets width when table structure changes without changing concatenated text", async () => {

@@ -895,6 +895,12 @@ export function MarkdownTable({
   const { streaming } = useContext(MarkdownFeatureContext);
   const tableShellRef = useRef<HTMLDivElement>(null);
   const tableScrollRef = useRef<HTMLDivElement>(null);
+  const tableScrollbarRef = useRef<HTMLDivElement>(null);
+  const tableScrollbarThumbRef = useRef<HTMLSpanElement>(null);
+  const tableScrollbarDragRef = useRef<{
+    pointerId: number;
+    grabOffset: number;
+  } | null>(null);
   const tableRef = useRef<HTMLTableElement>(null);
   const tableDialogRef = useRef<HTMLDialogElement>(null);
   const tableExpandButtonRef = useRef<HTMLButtonElement>(null);
@@ -903,6 +909,7 @@ export function MarkdownTable({
   const tableIsExpandedRef = useRef(false);
   const shouldRestoreTableFocusRef = useRef(false);
   const tableDialogTitleId = useId();
+  const tableScrollViewportId = useId();
   const [tableScrollHint, setTableScrollHint] = useState({
     start: false,
     end: false,
@@ -910,7 +917,7 @@ export function MarkdownTable({
   const [tableScrollbar, setTableScrollbar] = useState({
     max: 0,
     left: 0,
-    thumbLeft: 0,
+    thumbProgress: 0,
     thumbWidth: 100,
   });
   const [tableIsScrollable, setTableIsScrollable] = useState(false);
@@ -937,9 +944,9 @@ export function MarkdownTable({
       setTableScrollbar((current) =>
         current.max ||
         current.left ||
-        current.thumbLeft ||
+        current.thumbProgress ||
         current.thumbWidth !== 100
-          ? { max: 0, left: 0, thumbLeft: 0, thumbWidth: 100 }
+          ? { max: 0, left: 0, thumbProgress: 0, thumbWidth: 100 }
           : current,
       );
       setTableScrollHint((current) =>
@@ -967,9 +974,9 @@ export function MarkdownTable({
     const nextScrollbar = {
       max: maxScrollLeft,
       left: Math.min(maxScrollLeft, Math.max(0, tableShell.scrollLeft)),
-      thumbLeft:
-        tableScrollWidth > 0
-          ? (Math.max(0, tableShell.scrollLeft) / tableScrollWidth) * 100
+      thumbProgress:
+        maxScrollLeft > 0
+          ? (Math.max(0, tableShell.scrollLeft) / maxScrollLeft) * 100
           : 0,
       thumbWidth:
         tableScrollWidth > 0
@@ -989,7 +996,7 @@ export function MarkdownTable({
     setTableScrollbar((current) =>
       current.max === nextScrollbar.max &&
       current.left === nextScrollbar.left &&
-      Math.abs(current.thumbLeft - nextScrollbar.thumbLeft) < 0.01 &&
+      Math.abs(current.thumbProgress - nextScrollbar.thumbProgress) < 0.01 &&
       Math.abs(current.thumbWidth - nextScrollbar.thumbWidth) < 0.01
         ? current
         : nextScrollbar,
@@ -1033,16 +1040,28 @@ export function MarkdownTable({
   );
 
   const scrollTableFromPointer = useCallback(
-    (event: React.PointerEvent<HTMLInputElement>) => {
-      const controlBounds = event.currentTarget.getBoundingClientRect();
-      if (controlBounds.width <= 0) return;
-      const pointerProgress = Math.min(
-        1,
-        Math.max(0, (event.clientX - controlBounds.left) / controlBounds.width),
+    (clientX: number, grabOffset: number) => {
+      const tableViewport = tableScrollRef.current;
+      const scrollbar = tableScrollbarRef.current;
+      const thumb = tableScrollbarThumbRef.current;
+      if (!tableViewport || !scrollbar || !thumb) return;
+
+      const trackBounds = scrollbar.getBoundingClientRect();
+      const thumbBounds = thumb.getBoundingClientRect();
+      const thumbTravel = Math.max(0, trackBounds.width - thumbBounds.width);
+      const maxScrollLeft = Math.max(
+        0,
+        tableViewport.scrollWidth - tableViewport.clientWidth,
       );
-      scrollTableTo(pointerProgress * tableScrollbar.max);
+      if (thumbTravel <= 0 || maxScrollLeft <= 0) return;
+
+      const nextThumbLeft = Math.min(
+        thumbTravel,
+        Math.max(0, clientX - trackBounds.left - grabOffset),
+      );
+      scrollTableTo((nextThumbLeft / thumbTravel) * maxScrollLeft);
     },
-    [scrollTableTo, tableScrollbar.max],
+    [scrollTableTo],
   );
 
   const openExpandedTable = useCallback(() => {
@@ -1222,6 +1241,7 @@ export function MarkdownTable({
         </div>
       )}
       <div
+        id={tableScrollViewportId}
         ref={tableScrollRef}
         className="markdown-table-scroll-viewport"
         tabIndex={tableScrollbar.max > 1 ? 0 : undefined}
@@ -1243,78 +1263,118 @@ export function MarkdownTable({
         <table {...tableProps} ref={tableRef} />
       </div>
       {tableScrollbar.max > 1 && (
-        <div className="markdown-table-scrollbar">
+        <div
+          ref={tableScrollbarRef}
+          className="markdown-table-scrollbar"
+          role="slider"
+          tabIndex={0}
+          aria-controls={tableScrollViewportId}
+          aria-label={Locale.Markdown.TableScrollbar}
+          aria-orientation="horizontal"
+          aria-valuemin={0}
+          aria-valuemax={tableScrollbar.max}
+          aria-valuenow={Math.min(tableScrollbar.left, tableScrollbar.max)}
+          aria-valuetext={Locale.Markdown.TableScrollPosition(
+            tableScrollbar.max > 0
+              ? Math.round((tableScrollbar.left / tableScrollbar.max) * 100)
+              : 0,
+          )}
+          onKeyDown={(event) => {
+            const tableViewport = tableScrollRef.current;
+            if (!tableViewport) return;
+            const arrowStep = Math.max(
+              24,
+              Math.round(tableViewport.clientWidth * 0.08),
+            );
+            const pageStep = Math.max(
+              arrowStep,
+              Math.round(tableViewport.clientWidth * 0.8),
+            );
+            let nextScrollLeft: number | undefined;
+
+            if (event.key === "Home") nextScrollLeft = 0;
+            if (event.key === "End") nextScrollLeft = tableScrollbar.max;
+            if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
+              nextScrollLeft = tableScrollbar.left - arrowStep;
+            }
+            if (event.key === "ArrowRight" || event.key === "ArrowUp") {
+              nextScrollLeft = tableScrollbar.left + arrowStep;
+            }
+            if (event.key === "PageUp") {
+              nextScrollLeft = tableScrollbar.left + pageStep;
+            }
+            if (event.key === "PageDown") {
+              nextScrollLeft = tableScrollbar.left - pageStep;
+            }
+            if (nextScrollLeft === undefined) return;
+            event.preventDefault();
+            scrollTableTo(nextScrollLeft);
+          }}
+          onPointerDown={(event) => {
+            if (
+              event.isPrimary === false ||
+              (event.pointerType === "mouse" && event.button !== 0)
+            ) {
+              return;
+            }
+            const thumb = tableScrollbarThumbRef.current;
+            if (!thumb) return;
+            const thumbBounds = thumb.getBoundingClientRect();
+            const grabbedThumb =
+              event.clientX >= thumbBounds.left &&
+              event.clientX <= thumbBounds.right;
+            const grabOffset = grabbedThumb
+              ? event.clientX - thumbBounds.left
+              : thumbBounds.width / 2;
+
+            event.preventDefault();
+            event.currentTarget.focus({ preventScroll: true });
+            tableScrollbarDragRef.current = {
+              pointerId: event.pointerId,
+              grabOffset,
+            };
+            event.currentTarget.setPointerCapture?.(event.pointerId);
+            if (!grabbedThumb) {
+              scrollTableFromPointer(event.clientX, grabOffset);
+            }
+          }}
+          onPointerMove={(event) => {
+            const drag = tableScrollbarDragRef.current;
+            if (!drag || drag.pointerId !== event.pointerId) return;
+            scrollTableFromPointer(event.clientX, drag.grabOffset);
+          }}
+          onPointerUp={(event) => {
+            const drag = tableScrollbarDragRef.current;
+            if (!drag || drag.pointerId !== event.pointerId) return;
+            scrollTableFromPointer(event.clientX, drag.grabOffset);
+            tableScrollbarDragRef.current = null;
+            if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+          }}
+          onPointerCancel={(event) => {
+            if (tableScrollbarDragRef.current?.pointerId !== event.pointerId) {
+              return;
+            }
+            tableScrollbarDragRef.current = null;
+            if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+          }}
+          onLostPointerCapture={(event) => {
+            if (tableScrollbarDragRef.current?.pointerId === event.pointerId) {
+              tableScrollbarDragRef.current = null;
+            }
+          }}
+        >
           <span
+            ref={tableScrollbarThumbRef}
             aria-hidden="true"
             className="markdown-table-scrollbar-thumb"
             style={{
-              left: `${tableScrollbar.thumbLeft}%`,
+              left: `${tableScrollbar.thumbProgress}%`,
+              transform: `translateX(-${tableScrollbar.thumbProgress}%)`,
               width: `${tableScrollbar.thumbWidth}%`,
-            }}
-          />
-          <input
-            className="markdown-table-scrollbar-control"
-            type="range"
-            min={0}
-            max={Math.max(1, tableScrollbar.max)}
-            step={1}
-            value={Math.min(tableScrollbar.left, tableScrollbar.max)}
-            aria-label={Locale.Markdown.TableScrollbar}
-            aria-valuetext={Locale.Markdown.TableScrollPosition(
-              tableScrollbar.max > 0
-                ? Math.round((tableScrollbar.left / tableScrollbar.max) * 100)
-                : 0,
-            )}
-            onChange={(event) =>
-              scrollTableTo(Number(event.currentTarget.value))
-            }
-            onKeyDown={(event) => {
-              const tableViewport = tableScrollRef.current;
-              if (!tableViewport) return;
-              const arrowStep = Math.max(
-                24,
-                Math.round(tableViewport.clientWidth * 0.08),
-              );
-              const pageStep = Math.max(
-                arrowStep,
-                Math.round(tableViewport.clientWidth * 0.8),
-              );
-              let nextScrollLeft: number | undefined;
-
-              if (event.key === "Home") nextScrollLeft = 0;
-              if (event.key === "End") nextScrollLeft = tableScrollbar.max;
-              if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
-                nextScrollLeft = tableScrollbar.left - arrowStep;
-              }
-              if (event.key === "ArrowRight" || event.key === "ArrowUp") {
-                nextScrollLeft = tableScrollbar.left + arrowStep;
-              }
-              if (event.key === "PageDown") {
-                nextScrollLeft = tableScrollbar.left + pageStep;
-              }
-              if (event.key === "PageUp") {
-                nextScrollLeft = tableScrollbar.left - pageStep;
-              }
-              if (nextScrollLeft === undefined) return;
-              event.preventDefault();
-              scrollTableTo(nextScrollLeft);
-            }}
-            onPointerDown={(event) => {
-              event.preventDefault();
-              event.currentTarget.focus({ preventScroll: true });
-              event.currentTarget.setPointerCapture?.(event.pointerId);
-              scrollTableFromPointer(event);
-            }}
-            onPointerMove={(event) => {
-              if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
-                scrollTableFromPointer(event);
-              }
-            }}
-            onPointerUp={(event) => {
-              scrollTableFromPointer(event);
-              if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
-                event.currentTarget.releasePointerCapture(event.pointerId);
-              }
             }}
           />
         </div>

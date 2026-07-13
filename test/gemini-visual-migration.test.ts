@@ -421,6 +421,18 @@ describe("Gemini visual migration shell", () => {
       mobileStyles,
       ".chat-input-panel.chat-input-panel-empty",
     );
+    const mobileExpandedEmptyInputPanelBlock = readCssBlock(
+      mobileStyles,
+      ".chat-input-panel.chat-input-panel-empty:not(.chat-input-panel-collapsed)",
+    );
+    const mobileExpandedEmptyInputRowBlock = readCssBlock(
+      mobileExpandedEmptyInputPanelBlock,
+      ".chat-input-row",
+    );
+    const mobileExpandedEmptyMenuButtonBlock = readCssBlock(
+      mobileExpandedEmptyInputPanelBlock,
+      ".chat-input-menu-button",
+    );
     const tabletInputPanelInnerBlock = readCssBlock(
       tabletStyles,
       ".chat-input-panel-inner",
@@ -3706,6 +3718,18 @@ describe("Gemini visual migration shell", () => {
     );
     expect(mobileInputRowFocusBlock).toMatch(
       /box-shadow:[\s\S]*0 8px 22px var\(--chat-input-panel-elevated-shadow-color\),[\s\S]*0 0 0 3px var\(--chat-input-focus-ring-color\);/,
+    );
+    expect(mobileExpandedEmptyInputRowBlock).toMatch(
+      /align-items:\s*flex-end;/,
+    );
+    expect(mobileExpandedEmptyInputRowBlock).toMatch(
+      /border-radius:\s*24px;/,
+    );
+    expect(mobileExpandedEmptyInputRowBlock).not.toMatch(
+      /border-radius:\s*999px;/,
+    );
+    expect(mobileExpandedEmptyMenuButtonBlock).toMatch(
+      /margin-bottom:\s*7px;/,
     );
     expect(mobileEmptyStatusRowBlock).toMatch(/width:\s*1px;/);
     expect(mobileEmptyStatusRowBlock).toMatch(/clip-path:\s*inset\(50%\);/);
@@ -10626,6 +10650,8 @@ describe("Gemini visual migration shell", () => {
     expect(tableScrollbarThumbBlock).toMatch(
       /background:\s*var\(--markdown-table-scrollbar-thumb-color\);/,
     );
+    expect(tableScrollbarThumbBlock).not.toMatch(/left\s+0\.08s/);
+    expect(tableScrollbarThumbBlock).not.toMatch(/width\s+0\.08s/);
     expect(tableFullscreenDialogBlock).toMatch(/position:\s*fixed;/);
     expect(tableFullscreenDialogBlock).toMatch(/height:\s*100dvh;/);
     expect(tableFullscreenDialogBlock).toMatch(/z-index:\s*10000;/);

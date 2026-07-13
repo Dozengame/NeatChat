@@ -6268,6 +6268,17 @@
     }
   }
 
+  .chat-input-panel.chat-input-panel-empty:not(.chat-input-panel-collapsed) {
+    .chat-input-row {
+      align-items: flex-end;
+      border-radius: 24px;
+    }
+
+    .chat-input-menu-button {
+      margin-bottom: 7px;
+    }
+  }
+
   .chat-input {
     font-size: 16px;
   }
