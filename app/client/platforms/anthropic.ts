@@ -15,6 +15,7 @@ import { preProcessImageContent, stream } from "@/app/utils/chat";
 import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
 import { RequestPayload } from "./openai";
 import { fetch } from "@/app/utils/stream";
+import { mergeLLMRequestConfig } from "../request-config";
 
 export type MultiBlockContent = {
   type: "image" | "text";
@@ -91,13 +92,11 @@ export class ClaudeApi implements LLMApi {
 
     const shouldStream = !!options.config.stream;
 
-    const modelConfig = {
-      ...useAppConfig.getState().modelConfig,
-      ...useChatStore.getState().currentSession().mask.modelConfig,
-      ...{
-        model: options.config.model,
-      },
-    };
+    const modelConfig = mergeLLMRequestConfig(
+      useAppConfig.getState().modelConfig,
+      useChatStore.getState().currentSession().mask.modelConfig,
+      options.config,
+    );
 
     // try get base64image from local cache image_url
     const messages: ChatOptions["messages"] = await Promise.all(
@@ -206,16 +205,19 @@ export class ClaudeApi implements LLMApi {
 
     if (shouldStream) {
       let index = -1;
-      const [tools, funcs] = usePluginStore
-        .getState()
-        .getAsTools(
-          useChatStore.getState().currentSession().mask?.plugin || [],
-        );
+      const [tools, funcs] =
+        options.allowTools === true
+          ? usePluginStore
+              .getState()
+              .getAsTools(
+                useChatStore.getState().currentSession().mask?.plugin || [],
+              )
+          : [[], {}];
       return stream(
         path,
         requestBody,
         {
-          ...(await getHeadersAsync()),
+          ...(await getHeadersAsync(false, modelConfig.providerName)),
           "anthropic-version": accessStore.anthropicApiVersion,
         },
         // @ts-ignore
@@ -317,7 +319,7 @@ export class ClaudeApi implements LLMApi {
         body: JSON.stringify(requestBody),
         signal: controller.signal,
         headers: {
-          ...(await getHeadersAsync()), // get common headers
+          ...(await getHeadersAsync(false, modelConfig.providerName)), // get common headers
           "anthropic-version": accessStore.anthropicApiVersion,
           // do not send `anthropicApiKey` in browser!!!
           // Authorization: getAuthKey(accessStore.anthropicApiKey),

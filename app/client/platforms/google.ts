@@ -30,6 +30,7 @@ import { fetch } from "@/app/utils/stream";
 import { withAbortTimeoutResponse } from "@/app/utils/request-timeout";
 import { getAccessRestrictedPublicErrorMessage } from "@/app/utils/public-error";
 import Locale from "../../locales";
+import { mergeLLMRequestConfig } from "../request-config";
 
 export class GeminiProApi implements LLMApi {
   path(path: string, shouldStream = false): string {
@@ -108,13 +109,15 @@ export class GeminiProApi implements LLMApi {
     );
 
     // 只有当用户选择了 googleSearch 时才创建 tools
-    const tools = session.mask?.plugin?.includes("googleSearch")
-      ? [
-          {
-            googleSearch: {},
-          },
-        ]
-      : undefined;
+    const tools =
+      options.allowTools === true &&
+      session.mask?.plugin?.includes("googleSearch")
+        ? [
+            {
+              googleSearch: {},
+            },
+          ]
+        : undefined;
 
     const messages = _messages.map((v) => {
       let parts: any[] = [{ text: getMessageTextContent(v) }];
@@ -161,13 +164,11 @@ export class GeminiProApi implements LLMApi {
 
     const accessStore = useAccessStore.getState();
 
-    const modelConfig = {
-      ...useAppConfig.getState().modelConfig,
-      ...useChatStore.getState().currentSession().mask.modelConfig,
-      ...{
-        model: options.config.model,
-      },
-    };
+    const modelConfig = mergeLLMRequestConfig(
+      useAppConfig.getState().modelConfig,
+      session.mask.modelConfig,
+      options.config,
+    );
     const requestPayload = {
       contents: messages,
       ...(tools ? { tools } : {}),
@@ -210,19 +211,22 @@ export class GeminiProApi implements LLMApi {
         method: "POST",
         body: JSON.stringify(requestPayload),
         signal: controller.signal,
-        headers: await getHeadersAsync(),
+        headers: await getHeadersAsync(false, modelConfig.providerName),
       };
 
       if (shouldStream) {
-        const [_, funcs] = usePluginStore
-          .getState()
-          .getAsTools(
-            useChatStore.getState().currentSession().mask?.plugin || [],
-          );
+        const [, funcs] =
+          options.allowTools === true
+            ? usePluginStore
+                .getState()
+                .getAsTools(
+                  useChatStore.getState().currentSession().mask?.plugin || [],
+                )
+            : [[], {}];
         return stream(
           chatPath,
           requestPayload,
-          await getHeadersAsync(),
+          await getHeadersAsync(false, modelConfig.providerName),
           tools || [], // 如果 tools 未定义，传入空数组
           funcs,
           controller,

@@ -14,6 +14,7 @@ Do not read all iteration files by default. Use `rg` first, then open the smalle
 
 ## Routing
 
+- Summary Model effective `DEFAULT_MODEL` inheritance, per-model `OPENAI_REASONING_EFFORT`, provider-wide request/header authority, target-session isolation, locked/stale Settings states, and responsive sentinel UI: `iterations/2026-07-13-summary-model-defaults.md`.
 - Context-prompt count regression where the rendered `BOT_HELLO` fallback was misreported as a preset prompt in desktop toast and mobile settings labels: `iterations/2026-07-13-context-prompt-count.md`.
 - Markdown same-message TOC anchors under HashRouter and direction-aware chat quick-jump navigation: `iterations/2026-07-13-markdown-anchor-scroll-navigation.md`.
 - Frontend-only `main...dev` pre-merge performance, browser compatibility, desktop-first composer/model-menu motion, and Markdown streaming optimization review: `iterations/2026-07-13-dev-main-frontend-performance-review.md`.

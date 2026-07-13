@@ -75,6 +75,9 @@ import {
   createStreamUpdateCoalescer,
   getStreamUpdateInterval,
 } from "../utils/stream-update-coalescer";
+import { resolveSummaryRequestConfig } from "../utils/summary-request";
+import { useAccessStore } from "./access";
+import { collectModelsWithDefaultModelAndPolicy } from "../utils/model";
 
 const localStorage = safeLocalStorage();
 const chatPersistStorage = createTrailingThrottledJSONStorage<any>(
@@ -232,13 +235,6 @@ function createSession(mask?: Mask): ChatSession {
   }
 
   return session;
-}
-
-function getSummarizeModel(
-  currentModel: string,
-  providerName: string,
-): string[] {
-  return [currentModel, providerName];
 }
 
 function countMessages(msgs: ChatMessage[]) {
@@ -922,8 +918,8 @@ export const useChatStore = createPersistStore(
         });
       },
 
-      getMemoryPrompt() {
-        const session = get().currentSession();
+      getMemoryPrompt(targetSession?: ChatSession) {
+        const session = targetSession ?? get().currentSession();
 
         if (session.memoryPrompt.length) {
           return {
@@ -1208,13 +1204,33 @@ export const useChatStore = createPersistStore(
           return;
         }
 
-        // if not config compressModel, then using getSummarizeModel
-        const [model, providerName] = modelConfig.compressModel
-          ? [modelConfig.compressModel, modelConfig.compressProviderName]
-          : getSummarizeModel(
-              session.mask.modelConfig.model,
-              session.mask.modelConfig.providerName,
-            );
+        const accessConfig = useAccessStore.getState();
+        const summaryModelCatalog = collectModelsWithDefaultModelAndPolicy(
+          config.models,
+          config.customModels || accessConfig.customModels || "",
+          accessConfig.defaultModel,
+          accessConfig.allowedModels,
+        );
+        const availableSummaryModelRefs = new Set(
+          summaryModelCatalog
+            .filter((model) => model.available)
+            .map((model) => `${model.name}@${model.provider?.providerName}`),
+        );
+        const summaryRequestConfig = resolveSummaryRequestConfig({
+          targetModelConfig: modelConfig,
+          fallbackModelConfig: config.modelConfig,
+          publicConfig: config.serverConfigSnapshot,
+          availableModelRefs: availableSummaryModelRefs,
+        });
+        const { model, providerName, reasoningEffort, max_output_tokens } =
+          summaryRequestConfig;
+        const summaryModelConfig = {
+          ...modelConfig,
+          model,
+          providerName,
+          reasoningEffort,
+          max_output_tokens,
+        };
         const { getClientApi } = await import("../client/api");
         const api: ClientApi = getClientApi(providerName as ServiceProvider);
 
@@ -1254,9 +1270,8 @@ export const useChatStore = createPersistStore(
           api.llm.chat({
             messages: topicMessages,
             config: {
-              model,
+              ...summaryModelConfig,
               stream: false,
-              providerName,
             },
             onFinish(message, responseRes) {
               if (responseRes?.status === 200) {
@@ -1286,7 +1301,7 @@ export const useChatStore = createPersistStore(
             Math.max(0, n - modelConfig.historyMessageCount),
           );
         }
-        const memoryPrompt = get().getMemoryPrompt();
+        const memoryPrompt = get().getMemoryPrompt(session);
         if (memoryPrompt) {
           // add memory prompt
           toBeSummarizedMsgs.unshift(memoryPrompt);
@@ -1305,8 +1320,6 @@ export const useChatStore = createPersistStore(
           historyMsgLength > modelConfig.compressMessageLengthThreshold &&
           modelConfig.sendMemory
         ) {
-          // Keep summary requests from inheriting the active response budget.
-          const { max_output_tokens, ...modelcfg } = modelConfig;
           api.llm.chat({
             messages: toBeSummarizedMsgs.concat(
               createMessage({
@@ -1316,10 +1329,8 @@ export const useChatStore = createPersistStore(
               }),
             ),
             config: {
-              ...modelcfg,
+              ...summaryModelConfig,
               stream: true,
-              model,
-              providerName,
             },
             onUpdate(message) {
               session.memoryPrompt = message;

@@ -160,6 +160,12 @@ function useSettingsView() {
       });
     });
   };
+  const clearModelConfigOverride = (fields: string[]) => {
+    updateConfig((config) => {
+      config.modelConfigMeta = { ...(config.modelConfigMeta ?? {}) };
+      fields.forEach((field) => delete config.modelConfigMeta![field]);
+    });
+  };
 
   const updateStore = useUpdateStore();
   const accessStore = useAccessStore();
@@ -1510,6 +1516,7 @@ function useSettingsView() {
                   modelConfig={config.modelConfig}
                   modelConfigMeta={config.modelConfigMeta}
                   markOverride={markModelConfigOverride}
+                  clearOverride={clearModelConfigOverride}
                   updateConfig={(updater) => {
                     const modelConfig = { ...config.modelConfig };
                     updater(modelConfig);

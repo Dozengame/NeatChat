@@ -43,6 +43,7 @@ export interface LLMConfig {
   presence_penalty?: number;
   frequency_penalty?: number;
   reasoningEffort?: OpenAIChatReasoningEffort;
+  max_output_tokens?: number;
   size?: OpenAIImageSize;
   quality?: OpenAIImageQuality;
   style?: DalleStyle;

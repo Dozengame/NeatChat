@@ -23,6 +23,7 @@ import { fetch } from "@/app/utils/stream";
 import { withAbortTimeoutResponse } from "@/app/utils/request-timeout";
 import { getAccessRestrictedPublicErrorMessage } from "@/app/utils/public-error";
 import Locale from "../../locales";
+import { mergeLLMRequestConfig } from "../request-config";
 
 export class MoonshotApi implements LLMApi {
   private disableListModels = true;
@@ -69,14 +70,11 @@ export class MoonshotApi implements LLMApi {
       messages.push({ role: v.role, content });
     }
 
-    const modelConfig = {
-      ...useAppConfig.getState().modelConfig,
-      ...useChatStore.getState().currentSession().mask.modelConfig,
-      ...{
-        model: options.config.model,
-        providerName: options.config.providerName,
-      },
-    };
+    const modelConfig = mergeLLMRequestConfig(
+      useAppConfig.getState().modelConfig,
+      useChatStore.getState().currentSession().mask.modelConfig,
+      options.config,
+    );
 
     const requestPayload: RequestPayload = {
       messages,
@@ -101,19 +99,22 @@ export class MoonshotApi implements LLMApi {
         method: "POST",
         body: JSON.stringify(requestPayload),
         signal: controller.signal,
-        headers: await getHeadersAsync(),
+        headers: await getHeadersAsync(false, modelConfig.providerName),
       };
 
       if (shouldStream) {
-        const [tools, funcs] = usePluginStore
-          .getState()
-          .getAsTools(
-            useChatStore.getState().currentSession().mask?.plugin || [],
-          );
+        const [tools, funcs] =
+          options.allowTools === true
+            ? usePluginStore
+                .getState()
+                .getAsTools(
+                  useChatStore.getState().currentSession().mask?.plugin || [],
+                )
+            : [[], {}];
         return stream(
           chatPath,
           requestPayload,
-          await getHeadersAsync(),
+          await getHeadersAsync(false, modelConfig.providerName),
           tools as any,
           funcs,
           controller,

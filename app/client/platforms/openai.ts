@@ -16,6 +16,7 @@ import {
   useChatStore,
   usePluginStore,
 } from "@/app/store";
+import type { ModelConfig } from "@/app/store/config";
 import { collectModelsWithDefaultModel } from "@/app/utils/model";
 import {
   preProcessImageContent,
@@ -67,6 +68,7 @@ import {
 import { fetch } from "@/app/utils/stream";
 import { withAbortTimeoutResponse } from "@/app/utils/request-timeout";
 import { isAccessRestrictedPublicError } from "@/app/utils/public-error";
+import { mergeLLMRequestConfig } from "../request-config";
 import {
   OPENAI_IMAGE_REQUEST_TIMEOUT_MS,
   abortOpenAIImageRequest,
@@ -283,14 +285,11 @@ export class ChatGPTApi implements LLMApi {
   }
 
   async chat(options: ChatOptions) {
-    const modelConfig = {
-      ...useAppConfig.getState().modelConfig,
-      ...useChatStore.getState().currentSession().mask.modelConfig,
-      ...{
-        model: options.config.model,
-        providerName: options.config.providerName,
-      },
-    };
+    const modelConfig = mergeLLMRequestConfig(
+      useAppConfig.getState().modelConfig,
+      useChatStore.getState().currentSession().mask.modelConfig,
+      options.config,
+    ) as ModelConfig;
     const accessStore = useAccessStore.getState();
     const isImageGeneration = isOpenAIImageGenerationModelConfig({
       model: options.config.model,
@@ -503,7 +502,10 @@ export class ChatGPTApi implements LLMApi {
       }
       if (shouldStream) {
         if (useResponses) {
-          const headers = await getHeadersAsync();
+          const headers = await getHeadersAsync(
+            false,
+            modelConfig.providerName,
+          );
           await runOpenAIResponsesToolLoop({
             initialPayload: requestPayload as ResponsesRequestPayload,
             executors: responsesFunctionExecutors,
@@ -577,7 +579,7 @@ export class ChatGPTApi implements LLMApi {
             ...requestPayload,
             ...(Array.isArray(tools) && tools.length > 0 ? { tools } : {}),
           },
-          await getHeadersAsync(),
+          await getHeadersAsync(false, modelConfig.providerName),
           Array.isArray(tools) ? tools : [],
           funcs,
           controller,
@@ -672,7 +674,10 @@ export class ChatGPTApi implements LLMApi {
           method: "POST",
           body: multipartPayload ?? JSON.stringify(requestPayload),
           signal: controller.signal,
-          headers: await getHeadersAsync(isMultipartRequest),
+          headers: await getHeadersAsync(
+            isMultipartRequest,
+            modelConfig.providerName,
+          ),
         };
 
         if (isImageGeneration) {

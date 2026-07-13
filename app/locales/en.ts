@@ -1009,6 +1009,9 @@ const en: LocaleType = {
     CompressModel: {
       Title: "Summary Model",
       SubTitle: "Model used to compress history and generate title",
+      FollowDefault: (model: string) =>
+        `Follow default model (current: ${model})`,
+      Unavailable: (model: string) => `${model} (currently unavailable)`,
     },
     Temperature: {
       Title: "Temperature",

@@ -93,6 +93,12 @@ export function MaskConfig(props: {
       });
     });
   };
+  const clearModelConfigOverride = (fields: string[]) => {
+    props.updateMask((mask) => {
+      mask.modelConfigMeta = { ...(mask.modelConfigMeta ?? {}) };
+      fields.forEach((field) => delete mask.modelConfigMeta![field]);
+    });
+  };
 
   const copyMaskLink = () => {
     const maskLink = `${location.protocol}//${location.host}/#${Path.NewChat}?mask=${props.mask.id}`;
@@ -259,6 +265,7 @@ export function MaskConfig(props: {
           modelConfig={{ ...props.mask.modelConfig }}
           modelConfigMeta={props.mask.modelConfigMeta}
           markOverride={markModelConfigOverride}
+          clearOverride={clearModelConfigOverride}
           updateConfig={updateConfig}
         />
         {props.extraListItems}

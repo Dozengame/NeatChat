@@ -45,6 +45,7 @@ import type {
   OpenAIResponsesReasoningMode,
   OpenAIResponsesTextVerbosity,
 } from "../utils/openai-responses";
+import { resolveSummaryRequestConfig } from "../utils/summary-request";
 
 const SOURCE_LABELS: Record<ConfigSource, string> = {
   admin_forced: Locale.Settings.GPT56Capabilities.ConfigSource.AdminForced,
@@ -107,6 +108,7 @@ export function ModelConfigList(props: {
   updateConfig: (updater: (config: ModelConfig) => void) => void;
   modelConfigMeta?: ModelConfigMeta;
   markOverride?: (fields: string[]) => void;
+  clearOverride?: (fields: string[]) => void;
 }) {
   return useModelConfigListView(props);
 }
@@ -116,6 +118,7 @@ function useModelConfigListView(props: {
   updateConfig: (updater: (config: ModelConfig) => void) => void;
   modelConfigMeta?: ModelConfigMeta;
   markOverride?: (fields: string[]) => void;
+  clearOverride?: (fields: string[]) => void;
 }) {
   const accessStore = useAccessStore();
   const appConfig = useAppConfig();
@@ -158,7 +161,47 @@ function useModelConfigListView(props: {
     "provider.providerName",
   );
   const value = `${props.modelConfig.model}@${props.modelConfig?.providerName}`;
-  const compressModelValue = `${props.modelConfig.compressModel}@${props.modelConfig?.compressProviderName}`;
+  const persistedCompressModelValue =
+    props.modelConfig.compressModel && props.modelConfig.compressProviderName
+      ? `${props.modelConfig.compressModel}@${props.modelConfig.compressProviderName}`
+      : "";
+  const summarySelectionLocked = isLocked("model") || isLocked("providerName");
+  const persistedSummaryModel = allModels.find(
+    (model) =>
+      `${model.name}@${model.provider?.providerName}` ===
+      persistedCompressModelValue,
+  );
+  const persistedSummaryModelSelectable =
+    !!persistedCompressModelValue &&
+    !!persistedSummaryModel?.available &&
+    (allowedModels.size === 0 ||
+      allowedModels.has(persistedCompressModelValue));
+  const showUnavailableSummaryOverride =
+    !summarySelectionLocked &&
+    !!persistedCompressModelValue &&
+    !persistedSummaryModelSelectable;
+  const compressModelValue = summarySelectionLocked
+    ? ""
+    : persistedCompressModelValue;
+  const summaryDefault = resolveSummaryRequestConfig({
+    targetModelConfig: {
+      ...props.modelConfig,
+      compressModel: "",
+      compressProviderName: "",
+    },
+    fallbackModelConfig: appConfig.modelConfig,
+    publicConfig: appConfig.serverConfigSnapshot,
+  });
+  const [summaryDefaultModel, summaryDefaultProvider] = getModelProvider(
+    summaryDefault.defaultModelRef,
+  );
+  const summaryDefaultDisplayModel =
+    allModels.find(
+      (model) =>
+        model.name === summaryDefaultModel &&
+        model.provider?.providerName === summaryDefaultProvider,
+    )?.displayName ?? summaryDefaultModel;
+  const summaryDefaultLabel = `${summaryDefaultDisplayModel}(${summaryDefaultProvider})`;
   const isOpenAIGpt5OrNewer = isOpenAIGpt5OrNewerModelConfig({
     model: props.modelConfig.model,
     providerName: props.modelConfig?.providerName,
@@ -799,6 +842,7 @@ function useModelConfigListView(props: {
           </ListItem>
 
           <ListItem
+            className={styles["summary-model-item"]}
             title={Locale.Settings.CompressModel.Title}
             subTitle={Locale.Settings.CompressModel.SubTitle}
           >
@@ -806,7 +850,20 @@ function useModelConfigListView(props: {
               className={styles["select-compress-model"]}
               aria-label={Locale.Settings.CompressModel.Title}
               value={compressModelValue}
+              disabled={summarySelectionLocked}
               onChange={(e) => {
+                if (summarySelectionLocked) return;
+                if (!e.currentTarget.value) {
+                  props.updateConfig((config) => {
+                    config.compressModel = "";
+                    config.compressProviderName = "";
+                  });
+                  props.clearOverride?.([
+                    "compressModel",
+                    "compressProviderName",
+                  ]);
+                  return;
+                }
                 const [model, providerName] = getModelProvider(
                   e.currentTarget.value,
                 );
@@ -817,8 +874,25 @@ function useModelConfigListView(props: {
                 props.markOverride?.(["compressModel", "compressProviderName"]);
               }}
             >
+              <option value="">
+                {Locale.Settings.CompressModel.FollowDefault(
+                  summaryDefaultLabel,
+                )}
+              </option>
+              {showUnavailableSummaryOverride && (
+                <option value={persistedCompressModelValue} disabled>
+                  {Locale.Settings.CompressModel.Unavailable(
+                    `${
+                      persistedSummaryModel?.displayName ??
+                      props.modelConfig.compressModel
+                    }(${props.modelConfig.compressProviderName})`,
+                  )}
+                </option>
+              )}
               {allModels.flatMap((v) =>
-                v.available
+                v.available &&
+                (allowedModels.size === 0 ||
+                  allowedModels.has(`${v.name}@${v.provider?.providerName}`))
                   ? [
                       <option
                         value={`${v.name}@${v.provider?.providerName}`}

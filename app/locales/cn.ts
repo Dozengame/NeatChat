@@ -995,6 +995,8 @@ const cn = {
     CompressModel: {
       Title: "对话摘要模型",
       SubTitle: "用于压缩历史记录、生成对话标题的模型",
+      FollowDefault: (model: string) => `跟随默认模型（当前：${model}）`,
+      Unavailable: (model: string) => `${model}（当前不可用）`,
     },
     Temperature: {
       Title: "随机性 (temperature)",

@@ -25,6 +25,7 @@ import {
 import { getAccessRestrictedPublicErrorMessage } from "@/app/utils/public-error";
 
 import { RequestPayload } from "./openai";
+import { mergeLLMRequestConfig } from "../request-config";
 
 export class SparkApi implements LLMApi {
   private disableListModels = true;
@@ -71,14 +72,11 @@ export class SparkApi implements LLMApi {
       messages.push({ role: v.role, content });
     }
 
-    const modelConfig = {
-      ...useAppConfig.getState().modelConfig,
-      ...useChatStore.getState().currentSession().mask.modelConfig,
-      ...{
-        model: options.config.model,
-        providerName: options.config.providerName,
-      },
-    };
+    const modelConfig = mergeLLMRequestConfig(
+      useAppConfig.getState().modelConfig,
+      useChatStore.getState().currentSession().mask.modelConfig,
+      options.config,
+    );
 
     const requestPayload: RequestPayload = {
       messages,
@@ -103,7 +101,7 @@ export class SparkApi implements LLMApi {
         method: "POST",
         body: JSON.stringify(requestPayload),
         signal: controller.signal,
-        headers: await getHeadersAsync(),
+        headers: await getHeadersAsync(false, modelConfig.providerName),
       };
 
       if (shouldStream) {

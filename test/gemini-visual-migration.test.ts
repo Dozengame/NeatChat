@@ -25569,6 +25569,22 @@ describe("Gemini visual migration shell", () => {
       compressSelectBlock,
       "&.select-compress-model select:focus-visible",
     );
+    const summaryMobileBlock = readCssBlock(
+      modelConfigStyles,
+      "@media screen and (max-width: 600px)",
+    );
+    const summaryMobileItemBlock = readCssBlock(
+      summaryMobileBlock,
+      ".summary-model-item",
+    );
+    const summaryMobileSelectBlock = readCssBlock(
+      summaryMobileItemBlock,
+      ".select-compress-model",
+    );
+    const summaryMobileControlBlock = readCssBlock(
+      summaryMobileSelectBlock,
+      "select",
+    );
     const darkCompressSelectBlock = readCssBlock(
       modelConfigStyles,
       ":global(.dark) .select-compress-model",
@@ -25619,6 +25635,7 @@ describe("Gemini visual migration shell", () => {
     expect(modelConfig).toContain(
       'className={styles["select-compress-model"]}',
     );
+    expect(modelConfig).toContain('className={styles["summary-model-item"]}');
     expect(modelConfig).toContain("value={compressModelValue}");
     expect(modelConfig).toContain("ModalConfigValidator.model(model)");
     expect(modelConfig).toContain(
@@ -25689,6 +25706,11 @@ describe("Gemini visual migration shell", () => {
     expect(compressSelectFocusBlock).toMatch(
       /box-shadow:[\s\S]*var\(--model-config-field-focus-shadow-color\)[\s\S]*var\(--model-config-field-inner-shadow-color\)/,
     );
+    expect(summaryMobileItemBlock).toMatch(/align-items:\s*stretch;/);
+    expect(summaryMobileItemBlock).toMatch(/flex-direction:\s*column;/);
+    expect(summaryMobileSelectBlock).toMatch(/width:\s*100%;/);
+    expect(summaryMobileControlBlock).toMatch(/text-overflow:\s*ellipsis;/);
+    expect(summaryMobileControlBlock).toMatch(/white-space:\s*nowrap;/);
     expect(compressPaintScope).not.toContain("var(--white)");
     expect(compressPaintScope).not.toContain("var(--gray)");
     expect(compressPaintScope).not.toContain("background-color: var(--white)");
