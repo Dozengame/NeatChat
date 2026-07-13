@@ -89,3 +89,19 @@
 - Final targeted verification passed `5` suites / `147` tests, TypeScript, ESLint, `git diff --check`, production `next build`, and independent read-only semantic review.
 - Real authenticated Chrome verified all eight Chinese size labels/descriptions, exactly four GPT Image 2 quality stops with no `standard/hd`, desktop popup geometry without overflow, and the restored `auto / medium` state. After the known post-build dev-server restart, `/api/config` returned JSON 200 and cold load passed; the only Console entry was Huaban extension attribute-injection noise, not a product error.
 - No paid image generation, credential entry, push, PR, deploy, or remote configuration change was performed.
+
+## Homepage Suggestion Card Removal
+
+### Result
+
+- Desktop and mobile new-chat homes no longer render the four suggestion cards below the welcome title.
+- The removal is structural rather than CSS-only: the shared JSX, click-to-fill handler, responsive/theme/accessibility styles, Chinese/English card copy, and obsolete card-specific visual assertions are deleted.
+- The existing welcome title, `Chat / Image` tabs, composer, model/reasoning/image controls, sessions, request contracts, state, persistence, and existing-chat behavior are unchanged.
+
+### Verification
+
+- Commit: `aa2172a0 Remove homepage suggestion cards`.
+- Targeted Jest passed `90/90` across `test/gemini-visual-migration.test.ts` and `test/chat-home-mode.test.ts`; the visual contract now asserts the card JSX, locale keys, and `.chat-empty-suggestion*` SCSS remain absent.
+- ESLint, TypeScript, `git diff --check`, and production `next build` passed.
+- In-app Browser QA used the real local homepage at `1440x1024` and `390x844`. Both viewports measured suggestion DOM/copy `0`, horizontal overflow `0`, framework overlay `0`, and no Console warning/error; `Chat -> Image` switching remained functional and did not restore the cards.
+- No push, PR, deploy, credential entry, paid request, or remote configuration change was performed.
