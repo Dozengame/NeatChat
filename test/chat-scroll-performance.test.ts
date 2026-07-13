@@ -34,6 +34,32 @@ describe("chat scroll performance contract", () => {
     expect(hook).not.toContain("autoScroll && !detach");
   });
 
+  test("keeps quick-jump direction transient and reaches global message edges", () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "app/components/chat.tsx"),
+      "utf8",
+    );
+    const chatInner = source.slice(
+      source.indexOf("function useChatInnerView()"),
+      source.indexOf("function ChatInner()"),
+    );
+
+    expect(chatInner).toContain("accumulateChatScrollDirection(");
+    expect(chatInner).toContain("scrollDirectionAccumulatorRef.current");
+    expect(chatInner).toMatch(
+      /useLayoutEffect\(\(\) => \{[\s\S]*lastObservedScrollTopRef\.current = scrollRef\.current\?\.scrollTop \?\? 0;[\s\S]*scrollDirectionAccumulatorRef\.current = 0;[\s\S]*\}, \[session\.id, scrollRef\]\);/,
+    );
+    expect(chatInner).toMatch(
+      /const scrollToTop = useCallback\(\(\) => \{[\s\S]*setAutoScroll\(false\);[\s\S]*setMsgRenderIndex\(0\);[\s\S]*requestAnimationFrame\(\(\) => \{[\s\S]*scrollRef\.current\?\.scrollTo\(0, 0\);/,
+    );
+    expect(chatInner).toMatch(
+      /const scrollToBottom = useCallback\(\(\) => \{[\s\S]*setMsgRenderIndex\(renderMessages\.length - CHAT_PAGE_SIZE\);[\s\S]*scrollDomToBottom\(\);/,
+    );
+    expect(chatInner).toMatch(
+      /lastObservedScrollTopRef\.current = nextScrollTop;[\s\S]*scrollDirectionAccumulatorRef\.current = 0;[\s\S]*scrollDom\.scrollTop = nextScrollTop;/,
+    );
+  });
+
   test("does not keep hidden chat tools or wrapper subscriptions on the stream render path", () => {
     const source = fs.readFileSync(
       path.join(process.cwd(), "app/components/chat.tsx"),

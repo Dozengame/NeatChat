@@ -2485,6 +2485,19 @@
     width: 18px;
     height: 18px;
     fill: currentColor;
+
+    path {
+      stroke: currentColor !important;
+    }
+  }
+
+  .chat-scroll-direction-icon {
+    display: inline-flex;
+    transition: transform 0.18s ease;
+  }
+
+  &[data-direction="top"] .chat-scroll-direction-icon {
+    transform: rotate(180deg);
   }
 
   &:hover {
@@ -8231,6 +8244,10 @@
   .chat-scroll-to-bottom:hover,
   .chat-scroll-to-bottom:active {
     transform: var(--chat-scroll-bottom-position-transform) !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .chat-scroll-direction-icon {
     transition-duration: 0.01ms !important;
   }
 

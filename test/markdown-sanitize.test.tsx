@@ -65,6 +65,7 @@ import {
   Markdown,
   markdownSanitizeSchema,
 } from "../app/components/markdown";
+import { rehypeMarkdownHeadingAnchors } from "../app/utils/markdown-anchor";
 
 describe("Markdown raw HTML sanitization contract", () => {
   beforeEach(() => {
@@ -79,9 +80,13 @@ describe("Markdown raw HTML sanitization contract", () => {
       mockReactMarkdown.mock.calls[0][0].rehypePlugins ?? [];
     expect(rehypePlugins[0]).toBe(RehypeRaw);
     expect(rehypePlugins[1]).toEqual([RehypeSanitize, markdownSanitizeSchema]);
-    expect(rehypePlugins[2]).toBe(RehypeKatex);
-    expect(Array.isArray(rehypePlugins[3])).toBe(true);
-    expect((rehypePlugins[3] as unknown[])[0]).toBe(RehypeHighlight);
+    expect(rehypePlugins[2]).toEqual([
+      rehypeMarkdownHeadingAnchors,
+      expect.objectContaining({ scope: expect.any(String) }),
+    ]);
+    expect(rehypePlugins[3]).toBe(RehypeKatex);
+    expect(Array.isArray(rehypePlugins[4])).toBe(true);
+    expect((rehypePlugins[4] as unknown[])[0]).toBe(RehypeHighlight);
   });
 
   test("allows only the raw HTML and classes required by supported Markdown", () => {

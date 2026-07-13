@@ -82,6 +82,10 @@ import {
   getImagePreviewAlt,
   getMessageImageLabel,
 } from "../utils/image-action-labels";
+import {
+  accumulateChatScrollDirection,
+  type ChatScrollTarget,
+} from "../utils/chat-scroll-navigation";
 
 import dynamic from "next/dynamic";
 
@@ -1866,6 +1870,12 @@ function useChatInnerView() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const readingSurfaceRef = useRef<HTMLDivElement>(null);
   const [hitBottom, setHitBottom] = useState(true);
+  const [hitTop, setHitTop] = useState(true);
+  const [quickJumpTarget, setQuickJumpTarget] =
+    useState<ChatScrollTarget>("bottom");
+  const lastObservedScrollTopRef = useRef(0);
+  const scrollDirectionAccumulatorRef = useRef(0);
+  const msgRenderIndexRef = useRef(0);
   const attachWithTopRef = useRef(false);
   const isTyping = userInput !== "";
 
@@ -1886,23 +1896,33 @@ function useChatInnerView() {
   );
   const isMobileScreen = useMobileScreen();
   const isCompactScreen = useCompactScreen();
+  useLayoutEffect(() => {
+    setHitTop(true);
+    setHitBottom(true);
+    setQuickJumpTarget("bottom");
+    lastObservedScrollTopRef.current = scrollRef.current?.scrollTop ?? 0;
+    scrollDirectionAccumulatorRef.current = 0;
+  }, [session.id, scrollRef]);
   const syncHitBottomState = useCallback(
     (e: HTMLElement, syncAutoScroll = false) => {
       const bottomHeight = e.scrollTop + e.clientHeight;
-      const isHitBottom =
-        bottomHeight >= e.scrollHeight - (isMobileScreen ? 4 : 10);
+      const edgeTolerance = isMobileScreen ? 4 : 10;
+      const isHitTop =
+        msgRenderIndexRef.current === 0 && e.scrollTop <= edgeTolerance;
+      const isHitBottom = bottomHeight >= e.scrollHeight - edgeTolerance;
       const lastMessage = readingSurfaceRef.current
         ?.lastElementChild as HTMLElement | null;
       attachWithTopRef.current = lastMessage
         ? lastMessage.offsetTop - e.scrollTop < 100
         : false;
 
+      setHitTop(isHitTop);
       setHitBottom(isHitBottom);
       if (syncAutoScroll) {
         setAutoScroll(isHitBottom);
       }
 
-      return { bottomHeight, isHitBottom };
+      return { bottomHeight, isHitBottom, isHitTop };
     },
     [isMobileScreen, setAutoScroll],
   );
@@ -3063,6 +3083,7 @@ function useChatInnerView() {
   const [msgRenderIndex, _setMsgRenderIndex] = useState(() =>
     Math.max(0, renderMessages.length - CHAT_PAGE_SIZE),
   );
+  msgRenderIndexRef.current = msgRenderIndex;
   const pendingMessageWindowAnchorRef = useRef<{
     key: string;
     top: number;
@@ -3103,7 +3124,11 @@ function useChatInnerView() {
     const scrollRect = scrollDom.getBoundingClientRect();
     const nextAnchorTop =
       anchorElement.getBoundingClientRect().top - scrollRect.top;
-    scrollDom.scrollTop += nextAnchorTop - pendingAnchor.top;
+    const nextScrollTop =
+      scrollDom.scrollTop + nextAnchorTop - pendingAnchor.top;
+    lastObservedScrollTopRef.current = nextScrollTop;
+    scrollDirectionAccumulatorRef.current = 0;
+    scrollDom.scrollTop = nextScrollTop;
   }, [messageRenderStartIndex, messages, scrollRef]);
   const showEmptyState =
     !markdownStressQaEnabled &&
@@ -3319,6 +3344,19 @@ function useChatInnerView() {
   );
 
   const onChatBodyScroll = (e: HTMLElement) => {
+    const directionUpdate = accumulateChatScrollDirection(
+      scrollDirectionAccumulatorRef.current,
+      e.scrollTop - lastObservedScrollTopRef.current,
+    );
+    lastObservedScrollTopRef.current = e.scrollTop;
+    scrollDirectionAccumulatorRef.current = directionUpdate.accumulatedDelta;
+    const nextTarget = directionUpdate.target;
+    if (nextTarget) {
+      setQuickJumpTarget((currentTarget) =>
+        currentTarget === nextTarget ? currentTarget : nextTarget,
+      );
+    }
+
     const { bottomHeight } = syncHitBottomState(e, true);
     const edgeThreshold = e.clientHeight;
 
@@ -3370,10 +3408,30 @@ function useChatInnerView() {
       setIsInputExpanded(false);
     }
   };
+  const scrollToTop = useCallback(() => {
+    setAutoScroll(false);
+    setQuickJumpTarget("top");
+    setHitTop(true);
+    setHitBottom(false);
+    setMsgRenderIndex(0);
+    scrollDirectionAccumulatorRef.current = 0;
+    lastObservedScrollTopRef.current = 0;
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo(0, 0);
+    });
+  }, [scrollRef, setAutoScroll, setMsgRenderIndex]);
   const scrollToBottom = useCallback(() => {
+    setQuickJumpTarget("bottom");
+    setHitTop(false);
+    setHitBottom(true);
     setMsgRenderIndex(renderMessages.length - CHAT_PAGE_SIZE);
+    scrollDirectionAccumulatorRef.current = 0;
+    const scrollDom = scrollRef.current;
+    lastObservedScrollTopRef.current = scrollDom
+      ? Math.max(0, scrollDom.scrollHeight - scrollDom.clientHeight)
+      : lastObservedScrollTopRef.current;
     scrollDomToBottom();
-  }, [renderMessages.length, scrollDomToBottom, setMsgRenderIndex]);
+  }, [renderMessages.length, scrollDomToBottom, scrollRef, setMsgRenderIndex]);
   const clearContextDividerRef = useRef<HTMLButtonElement>(null);
   const chatInputPanelRef = useRef<HTMLDivElement>(null);
   const [chatBodyBottomSafeArea, setChatBodyBottomSafeArea] = useState<
@@ -5605,17 +5663,31 @@ function useChatInnerView() {
             })}
             data-drag-active={isDropzonePreviewActive ? "true" : undefined}
           >
-            {!showEmptyState && !hitBottom && !showChatActionMenu && (
-              <button
-                type="button"
-                className={styles["chat-scroll-to-bottom"]}
-                aria-label={Locale.Chat.InputActions.ToBottom}
-                aria-controls="chat-scroll-body"
-                onClick={scrollToBottom}
-              >
-                <BottomIcon />
-              </button>
-            )}
+            {!showEmptyState &&
+              !(quickJumpTarget === "top" ? hitTop : hitBottom) &&
+              !showChatActionMenu && (
+                <button
+                  type="button"
+                  className={styles["chat-scroll-to-bottom"]}
+                  data-direction={quickJumpTarget}
+                  aria-label={
+                    quickJumpTarget === "top"
+                      ? Locale.Chat.InputActions.ToTop
+                      : Locale.Chat.InputActions.ToBottom
+                  }
+                  aria-controls="chat-scroll-body"
+                  onClick={
+                    quickJumpTarget === "top" ? scrollToTop : scrollToBottom
+                  }
+                >
+                  <span
+                    className={styles["chat-scroll-direction-icon"]}
+                    aria-hidden="true"
+                  >
+                    <BottomIcon />
+                  </span>
+                </button>
+              )}
             <PromptHints
               prompts={promptHints}
               onPromptSelect={onPromptSelect}

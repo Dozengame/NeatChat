@@ -14,6 +14,7 @@ Do not read all iteration files by default. Use `rg` first, then open the smalle
 
 ## Routing
 
+- Markdown same-message TOC anchors under HashRouter and direction-aware chat quick-jump navigation: `iterations/2026-07-13-markdown-anchor-scroll-navigation.md`.
 - Frontend-only `main...dev` pre-merge performance, browser compatibility, desktop-first composer/model-menu motion, and Markdown streaming optimization review: `iterations/2026-07-13-dev-main-frontend-performance-review.md`.
 - Final merged review from `6c8760f7` through the 2026-07-12 model-selector/config capability release, including default-model hydration, Chat/Image classification, reasoning matrices, override reconciliation, output limits, and final QA: `iterations/2026-07-12-final-model-review.md`.
 - Per-model `OPENAI_REASONING_EFFORT` defaults, scalar compatibility, model-switch resolution, and provider/override boundaries: `iterations/2026-07-12-reasoning-effort-defaults.md`.

@@ -33,6 +33,11 @@ const MARKDOWN_STRESS_QA_CONTENT = `# Markdown 压测示例文档
 
 这份内容只用于本地 UI QA，覆盖标题、段落、引用、行内代码、列表、表格、代码块、details、长链接和长文本换行。
 
+## 目录跳转
+
+- [代码块](#代码块)
+- [步骤与列表](#步骤与列表)
+
 > 这是一段 blockquote，用于测试引用样式、换行、嵌套、以及长文本渲染效果。
 > 第二行引用内容，包含 **bold**、_italic_、\`inline code\`。
 

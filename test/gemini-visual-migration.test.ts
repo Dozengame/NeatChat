@@ -2358,7 +2358,7 @@ describe("Gemini visual migration shell", () => {
     expect(autoDarkChatBodyTokens).toEqual(darkChatBodyTokens);
     expect(chatBodyRootBlock).not.toContain("background-color: var(--gray)");
     expect(chat).toMatch(
-      /className=\{clsx\(styles\["chat-input-panel"\][\s\S]*\)\}[\s\S]*\{!showEmptyState && !hitBottom && !showChatActionMenu && \([\s\S]*className=\{styles\["chat-scroll-to-bottom"\]\}[\s\S]*aria-label=\{Locale\.Chat\.InputActions\.ToBottom\}[\s\S]*aria-controls="chat-scroll-body"[\s\S]*onClick=\{scrollToBottom\}[\s\S]*<BottomIcon \/>[\s\S]*\)\}[\s\S]*<PromptHints/,
+      /className=\{clsx\(styles\["chat-input-panel"\][\s\S]*\)\}[\s\S]*!\(quickJumpTarget === "top" \? hitTop : hitBottom\)[\s\S]*className=\{styles\["chat-scroll-to-bottom"\]\}[\s\S]*data-direction=\{quickJumpTarget\}[\s\S]*Locale\.Chat\.InputActions\.ToTop[\s\S]*Locale\.Chat\.InputActions\.ToBottom[\s\S]*aria-controls="chat-scroll-body"[\s\S]*quickJumpTarget === "top" \? scrollToTop : scrollToBottom[\s\S]*className=\{styles\["chat-scroll-direction-icon"\]\}[\s\S]*<BottomIcon \/>[\s\S]*<PromptHints/,
     );
     expect(scrollToBottomRootBlock).toMatch(
       /--chat-scroll-bottom-size:\s*42px;/,
@@ -2410,7 +2410,7 @@ describe("Gemini visual migration shell", () => {
       /padding:\s*34px 40px var\(--chat-body-bottom-safe-area\);/,
     );
     expect(chat).toMatch(
-      /const syncHitBottomState = useCallback\(\s*\(e: HTMLElement, syncAutoScroll = false\) => \{[\s\S]*const bottomHeight = e\.scrollTop \+ e\.clientHeight;[\s\S]*setHitBottom\(isHitBottom\);[\s\S]*if \(syncAutoScroll\) \{[\s\S]*setAutoScroll\(isHitBottom\);[\s\S]*\}[\s\S]*return \{ bottomHeight, isHitBottom \};[\s\S]*\},\s*\[isMobileScreen, setAutoScroll\],\s*\);/,
+      /const syncHitBottomState = useCallback\(\s*\(e: HTMLElement, syncAutoScroll = false\) => \{[\s\S]*const bottomHeight = e\.scrollTop \+ e\.clientHeight;[\s\S]*setHitTop\(isHitTop\);[\s\S]*setHitBottom\(isHitBottom\);[\s\S]*if \(syncAutoScroll\) \{[\s\S]*setAutoScroll\(isHitBottom\);[\s\S]*\}[\s\S]*return \{ bottomHeight, isHitBottom, isHitTop \};[\s\S]*\},\s*\[isMobileScreen, setAutoScroll\],\s*\);/,
     );
     expect(chat).toMatch(
       /const onChatBodyScroll = \(e: HTMLElement\) => \{[\s\S]*const \{ bottomHeight \} = syncHitBottomState\(e, true\);/,
@@ -12565,6 +12565,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(headingBlock).toMatch(/line-height:\s*1\.32;/);
     expect(headingBlock).toMatch(/letter-spacing:\s*0;/);
+    expect(headingBlock).toMatch(
+      /scroll-margin-block-start:\s*var\(--markdown-heading-gap\);/,
+    );
     expect(stackedHeadingBlock).toMatch(
       /margin-top:\s*var\(--markdown-heading-stack-gap\);/,
     );
@@ -25430,6 +25433,10 @@ describe("Gemini visual migration shell", () => {
       markdownStyles,
       ".markdown-body :is(h1, h2, h3, h4, h5, h6) + :is(h1, h2, h3, h4, h5, h6)",
     );
+    const headingBlock = readRootCssBlock(
+      markdownStyles,
+      ".markdown-body h1,\n.markdown-body h2,\n.markdown-body h3,\n.markdown-body h4,\n.markdown-body h5,\n.markdown-body h6",
+    );
     const blockquoteStreamingSelector =
       '.markdown-body[data-streaming="true"] > blockquote:last-child > :is(ul, ol):last-child > li:last-child::after';
     const blockquoteStreamingCaretBlock = readRootCssBlock(
@@ -25505,9 +25512,10 @@ describe("Gemini visual migration shell", () => {
       /color:\s*var\(--markdown-blockquote-color\);/,
     );
     expect(blockquoteBlock).toMatch(/overflow-wrap:\s*anywhere;/);
-    expect(headingStackBlock).toMatch(
-      /scroll-margin-top:\s*var\(--markdown-heading-gap\);/,
+    expect(headingBlock).toMatch(
+      /scroll-margin-block-start:\s*var\(--markdown-heading-gap\);/,
     );
+    expect(headingStackBlock).not.toMatch(/scroll-margin/);
 
     expect(inlineCodeBlock).toMatch(/box-decoration-break:\s*clone;/);
     expect(inlineCodeBlock).toMatch(

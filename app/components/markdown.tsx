@@ -39,6 +39,11 @@ import {
 } from "../utils/markdown-sanitize";
 import { ATTACHMENT_WIRE_LABELS } from "../utils/attachment-wire";
 import { shouldPromoteMarkdownSurface } from "../utils/markdown-surface-width";
+import {
+  findMarkdownAnchorTarget,
+  isMarkdownFragmentHref,
+  rehypeMarkdownHeadingAnchors,
+} from "../utils/markdown-anchor";
 
 export { isSafeMarkdownImageSource, markdownSanitizeSchema };
 
@@ -1448,6 +1453,7 @@ function MarkDownContentInner(
   } & MarkdownImageActionProps,
 ) {
   const { content, streaming = false } = props;
+  const markdownAnchorScope = useId();
   const escapedContent = useMemo(() => {
     // 检查是否是 base64 图像数据
     try {
@@ -1510,6 +1516,7 @@ function MarkDownContentInner(
       rehypePlugins={[
         RehypeRaw,
         [RehypeSanitize, markdownSanitizeSchema],
+        [rehypeMarkdownHeadingAnchors, { scope: markdownAnchorScope }],
         RehypeKatex,
         ...(!streaming ? [REHYPE_HIGHLIGHT_PLUGIN] : []),
       ]}
@@ -1589,6 +1596,46 @@ function MarkDownContentInner(
               <MarkdownMediaCard kind="video" href={href}>
                 {aProps.children}
               </MarkdownMediaCard>
+            );
+          }
+
+          if (isMarkdownFragmentHref(href)) {
+            return (
+              <a
+                {...aProps}
+                href={href}
+                target={undefined}
+                rel={undefined}
+                onClick={(event) => {
+                  event.preventDefault();
+                  const markdownRoot =
+                    event.currentTarget.closest(".markdown-body");
+                  if (!markdownRoot) return;
+
+                  const target = findMarkdownAnchorTarget(markdownRoot, href);
+                  if (!target) return;
+
+                  if (!target.hasAttribute("tabindex")) {
+                    target.tabIndex = -1;
+                  }
+                  try {
+                    target.focus({ preventScroll: true });
+                  } catch {
+                    target.focus();
+                  }
+                  target.scrollIntoView({
+                    behavior: window.matchMedia?.(
+                      "(prefers-reduced-motion: reduce)",
+                    ).matches
+                      ? "auto"
+                      : "smooth",
+                    block: "start",
+                    inline: "nearest",
+                  });
+                }}
+              >
+                {aProps.children || href}
+              </a>
             );
           }
 

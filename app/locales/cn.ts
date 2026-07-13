@@ -65,6 +65,7 @@ const cn = {
     },
     InputActions: {
       Stop: "停止响应",
+      ToTop: "滚到最早",
       ToBottom: "滚到最新",
       Theme: {
         auto: "自动主题",

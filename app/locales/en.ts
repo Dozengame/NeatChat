@@ -66,6 +66,7 @@ const en: LocaleType = {
     },
     InputActions: {
       Stop: "Stop",
+      ToTop: "To Earliest",
       ToBottom: "To Latest",
       Theme: {
         auto: "Auto",

@@ -3582,6 +3582,7 @@ summary,
   font-weight: var(--base-text-weight-semibold, 600);
   line-height: 1.32;
   letter-spacing: 0;
+  scroll-margin-block-start: var(--markdown-heading-gap);
 }
 
 .markdown-body h2 {
@@ -3614,7 +3615,6 @@ summary,
 
 .markdown-body :is(h1, h2, h3, h4, h5, h6) + :is(h1, h2, h3, h4, h5, h6) {
   margin-top: var(--markdown-heading-stack-gap);
-  scroll-margin-top: var(--markdown-heading-gap);
 }
 
 .markdown-body h3 {
