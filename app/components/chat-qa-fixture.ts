@@ -12,6 +12,8 @@ const MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_PARAM = "dropzone_preview";
 const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_PARAM =
   "attachment_strip_preview";
 const MARKDOWN_STRESS_QA_HISTORY_COUNT_PARAM = "history_count";
+const MARKDOWN_STRESS_QA_HISTORY_DENSITY_PARAM = "history_density";
+const MARKDOWN_STRESS_QA_INTERACTIVE_INPUT_PARAM = "interactive_input";
 export const MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX = "codex-qa-markdown-stress";
 const IMAGE_GALLERY_QA_MESSAGE_ID_PREFIX = "codex-qa-image-gallery";
 const JIMENG_PARSER_QA_MESSAGE_ID_PREFIX = "codex-qa-jimeng-parser";
@@ -439,6 +441,13 @@ export function isMarkdownStressQaEnabled(locationSearch: string) {
   return params.get("codex_qa") === MARKDOWN_STRESS_QA_PARAM;
 }
 
+export function isMarkdownStressQaInteractiveInputEnabled(
+  locationSearch: string,
+) {
+  const params = new URLSearchParams(locationSearch);
+  return params.get(MARKDOWN_STRESS_QA_INTERACTIVE_INPUT_PARAM) === "editable";
+}
+
 export function isImageGalleryQaEnabled(locationSearch: string) {
   const params = new URLSearchParams(locationSearch);
   return params.get("codex_qa") === IMAGE_GALLERY_QA_PARAM;
@@ -561,6 +570,8 @@ export function getMarkdownStressQaMessages(
     ...MARKDOWN_STRESS_QA_MESSAGES,
     ...MARKDOWN_STRESS_QA_BOUNDARY_MESSAGES,
   ];
+  const compactHistory =
+    params.get(MARKDOWN_STRESS_QA_HISTORY_DENSITY_PARAM) === "compact";
 
   return Array.from({ length: historyCount }, (_, index) => {
     const template = historyTemplates[index % historyTemplates.length];
@@ -568,10 +579,15 @@ export function getMarkdownStressQaMessages(
       ...template,
       id: `${template.id}-history-${index}`,
       date: new Date(Date.UTC(2026, 6, 13, 0, 0, index)).toISOString(),
-      streaming:
-        index === historyCount - 1 && template.role === "assistant"
-          ? true
-          : undefined,
+      role: compactHistory ? "user" : template.role,
+      content: compactHistory
+        ? `${template.role === "user" ? "短消息" : "简短回复"} ${index + 1}`
+        : template.content,
+      streaming: compactHistory
+        ? undefined
+        : index === historyCount - 1 && template.role === "assistant"
+        ? true
+        : undefined,
     };
   });
 }

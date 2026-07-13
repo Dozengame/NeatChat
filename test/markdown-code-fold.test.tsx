@@ -12,6 +12,7 @@ jest.mock("../app/utils", () => ({
 
 jest.mock("../app/utils/token", () => ({
   encode: jest.fn((text: string) => text.split("")),
+  estimateTokenLengthInLLM: jest.fn((text: string) => text.length),
 }));
 
 jest.mock("../app/components/ui-lib-actions", () => ({

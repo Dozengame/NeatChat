@@ -5558,12 +5558,12 @@ summary,
     --markdown-code-block-padding-start: calc(
       var(--markdown-code-line-number-width) + 12px
     );
-    --markdown-code-action-rail-width: 78px;
+    --markdown-code-action-rail-width: 96px;
     --markdown-code-action-inset: 8px;
-    --markdown-code-action-size: 36px;
+    --markdown-code-action-size: 44px;
     --markdown-code-content-end-padding: 12px;
-    --markdown-code-labeled-padding-top: 42px;
-    --markdown-code-fold-overlay-offset: 58px;
+    --markdown-code-labeled-padding-top: 52px;
+    --markdown-code-fold-overlay-offset: 68px;
     font-size: 0.9em;
     line-height: 1.58;
   }
@@ -5795,12 +5795,12 @@ summary,
     --markdown-code-block-padding-start: calc(
       var(--markdown-code-line-number-width) + 12px
     );
-    --markdown-code-action-rail-width: 72px;
+    --markdown-code-action-rail-width: 96px;
     --markdown-code-action-inset: 7px;
-    --markdown-code-action-size: 34px;
+    --markdown-code-action-size: 44px;
     --markdown-code-content-end-padding: 10px;
-    --markdown-code-labeled-padding-top: 38px;
-    --markdown-code-fold-overlay-offset: 54px;
+    --markdown-code-labeled-padding-top: 52px;
+    --markdown-code-fold-overlay-offset: 68px;
   }
 }
 

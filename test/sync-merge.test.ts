@@ -90,6 +90,51 @@ describe("sync state merge", () => {
     ).toMatchObject({ value: "remote", lastUpdateTime: 20 });
   });
 
+  test("fills nested defaults while preserving the latest state as winner", () => {
+    const merged = mergeWithUpdate(
+      {
+        lastUpdateTime: 10,
+        modelConfig: {
+          model: "local-model",
+          reasoningEffort: "medium",
+          max_output_tokens: 4096,
+          nested: { retained: true, winner: "local" },
+        },
+        models: ["local-a", "local-b"],
+      },
+      {
+        lastUpdateTime: 20,
+        modelConfig: {
+          model: "remote-model",
+          nested: { winner: "remote" },
+        },
+        models: ["remote-only"],
+      } as any,
+    ) as any;
+
+    expect(merged.modelConfig).toEqual({
+      model: "remote-model",
+      reasoningEffort: "medium",
+      max_output_tokens: 4096,
+      nested: { retained: true, winner: "remote" },
+    });
+    expect(merged.models).toEqual(["remote-only"]);
+  });
+
+  test("rejects unsafe nested keys from either sync candidate", () => {
+    const unsafeRemote = JSON.parse(
+      '{"lastUpdateTime":20,"modelConfig":{"__proto__":{"polluted":true}}}',
+    );
+
+    expect(() =>
+      mergeWithUpdate(
+        { lastUpdateTime: 10, modelConfig: { model: "safe" } },
+        unsafeRemote,
+      ),
+    ).toThrow("Unsafe object key");
+    expect(({} as any).polluted).toBeUndefined();
+  });
+
   test("preserves selected chat identity and advances render revisions", () => {
     const selected = chatSession("selected", 10, ["local-message"]);
     const localState = {

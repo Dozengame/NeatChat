@@ -1665,12 +1665,16 @@ export const useChatStore = createPersistStore(
                 executeMcpAction(mcpRequest.clientId, mcpRequest.mcp)
                   .then(async (result) => {
                     let resultForChat = result;
-                    let querySubmitId = getJimengQuerySubmitId(resultForChat);
+                    let querySubmitId = getJimengQuerySubmitId(resultForChat, {
+                      // 首次成功响应可能只有本地 MEDIA 路径，因此允许带
+                      // download 参数补查一次；终态查询不得继续轮询成超时。
+                      querySuccessfulResultWithoutMedia: true,
+                    });
                     updateJimengMessage(
                       mergeJimengProgressWithResult(
                         progressText,
                         resultForChat,
-                        { includeImages: !querySubmitId },
+                        { includeMedia: !querySubmitId },
                       ),
                     );
 
@@ -1703,7 +1707,7 @@ export const useChatStore = createPersistStore(
                         mergeJimengProgressWithResult(
                           progressText,
                           resultForChat,
-                          { includeImages: !querySubmitId },
+                          { includeMedia: !querySubmitId },
                         ),
                       );
                     }
@@ -1719,7 +1723,7 @@ export const useChatStore = createPersistStore(
                               `error_message: ${Locale.Chat.ImageGeneration.QueryTimeout}`,
                             ].join("\n"),
                           ),
-                          { includeImages: false },
+                          { includeMedia: false },
                         ),
                       );
                     }
@@ -1733,7 +1737,7 @@ export const useChatStore = createPersistStore(
                           "gen_status: failed",
                           `error_message: ${Locale.Chat.ImageGeneration.SubmitOrQueryFailed}`,
                         ].join("\n"),
-                        { includeImages: false },
+                        { includeMedia: false },
                       ),
                     );
                     showToast(Locale.Chat.ImageGeneration.Failed);

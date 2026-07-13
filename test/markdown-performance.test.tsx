@@ -1,5 +1,5 @@
 jest.mock("../app/utils/token", () => ({
-  encode: jest.fn((text: string) => text.split("")),
+  estimateTokenLengthInLLM: jest.fn((text: string) => text.length),
 }));
 
 jest.mock("../app/store", () => ({
@@ -50,7 +50,7 @@ jest.mock("next/dynamic", () => {
 });
 
 import { fireEvent, render, screen } from "@testing-library/react";
-import { encode } from "../app/utils/token";
+import { estimateTokenLengthInLLM } from "../app/utils/token";
 import { Markdown, MarkdownSpan } from "../app/components/markdown";
 import Locale from "../app/locales";
 import RehypeHighlight from "rehype-highlight";
@@ -68,14 +68,14 @@ describe("Markdown performance", () => {
 
     rerender(<Markdown content="hello world" messageId="m1" streaming />);
 
-    expect(encode).not.toHaveBeenCalled();
+    expect(estimateTokenLengthInLLM).not.toHaveBeenCalled();
 
     rerender(
       <Markdown content="hello world" messageId="m1" streaming={false} />,
     );
 
-    expect(encode).toHaveBeenCalledTimes(1);
-    expect(encode).toHaveBeenCalledWith("hello world");
+    expect(estimateTokenLengthInLLM).toHaveBeenCalledTimes(1);
+    expect(estimateTokenLengthInLLM).toHaveBeenCalledWith("hello world");
   });
 
   test("defers syntax highlighting until streaming finishes", () => {
@@ -143,32 +143,6 @@ describe("Markdown performance", () => {
     });
   });
 
-  test("delegates content-change scrolling to the chat container", () => {
-    const onContentChange = jest.fn();
-
-    const { rerender } = render(
-      <Markdown
-        content="hello"
-        messageId="m1"
-        streaming
-        shouldAutoScroll
-        onContentChange={onContentChange}
-      />,
-    );
-
-    rerender(
-      <Markdown
-        content="hello world"
-        messageId="m1"
-        streaming
-        shouldAutoScroll
-        onContentChange={onContentChange}
-      />,
-    );
-
-    expect(onContentChange).toHaveBeenCalledTimes(1);
-  });
-
   test("presents token info as a toggled metadata chip", () => {
     window.localStorage.setItem("first_char_delay_m2", "512");
     const tokenCountText = Locale.Chat.TokenInfo.TokenCount(11);
@@ -187,7 +161,7 @@ describe("Markdown performance", () => {
     expect(tokenChip.getAttribute("aria-label")).toBe(tokenInfoLabel);
     expect(tokenChip.getAttribute("aria-pressed")).toBe("false");
     expect(tokenChip.getAttribute("data-token-info-expanded")).toBe("false");
-    expect(encode).toHaveBeenCalledWith("hello world");
+    expect(estimateTokenLengthInLLM).toHaveBeenCalledWith("hello world");
 
     fireEvent.mouseEnter(tokenChip);
     expect(tokenChip.textContent).toBe(tokenDelayText);

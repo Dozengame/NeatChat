@@ -187,6 +187,33 @@ describe("chat render messages", () => {
     expect(visibleMessages[0].content).not.toContain("json:mcp");
   });
 
+  test("projects a Jimeng video result into the following assistant reply", () => {
+    const videoUrl = "https://example.com/jimeng/video-1.mp4";
+    const visibleMessages = getVisibleChatMessages([
+      message({
+        id: "jimeng-result",
+        role: "assistant",
+        isMcpResponse: true,
+        content: [
+          "submit_id: video-1",
+          "gen_status: success",
+          "public_urls:",
+          videoUrl,
+        ].join("\n"),
+      }),
+      message({
+        id: "assistant-final",
+        role: "assistant",
+        content: "视频已生成。",
+      }),
+    ]);
+
+    expect(visibleMessages).toHaveLength(1);
+    expect(visibleMessages[0].content).toContain(
+      `[generated video 1](${videoUrl})`,
+    );
+  });
+
   test("reprocesses only the mutable tail during streaming updates", () => {
     let contentReads = 0;
     let tailContent = "stream-0";

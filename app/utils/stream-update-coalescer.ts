@@ -41,7 +41,9 @@ export function createStreamUpdateCoalescer(
 }
 
 export function getStreamUpdateInterval(contentLength: number) {
-  if (contentLength >= 128_000) return 120;
-  if (contentLength >= 64_000) return 80;
+  if (contentLength >= 256_000) return 1_200;
+  if (contentLength >= 128_000) return 500;
+  if (contentLength >= 64_000) return 250;
+  if (contentLength >= 32_000) return 120;
   return 50;
 }

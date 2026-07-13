@@ -31,7 +31,30 @@ describe("chat scroll performance contract", () => {
 
     expect(hook).toContain("shouldAutoScroll: boolean = true");
     expect(hook).toContain("if (autoScroll && shouldAutoScroll)");
+    expect(hook).toContain('typeof ResizeObserver !== "undefined"');
+    expect(hook).toContain("cancelAnimationFrame(scrollFrameRef.current)");
     expect(hook).not.toContain("autoScroll && !detach");
+  });
+
+  test("backfills only when the initial page does not fill the viewport", () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "app/components/chat.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain(
+      "Math.max(0, renderMessages.length - CHAT_PAGE_SIZE)",
+    );
+    expect(source).toContain("getUnderfilledChatWindowStart(");
+    expect(source).toContain(
+      "Math.max(0, renderMessages.length - MAX_RENDER_MSG_COUNT)",
+    );
+    expect(source).toContain("previousQaMessageWindowKeyRef");
+    expect(source).toContain("data-message-index={absoluteMessageIndex}");
+    expect(source).toContain("preserveMessageWindowAnchor(targetIndex)");
+    expect(source).toContain(
+      "setMsgRenderIndex(renderMessages.length - CHAT_PAGE_SIZE)",
+    );
   });
 
   test("keeps quick-jump direction transient and reaches global message edges", () => {

@@ -6,8 +6,20 @@ const IMAGE_URL_PATTERN =
   /https:\/\/[^\s)"'>]+\.(?:png|jpe?g|webp|gif)(?:\?[^\s)"'>]*)?/gi;
 const IMAGE_URL_LINE_PATTERN =
   /^https:\/\/[^\s)"'>]+\.(?:png|jpe?g|webp|gif)(?:\?[^\s)"'>]*)?$/i;
+const VIDEO_URL_PATTERN =
+  /https:\/\/[^\s)"'>]+\.(?:3g[2p]|avi|m4v|mov|mp4|mpeg|ogv|webm)(?:\?[^\s)"'>]*)?/gi;
+const VIDEO_URL_LINE_PATTERN =
+  /^https:\/\/[^\s)"'>]+\.(?:3g[2p]|avi|m4v|mov|mp4|mpeg|ogv|webm)(?:\?[^\s)"'>]*)?$/i;
+const QUOTED_HTTPS_URL_PATTERN = /["'](https:\/\/[^"']+)["']/gi;
+const BARE_HTTPS_URL_PATTERN = /https:\/\/[^\s"'<>\[\]{}]+/gi;
 const MARKDOWN_IMAGE_PATTERN = /!\[[^\]\n]*\]\((https:\/\/[^\s)]+)\)/gi;
 const MARKDOWN_IMAGE_LINE_PATTERN = /^!\[[^\]\n]*\]\((https:\/\/[^\s)]+)\)$/i;
+const MARKDOWN_VIDEO_PATTERN =
+  /\[[^\]\n]*\]\((https:\/\/[^\s)]+\.(?:3g[2p]|avi|m4v|mov|mp4|mpeg|ogv|webm)(?:\?[^\s)]*)?)\)/gi;
+const MARKDOWN_VIDEO_LINE_PATTERN =
+  /^\[[^\]\n]*\]\((https:\/\/[^\s)]+\.(?:3g[2p]|avi|m4v|mov|mp4|mpeg|ogv|webm)(?:\?[^\s)]*)?)\)$/i;
+const MARKDOWN_GENERATED_MEDIA_PATTERN =
+  /^\[generated (?:media|video) \d+\]\((https:\/\/[^\s)]+)\)$/i;
 const MEDIA_LOCAL_PATH_PATTERN = /MEDIA:\/\S+/gi;
 const GEN_STATUS_PATTERN = /"?gen_status"?\s*[:=]\s*"?([a-zA-Z0-9_-]+)"?/gi;
 const SUBMIT_ID_PATTERN = /"?submit_id"?\s*[:=]\s*"?([^",\s]+)"?/gi;
@@ -126,23 +138,128 @@ function extractPublicImageUrls(text: string) {
   return unique(text.match(IMAGE_URL_PATTERN) ?? []);
 }
 
-function hasDisplayableImage(text: string) {
-  return (
-    extractMarkdownImages(text).length > 0 ||
-    extractPublicImageUrls(text).length > 0
+function extractMarkdownVideos(text: string) {
+  return unique(
+    Array.from(text.matchAll(MARKDOWN_VIDEO_PATTERN)).map((match) => match[1]),
   );
 }
 
-function getMarkdownImageLines(text: string) {
-  return extractMarkdownImages(text).map(
-    (item) => item.markdown || item.fallback,
+function extractPublicVideoUrls(text: string) {
+  return unique(text.match(VIDEO_URL_PATTERN) ?? []);
+}
+
+function extractDeclaredUrlsFromValue(value: string) {
+  const quotedUrls = Array.from(value.matchAll(QUOTED_HTTPS_URL_PATTERN)).map(
+    (match) => match[1].trim(),
   );
+  if (quotedUrls.length > 0) {
+    return quotedUrls;
+  }
+
+  return (value.match(BARE_HTTPS_URL_PATTERN) ?? []).map((url) => {
+    let normalized = url.replace(/[.,;]+$/, "");
+    while (normalized.endsWith(")")) {
+      const closingCount = normalized.match(/\)/g)?.length ?? 0;
+      const openingCount = normalized.match(/\(/g)?.length ?? 0;
+      if (closingCount <= openingCount) break;
+      normalized = normalized.slice(0, -1);
+    }
+    return normalized;
+  });
+}
+
+function extractDeclaredPublicUrls(text: string) {
+  const urls: string[] = [];
+  let collecting = false;
+
+  for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    const header = trimmed.match(/^"?public_urls"?\s*[:=]\s*(.*)$/i);
+    if (header) {
+      collecting = true;
+      urls.push(...extractDeclaredUrlsFromValue(header[1]));
+      continue;
+    }
+
+    if (!collecting) continue;
+    const lineUrls = extractDeclaredUrlsFromValue(trimmed);
+    if (lineUrls.length > 0) {
+      urls.push(...lineUrls);
+      continue;
+    }
+    if (trimmed && !/^[\],]+$/.test(trimmed)) {
+      collecting = false;
+    }
+  }
+
+  return unique(urls);
+}
+
+type DisplayableMediaItem = {
+  url: string;
+  markdown: string;
+};
+
+function getDisplayableMediaItems(text: string) {
+  const items: DisplayableMediaItem[] = [];
+  const seen = new Set<string>();
+  const add = (url: string, markdown: string) => {
+    if (!url || seen.has(url)) return;
+    seen.add(url);
+    items.push({ url, markdown });
+  };
+
+  extractMarkdownImages(text).forEach((item, index) =>
+    add(item.url, item.markdown || item.fallback),
+  );
+  extractMarkdownVideos(text).forEach((url, index) =>
+    add(url, `[generated video ${index + 1}](${url})`),
+  );
+  Array.from(text.matchAll(new RegExp(MARKDOWN_GENERATED_MEDIA_PATTERN, "gim")))
+    .map((match) => match[1])
+    .forEach((url, index) =>
+      add(url, `[generated media ${index + 1}](${url})`),
+    );
+  extractPublicImageUrls(text).forEach((url, index) =>
+    add(url, `![generated image ${index + 1}](${url})`),
+  );
+  extractPublicVideoUrls(text).forEach((url, index) =>
+    add(url, `[generated video ${index + 1}](${url})`),
+  );
+  extractDeclaredPublicUrls(text).forEach((url, index) =>
+    add(url, `[generated media ${index + 1}](${url})`),
+  );
+
+  return items;
+}
+
+function hasDisplayableMedia(text: string) {
+  return getDisplayableMediaItems(text).length > 0;
+}
+
+function getMarkdownMediaLines(text: string) {
+  return getDisplayableMediaItems(text).map((item) => item.markdown);
 }
 
 function removeMarkdownImageLines(text: string) {
   return text
     .split(/\r?\n/)
     .filter((line) => !line.trim().match(MARKDOWN_IMAGE_LINE_PATTERN))
+    .join("\n")
+    .trim();
+}
+
+function removeMarkdownMediaLines(text: string) {
+  return text
+    .split(/\r?\n/)
+    .filter((line) => {
+      const trimmed = line.trim();
+      return !(
+        MARKDOWN_IMAGE_LINE_PATTERN.test(trimmed) ||
+        MARKDOWN_VIDEO_LINE_PATTERN.test(trimmed) ||
+        MARKDOWN_GENERATED_MEDIA_PATTERN.test(trimmed)
+      );
+    })
     .join("\n")
     .trim();
 }
@@ -251,6 +368,8 @@ function isDiagnosticBlockBoundary(line: string) {
     DIAGNOSTIC_BLOCK_BOUNDARY_PATTERN.test(trimmed) ||
     MARKDOWN_IMAGE_LINE_PATTERN.test(trimmed) ||
     IMAGE_URL_LINE_PATTERN.test(trimmed) ||
+    MARKDOWN_VIDEO_LINE_PATTERN.test(trimmed) ||
+    VIDEO_URL_LINE_PATTERN.test(trimmed) ||
     trimmed.startsWith("/home/ubuntu/") ||
     trimmed === "{" ||
     trimmed === "}"
@@ -341,14 +460,31 @@ function removeInternalJimengLines(text: string) {
     .trim();
 }
 
-export function getJimengQuerySubmitId(result: unknown) {
+export function getJimengQuerySubmitId(
+  result: unknown,
+  options: { querySuccessfulResultWithoutMedia?: boolean } = {},
+) {
   const sanitizedText = removeLocalMediaPaths(resultToText(result));
-  if (!sanitizedText || hasDisplayableImage(sanitizedText)) {
+  if (!sanitizedText) {
     return undefined;
   }
 
   const status = getLastGenStatus(sanitizedText);
   if (isTerminalFailureStatus(status)) {
+    return undefined;
+  }
+
+  if (
+    hasDisplayableMedia(sanitizedText) &&
+    (!status || status.toLowerCase() === "success")
+  ) {
+    return undefined;
+  }
+
+  if (
+    status?.toLowerCase() === "success" &&
+    !options.querySuccessfulResultWithoutMedia
+  ) {
     return undefined;
   }
 
@@ -364,8 +500,8 @@ export function combineMcpToolResults(...results: unknown[]) {
     .join("\n\n");
 }
 
-export function hasJimengDisplayableImage(result: unknown) {
-  return hasDisplayableImage(removeLocalMediaPaths(resultToText(result)));
+export function hasJimengDisplayableMedia(result: unknown) {
+  return hasDisplayableMedia(removeLocalMediaPaths(resultToText(result)));
 }
 
 export function getJimengGalleryDisplay(content: string) {
@@ -440,7 +576,7 @@ export function formatFailedMcpRequestForChat() {
 export function mergeJimengProgressWithResult(
   progressText: string,
   result: unknown,
-  options: { includeImages?: boolean } = {},
+  options: { includeMedia?: boolean } = {},
 ) {
   const formattedResult = formatMcpToolResultForChat(
     JIMENG_MCP_SERVER_ID,
@@ -448,8 +584,8 @@ export function mergeJimengProgressWithResult(
   );
   const genStatus = getLastGenStatus(formattedResult);
   const errorDetails = extractErrorDetails(formattedResult);
-  const imageMarkdown = options.includeImages
-    ? getMarkdownImageLines(formattedResult).join("\n")
+  const mediaMarkdown = options.includeMedia
+    ? getMarkdownMediaLines(formattedResult).join("\n")
     : "";
   const progressLines = [
     `- ${JimengDisplay.Status}${getJimengStatusLabel(genStatus)}`,
@@ -459,7 +595,7 @@ export function mergeJimengProgressWithResult(
   return [
     stripJimengProgressSection(progressText),
     `${JimengDisplay.Progress}\n${progressLines.filter(Boolean).join("\n")}`,
-    imageMarkdown,
+    mediaMarkdown,
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -470,14 +606,11 @@ export function mergeJimengResultIntoReply(replyText: string, result: unknown) {
     JIMENG_MCP_SERVER_ID,
     result,
   );
-  const missingImageLines = getMarkdownImageLines(formattedResult).filter(
-    (line) => {
-      const url = line.match(MARKDOWN_IMAGE_LINE_PATTERN)?.[1];
-      return !!url && !replyText.includes(url);
-    },
+  const missingMediaItems = getDisplayableMediaItems(formattedResult).filter(
+    (item) => !replyText.includes(item.url),
   );
 
-  if (missingImageLines.length === 0) {
+  if (missingMediaItems.length === 0) {
     return replyText;
   }
 
@@ -486,10 +619,10 @@ export function mergeJimengResultIntoReply(replyText: string, result: unknown) {
   const hasDiagnostics =
     (!submitId || replyText.includes(submitId)) &&
     (!genStatus || replyText.toLowerCase().includes(genStatus.toLowerCase()));
-  const resultTextWithoutImages = removeMarkdownImageLines(formattedResult);
+  const resultTextWithoutMedia = removeMarkdownMediaLines(formattedResult);
   const appendedResult = [
-    hasDiagnostics ? "" : resultTextWithoutImages,
-    missingImageLines.join("\n"),
+    hasDiagnostics ? "" : resultTextWithoutMedia,
+    missingMediaItems.map((item) => item.markdown).join("\n"),
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -511,26 +644,18 @@ export function formatMcpToolResultForChat(clientId: string, result: unknown) {
     return "";
   }
 
-  const markdownImages = extractMarkdownImages(sanitizedText);
-  const publicImageUrls = extractPublicImageUrls(sanitizedText);
+  const displayableMedia = getDisplayableMediaItems(sanitizedText);
   const diagnosticText = buildJimengDiagnosticText(sanitizedText);
 
   if (hasNonSuccessStatus(sanitizedText)) {
     return diagnosticText || removeInternalJimengLines(sanitizedText);
   }
 
-  if (markdownImages.length > 0) {
-    const imageMarkdown = markdownImages
-      .map((item) => item.markdown || item.fallback)
+  if (displayableMedia.length > 0) {
+    const mediaMarkdown = displayableMedia
+      .map((item) => item.markdown)
       .join("\n");
-    return [diagnosticText, imageMarkdown].filter(Boolean).join("\n\n");
-  }
-
-  if (publicImageUrls.length > 0) {
-    const imageMarkdown = publicImageUrls
-      .map((url, index) => `![generated image ${index + 1}](${url})`)
-      .join("\n");
-    return [diagnosticText, imageMarkdown].filter(Boolean).join("\n\n");
+    return [diagnosticText, mediaMarkdown].filter(Boolean).join("\n\n");
   }
 
   return diagnosticText || removeInternalJimengLines(sanitizedText);

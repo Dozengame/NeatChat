@@ -1495,6 +1495,11 @@
     border-radius: 999px;
   }
 
+  .sidebar-settings-icon {
+    width: 20px;
+    height: 20px;
+  }
+
   .sidebar-settings-label {
     display: none;
   }
@@ -1855,8 +1860,24 @@
     box-shadow: var(--focus-ring-shadow);
   }
 
-  button {
+  .sidebar-settings-icon {
     flex: 0 0 auto;
+  }
+}
+
+.sidebar-settings-icon {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    filter: none !important;
+    color: currentColor;
   }
 }
 
@@ -1873,7 +1894,7 @@
   background-color: var(--sidebar-item-active-background);
   color: var(--primary);
 
-  button {
+  .sidebar-settings-icon {
     color: var(--primary);
     background: var(--sidebar-action-active-background);
     box-shadow:
@@ -1892,7 +1913,7 @@
 }
 
 :global(.dark) .sidebar-settings-link-active {
-  button {
+  .sidebar-settings-icon {
     background: var(--sidebar-action-active-background);
     box-shadow:
       0 0 0 1px var(--sidebar-action-active-ring-shadow),

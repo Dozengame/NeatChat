@@ -66,18 +66,32 @@ describe("stream update coalescer", () => {
     coalescer.schedule();
     expect(publish).toHaveBeenCalledTimes(1);
 
-    contentLength = 70_000;
+    contentLength = 40_000;
     coalescer.schedule();
-    jest.advanceTimersByTime(79);
+    jest.advanceTimersByTime(119);
     expect(publish).toHaveBeenCalledTimes(1);
     jest.advanceTimersByTime(1);
     expect(publish).toHaveBeenCalledTimes(2);
 
-    contentLength = 140_000;
+    contentLength = 70_000;
     coalescer.schedule();
-    jest.advanceTimersByTime(119);
+    jest.advanceTimersByTime(249);
     expect(publish).toHaveBeenCalledTimes(2);
     jest.advanceTimersByTime(1);
     expect(publish).toHaveBeenCalledTimes(3);
+
+    contentLength = 140_000;
+    coalescer.schedule();
+    jest.advanceTimersByTime(499);
+    expect(publish).toHaveBeenCalledTimes(3);
+    jest.advanceTimersByTime(1);
+    expect(publish).toHaveBeenCalledTimes(4);
+
+    contentLength = 300_000;
+    coalescer.schedule();
+    jest.advanceTimersByTime(1_199);
+    expect(publish).toHaveBeenCalledTimes(4);
+    jest.advanceTimersByTime(1);
+    expect(publish).toHaveBeenCalledTimes(5);
   });
 });

@@ -20,6 +20,53 @@ export function followChatTailAfterResize(
   return true;
 }
 
+export function getUnderfilledChatWindowStart(
+  currentStart: number,
+  minimumStart: number,
+  contentHeight: number,
+  viewportHeight: number,
+  pageSize: number,
+) {
+  if (
+    currentStart <= minimumStart ||
+    contentHeight > viewportHeight + 1 ||
+    pageSize <= 0
+  ) {
+    return currentStart;
+  }
+
+  return Math.max(minimumStart, currentStart - pageSize);
+}
+
+export function isMessageIndexRetainedInWindow(
+  messageIndex: number,
+  windowStart: number,
+  maxRenderCount: number,
+) {
+  return (
+    Number.isInteger(messageIndex) &&
+    maxRenderCount > 0 &&
+    messageIndex >= windowStart &&
+    messageIndex < windowStart + maxRenderCount
+  );
+}
+
+export function isRetainedVisibleMessageAnchor(
+  messageIndex: number,
+  messageTop: number,
+  messageBottom: number,
+  windowStart: number,
+  maxRenderCount: number,
+  viewportTop: number,
+  viewportBottom: number,
+) {
+  return (
+    isMessageIndexRetainedInWindow(messageIndex, windowStart, maxRenderCount) &&
+    messageBottom >= viewportTop &&
+    messageTop <= viewportBottom
+  );
+}
+
 export function accumulateChatScrollDirection(
   accumulatedDelta: number,
   scrollDelta: number,

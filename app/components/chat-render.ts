@@ -6,7 +6,7 @@ import {
   formatFailedMcpRequestForChat,
   formatJimengMcpRequestForChat,
   formatPendingMcpRequestForChat,
-  hasJimengDisplayableImage,
+  hasJimengDisplayableMedia,
   mergeJimengProgressWithResult,
   mergeJimengResultIntoReply,
 } from "../mcp/display";
@@ -77,14 +77,14 @@ function projectMessage(
             state.visibleMessages[state.pendingJimengProgressIndex],
           ),
           textContent,
-          { includeImages: false },
+          { includeMedia: false },
         ),
       };
       state.pendingJimengResult = textContent;
       return;
     }
 
-    if (hasJimengDisplayableImage(textContent)) {
+    if (hasJimengDisplayableMedia(textContent)) {
       state.pendingJimengResult = textContent;
     }
     return;
@@ -168,7 +168,7 @@ function finalizeProjection(state: VisibleMessageProjectionState) {
           visibleMessages[state.pendingJimengProgressIndex],
         ),
         state.pendingJimengResult,
-        { includeImages: true },
+        { includeMedia: true },
       ),
     };
   }

@@ -23,6 +23,11 @@ describe("development-only chat QA fixture", () => {
     expect(fixtureSource).toContain("[代码块](#代码块)");
     expect(fixtureSource).toContain("codex-qa-markdown-stress");
     expect(fixtureSource).toContain('"history_count"');
+    expect(fixtureSource).toContain('"history_density"');
+    expect(fixtureSource).toContain('"interactive_input"');
+    expect(fixtureSource).toContain(
+      "isMarkdownStressQaInteractiveInputEnabled",
+    );
     expect(fixtureSource).toMatch(/Math\.min\(\s*240,/);
     expect(fixtureSource).toContain("data:image/png;base64,");
     expect(fixtureSource).not.toContain("data:image/svg+xml");
@@ -32,5 +37,16 @@ describe("development-only chat QA fixture", () => {
     expect(fixtureSource).toContain('JIMENG_PARSER_QA_PARAM = "jimeng-parser"');
     expect(fixtureSource).toContain("getJimengParserQaMessages");
     expect(fixtureSource).toContain('"model_version":"4.6","poll":0}}');
+  });
+
+  test("creates compact rows for tall-viewport underfill QA", async () => {
+    const fixture = await import("../app/components/chat-qa-fixture");
+    const messages = fixture.getMarkdownStressQaMessages(
+      "?codex_qa=markdown-stress&history_count=60&history_density=compact",
+    );
+
+    expect(messages).toHaveLength(60);
+    expect(messages[0].content).toBe("短消息 1");
+    expect(messages[1].content).toBe("简短回复 2");
   });
 });

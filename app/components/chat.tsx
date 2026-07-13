@@ -86,6 +86,9 @@ import {
   accumulateChatScrollDirection,
   followChatTailAfterResize,
   getAnchoredScrollTop,
+  getUnderfilledChatWindowStart,
+  isMessageIndexRetainedInWindow,
+  isRetainedVisibleMessageAnchor,
   type ChatScrollTarget,
 } from "../utils/chat-scroll-navigation";
 
@@ -110,6 +113,7 @@ import { showConfirm, showPrompt, showToast } from "./ui-lib-actions";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   CHAT_PAGE_SIZE,
+  MAX_RENDER_MSG_COUNT,
   DEFAULT_TTS_ENGINE,
   ENABLE_REALTIME_CHAT,
   ENABLE_TEXT_TO_SPEECH,
@@ -169,11 +173,7 @@ import {
   uploadAttachments,
 } from "../utils/file";
 import { formatAttachmentForPrompt } from "../utils/attachment-wire";
-import {
-  activateMcpClient,
-  deactivateMcpClient,
-  isMcpEnabled,
-} from "../mcp/actions";
+import { activateMcpClient, isMcpEnabled } from "../mcp/actions";
 import {
   type ConfigSource,
   createConfigFieldMeta,
@@ -838,18 +838,36 @@ function useScrollToBottom(
   // for auto-scroll
 
   const [autoScroll, setAutoScroll] = useState(true);
+  const scrollFrameRef = useRef<number | null>(null);
   const scrollDomToBottom = useCallback(() => {
     const dom = scrollRef.current;
     if (dom) {
-      requestAnimationFrame(() => {
+      if (scrollFrameRef.current !== null) {
+        cancelAnimationFrame(scrollFrameRef.current);
+      }
+      scrollFrameRef.current = requestAnimationFrame(() => {
+        scrollFrameRef.current = null;
         setAutoScroll(true);
         dom.scrollTo(0, dom.scrollHeight);
       });
     }
   }, [scrollRef]);
 
-  // auto scroll
+  useEffect(
+    () => () => {
+      if (scrollFrameRef.current !== null) {
+        cancelAnimationFrame(scrollFrameRef.current);
+      }
+    },
+    [],
+  );
+
+  // ResizeObserver follows content growth in modern browsers. This signal is
+  // only the capability fallback, avoiding duplicate scroll/layout work.
   useLayoutEffect(() => {
+    if (typeof ResizeObserver !== "undefined" && scrollSignal !== undefined) {
+      return;
+    }
     if (autoScroll && shouldAutoScroll) {
       scrollDomToBottom();
     }
@@ -1084,19 +1102,6 @@ function useChatActionsView(props: ChatActionsProps) {
           error instanceof Error
             ? error.message
             : Locale.Chat.ImageGeneration.EnableFailed,
-        );
-        return false;
-      }
-    } else {
-      try {
-        await deactivateMcpClient(JIMENG_MCP_SERVER_ID);
-      } catch (error) {
-        if (!settleFailedIntent()) return false;
-        console.warn("[MCP] Failed to deactivate Jimeng MCP", error);
-        showToast(
-          error instanceof Error
-            ? error.message
-            : Locale.Chat.ImageGeneration.DisableFailed,
         );
         return false;
       }
@@ -1907,6 +1912,13 @@ function useChatInnerView() {
   }, [location.search]);
   const markdownStressQaEnabled = useMemo(
     () => chatQaFixture?.isMarkdownStressQaEnabled(location.search) ?? false,
+    [chatQaFixture, location.search],
+  );
+  const markdownStressQaInteractiveInputEnabled = useMemo(
+    () =>
+      chatQaFixture?.isMarkdownStressQaInteractiveInputEnabled(
+        location.search,
+      ) ?? false,
     [chatQaFixture, location.search],
   );
   const imageGalleryQaEnabled = useMemo(
@@ -3101,6 +3113,7 @@ function useChatInnerView() {
   msgRenderIndexRef.current = msgRenderIndex;
   const pendingMessageWindowAnchorRef = useRef<{
     key: string;
+    index: number;
     top: number;
   } | null>(null);
   const setMsgRenderIndex = useCallback(
@@ -3112,10 +3125,29 @@ function useChatInnerView() {
     [renderMessages.length],
   );
 
+  const qaMessageWindowKey = markdownStressQaEnabled
+    ? `markdown:${location.search}`
+    : imageGalleryQaEnabled
+    ? `gallery:${location.search}`
+    : jimengParserQaEnabled
+    ? `jimeng:${location.search}`
+    : undefined;
+  const previousQaMessageWindowKeyRef = useRef<string>();
+  useLayoutEffect(() => {
+    if (!qaMessageWindowKey) {
+      previousQaMessageWindowKeyRef.current = undefined;
+      return;
+    }
+    if (previousQaMessageWindowKeyRef.current === qaMessageWindowKey) return;
+
+    previousQaMessageWindowKeyRef.current = qaMessageWindowKey;
+    setMsgRenderIndex(renderMessages.length - CHAT_PAGE_SIZE);
+  }, [qaMessageWindowKey, renderMessages.length, setMsgRenderIndex]);
+
   const messageRenderStartIndex = msgRenderIndex;
   const messages = useMemo(() => {
     const endRenderIndex = Math.min(
-      messageRenderStartIndex + 3 * CHAT_PAGE_SIZE,
+      messageRenderStartIndex + MAX_RENDER_MSG_COUNT,
       renderMessages.length,
     );
     return renderMessages.slice(messageRenderStartIndex, endRenderIndex);
@@ -3124,6 +3156,27 @@ function useChatInnerView() {
   const shortcutMessageWindowStartRef = useRef(messageRenderStartIndex);
   shortcutMessagesRef.current = messages;
   shortcutMessageWindowStartRef.current = messageRenderStartIndex;
+  useLayoutEffect(() => {
+    const scrollDom = scrollRef.current;
+    const readingSurface = readingSurfaceRef.current;
+    if (!scrollDom || !readingSurface) return;
+
+    const nextStart = getUnderfilledChatWindowStart(
+      messageRenderStartIndex,
+      Math.max(0, renderMessages.length - MAX_RENDER_MSG_COUNT),
+      readingSurface.scrollHeight,
+      scrollDom.clientHeight,
+      CHAT_PAGE_SIZE,
+    );
+    if (nextStart !== messageRenderStartIndex) {
+      setMsgRenderIndex(nextStart);
+    }
+  }, [
+    messageRenderStartIndex,
+    messages.length,
+    renderMessages.length,
+    setMsgRenderIndex,
+  ]);
   useLayoutEffect(() => {
     const pendingAnchor = pendingMessageWindowAnchorRef.current;
     const scrollDom = scrollRef.current;
@@ -3384,34 +3437,57 @@ function useChatInnerView() {
     const nextPageMsgIndex = msgRenderIndex + CHAT_PAGE_SIZE;
     const maxRenderIndex = Math.max(0, renderMessages.length - CHAT_PAGE_SIZE);
 
-    const preserveMessageWindowAnchor = () => {
-      if (pendingMessageWindowAnchorRef.current) return;
+    const preserveMessageWindowAnchor = (targetIndex: number) => {
+      const pendingAnchor = pendingMessageWindowAnchorRef.current;
+      if (pendingAnchor) {
+        return isMessageIndexRetainedInWindow(
+          pendingAnchor.index,
+          targetIndex,
+          MAX_RENDER_MSG_COUNT,
+        );
+      }
       const scrollRect = e.getBoundingClientRect();
       const anchorElement = Array.from(
         readingSurfaceRef.current?.querySelectorAll<HTMLElement>(
           "[data-message-anchor]",
         ) ?? [],
-      ).find(
-        (element) => element.getBoundingClientRect().bottom >= scrollRect.top,
-      );
+      ).find((element) => {
+        const messageIndex = Number(element.dataset.messageIndex);
+        const messageRect = element.getBoundingClientRect();
+        return isRetainedVisibleMessageAnchor(
+          messageIndex,
+          messageRect.top,
+          messageRect.bottom,
+          targetIndex,
+          MAX_RENDER_MSG_COUNT,
+          scrollRect.top,
+          scrollRect.bottom,
+        );
+      });
       const key = anchorElement?.dataset.messageAnchor;
-      if (!anchorElement || !key) return;
+      if (!anchorElement || !key) return false;
       pendingMessageWindowAnchorRef.current = {
         key,
+        index: Number(anchorElement.dataset.messageIndex),
         top: anchorElement.getBoundingClientRect().top - scrollRect.top,
       };
+      return true;
     };
 
     if (isTouchTopEdge && !isTouchBottomEdge) {
       const targetIndex = Math.max(0, prevPageMsgIndex);
-      if (targetIndex !== msgRenderIndex) {
-        preserveMessageWindowAnchor();
+      if (
+        targetIndex !== msgRenderIndex &&
+        preserveMessageWindowAnchor(targetIndex)
+      ) {
         setMsgRenderIndex(targetIndex);
       }
     } else if (isTouchBottomEdge) {
       const targetIndex = Math.min(maxRenderIndex, nextPageMsgIndex);
-      if (targetIndex !== msgRenderIndex) {
-        preserveMessageWindowAnchor();
+      if (
+        targetIndex !== msgRenderIndex &&
+        preserveMessageWindowAnchor(targetIndex)
+      ) {
         setMsgRenderIndex(targetIndex);
       }
     }
@@ -5354,6 +5430,10 @@ function useChatInnerView() {
                           isUser
                             ? styles["chat-message-user"]
                             : styles["chat-message"],
+                          !isUser &&
+                            absoluteMessageIndex ===
+                              renderMessages.length - 1 &&
+                            styles["chat-message-tail"],
                         )}
                         role="listitem"
                         aria-label={messageLabel}
@@ -5364,6 +5444,7 @@ function useChatInnerView() {
                             : undefined
                         }
                         data-message-anchor={messageRenderIdentity}
+                        data-message-index={absoluteMessageIndex}
                       >
                         <div className={styles["chat-message-container"]}>
                           <div className={styles["chat-message-header"]}>
@@ -5460,14 +5541,12 @@ function useChatInnerView() {
                               isUser={isUser}
                               messageId={message.id}
                               streaming={message.streaming}
-                              shouldAutoScroll={autoScroll}
                               enableArtifacts={
                                 session.mask?.enableArtifacts !== false
                               }
                               enableCodeFold={
                                 session.mask?.enableCodeFold !== false
                               }
-                              onContentChange={scrollDomToBottom}
                               onPreviewImage={openMarkdownImagePreview}
                               onDownloadImage={downloadImage}
                             />
@@ -5769,12 +5848,20 @@ function useChatInnerView() {
                   aria-controls={
                     promptHints.length > 0 ? "chat-prompt-hints" : undefined
                   }
-                  aria-readonly={markdownStressQaEnabled ? true : undefined}
+                  aria-readonly={
+                    markdownStressQaEnabled &&
+                    !markdownStressQaInteractiveInputEnabled
+                      ? true
+                      : undefined
+                  }
                   aria-haspopup="listbox"
                   onChange={(e) => onInput(e.currentTarget.value)}
                   value={userInput}
                   onKeyDown={onInputKeyDown}
-                  readOnly={markdownStressQaEnabled}
+                  readOnly={
+                    markdownStressQaEnabled &&
+                    !markdownStressQaInteractiveInputEnabled
+                  }
                   onFocus={() => {
                     setIsChatInputFocused(true);
                     scrollToBottom();
@@ -5788,10 +5875,12 @@ function useChatInnerView() {
                   onPaste={markdownStressQaEnabled ? undefined : handlePaste}
                   rows={shouldExpandChatInput ? inputRows : 1}
                   autoFocus={autoFocus}
-                  style={{
-                    fontSize: config.fontSize,
-                    fontFamily: config.fontFamily,
-                  }}
+                  style={
+                    {
+                      "--chat-input-font-size": `${config.fontSize}px`,
+                      fontFamily: config.fontFamily,
+                    } as React.CSSProperties
+                  }
                 />
 
                 <button

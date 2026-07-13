@@ -76,7 +76,29 @@ describe("frontend performance and compatibility contracts", () => {
     );
   });
 
-  test("uses one semantic mobile settings target and compositor drawer motion", () => {
+  test("avoids duplicate Markdown listeners and permanent timing keys", () => {
+    const markdown = readSource("app/components/markdown.tsx");
+    const tableObserverStart = markdown.indexOf(
+      "const tableResizeObserver = new ResizeObserver",
+    );
+    const tableObserverEnd = markdown.indexOf(
+      "}, [syncTableScrollHint, tableIsExpanded]);",
+      tableObserverStart,
+    );
+    const tableObserver = markdown.slice(tableObserverStart, tableObserverEnd);
+
+    expect(markdown).not.toContain(
+      'codeScroller.addEventListener("scroll", syncCodeScrollHint',
+    );
+    expect(markdown).toContain("onScroll={syncCodeScrollHint}");
+    expect(tableObserver).not.toContain(
+      'window.addEventListener("resize", syncTableScrollHint)',
+    );
+    expect(markdown).not.toContain("msg_start_");
+    expect(markdown).not.toContain("onContentChange");
+  });
+
+  test("uses one semantic settings target and compositor drawer motion", () => {
     const sidebar = readSource("app/components/sidebar.tsx");
     const homeStyles = readSource("app/components/home.module.scss");
     const chatStyles = readSource("app/components/chat.module.scss");
@@ -90,6 +112,15 @@ describe("frontend performance and compatibility contracts", () => {
     );
     expect(mobileSettings).not.toContain("<IconButton");
     expect(mobileSettings).toContain("<SettingsIcon />");
+    const desktopSettingsStart = sidebar.indexOf(
+      'styles["sidebar-settings-link"]',
+    );
+    const desktopSettings = sidebar.slice(
+      desktopSettingsStart,
+      sidebar.indexOf("</Link>", desktopSettingsStart),
+    );
+    expect(desktopSettings).not.toContain("<IconButton");
+    expect(desktopSettings).toContain('styles["sidebar-settings-icon"]');
     expect(sidebar).not.toContain("isIOSMobile");
     expect(homeStyles).toMatch(/transform:\s*translate3d\(-100%, 0, 0\)/);
     expect(homeStyles).toMatch(/transition:\s*transform 0\.2s/);
@@ -98,6 +129,33 @@ describe("frontend performance and compatibility contracts", () => {
     );
     expect(chatStyles).toMatch(
       /@media only screen and \(max-width: 358px\)[\s\S]*\.chat-input-model-button\s*\{[\s\S]*min-width:\s*64px;[\s\S]*max-width:\s*64px;[\s\S]*\.chat-input-panel-inner-with-model\s*\{[\s\S]*padding-right:\s*136px;/,
+    );
+  });
+
+  test("keeps compact controls touch-safe and Safari glass compatible", () => {
+    const chat = readSource("app/components/chat.tsx");
+    const chatStyles = readSource("app/components/chat.module.scss");
+    const markdownStyles = readSource("app/styles/markdown.scss");
+
+    expect(chat).toContain(
+      '"--chat-input-font-size": `${config.fontSize}px`',
+    );
+    expect(chat).not.toContain("fontSize: config.fontSize");
+    expect(chatStyles).toContain(
+      "font-size: max(16px, var(--chat-input-font-size, 16px))",
+    );
+    expect(chatStyles).toMatch(
+      /\.chat-mobile-header-button[\s\S]*width:\s*44px;[\s\S]*height:\s*44px;/,
+    );
+    expect(chatStyles).toMatch(
+      /\.chat-message-action-rail[\s\S]*\.chat-input-action\s*\{[\s\S]*width:\s*44px;[\s\S]*height:\s*44px;/,
+    );
+    expect(markdownStyles).toContain("--markdown-code-action-size: 44px");
+    expect(chatStyles).toMatch(
+      /-webkit-backdrop-filter:\s*blur\(18px\);\s*backdrop-filter:\s*blur\(18px\);/,
+    );
+    expect(chatStyles).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.chat-message-tail\s*\{[\s\S]*animation:\s*none !important;/,
     );
   });
 });

@@ -6,13 +6,14 @@ import {
   formatMcpToolResultForChat,
   getJimengQuerySubmitId,
   getJimengGalleryDisplay,
-  hasJimengDisplayableImage,
+  hasJimengDisplayableMedia,
   mergeJimengProgressWithResult,
   mergeJimengResultIntoReply,
 } from "../app/mcp/display";
 import { JIMENG_MCP_SERVER_ID } from "../app/mcp/jimeng";
 
 const imageUrl = "https://123.207.69.230/jimeng-media/submit-1/image-1.png";
+const videoUrl = "https://example.com/jimeng-media/submit-video/video-1.mp4";
 const jimengText2ImageRequest = [
   "```json:mcp:jimeng-mcp",
   JSON.stringify({
@@ -220,20 +221,35 @@ describe("formatMcpToolResultForChat", () => {
     expect(formatted).not.toContain(imageUrl);
   });
 
-  test("requests a follow-up query when generation succeeds without public image urls", () => {
+  test("queries an initial success without public media at most once", () => {
+    const successfulSubmit = [
+      "command: dreamina text2image --poll=60",
+      "stdout:",
+      "{",
+      '"submit_id": "submit-1",',
+      '"gen_status": "success",',
+      '"result_json": {"images": [{"image_url": "[redacted-url]"}]}',
+      "}",
+    ].join("\n");
+
+    expect(getJimengQuerySubmitId(successfulSubmit)).toBeUndefined();
+    expect(
+      getJimengQuerySubmitId(successfulSubmit, {
+        querySuccessfulResultWithoutMedia: true,
+      }),
+    ).toBe("submit-1");
+  });
+
+  test("stops polling a successful query that only returned local media", () => {
     expect(
       getJimengQuerySubmitId(
         [
-          "command: dreamina text2image --poll=60",
-          "stdout:",
-          "{",
-          '"submit_id": "submit-1",',
-          '"gen_status": "success",',
-          '"result_json": {"images": [{"image_url": "[redacted-url]"}]}',
-          "}",
+          "submit_id: submit-1",
+          "gen_status: success",
+          "MEDIA:/home/ubuntu/jimeng/downloads/submit-1/video.mp4",
         ].join("\n"),
       ),
-    ).toBe("submit-1");
+    ).toBeUndefined();
   });
 
   test("does not query again when public image urls are already present", () => {
@@ -247,6 +263,83 @@ describe("formatMcpToolResultForChat", () => {
         ].join("\n"),
       ),
     ).toBeUndefined();
+  });
+
+  test("stops polling and renders a successful public video", () => {
+    const result = [
+      "submit_id: video-1",
+      "gen_status: success",
+      `public_urls: ["${videoUrl}"]`,
+    ].join("\n");
+
+    expect(getJimengQuerySubmitId(result)).toBeUndefined();
+    expect(formatMcpToolResultForChat(JIMENG_MCP_SERVER_ID, result)).toBe(
+      [
+        "submit_id: video-1\ngen_status: success",
+        `[generated video 1](${videoUrl})`,
+      ].join("\n\n"),
+    );
+  });
+
+  test("keeps polling an unfinished video task even when an early url exists", () => {
+    expect(
+      getJimengQuerySubmitId(
+        [
+          "submit_id: video-1",
+          "gen_status: querying",
+          "public_urls:",
+          videoUrl,
+        ].join("\n"),
+      ),
+    ).toBe("video-1");
+  });
+
+  test("preserves an opaque successful public media url as a safe link", () => {
+    const opaqueUrl = "https://example.com/jimeng-media/download?id=video-1";
+    const result = [
+      "submit_id: video-1",
+      "gen_status: success",
+      "public_urls:",
+      opaqueUrl,
+    ].join("\n");
+
+    expect(getJimengQuerySubmitId(result)).toBeUndefined();
+    expect(formatMcpToolResultForChat(JIMENG_MCP_SERVER_ID, result)).toContain(
+      `[generated media 1](${opaqueUrl})`,
+    );
+  });
+
+  test("preserves commas in quoted public video urls without duplicates", () => {
+    const signedVideoUrl =
+      "https://example.com/generated/video.mp4?expires=1&sig=a,b";
+    const formatted = formatMcpToolResultForChat(
+      JIMENG_MCP_SERVER_ID,
+      [
+        "submit_id: video-comma",
+        "gen_status: success",
+        `public_urls: ["${signedVideoUrl}"]`,
+      ].join("\n"),
+    );
+
+    expect(formatted).toContain(`[generated video 1](${signedVideoUrl})`);
+    expect(formatted).not.toContain("sig=a)");
+    expect(formatted.match(/generated (?:video|media)/g)).toHaveLength(1);
+  });
+
+  test("removes an unmatched closing parenthesis from a bare public url", () => {
+    const formatted = formatMcpToolResultForChat(
+      JIMENG_MCP_SERVER_ID,
+      [
+        "submit_id: opaque-paren",
+        "gen_status: success",
+        "public_urls: https://example.com/download?id=opaque-paren)",
+      ].join("\n"),
+    );
+
+    expect(formatted).toContain(
+      "[generated media 1](https://example.com/download?id=opaque-paren)",
+    );
+    expect(formatted).not.toContain("id=opaque-paren))");
   });
 
   test("does not query terminal failures", () => {
@@ -356,7 +449,7 @@ describe("formatMcpToolResultForChat", () => {
       "The generated media has been downloaded locally.",
     ].join("\n");
 
-    expect(hasJimengDisplayableImage(rawResult)).toBe(true);
+    expect(hasJimengDisplayableMedia(rawResult)).toBe(true);
     expect(
       mergeJimengResultIntoReply(
         "猫咪图片已生成成功：\n\n- 状态：success\n- 任务 ID：submit-1",
@@ -382,7 +475,7 @@ describe("formatMcpToolResultForChat", () => {
         "submit_id: submit-1",
         "gen_status: querying",
       ].join("\n"),
-      { includeImages: false },
+      { includeMedia: false },
     );
 
     expect(updatedProgress).toContain("Optimized Prompt:");
@@ -406,7 +499,7 @@ describe("formatMcpToolResultForChat", () => {
         "public_urls:",
         imageUrl,
       ].join("\n"),
-      { includeImages: true },
+      { includeMedia: true },
     );
 
     expect(updatedProgress).toContain("Status: Generation succeeded");
@@ -473,6 +566,20 @@ describe("formatMcpToolResultForChat", () => {
         ].join("\n"),
       ),
     ).toBe(visibleReply);
+  });
+
+  test("merges a multiline public video into the visible assistant reply", () => {
+    const visibleReply = "视频已生成：";
+    const rawResult = [
+      "submit_id: video-1",
+      "gen_status: success",
+      "public_urls:",
+      videoUrl,
+    ].join("\n");
+
+    expect(mergeJimengResultIntoReply(visibleReply, rawResult)).toContain(
+      `[generated video 1](${videoUrl})`,
+    );
   });
 
   test("keeps normal MCP responses in the existing response block format", () => {

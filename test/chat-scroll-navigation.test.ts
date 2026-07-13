@@ -3,6 +3,9 @@ import {
   CHAT_SCROLL_DIRECTION_THRESHOLD,
   followChatTailAfterResize,
   getAnchoredScrollTop,
+  getUnderfilledChatWindowStart,
+  isMessageIndexRetainedInWindow,
+  isRetainedVisibleMessageAnchor,
 } from "../app/utils/chat-scroll-navigation";
 
 describe("chat quick-jump direction", () => {
@@ -21,6 +24,32 @@ describe("chat quick-jump direction", () => {
     scrollTo.mockClear();
     expect(followChatTailAfterResize(container, false)).toBe(false);
     expect(scrollTo).not.toHaveBeenCalled();
+  });
+
+  test("backfills an underfilled viewport one page at a time within the DOM cap", () => {
+    expect(getUnderfilledChatWindowStart(225, 195, 600, 900, 15)).toBe(210);
+    expect(getUnderfilledChatWindowStart(210, 195, 600, 900, 15)).toBe(195);
+    expect(getUnderfilledChatWindowStart(195, 195, 600, 900, 15)).toBe(195);
+    expect(getUnderfilledChatWindowStart(225, 195, 1200, 900, 15)).toBe(225);
+  });
+
+  test("anchors only to messages retained by the next render window", () => {
+    expect(isMessageIndexRetainedInWindow(209, 210, 45)).toBe(false);
+    expect(isMessageIndexRetainedInWindow(210, 210, 45)).toBe(true);
+    expect(isMessageIndexRetainedInWindow(254, 210, 45)).toBe(true);
+    expect(isMessageIndexRetainedInWindow(255, 210, 45)).toBe(false);
+  });
+
+  test("waits for a retained message before shifting past an oversized row", () => {
+    expect(
+      isRetainedVisibleMessageAnchor(0, -3220, 1780, 15, 45, 0, 900),
+    ).toBe(false);
+    expect(
+      isRetainedVisibleMessageAnchor(15, 1780, 1810, 15, 45, 0, 900),
+    ).toBe(false);
+    expect(
+      isRetainedVisibleMessageAnchor(15, 880, 910, 15, 45, 0, 900),
+    ).toBe(true);
   });
 
   test("accumulates small same-direction deltas before changing direction", () => {

@@ -2,7 +2,6 @@ import React, { useEffect, useRef, Fragment } from "react";
 
 import styles from "./home.module.scss";
 
-import { IconButton } from "./button";
 import SettingsIcon from "../icons/settings.svg";
 import AddIcon from "../icons/add.svg";
 import MaskIcon from "../icons/mask.svg";
@@ -409,11 +408,12 @@ export function SideBar(props: {
                   location.pathname === Path.Settings ? "page" : undefined
                 }
               >
-                <IconButton
-                  aria={Locale.Settings.Title}
-                  icon={<SettingsIcon />}
-                  shadow
-                />
+                <span
+                  className={styles["sidebar-settings-icon"]}
+                  aria-hidden="true"
+                >
+                  <SettingsIcon />
+                </span>
                 <span className={styles["sidebar-settings-label"]}>
                   {Locale.Settings.Title}
                 </span>

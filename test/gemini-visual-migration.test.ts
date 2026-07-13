@@ -1573,7 +1573,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('styles["chat-multimodal-section-session"]');
     expect(chat).toContain("isMcpEnabled()");
     expect(chat).toContain("activateMcpClient(JIMENG_MCP_SERVER_ID)");
-    expect(chat).toContain("deactivateMcpClient(JIMENG_MCP_SERVER_ID)");
+    expect(chat).not.toContain("deactivateMcpClient(JIMENG_MCP_SERVER_ID)");
     expect(chat).toContain("JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT");
     expect(chat).toContain("uploadAttachments(");
     expect(chat).toContain('styles["attachments-container"]');
@@ -3220,8 +3220,8 @@ describe("Gemini visual migration shell", () => {
       /box-shadow:\s*0 1px 0 var\(--chat-header-shadow-color\);/,
     );
     expect(mobileHeaderRootBlock).toMatch(/backdrop-filter:\s*blur\(18px\);/);
-    expect(mobileHeaderButtonBlock).toMatch(/width:\s*40px;/);
-    expect(mobileHeaderButtonBlock).toMatch(/height:\s*40px;/);
+    expect(mobileHeaderButtonBlock).toMatch(/width:\s*44px;/);
+    expect(mobileHeaderButtonBlock).toMatch(/height:\s*44px;/);
     expect(mobileHeaderButtonBlock).toMatch(
       /color:\s*var\(--chat-header-title-color\);/,
     );
@@ -3949,7 +3949,7 @@ describe("Gemini visual migration shell", () => {
     expect(setImageGenerationModeBlock).toContain(
       "activateMcpClient(JIMENG_MCP_SERVER_ID)",
     );
-    expect(setImageGenerationModeBlock).toContain(
+    expect(setImageGenerationModeBlock).not.toContain(
       "deactivateMcpClient(JIMENG_MCP_SERVER_ID)",
     );
     expect(setImageGenerationModeBlock).toMatch(
@@ -4351,7 +4351,7 @@ describe("Gemini visual migration shell", () => {
       /\.chat-item-narrow[\s\S]*transform:\s*scale\(0\.7\) translateX\(-50%\);/,
     );
     expect(sidebarSettingsLinkActiveBlock).toMatch(
-      /button\s*\{[\s\S]*background:\s*var\(--sidebar-action-active-background\);/,
+      /\.sidebar-settings-icon\s*\{[\s\S]*background:\s*var\(--sidebar-action-active-background\);/,
     );
     expect(sidebarSettingsLinkActiveBlock).toMatch(
       /background-color:\s*var\(--sidebar-item-active-background\);/,
@@ -8448,8 +8448,8 @@ describe("Gemini visual migration shell", () => {
     expect(markdown).toMatch(
       /let codeResizeObserver: ResizeObserver \| null = null;[\s\S]*typeof ResizeObserver !== "undefined"[\s\S]*codeResizeObserver = new ResizeObserver\(\(\) => \{[\s\S]*syncCodeScrollHint\(\);[\s\S]*codeResizeObserver\.observe\(codeScroller\)/,
     );
-    expect(markdown).toMatch(
-      /codeScroller\.addEventListener\("scroll", syncCodeScrollHint, \{\s*passive: true,?\s*\}\)/,
+    expect(markdown).not.toContain(
+      'codeScroller.addEventListener("scroll", syncCodeScrollHint',
     );
     expect(markdown).toContain("const codeBlockId = useId()");
     expect(markdown).toContain("markdown-code-block-labeled");
@@ -8670,18 +8670,18 @@ describe("Gemini visual migration shell", () => {
       /--markdown-code-block-padding-start:\s*calc\(\s*var\(--markdown-code-line-number-width\) \+ 12px\s*\);/,
     );
     expect(mobileCodeBlock).toMatch(
-      /--markdown-code-action-rail-width:\s*78px;/,
+      /--markdown-code-action-rail-width:\s*96px;/,
     );
     expect(mobileCodeBlock).toMatch(/--markdown-code-action-inset:\s*8px;/);
-    expect(mobileCodeBlock).toMatch(/--markdown-code-action-size:\s*36px;/);
+    expect(mobileCodeBlock).toMatch(/--markdown-code-action-size:\s*44px;/);
     expect(mobileCodeBlock).toMatch(
       /--markdown-code-content-end-padding:\s*12px;/,
     );
     expect(mobileCodeBlock).toMatch(
-      /--markdown-code-labeled-padding-top:\s*42px;/,
+      /--markdown-code-labeled-padding-top:\s*52px;/,
     );
     expect(mobileCodeBlock).toMatch(
-      /--markdown-code-fold-overlay-offset:\s*58px;/,
+      /--markdown-code-fold-overlay-offset:\s*68px;/,
     );
     expect(mobileCodeBlock).toMatch(/font-size:\s*0\.9em;/);
     expect(mobileCodeBlock).toMatch(/line-height:\s*1\.58;/);
@@ -8707,9 +8707,9 @@ describe("Gemini visual migration shell", () => {
       /--markdown-code-block-padding-start:\s*calc\(\s*var\(--markdown-code-line-number-width\) \+ 12px\s*\);/,
     );
     expect(narrowCodeBlock).toMatch(
-      /--markdown-code-action-rail-width:\s*72px;/,
+      /--markdown-code-action-rail-width:\s*96px;/,
     );
-    expect(narrowCodeBlock).toMatch(/--markdown-code-action-size:\s*34px;/);
+    expect(narrowCodeBlock).toMatch(/--markdown-code-action-size:\s*44px;/);
     expect(narrowCodeBlock).toMatch(
       /--markdown-code-content-end-padding:\s*10px;/,
     );
@@ -17135,10 +17135,12 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /const doSubmit = \(userInput: string\) => \{\s*if \(markdownStressQaEnabled\) \{\s*return;\s*\}/,
     );
-    expect(chat).toContain(
-      "aria-readonly={markdownStressQaEnabled ? true : undefined}",
+    expect(chat).toMatch(
+      /aria-readonly=\{\s*markdownStressQaEnabled &&\s*!markdownStressQaInteractiveInputEnabled\s*\? true\s*: undefined\s*\}/,
     );
-    expect(chat).toContain("readOnly={markdownStressQaEnabled}");
+    expect(chat).toMatch(
+      /readOnly=\{\s*markdownStressQaEnabled &&\s*!markdownStressQaInteractiveInputEnabled\s*\}/,
+    );
     expect(chat).toContain(
       "onPaste={markdownStressQaEnabled ? undefined : handlePaste}",
     );
@@ -19376,10 +19378,10 @@ describe("Gemini visual migration shell", () => {
       /transform:\s*none\s*!important;/,
     );
     expect(mobileMessageActionRailBlock).toMatch(/gap:\s*3px;/);
-    expect(mobileMessageActionButtonBlock).toMatch(/width:\s*34px;/);
-    expect(mobileMessageActionButtonBlock).toMatch(/height:\s*34px;/);
+    expect(mobileMessageActionButtonBlock).toMatch(/width:\s*44px;/);
+    expect(mobileMessageActionButtonBlock).toMatch(/height:\s*44px;/);
     expect(mobileMessageActionButtonBlock).toMatch(
-      /&:hover,\s*&:focus-visible[\s\S]*width:\s*34px;/,
+      /&:hover,\s*&:focus-visible[\s\S]*width:\s*44px;/,
     );
     expect(touchMessageActionButtonBlock).toMatch(
       /&:hover[\s\S]*background:\s*var\(--message-action-button-background\);/,

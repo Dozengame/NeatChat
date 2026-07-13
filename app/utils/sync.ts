@@ -9,6 +9,52 @@ function cloneSyncState<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+const UNSAFE_SYNC_KEYS = new Set(["__proto__", "prototype", "constructor"]);
+
+function isPlainSyncObject(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== "object") return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function cloneSyncValue<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => cloneSyncValue(item)) as T;
+  }
+  if (!isPlainSyncObject(value)) {
+    return value;
+  }
+
+  const clone: Record<string, unknown> = {};
+  Object.keys(value).forEach((key) => {
+    if (UNSAFE_SYNC_KEYS.has(key)) {
+      throw new Error(`Unsafe object key: ${key}`);
+    }
+    clone[key] = cloneSyncValue(value[key]);
+  });
+  return clone as T;
+}
+
+function mergePreferredSyncValue<T>(fallback: T, preferred: T): T {
+  if (!isPlainSyncObject(preferred)) {
+    return cloneSyncValue(preferred);
+  }
+
+  const merged = isPlainSyncObject(fallback)
+    ? cloneSyncValue(fallback)
+    : ({} as Record<string, unknown>);
+  Object.keys(preferred).forEach((key) => {
+    if (UNSAFE_SYNC_KEYS.has(key)) {
+      throw new Error(`Unsafe object key: ${key}`);
+    }
+    merged[key] = mergePreferredSyncValue(
+      isPlainSyncObject(fallback) ? fallback[key] : undefined,
+      preferred[key],
+    );
+  });
+  return merged as T;
+}
+
 type NonFunctionKeys<T> = {
   [K in keyof T]: T[K] extends (...args: any[]) => any ? never : K;
 }[keyof T];
@@ -184,8 +230,8 @@ export function mergeWithUpdate<T extends { lastUpdateTime?: number }>(
   const remoteUpdateTime = remoteState.lastUpdateTime ?? 0;
 
   if (localUpdateTime < remoteUpdateTime) {
-    return { ...localState, ...remoteState };
+    return mergePreferredSyncValue(localState, remoteState);
   } else {
-    return { ...remoteState, ...localState };
+    return mergePreferredSyncValue(remoteState, localState);
   }
 }

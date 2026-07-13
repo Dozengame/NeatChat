@@ -32,7 +32,7 @@ import { showToast } from "./ui-lib-actions";
 
 import { useAppConfig } from "../store/config";
 import { FileAttachment } from "./file-attachment";
-import { encode } from "../utils/token";
+import { estimateTokenLengthInLLM } from "../utils/token";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
 import {
@@ -553,13 +553,8 @@ export function PreCode(props: { children: any }) {
     } else {
       window.addEventListener("resize", syncCodeScrollHint);
     }
-    codeScroller.addEventListener("scroll", syncCodeScrollHint, {
-      passive: true,
-    });
-
     return () => {
       codeResizeObserver?.disconnect();
-      codeScroller.removeEventListener("scroll", syncCodeScrollHint);
       if (!codeResizeObserver) {
         window.removeEventListener("resize", syncCodeScrollHint);
       }
@@ -1180,11 +1175,8 @@ export function MarkdownTable({
     if (tableRef.current) {
       tableResizeObserver.observe(tableRef.current);
     }
-    window.addEventListener("resize", syncTableScrollHint);
-
     return () => {
       tableResizeObserver.disconnect();
-      window.removeEventListener("resize", syncTableScrollHint);
     };
   }, [syncTableScrollHint, tableIsExpanded]);
 
@@ -1641,6 +1633,8 @@ const videoMediaExtensions = new Set([
   "ogv",
   "mpeg",
   "mp4",
+  "m4v",
+  "mov",
   "avi",
 ]);
 
@@ -2139,10 +2133,8 @@ export function Markdown(
     isUser?: boolean;
     messageId?: string;
     streaming?: boolean;
-    shouldAutoScroll?: boolean;
     enableArtifacts?: boolean;
     enableCodeFold?: boolean;
-    onContentChange?: () => void;
   } & MarkdownImageActionProps,
 ) {
   const {
@@ -2153,15 +2145,12 @@ export function Markdown(
     loading,
     messageId,
     streaming,
-    shouldAutoScroll,
     enableArtifacts = true,
     enableCodeFold = true,
-    onContentChange,
     onPreviewImage,
     onDownloadImage,
   } = props;
   const mdRef = useRef<HTMLDivElement>(null);
-  const lastContentRef = useRef(content);
 
   // 添加token计数状态和首字延迟状态
   const tokenInfo = useMemo<{
@@ -2179,7 +2168,7 @@ export function Markdown(
         : null;
 
       return {
-        count: encode(content).length,
+        count: estimateTokenLengthInLLM(content),
         isUser: isUser ?? false,
         firstCharDelay: storedDelay ? parseInt(storedDelay) : undefined,
       };
@@ -2216,16 +2205,8 @@ export function Markdown(
     if (loading && !isUser && !messageStartTimeRef.current) {
       // 记录消息开始请求的时间
       messageStartTimeRef.current = Date.now();
-
-      // 保存到localStorage
-      if (messageId) {
-        localStorage.setItem(
-          `msg_start_${messageId}`,
-          messageStartTimeRef.current.toString(),
-        );
-      }
     }
-  }, [loading, isUser, messageId]);
+  }, [loading, isUser]);
 
   useLayoutEffect(() => {
     if (
@@ -2248,17 +2229,6 @@ export function Markdown(
       );
     }
   }, [content, isUser, messageId]);
-
-  // 自动滚动效果
-  useLayoutEffect(() => {
-    if (content === lastContentRef.current) return;
-
-    if (shouldAutoScroll) {
-      onContentChange?.();
-    }
-
-    lastContentRef.current = content;
-  }, [content, onContentChange, shouldAutoScroll]);
 
   return (
     <div className="markdown-body-container">

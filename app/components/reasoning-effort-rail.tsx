@@ -371,6 +371,7 @@ export function DiscreteOptionRail<T extends string>({
         style={
           {
             "--reasoning-rail-position": `${activePosition}%`,
+            "--reasoning-rail-fill-scale": activePosition / 100,
             "--reasoning-rail-stop-count": stopCount,
           } as React.CSSProperties
         }

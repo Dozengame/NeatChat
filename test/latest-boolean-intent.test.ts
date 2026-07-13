@@ -73,9 +73,7 @@ describe("latest boolean intent", () => {
     expect(source).toMatch(
       /settle\(intent\.token, false\)[\s\S]*?setImageGenerationEnabled\(imageGenerationIntent\.value\(\)\)/,
     );
-    expect(source).toMatch(
-      /deactivateMcpClient\(JIMENG_MCP_SERVER_ID\);[\s\S]*?catch \(error\) \{[\s\S]*?settleFailedIntent\(\)[\s\S]*?return false;/,
-    );
+    expect(source).not.toContain("deactivateMcpClient(JIMENG_MCP_SERVER_ID)");
     expect(source).not.toContain(
       "setImageGenerationMode(!props.imageGenerationEnabled)",
     );
