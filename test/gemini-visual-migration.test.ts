@@ -3462,6 +3462,12 @@ describe("Gemini visual migration shell", () => {
       'className={styles["chat-mobile-context-count"]}',
     );
     expect(chat).toContain(
+      "const presetPromptCount = session.mask.context.length;",
+    );
+    expect(chat).toContain(
+      "Locale.Context.SettingsWithPrompts(presetPromptCount)",
+    );
+    expect(chat).not.toContain(
       "Locale.Context.SettingsWithPrompts(context.length)",
     );
     expect(chat).not.toContain('context.length > 99 ? "99+" : context.length');
@@ -22672,6 +22678,8 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain(
       "aria-label={Locale.Context.Toast(props.contextLength)}",
     );
+    expect(chat).toContain("contextLength={presetPromptCount}");
+    expect(chat).not.toContain("contextLength={context.length}");
     expect(chat).toContain('aria-haspopup="dialog"');
     expect(chat).toContain('aria-controls="session-config-modal"');
     expect(chat).toContain("aria-expanded={props.showModal}");

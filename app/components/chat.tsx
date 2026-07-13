@@ -3008,6 +3008,7 @@ function useChatInnerView() {
     }
   }
 
+  const presetPromptCount = session.mask.context.length;
   const context: RenderMessage[] = useMemo(() => {
     return session.mask.hideContext ? [] : session.mask.context.slice();
   }, [session.mask.context, session.mask.hideContext]);
@@ -4719,7 +4720,7 @@ function useChatInnerView() {
     <PromptToast
       showToast={!hitBottom}
       showModal={showPromptModal}
-      contextLength={context.length}
+      contextLength={presetPromptCount}
       onOpen={openPromptModal}
     />
   );
@@ -4811,13 +4812,13 @@ function useChatInnerView() {
             icon={<SettingsIcon />}
             bordered
             title={
-              context.length > 0
-                ? Locale.Context.SettingsWithPrompts(context.length)
+              presetPromptCount > 0
+                ? Locale.Context.SettingsWithPrompts(presetPromptCount)
                 : Locale.Chat.InputActions.Settings
             }
             aria={
-              context.length > 0
-                ? Locale.Context.SettingsWithPrompts(context.length)
+              presetPromptCount > 0
+                ? Locale.Context.SettingsWithPrompts(presetPromptCount)
                 : Locale.Chat.InputActions.Settings
             }
             onClick={(event) => {
