@@ -14,6 +14,7 @@ Do not read all iteration files by default. Use `rg` first, then open the smalle
 
 ## Routing
 
+- Markdown table slider drag mapping/capture and mobile expanded-empty composer geometry regressions: `iterations/2026-07-13-table-drag-mobile-composer.md`.
 - Markdown 超宽表格的常驻横向滚动控制、应用内全屏阅读、键盘/焦点语义和响应式验收：`iterations/2026-07-13-markdown-wide-table-reading.md`。
 - Final full-stack `main...dev` pre-merge audit at the 35-commit baseline, covering chat/scrolling, OpenAI Responses and model capabilities, MCP partial failure recovery, persistence, file/PDF lifecycle, image options, HTML previews, security redaction, production build, static-export boundary, and desktop/mobile Browser QA: `iterations/2026-07-13-dev-main-final-premerge-review.md`.
 - Summary Model effective `DEFAULT_MODEL` inheritance, per-model `OPENAI_REASONING_EFFORT`, provider-wide request/header authority, target-session isolation, locked/stale Settings states, and responsive sentinel UI: `iterations/2026-07-13-summary-model-defaults.md`.
