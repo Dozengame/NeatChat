@@ -1913,6 +1913,10 @@ function useChatInnerView() {
     () => chatQaFixture?.isImageGalleryQaEnabled(location.search) ?? false,
     [chatQaFixture, location.search],
   );
+  const jimengParserQaEnabled = useMemo(
+    () => chatQaFixture?.isJimengParserQaEnabled(location.search) ?? false,
+    [chatQaFixture, location.search],
+  );
   const markdownStressQaDropzonePreview = useMemo(
     () =>
       markdownStressQaEnabled
@@ -3036,6 +3040,10 @@ function useChatInnerView() {
       return chatQaFixture.getImageGalleryQaMessages();
     }
 
+    if (jimengParserQaEnabled && chatQaFixture) {
+      return chatQaFixture.getJimengParserQaMessages(location.search);
+    }
+
     const visibleSessionMessages = projectVisibleChatMessages(
       session.messages as RenderMessage[],
       chatStore.messageProjectionRevision,
@@ -3078,6 +3086,7 @@ function useChatInnerView() {
     context,
     isLoading,
     imageGalleryQaEnabled,
+    jimengParserQaEnabled,
     location.search,
     markdownStressQaEnabled,
     chatStore.messageProjectionRevision,
@@ -3142,6 +3151,7 @@ function useChatInnerView() {
   const showEmptyState =
     !markdownStressQaEnabled &&
     !imageGalleryQaEnabled &&
+    !jimengParserQaEnabled &&
     session.messages.length === 0 &&
     context.length === 1 &&
     getMessageTextContent(context[0]) === BOT_HELLO.content &&

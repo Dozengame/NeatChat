@@ -31,6 +31,7 @@ export const JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT = `
 - 用户附带图片时，优先判断是否需要 image2image 或 image2video；如果用户只是要求基于图片生成、改图、换风格、扩展、参考角色或参考画面，就使用带图片输入的工具。
 - 用户询问余额、任务状态、历史任务或结果查询时，使用对应查询工具。
 - 工具返回 submit_id 且 gen_status 为 querying、pending、running、processing 等未完成状态时，继续调用 dreamina_query_result 或工具列表中对应的查询结果工具，直到拿到 success、失败状态或明确错误原因。
+- MCP 工具调用必须使用完整、合法的 JSON；输出前核对字符串引号以及所有大括号、中括号均已正确闭合，不要把说明文字写进 JSON 代码块。
 - 信息足够时直接发起一次 MCP 请求；只有关键生成信息缺失且无法合理补全时，才用一句话追问。
 `.trim();
 

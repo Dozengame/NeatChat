@@ -56,7 +56,7 @@ import {
   initializeMcpSystem,
   isMcpEnabled,
 } from "../mcp/actions";
-import { extractMcpJson, isMcpJson } from "../mcp/utils";
+import { extractMcpJson, hasMcpJsonStart, isMcpJson } from "../mcp/utils";
 import {
   combineMcpToolResults,
   formatFailedMcpRequestForChat,
@@ -1603,7 +1603,33 @@ export const useChatStore = createPersistStore(
         if (!mcpCache.enabled) return;
 
         const content = getMessageTextContent(message);
-        if (isMcpJson(content)) {
+        if (hasMcpJsonStart(content)) {
+          const actionSession = targetSession ?? get().currentSession();
+          const settleMcpRequestFailure = () => {
+            const failureMessage = formatFailedMcpRequestForChat();
+            get().updateTargetSession(actionSession, (session) => {
+              const targetMessage = session.messages.find(
+                (item) => item.id === message.id,
+              );
+              if (targetMessage) {
+                targetMessage.content = failureMessage;
+                targetMessage.streaming = false;
+                targetMessage.isError = true;
+                targetMessage.date = new Date().toLocaleString();
+              }
+              session.messages = session.messages.concat();
+              session.lastUpdate = Date.now();
+            });
+            flushChatPersistence();
+            showToast(Locale.Chat.ImageGeneration.Display.ToolFailure);
+          };
+
+          if (!isMcpJson(content)) {
+            console.error("[MCP] received an incomplete tool message");
+            settleMcpRequestFailure();
+            return;
+          }
+
           try {
             const mcpRequest = extractMcpJson(content);
             if (mcpRequest) {
@@ -1715,7 +1741,6 @@ export const useChatStore = createPersistStore(
                 return;
               }
 
-              const actionSession = targetSession ?? get().currentSession();
               executeMcpAction(mcpRequest.clientId, mcpRequest.mcp)
                 .then(async (result) => {
                   const formattedResult = formatMcpToolResultForChat(
@@ -1727,26 +1752,12 @@ export const useChatStore = createPersistStore(
                   });
                 })
                 .catch(() => {
-                  const failureMessage = formatFailedMcpRequestForChat();
-                  get().updateTargetSession(actionSession, (session) => {
-                    const targetMessage = session.messages.find(
-                      (item) => item.id === message.id,
-                    );
-                    if (targetMessage) {
-                      targetMessage.content = failureMessage;
-                      targetMessage.streaming = false;
-                      targetMessage.isError = true;
-                      targetMessage.date = new Date().toLocaleString();
-                    }
-                    session.messages = session.messages.concat();
-                    session.lastUpdate = Date.now();
-                  });
-                  flushChatPersistence();
-                  showToast(Locale.Chat.ImageGeneration.Display.ToolFailure);
+                  settleMcpRequestFailure();
                 });
             }
           } catch {
             console.error("[MCP] failed to process a tool message");
+            settleMcpRequestFailure();
           }
         }
       },

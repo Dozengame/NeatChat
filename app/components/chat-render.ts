@@ -1,8 +1,9 @@
 import type { ChatMessage } from "../store";
 import { getMessageTextContent } from "../utils";
 import { deepClone } from "../utils/clone";
-import { isMcpJson } from "../mcp/utils";
+import { hasMcpJsonStart, isMcpJson, tryExtractMcpJson } from "../mcp/utils";
 import {
+  formatFailedMcpRequestForChat,
   formatJimengMcpRequestForChat,
   formatPendingMcpRequestForChat,
   hasJimengDisplayableImage,
@@ -97,6 +98,13 @@ function projectMessage(
         ...message,
         content: jimengProgress,
       });
+    } else if (!tryExtractMcpJson(textContent)) {
+      state.visibleMessages.push({
+        ...message,
+        content: formatFailedMcpRequestForChat(),
+        streaming: false,
+        isError: true,
+      });
     }
     return;
   }
@@ -110,6 +118,20 @@ function projectMessage(
       });
       return;
     }
+  }
+
+  if (
+    message.role === "assistant" &&
+    !message.streaming &&
+    hasMcpJsonStart(textContent)
+  ) {
+    state.visibleMessages.push({
+      ...message,
+      content: formatFailedMcpRequestForChat(),
+      streaming: false,
+      isError: true,
+    });
+    return;
   }
 
   if (message.role === "assistant" && state.pendingJimengResult) {

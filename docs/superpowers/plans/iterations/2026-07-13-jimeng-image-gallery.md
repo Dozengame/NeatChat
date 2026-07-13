@@ -41,3 +41,33 @@
 
 - Live Jimeng/provider success is not claimed because the task did not authorize a paid or side-effecting third-party generation. Deterministic MCP initialization, prompt-schema, preflight failure, result projection, and gallery tests cover the repaired local chain.
 - Jimeng's transient runtime remains initialized when the user temporarily switches to a `gpt-image-*` model; request and UI isolation are strict, and retaining it avoids a lifecycle race while preserving the enabled state when returning to Chat.
+
+## Rejected acceptance follow-up: blank Jimeng reply
+
+### Runtime evidence and cause
+
+- The deployed conversation showed the assistant response during streaming and then rendered no assistant message. Its Console recorded `Failed to parse Jimeng request` followed by `failed to process a tool message`.
+- The deployed Edit All Messages surface exposed the exact safe payload shape: the fenced request ended with `"model_version":"4.6","poll":0}}` before the closing fence. The `arguments` and `params` objects were closed, but the root request object was missing one final `}`.
+- The streaming projection initially rendered Preparing while the fence was incomplete. Once the closed fence arrived, `isMcpJson` matched it, strict `JSON.parse` failed, `formatJimengMcpRequestForChat` returned no progress, and the projection still returned without a visible message. The store catch logged the error but did not update `content`, `streaming`, `isError`, or persistence.
+
+### Corrected contract
+
+- Strict `JSON.parse` remains the default. Only `jimeng-mcp` may attempt EOF recovery, and only when a quote/escape-aware delimiter scan proves that every nested value is closed and the sole missing delimiter is the outer root `}`. The repaired payload is parsed strictly again before the existing execution validation and live tool allowlist.
+- Missing commas, trailing commas, raw control characters, unclosed strings, mismatched delimiters, multiple missing levels, generic MCP truncation, multiple complete blocks, and a complete block followed by another incomplete MCP start are rejected without execution.
+- Final incomplete or malformed requests update the original assistant message to a localized `streaming=false`, `isError=true` terminal failure and flush persistence. The render projection applies the same sanitized fallback to historical or race-state records; raw MCP protocol is never shown.
+- The Jimeng system prompt now explicitly requires one complete legal JSON request and bracket verification. This reduces recurrence but does not replace parser and failure-state protection.
+- Development-only `codex_qa=jimeng-parser` fixtures reproduce both the exact recoverable deployment payload and a non-recoverable malformed payload without credentials or provider calls.
+
+### Follow-up verification
+
+- Complete Jest: `81/81` suites and `807/807` tests passed.
+- `corepack yarn lint`, `npx tsc --noEmit --pretty false`, `git diff --check`, and `corepack yarn build` passed. The build retained only existing npm config notices and the Edge static-generation warning.
+- Independent review found no remaining Critical or Important blocker after closing the mixed complete-plus-incomplete multiple-request case.
+- Chrome QA on the real local app and final source:
+  - `1440x1024`: exact deployed payload rendered the optimized prompt, parameters, and submitting status; document overflow `0`; raw MCP protocol absent; Console warning/error `0`.
+  - `390x844`: the same message remained readable and non-empty with document overflow `0`; raw MCP protocol absent; Console warning/error `0`.
+  - Non-recoverable malformed JSON rendered exactly one localized terminal failure instead of disappearing; raw protocol remained absent and Console warning/error stayed `0` in the render fixture.
+
+### Remaining boundary
+
+- No new live or paid Jimeng generation was run. External service success is not claimed; deterministic tests cover parser recovery, exactly-once handoff to `executeMcpAction`, non-execution for rejected inputs, persistence terminal state, and render visibility.

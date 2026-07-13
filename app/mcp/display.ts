@@ -175,7 +175,6 @@ function getJimengToolCall(content: string) {
       arguments: mcp.params?.arguments ?? {},
     };
   } catch (error) {
-    console.warn("[MCP] Failed to parse Jimeng request", error);
     return undefined;
   }
 }

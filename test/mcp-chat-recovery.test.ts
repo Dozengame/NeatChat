@@ -187,14 +187,10 @@ describe("MCP chat recovery", () => {
       )
       .join("\n");
 
-    expect(promptMessages).toContain(
-      `json:mcp:${JIMENG_MCP_SERVER_ID}`,
-    );
+    expect(promptMessages).toContain(`json:mcp:${JIMENG_MCP_SERVER_ID}`);
     expect(promptMessages).toContain('method: "tools/call"');
     expect(promptMessages).toContain("dreamina_text2image");
-    expect(promptMessages).toContain(
-      JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
-    );
+    expect(promptMessages).toContain(JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT);
   });
 
   test("fails a Jimeng image request locally when its scoped schema is missing", async () => {
@@ -219,15 +215,12 @@ describe("MCP chat recovery", () => {
     await useChatStore.getState().resetMcpCache();
 
     try {
-      await useChatStore.getState().onUserInput(
-        "Draw a world map",
-        undefined,
-        false,
-        {
+      await useChatStore
+        .getState()
+        .onUserInput("Draw a world map", undefined, false, {
           mcpClientIds: ["demo", JIMENG_MCP_SERVER_ID],
           systemPrompt: JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
-        },
-      );
+        });
 
       const messages = useChatStore.getState().currentSession().messages;
       const assistantMessage = messages.at(-1);
@@ -283,5 +276,108 @@ describe("MCP chat recovery", () => {
     expect(showToast).toHaveBeenCalledWith(
       Locale.Chat.ImageGeneration.Display.ToolFailure,
     );
+  });
+
+  test("executes a Jimeng call whose final JSON omitted only an outer closing brace", async () => {
+    executeMcpAction.mockResolvedValueOnce(
+      "gen_status: failed\nerror_message: fixture stopped before provider",
+    );
+    await useChatStore.getState().resetMcpCache();
+    const session = useChatStore.getState().currentSession();
+    const message = createMessage({
+      id: "truncated-jimeng-message",
+      role: "assistant",
+      streaming: false,
+      content: [
+        "```json:mcp:jimeng-mcp",
+        '{"method":"tools/call","params":{"name":"dreamina_text2image","arguments":{"prompt":"sunrise","ratio":"16:9","poll":0}}',
+        "```",
+      ].join("\n"),
+    });
+    session.messages = [message];
+
+    useChatStore.getState().checkMcpJson(message, session);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(executeMcpAction).toHaveBeenCalledWith(JIMENG_MCP_SERVER_ID, {
+      method: "tools/call",
+      params: {
+        name: "dreamina_text2image",
+        arguments: { prompt: "sunrise", ratio: "16:9", poll: 0 },
+      },
+    });
+    expect(executeMcpAction).toHaveBeenCalledTimes(1);
+    expect(message.content).toContain("fixture stopped before provider");
+    expect(message.content).not.toContain("```json:mcp");
+  });
+
+  test("settles malformed Jimeng JSON visibly without executing the tool", async () => {
+    const consoleErrorSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    await useChatStore.getState().resetMcpCache();
+    const session = useChatStore.getState().currentSession();
+    const message = createMessage({
+      id: "invalid-jimeng-message",
+      role: "assistant",
+      streaming: false,
+      content: [
+        "```json:mcp:jimeng-mcp",
+        '{"method":"tools/call" "params":{}}',
+        "```",
+      ].join("\n"),
+    });
+    session.messages = [message];
+
+    try {
+      useChatStore.getState().checkMcpJson(message, session);
+
+      expect(executeMcpAction).not.toHaveBeenCalled();
+      expect(message).toMatchObject({
+        streaming: false,
+        isError: true,
+        content: expect.stringContaining(
+          Locale.Chat.ImageGeneration.Display.ToolFailure,
+        ),
+      });
+      expect(message.content).not.toContain("```json:mcp");
+      expect(showToast).toHaveBeenCalledWith(
+        Locale.Chat.ImageGeneration.Display.ToolFailure,
+      );
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
+  });
+
+  test("settles a final incomplete Jimeng fence without exposing or executing it", async () => {
+    const consoleErrorSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    await useChatStore.getState().resetMcpCache();
+    const session = useChatStore.getState().currentSession();
+    const message = createMessage({
+      id: "incomplete-jimeng-message",
+      role: "assistant",
+      streaming: false,
+      content: '```json:mcp:jimeng-mcp\n{"method":"tools/call"',
+    });
+    session.messages = [message];
+
+    try {
+      useChatStore.getState().checkMcpJson(message, session);
+
+      expect(executeMcpAction).not.toHaveBeenCalled();
+      expect(message).toMatchObject({
+        streaming: false,
+        isError: true,
+        content: expect.stringContaining(
+          Locale.Chat.ImageGeneration.Display.ToolFailure,
+        ),
+      });
+      expect(message.content).not.toContain("json:mcp");
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
   });
 });

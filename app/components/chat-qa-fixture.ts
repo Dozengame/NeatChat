@@ -1,10 +1,12 @@
 import type { MultimodalContent } from "../client/types";
 import type { ModelType } from "../store/config";
 import type { DraggedAttachmentSummary, FileInfo } from "../utils/file";
-import type { RenderMessage } from "./chat-render";
+import { getVisibleChatMessages, type RenderMessage } from "./chat-render";
 
 const MARKDOWN_STRESS_QA_PARAM = "markdown-stress";
 const IMAGE_GALLERY_QA_PARAM = "image-gallery";
+const JIMENG_PARSER_QA_PARAM = "jimeng-parser";
+const JIMENG_PARSER_QA_MALFORMED_PARAM = "malformed";
 const MARKDOWN_STRESS_QA_BOUNDARY_PARAM = "streaming_boundary";
 const MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_PARAM = "dropzone_preview";
 const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_PARAM =
@@ -12,6 +14,7 @@ const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_PARAM =
 const MARKDOWN_STRESS_QA_HISTORY_COUNT_PARAM = "history_count";
 export const MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX = "codex-qa-markdown-stress";
 const IMAGE_GALLERY_QA_MESSAGE_ID_PREFIX = "codex-qa-image-gallery";
+const JIMENG_PARSER_QA_MESSAGE_ID_PREFIX = "codex-qa-jimeng-parser";
 const QA_PNG_IMAGE =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 const IMAGE_GALLERY_QA_IMAGES = [
@@ -320,6 +323,18 @@ const IMAGE_GALLERY_QA_MESSAGES: RenderMessage[] = [
     ] satisfies MultimodalContent[],
   },
 ];
+const JIMENG_PARSER_QA_REQUEST = [
+  "我先优化日出风景的生成提示词。",
+  "```json:mcp:jimeng-mcp",
+  '{"method":"tools/call","params":{"name":"dreamina_text2image","arguments":{"prompt":"壮丽的日出风景，金色晨光洒在平静湖面，写实摄影风格，电影级构图，无文字，无水印","ratio":"16:9","resolution_type":"1k","model_version":"4.6","poll":0}}',
+  "```",
+  "正在提交生成任务。",
+].join("\n");
+const JIMENG_PARSER_QA_MALFORMED_REQUEST = [
+  "```json:mcp:jimeng-mcp",
+  '{"method":"tools/call" "params":{"name":"dreamina_text2image"}}',
+  "```",
+].join("\n");
 const MARKDOWN_STRESS_QA_BOUNDARY_MESSAGES: RenderMessage[] =
   MARKDOWN_STRESS_QA_BOUNDARY_VARIANTS.map((variant) => ({
     id: `${MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX}-streaming-${variant}`,
@@ -429,8 +444,39 @@ export function isImageGalleryQaEnabled(locationSearch: string) {
   return params.get("codex_qa") === IMAGE_GALLERY_QA_PARAM;
 }
 
+export function isJimengParserQaEnabled(locationSearch: string) {
+  const params = new URLSearchParams(locationSearch);
+  return params.get("codex_qa") === JIMENG_PARSER_QA_PARAM;
+}
+
 export function getImageGalleryQaMessages(): RenderMessage[] {
   return IMAGE_GALLERY_QA_MESSAGES;
+}
+
+export function getJimengParserQaMessages(
+  locationSearch: string,
+): RenderMessage[] {
+  const params = new URLSearchParams(locationSearch);
+  const content = params.has(JIMENG_PARSER_QA_MALFORMED_PARAM)
+    ? JIMENG_PARSER_QA_MALFORMED_REQUEST
+    : JIMENG_PARSER_QA_REQUEST;
+
+  return getVisibleChatMessages([
+    {
+      id: `${JIMENG_PARSER_QA_MESSAGE_ID_PREFIX}-user`,
+      date: "2026/7/13 00:00:00",
+      role: "user",
+      content: "出几张日出图",
+    },
+    {
+      id: `${JIMENG_PARSER_QA_MESSAGE_ID_PREFIX}-assistant`,
+      date: "2026/7/13 00:00:01",
+      role: "assistant",
+      model: "gpt-5.6-luna" as ModelType,
+      streaming: false,
+      content,
+    },
+  ]);
 }
 
 function getMarkdownStressQaBoundaryVariant(locationSearch: string) {
