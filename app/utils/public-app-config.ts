@@ -7,6 +7,8 @@ import type {
   OpenAIResponsesPromptCacheMode,
   OpenAIResponsesReasoningContext,
   OpenAIResponsesReasoningEffort,
+  OpenAIResponsesReasoningEffortAllowlist,
+  OpenAIResponsesReasoningEffortDefaults,
   OpenAIResponsesReasoningMode,
   OpenAIResponsesTextVerbosity,
 } from "./openai-responses";
@@ -76,6 +78,8 @@ export type PublicAppConfig = {
     max_output_tokens?: number;
   };
   allowedModels: string[];
+  reasoningEffortAllowlist?: OpenAIResponsesReasoningEffortAllowlist;
+  reasoningEffortDefaults?: OpenAIResponsesReasoningEffortDefaults;
   lockedFields: string[];
   serverFlags: {
     needCode: boolean;
@@ -105,6 +109,11 @@ const DEFAULT_WEBUI_LOCKED_FIELDS = [
   "apiKey",
   "temperature",
   "textVerbosity",
+  "reasoningMode",
+  "reasoningContext",
+  "inputImageDetail",
+  "promptCacheMode",
+  "promptCacheKey",
 ];
 
 const PROVIDER_NAMES = new Map(

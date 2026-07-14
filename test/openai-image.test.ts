@@ -1,6 +1,9 @@
 import { readFileSync } from "fs";
 
 import { DEFAULT_MODELS, ServiceProvider } from "../app/constant";
+import Locale from "../app/locales";
+import cn from "../app/locales/cn";
+import en from "../app/locales/en";
 import {
   OPENAI_IMAGE_REQUEST_TIMEOUT_MS,
   VERCEL_HOBBY_MAX_DURATION_SECONDS,
@@ -10,8 +13,13 @@ import {
   buildOpenAIImageGenerationPayload,
   createOpenAIImageTimeoutError,
   getOpenAIImageGenerationProgressContent,
+  getOpenAIImageGenerationOptions,
+  getOpenAIImageErrorMessage,
   getOpenAIImageOutputContentType,
+  isGptImage2,
   isOpenAIImageGenerationModelConfig,
+  normalizeOpenAIImageQuality,
+  normalizeOpenAIImageSize,
   parseOpenAIImageResponsePayload,
 } from "../app/utils/openai-image";
 
@@ -97,6 +105,86 @@ describe("OpenAI image generation models", () => {
     expect(config.style).toBeUndefined();
   });
 
+  test("resolves size and quality capabilities per image model", () => {
+    expect(isGptImage2("gpt-image-2")).toBe(true);
+    expect(isGptImage2("gpt-image-2-2026-04-21")).toBe(true);
+    expect(isGptImage2("gpt-image-2-custom")).toBe(false);
+    expect(getOpenAIImageGenerationOptions("gpt-image-2")).toMatchObject({
+      sizes: expect.arrayContaining(["auto", "2048x2048", "3840x2160"]),
+      qualities: ["auto", "low", "medium", "high"],
+    });
+    expect(getOpenAIImageGenerationOptions("gpt-image-1.5")).toMatchObject({
+      sizes: ["auto", "1024x1024", "1536x1024", "1024x1536"],
+      qualities: ["auto", "low", "medium", "high"],
+    });
+    expect(
+      getOpenAIImageGenerationOptions("gpt-image-1.5").sizes,
+    ).not.toContain("3840x2160");
+    expect(
+      getOpenAIImageGenerationOptions("gpt-image-1.5-2025-12-16").sizes,
+    ).not.toContain("3840x2160");
+    expect(
+      getOpenAIImageGenerationOptions("gpt-image-3-preview").sizes,
+    ).toEqual(["auto", "1024x1024", "1536x1024", "1024x1536"]);
+    expect(getOpenAIImageGenerationOptions("dall-e-3")).toMatchObject({
+      sizes: ["1024x1024", "1792x1024", "1024x1792"],
+      qualities: ["standard", "hd"],
+    });
+    expect(getOpenAIImageGenerationOptions("dall-e-2")).toMatchObject({
+      sizes: ["1024x1024"],
+      qualities: [],
+    });
+  });
+
+  test("normalizes stale cross-model values before rendering or sending", () => {
+    expect(normalizeOpenAIImageQuality("gpt-image-2", "standard")).toBe("auto");
+    expect(normalizeOpenAIImageQuality("dall-e-3", "high")).toBe("standard");
+    expect(normalizeOpenAIImageSize("gpt-image-2", "1792x1024")).toBe("auto");
+    expect(normalizeOpenAIImageSize("dall-e-3", "3840x2160")).toBe("1024x1024");
+    expect(normalizeOpenAIImageSize("gpt-image-3-preview", "3840x2160")).toBe(
+      "auto",
+    );
+
+    const chatSource = readFileSync("app/components/chat.tsx", "utf8");
+    const modelConfigSource = readFileSync(
+      "app/components/model-config.tsx",
+      "utf8",
+    );
+    expect(chatSource).toContain("value={headerCurrentQuality}");
+    expect(chatSource).toContain("value={headerCurrentSize}");
+    expect(modelConfigSource).toContain("value={currentImageQuality}");
+    expect(modelConfigSource).toContain("value={currentImageSize}");
+    expect(modelConfigSource).toContain(
+      "Locale.Settings.ImageGeneration.SizeOption(size)",
+    );
+  });
+
+  test.each([
+    ["auto", "Auto", "自动"],
+    ["1024x1024", "Square", "方形 · 1K"],
+    ["1536x1024", "Landscape", "横向 · 1.5K"],
+    ["1024x1536", "Portrait", "纵向 · 1.5K"],
+    ["2048x2048", "2K Square", "方形 · 2K"],
+    ["2048x1152", "2K Landscape", "横向 · 2K"],
+    ["3840x2160", "4K Landscape", "横向 · 4K"],
+    ["2160x3840", "4K Portrait", "纵向 · 4K"],
+  ])(
+    "localizes gpt-image-2 size %s without changing its API value",
+    (size, englishLabel, chineseLabel) => {
+      expect(en.Settings.ImageGeneration.SizeLabel(size)).toBe(englishLabel);
+      expect(cn.Settings.ImageGeneration.SizeLabel(size)).toBe(chineseLabel);
+      if (size !== "auto") {
+        expect(en.Settings.ImageGeneration.SizeOption(size)).toContain(size);
+        expect(cn.Settings.ImageGeneration.SizeOption(size)).toContain(size);
+      }
+    },
+  );
+
+  test("falls back to the exact API value for unknown dimensions", () => {
+    expect(en.Settings.ImageGeneration.SizeLabel("1600x900")).toBe("1600x900");
+    expect(cn.Settings.ImageGeneration.SizeLabel("1600x900")).toBe("1600x900");
+  });
+
   test("applies conservative defaults for non-DALL-E 3 DALL-E models", () => {
     const config = applyOpenAIImageGenerationDefaults({
       model: "dall-e-next",
@@ -111,7 +199,7 @@ describe("OpenAI image generation models", () => {
     expect(config.style).toBeUndefined();
   });
 
-  test("builds gpt-image-2 Images API payload without DALL-E 3 fields", () => {
+  test("builds an unknown gpt-image payload without DALL-E 3 fields", () => {
     const payload = buildOpenAIImageGenerationPayload({
       model: "gpt-image-3-preview",
       prompt: "Draw a clean app icon",
@@ -129,6 +217,36 @@ describe("OpenAI image generation models", () => {
     });
     expect(payload.response_format).toBeUndefined();
     expect(payload.style).toBeUndefined();
+  });
+
+  test("uses conservative size semantics for unknown gpt-image models", () => {
+    const payload = buildOpenAIImageGenerationPayload({
+      model: "gpt-image-custom",
+      prompt: "Draw a wide banner",
+      config: { size: "3840x2160", quality: "high" },
+    }) as any;
+
+    expect(payload).toMatchObject({
+      size: "auto",
+      quality: "high",
+    });
+
+    const legacyPayload = buildOpenAIImageGenerationPayload({
+      model: "gpt-image-1.5",
+      prompt: "Draw a wide banner",
+      config: { size: "3840x2160", quality: "high" },
+    }) as any;
+    expect(legacyPayload).toMatchObject({ size: "auto", quality: "high" });
+  });
+
+  test("keeps documented gpt-image-2 snapshot sizes", () => {
+    const payload = buildOpenAIImageGenerationPayload({
+      model: "gpt-image-2-2026-04-21",
+      prompt: "Draw a wide banner",
+      config: { size: "3840x2160", quality: "high" },
+    }) as any;
+
+    expect(payload).toMatchObject({ size: "3840x2160", quality: "high" });
   });
 
   test("keeps valid gpt-image-2 image settings in the request payload", () => {
@@ -183,24 +301,45 @@ describe("OpenAI image generation models", () => {
   });
 
   test("describes image generation progress phases", () => {
+    const progressCopy = Locale.Chat.ImageGeneration.Progress;
     expect(
       getOpenAIImageGenerationProgressContent({
         model: "gpt-image-2",
         phase: "preparing",
+        copy: progressCopy,
       }),
-    ).toContain("正在准备图片生成请求");
+    ).toContain(progressCopy.Preparing);
     expect(
       getOpenAIImageGenerationProgressContent({
         model: "gpt-image-2",
         phase: "generating",
+        copy: progressCopy,
       }),
-    ).toContain("正在生成图片");
+    ).toContain(progressCopy.Generating);
     expect(
       getOpenAIImageGenerationProgressContent({
         model: "gpt-image-2",
         phase: "saving",
+        copy: progressCopy,
       }),
-    ).toContain("正在保存图片");
+    ).toContain(progressCopy.Saving);
+  });
+
+  test("uses the caller-provided progress copy", () => {
+    const copy = {
+      Model: (model: string) => ` model=${model}`,
+      Preparing: "prepare",
+      Generating: "generate",
+      Saving: "save",
+    };
+
+    expect(
+      getOpenAIImageGenerationProgressContent({
+        model: "gpt-image-2",
+        phase: "saving",
+        copy,
+      }),
+    ).toBe("save model=gpt-image-2");
   });
 
   test("uses a Vercel Hobby-compatible timeout for image generation requests", () => {
@@ -241,6 +380,61 @@ describe("OpenAI image generation models", () => {
         message: "An error occurred with your deployment",
       },
     });
+  });
+
+  test("localizes access-restricted image errors without exposing machine codes", () => {
+    expect(
+      getOpenAIImageErrorMessage({
+        status: 429,
+        payload: {
+          code: "access_restricted",
+          msg: "access_restricted",
+        },
+        accessRestrictedMessage: Locale.Error.AccessRestricted,
+      }),
+    ).toBe(Locale.Error.AccessRestricted);
+  });
+
+  test.each([
+    "Authorization: Bearer upstream-secret",
+    "Invalid API key provided: sk-proj-upstream-secret",
+    "<html><body>gateway failure</body></html>",
+    "x".repeat(1000),
+  ])("sanitizes unsafe public image error detail", (message) => {
+    const publicMessage = getOpenAIImageErrorMessage({
+      status: 502,
+      payload: {
+        error: {
+          code: "upstream_error",
+          message,
+          request_id: "req_image_123",
+        },
+      },
+      accessRestrictedMessage: Locale.Error.AccessRestricted,
+    });
+
+    expect(publicMessage).toBe(
+      "OpenAI image generation failed (upstream_error) [request_id: req_image_123]",
+    );
+    expect(publicMessage).not.toContain(message);
+  });
+
+  test("does not expose a credential-shaped image error code", () => {
+    const publicMessage = getOpenAIImageErrorMessage({
+      status: 502,
+      payload: {
+        error: {
+          code: "sk-proj-upstream-secret",
+          message: "Invalid request",
+        },
+      },
+      accessRestrictedMessage: Locale.Error.AccessRestricted,
+    });
+
+    expect(publicMessage).toBe(
+      "OpenAI image generation failed (502): Invalid request",
+    );
+    expect(publicMessage).not.toContain("sk-proj-upstream-secret");
   });
 
   test("keeps DALL-E 3 payload compatible with the existing image path", () => {

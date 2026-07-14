@@ -10,7 +10,6 @@ import { getHeadersAsync } from "../header-loader";
 import {
   useAccessStore,
   useAppConfig,
-  useChatStore,
   usePluginStore,
   ChatMessageTool,
 } from "@/app/store";
@@ -27,6 +26,15 @@ import { preProcessImageContent } from "@/app/utils/chat";
 import { nanoid } from "nanoid";
 import { RequestPayload } from "./openai";
 import { fetch } from "@/app/utils/stream";
+import { withAbortTimeoutResponse } from "@/app/utils/request-timeout";
+import {
+  getPublicHttpErrorMessage,
+  getPublicUpstreamErrorMessage,
+  hasUpstreamErrorPayload,
+  readResponsePayload,
+} from "@/app/utils/public-error";
+import Locale from "../../locales";
+import { mergeLLMRequestConfig } from "../request-config";
 
 export class GeminiProApi implements LLMApi {
   path(path: string, shouldStream = false): string {
@@ -48,8 +56,6 @@ export class GeminiProApi implements LLMApi {
       baseUrl = "https://" + baseUrl;
     }
 
-    console.log("[Proxy Endpoint] ", baseUrl, path);
-
     let chatPath = [baseUrl, path].join("/");
     if (shouldStream) {
       chatPath += chatPath.includes("?") ? "&alt=sse" : "?alt=sse";
@@ -58,8 +64,6 @@ export class GeminiProApi implements LLMApi {
     return chatPath;
   }
   extractMessage(res: any) {
-    console.log("[Response] gemini-pro response: ", res);
-
     // 处理数组形式的响应（多个块）
     if (Array.isArray(res)) {
       // 合并所有文本块
@@ -90,10 +94,9 @@ export class GeminiProApi implements LLMApi {
     let multimodal = false;
 
     // 添加联网状态日志
-    const session = useChatStore.getState().currentSession();
     console.log(
       "[Chat] Web Access:",
-      session.mask?.plugin?.includes("googleSearch") ? "Enabled" : "Disabled",
+      options.pluginIds?.includes("googleSearch") ? "Enabled" : "Disabled",
     );
 
     // try get base64image from local cache image_url
@@ -105,13 +108,14 @@ export class GeminiProApi implements LLMApi {
     );
 
     // 只有当用户选择了 googleSearch 时才创建 tools
-    const tools = session.mask?.plugin?.includes("googleSearch")
-      ? [
-          {
-            googleSearch: {},
-          },
-        ]
-      : undefined;
+    const tools =
+      options.allowTools === true && options.pluginIds?.includes("googleSearch")
+        ? [
+            {
+              googleSearch: {},
+            },
+          ]
+        : undefined;
 
     const messages = _messages.map((v) => {
       let parts: any[] = [{ text: getMessageTextContent(v) }];
@@ -158,13 +162,11 @@ export class GeminiProApi implements LLMApi {
 
     const accessStore = useAccessStore.getState();
 
-    const modelConfig = {
-      ...useAppConfig.getState().modelConfig,
-      ...useChatStore.getState().currentSession().mask.modelConfig,
-      ...{
-        model: options.config.model,
-      },
-    };
+    const modelConfig = mergeLLMRequestConfig(
+      useAppConfig.getState().modelConfig,
+      useAppConfig.getState().modelConfig,
+      options.config,
+    );
     const requestPayload = {
       contents: messages,
       ...(tools ? { tools } : {}),
@@ -207,25 +209,18 @@ export class GeminiProApi implements LLMApi {
         method: "POST",
         body: JSON.stringify(requestPayload),
         signal: controller.signal,
-        headers: await getHeadersAsync(),
+        headers: await getHeadersAsync(false, modelConfig.providerName),
       };
 
-      // make a fetch request
-      const requestTimeoutId = setTimeout(
-        () => controller.abort(),
-        REQUEST_TIMEOUT_MS,
-      );
-
       if (shouldStream) {
-        const [_, funcs] = usePluginStore
-          .getState()
-          .getAsTools(
-            useChatStore.getState().currentSession().mask?.plugin || [],
-          );
+        const [, funcs] =
+          options.allowTools === true
+            ? usePluginStore.getState().getAsTools(options.pluginIds ?? [])
+            : [[], {}];
         return stream(
           chatPath,
           requestPayload,
-          await getHeadersAsync(),
+          await getHeadersAsync(false, modelConfig.providerName),
           tools || [], // 如果 tools 未定义，传入空数组
           funcs,
           controller,
@@ -318,23 +313,47 @@ export class GeminiProApi implements LLMApi {
           options,
         );
       } else {
-        const res = await fetch(chatPath, chatPayload);
-        clearTimeout(requestTimeoutId);
-        const resJson = await res.json();
+        const { response: res, body: responseBody } =
+          await withAbortTimeoutResponse({
+            controller,
+            timeoutMs: REQUEST_TIMEOUT_MS,
+            operation: () => fetch(chatPath, chatPayload),
+            consume: readResponsePayload,
+          });
+        const resJson = responseBody.payload as any;
+        if (
+          !res.ok ||
+          !responseBody.isJson ||
+          hasUpstreamErrorPayload(resJson)
+        ) {
+          throw new Error(
+            getPublicHttpErrorMessage({
+              response: res,
+              payload: resJson ?? { message: responseBody.text },
+              fallback:
+                res.status === 401
+                  ? Locale.Error.Unauthorized
+                  : Locale.Error.RequestFailed(res.ok ? undefined : res.status),
+              accessRestrictedMessage: Locale.Error.AccessRestricted,
+            }),
+          );
+        }
         if (resJson?.promptFeedback?.blockReason) {
-          // being blocked
-          options.onError?.(
-            new Error(
-              "Message is being blocked for reason: " +
-                resJson.promptFeedback.blockReason,
-            ),
+          throw new Error(
+            getPublicUpstreamErrorMessage({
+              fallback: Locale.Error.RequestFailed(),
+              detail: resJson.promptFeedback.blockReason,
+            }),
           );
         }
         const message = apiClient.extractMessage(resJson);
+        if (!message) {
+          throw new Error(Locale.Error.RequestFailed());
+        }
         options.onFinish(message, res);
       }
     } catch (e) {
-      console.log("[Request] failed to make a chat request", e);
+      console.error("[Google] chat request failed");
       options.onError?.(e as Error);
     }
   }

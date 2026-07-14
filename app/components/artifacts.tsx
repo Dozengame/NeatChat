@@ -11,8 +11,8 @@ import styles from "./artifacts.module.scss";
 import { ArtifactsShareButton } from "./artifacts-share-button";
 import { HTMLPreview, HTMLPreviewHander } from "./artifacts-preview";
 
-async function loadArtifactContent(id: string) {
-  const res = await fetch(`${ApiPath.Artifacts}?id=${id}`);
+async function loadArtifactContent(id: string, signal: AbortSignal) {
+  const res = await fetch(`${ApiPath.Artifacts}?id=${id}`, { signal });
   if (res.status > 300) {
     throw Error("can not get content");
   }
@@ -24,16 +24,30 @@ export function Artifacts() {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(true);
   const [fileName, setFileName] = useState("");
+  const [previewApproved, setPreviewApproved] = useState(false);
   const previewRef = useRef<HTMLPreviewHander>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
+    setCode("");
+    setFileName("");
+    setPreviewApproved(false);
+    setLoading(Boolean(id));
     if (id) {
-      loadArtifactContent(id)
-        .then(setCode)
-        .catch(() => {
+      loadArtifactContent(id, controller.signal)
+        .then((content) => {
+          if (controller.signal.aborted) return;
+          setCode(content);
+        })
+        .catch((error) => {
+          if (controller.signal.aborted) return;
           showToast(Locale.Export.Artifacts.Error);
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setLoading(false);
         });
     }
+    return () => controller.abort();
   }, [id]);
 
   return (
@@ -63,6 +77,7 @@ export function Artifacts() {
             shadow
             title={Locale.Export.Artifacts.ReloadTitle}
             aria={Locale.Export.Artifacts.ReloadTitle}
+            disabled={!code || !previewApproved}
             onClick={() => previewRef.current?.reload()}
           />
         </div>
@@ -80,12 +95,15 @@ export function Artifacts() {
         {code && (
           <HTMLPreview
             code={code}
+            executionKey={id}
+            accessibleTitle={Locale.Markdown.HtmlPreview}
+            runLabel={Locale.Markdown.RunHtmlPreview}
             ref={previewRef}
             autoHeight={false}
             height={"100%"}
+            onApprovalChange={setPreviewApproved}
             onLoad={(title) => {
               setFileName(title as string);
-              setLoading(false);
             }}
           />
         )}

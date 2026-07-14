@@ -34,7 +34,6 @@ import ConfirmIcon from "../icons/confirm.svg";
 import CancelIcon from "../icons/cancel.svg";
 import FileIcon from "../icons/file.svg";
 import AttachmentIcon from "../icons/attachment.svg";
-import ImageIcon from "../icons/image.svg";
 import DownloadIcon from "../icons/download.svg";
 import AddIcon from "../icons/add.svg";
 import NeatIcon from "../icons/neat.svg";
@@ -82,6 +81,15 @@ import {
   getImagePreviewAlt,
   getMessageImageLabel,
 } from "../utils/image-action-labels";
+import {
+  accumulateChatScrollDirection,
+  followChatTailAfterResize,
+  getAnchoredScrollTop,
+  getUnderfilledChatWindowStart,
+  isMessageIndexRetainedInWindow,
+  isRetainedVisibleMessageAnchor,
+  type ChatScrollTarget,
+} from "../utils/chat-scroll-navigation";
 
 import dynamic from "next/dynamic";
 
@@ -104,6 +112,7 @@ import { showConfirm, showPrompt, showToast } from "./ui-lib-actions";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   CHAT_PAGE_SIZE,
+  MAX_RENDER_MSG_COUNT,
   DEFAULT_TTS_ENGINE,
   ENABLE_REALTIME_CHAT,
   ENABLE_TEXT_TO_SPEECH,
@@ -118,41 +127,37 @@ import { ContextPrompts, MaskAvatar, MaskConfig } from "./mask";
 import { useMaskStore } from "../store/mask";
 import { useChatCommand, useCommand } from "../command";
 import { prettyObject } from "../utils/format";
-import { ExportMessageModal } from "./exporter";
 import { getClientConfig } from "../config/client";
 import { useAllModels } from "../utils/hooks";
 import { MultimodalContent } from "../client/types";
 import {
+  applyConfiguredOpenAIResponsesReasoningEffortDefault,
   applyOpenAIResponsesModelConstraints,
+  filterOpenAIResponsesReasoningEfforts,
   getMaxOutputTokensForReasoningEffort,
-  getOpenAIResponsesReasoningEfforts,
   clampOpenAIResponsesMaxOutputTokens,
-  isOpenAIGpt5OrNewerModelConfig,
+  isOpenAIResponsesReasoningModelConfig,
+  includeCurrentOpenAIResponsesReasoningEffort,
   normalizeOpenAIResponsesReasoningEffort,
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
   OpenAIChatReasoningEffort,
 } from "../utils/openai-responses";
 import {
   applyOpenAIImageGenerationDefaults,
-  DALLE_IMAGE_COMPATIBLE_SIZES,
-  DALLE3_IMAGE_QUALITIES,
-  DALLE3_IMAGE_SIZES,
   DALLE3_IMAGE_STYLES,
-  GPT_IMAGE_2_QUALITIES,
-  GPT_IMAGE_2_SIZES,
+  getOpenAIImageGenerationOptions,
   isDalle3,
-  isGptImageGenerationModel,
   isOpenAIImageGenerationModelConfig,
+  normalizeOpenAIImageQuality,
+  normalizeOpenAIImageSize,
 } from "../utils/openai-image";
 
-import { ClientApi } from "../client/api";
 import { createTTSPlayer } from "../utils/audio";
-import { MsEdgeTTS, OUTPUT_FORMAT } from "../utils/ms_edge_tts";
 
 import { isEmpty } from "lodash-es";
 import { getModelProvider } from "../utils/model";
-import { RealtimeChat } from "@/app/components/realtime-chat";
 import clsx from "clsx";
+import { shallow } from "zustand/shallow";
 import {
   type DraggedAttachmentSummary,
   FileInfo,
@@ -166,29 +171,47 @@ import {
   replaceAttachmentImageAtIndex,
   uploadAttachments,
 } from "../utils/file";
+import { formatAttachmentForPrompt } from "../utils/attachment-wire";
 import {
-  activateMcpClient,
-  deactivateMcpClient,
-  isMcpEnabled,
-} from "../mcp/actions";
-import { createConfigFieldMeta } from "../utils/public-app-config";
+  type ConfigSource,
+  createConfigFieldMeta,
+} from "../utils/public-app-config";
 import {
-  JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
-  JIMENG_MCP_SERVER_ID,
-} from "../mcp/jimeng";
-import {
-  getVisibleChatMessages,
+  createPinnedContextMessage,
+  createVisibleChatMessagesProjector,
+  findMessageForRenderSource,
+  getMessageRenderIdentity,
   RenderMessage,
   shouldRenderLoadingPreview,
 } from "./chat-render";
+import { getComposerModelMenuPlacement } from "../utils/composer-model-menu-placement";
 
-import { ImageEditor } from "./image-editor";
+import {
+  DiscreteOptionRail,
+  ReasoningEffortRail,
+} from "./reasoning-effort-rail";
+import {
+  MessageImageGallery,
+  MessageImagePreview,
+} from "./message-image-gallery";
+import {
+  ChatHomeMode,
+  ChatHomeModel,
+  ComposerModelMenuSection,
+  getComposerModelMenuSection,
+  getChatHomeModeForModel,
+  getChatHomeModeModels,
+  getImageComposerSummary,
+  isChatHomeModeDisabled,
+  resolvePreferredChatHomeModel,
+} from "./chat-home-mode";
 
 const localStorage = safeLocalStorage();
 
 const ttsPlayer = createTTSPlayer();
 const reasoningLabels: Record<OpenAIChatReasoningEffort, string> = {
   none: Locale.Settings.ReasoningEffort.None,
+  minimal: Locale.Settings.ReasoningEffort.Minimal,
   low: Locale.Settings.ReasoningEffort.Low,
   medium: Locale.Settings.ReasoningEffort.Medium,
   high: Locale.Settings.ReasoningEffort.High,
@@ -197,6 +220,7 @@ const reasoningLabels: Record<OpenAIChatReasoningEffort, string> = {
 };
 const reasoningDescriptions: Record<OpenAIChatReasoningEffort, string> = {
   none: Locale.Settings.ReasoningEffort.NoneDescription,
+  minimal: Locale.Settings.ReasoningEffort.MinimalDescription,
   low: Locale.Settings.ReasoningEffort.LowDescription,
   medium: Locale.Settings.ReasoningEffort.MediumDescription,
   high: Locale.Settings.ReasoningEffort.HighDescription,
@@ -204,418 +228,33 @@ const reasoningDescriptions: Record<OpenAIChatReasoningEffort, string> = {
   max: Locale.Settings.ReasoningEffort.MaxDescription,
 };
 const imageQualityLabels: Record<OpenAIImageQuality, string> = {
-  auto: "自动",
-  low: "低清晰度",
-  medium: "标准清晰度",
-  high: "高清晰度",
-  standard: "标准",
-  hd: "高清",
+  auto: Locale.Settings.ImageGeneration.Auto,
+  low: Locale.Settings.ImageGeneration.Low,
+  medium: Locale.Settings.ImageGeneration.Medium,
+  high: Locale.Settings.ImageGeneration.High,
+  standard: Locale.Settings.ImageGeneration.Standard,
+  hd: Locale.Settings.ImageGeneration.HD,
 };
 const getImageQualityLabel = (quality: OpenAIImageQuality) =>
   imageQualityLabels[quality] ?? quality;
-type MobileModelAdvancedSection = "reasoning" | "image-size" | "image-quality";
-type ModelMenuPlacement = "header" | "empty-composer";
-
+const getImageSizeLabel = (size: OpenAIImageSize) =>
+  Locale.Settings.ImageGeneration.SizeLabel(size);
 const CHAT_BODY_BOTTOM_SAFE_AREA_BASE = 150;
 const CHAT_BODY_BOTTOM_SAFE_AREA_MOBILE_BASE = 118;
-const CHAT_SCROLL_BOTTOM_CLEARANCE = 54;
-const CHAT_SCROLL_BOTTOM_MOBILE_CLEARANCE = 50;
-const MARKDOWN_STRESS_QA_PARAM = "markdown-stress";
-const MARKDOWN_STRESS_QA_BOUNDARY_PARAM = "streaming_boundary";
-const MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_PARAM = "dropzone_preview";
-const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_PARAM =
-  "attachment_strip_preview";
-const MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX = "codex-qa-markdown-stress";
-type MarkdownStressBoundaryVariant =
-  | "details"
-  | "table"
-  | "artifact"
-  | "image"
-  | "media";
-type MarkdownStressDropzonePreviewVariant = "accepted" | "blocked";
-type MarkdownStressAttachmentStripPreviewVariant =
-  | "populated"
-  | "full"
-  | "overflow";
-const MARKDOWN_STRESS_QA_BOUNDARY_VARIANTS: MarkdownStressBoundaryVariant[] = [
-  "details",
-  "table",
-  "artifact",
-  "image",
-  "media",
-];
-const MARKDOWN_STRESS_QA_CONTENT = `# Markdown 压测示例文档
+const CHAT_SCROLL_BOTTOM_CLEARANCE = 66;
+const CHAT_SCROLL_BOTTOM_MOBILE_CLEARANCE = 60;
+type ChatQaFixture = typeof import("./chat-qa-fixture");
 
-这份内容只用于本地 UI QA，覆盖标题、段落、引用、行内代码、列表、表格、代码块、details、长链接和长文本换行。
-
-> 这是一段 blockquote，用于测试引用样式、换行、嵌套、以及长文本渲染效果。
-> 第二行引用内容，包含 **bold**、_italic_、\`inline code\`。
-
-## 引用与行内代码
-
-> 引用第一段：同一行内混合中文、English words、\`inline code\` 和强调文本，用于检查低眩光背景、左侧 rail、段落节奏和换行。
->
-> - 引用内列表第一项：短内容应该保持紧凑。
-> - 引用内列表第二项包含 \`veryLongInlineCodeIdentifierForMarkdownStressWrappingAndCopySafety\`，用于检查超长行内代码不会撑破消息宽度。
->
-> 引用最后一段紧跟列表，用于检查 blockquote 内部多段内容之间的留白是否自然。
-
-### 连续标题层级
-#### 子标题紧跟标题
-
-连续标题后的正文包含 \`veryLongInlineCodeIdentifierForMarkdownStressWrappingAndCopySafety\`、普通链接和中文说明，用于检查标题、段落、行内代码之间的节奏。
-
-## 深度阅读节奏
-
-连续标题后的引用、表格、details 和长行内代码需要在 light/dark 下保持低眩光阅读面，并且 320px 窄屏不能出现页面级横向滚动。
-
-> 深度引用第一段：包含 \`blockquoteStreamingCaretProbe\`、中文说明和 English words，用于检查引用卡片的宽度、文字颜色和 streaming caret 位置。
->
-> - 引用内列表最后一项保留 \`blockquoteStreamingCaretProbeNestedListItem\`，用于检查流式输出停在引用列表末尾时 caret 不会漂到卡片外。
-
-## 代码块
-
-\`\`\`typescript
-type ChatMessage = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  meta?: {
-    markdown: true;
-    language: "zh-CN";
-  };
-};
-
-const renderMessage = (message: ChatMessage) => {
-  return message.content.trim() || "empty";
-};
-\`\`\`
-
-\`\`\`json
-{
-  "name": "stress-test",
-  "type": "markdown",
-  "enabled": true,
-  "items": [1, 2, 3, 4, 5],
-  "meta": {
-    "author": "OpenAI",
-    "language": "zh-CN"
-  }
-}
-\`\`\`
-
-\`\`\`bash
-#!/usr/bin/env bash
-set -e
-
-echo "Start build..."
-yarn install
-yarn build
-echo "Done."
-\`\`\`
-
-## 表格
-
-| Surface | Expected behavior | QA focus | Extra long validation note |
-| --- | --- | --- | --- |
-| Code block | GitHub-like card with line numbers | Copy excludes gutter | Keep language label, gutter, fold control, and copy button readable on mobile and desktop. |
-| Table | Horizontal overflow stays contained | No page overflow | A deliberately longer table cell checks the edge fade, keyboard focus region, and wrapping behavior. |
-| Quote | Soft rail and readable text | Light and dark comfort | Mixed Chinese and English text should remain calm without clipped glyphs or forced page width. |
-
-表格说明：这段说明紧跟在表格之后，用于检查表格、段落和后续内容之间的节奏。
-
-## 步骤与列表
-
-1. 明确完成标准：同一行内包含 \`inline code\`、[列表内长链接](https://example.com/neatchat/markdown-stress/list-item/with/a/very/long/url/that/should/wrap-cleanly?surface=list&viewport=mobile) 和中文说明时，仍然应该自然换行。
-2. 拆分实现步骤：
-   - 桌面和移动端使用同一套列表节奏。
-   - 嵌套内容包含第二段说明，用于检查多段 list item。
-
-   第二段继续描述这个步骤，确保列表项内段落不会产生过大的空白，也不会挤压后续列表。
-3. 验证输出：
-   - 代码块、表格和列表连续出现时保持清晰层级。
-   - 320px 窄屏不出现页面横向滚动。
-
-任务清单：
-
-- [x] 已完成的任务列表项：行首 checkbox 与正文基线对齐。
-- [ ] 待确认的任务列表项：未选状态在 light/dark 下都要清晰。
-- [ ] 未完成任务 4：包含嵌套子任务，检查缩进、checkbox 对齐和文本换行。
-  - [ ] 子任务 4.1：移动端窄屏不能挤压正文。
-  - [x] 子任务 4.2：完成态不能让图标和文本错位。
-
-<details>
-<summary>折叠内容</summary>
-
-- 第一层列表内容
-  - 第二层列表内容
-  - 混合中文和 English text should wrap without clipping.
-- 长链接测试：https://example.com/neatchat/markdown-stress/very/long/path/that/should/wrap/without/forcing/horizontal/page/overflow?source=codex_qa&theme=both
-
-> details 内的引用内容，用于检查普通折叠块内部引用、列表、链接和长文本的混排节奏。
-
-</details>
-
-## 多模态预览
-
-![多模态预览](data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='640'%20height='360'%20viewBox='0%200%20640%20360'%3E%3Crect%20width='640'%20height='360'%20rx='28'%20fill='%23eef4ff'/%3E%3Ccircle%20cx='126'%20cy='116'%20r='48'%20fill='%236d8dff'/%3E%3Crect%20x='210'%20y='82'%20width='330'%20height='28'%20rx='14'%20fill='%236779e6'/%3E%3Crect%20x='210'%20y='132'%20width='250'%20height='20'%20rx='10'%20fill='%2392a7ff'/%3E%3Cpath%20d='M64%20286L222%20182l92%2064%2078-54%20184%2094H64z'%20fill='%23c8d7ff'/%3E%3C/svg%3E)
-
-![图片生成提示词预览](data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='640'%20height='360'%20viewBox='0%200%20640%20360'%3E%3Crect%20width='640'%20height='360'%20rx='28'%20fill='%23f7f7fb'/%3E%3Crect%20x='72'%20y='72'%20width='496'%20height='216'%20rx='18'%20fill='%23dfe7ff'/%3E%3Ccircle%20cx='168'%20cy='144'%20r='42'%20fill='%23799aff'/%3E%3Cpath%20d='M112%20242l92-70%2070%2052%2058-42%20196%2060z'%20fill='%23aebeff'/%3E%3C/svg%3E) 助手善于判断用户意图，当确定需要提供图片时，助手会输出 markdown 图片语法并追加一段较长的中文提示说明，用于验证图片后接长文本时不会挤压 token、按钮或消息边界，也不会产生横向滚动。
-
-[音频预览](/codex-qa/neatchat-stress-audio.mp3)
-
-[视频预览](/codex-qa/neatchat-stress-video.mp4)
-
-连续内容后续段落：媒体、表格、details 和正文连续出现时，视觉节奏应该仍然保持轻量、留白清晰，并且不会让任何按钮、图片或控制条挤出聊天消息边界。
-
-长文本压测：中文内容混排用于验证编码、换行、滚动、折叠、锚点、复制、搜索、高亮、SSR、CSR、分页、虚拟滚动等能力。ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
-
-\`End of markdown stress test content.\`
-`;
-const MARKDOWN_STRESS_QA_BOUNDARY_CONTENT: Record<
-  MarkdownStressBoundaryVariant,
-  string
-> = {
-  details: `# codex-qa-streaming-details
-
-前置段落用于检查 streaming caret 在最终 details 块前的段落节奏。
-
-<details open>
-<summary>流式 details 终点</summary>
-
-- codex-qa-streaming-details
-- 最后一屏应该保留折叠块边界、左侧节奏和底部 caret 空间。
-
-</details>`,
-  table: `# codex-qa-streaming-table
-
-最终内容停在表格，用于检查 streaming caret 与横向滚动容器的距离。
-
-| codex-qa-streaming-table | 状态 | 说明 |
-| --- | --- | --- |
-| final-row | streaming | 表格边界不应挤压消息操作区或页面宽度。 |`,
-  artifact: `# codex-qa-streaming-artifact
-
-最终内容停在 HTML artifact 代码块，用于检查预览卡片与 streaming 状态的边界。
-
-\`\`\`html
-<!doctype html>
-<html>
-  <body>
-    <main aria-label="codex-qa-streaming-artifact">
-      <h1>codex-qa-streaming-artifact</h1>
-      <p>Artifact preview should stay bounded in the message column.</p>
-    </main>
-  </body>
-</html>
-\`\`\``,
-  image: `# codex-qa-streaming-image
-
-最终内容停在图片，用于检查媒体卡片底部空间和流式 caret。
-
-![codex-qa-streaming-image](data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='640'%20height='360'%20viewBox='0%200%20640%20360'%3E%3Crect%20width='640'%20height='360'%20rx='28'%20fill='%23eef4ff'/%3E%3Ccircle%20cx='146'%20cy='126'%20r='52'%20fill='%236d8dff'/%3E%3Cpath%20d='M76%20288l150-100%2088%2068%2076-48%20174%2080H76z'%20fill='%23b8c8ff'/%3E%3Ctext%20x='236'%20y='132'%20font-size='28'%20font-family='Arial'%20fill='%23324152'%3Ecodex-qa-streaming-image%3C/text%3E%3C/svg%3E)`,
-  media: `# codex-qa-streaming-media
-
-最终内容停在真实本地媒体资源，用于检查 audio/video card 的 loading、focus 和底部留白。
-
-[音频预览](/codex-qa/neatchat-stress-audio.mp3)
-
-[视频预览](/codex-qa/neatchat-stress-video.mp4)`,
-};
-const MARKDOWN_STRESS_QA_MESSAGES: RenderMessage[] = [
-  {
-    id: `${MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX}-user`,
-    date: "2026/6/26 00:00:00",
-    role: "user",
-    content: "渲染一份 Markdown 压测示例文档，用于检查聊天内容显示。",
-  },
-  {
-    id: `${MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX}-assistant`,
-    date: "2026/6/26 00:00:01",
-    role: "assistant",
-    model: "gpt-5.4" as ModelType,
-    content: MARKDOWN_STRESS_QA_CONTENT,
-  },
-];
-const MARKDOWN_STRESS_QA_BOUNDARY_MESSAGES: RenderMessage[] =
-  MARKDOWN_STRESS_QA_BOUNDARY_VARIANTS.map((variant) => ({
-    id: `${MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX}-streaming-${variant}`,
-    date: "2026/6/27 00:00:00",
-    role: "assistant",
-    model: "gpt-5.4" as ModelType,
-    streaming: true,
-    content: MARKDOWN_STRESS_QA_BOUNDARY_CONTENT[variant],
-  }));
-const MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_SUMMARIES: Record<
-  MarkdownStressDropzonePreviewVariant,
-  DraggedAttachmentSummary
-> = {
-  accepted: {
-    text: "可添加 2 张图片 · 1 个文件",
-    hint: "释放后添加到输入框 · 最多3张图片、5个文件",
-    willAdd: true,
-  },
-  blocked: {
-    text: "附件已满",
-    hint: "最多3张图片、5个文件 · 请先移除部分附件",
-    willAdd: false,
-  },
-};
-const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_IMAGES: Record<
-  MarkdownStressAttachmentStripPreviewVariant,
-  string[]
-> = {
-  populated: [
-    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%231a73e8'/%3E%3Ccircle%20cx='102'%20cy='104'%20r='36'%20fill='%23d7e3ff'/%3E%3Cpath%20d='M42%20252l92-92%2058%2048%2038-36%2048%2080H42z'%20fill='%23edf2ff'/%3E%3C/svg%3E",
-  ],
-  full: [
-    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%231a73e8'/%3E%3Ccircle%20cx='102'%20cy='104'%20r='36'%20fill='%23d7e3ff'/%3E%3Cpath%20d='M42%20252l92-92%2058%2048%2038-36%2048%2080H42z'%20fill='%23edf2ff'/%3E%3C/svg%3E",
-    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%230b8043'/%3E%3Ccircle%20cx='230'%20cy='94'%20r='34'%20fill='%23c8f7dc'/%3E%3Cpath%20d='M38%20244l86-74%2054%2044%2044-62%2062%2092H38z'%20fill='%23e7f8ee'/%3E%3C/svg%3E",
-    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%23a142f4'/%3E%3Ccircle%20cx='98'%20cy='92'%20r='32'%20fill='%23f1dcff'/%3E%3Cpath%20d='M44%20246l72-72%2046%2040%2048-58%2068%2090H44z'%20fill='%23f7edff'/%3E%3C/svg%3E",
-  ],
-  overflow: [
-    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%231a73e8'/%3E%3Ccircle%20cx='102'%20cy='104'%20r='36'%20fill='%23d7e3ff'/%3E%3Cpath%20d='M42%20252l92-92%2058%2048%2038-36%2048%2080H42z'%20fill='%23edf2ff'/%3E%3C/svg%3E",
-    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%230b8043'/%3E%3Ccircle%20cx='230'%20cy='94'%20r='34'%20fill='%23c8f7dc'/%3E%3Cpath%20d='M38%20244l86-74%2054%2044%2044-62%2062%2092H38z'%20fill='%23e7f8ee'/%3E%3C/svg%3E",
-    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='320'%20viewBox='0%200%20320%20320'%3E%3Crect%20width='320'%20height='320'%20rx='48'%20fill='%23a142f4'/%3E%3Ccircle%20cx='98'%20cy='92'%20r='32'%20fill='%23f1dcff'/%3E%3Cpath%20d='M44%20246l72-72%2046%2040%2048-58%2068%2090H44z'%20fill='%23f7edff'/%3E%3C/svg%3E",
-  ],
-};
-const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_FILE_FIXTURES: Record<
-  MarkdownStressAttachmentStripPreviewVariant,
-  Array<Pick<FileInfo, "name" | "type" | "content">>
-> = {
-  populated: [
-    {
-      name: "产品需求摘要.md",
-      type: "text/markdown",
-      content: "# 产品需求摘要\n\n用于验证附件 strip 的普通填充状态。",
-    },
-    {
-      name: "release-checklist.json",
-      type: "application/json",
-      content: '{ "status": "draft", "items": ["qa", "review"] }',
-    },
-  ],
-  full: [
-    {
-      name: "界面压测报告.md",
-      type: "text/markdown",
-      content: "# 界面压测报告\n\n用于验证附件已满状态。",
-    },
-    {
-      name: "markdown-render-fixture.json",
-      type: "application/json",
-      content: '{ "fixture": "markdown-render", "rows": 42 }',
-    },
-    {
-      name: "table-overflow-sample.csv",
-      type: "text/csv",
-      content: "metric,value\nlatency,128\nmemory,452",
-    },
-    {
-      name: "long-code-block.ts",
-      type: "text/typescript",
-      content: "export const fixture = 'long-code-block';",
-    },
-    {
-      name: "qa-notes.txt",
-      type: "text/plain",
-      content: "最多 3 张图片和 5 个文件时显示已满状态。",
-    },
-  ],
-  overflow: [
-    {
-      name: "2026-markdown-performance-benchmark-summary.md",
-      type: "text/markdown",
-      content: "# Markdown Performance Benchmark\n\nOverflow fixture.",
-    },
-    {
-      name: "conversation-export-with-extra-long-file-name.json",
-      type: "application/json",
-      content: '{ "messages": 128, "attachments": true }',
-    },
-    {
-      name: "nested-list-and-table-regression-cases.csv",
-      type: "text/csv",
-      content: "case,result\nnested-list,pass\ntable,pass",
-    },
-    {
-      name: "streaming-code-block-boundary-sample.ts",
-      type: "text/typescript",
-      content: "export function sample() { return 'streaming'; }",
-    },
-  ],
-};
-
-function isMarkdownStressQaEnabled(locationSearch: string) {
-  const params = new URLSearchParams(locationSearch);
-  return params.get("codex_qa") === MARKDOWN_STRESS_QA_PARAM;
-}
-
-function getMarkdownStressQaBoundaryVariant(locationSearch: string) {
-  const params = new URLSearchParams(locationSearch);
-  const variant = params.get(MARKDOWN_STRESS_QA_BOUNDARY_PARAM);
-  if (variant === "all") {
-    return variant;
-  }
-
-  if (
-    MARKDOWN_STRESS_QA_BOUNDARY_VARIANTS.includes(
-      variant as MarkdownStressBoundaryVariant,
-    )
-  ) {
-    return variant as MarkdownStressBoundaryVariant;
-  }
-}
-
-function getMarkdownStressQaDropzonePreviewVariant(locationSearch: string) {
-  const params = new URLSearchParams(locationSearch);
-  const variant = params.get(MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_PARAM);
-  return variant === "accepted" || variant === "blocked" ? variant : undefined;
-}
-
-function getMarkdownStressQaAttachmentStripPreviewVariant(
+async function loadChatQaFixture(
   locationSearch: string,
-) {
-  const params = new URLSearchParams(locationSearch);
-  const variant = params.get(MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_PARAM);
-  return variant === "populated" || variant === "full" || variant === "overflow"
-    ? variant
-    : undefined;
+): Promise<ChatQaFixture | undefined> {
+  if (process.env.NODE_ENV !== "production") {
+    const params = new URLSearchParams(locationSearch);
+    if (params.has("codex_qa")) {
+      return import("./chat-qa-fixture");
+    }
+  }
 }
-
-function createMarkdownStressQaAttachmentStripPreview(
-  variant: MarkdownStressAttachmentStripPreviewVariant,
-): { images: string[]; files: FileInfo[] } {
-  const files = MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_FILE_FIXTURES[
-    variant
-  ].map((fixture) => ({
-    ...fixture,
-    size: new Blob([fixture.content]).size,
-    originalFile: new File([fixture.content], fixture.name, {
-      type: fixture.type,
-    }),
-  }));
-
-  return {
-    images: [...MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_IMAGES[variant]],
-    files,
-  };
-}
-
-function getMarkdownStressQaMessages(locationSearch: string): RenderMessage[] {
-  const boundaryVariant = getMarkdownStressQaBoundaryVariant(locationSearch);
-  if (!boundaryVariant) return MARKDOWN_STRESS_QA_MESSAGES;
-
-  const boundaryMessages =
-    boundaryVariant === "all"
-      ? MARKDOWN_STRESS_QA_BOUNDARY_MESSAGES
-      : MARKDOWN_STRESS_QA_BOUNDARY_MESSAGES.filter((message) =>
-          message.id.endsWith(`-${boundaryVariant}`),
-        );
-
-  return [MARKDOWN_STRESS_QA_MESSAGES[0], ...boundaryMessages];
-}
-
 const stopAll = () => ChatControllerPool.stopAll();
 type ChatActionModalKey = "model" | "plugin" | "size" | "quality" | "style";
 type ChatActionModals = Record<ChatActionModalKey, boolean>;
@@ -679,27 +318,6 @@ function getImageDownloadName(src: string) {
   }
 }
 
-function isJimengPublicImage(src: string) {
-  try {
-    const url = new URL(src, window.location.href);
-    return (
-      url.protocol === "https:" &&
-      url.hostname === "123.207.69.230" &&
-      url.pathname.startsWith("/jimeng-media/")
-    );
-  } catch {
-    return false;
-  }
-}
-
-function getDownloadSource(src: string) {
-  if (!isJimengPublicImage(src)) {
-    return src;
-  }
-
-  return `/api/image-download?url=${encodeURIComponent(src)}`;
-}
-
 function triggerFileDownload(url: string, fileName: string) {
   if (!url) return;
 
@@ -745,10 +363,8 @@ async function downloadImage(src: string) {
   if (!src) return;
 
   const fileName = getImageDownloadName(src);
-  const downloadSource = getDownloadSource(src);
-
   try {
-    const response = await fetch(downloadSource);
+    const response = await fetch(src);
     if (!response.ok) {
       throw new Error(`Failed to fetch image: ${response.status}`);
     }
@@ -772,62 +388,26 @@ async function downloadImage(src: string) {
     window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
   } catch (error) {
     console.warn("[Image Download] Falling back to direct link", error);
-    showToast("无法直接保存图片，已打开原图");
+    showToast(Locale.ImageActions.OpenedOriginal);
     triggerFileDownload(src, fileName);
   }
-}
-
-function MessageImagePreview(props: {
-  src: string;
-  alt?: string;
-  className: string;
-  actionLabels: ReturnType<typeof getImageActionLabels>;
-  onPreview: (
-    src: string,
-    options?: { trigger?: HTMLButtonElement | null; label?: string },
-  ) => void;
-  onDownload: (src: string) => void | Promise<void>;
-}) {
-  return (
-    <span className={styles["chat-message-image-frame"]}>
-      <button
-        type="button"
-        className={styles["chat-message-image-preview-button"]}
-        aria-label={props.actionLabels.preview}
-        onClick={(event) =>
-          props.onPreview(props.src, {
-            trigger: event.currentTarget,
-            label: props.alt,
-          })
-        }
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          className={props.className}
-          src={props.src}
-          alt={props.alt ?? ""}
-        />
-      </button>
-      <button
-        type="button"
-        className={styles["chat-message-image-download"]}
-        aria-label={props.actionLabels.download}
-        title={props.actionLabels.download}
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          props.onDownload(props.src);
-        }}
-      >
-        <DownloadIcon />
-      </button>
-    </span>
-  );
 }
 
 const Markdown = dynamic(async () => (await import("./markdown")).Markdown, {
   loading: () => <LoadingIcon />,
 });
+const ExportMessageModal = dynamic(
+  async () => (await import("./exporter")).ExportMessageModal,
+  { loading: () => <LoadingIcon /> },
+);
+const ImageEditor = dynamic(
+  async () => (await import("./image-editor")).ImageEditor,
+  { loading: () => <LoadingIcon /> },
+);
+const RealtimeChat = dynamic(
+  async () => (await import("./realtime-chat")).RealtimeChat,
+  { loading: () => <LoadingIcon /> },
+);
 
 export function SessionConfigModel(props: { onClose: () => void }) {
   const chatStore = useChatStore();
@@ -906,19 +486,16 @@ export function SessionConfigModel(props: { onClose: () => void }) {
 function PromptToast(props: {
   showToast?: boolean;
   showModal?: boolean;
+  contextLength: number;
   onOpen: (_: HTMLButtonElement) => void;
 }) {
-  const chatStore = useChatStore();
-  const session = chatStore.currentSession();
-  const context = session.mask.context;
-
   return (
     <div className={styles["prompt-toast"]} key="prompt-toast">
-      {props.showToast && context.length > 0 && (
+      {props.showToast && props.contextLength > 0 && (
         <button
           type="button"
           className={clsx(styles["prompt-toast-inner"], "clickable")}
-          aria-label={Locale.Context.Toast(context.length)}
+          aria-label={Locale.Context.Toast(props.contextLength)}
           aria-haspopup="dialog"
           aria-controls="session-config-modal"
           aria-expanded={props.showModal}
@@ -926,7 +503,7 @@ function PromptToast(props: {
         >
           <BrainIcon />
           <span className={styles["prompt-toast-content"]}>
-            {Locale.Context.Toast(context.length)}
+            {Locale.Context.Toast(props.contextLength)}
           </span>
         </button>
       )}
@@ -1086,7 +663,7 @@ export function PromptHints(props: {
       id="chat-prompt-hints"
       className={styles["prompt-hints"]}
       role="listbox"
-      aria-label="提示词建议"
+      aria-label={Locale.Chat.Accessibility.PromptSuggestions}
       aria-activedescendant={`chat-prompt-hint-${activeSelectIndex}`}
     >
       {prompts.map((prompt, i) => (
@@ -1113,22 +690,24 @@ export function PromptHints(props: {
 
 const ClearContextDivider = React.forwardRef<HTMLButtonElement>(
   function ClearContextDivider(_, ref) {
-    const chatStore = useChatStore();
-    const session = chatStore.currentSession();
-
     return (
       <button
         type="button"
         ref={ref}
         className={styles["clear-context"]}
-        aria-label={`${Locale.Context.Clear}，${Locale.Context.Revert}`}
+        aria-label={Locale.Chat.Accessibility.CombinedLabels([
+          Locale.Context.Clear,
+          Locale.Context.Revert,
+        ])}
         title={Locale.Context.Revert}
-        onClick={() =>
+        onClick={() => {
+          const chatStore = useChatStore.getState();
+          const session = chatStore.currentSession();
           chatStore.updateTargetSession(
             session,
             (session) => (session.clearContextIndex = undefined),
-          )
-        }
+          );
+        }}
       >
         <span className={styles["clear-context-status"]}>
           <span className={styles["clear-context-mark"]} aria-hidden="true" />
@@ -1156,6 +735,7 @@ export function ChatAction(props: {
   ariaHasPopup?: React.AriaAttributes["aria-haspopup"];
   ariaExpanded?: boolean;
   ariaPressed?: boolean;
+  ariaBusy?: boolean;
   ariaDescribedBy?: string;
   role?: React.AriaRole;
 }) {
@@ -1191,6 +771,7 @@ export function ChatAction(props: {
       aria-haspopup={props.ariaHasPopup}
       aria-expanded={props.ariaExpanded}
       aria-pressed={props.ariaPressed}
+      aria-busy={props.ariaBusy}
       role={props.role}
       disabled={props.disabled}
       onClick={(event) => {
@@ -1219,28 +800,46 @@ export function ChatAction(props: {
 
 function useScrollToBottom(
   scrollRef: RefObject<HTMLDivElement>,
-  detach: boolean = false,
+  shouldAutoScroll: boolean = true,
   scrollSignal?: string,
 ) {
   // for auto-scroll
 
   const [autoScroll, setAutoScroll] = useState(true);
+  const scrollFrameRef = useRef<number | null>(null);
   const scrollDomToBottom = useCallback(() => {
     const dom = scrollRef.current;
     if (dom) {
-      requestAnimationFrame(() => {
+      if (scrollFrameRef.current !== null) {
+        cancelAnimationFrame(scrollFrameRef.current);
+      }
+      scrollFrameRef.current = requestAnimationFrame(() => {
+        scrollFrameRef.current = null;
         setAutoScroll(true);
         dom.scrollTo(0, dom.scrollHeight);
       });
     }
   }, [scrollRef]);
 
-  // auto scroll
+  useEffect(
+    () => () => {
+      if (scrollFrameRef.current !== null) {
+        cancelAnimationFrame(scrollFrameRef.current);
+      }
+    },
+    [],
+  );
+
+  // ResizeObserver follows content growth in modern browsers. This signal is
+  // only the capability fallback, avoiding duplicate scroll/layout work.
   useLayoutEffect(() => {
-    if (autoScroll && !detach) {
+    if (typeof ResizeObserver !== "undefined" && scrollSignal !== undefined) {
+      return;
+    }
+    if (autoScroll && shouldAutoScroll) {
       scrollDomToBottom();
     }
-  }, [autoScroll, detach, scrollDomToBottom, scrollSignal]);
+  }, [autoScroll, scrollDomToBottom, scrollSignal, shouldAutoScroll]);
 
   return {
     scrollRef,
@@ -1263,8 +862,6 @@ type ChatActionsProps = {
   openShortcutKeyModal: () => void;
   setUserInput: (input: string) => void;
   setShowChatSidePanel: React.Dispatch<React.SetStateAction<boolean>>;
-  imageGenerationEnabled: boolean;
-  setImageGenerationEnabled: React.Dispatch<React.SetStateAction<boolean>>;
   onActionComplete?: () => void;
 };
 
@@ -1318,21 +915,20 @@ function useChatActionsView(props: ChatActionsProps) {
     model: currentModel,
     providerName: currentProviderName,
   });
-  const isGptImageModel = isGptImageGenerationModel(currentModel);
   const isDalle3Model = isDalle3(currentModel);
-  const imageSizes = isGptImageModel
-    ? GPT_IMAGE_2_SIZES
-    : isDalle3Model
-    ? DALLE3_IMAGE_SIZES
-    : DALLE_IMAGE_COMPATIBLE_SIZES;
-  const imageQualitys = isGptImageModel
-    ? GPT_IMAGE_2_QUALITIES
-    : isDalle3Model
-    ? DALLE3_IMAGE_QUALITIES
-    : [];
+  const imageOptions = getOpenAIImageGenerationOptions(currentModel);
+  const imageSizes = imageOptions.sizes;
+  const imageQualitys = imageOptions.qualities;
   const dalle3Styles = DALLE3_IMAGE_STYLES;
-  const currentSize = session.mask.modelConfig?.size ?? "1024x1024";
-  const currentQuality = session.mask.modelConfig?.quality ?? "standard";
+  const currentSize = normalizeOpenAIImageSize(
+    currentModel,
+    session.mask.modelConfig?.size,
+  );
+  const currentQuality =
+    normalizeOpenAIImageQuality(
+      currentModel,
+      session.mask.modelConfig?.quality,
+    ) ?? "standard";
   const currentStyle = session.mask.modelConfig?.style ?? "vivid";
 
   const isCompactScreen = useCompactScreen();
@@ -1357,6 +953,11 @@ function useChatActionsView(props: ChatActionsProps) {
         session.mask.modelConfig.model = nextModel.name;
         session.mask.modelConfig.providerName = nextModel?.provider
           ?.providerName as ServiceProvider;
+        applyConfiguredOpenAIResponsesReasoningEffortDefault({
+          config: session.mask.modelConfig,
+          configMeta: session.mask.modelConfigMeta,
+          defaults: config.serverConfigSnapshot?.reasoningEffortDefaults,
+        });
         applyOpenAIResponsesModelConstraints(session.mask.modelConfig);
         applyOpenAIImageGenerationDefaults(session.mask.modelConfig);
         session.mask.modelConfigMeta = {
@@ -1419,41 +1020,6 @@ function useChatActionsView(props: ChatActionsProps) {
       props.onActionComplete?.();
     }
   };
-  const setImageGenerationMode = async (enabled: boolean) => {
-    if (enabled) {
-      let mcpEnabled = false;
-      try {
-        mcpEnabled = await isMcpEnabled();
-      } catch (error) {
-        console.warn("[MCP] Failed to check MCP status", error);
-        showToast("图片生成未启用");
-        return;
-      }
-
-      if (!mcpEnabled) {
-        showToast("图片生成未启用");
-        return;
-      }
-
-      try {
-        await activateMcpClient(JIMENG_MCP_SERVER_ID);
-        chatStore.resetMcpCache();
-      } catch (error) {
-        showToast(error instanceof Error ? error.message : "图片生成启用失败");
-        return;
-      }
-    } else {
-      try {
-        await deactivateMcpClient(JIMENG_MCP_SERVER_ID);
-      } catch (error) {
-        console.warn("[MCP] Failed to deactivate Jimeng MCP", error);
-      }
-      chatStore.resetMcpCache();
-    }
-
-    props.setImageGenerationEnabled(enabled);
-    showToast(enabled ? "已启用图片生成" : "已关闭图片生成");
-  };
   const hasSessionActions =
     couldStop ||
     !props.hitBottom ||
@@ -1468,14 +1034,14 @@ function useChatActionsView(props: ChatActionsProps) {
             styles["chat-multimodal-section-primary"],
           )}
           role="group"
-          aria-label="多模态工具"
+          aria-label={Locale.Chat.ChatToolMenu.MultimodalTools}
         >
           <div className={styles["chat-multimodal-section-header"]}>
             <span className={styles["chat-multimodal-section-title"]}>
-              <span>添加内容</span>
+              <span>{Locale.Chat.ChatToolMenu.AddContent}</span>
             </span>
             <span className={styles["chat-multimodal-section-subtitle"]}>
-              <span>文件和图片</span>
+              <span>{Locale.Chat.ChatToolMenu.FilesAndImages}</span>
             </span>
             <span
               id="chat-multimodal-upload-state"
@@ -1486,7 +1052,9 @@ function useChatActionsView(props: ChatActionsProps) {
               )}
               aria-live="polite"
             >
-              {props.attachmentSlotsFull ? "已满" : "3 图 · 5 文件"}
+              {props.attachmentSlotsFull
+                ? Locale.Chat.ChatToolMenu.Full
+                : Locale.Chat.ChatToolMenu.Capacity}
             </span>
           </div>
           <ChatAction
@@ -1495,26 +1063,15 @@ function useChatActionsView(props: ChatActionsProps) {
               props.uploadAttachments();
               completeMobileAction();
             }}
-            text={"上传附件"}
+            text={Locale.Chat.ChatToolMenu.UploadAttachment}
             icon={props.uploading ? <LoadingButtonIcon /> : <AttachmentIcon />}
             ariaDescribedBy="chat-multimodal-upload-state"
             disabled={props.attachmentSlotsFull}
             title={
               props.attachmentSlotsFull
-                ? "附件已满：最多 3 张图片、5 个文件"
+                ? Locale.Chat.ChatToolMenu.AttachmentFull
                 : undefined
             }
-          />
-
-          <ChatAction
-            active={props.imageGenerationEnabled}
-            ariaPressed={props.imageGenerationEnabled}
-            onClick={async () => {
-              await setImageGenerationMode(!props.imageGenerationEnabled);
-              completeMobileAction();
-            }}
-            text={props.imageGenerationEnabled ? "关闭图片生成" : "图片生成"}
-            icon={<ImageIcon />}
           />
         </div>
 
@@ -1525,14 +1082,14 @@ function useChatActionsView(props: ChatActionsProps) {
               styles["chat-multimodal-section-session"],
             )}
             role="group"
-            aria-label="会话工具"
+            aria-label={Locale.Chat.ChatToolMenu.SessionTools}
           >
             <div className={styles["chat-multimodal-section-header"]}>
               <span className={styles["chat-multimodal-section-title"]}>
-                <span>会话</span>
+                <span>{Locale.Chat.ChatToolMenu.Session}</span>
               </span>
               <span className={styles["chat-multimodal-section-subtitle"]}>
-                <span>模型和设置</span>
+                <span>{Locale.Chat.ChatToolMenu.ModelsAndSettings}</span>
               </span>
             </div>
             {couldStop && (
@@ -1601,7 +1158,9 @@ function useChatActionsView(props: ChatActionsProps) {
               <ChatAction
                 onClick={() => {
                   if (modelLocked) {
-                    showToast("该项已由管理员锁定");
+                    showToast(
+                      Locale.Settings.GPT56Capabilities.ConfigSource.Locked,
+                    );
                     return;
                   }
                   setActionModalOpen("model", true);
@@ -1639,6 +1198,12 @@ function useChatActionsView(props: ChatActionsProps) {
                     session.mask.modelConfig.model = model as ModelType;
                     session.mask.modelConfig.providerName =
                       providerName as ServiceProvider;
+                    applyConfiguredOpenAIResponsesReasoningEffortDefault({
+                      config: session.mask.modelConfig,
+                      configMeta: session.mask.modelConfigMeta,
+                      defaults:
+                        config.serverConfigSnapshot?.reasoningEffortDefaults,
+                    });
                     applyOpenAIResponsesModelConstraints(
                       session.mask.modelConfig,
                     );
@@ -1819,17 +1384,26 @@ function ChatInputReasoningAction() {
       OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
     currentModel,
   );
-  const currentReasoningEfforts =
-    getOpenAIResponsesReasoningEfforts(currentModel);
+  const currentReasoningEfforts = filterOpenAIResponsesReasoningEfforts(
+    currentModel,
+    accessStore.serverConfigSnapshot?.reasoningEffortAllowlist,
+  );
+  const visibleCurrentReasoningEfforts =
+    includeCurrentOpenAIResponsesReasoningEffort(
+      currentReasoningEfforts,
+      currentReasoningEffort,
+    );
   const [showReasoningSelectorModal, setShowReasoningSelectorModal] =
     useState(false);
   const reasoningLocked =
     accessStore.lockedFields?.includes("reasoningEffort") ||
     session.mask.modelConfigMeta?.reasoningEffort?.locked;
-  const showReasoningSelector = isOpenAIGpt5OrNewerModelConfig({
-    model: currentModel,
-    providerName: currentProviderName,
-  });
+  const showReasoningSelector =
+    visibleCurrentReasoningEfforts.length > 0 &&
+    isOpenAIResponsesReasoningModelConfig({
+      model: currentModel,
+      providerName: currentProviderName,
+    });
   const getReasoningMaxOutputTokens = (effort: OpenAIChatReasoningEffort) =>
     clampOpenAIResponsesMaxOutputTokens(
       accessStore.openaiMaxOutputTokens ??
@@ -1841,7 +1415,7 @@ function ChatInputReasoningAction() {
 
   const openReasoningSelector = () => {
     if (reasoningLocked) {
-      showToast("该项已由管理员锁定");
+      showToast(Locale.Settings.GPT56Capabilities.ConfigSource.Locked);
       return;
     }
     setShowReasoningSelectorModal(true);
@@ -1882,9 +1456,11 @@ function ChatInputReasoningAction() {
           event.preventDefault();
           openReasoningSelector();
         }}
-        disabled={reasoningLocked}
-        aria-label={`思考等级：${reasoningLabels[currentReasoningEffort]}`}
-        aria-haspopup="listbox"
+        disabled={reasoningLocked || currentReasoningEfforts.length === 0}
+        aria-label={Locale.Chat.ModelMenu.SelectedReasoning(
+          reasoningLabels[currentReasoningEffort],
+        )}
+        aria-haspopup="dialog"
         aria-expanded={showReasoningSelectorModal}
       >
         <BrainIcon />
@@ -1893,10 +1469,16 @@ function ChatInputReasoningAction() {
       </button>
       {showReasoningSelectorModal && (
         <Selector
+          ariaLabel={Locale.Chat.ModelMenu.SelectedReasoning(
+            reasoningLabels[currentReasoningEffort],
+          )}
           defaultSelectedValue={currentReasoningEffort}
-          items={currentReasoningEfforts.map((effort) => ({
+          items={visibleCurrentReasoningEfforts.map((effort) => ({
             title: reasoningLabels[effort],
             value: effort,
+            disable: !currentReasoningEfforts.some(
+              (allowedEffort) => allowedEffort === effort,
+            ),
             icon: <BrainIcon />,
           }))}
           onClose={() => setShowReasoningSelectorModal(false)}
@@ -2076,9 +1658,36 @@ export function ShortcutKeyModal(props: { onClose: () => void }) {
 }
 
 function useChatInnerView() {
-  const chatStore = useChatStore();
-  const session = chatStore.currentSession();
+  const chatStore = useChatStore((state) => {
+    const session = state.currentSession();
+    const tailMessage = session.messages.at(-1);
+
+    return {
+      session,
+      tailContent: tailMessage ? getMessageTextContent(tailMessage) : "",
+      tailStreaming: tailMessage?.streaming ?? false,
+      messageProjectionRevision: state.messageProjectionRevision,
+      currentSessionIndex: state.currentSessionIndex,
+      lastInput: state.lastInput,
+      updateTargetSession: state.updateTargetSession,
+      newSession: state.newSession,
+      nextSession: state.nextSession,
+      forkSession: state.forkSession,
+      deleteSession: state.deleteSession,
+      setLastInput: state.setLastInput,
+      onUserInput: state.onUserInput,
+      summarizeSession: state.summarizeSession,
+    };
+  }, shallow);
+  const session = chatStore.session;
   const updateTargetSession = chatStore.updateTargetSession;
+  const visibleChatMessagesProjectorRef = useRef<
+    ReturnType<typeof createVisibleChatMessagesProjector> | undefined
+  >(undefined);
+  const projectVisibleChatMessages =
+    visibleChatMessagesProjectorRef.current ??
+    (visibleChatMessagesProjectorRef.current =
+      createVisibleChatMessagesProjector());
   const config = useAppConfig();
   const fontSize = config.fontSize;
   const fontFamily = config.fontFamily;
@@ -2090,6 +1699,7 @@ function useChatInnerView() {
   const [userInput, setUserInput] = useState(
     () => localStorage.getItem(unfinishedInputKey) ?? "",
   );
+  const [isChatInputFocused, setIsChatInputFocused] = useState(false);
   const [isLoading, setIsLoading] = useReducer(
     (_: boolean, next: boolean) => next,
     false,
@@ -2097,72 +1707,107 @@ function useChatInnerView() {
   const { submitKey, shouldSubmit } = useSubmitHandler();
   const scrollRef = useRef<HTMLDivElement>(null);
   const readingSurfaceRef = useRef<HTMLDivElement>(null);
-  const isScrolledToBottom = scrollRef?.current
-    ? Math.abs(
-        scrollRef.current.scrollHeight -
-          (scrollRef.current.scrollTop + scrollRef.current.clientHeight),
-      ) <= 1
-    : false;
-  const isAttachWithTop = (() => {
-    const lastMessage = scrollRef.current?.lastElementChild as HTMLElement;
-    // if scrolllRef is not ready or no message, return false
-    if (!scrollRef?.current || !lastMessage) return false;
-    const topDistance =
-      lastMessage!.getBoundingClientRect().top -
-      scrollRef.current.getBoundingClientRect().top;
-    // leave some space for user question
-    return topDistance < 100;
-  })();
-
-  const isTyping = userInput !== "";
-
-  // if user is typing, should auto scroll to bottom
-  // if user is not typing, should auto scroll to bottom only if already at bottom
+  const [hitBottom, setHitBottom] = useState(true);
+  const [hitTop, setHitTop] = useState(true);
+  const [quickJumpTarget, setQuickJumpTarget] =
+    useState<ChatScrollTarget>("bottom");
+  const lastObservedScrollTopRef = useRef(0);
+  const scrollDirectionAccumulatorRef = useRef(0);
+  const pendingQuickJumpTargetRef = useRef<ChatScrollTarget | null>(null);
+  const msgRenderIndexRef = useRef(0);
+  const attachWithTopRef = useRef(false);
+  const lastSessionMessage = session.messages.at(-1);
   const messageScrollSignal = `${session.messages.length}:${
-    session.messages.at(-1)?.id ?? ""
-  }`;
+    lastSessionMessage?.id ?? ""
+  }:${
+    lastSessionMessage ? getMessageTextContent(lastSessionMessage).length : 0
+  }:${lastSessionMessage?.streaming ? 1 : 0}`;
+  const shouldFollowLatestMessage = hitBottom || attachWithTopRef.current;
   const { autoScroll, setAutoScroll, scrollDomToBottom } = useScrollToBottom(
     scrollRef,
-    (isScrolledToBottom || isAttachWithTop) && !isTyping,
+    shouldFollowLatestMessage,
     messageScrollSignal,
   );
-  const [hitBottom, setHitBottom] = useState(true);
+  const autoScrollRef = useRef(autoScroll);
+  autoScrollRef.current = autoScroll;
   const isMobileScreen = useMobileScreen();
   const isCompactScreen = useCompactScreen();
+  useLayoutEffect(() => {
+    setHitTop(true);
+    setHitBottom(true);
+    setQuickJumpTarget("bottom");
+    pendingQuickJumpTargetRef.current = null;
+    lastObservedScrollTopRef.current = scrollRef.current?.scrollTop ?? 0;
+    scrollDirectionAccumulatorRef.current = 0;
+  }, [session.id, scrollRef]);
   const syncHitBottomState = useCallback(
     (e: HTMLElement, syncAutoScroll = false) => {
       const bottomHeight = e.scrollTop + e.clientHeight;
-      const isHitBottom =
-        bottomHeight >= e.scrollHeight - (isMobileScreen ? 4 : 10);
+      const edgeTolerance = isMobileScreen ? 4 : 10;
+      const isHitTop =
+        msgRenderIndexRef.current === 0 && e.scrollTop <= edgeTolerance;
+      const isHitBottom = bottomHeight >= e.scrollHeight - edgeTolerance;
+      const lastMessage = readingSurfaceRef.current
+        ?.lastElementChild as HTMLElement | null;
+      attachWithTopRef.current = lastMessage
+        ? lastMessage.offsetTop - e.scrollTop < 100
+        : false;
 
+      setHitTop(isHitTop);
       setHitBottom(isHitBottom);
       if (syncAutoScroll) {
+        autoScrollRef.current = isHitBottom;
         setAutoScroll(isHitBottom);
       }
 
-      return { bottomHeight, isHitBottom };
+      return { bottomHeight, isHitBottom, isHitTop };
     },
     [isMobileScreen, setAutoScroll],
   );
   const navigate = useNavigate();
   const location = useLocation();
+  const [chatQaFixture, setChatQaFixture] = useState<ChatQaFixture>();
+  useEffect(() => {
+    let active = true;
+    void loadChatQaFixture(location.search).then((fixture) => {
+      if (active) setChatQaFixture(fixture);
+    });
+    return () => {
+      active = false;
+    };
+  }, [location.search]);
   const markdownStressQaEnabled = useMemo(
-    () => isMarkdownStressQaEnabled(location.search),
-    [location.search],
+    () => chatQaFixture?.isMarkdownStressQaEnabled(location.search) ?? false,
+    [chatQaFixture, location.search],
+  );
+  const markdownStressQaInteractiveInputEnabled = useMemo(
+    () =>
+      chatQaFixture?.isMarkdownStressQaInteractiveInputEnabled(
+        location.search,
+      ) ?? false,
+    [chatQaFixture, location.search],
+  );
+  const imageGalleryQaEnabled = useMemo(
+    () => chatQaFixture?.isImageGalleryQaEnabled(location.search) ?? false,
+    [chatQaFixture, location.search],
   );
   const markdownStressQaDropzonePreview = useMemo(
     () =>
       markdownStressQaEnabled
-        ? getMarkdownStressQaDropzonePreviewVariant(location.search)
+        ? chatQaFixture?.getMarkdownStressQaDropzonePreviewVariant(
+            location.search,
+          )
         : undefined,
-    [location.search, markdownStressQaEnabled],
+    [chatQaFixture, location.search, markdownStressQaEnabled],
   );
   const markdownStressQaAttachmentStripPreview = useMemo(
     () =>
       markdownStressQaEnabled
-        ? getMarkdownStressQaAttachmentStripPreviewVariant(location.search)
+        ? chatQaFixture?.getMarkdownStressQaAttachmentStripPreviewVariant(
+            location.search,
+          )
         : undefined,
-    [location.search, markdownStressQaEnabled],
+    [chatQaFixture, location.search, markdownStressQaEnabled],
   );
   const [attachImages, setAttachImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -2178,13 +1823,12 @@ function useChatInnerView() {
     start: false,
     end: false,
   });
-  const [imageGenerationEnabled, setImageGenerationEnabled] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [dragPayloadSummary, setDragPayloadSummary] =
     useState<DraggedAttachmentSummary | null>(null);
   const dragCounter = useRef(0);
   const dropzonePreviewSummary = markdownStressQaDropzonePreview
-    ? MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_SUMMARIES[
+    ? chatQaFixture?.MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_SUMMARIES[
         markdownStressQaDropzonePreview
       ]
     : null;
@@ -2221,6 +1865,17 @@ function useChatInnerView() {
 
         const dom = scrollRef.current;
         if (dom) {
+          if (autoScrollRef.current) {
+            pendingQuickJumpTargetRef.current = "bottom";
+          }
+          if (followChatTailAfterResize(dom, autoScrollRef.current)) {
+            lastObservedScrollTopRef.current = Math.max(
+              0,
+              dom.scrollHeight - dom.clientHeight,
+            );
+            scrollDirectionAccumulatorRef.current = 0;
+            setQuickJumpTarget("bottom");
+          }
           syncHitBottomState(dom);
         }
       });
@@ -2245,7 +1900,18 @@ function useChatInnerView() {
 
       contentResizeObserver?.disconnect();
     };
-  }, [messageScrollSignal, scrollRef, session.id, syncHitBottomState]);
+  }, [scrollRef, session.id, syncHitBottomState]);
+
+  useEffect(() => {
+    if (typeof ResizeObserver !== "undefined") return;
+    const resizeFrame = requestAnimationFrame(() => {
+      const dom = scrollRef.current;
+      if (dom) {
+        syncHitBottomState(dom);
+      }
+    });
+    return () => cancelAnimationFrame(resizeFrame);
+  }, [messageScrollSignal, session.id, syncHitBottomState]);
 
   // prompt hints
   const promptStore = usePromptStore();
@@ -2255,21 +1921,21 @@ function useChatInnerView() {
   const ignoreInputCollapseUntil = useRef(0);
 
   useEffect(() => {
-    if (!markdownStressQaAttachmentStripPreview) return;
+    if (!markdownStressQaAttachmentStripPreview || !chatQaFixture) return;
 
-    const seededAttachments = createMarkdownStressQaAttachmentStripPreview(
-      markdownStressQaAttachmentStripPreview,
-    );
+    const seededAttachments =
+      chatQaFixture.createMarkdownStressQaAttachmentStripPreview(
+        markdownStressQaAttachmentStripPreview,
+      );
     setAttachImages(seededAttachments.images);
     setAttachedFiles(seededAttachments.files);
     setIsInputExpanded(true);
-  }, [markdownStressQaAttachmentStripPreview]);
+  }, [chatQaFixture, markdownStressQaAttachmentStripPreview]);
 
   const hasActiveInputContent =
     userInput.trim().length > 0 ||
     attachImages.length > 0 ||
     attachedFiles.length > 0 ||
-    imageGenerationEnabled ||
     promptHints.length > 0;
   const canSubmitComposer =
     !markdownStressQaEnabled &&
@@ -2352,19 +2018,23 @@ function useChatInnerView() {
       const truncatedText =
         text.length > MAX_FILE_CONTENT_LENGTH
           ? text.substring(0, MAX_FILE_CONTENT_LENGTH) +
-            `\n\n[文件过大，已截断。原文件大小: ${text.length} 字符]`
+            `\n\n${Locale.Chat.Attachments.Reader.ContentTruncated(
+              text.length,
+            )}`
           : text;
 
       // 将长文本转换为文件附件
+      const inputTextFileName = Locale.Chat.Attachments.InputTextFile(
+        new Date().toISOString().slice(0, 19).replace(/[T:]/g, "-"),
+      );
       const longTextFile: FileInfo = {
-        name: `输入文本_${new Date()
-          .toISOString()
-          .slice(0, 19)
-          .replace(/[T:]/g, "-")}.txt`,
+        name: inputTextFileName,
         type: "text/plain",
         size: text.length,
         content: truncatedText,
-        originalFile: new File([text], "输入文本.txt", { type: "text/plain" }),
+        originalFile: new File([text], inputTextFileName, {
+          type: "text/plain",
+        }),
       };
 
       // 添加到文件附件列表
@@ -2374,11 +2044,13 @@ function useChatInnerView() {
       setUserInput("");
 
       // 显示提示
-      showToast("文本过长，已自动转换为文件附件");
+      showToast(Locale.Chat.Attachments.TextConverted);
 
       // 如果文本被截断，显示额外提示
       if (text.length > MAX_FILE_CONTENT_LENGTH) {
-        showToast(`文件内容过大，已截断至 ${MAX_FILE_CONTENT_LENGTH} 字符`);
+        showToast(
+          Locale.Chat.Attachments.ContentTruncated(MAX_FILE_CONTENT_LENGTH),
+        );
       }
 
       return;
@@ -2415,12 +2087,13 @@ function useChatInnerView() {
 
     if (userInput.length > MAX_TEXT_LENGTH) {
       // 将长文本转换为文件附件
+      const longTextFileName = Locale.Chat.Attachments.LongTextFile;
       const longTextFile: FileInfo = {
-        name: "长文本.txt",
+        name: longTextFileName,
         type: "text/plain",
         size: userInput.length,
         content: userInput,
-        originalFile: new File([userInput], "长文本.txt", {
+        originalFile: new File([userInput], longTextFileName, {
           type: "text/plain",
         }),
       };
@@ -2428,21 +2101,16 @@ function useChatInnerView() {
       filesToSend.push(longTextFile);
 
       // 替换用户输入为提示信息
-      finalUserInput = "我发送了一个长文本文件，内容已自动转换为附件。";
+      finalUserInput = Locale.Chat.Attachments.LongTextMessage;
 
       // 显示提示
-      showToast("文本过长，已自动转换为文件附件");
+      showToast(Locale.Chat.Attachments.TextConverted);
     }
 
     // 如果有附加文件，将文件信息添加到用户输入
     if (filesToSend.length > 0) {
       const fileInfosText = filesToSend
-        .map(
-          (file) =>
-            `文件名: ${file.name}\n类型: ${file.type}\n大小: ${(
-              file.size / 1024
-            ).toFixed(2)} KB\n\n${file.content}`,
-        )
+        .map(formatAttachmentForPrompt)
         .join("\n\n---\n\n");
 
       finalUserInput = finalUserInput
@@ -2460,17 +2128,7 @@ function useChatInnerView() {
 
     setIsLoading(true);
     chatStore
-      .onUserInput(
-        finalUserInput,
-        attachImages,
-        false,
-        imageGenerationEnabled
-          ? {
-              mcpClientIds: [JIMENG_MCP_SERVER_ID],
-              systemPrompt: JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
-            }
-          : undefined,
-      )
+      .onUserInput(finalUserInput, attachImages)
       .then(() => setIsLoading(false));
 
     setAttachImages([]);
@@ -2533,9 +2191,15 @@ function useChatInnerView() {
       if (session.mask.syncGlobalConfig) {
         console.log("[Mask] syncing from global, name = ", session.mask.name);
         session.mask.modelConfig = { ...config.modelConfig };
+        session.mask.modelConfigMeta = { ...(config.modelConfigMeta ?? {}) };
       }
     });
-  }, [updateTargetSession, config.modelConfig, session]);
+  }, [
+    updateTargetSession,
+    config.modelConfig,
+    config.modelConfigMeta,
+    session,
+  ]);
 
   // check if should send message
   const onInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -2646,9 +2310,13 @@ function useChatInnerView() {
   };
 
   const onPinMessage = (message: ChatMessage) => {
-    chatStore.updateTargetSession(session, (session) =>
-      session.mask.context.push(message),
+    const pinnedMessage = createPinnedContextMessage(
+      message,
+      createMessage({}).id,
     );
+    chatStore.updateTargetSession(session, (session) => {
+      session.mask.context.push(pinnedMessage);
+    });
 
     showToast(Locale.Chat.Actions.PinToastContent, {
       text: Locale.Chat.Actions.PinToastAction,
@@ -2661,48 +2329,61 @@ function useChatInnerView() {
   const accessStore = useAccessStore();
   const [showMobileModelSelector, setShowMobileModelSelector] = useState(false);
   const [expandedMobileModelSection, setExpandedMobileModelSection] =
-    useState<MobileModelAdvancedSection | null>(null);
-  const [modelMenuPlacement, setModelMenuPlacement] =
-    useState<ModelMenuPlacement>("header");
-  const [emptyComposerModelMenuStyle, setEmptyComposerModelMenuStyle] =
-    useState<React.CSSProperties | undefined>(undefined);
+    useState<ComposerModelMenuSection | null>(null);
+  const [composerModelMenuStyle, setComposerModelMenuStyle] = useState<
+    React.CSSProperties | undefined
+  >(undefined);
   const modelSelectorButtonRef = useRef<HTMLButtonElement>(null);
   const modelMenuRef = useRef<HTMLDivElement>(null);
-  const modelMenuFocusFrameRef = useRef<number | null>(null);
-  const getEmptyComposerModelMenuStyle = (button: HTMLButtonElement) => {
-    const viewportPadding = 16;
-    const menuWidth = Math.min(380, window.innerWidth - viewportPadding * 2);
-    const buttonRect = button.getBoundingClientRect();
-    const left = Math.max(
-      viewportPadding,
-      Math.min(
-        buttonRect.right - menuWidth,
-        window.innerWidth - menuWidth - viewportPadding,
-      ),
-    );
-    const belowTop = buttonRect.bottom + 10;
-    const belowSpace = window.innerHeight - belowTop - viewportPadding;
-    const maxEstimatedMenuHeight = Math.min(
-      320,
-      window.innerHeight - viewportPadding * 2,
-    );
-    const top =
-      belowSpace >= 260
-        ? belowTop
-        : Math.max(
-            viewportPadding,
-            buttonRect.top - maxEstimatedMenuHeight - 10,
-          );
+  const lastHomeChatModelRef = useRef<string>();
+  const lastHomeImageModelRef = useRef<string>();
+  const homeModeInitializedRef = useRef(false);
+  const getComposerModelMenuStyle = useCallback(
+    (button: HTMLButtonElement, preferBelowOnDesktop: boolean) => {
+      const visualViewport = window.visualViewport;
+      const viewportLeft = visualViewport?.offsetLeft ?? 0;
+      const viewportTop = visualViewport?.offsetTop ?? 0;
+      const viewportWidth = visualViewport?.width ?? window.innerWidth;
+      const viewportHeight = visualViewport?.height ?? window.innerHeight;
+      const buttonRect = button.getBoundingClientRect();
+      const composerRect =
+        button.closest("label")?.getBoundingClientRect() ?? buttonRect;
+      const placement = getComposerModelMenuPlacement({
+        buttonRect,
+        composerRect,
+        compact: isCompactScreen,
+        preferBelowOnDesktop,
+        viewport: {
+          left: viewportLeft,
+          top: viewportTop,
+          width: viewportWidth,
+          height: viewportHeight,
+          layoutHeight: window.innerHeight,
+        },
+      });
 
-    return {
-      "--chat-model-menu-empty-left": `${left}px`,
-      "--chat-model-menu-empty-top": `${Math.max(viewportPadding, top)}px`,
-      "--chat-model-menu-empty-width": `${menuWidth}px`,
-    } as React.CSSProperties;
-  };
+      return {
+        "--chat-model-menu-composer-left": `${placement.left}px`,
+        "--chat-model-menu-composer-top": placement.openBelow
+          ? `${placement.top}px`
+          : "auto",
+        "--chat-model-menu-composer-bottom": placement.openBelow
+          ? "auto"
+          : `${placement.bottom}px`,
+        "--chat-model-menu-composer-width": `${placement.width}px`,
+        "--chat-model-menu-composer-max-height": `${placement.maxHeight}px`,
+        "--chat-model-menu-composer-origin": placement.openBelow
+          ? "top center"
+          : "bottom center",
+        "--chat-model-menu-composer-shift": placement.openBelow
+          ? "8px"
+          : "-8px",
+      } as React.CSSProperties;
+    },
+    [isCompactScreen],
+  );
   const closeMobileModelSelector = useCallback(() => {
     setShowMobileModelSelector(false);
-    setExpandedMobileModelSection(null);
   }, []);
   const restoreModelSelectorFocus = useCallback(() => {
     setTimeout(() => {
@@ -2711,10 +2392,14 @@ function useChatInnerView() {
   }, []);
   const getModelMenuControls = useCallback(() => {
     return Array.from(
-      modelMenuRef.current?.querySelectorAll<HTMLButtonElement>(
-        '[role="option"], button[aria-controls]',
+      modelMenuRef.current?.querySelectorAll<HTMLElement>(
+        '[role="option"], [role="slider"], button[aria-controls], [data-model-menu-control="true"]',
       ) ?? [],
-    ).filter((control) => !control.disabled && control.offsetParent !== null);
+    ).filter(
+      (control) =>
+        (!(control instanceof HTMLButtonElement) || !control.disabled) &&
+        control.offsetParent !== null,
+    );
   }, []);
   const focusModelMenuControl = useCallback(
     (key: string) => {
@@ -2765,7 +2450,10 @@ function useChatInnerView() {
     const selectedControl = controls.find(
       (control) => control.getAttribute("aria-selected") === "true",
     );
-    const nextControl = selectedControl ?? controls[0];
+    const sliderControl = controls.find(
+      (control) => control.getAttribute("role") === "slider",
+    );
+    const nextControl = selectedControl ?? sliderControl ?? controls[0];
     nextControl.focus({ preventScroll: true });
     nextControl.scrollIntoView({ block: "nearest" });
   }, [getModelMenuControls]);
@@ -2814,26 +2502,23 @@ function useChatInnerView() {
     focusModelMenuControl(event.key);
   };
   useEffect(() => {
-    if (modelMenuFocusFrameRef.current !== null) {
-      cancelAnimationFrame(modelMenuFocusFrameRef.current);
-      modelMenuFocusFrameRef.current = null;
-    }
     if (!showMobileModelSelector) return;
 
-    modelMenuFocusFrameRef.current = requestAnimationFrame(() => {
-      modelMenuFocusFrameRef.current = requestAnimationFrame(() => {
-        modelMenuFocusFrameRef.current = null;
+    const frame = requestAnimationFrame(() => {
+      if (expandedMobileModelSection) {
+        modelMenuRef.current
+          ?.querySelector<HTMLElement>('[role="slider"]')
+          ?.focus({ preventScroll: true });
+      } else {
         focusInitialModelMenuControl();
-      });
-    });
-
-    return () => {
-      if (modelMenuFocusFrameRef.current !== null) {
-        cancelAnimationFrame(modelMenuFocusFrameRef.current);
-        modelMenuFocusFrameRef.current = null;
       }
-    };
-  }, [focusInitialModelMenuControl, showMobileModelSelector]);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [
+    expandedMobileModelSection,
+    focusInitialModelMenuControl,
+    showMobileModelSelector,
+  ]);
   useEffect(() => {
     if (!showMobileModelSelector) return;
 
@@ -2853,10 +2538,8 @@ function useChatInnerView() {
     restoreModelSelectorFocus,
     showMobileModelSelector,
   ]);
-  const toggleMobileModelSection = (section: MobileModelAdvancedSection) => {
-    setExpandedMobileModelSection((currentSection) =>
-      currentSection === section ? null : section,
-    );
+  const returnToModelList = () => {
+    setExpandedMobileModelSection(null);
   };
   const headerCurrentModel = session.mask.modelConfig.model;
   const headerCurrentProviderName =
@@ -2868,6 +2551,14 @@ function useChatInnerView() {
   const headerAvailableModels = useMemo(
     () => allHeaderModels.filter((model) => model.available),
     [allHeaderModels],
+  );
+  const headerChatModels = useMemo(
+    () => getChatHomeModeModels(headerAvailableModels, "chat"),
+    [headerAvailableModels],
+  );
+  const headerImageModels = useMemo(
+    () => getChatHomeModeModels(headerAvailableModels, "image"),
+    [headerAvailableModels],
   );
   const headerCurrentModelName = useMemo(() => {
     const model = headerAvailableModels.find(
@@ -2882,46 +2573,100 @@ function useChatInnerView() {
       OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
     headerCurrentModel,
   );
-  const headerReasoningEfforts =
-    getOpenAIResponsesReasoningEfforts(headerCurrentModel);
+  const headerReasoningEfforts = useMemo(
+    () =>
+      filterOpenAIResponsesReasoningEfforts(
+        headerCurrentModel,
+        accessStore.serverConfigSnapshot?.reasoningEffortAllowlist,
+      ),
+    [
+      accessStore.serverConfigSnapshot?.reasoningEffortAllowlist,
+      headerCurrentModel,
+    ],
+  );
+  const visibleHeaderReasoningEfforts = useMemo(
+    () =>
+      includeCurrentOpenAIResponsesReasoningEffort(
+        headerReasoningEfforts,
+        headerCurrentReasoningEffort,
+      ),
+    [headerCurrentReasoningEffort, headerReasoningEfforts],
+  );
   const headerReasoningLocked =
     accessStore.lockedFields?.includes("reasoningEffort") ||
     session.mask.modelConfigMeta?.reasoningEffort?.locked;
-  const showHeaderReasoningControl = isOpenAIGpt5OrNewerModelConfig({
-    model: headerCurrentModel,
-    providerName: headerCurrentProviderName,
-  });
+  const showHeaderReasoningControl =
+    visibleHeaderReasoningEfforts.length > 0 &&
+    isOpenAIResponsesReasoningModelConfig({
+      model: headerCurrentModel,
+      providerName: headerCurrentProviderName,
+    });
   const showHeaderImageControls = isOpenAIImageGenerationModelConfig({
     model: headerCurrentModel,
     providerName: headerCurrentProviderName,
   });
-  const headerIsGptImageModel = isGptImageGenerationModel(headerCurrentModel);
-  const headerIsDalle3Model = isDalle3(headerCurrentModel);
-  const headerImageSizes = headerIsGptImageModel
-    ? GPT_IMAGE_2_SIZES
-    : headerIsDalle3Model
-    ? DALLE3_IMAGE_SIZES
-    : DALLE_IMAGE_COMPATIBLE_SIZES;
-  const headerImageQualitys = headerIsGptImageModel
-    ? GPT_IMAGE_2_QUALITIES
-    : headerIsDalle3Model
-    ? DALLE3_IMAGE_QUALITIES
-    : [];
-  const headerCurrentSize =
-    session.mask.modelConfig?.size ?? ("1024x1024" as OpenAIImageSize);
+  const emptyComposerMode = getChatHomeModeForModel(
+    headerCurrentModel,
+    headerCurrentProviderName,
+  );
+  const headerImageOptions =
+    getOpenAIImageGenerationOptions(headerCurrentModel);
+  const headerImageSizes = headerImageOptions.sizes;
+  const headerImageQualitys = headerImageOptions.qualities;
+  const headerCurrentSize = normalizeOpenAIImageSize(
+    headerCurrentModel,
+    session.mask.modelConfig?.size,
+  );
   const headerCurrentQuality =
-    session.mask.modelConfig?.quality ?? ("standard" as OpenAIImageQuality);
-  const desktopModelDetail = showHeaderImageControls
-    ? `${headerCurrentSize} · ${getImageQualityLabel(headerCurrentQuality)}`
+    normalizeOpenAIImageQuality(
+      headerCurrentModel,
+      session.mask.modelConfig?.quality,
+    ) ?? ("standard" as OpenAIImageQuality);
+  const headerImageSizeLabels = Object.fromEntries(
+    headerImageSizes.map((size) => [size, getImageSizeLabel(size)]),
+  ) as Record<OpenAIImageSize, string>;
+  const headerImageSizeDescriptions = Object.fromEntries(
+    headerImageSizes.map((size) => [
+      size,
+      Locale.Chat.ModelMenu.ImageSizeDescription(size),
+    ]),
+  ) as Record<OpenAIImageSize, string>;
+  const headerImageQualityLabels = Object.fromEntries(
+    headerImageQualitys.map((quality) => [
+      quality,
+      getImageQualityLabel(quality),
+    ]),
+  ) as Record<OpenAIImageQuality, string>;
+  const headerImageQualityDescriptions = Object.fromEntries(
+    headerImageQualitys.map((quality) => [
+      quality,
+      Locale.Chat.ModelMenu.ImageQualityDescription(quality),
+    ]),
+  ) as Record<OpenAIImageQuality, string>;
+  const headerImageSizeLocked =
+    accessStore.lockedFields?.includes("size") ||
+    session.mask.modelConfigMeta?.size?.locked;
+  const headerImageQualityLocked =
+    accessStore.lockedFields?.includes("quality") ||
+    session.mask.modelConfigMeta?.quality?.locked;
+  const isReasoningSectionExpanded = expandedMobileModelSection === "reasoning";
+  const isImageOptionsExpanded = expandedMobileModelSection === "image-options";
+  const currentModelMenuSection = getComposerModelMenuSection(
+    headerCurrentModel,
+    headerCurrentProviderName,
+  );
+  const imageComposerSummary = getImageComposerSummary(
+    headerCurrentSize,
+    headerImageQualitys.length > 0 ? headerCurrentQuality : undefined,
+    Locale.Settings.ImageGeneration.Auto,
+    getImageSizeLabel(headerCurrentSize),
+    getImageQualityLabel(headerCurrentQuality),
+  );
+  const currentModelDetail = showHeaderImageControls
+    ? imageComposerSummary
     : showHeaderReasoningControl
     ? reasoningLabels[headerCurrentReasoningEffort]
     : headerCurrentProviderName;
-  const mobileModelDetail = desktopModelDetail;
-  const isReasoningSectionExpanded = expandedMobileModelSection === "reasoning";
-  const isImageSizeSectionExpanded =
-    expandedMobileModelSection === "image-size";
-  const isImageQualitySectionExpanded =
-    expandedMobileModelSection === "image-quality";
   const getHeaderReasoningMaxOutputTokens = (
     effort: OpenAIChatReasoningEffort,
   ) =>
@@ -2930,41 +2675,87 @@ function useChatInnerView() {
         getMaxOutputTokensForReasoningEffort(effort),
       headerCurrentModel,
     );
-  const selectHeaderModel = (selected: string) => {
-    if (headerModelLocked) {
-      showToast("该项已由管理员锁定");
+  const selectHeaderModel = useCallback(
+    (
+      selected: string,
+      options: {
+        closeMenu?: boolean;
+        restoreFocus?: boolean;
+        announce?: boolean;
+        source?: ConfigSource;
+        syncGlobalConfig?: boolean;
+      } = {},
+    ) => {
+      if (headerModelLocked) {
+        showToast(Locale.Settings.GPT56Capabilities.ConfigSource.Locked);
+        return false;
+      }
+      const [model, providerName] = getModelProvider(selected);
+      const source = options.source ?? "conversation_override";
+      chatStore.updateTargetSession(session, (session) => {
+        session.mask.modelConfig.model = model as ModelType;
+        session.mask.modelConfig.providerName = providerName as ServiceProvider;
+        applyConfiguredOpenAIResponsesReasoningEffortDefault({
+          config: session.mask.modelConfig,
+          configMeta: session.mask.modelConfigMeta,
+          defaults: config.serverConfigSnapshot?.reasoningEffortDefaults,
+        });
+        applyOpenAIResponsesModelConstraints(session.mask.modelConfig);
+        applyOpenAIImageGenerationDefaults(session.mask.modelConfig);
+        session.mask.modelConfigMeta = {
+          ...(session.mask.modelConfigMeta ?? {}),
+          model: createConfigFieldMeta({
+            source,
+            publicConfig: config.serverConfigSnapshot,
+          }),
+          providerName: createConfigFieldMeta({
+            source,
+            publicConfig: config.serverConfigSnapshot,
+          }),
+        };
+        session.mask.syncGlobalConfig = options.syncGlobalConfig ?? false;
+        if (model !== "gemini-2.0-flash-exp") {
+          session.mask.plugin = [];
+        }
+      });
+      if (options.closeMenu !== false) closeMobileModelSelector();
+      if (options.restoreFocus !== false) restoreModelSelectorFocus();
+      if (options.announce !== false) showToast(model);
+      return true;
+    },
+    [
+      chatStore,
+      closeMobileModelSelector,
+      config.serverConfigSnapshot,
+      headerModelLocked,
+      restoreModelSelectorFocus,
+      session,
+    ],
+  );
+  const selectComposerModel = (model: ChatHomeModel, selected: boolean) => {
+    const providerName = model.provider?.providerName;
+    const nextSection = getComposerModelMenuSection(model.name, providerName);
+    if (selected) {
+      if (nextSection) {
+        setExpandedMobileModelSection(nextSection);
+      } else {
+        closeMobileModelSelector();
+        restoreModelSelectorFocus();
+      }
       return;
     }
-    const [model, providerName] = getModelProvider(selected);
-    chatStore.updateTargetSession(session, (session) => {
-      session.mask.modelConfig.model = model as ModelType;
-      session.mask.modelConfig.providerName = providerName as ServiceProvider;
-      applyOpenAIResponsesModelConstraints(session.mask.modelConfig);
-      applyOpenAIImageGenerationDefaults(session.mask.modelConfig);
-      session.mask.modelConfigMeta = {
-        ...(session.mask.modelConfigMeta ?? {}),
-        model: createConfigFieldMeta({
-          source: "conversation_override",
-          publicConfig: config.serverConfigSnapshot,
-        }),
-        providerName: createConfigFieldMeta({
-          source: "conversation_override",
-          publicConfig: config.serverConfigSnapshot,
-        }),
-      };
-      session.mask.syncGlobalConfig = false;
-      if (model !== "gemini-2.0-flash-exp") {
-        session.mask.plugin = [];
-      }
+    const keepMenuOpen = nextSection !== null;
+    const changed = selectHeaderModel(`${model.name}@${providerName}`, {
+      closeMenu: !keepMenuOpen,
+      restoreFocus: !keepMenuOpen,
     });
-    closeMobileModelSelector();
-    showToast(model);
+    if (changed && nextSection) setExpandedMobileModelSection(nextSection);
   };
   const selectHeaderReasoningEffort = (
     reasoningEffort: OpenAIChatReasoningEffort,
   ) => {
     if (headerReasoningLocked) {
-      showToast("该项已由管理员锁定");
+      showToast(Locale.Settings.GPT56Capabilities.ConfigSource.Locked);
       return;
     }
     chatStore.updateTargetSession(session, (session) => {
@@ -2987,6 +2778,10 @@ function useChatInnerView() {
     showToast(reasoningLabels[reasoningEffort]);
   };
   const selectHeaderImageSize = (size: OpenAIImageSize) => {
+    if (headerImageSizeLocked) {
+      showToast(Locale.Settings.GPT56Capabilities.ConfigSource.Locked);
+      return;
+    }
     chatStore.updateTargetSession(session, (session) => {
       session.mask.modelConfig.size = size;
       session.mask.modelConfigMeta = {
@@ -3001,6 +2796,10 @@ function useChatInnerView() {
     showToast(size);
   };
   const selectHeaderImageQuality = (quality: OpenAIImageQuality) => {
+    if (headerImageQualityLocked) {
+      showToast(Locale.Settings.GPT56Capabilities.ConfigSource.Locked);
+      return;
+    }
     chatStore.updateTargetSession(session, (session) => {
       session.mask.modelConfig.quality = quality;
       session.mask.modelConfigMeta = {
@@ -3020,14 +2819,19 @@ function useChatInnerView() {
       ttsPlayer.stop();
       setSpeechStatus(false);
     } else {
-      var api: ClientApi;
-      api = new ClientApi(ModelProvider.GPT);
+      const [{ ClientApi }, { markdownToTxt }] = await Promise.all([
+        import("../client/api"),
+        import("markdown-to-txt"),
+      ]);
+      const api = new ClientApi(ModelProvider.GPT);
       const config = useAppConfig.getState();
       ttsPlayer.init();
       let audioBuffer: ArrayBuffer;
-      const { markdownToTxt } = require("markdown-to-txt");
       const textContent = markdownToTxt(text);
       if (config.ttsConfig.engine !== DEFAULT_TTS_ENGINE) {
+        const { MsEdgeTTS, OUTPUT_FORMAT } = await import(
+          "../utils/ms_edge_tts"
+        );
         const edgeVoiceName = accessStore.edgeVoiceName();
         const tts = new MsEdgeTTS();
         await tts.setMetadata(
@@ -3056,6 +2860,7 @@ function useChatInnerView() {
     }
   }
 
+  const presetPromptCount = session.mask.context.length;
   const context: RenderMessage[] = useMemo(() => {
     return session.mask.hideContext ? [] : session.mask.context.slice();
   }, [session.mask.context, session.mask.hideContext]);
@@ -3071,14 +2876,21 @@ function useChatInnerView() {
     context.push(copiedHello);
   }
 
+  const previewInput = config.sendPreviewBubble ? userInput : "";
+
   // preview messages
   const renderMessages = useMemo(() => {
-    if (markdownStressQaEnabled) {
-      return getMarkdownStressQaMessages(location.search);
+    if (markdownStressQaEnabled && chatQaFixture) {
+      return chatQaFixture.getMarkdownStressQaMessages(location.search);
     }
 
-    const visibleSessionMessages = getVisibleChatMessages(
+    if (imageGalleryQaEnabled && chatQaFixture) {
+      return chatQaFixture.getImageGalleryQaMessages();
+    }
+
+    const visibleSessionMessages = projectVisibleChatMessages(
       session.messages as RenderMessage[],
+      chatStore.messageProjectionRevision,
     );
     const showLoadingPreview = shouldRenderLoadingPreview(
       visibleSessionMessages,
@@ -3101,12 +2913,12 @@ function useChatInnerView() {
           : [],
       )
       .concat(
-        userInput.length > 0 && config.sendPreviewBubble
+        previewInput.length > 0
           ? [
               {
                 ...createMessage({
                   role: "user",
-                  content: userInput,
+                  content: previewInput,
                 }),
                 preview: true,
               },
@@ -3114,18 +2926,27 @@ function useChatInnerView() {
           : [],
       );
   }, [
-    config.sendPreviewBubble,
+    chatQaFixture,
     context,
     isLoading,
+    imageGalleryQaEnabled,
     location.search,
     markdownStressQaEnabled,
+    chatStore.messageProjectionRevision,
+    projectVisibleChatMessages,
     session.messages,
-    userInput,
+    previewInput,
   ]);
 
   const [msgRenderIndex, _setMsgRenderIndex] = useState(() =>
     Math.max(0, renderMessages.length - CHAT_PAGE_SIZE),
   );
+  msgRenderIndexRef.current = msgRenderIndex;
+  const pendingMessageWindowAnchorRef = useRef<{
+    key: string;
+    index: number;
+    top: number;
+  } | null>(null);
   const setMsgRenderIndex = useCallback(
     (newIndex: number) => {
       newIndex = Math.min(renderMessages.length - CHAT_PAGE_SIZE, newIndex);
@@ -3135,41 +2956,305 @@ function useChatInnerView() {
     [renderMessages.length],
   );
 
+  const qaMessageWindowKey = markdownStressQaEnabled
+    ? `markdown:${location.search}`
+    : imageGalleryQaEnabled
+    ? `gallery:${location.search}`
+    : undefined;
+  const previousQaMessageWindowKeyRef = useRef<string>();
+  useLayoutEffect(() => {
+    if (!qaMessageWindowKey) {
+      previousQaMessageWindowKeyRef.current = undefined;
+      return;
+    }
+    if (previousQaMessageWindowKeyRef.current === qaMessageWindowKey) return;
+
+    previousQaMessageWindowKeyRef.current = qaMessageWindowKey;
+    setMsgRenderIndex(renderMessages.length - CHAT_PAGE_SIZE);
+  }, [qaMessageWindowKey, renderMessages.length, setMsgRenderIndex]);
+
+  const messageRenderStartIndex = msgRenderIndex;
   const messages = useMemo(() => {
-    const startRenderIndex = markdownStressQaEnabled ? 0 : msgRenderIndex;
     const endRenderIndex = Math.min(
-      startRenderIndex + 3 * CHAT_PAGE_SIZE,
+      messageRenderStartIndex + MAX_RENDER_MSG_COUNT,
       renderMessages.length,
     );
-    return renderMessages.slice(startRenderIndex, endRenderIndex);
-  }, [markdownStressQaEnabled, msgRenderIndex, renderMessages]);
+    return renderMessages.slice(messageRenderStartIndex, endRenderIndex);
+  }, [messageRenderStartIndex, renderMessages]);
+  const shortcutMessagesRef = useRef(messages);
+  const shortcutMessageWindowStartRef = useRef(messageRenderStartIndex);
+  shortcutMessagesRef.current = messages;
+  shortcutMessageWindowStartRef.current = messageRenderStartIndex;
+  useLayoutEffect(() => {
+    const scrollDom = scrollRef.current;
+    const readingSurface = readingSurfaceRef.current;
+    if (!scrollDom || !readingSurface) return;
+
+    const nextStart = getUnderfilledChatWindowStart(
+      messageRenderStartIndex,
+      Math.max(0, renderMessages.length - MAX_RENDER_MSG_COUNT),
+      readingSurface.scrollHeight,
+      scrollDom.clientHeight,
+      CHAT_PAGE_SIZE,
+    );
+    if (nextStart !== messageRenderStartIndex) {
+      setMsgRenderIndex(nextStart);
+    }
+  }, [
+    messageRenderStartIndex,
+    messages.length,
+    renderMessages.length,
+    setMsgRenderIndex,
+  ]);
+  useLayoutEffect(() => {
+    const pendingAnchor = pendingMessageWindowAnchorRef.current;
+    const scrollDom = scrollRef.current;
+    const readingSurface = readingSurfaceRef.current;
+    if (!pendingAnchor || !scrollDom || !readingSurface) return;
+
+    const anchorElement = Array.from(
+      readingSurface.querySelectorAll<HTMLElement>("[data-message-anchor]"),
+    ).find((element) => element.dataset.messageAnchor === pendingAnchor.key);
+    pendingMessageWindowAnchorRef.current = null;
+    if (!anchorElement) return;
+
+    const scrollRect = scrollDom.getBoundingClientRect();
+    const nextAnchorTop =
+      anchorElement.getBoundingClientRect().top - scrollRect.top;
+    const nextScrollTop = getAnchoredScrollTop(
+      scrollDom.scrollTop,
+      nextAnchorTop,
+      pendingAnchor.top,
+    );
+    lastObservedScrollTopRef.current = nextScrollTop;
+    scrollDirectionAccumulatorRef.current = 0;
+    scrollDom.scrollTop = nextScrollTop;
+  }, [messageRenderStartIndex, messages, scrollRef]);
   const showEmptyState =
     !markdownStressQaEnabled &&
+    !imageGalleryQaEnabled &&
     session.messages.length === 0 &&
     context.length === 1 &&
     getMessageTextContent(context[0]) === BOT_HELLO.content &&
     !isLoading;
-  const showEmptyComposer = showEmptyState && !hasActiveInputContent;
-  const showEmptyHero =
-    showEmptyState && !hasActiveInputContent && !showChatActionMenu;
-  const showDesktopModelControls = !showEmptyState;
+  const showEmptyComposer = showEmptyState;
+  const showEmptyHero = showEmptyState && !showChatActionMenu;
   const showDesktopChatHeader = !isCompactScreen && !showEmptyState;
-  const showEmptyComposerModelSelect = showEmptyComposer && !isCompactScreen;
-  const applyEmptySuggestion = useCallback(
-    (suggestion: string) => {
-      setShowChatActionMenu(false);
-      setPromptHints([]);
-      expandInput();
-      setUserInput(suggestion);
-      requestAnimationFrame(() => {
-        inputRef.current?.focus();
-      });
-    },
-    [expandInput],
-  );
+  useEffect(() => {
+    if (!showMobileModelSelector) return;
 
+    let updateFrame = 0;
+    const updateModelMenuPlacement = () => {
+      cancelAnimationFrame(updateFrame);
+      updateFrame = requestAnimationFrame(() => {
+        const trigger = modelSelectorButtonRef.current;
+        if (!trigger) return;
+        setComposerModelMenuStyle(
+          getComposerModelMenuStyle(trigger, showEmptyComposer),
+        );
+      });
+    };
+
+    updateModelMenuPlacement();
+    window.addEventListener("resize", updateModelMenuPlacement);
+    window.visualViewport?.addEventListener("resize", updateModelMenuPlacement);
+    window.visualViewport?.addEventListener("scroll", updateModelMenuPlacement);
+
+    return () => {
+      cancelAnimationFrame(updateFrame);
+      window.removeEventListener("resize", updateModelMenuPlacement);
+      window.visualViewport?.removeEventListener(
+        "resize",
+        updateModelMenuPlacement,
+      );
+      window.visualViewport?.removeEventListener(
+        "scroll",
+        updateModelMenuPlacement,
+      );
+    };
+  }, [getComposerModelMenuStyle, showEmptyComposer, showMobileModelSelector]);
+  const configuredChatHomeDefault = useMemo(
+    () =>
+      config.serverConfigSnapshot
+        ? {
+            name:
+              config.serverConfigSnapshot.forced.model ??
+              config.serverConfigSnapshot.defaults.model,
+            providerName:
+              config.serverConfigSnapshot.forced.providerName ??
+              config.serverConfigSnapshot.defaults.providerName,
+          }
+        : undefined,
+    [config.serverConfigSnapshot],
+  );
+  const headerModelsForMenu = showEmptyState
+    ? emptyComposerMode === "image"
+      ? headerImageModels
+      : headerChatModels
+    : headerAvailableModels;
+  const selectEmptyComposerMode = (mode: ChatHomeMode) => {
+    if (mode === emptyComposerMode) return;
+
+    const availableModelCount =
+      mode === "chat" ? headerChatModels.length : headerImageModels.length;
+    if (
+      isChatHomeModeDisabled({
+        mode,
+        activeMode: emptyComposerMode,
+        availableModelCount,
+        modelLocked: headerModelLocked,
+      })
+    ) {
+      return;
+    }
+
+    const currentModelRef = `${headerCurrentModel}@${headerCurrentProviderName}`;
+    if (emptyComposerMode === "chat") {
+      lastHomeChatModelRef.current = currentModelRef;
+    } else {
+      lastHomeImageModelRef.current = currentModelRef;
+    }
+
+    const eligibleModels =
+      mode === "chat" ? headerChatModels : headerImageModels;
+    const rememberedRef =
+      mode === "chat"
+        ? lastHomeChatModelRef.current
+        : lastHomeImageModelRef.current;
+    const rememberedModel = eligibleModels.find(
+      (model) =>
+        `${model.name}@${model.provider?.providerName}` === rememberedRef,
+    );
+    const targetModel =
+      rememberedModel ??
+      resolvePreferredChatHomeModel(
+        mode,
+        headerAvailableModels,
+        configuredChatHomeDefault,
+      );
+
+    if (!targetModel) {
+      showToast(
+        mode === "chat"
+          ? Locale.Chat.ModelMenu.ChatModelUnavailable
+          : Locale.Chat.ModelMenu.ImageModelUnavailable,
+      );
+      return;
+    }
+
+    const changed = selectHeaderModel(
+      `${targetModel.name}@${targetModel.provider?.providerName}`,
+      { closeMenu: false, restoreFocus: false, announce: false },
+    );
+    if (changed) {
+      closeMobileModelSelector();
+      setExpandedMobileModelSection(null);
+    }
+  };
+  useEffect(() => {
+    if (
+      !showEmptyState ||
+      homeModeInitializedRef.current ||
+      headerAvailableModels.length === 0
+    ) {
+      return;
+    }
+
+    homeModeInitializedRef.current = true;
+    const currentModelRef = `${headerCurrentModel}@${headerCurrentProviderName}`;
+    const currentIsEligibleChat = headerChatModels.some(
+      (model) =>
+        `${model.name}@${model.provider?.providerName}` === currentModelRef,
+    );
+    if (currentIsEligibleChat) {
+      lastHomeChatModelRef.current = currentModelRef;
+      return;
+    }
+    if (headerModelLocked) return;
+
+    const defaultChatModel = resolvePreferredChatHomeModel(
+      "chat",
+      headerAvailableModels,
+      configuredChatHomeDefault,
+    );
+    if (!defaultChatModel) return;
+
+    selectHeaderModel(
+      `${defaultChatModel.name}@${defaultChatModel.provider?.providerName}`,
+      {
+        closeMenu: false,
+        restoreFocus: false,
+        announce: false,
+        source: config.serverConfigSnapshot ? "server_default" : "fallback",
+        syncGlobalConfig: true,
+      },
+    );
+  }, [
+    headerAvailableModels,
+    headerChatModels,
+    headerCurrentModel,
+    headerCurrentProviderName,
+    headerModelLocked,
+    configuredChatHomeDefault,
+    config.serverConfigSnapshot,
+    selectHeaderModel,
+    showEmptyState,
+  ]);
+  const handleEmptyComposerModeKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+  ) => {
+    const nextMode =
+      event.key === "Home" || event.key === "ArrowLeft"
+        ? "chat"
+        : event.key === "End" || event.key === "ArrowRight"
+        ? "image"
+        : undefined;
+    if (!nextMode) return;
+
+    const availableModelCount =
+      nextMode === "chat" ? headerChatModels.length : headerImageModels.length;
+    if (
+      isChatHomeModeDisabled({
+        mode: nextMode,
+        activeMode: emptyComposerMode,
+        availableModelCount,
+        modelLocked: headerModelLocked,
+      })
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    selectEmptyComposerMode(nextMode);
+    requestAnimationFrame(() => {
+      document.getElementById(`chat-home-mode-${nextMode}`)?.focus();
+    });
+  };
   const onChatBodyScroll = (e: HTMLElement) => {
-    const { bottomHeight } = syncHitBottomState(e, true);
+    const pendingQuickJumpTarget = pendingQuickJumpTargetRef.current;
+    if (pendingQuickJumpTarget) {
+      lastObservedScrollTopRef.current = e.scrollTop;
+      scrollDirectionAccumulatorRef.current = 0;
+      setQuickJumpTarget(pendingQuickJumpTarget);
+    } else {
+      const directionUpdate = accumulateChatScrollDirection(
+        scrollDirectionAccumulatorRef.current,
+        e.scrollTop - lastObservedScrollTopRef.current,
+      );
+      lastObservedScrollTopRef.current = e.scrollTop;
+      scrollDirectionAccumulatorRef.current = directionUpdate.accumulatedDelta;
+      const nextTarget = directionUpdate.target;
+      if (nextTarget) {
+        setQuickJumpTarget((currentTarget) =>
+          currentTarget === nextTarget ? currentTarget : nextTarget,
+        );
+      }
+    }
+
+    const { bottomHeight, isHitBottom, isHitTop } = syncHitBottomState(
+      e,
+      pendingQuickJumpTarget === null,
+    );
     const edgeThreshold = e.clientHeight;
 
     const isTouchTopEdge = e.scrollTop <= edgeThreshold;
@@ -3177,11 +3262,70 @@ function useChatInnerView() {
 
     const prevPageMsgIndex = msgRenderIndex - CHAT_PAGE_SIZE;
     const nextPageMsgIndex = msgRenderIndex + CHAT_PAGE_SIZE;
+    const maxRenderIndex = Math.max(0, renderMessages.length - CHAT_PAGE_SIZE);
+
+    const preserveMessageWindowAnchor = (targetIndex: number) => {
+      const pendingAnchor = pendingMessageWindowAnchorRef.current;
+      if (pendingAnchor) {
+        return isMessageIndexRetainedInWindow(
+          pendingAnchor.index,
+          targetIndex,
+          MAX_RENDER_MSG_COUNT,
+        );
+      }
+      const scrollRect = e.getBoundingClientRect();
+      const anchorElement = Array.from(
+        readingSurfaceRef.current?.querySelectorAll<HTMLElement>(
+          "[data-message-anchor]",
+        ) ?? [],
+      ).find((element) => {
+        const messageIndex = Number(element.dataset.messageIndex);
+        const messageRect = element.getBoundingClientRect();
+        return isRetainedVisibleMessageAnchor(
+          messageIndex,
+          messageRect.top,
+          messageRect.bottom,
+          targetIndex,
+          MAX_RENDER_MSG_COUNT,
+          scrollRect.top,
+          scrollRect.bottom,
+        );
+      });
+      const key = anchorElement?.dataset.messageAnchor;
+      if (!anchorElement || !key) return false;
+      pendingMessageWindowAnchorRef.current = {
+        key,
+        index: Number(anchorElement.dataset.messageIndex),
+        top: anchorElement.getBoundingClientRect().top - scrollRect.top,
+      };
+      return true;
+    };
 
     if (isTouchTopEdge && !isTouchBottomEdge) {
-      setMsgRenderIndex(prevPageMsgIndex);
+      const targetIndex = Math.max(0, prevPageMsgIndex);
+      if (
+        targetIndex !== msgRenderIndex &&
+        preserveMessageWindowAnchor(targetIndex)
+      ) {
+        setMsgRenderIndex(targetIndex);
+      }
     } else if (isTouchBottomEdge) {
-      setMsgRenderIndex(nextPageMsgIndex);
+      const targetIndex = Math.min(maxRenderIndex, nextPageMsgIndex);
+      if (
+        targetIndex !== msgRenderIndex &&
+        preserveMessageWindowAnchor(targetIndex)
+      ) {
+        setMsgRenderIndex(targetIndex);
+      }
+    }
+
+    if (
+      (pendingQuickJumpTarget === "top" && msgRenderIndex === 0 && isHitTop) ||
+      (pendingQuickJumpTarget === "bottom" &&
+        msgRenderIndex === maxRenderIndex &&
+        isHitBottom)
+    ) {
+      pendingQuickJumpTargetRef.current = null;
     }
 
     if (
@@ -3193,10 +3337,33 @@ function useChatInnerView() {
       setIsInputExpanded(false);
     }
   };
+  const scrollToTop = useCallback(() => {
+    autoScrollRef.current = false;
+    pendingQuickJumpTargetRef.current = "top";
+    setAutoScroll(false);
+    setQuickJumpTarget("top");
+    setHitTop(true);
+    setHitBottom(false);
+    setMsgRenderIndex(0);
+    scrollDirectionAccumulatorRef.current = 0;
+    lastObservedScrollTopRef.current = 0;
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo(0, 0);
+    });
+  }, [scrollRef, setAutoScroll, setMsgRenderIndex]);
   const scrollToBottom = useCallback(() => {
+    autoScrollRef.current = true;
+    pendingQuickJumpTargetRef.current = "bottom";
+    setQuickJumpTarget("bottom");
+    setHitTop(false);
+    setHitBottom(true);
     setMsgRenderIndex(renderMessages.length - CHAT_PAGE_SIZE);
+    scrollDirectionAccumulatorRef.current = 0;
+    const scrollDom = scrollRef.current;
+    lastObservedScrollTopRef.current =
+      scrollDom?.scrollTop ?? lastObservedScrollTopRef.current;
     scrollDomToBottom();
-  }, [renderMessages.length, scrollDomToBottom, setMsgRenderIndex]);
+  }, [renderMessages.length, scrollDomToBottom, scrollRef, setMsgRenderIndex]);
   const clearContextDividerRef = useRef<HTMLButtonElement>(null);
   const chatInputPanelRef = useRef<HTMLDivElement>(null);
   const [chatBodyBottomSafeArea, setChatBodyBottomSafeArea] = useState<
@@ -3307,9 +3474,9 @@ function useChatInnerView() {
   }, [getClearContextBottomInset, scrollRef]);
 
   // clear context index = context length + index in messages
-  const clearContextIndex =
+  const clearContextAbsoluteIndex =
     (session.clearContextIndex ?? -1) >= 0
-      ? session.clearContextIndex! + context.length - msgRenderIndex
+      ? session.clearContextIndex! + context.length
       : -1;
   const clearContextScrollKeyRef = useRef<string | null>(null);
   useLayoutEffect(() => {
@@ -3493,11 +3660,11 @@ function useChatInnerView() {
 
         if (filesToAdd.length > 0) {
           setAttachedFiles([...currentAttachedFiles, ...filesToAdd]);
-          messages.push(`已添加 ${filesToAdd.length} 个文件`);
+          messages.push(Locale.Chat.Attachments.AddedFiles(filesToAdd.length));
         }
 
         if (fileInfos.length > remainingFileSlots) {
-          messages.push("最多只能上传5个文件，已保留前5个");
+          messages.push(Locale.Chat.Attachments.MaxFiles);
         }
       }
 
@@ -3507,16 +3674,18 @@ function useChatInnerView() {
 
         if (imagesToAdd.length > 0) {
           setAttachImages([...currentAttachImages, ...imagesToAdd]);
-          messages.push(`已添加 ${imagesToAdd.length} 张图片`);
+          messages.push(
+            Locale.Chat.Attachments.AddedImages(imagesToAdd.length),
+          );
         }
 
         if (imageUrls.length > remainingImageSlots) {
-          messages.push("最多只能上传3张图片，已保留前3张");
+          messages.push(Locale.Chat.Attachments.MaxImages);
         }
       }
 
       if (messages.length > 0) {
-        showToast(messages.join("，"));
+        showToast(Locale.Chat.Attachments.JoinMessages(messages));
       }
     },
     // All state reads go through refs; setAttachedFiles/setAttachImages are stable
@@ -3599,7 +3768,7 @@ function useChatInnerView() {
         const MAX_SIZE = 15 * 1024 * 1024;
         const validSizeFiles = files.filter((file) => {
           if (file.size > MAX_SIZE) {
-            showToast(`文件 ${file.name} 超过 15MB 限制，已忽略`);
+            showToast(Locale.Chat.Attachments.FileTooLarge(file.name));
             return false;
           }
           return true;
@@ -3622,10 +3791,10 @@ function useChatInnerView() {
         );
 
         if (images.length > remainingImageSlots) {
-          showToast("最多只能上传3张图片，已保留前3张");
+          showToast(Locale.Chat.Attachments.MaxImages);
         }
         if (documents.length > remainingFileSlots) {
-          showToast("最多只能上传5个文件，已保留前5个");
+          showToast(Locale.Chat.Attachments.MaxFiles);
         }
 
         const slicedImages = images.slice(0, remainingImageSlots);
@@ -3646,7 +3815,7 @@ function useChatInnerView() {
         } catch (error) {
           if (!isMounted.current) return;
           console.error("读取拖拽附件失败:", error);
-          showToast("读取拖拽附件失败");
+          showToast(Locale.Chat.Attachments.DragReadFailed);
         } finally {
           if (isMounted.current) {
             setUploading(false);
@@ -3682,7 +3851,7 @@ function useChatInnerView() {
         appendAttachments(fileInfos, [...imageUrls, ...pastedImageUrls]);
       } catch (error) {
         console.error("读取粘贴附件失败:", error);
-        showToast("读取粘贴附件失败");
+        showToast(Locale.Chat.Attachments.PasteReadFailed);
       } finally {
         setUploading(false);
       }
@@ -3696,7 +3865,7 @@ function useChatInnerView() {
 
         // 检查文件数量限制
         if (attachedFiles.length >= 5) {
-          showToast("最多只能上传5个文件");
+          showToast(Locale.Chat.Attachments.FileSlotsFull);
           return;
         }
 
@@ -3705,15 +3874,20 @@ function useChatInnerView() {
         const truncatedText =
           text.length > maxLength
             ? text.substring(0, maxLength) +
-              `\n\n[文件过大，已截断。原文件大小: ${text.length} 字符]`
+              `\n\n${Locale.Chat.Attachments.Reader.ContentTruncated(
+                text.length,
+              )}`
             : text;
 
         // 将长文本转为文件附件
-        const file = new File([text], "粘贴的文本.txt", { type: "text/plain" });
+        const pastedTextFileName = Locale.Chat.Attachments.PastedTextFile;
+        const file = new File([text], pastedTextFileName, {
+          type: "text/plain",
+        });
         setAttachedFiles([
           ...attachedFiles,
           {
-            name: "粘贴的文本.txt",
+            name: pastedTextFileName,
             type: "text/plain",
             size: text.length,
             content: truncatedText,
@@ -3721,7 +3895,7 @@ function useChatInnerView() {
           },
         ]);
 
-        showToast("已将长文本转为附件");
+        showToast(Locale.Chat.Attachments.LongTextConverted);
       }
     }
   };
@@ -3729,7 +3903,7 @@ function useChatInnerView() {
   // 修改上传附件的处理函数
   async function handleUploadAttachments() {
     if (attachmentSlotsFull) {
-      showToast("附件已满：最多 3 张图片、5 个文件");
+      showToast(Locale.Chat.Attachments.Full);
       return;
     }
 
@@ -3745,7 +3919,7 @@ function useChatInnerView() {
       },
       // 上传失败
       (error) => {
-        showToast("读取文件失败");
+        showToast(Locale.Chat.Attachments.FileReadFailed);
       },
       // 完成上传
       () => {
@@ -3856,7 +4030,7 @@ function useChatInnerView() {
       ) {
         event.preventDefault();
         setTimeout(() => {
-          chatStore.newSession();
+          useChatStore.getState().newSession();
           navigate(Path.Chat);
         }, 10);
       }
@@ -3885,17 +4059,19 @@ function useChatInnerView() {
         event.key.toLowerCase() === "c"
       ) {
         event.preventDefault();
+        const shortcutMessages = shortcutMessagesRef.current;
         let lastNonUserMessage: ChatMessage | undefined;
         let lastNonUserMessageIndex = -1;
         for (
-          let messageIndex = messages.length - 1;
+          let messageIndex = shortcutMessages.length - 1;
           messageIndex >= 0;
           messageIndex -= 1
         ) {
-          const candidateMessage = messages[messageIndex];
+          const candidateMessage = shortcutMessages[messageIndex];
           if (candidateMessage.role !== "user") {
             lastNonUserMessage = candidateMessage;
-            lastNonUserMessageIndex = messageIndex;
+            lastNonUserMessageIndex =
+              shortcutMessageWindowStartRef.current + messageIndex;
             break;
           }
         }
@@ -3922,22 +4098,17 @@ function useChatInnerView() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [
-    messages,
-    chatStore,
-    navigate,
-    openShortcutKeyModal,
-    copyMessageContent,
-    getMessageActionId,
-  ]);
+  }, [navigate, openShortcutKeyModal, copyMessageContent, getMessageActionId]);
 
   const [showChatSidePanel, setShowChatSidePanel] = useState(false);
 
   // 添加触摸滑动相关的状态
   const touchStartXRef = useRef(0);
+  const touchStartYRef = useRef(0);
   const touchEndXRef = useRef(0);
+  const touchEndYRef = useRef(0);
   const ignoreChatSwipeRef = useRef(false);
-  const isAttachmentStripTouch = (target: EventTarget | null) => {
+  const isExcludedChatSwipeTarget = (target: EventTarget | null) => {
     const touchTarget =
       target instanceof Element
         ? target
@@ -3946,22 +4117,33 @@ function useChatInnerView() {
         : null;
 
     return Boolean(
-      touchTarget?.closest('[data-composer-attachment-strip="true"]'),
+      touchTarget?.closest(
+        '[data-composer-attachment-strip="true"], [data-chat-horizontal-scroll="true"]',
+      ),
     );
+  };
+
+  const resetChatSwipe = () => {
+    ignoreChatSwipeRef.current = false;
+    touchStartXRef.current = 0;
+    touchStartYRef.current = 0;
+    touchEndXRef.current = 0;
+    touchEndYRef.current = 0;
   };
 
   // 处理触摸事件
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (isAttachmentStripTouch(e.target)) {
+    const touch = e.touches[0];
+    if (!touch || touch.clientX > 32 || isExcludedChatSwipeTarget(e.target)) {
       ignoreChatSwipeRef.current = true;
-      touchStartXRef.current = 0;
-      touchEndXRef.current = 0;
       return;
     }
 
     ignoreChatSwipeRef.current = false;
-    touchStartXRef.current = e.touches[0].clientX;
-    touchEndXRef.current = e.touches[0].clientX;
+    touchStartXRef.current = touch.clientX;
+    touchStartYRef.current = touch.clientY;
+    touchEndXRef.current = touch.clientX;
+    touchEndYRef.current = touch.clientY;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -3969,30 +4151,35 @@ function useChatInnerView() {
       return;
     }
 
-    touchEndXRef.current = e.touches[0].clientX;
+    const touch = e.touches[0];
+    if (!touch) return;
+    touchEndXRef.current = touch.clientX;
+    touchEndYRef.current = touch.clientY;
   };
 
   const handleTouchEnd = () => {
     if (ignoreChatSwipeRef.current) {
-      ignoreChatSwipeRef.current = false;
-      touchStartXRef.current = 0;
-      touchEndXRef.current = 0;
+      resetChatSwipe();
       return;
     }
 
-    if (!isCompactScreen) return;
+    if (!isCompactScreen) {
+      resetChatSwipe();
+      return;
+    }
 
-    const swipeDistance = touchEndXRef.current - touchStartXRef.current;
+    const swipeDistanceX = touchEndXRef.current - touchStartXRef.current;
+    const swipeDistanceY = touchEndYRef.current - touchStartYRef.current;
     const minSwipeDistance = 100; // 最小滑动距离
 
-    // 向右滑动且距离足够
-    if (swipeDistance > minSwipeDistance) {
+    if (
+      swipeDistanceX > minSwipeDistance &&
+      Math.abs(swipeDistanceX) > 1.2 * Math.abs(swipeDistanceY)
+    ) {
       navigate(Path.Home);
     }
 
-    // 重置触摸状态
-    touchStartXRef.current = 0;
-    touchEndXRef.current = 0;
+    resetChatSwipe();
   };
 
   const syncAttachmentScrollHint = useCallback(() => {
@@ -4196,7 +4383,9 @@ function useChatInnerView() {
 
   // 在_Chat组件中添加状态
   const [editingImage, setEditingImage] = useState<string | null>(null);
-  const [editingImageTitle, setEditingImageTitle] = useState("编辑图片");
+  const [editingImageTitle, setEditingImageTitle] = useState(
+    Locale.ImageEditor.Title,
+  );
   const editingAttachmentImageIndexRef = useRef<number | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewImageActionLabels, setPreviewImageActionLabels] = useState(
@@ -4474,12 +4663,13 @@ function useChatInnerView() {
   }, [closeImagePreview, previewImage]);
 
   const showInputReasoningAction = false;
-  const showInputStatusRow = showInputReasoningAction || imageGenerationEnabled;
+  const showInputStatusRow = showInputReasoningAction;
   const isMobileSidebarOpen = location.pathname === Path.Home;
   const promptToast = (
     <PromptToast
       showToast={!hitBottom}
       showModal={showPromptModal}
+      contextLength={presetPromptCount}
       onOpen={openPromptModal}
     />
   );
@@ -4491,6 +4681,7 @@ function useChatInnerView() {
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      onTouchCancel={resetChatSwipe}
     >
       <span
         className={styles["chat-dropzone-live-status"]}
@@ -4499,10 +4690,11 @@ function useChatInnerView() {
         aria-atomic="true"
       >
         {isDropzonePreviewActive
-          ? `${dropzonePayloadSummary?.text ?? "拖拽文件或图片到此处上传"}，${
+          ? Locale.Chat.Attachments.LiveStatus(
+              dropzonePayloadSummary?.text ?? Locale.Chat.Attachments.DropTitle,
               dropzonePayloadSummary?.hint ??
-              "释放后添加到输入框 · 最多3张图片、5个文件"
-            }。`
+                Locale.Chat.Attachments.Drag.AddHint,
+            )
           : ""}
       </span>
       <div
@@ -4523,17 +4715,17 @@ function useChatInnerView() {
             <AttachmentIcon />
           </div>
           <p id="chat-dropzone-status" className={styles["chat-dropzone-text"]}>
-            拖拽文件或图片到此处上传
+            {Locale.Chat.Attachments.DropTitle}
           </p>
           <p
             id="chat-dropzone-summary"
             className={styles["chat-dropzone-summary"]}
           >
-            {dropzonePayloadSummary?.text ?? "检测拖拽附件"}
+            {dropzonePayloadSummary?.text ?? Locale.Chat.Attachments.DropDetect}
           </p>
           <p id="chat-dropzone-hint" className={styles["chat-dropzone-hint"]}>
             {dropzonePayloadSummary?.hint ??
-              "释放后添加到输入框 · 最多3张图片、5个文件"}
+              Locale.Chat.Attachments.Drag.AddHint}
           </p>
         </div>
       </div>
@@ -4542,7 +4734,7 @@ function useChatInnerView() {
         className={clsx(styles["chat-input-action-menu-backdrop"], {
           [styles["chat-input-action-menu-backdrop-open"]]: showChatActionMenu,
         })}
-        aria-label="关闭对话工具"
+        aria-label={Locale.Chat.ChatToolMenu.Close}
         onClick={() => {
           setShowChatActionMenu(false);
           requestAnimationFrame(() => chatInputMenuButtonRef.current?.focus());
@@ -4562,45 +4754,29 @@ function useChatInnerView() {
           >
             <MenuIcon />
           </button>
-          <button
-            type="button"
-            ref={modelSelectorButtonRef}
-            className={styles["chat-mobile-model-title"]}
-            aria-label={`选择模型：${headerCurrentModelName}，${mobileModelDetail}`}
-            title={`${headerCurrentModelName} · ${mobileModelDetail}`}
-            onKeyDown={handleModelMenuKeyDown}
-            onClick={() => {
-              setShowChatActionMenu(false);
-              setExpandedMobileModelSection(null);
-              setModelMenuPlacement("header");
-              setEmptyComposerModelMenuStyle(undefined);
-              setShowMobileModelSelector((open) => !open);
-            }}
-            aria-controls="chat-model-menu"
-            aria-haspopup="dialog"
-            aria-expanded={showMobileModelSelector}
-          >
-            <span className={styles["chat-mobile-model-title-text"]}>
-              {headerCurrentModelName}
-            </span>
-            <span className={styles["chat-mobile-model-title-meta"]}>
-              {mobileModelDetail}
-            </span>
-            <span className={styles["chat-mobile-model-title-arrow"]}>⌄</span>
-          </button>
+          <div className={styles["chat-mobile-topic-title"]}>
+            {!session.topic ? DEFAULT_TOPIC : session.topic}
+          </div>
           <IconButton
             className={styles["chat-mobile-header-button"]}
             icon={<SettingsIcon />}
             bordered
-            title={Locale.Chat.InputActions.Settings}
-            aria={Locale.Chat.InputActions.Settings}
+            title={
+              presetPromptCount > 0
+                ? Locale.Context.SettingsWithPrompts(presetPromptCount)
+                : Locale.Chat.InputActions.Settings
+            }
+            aria={
+              presetPromptCount > 0
+                ? Locale.Context.SettingsWithPrompts(presetPromptCount)
+                : Locale.Chat.InputActions.Settings
+            }
             onClick={(event) => {
               closeMobileModelSelector();
               setShowChatActionMenu(false);
               openPromptModal(event.currentTarget);
             }}
           />
-          {promptToast}
         </div>
       ) : showDesktopChatHeader ? (
         <div
@@ -4624,37 +4800,9 @@ function useChatInnerView() {
             >
               {!session.topic ? DEFAULT_TOPIC : session.topic}
             </button>
-            {showDesktopModelControls && (
-              <button
-                type="button"
-                ref={modelSelectorButtonRef}
-                className={styles["chat-desktop-model-title"]}
-                aria-label="选择模型和参数"
-                onKeyDown={handleModelMenuKeyDown}
-                onClick={() => {
-                  setShowChatActionMenu(false);
-                  setExpandedMobileModelSection(null);
-                  setModelMenuPlacement("header");
-                  setEmptyComposerModelMenuStyle(undefined);
-                  setShowMobileModelSelector((open) => !open);
-                }}
-                aria-controls="chat-model-menu"
-                aria-haspopup="dialog"
-                aria-expanded={showMobileModelSelector}
-              >
-                <span className={styles["chat-desktop-model-name"]}>
-                  {headerCurrentModelName}
-                </span>
-                <span className={styles["chat-desktop-model-meta"]}>
-                  {desktopModelDetail}
-                </span>
-                <span className={styles["chat-desktop-model-title-arrow"]}>
-                  ⌄
-                </span>
-              </button>
-            )}
           </div>
-          {showDesktopModelControls && (
+          <div className={styles["chat-desktop-header-cluster"]}>
+            {promptToast}
             <div
               className={clsx(
                 "window-actions",
@@ -4731,15 +4879,10 @@ function useChatInnerView() {
                 </div>
               )}
             </div>
-          )}
-          {promptToast}
+          </div>
         </div>
       ) : null}
 
-      {/* 
-        We always render the model menu in the DOM to support smooth CSS exit transitions.
-        We toggle its visibility via class name instead of: showMobileModelSelector && (
-      */}
       <button
         type="button"
         className={clsx(
@@ -4750,7 +4893,8 @@ function useChatInnerView() {
             [styles["chat-model-menu-visible"]]: showMobileModelSelector,
           },
         )}
-        aria-label="关闭模型选择"
+        aria-label={Locale.Chat.ModelMenu.Close}
+        tabIndex={showMobileModelSelector ? 0 : -1}
         onClick={() => {
           closeMobileModelSelector();
           restoreModelSelectorFocus();
@@ -4763,278 +4907,194 @@ function useChatInnerView() {
           isCompactScreen
             ? styles["chat-mobile-model-menu"]
             : styles["chat-desktop-model-menu"],
+          styles["chat-desktop-model-menu-composer"],
           {
             [styles["chat-model-menu-visible"]]: showMobileModelSelector,
-            [styles["chat-desktop-model-menu-empty-composer"]]:
-              modelMenuPlacement === "empty-composer" && !isCompactScreen,
+            [styles["chat-model-menu-reasoning"]]:
+              isReasoningSectionExpanded || isImageOptionsExpanded,
           },
         )}
-        style={
-          modelMenuPlacement === "empty-composer" && !isCompactScreen
-            ? emptyComposerModelMenuStyle
-            : undefined
-        }
+        style={composerModelMenuStyle}
         onKeyDown={handleModelMenuKeyDown}
         tabIndex={-1}
         role="dialog"
-        aria-modal="true"
-        aria-label="模型和思考等级"
+        aria-modal={showMobileModelSelector ? true : undefined}
+        aria-label={
+          isImageOptionsExpanded
+            ? Locale.Chat.ModelMenu.ImageOptions
+            : isReasoningSectionExpanded
+            ? Locale.Chat.ModelMenu.ReasoningOptions
+            : Locale.Chat.ModelMenu.SelectModelAndParams
+        }
       >
-        <div
-          className={styles["chat-mobile-model-list"]}
-          role="listbox"
-          aria-label="可选模型"
-        >
-          {headerAvailableModels.length === 0 ? (
-            <div className={styles["chat-mobile-model-empty"]}>
-              暂无可用模型
+        {(isReasoningSectionExpanded || isImageOptionsExpanded) && (
+          <div className={styles["chat-model-menu-header"]}>
+            <div className={styles["chat-model-menu-current-model"]}>
+              {headerCurrentModelName}
             </div>
-          ) : (
-            headerAvailableModels.map((model) => {
-              const providerName = model?.provider?.providerName;
-              const selected =
-                model.name === headerCurrentModel &&
-                providerName === headerCurrentProviderName;
-              return (
-                <button
-                  type="button"
-                  key={`${model.name}@${providerName}`}
-                  className={clsx(styles["chat-mobile-model-option"], {
-                    [styles["chat-mobile-model-option-selected"]]: selected,
-                  })}
-                  role="option"
-                  aria-selected={selected}
-                  onClick={() =>
-                    selectHeaderModel(`${model.name}@${providerName}`)
-                  }
-                >
-                  <span className={styles["chat-mobile-menu-check"]}>
-                    {selected ? "✓" : ""}
-                  </span>
-                  <span className={styles["chat-mobile-model-copy"]}>
-                    <span className={styles["chat-mobile-model-name"]}>
-                      {model.displayName || model.name}
-                    </span>
-                    {providerName && (
-                      <span className={styles["chat-mobile-model-provider"]}>
-                        {providerName}
-                      </span>
-                    )}
-                  </span>
-                </button>
-              );
-            })
-          )}
-        </div>
-
-        {(showHeaderReasoningControl || showHeaderImageControls) && (
-          <>
-            <div className={styles["chat-mobile-model-divider"]} />
-            {showHeaderReasoningControl && (
-              <div className={styles["chat-mobile-model-section"]}>
-                <button
-                  type="button"
-                  className={styles["chat-mobile-reasoning-head"]}
-                  aria-expanded={isReasoningSectionExpanded}
-                  aria-controls="chat-mobile-reasoning-options"
-                  onClick={() => toggleMobileModelSection("reasoning")}
-                >
-                  <span>
-                    <strong>思考等级</strong>
-                    <small>
-                      {reasoningLabels[headerCurrentReasoningEffort]}
-                    </small>
-                  </span>
-                  <span className={styles["chat-mobile-reasoning-caret"]}>
-                    {isReasoningSectionExpanded ? "⌃" : "⌄"}
-                  </span>
-                </button>
-                {isReasoningSectionExpanded && (
-                  <div
-                    id="chat-mobile-reasoning-options"
-                    className={styles["chat-mobile-reasoning-list"]}
-                    role="listbox"
-                    aria-label="思考等级选项"
-                  >
-                    {headerReasoningEfforts.map((effort) => {
-                      const selected = effort === headerCurrentReasoningEffort;
-                      return (
-                        <button
-                          type="button"
-                          key={effort}
-                          className={clsx(
-                            styles["chat-mobile-reasoning-option"],
-                            {
-                              [styles["chat-mobile-reasoning-option-selected"]]:
-                                selected,
-                            },
-                          )}
-                          role="option"
-                          aria-selected={selected}
-                          onClick={() => selectHeaderReasoningEffort(effort)}
-                        >
-                          <span className={styles["chat-mobile-menu-check"]}>
-                            {selected ? "✓" : ""}
-                          </span>
-                          <span className={styles["chat-mobile-model-copy"]}>
-                            <span className={styles["chat-mobile-model-name"]}>
-                              {reasoningLabels[effort]}
-                            </span>
-                            <span
-                              className={styles["chat-mobile-model-provider"]}
-                            >
-                              {reasoningDescriptions[effort]}
-                            </span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+            <button
+              type="button"
+              className={styles["chat-model-menu-switch-model"]}
+              aria-label={Locale.Chat.ModelMenu.SwitchModel}
+              title={Locale.Chat.ModelMenu.SwitchModel}
+              data-model-menu-control="true"
+              onClick={returnToModelList}
+            >
+              <ResetIcon />
+              <span>{Locale.Chat.ModelMenu.SwitchModel}</span>
+            </button>
+          </div>
+        )}
+        {isReasoningSectionExpanded ? (
+          <ReasoningEffortRail
+            id="chat-mobile-reasoning-options"
+            ariaLabel={Locale.Chat.ModelMenu.ReasoningOptions}
+            title={Locale.Chat.ModelMenu.ReasoningEffort}
+            efforts={visibleHeaderReasoningEfforts}
+            allowedEfforts={headerReasoningEfforts}
+            value={headerCurrentReasoningEffort}
+            locked={!!headerReasoningLocked}
+            lockedLabel={Locale.Settings.GPT56Capabilities.ConfigSource.Locked}
+            labels={reasoningLabels}
+            descriptions={reasoningDescriptions}
+            onChange={selectHeaderReasoningEffort}
+            onLockedAttempt={() =>
+              selectHeaderReasoningEffort(headerCurrentReasoningEffort)
+            }
+          />
+        ) : isImageOptionsExpanded ? (
+          <div className={styles["chat-image-option-rails"]}>
+            <DiscreteOptionRail<OpenAIImageSize>
+              id="chat-image-size-options"
+              ariaLabel={Locale.Chat.ModelMenu.ImageSizeOptions}
+              title={Locale.Chat.ModelMenu.ImageSize}
+              options={headerImageSizes}
+              allowedOptions={headerImageSizes}
+              value={headerCurrentSize}
+              locked={!!headerImageSizeLocked}
+              lockedLabel={
+                Locale.Settings.GPT56Capabilities.ConfigSource.Locked
+              }
+              labels={headerImageSizeLabels}
+              descriptions={headerImageSizeDescriptions}
+              emphasizeHighest={false}
+              onChange={selectHeaderImageSize}
+              onLockedAttempt={() => selectHeaderImageSize(headerCurrentSize)}
+            />
+            {headerImageQualitys.length > 0 && (
+              <DiscreteOptionRail<OpenAIImageQuality>
+                id="chat-image-quality-options"
+                ariaLabel={Locale.Chat.ModelMenu.ImageQualityOptions}
+                title={Locale.Chat.ModelMenu.ImageQuality}
+                options={headerImageQualitys}
+                allowedOptions={headerImageQualitys}
+                value={headerCurrentQuality}
+                locked={!!headerImageQualityLocked}
+                lockedLabel={
+                  Locale.Settings.GPT56Capabilities.ConfigSource.Locked
+                }
+                labels={headerImageQualityLabels}
+                descriptions={headerImageQualityDescriptions}
+                emphasizeHighest={false}
+                onChange={selectHeaderImageQuality}
+                onLockedAttempt={() =>
+                  selectHeaderImageQuality(headerCurrentQuality)
+                }
+              />
             )}
-            {showHeaderImageControls && (
-              <>
-                <div className={styles["chat-mobile-model-section"]}>
-                  <button
-                    type="button"
-                    className={styles["chat-mobile-reasoning-head"]}
-                    aria-expanded={isImageSizeSectionExpanded}
-                    aria-controls="chat-mobile-image-size-options"
-                    onClick={() => toggleMobileModelSection("image-size")}
-                  >
-                    <span>
-                      <strong>图片尺寸</strong>
-                      <small>{headerCurrentSize}</small>
-                    </span>
-                    <span className={styles["chat-mobile-reasoning-caret"]}>
-                      {isImageSizeSectionExpanded ? "⌃" : "⌄"}
-                    </span>
-                  </button>
-                  {isImageSizeSectionExpanded && (
-                    <div
-                      id="chat-mobile-image-size-options"
-                      className={styles["chat-mobile-reasoning-list"]}
-                      role="listbox"
-                      aria-label="图片尺寸选项"
-                    >
-                      {headerImageSizes.map((size) => {
-                        const selected = size === headerCurrentSize;
-                        return (
-                          <button
-                            type="button"
-                            key={size}
-                            className={clsx(
-                              styles["chat-mobile-reasoning-option"],
-                              {
-                                [styles[
-                                  "chat-mobile-reasoning-option-selected"
-                                ]]: selected,
-                              },
-                            )}
-                            role="option"
-                            aria-selected={selected}
-                            onClick={() =>
-                              selectHeaderImageSize(size as OpenAIImageSize)
-                            }
-                          >
-                            <span className={styles["chat-mobile-menu-check"]}>
-                              {selected ? "✓" : ""}
-                            </span>
-                            <span className={styles["chat-mobile-model-copy"]}>
-                              <span
-                                className={styles["chat-mobile-model-name"]}
-                              >
-                                {size}
-                              </span>
-                              <span
-                                className={styles["chat-mobile-model-provider"]}
-                              >
-                                生成图片尺寸
-                              </span>
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+          </div>
+        ) : (
+          <>
+            <div
+              className={styles["chat-mobile-model-list"]}
+              role="listbox"
+              aria-label={Locale.Chat.ModelMenu.AvailableModels}
+            >
+              {headerModelsForMenu.length === 0 ? (
+                <div className={styles["chat-mobile-model-empty"]}>
+                  {showEmptyState && emptyComposerMode === "image"
+                    ? Locale.Chat.ModelMenu.ImageModelUnavailable
+                    : Locale.Chat.ModelMenu.Empty}
                 </div>
-                {headerImageQualitys.length > 0 && (
+              ) : (
+                headerModelsForMenu.map((model) => {
+                  const providerName = model?.provider?.providerName;
+                  const selected =
+                    model.name === headerCurrentModel &&
+                    providerName === headerCurrentProviderName;
+                  return (
+                    <button
+                      type="button"
+                      key={`${model.name}@${providerName}`}
+                      className={clsx(styles["chat-mobile-model-option"], {
+                        [styles["chat-mobile-model-option-selected"]]: selected,
+                      })}
+                      role="option"
+                      aria-selected={selected}
+                      onClick={() => selectComposerModel(model, selected)}
+                    >
+                      <span className={styles["chat-mobile-menu-check"]}>
+                        {selected ? "✓" : ""}
+                      </span>
+                      <span className={styles["chat-mobile-model-copy"]}>
+                        <span className={styles["chat-mobile-model-name"]}>
+                          {model.displayName || model.name}
+                        </span>
+                        {providerName && (
+                          <span
+                            className={styles["chat-mobile-model-provider"]}
+                          >
+                            {providerName}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            {(showHeaderReasoningControl || showHeaderImageControls) && (
+              <>
+                <div className={styles["chat-mobile-model-divider"]} />
+                {showHeaderReasoningControl && (
                   <div className={styles["chat-mobile-model-section"]}>
                     <button
                       type="button"
                       className={styles["chat-mobile-reasoning-head"]}
-                      aria-expanded={isImageQualitySectionExpanded}
-                      aria-controls="chat-mobile-image-quality-options"
-                      onClick={() => toggleMobileModelSection("image-quality")}
+                      aria-controls="chat-mobile-reasoning-options"
+                      onClick={() => setExpandedMobileModelSection("reasoning")}
                     >
                       <span>
-                        <strong>图片清晰度</strong>
+                        <strong>{Locale.Chat.ModelMenu.ReasoningEffort}</strong>
                         <small>
-                          {getImageQualityLabel(headerCurrentQuality)}
+                          {reasoningLabels[headerCurrentReasoningEffort]}
                         </small>
                       </span>
                       <span className={styles["chat-mobile-reasoning-caret"]}>
-                        {isImageQualitySectionExpanded ? "⌃" : "⌄"}
+                        ›
                       </span>
                     </button>
-                    {isImageQualitySectionExpanded && (
-                      <div
-                        id="chat-mobile-image-quality-options"
-                        className={styles["chat-mobile-reasoning-list"]}
-                        role="listbox"
-                        aria-label="图片清晰度选项"
-                      >
-                        {headerImageQualitys.map((quality) => {
-                          const selected = quality === headerCurrentQuality;
-                          return (
-                            <button
-                              type="button"
-                              key={quality}
-                              className={clsx(
-                                styles["chat-mobile-reasoning-option"],
-                                {
-                                  [styles[
-                                    "chat-mobile-reasoning-option-selected"
-                                  ]]: selected,
-                                },
-                              )}
-                              role="option"
-                              aria-selected={selected}
-                              onClick={() =>
-                                selectHeaderImageQuality(
-                                  quality as OpenAIImageQuality,
-                                )
-                              }
-                            >
-                              <span
-                                className={styles["chat-mobile-menu-check"]}
-                              >
-                                {selected ? "✓" : ""}
-                              </span>
-                              <span
-                                className={styles["chat-mobile-model-copy"]}
-                              >
-                                <span
-                                  className={styles["chat-mobile-model-name"]}
-                                >
-                                  {getImageQualityLabel(
-                                    quality as OpenAIImageQuality,
-                                  )}
-                                </span>
-                                <span
-                                  className={
-                                    styles["chat-mobile-model-provider"]
-                                  }
-                                >
-                                  {quality}
-                                </span>
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
+                  </div>
+                )}
+                {showHeaderImageControls && (
+                  <div className={styles["chat-mobile-model-section"]}>
+                    <button
+                      type="button"
+                      className={styles["chat-mobile-reasoning-head"]}
+                      aria-controls="chat-image-size-options"
+                      onClick={() =>
+                        setExpandedMobileModelSection("image-options")
+                      }
+                    >
+                      <span>
+                        <strong>{Locale.Chat.ModelMenu.ImageOptions}</strong>
+                        <small>{imageComposerSummary}</small>
+                      </span>
+                      <span className={styles["chat-mobile-reasoning-caret"]}>
+                        ›
+                      </span>
+                    </button>
                   </div>
                 )}
               </>
@@ -5052,414 +5112,427 @@ function useChatInnerView() {
             })}
             ref={scrollRef}
             style={chatBodyStyle}
-            aria-label="聊天消息"
+            aria-label={Locale.Chat.Accessibility.ChatMessages}
             onScroll={(e) => onChatBodyScroll(e.currentTarget)}
+            onWheel={() => {
+              pendingQuickJumpTargetRef.current = null;
+            }}
+            onTouchStart={() => {
+              pendingQuickJumpTargetRef.current = null;
+            }}
           >
-            {showEmptyHero && (
-              <div className={styles["chat-empty-state"]}>
-                <div className={clsx(styles["chat-empty-logo"], "no-dark")}>
-                  <NeatIcon />
-                </div>
-                <h1 className={styles["chat-empty-title"]}>
-                  {Locale.Chat.EmptyTitle}
-                </h1>
-                <ul
-                  className={styles["chat-empty-suggestions"]}
-                  aria-label="建议问题"
-                >
-                  {Locale.Chat.EmptySuggestions.map((suggestion) => (
-                    <li
-                      key={suggestion}
-                      className={styles["chat-empty-suggestion-item"]}
+            {showEmptyState && (
+              <div
+                className={styles["chat-home-mode-tabs"]}
+                role="tablist"
+                aria-label={Locale.Chat.HomeMode.Label}
+                data-active-mode={emptyComposerMode}
+              >
+                <span
+                  className={styles["chat-home-mode-indicator"]}
+                  aria-hidden="true"
+                />
+                {(["chat", "image"] as const).map((mode) => {
+                  const selected = emptyComposerMode === mode;
+                  const availableModelCount =
+                    mode === "chat"
+                      ? headerChatModels.length
+                      : headerImageModels.length;
+                  const disabled = isChatHomeModeDisabled({
+                    mode,
+                    activeMode: emptyComposerMode,
+                    availableModelCount,
+                    modelLocked: headerModelLocked,
+                  });
+                  return (
+                    <button
+                      id={`chat-home-mode-${mode}`}
+                      key={mode}
+                      type="button"
+                      className={clsx(styles["chat-home-mode-tab"], {
+                        [styles["chat-home-mode-tab-selected"]]: selected,
+                      })}
+                      role="tab"
+                      aria-selected={selected}
+                      aria-controls="chat-home-panel"
+                      disabled={disabled}
+                      tabIndex={selected ? 0 : -1}
+                      onClick={() => selectEmptyComposerMode(mode)}
+                      onKeyDown={handleEmptyComposerModeKeyDown}
                     >
-                      <button
-                        type="button"
-                        className={styles["chat-empty-suggestion"]}
-                        onClick={() => applyEmptySuggestion(suggestion)}
-                      >
-                        <div className={styles["chat-empty-suggestion-header"]}>
-                          <span
-                            className={styles["chat-empty-suggestion-title"]}
-                          >
-                            {(() => {
-                              const isZh =
-                                Locale.Chat.EmptySuggestions[0] ===
-                                "总结这段内容";
-                              const idx =
-                                Locale.Chat.EmptySuggestions.indexOf(
-                                  suggestion,
-                                );
-                              return (
-                                [
-                                  isZh ? "总结文本" : "Summarize text",
-                                  isZh ? "规划日程" : "Plan schedule",
-                                  isZh ? "创意绘图" : "Creative poster",
-                                  isZh ? "分析文档" : "Analyze document",
-                                ][idx] || suggestion
-                              );
-                            })()}
-                          </span>
-                          <span
-                            className={styles["chat-empty-suggestion-text"]}
-                          >
-                            {suggestion}
-                          </span>
-                        </div>
-                        <div className={styles["chat-empty-suggestion-footer"]}>
-                          <div
-                            className={
-                              styles["chat-empty-suggestion-icon-wrapper"]
-                            }
-                          >
-                            {(() => {
-                              const idx =
-                                Locale.Chat.EmptySuggestions.indexOf(
-                                  suggestion,
-                                );
-                              const icons = [
-                                FileIcon,
-                                AutoIcon,
-                                StyleIcon,
-                                BrainIcon,
-                              ];
-                              const IconComponent = icons[idx] || FileIcon;
-                              return <IconComponent />;
-                            })()}
-                          </div>
-                          <span
-                            className={
-                              styles["chat-empty-suggestion-affordance"]
-                            }
-                            aria-hidden="true"
-                          >
-                            →
-                          </span>
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                      {mode === "chat"
+                        ? Locale.Chat.HomeMode.Chat
+                        : Locale.Chat.HomeMode.Image}
+                    </button>
+                  );
+                })}
               </div>
             )}
             <div
-              className={styles["chat-reading-surface"]}
-              ref={readingSurfaceRef}
-              role="list"
-              aria-label="会话消息列表"
-              aria-live="polite"
-              aria-relevant="additions text"
-              aria-atomic="false"
+              className={styles["chat-home-panel"]}
+              id={showEmptyState ? "chat-home-panel" : undefined}
+              role={showEmptyState ? "tabpanel" : undefined}
+              aria-labelledby={
+                showEmptyState
+                  ? `chat-home-mode-${emptyComposerMode}`
+                  : undefined
+              }
             >
-              {(showEmptyState ? [] : messages).map((message, i) => {
-                const isUser = message.role === "user";
-                const isContext = i < context.length;
-                const isMarkdownStressQaMessage = message.id.startsWith(
-                  MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX,
-                );
-                const showActions =
-                  i > 0 &&
-                  !message.streaming &&
-                  !message.preview &&
-                  message.content.length > 0 &&
-                  !isContext &&
-                  !isMarkdownStressQaMessage;
-                const showTyping = message.preview || message.streaming;
-                const isWaiting =
-                  !isUser &&
-                  (message.preview ||
-                    (message.streaming && message.content.length === 0));
-                const isStreamingReveal =
-                  !isUser && message.streaming && message.content.length > 0;
+              {showEmptyHero && (
+                <div className={styles["chat-empty-state"]}>
+                  <div className={clsx(styles["chat-empty-logo"], "no-dark")}>
+                    <NeatIcon />
+                  </div>
+                  <h1 className={styles["chat-empty-title"]}>
+                    {Locale.Chat.EmptyTitle}
+                  </h1>
+                </div>
+              )}
+              <div
+                className={styles["chat-reading-surface"]}
+                ref={readingSurfaceRef}
+                role="list"
+                aria-label={Locale.Chat.Accessibility.MessageList}
+                aria-live="polite"
+                aria-relevant="additions text"
+                aria-atomic="false"
+              >
+                {(showEmptyState ? [] : messages).map((message, i) => {
+                  const absoluteMessageIndex = messageRenderStartIndex + i;
+                  const isUser = message.role === "user";
+                  const isContext = absoluteMessageIndex < context.length;
+                  const messageRenderIdentity = getMessageRenderIdentity(
+                    message,
+                    absoluteMessageIndex,
+                    context.length,
+                  );
+                  const qaMessageIdPrefix =
+                    chatQaFixture?.MARKDOWN_STRESS_QA_MESSAGE_ID_PREFIX;
+                  const isMarkdownStressQaMessage =
+                    qaMessageIdPrefix != null &&
+                    message.id.startsWith(qaMessageIdPrefix);
+                  const showActions =
+                    absoluteMessageIndex > 0 &&
+                    !message.streaming &&
+                    !message.preview &&
+                    message.content.length > 0 &&
+                    !isContext &&
+                    !isMarkdownStressQaMessage;
+                  const showTyping = message.preview || message.streaming;
+                  const isWaiting =
+                    !isUser &&
+                    (message.preview ||
+                      (message.streaming && message.content.length === 0));
+                  const isStreamingReveal =
+                    !isUser && message.streaming && message.content.length > 0;
 
-                const shouldShowClearContextDivider =
-                  i === clearContextIndex - 1;
-                const messageLabel = `${isUser ? "用户消息" : "助手消息"} ${
-                  i + 1
-                }`;
-                const messageActionLabel = `${messageLabel} 操作`;
-                const messageActionId = getMessageActionId(message, i);
-                const isMessageCopied =
-                  copiedMessageActionId === messageActionId;
-                const messageCopyActionLabel = `${messageActionLabel}：${
-                  isMessageCopied
-                    ? Locale.Copy.Success
-                    : Locale.Chat.Actions.Copy
-                }`;
-                const messageCopyStatus = isMessageCopied
-                  ? `${messageLabel} ${Locale.Copy.Success}`
-                  : "";
-                const messageImages = getMessageImages(message);
-                const singleMessageImageLabel = getMessageImageLabel(0, 1);
+                  const shouldShowClearContextDivider =
+                    absoluteMessageIndex === clearContextAbsoluteIndex - 1;
+                  const messageLabel = isUser
+                    ? Locale.Chat.Accessibility.UserMessage(
+                        absoluteMessageIndex + 1,
+                      )
+                    : Locale.Chat.Accessibility.AssistantMessage(
+                        absoluteMessageIndex + 1,
+                      );
+                  const messageActionLabel =
+                    Locale.Chat.Accessibility.MessageActions(messageLabel);
+                  const messageActionId = getMessageActionId(
+                    message,
+                    absoluteMessageIndex,
+                  );
+                  const isMessageCopied =
+                    copiedMessageActionId === messageActionId;
+                  const messageCopyActionLabel =
+                    Locale.Chat.Accessibility.ActionLabel(
+                      messageActionLabel,
+                      isMessageCopied
+                        ? Locale.Copy.Success
+                        : Locale.Chat.Actions.Copy,
+                    );
+                  const messageCopyStatus = isMessageCopied
+                    ? `${messageLabel} ${Locale.Copy.Success}`
+                    : "";
+                  const messageTextContent = getMessageTextContent(message);
+                  const messageImages = getMessageImages(message);
+                  const singleMessageImageLabel = getMessageImageLabel(0, 1);
 
-                return (
-                  <Fragment key={message.id}>
-                    <div
-                      className={clsx(
-                        styles["chat-message-row"],
-                        isUser
-                          ? styles["chat-message-row-user"]
-                          : styles["chat-message-row-assistant"],
-                        isUser
-                          ? styles["chat-message-user"]
-                          : styles["chat-message"],
-                      )}
-                      role="listitem"
-                      aria-label={messageLabel}
-                      aria-busy={showTyping ? true : undefined}
-                      data-testid={
-                        isMarkdownStressQaMessage
-                          ? "markdown-stress-qa-message"
-                          : undefined
-                      }
-                    >
-                      <div className={styles["chat-message-container"]}>
-                        <div className={styles["chat-message-header"]}>
-                          <div className={styles["chat-message-avatar"]}>
-                            {!isUser && (
-                              <div className={styles["chat-message-edit"]}>
-                                <IconButton
-                                  icon={<EditIcon />}
-                                  aria={Locale.Chat.Actions.Edit}
-                                  onClick={async () => {
-                                    const newMessage = await showPrompt(
-                                      Locale.Chat.Actions.Edit,
-                                      getMessageTextContent(message),
-                                      10,
-                                    );
-                                    let newContent:
-                                      | string
-                                      | MultimodalContent[] = newMessage;
-                                    const images = getMessageImages(message);
-                                    if (images.length > 0) {
-                                      newContent = [
-                                        { type: "text", text: newMessage },
-                                      ];
-                                      for (let i = 0; i < images.length; i++) {
-                                        newContent.push({
-                                          type: "image_url",
-                                          image_url: {
-                                            url: images[i],
-                                          },
-                                        });
-                                      }
-                                    }
-                                    chatStore.updateTargetSession(
-                                      session,
-                                      (session) => {
-                                        const m = session.mask.context
-                                          .concat(session.messages)
-                                          .find((m) => m.id === message.id);
-                                        if (m) {
-                                          m.content = newContent;
+                  return (
+                    <Fragment key={messageRenderIdentity}>
+                      <div
+                        className={clsx(
+                          styles["chat-message-row"],
+                          isUser
+                            ? styles["chat-message-row-user"]
+                            : styles["chat-message-row-assistant"],
+                          isUser
+                            ? styles["chat-message-user"]
+                            : styles["chat-message"],
+                          !isUser &&
+                            absoluteMessageIndex ===
+                              renderMessages.length - 1 &&
+                            styles["chat-message-tail"],
+                        )}
+                        role="listitem"
+                        aria-label={messageLabel}
+                        aria-busy={showTyping ? true : undefined}
+                        data-testid={
+                          isMarkdownStressQaMessage
+                            ? "markdown-stress-qa-message"
+                            : undefined
+                        }
+                        data-message-anchor={messageRenderIdentity}
+                        data-message-index={absoluteMessageIndex}
+                      >
+                        <div className={styles["chat-message-container"]}>
+                          <div className={styles["chat-message-header"]}>
+                            <div className={styles["chat-message-avatar"]}>
+                              {!isUser && (
+                                <div className={styles["chat-message-edit"]}>
+                                  <IconButton
+                                    icon={<EditIcon />}
+                                    aria={Locale.Chat.Actions.Edit}
+                                    onClick={async () => {
+                                      const newMessage = await showPrompt(
+                                        Locale.Chat.Actions.Edit,
+                                        getMessageTextContent(message),
+                                        10,
+                                      );
+                                      let newContent:
+                                        | string
+                                        | MultimodalContent[] = newMessage;
+                                      const images = getMessageImages(message);
+                                      if (images.length > 0) {
+                                        newContent = [
+                                          { type: "text", text: newMessage },
+                                        ];
+                                        for (
+                                          let i = 0;
+                                          i < images.length;
+                                          i++
+                                        ) {
+                                          newContent.push({
+                                            type: "image_url",
+                                            image_url: {
+                                              url: images[i],
+                                            },
+                                          });
                                         }
-                                      },
-                                    );
-                                  }}
-                                ></IconButton>
+                                      }
+                                      chatStore.updateTargetSession(
+                                        session,
+                                        (session) => {
+                                          const m = findMessageForRenderSource(
+                                            session.mask.context,
+                                            session.messages,
+                                            message.id,
+                                            isContext,
+                                          );
+                                          if (m) {
+                                            m.content = newContent;
+                                          }
+                                        },
+                                      );
+                                    }}
+                                  ></IconButton>
+                                </div>
+                              )}
+                              {isUser ? (
+                                <div className={styles["empty-avatar"]}></div>
+                              ) : (
+                                <>
+                                  {["system"].includes(message.role) ? (
+                                    <Avatar avatar="2699-fe0f" />
+                                  ) : (
+                                    <MaskAvatar
+                                      avatar={session.mask.avatar}
+                                      model={
+                                        message.model ||
+                                        session.mask.modelConfig.model
+                                      }
+                                    />
+                                  )}
+                                </>
+                              )}
+                            </div>
+                            {!isUser && (
+                              <div className={styles["chat-model-name"]}>
+                                {message.model}
                               </div>
                             )}
-                            {isUser ? (
-                              <div className={styles["empty-avatar"]}></div>
-                            ) : (
-                              <>
-                                {["system"].includes(message.role) ? (
-                                  <Avatar avatar="2699-fe0f" />
-                                ) : (
-                                  <MaskAvatar
-                                    avatar={session.mask.avatar}
-                                    model={
-                                      message.model ||
-                                      session.mask.modelConfig.model
-                                    }
-                                  />
-                                )}
-                              </>
-                            )}
                           </div>
-                          {!isUser && (
-                            <div className={styles["chat-model-name"]}>
-                              {message.model}
-                            </div>
-                          )}
-                        </div>
 
-                        <div
-                          className={clsx(
-                            styles["chat-message-item"],
-                            isWaiting && styles["chat-message-shimmer"],
-                            isStreamingReveal &&
-                              styles["chat-message-streaming-reveal"],
-                          )}
-                        >
-                          <Markdown
-                            key={message.streaming ? "loading" : "done"}
-                            content={getMessageTextContent(message)}
-                            loading={isWaiting}
-                            fontSize={fontSize}
-                            fontFamily={fontFamily}
-                            isUser={isUser}
-                            messageId={message.id}
-                            streaming={message.streaming}
-                            shouldAutoScroll={autoScroll}
-                            enableArtifacts={
-                              session.mask?.enableArtifacts !== false
-                            }
-                            enableCodeFold={
-                              session.mask?.enableCodeFold !== false
-                            }
-                            onContentChange={scrollDomToBottom}
-                            onPreviewImage={openMarkdownImagePreview}
-                            onDownloadImage={downloadImage}
-                          />
-                          {messageImages.length == 1 && (
-                            <MessageImagePreview
-                              className={styles["chat-message-item-image"]}
-                              src={messageImages[0]}
-                              alt={singleMessageImageLabel}
-                              actionLabels={getImageActionLabels(
-                                singleMessageImageLabel,
-                              )}
-                              onPreview={openImagePreview}
-                              onDownload={downloadImage}
-                            />
-                          )}
-                          {messageImages.length > 1 && (
-                            <div
-                              className={styles["chat-message-item-images"]}
-                              style={
-                                {
-                                  "--image-count": messageImages.length,
-                                } as React.CSSProperties
+                          <div
+                            className={clsx(
+                              styles["chat-message-item"],
+                              isStreamingReveal &&
+                                styles["chat-message-streaming-reveal"],
+                            )}
+                          >
+                            <Markdown
+                              key={message.streaming ? "loading" : "done"}
+                              content={messageTextContent}
+                              loading={isWaiting}
+                              fontSize={fontSize}
+                              fontFamily={fontFamily}
+                              isUser={isUser}
+                              messageId={message.id}
+                              streaming={message.streaming}
+                              enableArtifacts={
+                                session.mask?.enableArtifacts !== false
                               }
-                            >
-                              {messageImages.map((image, index) => {
-                                const imageLabel = getMessageImageLabel(
-                                  index,
-                                  messageImages.length,
-                                );
-
-                                return (
+                              enableCodeFold={
+                                session.mask?.enableCodeFold !== false
+                              }
+                              onPreviewImage={openMarkdownImagePreview}
+                              onDownloadImage={downloadImage}
+                            />
+                            {messageImages.length > 0 && (
+                              <div className={styles["chat-message-media"]}>
+                                {messageImages.length === 1 && (
                                   <MessageImagePreview
                                     className={
-                                      styles["chat-message-item-image-multi"]
+                                      styles["chat-message-item-image"]
                                     }
-                                    key={image}
-                                    src={image}
-                                    alt={imageLabel}
+                                    src={messageImages[0]}
+                                    alt={singleMessageImageLabel}
                                     actionLabels={getImageActionLabels(
-                                      imageLabel,
+                                      singleMessageImageLabel,
                                     )}
                                     onPreview={openImagePreview}
                                     onDownload={downloadImage}
                                   />
-                                );
-                              })}
+                                )}
+                                {messageImages.length > 1 && (
+                                  <MessageImageGallery
+                                    images={messageImages}
+                                    onPreview={openImagePreview}
+                                    onDownload={downloadImage}
+                                  />
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {showActions && (
+                            <div
+                              className={styles["chat-message-actions"]}
+                              role="group"
+                              aria-label={messageActionLabel}
+                            >
+                              <div
+                                className={styles["chat-message-action-rail"]}
+                                onKeyDown={handleMessageActionRailKeyDown}
+                              >
+                                <>
+                                  <ChatAction
+                                    text={Locale.Chat.Actions.Retry}
+                                    ariaLabel={Locale.Chat.Accessibility.ActionLabel(
+                                      messageActionLabel,
+                                      Locale.Chat.Actions.Retry,
+                                    )}
+                                    icon={<ResetIcon />}
+                                    onClick={() => onResend(message)}
+                                  />
+                                  <ChatAction
+                                    text={Locale.Chat.Actions.Delete}
+                                    ariaLabel={Locale.Chat.Accessibility.ActionLabel(
+                                      messageActionLabel,
+                                      Locale.Chat.Actions.Delete,
+                                    )}
+                                    icon={<DeleteIcon />}
+                                    onClick={() =>
+                                      onDelete(
+                                        message.id ?? absoluteMessageIndex,
+                                      )
+                                    }
+                                  />
+                                  <ChatAction
+                                    text={Locale.Chat.Actions.Pin}
+                                    ariaLabel={Locale.Chat.Accessibility.ActionLabel(
+                                      messageActionLabel,
+                                      Locale.Chat.Actions.Pin,
+                                    )}
+                                    icon={<PinIcon />}
+                                    onClick={() => onPinMessage(message)}
+                                  />
+                                  <ChatAction
+                                    text={
+                                      isMessageCopied
+                                        ? Locale.Copy.Success
+                                        : Locale.Chat.Actions.Copy
+                                    }
+                                    ariaLabel={messageCopyActionLabel}
+                                    title={messageCopyActionLabel}
+                                    dataCopyState={
+                                      isMessageCopied ? "copied" : "idle"
+                                    }
+                                    icon={
+                                      isMessageCopied ? (
+                                        <ConfirmIcon />
+                                      ) : (
+                                        <CopyIcon />
+                                      )
+                                    }
+                                    onClick={(event) =>
+                                      copyMessageContent(
+                                        message,
+                                        messageActionId,
+                                        event.currentTarget,
+                                      )
+                                    }
+                                  />
+                                  <span
+                                    className={
+                                      styles["chat-message-copy-status"]
+                                    }
+                                    role="status"
+                                    aria-live="polite"
+                                    aria-atomic="true"
+                                  >
+                                    {messageCopyStatus}
+                                  </span>
+                                  {ENABLE_TEXT_TO_SPEECH &&
+                                    config.ttsConfig.enable && (
+                                      <ChatAction
+                                        text={
+                                          speechStatus
+                                            ? Locale.Chat.Actions.StopSpeech
+                                            : Locale.Chat.Actions.Speech
+                                        }
+                                        ariaLabel={Locale.Chat.Accessibility.ActionLabel(
+                                          messageActionLabel,
+                                          speechStatus
+                                            ? Locale.Chat.Actions.StopSpeech
+                                            : Locale.Chat.Actions.Speech,
+                                        )}
+                                        icon={
+                                          speechStatus ? (
+                                            <SpeakStopIcon />
+                                          ) : (
+                                            <SpeakIcon />
+                                          )
+                                        }
+                                        onClick={() =>
+                                          openaiSpeech(
+                                            getMessageTextContent(message),
+                                          )
+                                        }
+                                      />
+                                    )}
+                                </>
+                              </div>
                             </div>
                           )}
                         </div>
-
-                        {showActions && (
-                          <div
-                            className={styles["chat-message-actions"]}
-                            role="group"
-                            aria-label={messageActionLabel}
-                          >
-                            <div
-                              className={styles["chat-message-action-rail"]}
-                              onKeyDown={handleMessageActionRailKeyDown}
-                            >
-                              <>
-                                <ChatAction
-                                  text={Locale.Chat.Actions.Retry}
-                                  ariaLabel={`${messageActionLabel}：${Locale.Chat.Actions.Retry}`}
-                                  icon={<ResetIcon />}
-                                  onClick={() => onResend(message)}
-                                />
-                                <ChatAction
-                                  text={Locale.Chat.Actions.Delete}
-                                  ariaLabel={`${messageActionLabel}：${Locale.Chat.Actions.Delete}`}
-                                  icon={<DeleteIcon />}
-                                  onClick={() => onDelete(message.id ?? i)}
-                                />
-                                <ChatAction
-                                  text={Locale.Chat.Actions.Pin}
-                                  ariaLabel={`${messageActionLabel}：${Locale.Chat.Actions.Pin}`}
-                                  icon={<PinIcon />}
-                                  onClick={() => onPinMessage(message)}
-                                />
-                                <ChatAction
-                                  text={
-                                    isMessageCopied
-                                      ? Locale.Copy.Success
-                                      : Locale.Chat.Actions.Copy
-                                  }
-                                  ariaLabel={messageCopyActionLabel}
-                                  title={messageCopyActionLabel}
-                                  dataCopyState={
-                                    isMessageCopied ? "copied" : "idle"
-                                  }
-                                  icon={
-                                    isMessageCopied ? (
-                                      <ConfirmIcon />
-                                    ) : (
-                                      <CopyIcon />
-                                    )
-                                  }
-                                  onClick={(event) =>
-                                    copyMessageContent(
-                                      message,
-                                      messageActionId,
-                                      event.currentTarget,
-                                    )
-                                  }
-                                />
-                                <span
-                                  className={styles["chat-message-copy-status"]}
-                                  role="status"
-                                  aria-live="polite"
-                                  aria-atomic="true"
-                                >
-                                  {messageCopyStatus}
-                                </span>
-                                {ENABLE_TEXT_TO_SPEECH &&
-                                  config.ttsConfig.enable && (
-                                    <ChatAction
-                                      text={
-                                        speechStatus
-                                          ? Locale.Chat.Actions.StopSpeech
-                                          : Locale.Chat.Actions.Speech
-                                      }
-                                      ariaLabel={`${messageActionLabel}：${
-                                        speechStatus
-                                          ? Locale.Chat.Actions.StopSpeech
-                                          : Locale.Chat.Actions.Speech
-                                      }`}
-                                      icon={
-                                        speechStatus ? (
-                                          <SpeakStopIcon />
-                                        ) : (
-                                          <SpeakIcon />
-                                        )
-                                      }
-                                      onClick={() =>
-                                        openaiSpeech(
-                                          getMessageTextContent(message),
-                                        )
-                                      }
-                                    />
-                                  )}
-                              </>
-                            </div>
-                          </div>
-                        )}
                       </div>
-                    </div>
-                    {shouldShowClearContextDivider && (
-                      <ClearContextDivider ref={clearContextDividerRef} />
-                    )}
-                  </Fragment>
-                );
-              })}
+                      {shouldShowClearContextDivider && (
+                        <ClearContextDivider ref={clearContextDividerRef} />
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </div>
             </div>
           </section>
           <div
@@ -5470,17 +5543,31 @@ function useChatInnerView() {
             })}
             data-drag-active={isDropzonePreviewActive ? "true" : undefined}
           >
-            {!showEmptyState && !hitBottom && !showChatActionMenu && (
-              <button
-                type="button"
-                className={styles["chat-scroll-to-bottom"]}
-                aria-label={Locale.Chat.InputActions.ToBottom}
-                aria-controls="chat-scroll-body"
-                onClick={scrollToBottom}
-              >
-                <BottomIcon />
-              </button>
-            )}
+            {!showEmptyState &&
+              !(quickJumpTarget === "top" ? hitTop : hitBottom) &&
+              !showChatActionMenu && (
+                <button
+                  type="button"
+                  className={styles["chat-scroll-to-bottom"]}
+                  data-direction={quickJumpTarget}
+                  aria-label={
+                    quickJumpTarget === "top"
+                      ? Locale.Chat.InputActions.ToTop
+                      : Locale.Chat.InputActions.ToBottom
+                  }
+                  aria-controls="chat-scroll-body"
+                  onClick={
+                    quickJumpTarget === "top" ? scrollToTop : scrollToBottom
+                  }
+                >
+                  <span
+                    className={styles["chat-scroll-direction-icon"]}
+                    aria-hidden="true"
+                  >
+                    <BottomIcon />
+                  </span>
+                </button>
+              )}
             <PromptHints
               prompts={promptHints}
               onPromptSelect={onPromptSelect}
@@ -5496,43 +5583,47 @@ function useChatInnerView() {
               onKeyDown={handleChatActionMenuKeyDown}
               role="dialog"
               aria-modal="true"
-              aria-label="对话工具菜单"
+              aria-label={Locale.Chat.ChatToolMenu.MenuLabel}
             >
-              <ChatActions
-                uploadAttachments={handleUploadAttachments}
-                setAttachImages={setAttachImages}
-                setUploading={setUploading}
-                attachmentSlotsFull={attachmentSlotsFull}
-                showPromptModal={() =>
-                  openPromptModal(chatInputMenuButtonRef.current)
-                }
-                scrollToBottom={scrollToBottom}
-                hitBottom={hitBottom}
-                uploading={uploading}
-                showPromptHints={() => {
-                  expandInput();
-                  // Click again to close
-                  if (promptHints.length > 0) {
-                    setPromptHints([]);
-                    return;
+              {showChatActionMenu && (
+                <ChatActions
+                  uploadAttachments={handleUploadAttachments}
+                  setAttachImages={setAttachImages}
+                  setUploading={setUploading}
+                  attachmentSlotsFull={attachmentSlotsFull}
+                  showPromptModal={() =>
+                    openPromptModal(chatInputMenuButtonRef.current)
                   }
+                  scrollToBottom={scrollToBottom}
+                  hitBottom={hitBottom}
+                  uploading={uploading}
+                  showPromptHints={() => {
+                    expandInput();
+                    // Click again to close
+                    if (promptHints.length > 0) {
+                      setPromptHints([]);
+                      return;
+                    }
 
-                  inputRef.current?.focus();
-                  setUserInput("/");
-                  onSearch("");
-                }}
-                openShortcutKeyModal={() =>
-                  openShortcutKeyModal(chatInputMenuButtonRef.current)
-                }
-                setUserInput={setUserInput}
-                setShowChatSidePanel={setShowChatSidePanel}
-                imageGenerationEnabled={imageGenerationEnabled}
-                setImageGenerationEnabled={setImageGenerationEnabled}
-                onActionComplete={() => setShowChatActionMenu(false)}
-              />
+                    inputRef.current?.focus();
+                    setUserInput("/");
+                    onSearch("");
+                  }}
+                  openShortcutKeyModal={() =>
+                    openShortcutKeyModal(chatInputMenuButtonRef.current)
+                  }
+                  setUserInput={setUserInput}
+                  setShowChatSidePanel={setShowChatSidePanel}
+                  onActionComplete={() => setShowChatActionMenu(false)}
+                />
+              )}
             </div>
 
-            <div className={styles["chat-input-row"]}>
+            <div
+              className={clsx(styles["chat-input-row"], {
+                [styles["chat-input-row-focused"]]: isChatInputFocused,
+              })}
+            >
               <button
                 type="button"
                 ref={chatInputMenuButtonRef}
@@ -5541,11 +5632,12 @@ function useChatInnerView() {
                 })}
                 onKeyDown={handleChatActionMenuKeyDown}
                 onClick={() => {
-                  expandInput();
                   setShowChatActionMenu((open) => !open);
                 }}
                 aria-label={
-                  showChatActionMenu ? "收起对话工具" : "打开对话工具"
+                  showChatActionMenu
+                    ? Locale.Chat.ChatToolMenu.Close
+                    : Locale.Chat.ChatToolMenu.Open
                 }
                 aria-controls="chat-input-action-menu"
                 aria-haspopup="dialog"
@@ -5555,6 +5647,9 @@ function useChatInnerView() {
               </button>
               <label
                 className={clsx(styles["chat-input-panel-inner"], {
+                  [styles["chat-input-panel-inner-with-model"]]: true,
+                  [styles["chat-input-panel-inner-focused"]]:
+                    isChatInputFocused,
                   [styles["chat-input-panel-inner-collapsed"]]:
                     !shouldExpandChatInput,
                   [styles["chat-input-panel-inner-attach"]]:
@@ -5562,6 +5657,12 @@ function useChatInnerView() {
                   [styles["chat-input-panel-inner-reasoning"]]:
                     showInputReasoningAction,
                   [styles["chat-input-panel-inner-status"]]: showInputStatusRow,
+                  [styles["chat-input-panel-inner-model-open"]]:
+                    showMobileModelSelector,
+                  [styles["chat-input-panel-inner-home-image"]]:
+                    showEmptyState && emptyComposerMode === "image",
+                  [styles["chat-input-panel-inner-home-chat"]]:
+                    showEmptyState && emptyComposerMode === "chat",
                 })}
                 htmlFor="chat-input"
               >
@@ -5582,56 +5683,91 @@ function useChatInnerView() {
                   aria-controls={
                     promptHints.length > 0 ? "chat-prompt-hints" : undefined
                   }
-                  aria-readonly={markdownStressQaEnabled ? true : undefined}
+                  aria-readonly={
+                    markdownStressQaEnabled &&
+                    !markdownStressQaInteractiveInputEnabled
+                      ? true
+                      : undefined
+                  }
                   aria-haspopup="listbox"
                   onChange={(e) => onInput(e.currentTarget.value)}
                   value={userInput}
                   onKeyDown={onInputKeyDown}
-                  readOnly={markdownStressQaEnabled}
+                  readOnly={
+                    markdownStressQaEnabled &&
+                    !markdownStressQaInteractiveInputEnabled
+                  }
                   onFocus={() => {
-                    scrollToBottom();
+                    setIsChatInputFocused(true);
                   }}
-                  onClick={() => {
-                    scrollToBottom();
-                  }}
+                  onBlur={() => setIsChatInputFocused(false)}
+                  onPointerDown={expandInput}
+                  onClick={expandInput}
                   onPaste={markdownStressQaEnabled ? undefined : handlePaste}
-                  rows={isCompactScreen ? 1 : inputRows}
+                  rows={shouldExpandChatInput ? inputRows : 1}
                   autoFocus={autoFocus}
-                  style={{
-                    fontSize: config.fontSize,
-                    fontFamily: config.fontFamily,
-                  }}
+                  style={
+                    {
+                      "--chat-input-font-size": `${config.fontSize}px`,
+                      fontFamily: config.fontFamily,
+                    } as React.CSSProperties
+                  }
                 />
 
-                {showEmptyComposerModelSelect && (
-                  <button
-                    type="button"
-                    ref={modelSelectorButtonRef}
-                    className={styles["chat-input-model-button"]}
-                    aria-label={`选择模型：${headerCurrentModelName}，${desktopModelDetail}`}
-                    title={`${headerCurrentModelName} · ${desktopModelDetail}`}
-                    onKeyDown={handleModelMenuKeyDown}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      setShowChatActionMenu(false);
-                      setExpandedMobileModelSection(null);
-                      setModelMenuPlacement("empty-composer");
-                      setEmptyComposerModelMenuStyle(
-                        getEmptyComposerModelMenuStyle(event.currentTarget),
-                      );
-                      setShowMobileModelSelector((open) => !open);
-                    }}
-                    aria-controls="chat-model-menu"
-                    aria-haspopup="dialog"
-                    aria-expanded={showMobileModelSelector}
-                  >
-                    <span className={styles["chat-input-model-name"]}>
-                      {headerCurrentModelName}
-                    </span>
-                    <span className={styles["chat-input-model-arrow"]}>⌄</span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  ref={modelSelectorButtonRef}
+                  className={clsx(styles["chat-input-model-button"], {
+                    [styles["chat-input-model-button-open"]]:
+                      showMobileModelSelector,
+                    [styles["chat-input-model-button-home-chat"]]:
+                      showEmptyState && emptyComposerMode === "chat",
+                    [styles["chat-input-model-button-home-image"]]:
+                      showEmptyState && emptyComposerMode === "image",
+                  })}
+                  aria-label={Locale.Chat.ModelMenu.SelectModel(
+                    headerCurrentModelName,
+                    currentModelDetail,
+                  )}
+                  onKeyDown={handleModelMenuKeyDown}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setShowChatActionMenu(false);
+                    setExpandedMobileModelSection(
+                      showMobileModelSelector ? null : currentModelMenuSection,
+                    );
+                    setComposerModelMenuStyle(
+                      getComposerModelMenuStyle(
+                        event.currentTarget,
+                        showEmptyComposer,
+                      ),
+                    );
+                    setShowMobileModelSelector((open) => !open);
+                  }}
+                  aria-controls="chat-model-menu"
+                  aria-haspopup="dialog"
+                  aria-expanded={showMobileModelSelector}
+                >
+                  {showMobileModelSelector && (
+                    <>
+                      <span className={styles["chat-input-model-name"]}>
+                        {headerCurrentModelName}
+                      </span>
+                      <span className={styles["chat-input-model-separator"]}>
+                        ·
+                      </span>
+                    </>
+                  )}
+                  <span className={styles["chat-input-model-detail"]}>
+                    {showEmptyState && emptyComposerMode === "chat"
+                      ? reasoningLabels[headerCurrentReasoningEffort]
+                      : showEmptyState && emptyComposerMode === "image"
+                      ? imageComposerSummary
+                      : currentModelDetail}
+                  </span>
+                  <span className={styles["chat-input-model-arrow"]}>⌄</span>
+                </button>
 
                 {showInputStatusRow && (
                   <div
@@ -5639,21 +5775,9 @@ function useChatInnerView() {
                     role="status"
                     aria-live="polite"
                     aria-atomic="true"
-                    aria-label="当前输入模式"
+                    aria-label={Locale.Chat.ModelMenu.CurrentInputMode}
                   >
                     {showInputReasoningAction && <ChatInputReasoningAction />}
-                    {imageGenerationEnabled && (
-                      <span
-                        className={clsx(
-                          styles["chat-input-mode-chip"],
-                          styles["chat-input-image-mode-chip"],
-                        )}
-                        aria-label="图片生成模式已开启"
-                      >
-                        <ImageIcon />
-                        <span>图片生成</span>
-                      </span>
-                    )}
                   </div>
                 )}
 
@@ -5694,7 +5818,7 @@ function useChatInnerView() {
                       ref={attachmentsContainerRef}
                       className={styles["attachments-container"]}
                       role="list"
-                      aria-label="附件预览"
+                      aria-label={Locale.Chat.Attachments.Preview}
                       onScroll={syncAttachmentScrollHint}
                     >
                       {/* 图片附件 */}
@@ -5734,11 +5858,13 @@ function useChatInnerView() {
                           <button
                             type="button"
                             className={styles["attach-image"]}
-                            aria-label={`编辑第 ${index + 1} 张图片附件`}
+                            aria-label={Locale.Chat.Attachments.EditImage(
+                              index + 1,
+                            )}
                             style={{ backgroundImage: `url("${image}")` }}
                             onClick={() => {
                               setEditingImageTitle(
-                                `编辑第 ${index + 1} 张图片附件`,
+                                Locale.Chat.Attachments.EditImage(index + 1),
                               );
                               editingAttachmentImageIndexRef.current = index;
                               editingImageMessageIdRef.current = null;
@@ -5747,7 +5873,9 @@ function useChatInnerView() {
                           />
                           <div className={styles["attach-image-mask"]}>
                             <DeleteImageButton
-                              ariaLabel={`删除第 ${index + 1} 张图片附件`}
+                              ariaLabel={Locale.Chat.Attachments.DeleteImage(
+                                index + 1,
+                              )}
                               deleteImage={(e) => {
                                 e.stopPropagation(); // 防止触发图片点击事件
                                 setAttachImages((currentImages) =>
@@ -5763,9 +5891,11 @@ function useChatInnerView() {
 
                       {/* 文件附件 */}
                       {attachedFiles.map((file, index) => {
-                        const fileEditContextLabel = `编辑第 ${
-                          index + 1
-                        } 个文件附件：${file.name}`;
+                        const fileEditContextLabel =
+                          Locale.Chat.Attachments.EditFile(
+                            index + 1,
+                            file.name,
+                          );
 
                         return (
                           <div
@@ -5810,7 +5940,12 @@ function useChatInnerView() {
                                   fileEditContextLabel,
                                   file.content,
                                   20, // 更多行数以便于编辑文件内容
-                                  { ariaLabel: `${fileEditContextLabel}内容` },
+                                  {
+                                    ariaLabel:
+                                      Locale.Chat.Attachments.EditFileContent(
+                                        file.name,
+                                      ),
+                                  },
                                 );
 
                                 if (newContent) {
@@ -5865,9 +6000,10 @@ function useChatInnerView() {
                             </button>
                             <div className={styles["attach-image-mask"]}>
                               <DeleteImageButton
-                                ariaLabel={`删除第 ${index + 1} 个文件附件：${
-                                  file.name
-                                }`}
+                                ariaLabel={Locale.Chat.Attachments.DeleteFile(
+                                  index + 1,
+                                  file.name,
+                                )}
                                 deleteImage={(e) => {
                                   e.stopPropagation(); // 防止触发文件点击事件
                                   deleteAttachedFile(index);
@@ -5888,8 +6024,8 @@ function useChatInnerView() {
                           <button
                             type="button"
                             className={styles["attachment-add-button"]}
-                            aria-label="继续添加附件"
-                            title="继续添加附件"
+                            aria-label={Locale.Chat.Attachments.AddMore}
+                            title={Locale.Chat.Attachments.AddMore}
                             disabled={uploading}
                             onClick={handleUploadAttachments}
                           >
@@ -5909,11 +6045,11 @@ function useChatInnerView() {
                             className={styles["attachment-full-indicator"]}
                             role="status"
                             aria-live="polite"
-                            aria-label="附件已满：最多 3 张图片、5 个文件"
-                            title="附件已满：最多 3 张图片、5 个文件"
+                            aria-label={Locale.Chat.Attachments.Full}
+                            title={Locale.Chat.Attachments.Full}
                           >
                             <AttachmentIcon />
-                            <span>已满</span>
+                            <span>{Locale.Chat.Attachments.FullShort}</span>
                           </div>
                         </div>
                       )}
@@ -5973,7 +6109,7 @@ function useChatInnerView() {
       {showFileEditModal && editingFile && (
         <div className="modal-mask">
           <Modal
-            title={`编辑文件内容: ${editingFile.name}`}
+            title={Locale.Chat.Attachments.EditFileContent(editingFile.name)}
             onClose={() => setShowFileEditModal(false)}
             actions={[
               <IconButton
@@ -6015,7 +6151,9 @@ function useChatInnerView() {
           >
             <div className={styles["file-edit-scroll"]}>
               <textarea
-                aria-label={`编辑文件内容: ${editingFile.name}`}
+                aria-label={Locale.Chat.Attachments.EditFileContent(
+                  editingFile.name,
+                )}
                 className={styles["file-edit-textarea"]}
                 value={editingFile.content}
                 onChange={(e) => {
@@ -6060,8 +6198,8 @@ function useChatInnerView() {
             <button
               type="button"
               className={styles["image-preview-button"]}
-              aria-label="关闭预览"
-              title="关闭预览"
+              aria-label={Locale.ImageActions.ClosePreview}
+              title={Locale.ImageActions.ClosePreview}
               onClick={closeImagePreview}
             >
               <CancelIcon />
@@ -6074,6 +6212,7 @@ function useChatInnerView() {
             width={1600}
             height={1200}
             unoptimized
+            priority
           />
         </dialog>
       )}
@@ -6084,7 +6223,7 @@ function useChatInnerView() {
           title={editingImageTitle}
           onClose={() => {
             setEditingImage(null);
-            setEditingImageTitle("编辑图片");
+            setEditingImageTitle(Locale.ImageEditor.Title);
             editingAttachmentImageIndexRef.current = null;
             editingImageMessageIdRef.current = null; // 清除消息ID
           }}
@@ -6142,7 +6281,7 @@ function useChatInnerView() {
             }
 
             setEditingImage(null);
-            setEditingImageTitle("编辑图片");
+            setEditingImageTitle(Locale.ImageEditor.Title);
             editingAttachmentImageIndexRef.current = null;
             editingImageMessageIdRef.current = null; // 清除消息ID
           }}
@@ -6157,7 +6296,10 @@ function ChatInner() {
 }
 
 export function Chat() {
-  const chatStore = useChatStore();
-  const session = chatStore.currentSession();
-  return <ChatInner key={session.id}></ChatInner>;
+  const sessionId = useChatStore((state) =>
+    state.currentSessionIndex < 0
+      ? state.temporarySession?.id
+      : state.sessions[state.currentSessionIndex]?.id,
+  );
+  return <ChatInner key={sessionId}></ChatInner>;
 }

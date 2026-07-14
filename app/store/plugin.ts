@@ -1,5 +1,5 @@
 import OpenAPIClientAxios from "openapi-client-axios";
-import { ACCESS_CODE_PREFIX, StoreKey } from "../constant";
+import { ACCESS_CODE_PREFIX, REQUEST_TIMEOUT_MS, StoreKey } from "../constant";
 import { nanoid } from "nanoid";
 import { createPersistStore } from "../utils/store";
 import { getClientConfig } from "../config/client";
@@ -82,6 +82,7 @@ export const FunctionToolService = {
         adapter: (window.__TAURI__ ? adapter : ["xhr"]) as any,
         baseURL,
         headers,
+        timeout: REQUEST_TIMEOUT_MS,
       },
     });
     try {

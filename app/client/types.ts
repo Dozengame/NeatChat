@@ -43,6 +43,7 @@ export interface LLMConfig {
   presence_penalty?: number;
   frequency_penalty?: number;
   reasoningEffort?: OpenAIChatReasoningEffort;
+  max_output_tokens?: number;
   size?: OpenAIImageSize;
   quality?: OpenAIImageQuality;
   style?: DalleStyle;
@@ -65,6 +66,8 @@ export interface ChatOptions {
   messages: RequestMessage[];
   config: LLMConfig;
   allowTools?: boolean;
+  pluginIds?: string[];
+  openaiResponsesRecoveryPending?: boolean;
 
   onUpdate?: (message: string, chunk: string) => void;
   onFinish: (

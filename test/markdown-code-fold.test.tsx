@@ -12,6 +12,7 @@ jest.mock("../app/utils", () => ({
 
 jest.mock("../app/utils/token", () => ({
   encode: jest.fn((text: string) => text.split("")),
+  estimateTokenLengthInLLM: jest.fn((text: string) => text.length),
 }));
 
 jest.mock("../app/components/ui-lib-actions", () => ({
@@ -28,11 +29,17 @@ jest.mock("remark-gfm", () => jest.fn());
 jest.mock("rehype-katex", () => jest.fn());
 jest.mock("rehype-raw", () => jest.fn());
 jest.mock("rehype-highlight", () => jest.fn());
+jest.mock("rehype-sanitize", () => ({
+  __esModule: true,
+  default: jest.fn(),
+  defaultSchema: { tagNames: [], attributes: {}, protocols: {} },
+}));
 
 jest.mock("next/dynamic", () => {
-  return () => function DynamicPlaceholder() {
-    return null;
-  };
+  return () =>
+    function DynamicPlaceholder() {
+      return null;
+    };
 });
 
 jest.mock("../app/icons/three-dots.svg", () => {
@@ -103,5 +110,14 @@ describe("Markdown code folding", () => {
       screen.queryByRole("button", { name: "Show full code block" }),
     ).not.toBeInTheDocument();
     expect(controlledCode).toHaveStyle({ maxHeight: "none" });
+  });
+
+  test("does not split or measure code blocks while content is streaming", () => {
+    render(
+      <Markdown content={"```text\nfirst line\nsecond line\n```"} streaming />,
+    );
+
+    expect(document.querySelectorAll(".code-line")).toHaveLength(0);
+    expect(scrollHeightSpy).not.toHaveBeenCalled();
   });
 });

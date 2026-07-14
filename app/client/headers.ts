@@ -17,7 +17,10 @@ function validString(x: string): boolean {
   return x?.length > 0;
 }
 
-export function getHeaders(ignoreHeaders: boolean = false) {
+export function getHeaders(
+  ignoreHeaders: boolean = false,
+  providerName?: string,
+) {
   const accessStore = useAccessStore.getState();
   const appConfig = useAppConfig.getState();
   let headers: Record<string, string> = {};
@@ -31,19 +34,21 @@ export function getHeaders(ignoreHeaders: boolean = false) {
   const clientConfig = getClientConfig();
 
   function getConfig() {
-    const modelConfig =
-      getRegisteredChatStore()?.getState().currentSession?.().mask
-        .modelConfig ?? appConfig.modelConfig;
-    const isGoogle = modelConfig.providerName === ServiceProvider.Google;
-    const isAzure = modelConfig.providerName === ServiceProvider.Azure;
-    const isAnthropic = modelConfig.providerName === ServiceProvider.Anthropic;
-    const isBaidu = modelConfig.providerName == ServiceProvider.Baidu;
-    const isByteDance = modelConfig.providerName === ServiceProvider.ByteDance;
-    const isAlibaba = modelConfig.providerName === ServiceProvider.Alibaba;
-    const isMoonshot = modelConfig.providerName === ServiceProvider.Moonshot;
-    const isIflytek = modelConfig.providerName === ServiceProvider.Iflytek;
-    const isXAI = modelConfig.providerName === ServiceProvider.XAI;
-    const isChatGLM = modelConfig.providerName === ServiceProvider.ChatGLM;
+    const effectiveProviderName =
+      providerName ??
+      getRegisteredChatStore()?.getState().currentSession?.().mask.modelConfig
+        .providerName ??
+      appConfig.modelConfig.providerName;
+    const isGoogle = effectiveProviderName === ServiceProvider.Google;
+    const isAzure = effectiveProviderName === ServiceProvider.Azure;
+    const isAnthropic = effectiveProviderName === ServiceProvider.Anthropic;
+    const isBaidu = effectiveProviderName == ServiceProvider.Baidu;
+    const isByteDance = effectiveProviderName === ServiceProvider.ByteDance;
+    const isAlibaba = effectiveProviderName === ServiceProvider.Alibaba;
+    const isMoonshot = effectiveProviderName === ServiceProvider.Moonshot;
+    const isIflytek = effectiveProviderName === ServiceProvider.Iflytek;
+    const isXAI = effectiveProviderName === ServiceProvider.XAI;
+    const isChatGLM = effectiveProviderName === ServiceProvider.ChatGLM;
     const isEnabledAccessControl = accessStore.enabledAccessControl();
     const apiKey = isGoogle
       ? accessStore.googleApiKey

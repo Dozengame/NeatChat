@@ -2,9 +2,7 @@
 
 import React from "react";
 import { IconButton } from "./button";
-import GithubIcon from "../icons/github.svg";
 import ResetIcon from "../icons/reload.svg";
-import { ISSUE_URL } from "../constant";
 import Locale from "../locales";
 import { showConfirm } from "./ui-lib-actions";
 import { useSyncStore } from "../store/sync";
@@ -47,14 +45,6 @@ export class ErrorBoundary extends React.Component<any, IErrorBoundaryState> {
           </pre>
 
           <div className="error-actions">
-            <a href={ISSUE_URL} className="error-report-link">
-              <IconButton
-                className="error-action-button"
-                text="Report This Error"
-                icon={<GithubIcon />}
-                bordered
-              />
-            </a>
             <IconButton
               className="error-action-button"
               icon={<ResetIcon />}

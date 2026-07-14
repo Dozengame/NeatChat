@@ -7,6 +7,8 @@ import {
   applyOpenAISafetyIdentifier,
   sanitizeOpenAIResponsesSafetyIdentifier,
 } from "./openai-safety";
+import { enforceLockedOpenAIResponsesPolicy } from "./openai-responses-policy";
+import { resolveLockedFields } from "../utils/public-app-config";
 
 const serverConfig = getServerSideConfig();
 const OPENAI_PROXY_REQUEST_TIMEOUT_MS = 10 * 60 * 1000;
@@ -154,6 +156,30 @@ export async function requestOpenai(req: NextRequest) {
 
         let jsonBody = JSON.parse(clonedBody) as Record<string, unknown>;
         if (path === OpenaiPath.ResponsesPath) {
+          if (
+            !jsonBody ||
+            typeof jsonBody !== "object" ||
+            Array.isArray(jsonBody)
+          ) {
+            throw new SyntaxError(
+              "OpenAI Responses body must be a JSON object",
+            );
+          }
+          jsonBody = enforceLockedOpenAIResponsesPolicy(jsonBody, {
+            lockedFields: resolveLockedFields({
+              webuiLockedFields: serverConfig.webuiLockedFields,
+              hasForcedMaxOutputTokens:
+                typeof serverConfig.openaiMaxOutputTokens === "number",
+            }),
+            temperature: serverConfig.defaultTemperature,
+            textVerbosity: serverConfig.openaiTextVerbosity,
+            maxOutputTokens: serverConfig.openaiMaxOutputTokens,
+            reasoningMode: serverConfig.openaiReasoningMode,
+            reasoningContext: serverConfig.openaiReasoningContext,
+            inputImageDetail: serverConfig.openaiInputImageDetail,
+            promptCacheMode: serverConfig.openaiPromptCacheMode,
+            promptCacheKey: serverConfig.openaiPromptCacheKey,
+          });
           jsonBody = sanitizeOpenAIResponsesSafetyIdentifier(jsonBody);
           fetchOptions.body = JSON.stringify(jsonBody);
           try {
@@ -187,6 +213,11 @@ export async function requestOpenai(req: NextRequest) {
       }
     } catch (e) {
       console.error("[OpenAI] request body preprocessing failed", e);
+      clearTimeout(timeoutId);
+      return NextResponse.json(
+        { error: true, message: "Invalid request body" },
+        { status: 400 },
+      );
     }
   }
 

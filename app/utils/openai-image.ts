@@ -1,4 +1,8 @@
 import { ServiceProvider } from "../constant";
+import {
+  getAccessRestrictedPublicErrorMessage,
+  getPublicUpstreamErrorMessage,
+} from "./public-error";
 import type {
   DalleStyle,
   GptImageQuality,
@@ -25,6 +29,13 @@ export const DALLE3_IMAGE_SIZES = [
 ] as const;
 export const DALLE_IMAGE_COMPATIBLE_SIZES = ["1024x1024"] as const;
 
+export const LEGACY_GPT_IMAGE_SIZES = [
+  "auto",
+  "1024x1024",
+  "1536x1024",
+  "1024x1536",
+] as const;
+
 export const DALLE3_IMAGE_QUALITIES = ["standard", "hd"] as const;
 export const DALLE3_IMAGE_STYLES = ["vivid", "natural"] as const;
 
@@ -39,7 +50,7 @@ export const GPT_IMAGE_2_SIZES = [
   "2160x3840",
 ] as const;
 
-export const GPT_IMAGE_2_QUALITIES = ["auto", "low", "medium", "high"] as const;
+export const GPT_IMAGE_QUALITIES = ["auto", "low", "medium", "high"] as const;
 
 const GPT_IMAGE_2_DEFAULTS = {
   size: "auto" as GptImageSize,
@@ -85,6 +96,13 @@ export type OpenAIImageGenerationRequestPayload =
   | DalleRequestPayload
   | GptImage2RequestPayload;
 
+export type OpenAIImageGenerationProgressCopy = {
+  Model: (model: string) => string;
+  Preparing: string;
+  Generating: string;
+  Saving: string;
+};
+
 export type OpenAIImageInputFile = {
   blob: Blob;
   filename?: string;
@@ -118,6 +136,64 @@ function isDalleImageGenerationModel(model?: string) {
 
 export function isGptImageGenerationModel(model?: string) {
   return normalizeModel(model).startsWith(GPT_IMAGE_MODEL_PREFIX);
+}
+
+function isModelOrDatedSnapshot(model: string, baseModel: string) {
+  return (
+    model === baseModel ||
+    new RegExp(`^${baseModel.replace(".", "\\.")}-\\d{4}-\\d{2}-\\d{2}$`).test(
+      model,
+    )
+  );
+}
+
+export function isGptImage2(model?: string) {
+  return isModelOrDatedSnapshot(normalizeModel(model), GPT_IMAGE_2_MODEL);
+}
+
+export function getOpenAIImageGenerationOptions(model?: string) {
+  if (isGptImageGenerationModel(model)) {
+    return {
+      sizes: isGptImage2(model) ? GPT_IMAGE_2_SIZES : LEGACY_GPT_IMAGE_SIZES,
+      qualities: GPT_IMAGE_QUALITIES,
+      styles: [] as readonly DalleStyle[],
+    };
+  }
+
+  if (isDalle3(model)) {
+    return {
+      sizes: DALLE3_IMAGE_SIZES,
+      qualities: DALLE3_IMAGE_QUALITIES,
+      styles: DALLE3_IMAGE_STYLES,
+    };
+  }
+
+  return {
+    sizes: DALLE_IMAGE_COMPATIBLE_SIZES,
+    qualities: [] as readonly OpenAIImageQuality[],
+    styles: [] as readonly DalleStyle[],
+  };
+}
+
+export function normalizeOpenAIImageSize(
+  model: string | undefined,
+  size: OpenAIImageSize | undefined,
+) {
+  const options = getOpenAIImageGenerationOptions(model).sizes;
+  return options.includes(size as never)
+    ? (size as OpenAIImageSize)
+    : (options[0] as OpenAIImageSize);
+}
+
+export function normalizeOpenAIImageQuality(
+  model: string | undefined,
+  quality: OpenAIImageQuality | undefined,
+) {
+  const options = getOpenAIImageGenerationOptions(model).qualities;
+  if (options.length === 0) return undefined;
+  return options.includes(quality as never)
+    ? quality
+    : (options[0] as OpenAIImageQuality);
 }
 
 export function isOpenAIImageGenerationModel(model?: string) {
@@ -162,18 +238,18 @@ export function getOpenAIImageOutputContentType(
 export function getOpenAIImageGenerationProgressContent(params: {
   model?: string;
   phase?: "preparing" | "generating" | "saving";
+  copy: OpenAIImageGenerationProgressCopy;
 }) {
-  const model = params.model?.trim();
-  const modelLine = model ? `\n\n模型：${model}` : "";
+  const modelLine = params.copy.Model(params.model?.trim() ?? "");
 
   switch (params.phase) {
     case "saving":
-      return `图片已生成，正在保存图片...${modelLine}`;
+      return `${params.copy.Saving}${modelLine}`;
     case "generating":
-      return `正在生成图片，请稍候...${modelLine}`;
+      return `${params.copy.Generating}${modelLine}`;
     case "preparing":
     default:
-      return `正在准备图片生成请求...${modelLine}`;
+      return `${params.copy.Preparing}${modelLine}`;
   }
 }
 
@@ -212,6 +288,55 @@ export function parseOpenAIImageResponsePayload(params: {
       },
     };
   }
+}
+
+export function getOpenAIImageErrorMessage(params: {
+  status: number;
+  payload: unknown;
+  accessRestrictedMessage: string;
+}) {
+  const localizedAccessError = getAccessRestrictedPublicErrorMessage({
+    response: { status: params.status },
+    payload: params.payload,
+    message: params.accessRestrictedMessage,
+  });
+  if (localizedAccessError) return localizedAccessError;
+
+  const payload = params.payload as
+    | {
+        error?: { message?: unknown; code?: unknown };
+        message?: unknown;
+        msg?: unknown;
+        code?: unknown;
+      }
+    | undefined;
+  const detail =
+    typeof payload?.error?.message === "string"
+      ? payload.error.message
+      : typeof payload?.message === "string"
+      ? payload.message
+      : typeof payload?.msg === "string"
+      ? payload.msg
+      : "";
+  const code =
+    typeof payload?.error?.code === "string"
+      ? payload.error.code
+      : typeof payload?.code === "string"
+      ? payload.code
+      : String(params.status);
+  const normalizedCode = code.trim();
+  const safeCode =
+    /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/.test(normalizedCode) &&
+    !/(?:^sk-|authorization|bearer|api[-_]?key|token|secret)/i.test(
+      normalizedCode,
+    )
+      ? normalizedCode
+      : String(params.status);
+  return getPublicUpstreamErrorMessage({
+    fallback: `OpenAI image generation failed (${safeCode})`,
+    payload: params.payload,
+    detail,
+  });
 }
 
 export function applyOpenAIImageGenerationDefaults<
@@ -264,14 +389,11 @@ export function buildOpenAIImageGenerationPayload(params: {
   config?: OpenAIImageGenerationConfig;
 }): OpenAIImageGenerationRequestPayload {
   if (isGptImageGenerationModel(params.model)) {
-    const size = GPT_IMAGE_2_SIZES.includes(params.config?.size as any)
-      ? params.config?.size
-      : GPT_IMAGE_2_DEFAULTS.size;
-    const quality = GPT_IMAGE_2_QUALITIES.includes(
-      params.config?.quality as any,
-    )
-      ? params.config?.quality
-      : GPT_IMAGE_2_DEFAULTS.quality;
+    const size = normalizeOpenAIImageSize(params.model, params.config?.size);
+    const quality = normalizeOpenAIImageQuality(
+      params.model,
+      params.config?.quality,
+    );
     const background =
       params.config?.background === "opaque" ||
       params.config?.background === "auto"
@@ -360,15 +482,12 @@ export function buildOpenAIImageEditFormData(params: {
   formData.append("n", "1");
   formData.append(
     "size",
-    GPT_IMAGE_2_SIZES.includes(params.config?.size as any)
-      ? params.config?.size ?? GPT_IMAGE_2_DEFAULTS.size
-      : GPT_IMAGE_2_DEFAULTS.size,
+    normalizeOpenAIImageSize(params.model, params.config?.size),
   );
   formData.append(
     "quality",
-    GPT_IMAGE_2_QUALITIES.includes(params.config?.quality as any)
-      ? params.config?.quality ?? GPT_IMAGE_2_DEFAULTS.quality
-      : GPT_IMAGE_2_DEFAULTS.quality,
+    normalizeOpenAIImageQuality(params.model, params.config?.quality) ??
+      GPT_IMAGE_2_DEFAULTS.quality,
   );
   formData.append(
     "background",

@@ -1,107 +1,153 @@
 import type { ChatMessage } from "../store";
 import { getMessageTextContent } from "../utils";
-import { isMcpJson } from "../mcp/utils";
+import { deepClone } from "../utils/clone";
+import { hasMcpJsonStart, isMcpJson, tryExtractMcpJson } from "../mcp/utils";
 import {
-  formatJimengMcpRequestForChat,
+  formatFailedMcpRequestForChat,
   formatPendingMcpRequestForChat,
-  hasJimengDisplayableImage,
-  mergeJimengProgressWithResult,
-  mergeJimengResultIntoReply,
 } from "../mcp/display";
 
 export type RenderMessage = ChatMessage & { preview?: boolean };
 
-export function getVisibleChatMessages(messages: RenderMessage[]) {
-  let pendingJimengResult: string | undefined;
-  let pendingJimengProgressIndex: number | undefined;
+export function createPinnedContextMessage(
+  message: ChatMessage,
+  nextId: string,
+): ChatMessage {
+  return {
+    ...deepClone(message),
+    id: nextId,
+  };
+}
 
-  const visibleMessages = messages.reduce<RenderMessage[]>(
-    (visibleMessages, message) => {
-      const textContent = getMessageTextContent(message);
+export function getMessageRenderIdentity(
+  message: RenderMessage,
+  absoluteIndex: number,
+  contextLength: number,
+) {
+  const source = absoluteIndex < contextLength ? "context" : "session";
+  return `${source}:${message.id ?? absoluteIndex}`;
+}
 
-      if (message.isMcpResponse) {
-        if (pendingJimengProgressIndex !== undefined) {
-          visibleMessages[pendingJimengProgressIndex] = {
-            ...visibleMessages[pendingJimengProgressIndex],
-            content: mergeJimengProgressWithResult(
-              getMessageTextContent(
-                visibleMessages[pendingJimengProgressIndex],
-              ),
-              textContent,
-              { includeImages: false },
-            ),
-          };
-          pendingJimengResult = textContent;
-          return visibleMessages;
-        }
-
-        if (hasJimengDisplayableImage(textContent)) {
-          pendingJimengResult = textContent;
-        }
-        return visibleMessages;
-      }
-
-      if (message.role === "assistant" && isMcpJson(textContent)) {
-        const jimengProgress = formatJimengMcpRequestForChat(textContent);
-        if (jimengProgress) {
-          pendingJimengProgressIndex = visibleMessages.length;
-          visibleMessages.push({
-            ...message,
-            content: jimengProgress,
-          });
-        }
-        return visibleMessages;
-      }
-
-      if (message.role === "assistant" && message.streaming) {
-        const pendingMcpProgress = formatPendingMcpRequestForChat(textContent);
-        if (pendingMcpProgress) {
-          visibleMessages.push({
-            ...message,
-            content: pendingMcpProgress,
-          });
-          return visibleMessages;
-        }
-      }
-
-      if (message.role === "assistant" && pendingJimengResult) {
-        const mergedContent = mergeJimengResultIntoReply(
-          textContent,
-          pendingJimengResult,
-        );
-        pendingJimengResult = undefined;
-        pendingJimengProgressIndex = undefined;
-
-        if (mergedContent !== textContent) {
-          visibleMessages.push({
-            ...message,
-            content: mergedContent,
-          });
-          return visibleMessages;
-        }
-      }
-
-      visibleMessages.push(message);
-      return visibleMessages;
-    },
-    [],
+export function findMessageForRenderSource(
+  contextMessages: ChatMessage[],
+  sessionMessages: ChatMessage[],
+  messageId: string,
+  isContext: boolean,
+) {
+  return (isContext ? contextMessages : sessionMessages).find(
+    (message) => message.id === messageId,
   );
+}
 
-  if (
-    pendingJimengProgressIndex !== undefined &&
-    pendingJimengResult !== undefined
-  ) {
-    visibleMessages[pendingJimengProgressIndex] = {
-      ...visibleMessages[pendingJimengProgressIndex],
-      content: mergeJimengProgressWithResult(
-        getMessageTextContent(visibleMessages[pendingJimengProgressIndex]),
-        pendingJimengResult,
-        { includeImages: true },
-      ),
-    };
+type VisibleMessageProjectionState = {
+  visibleMessages: RenderMessage[];
+};
+
+function createProjectionState(): VisibleMessageProjectionState {
+  return { visibleMessages: [] };
+}
+
+function cloneProjectionState(
+  state: VisibleMessageProjectionState,
+): VisibleMessageProjectionState {
+  return {
+    ...state,
+    visibleMessages: state.visibleMessages.slice(),
+  };
+}
+
+function projectMessage(
+  state: VisibleMessageProjectionState,
+  message: RenderMessage,
+) {
+  const textContent = getMessageTextContent(message);
+
+  if (message.isMcpResponse) return;
+
+  if (message.role === "assistant" && isMcpJson(textContent)) {
+    if (!tryExtractMcpJson(textContent)) {
+      state.visibleMessages.push({
+        ...message,
+        content: formatFailedMcpRequestForChat(),
+        streaming: false,
+        isError: true,
+      });
+    }
+    return;
   }
 
-  return visibleMessages;
+  if (message.role === "assistant" && message.streaming) {
+    const pendingMcpProgress = formatPendingMcpRequestForChat(textContent);
+    if (pendingMcpProgress) {
+      state.visibleMessages.push({
+        ...message,
+        content: pendingMcpProgress,
+      });
+      return;
+    }
+  }
+
+  if (
+    message.role === "assistant" &&
+    !message.streaming &&
+    hasMcpJsonStart(textContent)
+  ) {
+    state.visibleMessages.push({
+      ...message,
+      content: formatFailedMcpRequestForChat(),
+      streaming: false,
+      isError: true,
+    });
+    return;
+  }
+
+  state.visibleMessages.push(message);
+}
+
+function finalizeProjection(state: VisibleMessageProjectionState) {
+  return state.visibleMessages;
+}
+
+export function getVisibleChatMessages(messages: RenderMessage[]) {
+  const state = createProjectionState();
+  messages.forEach((message) => projectMessage(state, message));
+  return finalizeProjection(state);
+}
+
+export function createVisibleChatMessagesProjector() {
+  let cachedRevision: number | undefined;
+  let cachedMessageCount = -1;
+  let cachedFirstMessage: RenderMessage | undefined;
+  let cachedPrefixLastMessage: RenderMessage | undefined;
+  let cachedPrefixState = createProjectionState();
+
+  return (messages: RenderMessage[], revision: number) => {
+    const prefixLength = Math.max(0, messages.length - 1);
+    const canReusePrefix =
+      revision === cachedRevision &&
+      messages.length === cachedMessageCount &&
+      (prefixLength === 0 ||
+        (messages[0] === cachedFirstMessage &&
+          messages[prefixLength - 1] === cachedPrefixLastMessage));
+
+    if (!canReusePrefix) {
+      cachedPrefixState = createProjectionState();
+      for (let index = 0; index < prefixLength; index += 1) {
+        projectMessage(cachedPrefixState, messages[index]);
+      }
+      cachedRevision = revision;
+      cachedMessageCount = messages.length;
+      cachedFirstMessage = messages[0];
+      cachedPrefixLastMessage = messages[prefixLength - 1];
+    }
+
+    const state = cloneProjectionState(cachedPrefixState);
+    const tailMessage = messages.at(-1);
+    if (tailMessage) {
+      projectMessage(state, tailMessage);
+    }
+    return finalizeProjection(state);
+  };
 }
 
 export function shouldRenderLoadingPreview(

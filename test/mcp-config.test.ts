@@ -3,11 +3,7 @@ import {
   mergeMcpConfig,
   resolveConfigHeaders,
 } from "../app/mcp/config";
-import {
-  JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
-  JIMENG_MCP_SERVER_CONFIG,
-  normalizeJimengMcpRequest,
-} from "../app/mcp/jimeng";
+import { extractMcpJson } from "../app/mcp/utils";
 
 describe("MCP config", () => {
   const originalEnv = process.env;
@@ -20,88 +16,66 @@ describe("MCP config", () => {
     process.env = originalEnv;
   });
 
-  test("keeps bundled MCP servers when runtime config exists", () => {
-    expect(
-      mergeMcpConfig(
-        {
-          mcpServers: {
-            "jimeng-mcp": {
-              type: "streamable-http",
-              url: "https://example.com/jimeng-mcp",
-              status: "active",
-            },
-          },
-        },
-        {
-          mcpServers: {
-            filesystem: {
-              type: "stdio",
-              command: "npx",
-              args: ["-y", "@modelcontextprotocol/server-filesystem"],
-            },
-          },
-        },
-      ).mcpServers,
-    ).toHaveProperty("jimeng-mcp");
+  test("has no built-in executable MCP server", () => {
+    expect(BUILTIN_MCP_CONFIG).toEqual({ mcpServers: {} });
   });
 
-  test("keeps Jimeng MCP out of default chat tool exposure", () => {
-    expect(BUILTIN_MCP_CONFIG.mcpServers).toHaveProperty("jimeng-mcp");
-    expect(JIMENG_MCP_SERVER_CONFIG.status).toBe("paused");
-    expect(JIMENG_MCP_SERVER_CONFIG.chatDefaultEnabled).toBe(false);
-  });
-
-  test("guides async Jimeng result polling", () => {
-    expect(JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT).toContain("gen_status");
-    expect(JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT).toContain(
-      "dreamina_query_result",
+  test("merges configured servers without dropping either source", () => {
+    const merged = mergeMcpConfig(
+      { mcpServers: { first: { type: "stdio", command: "first" } } },
+      { mcpServers: { second: { type: "stdio", command: "second" } } },
     );
-    expect(JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT).toContain("poll 必须为 0");
+    expect(Object.keys(merged.mcpServers)).toEqual(["first", "second"]);
   });
 
-  test("forces Jimeng generation submits to stay non-blocking", () => {
-    expect(
-      normalizeJimengMcpRequest({
-        method: "tools/call",
-        params: {
-          name: "dreamina_text2image",
-          arguments: {
-            prompt: "cat",
-            poll: 60,
-          },
-        },
-      }),
-    ).toEqual({
-      method: "tools/call",
-      params: {
-        name: "dreamina_text2image",
-        arguments: {
-          prompt: "cat",
-          poll: 0,
-        },
-      },
+  test("keeps malformed and truncated generic MCP JSON strict", () => {
+    const payloads = [
+      '{"method":"tools/call" "params":{}}',
+      '{"method":"tools/call","params":{"name":"tool",}}',
+      '{"method":"tools/call","params":{"name":"tool"}',
+    ];
+    payloads.forEach((payload) => {
+      expect(() =>
+        extractMcpJson(["```json:mcp:demo", payload, "```"].join("\n")),
+      ).toThrow();
     });
   });
 
-  test("resolves MCP headers from environment variables", () => {
-    process.env.JIMENG_MCP_TOKEN = "test-token";
+  test("rejects multiple MCP requests in one assistant message", () => {
+    const request = JSON.stringify({
+      method: "tools/call",
+      params: { name: "lookup", arguments: { query: "sunrise" } },
+    });
+    const content = [
+      "```json:mcp:demo",
+      request,
+      "```",
+      "```json:mcp:demo",
+      request,
+      "```",
+    ].join("\n");
+    expect(() => extractMcpJson(content)).toThrow(
+      "Multiple MCP tool requests are not supported",
+    );
+  });
 
+  test("resolves MCP headers from environment variables", () => {
+    process.env.DEMO_MCP_TOKEN = "test-token";
     expect(
       resolveConfigHeaders(
-        { Authorization: "Bearer ${JIMENG_MCP_TOKEN}" },
-        "jimeng-mcp",
+        { Authorization: "Bearer ${DEMO_MCP_TOKEN}" },
+        "demo",
       ),
     ).toEqual({ Authorization: "Bearer test-token" });
   });
 
-  test("throws when a required MCP token env var is missing", () => {
-    delete process.env.JIMENG_MCP_TOKEN;
-
+  test("throws when a required MCP environment variable is missing", () => {
+    delete process.env.DEMO_MCP_TOKEN;
     expect(() =>
       resolveConfigHeaders(
-        { Authorization: "Bearer ${JIMENG_MCP_TOKEN}" },
-        "jimeng-mcp",
+        { Authorization: "Bearer ${DEMO_MCP_TOKEN}" },
+        "demo",
       ),
-    ).toThrow("JIMENG_MCP_TOKEN");
+    ).toThrow("DEMO_MCP_TOKEN");
   });
 });

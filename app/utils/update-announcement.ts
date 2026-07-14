@@ -63,7 +63,7 @@ export function parseUpdateAnnouncementJson(
           }
 
           const source = section as { title?: unknown; items?: unknown };
-          const title = cleanText(source.title) || "更新";
+          const title = cleanText(source.title);
           const items = parseItems(source.items);
 
           return items.length > 0 ? [{ title, items }] : [];
@@ -72,7 +72,7 @@ export function parseUpdateAnnouncementJson(
 
     const rootItems = parseItems(input.items);
     if (rootItems.length > 0) {
-      sections.unshift({ title: "更新", items: rootItems });
+      sections.unshift({ title: "", items: rootItems });
     }
 
     if (sections.length === 0) {

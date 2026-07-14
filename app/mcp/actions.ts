@@ -8,6 +8,7 @@ import {
 import { MCPClientLogger } from "./logger";
 import {
   McpConfigData,
+  McpChatServerState,
   McpRequestMessage,
   ServerConfig,
   ServerStatusResponse,
@@ -16,21 +17,43 @@ import fs from "fs/promises";
 import path from "path";
 import { getServerSideConfig } from "../config/server";
 import { BUILTIN_MCP_CONFIG, mergeMcpConfig } from "./config";
-import { JIMENG_MCP_SERVER_ID, normalizeJimengMcpRequest } from "./jimeng";
 import { cookies } from "next/headers";
 import {
   ACCESS_SESSION_COOKIE_NAME,
-  validateAccessSessionCookieValue,
+  resolveAccessSessionCookieValue,
 } from "../utils/access-session";
 import {
   clientsMap,
   getInitializeMcpSystemPromise,
+  runMcpConfigMutation,
+  runMcpClientLifecycle,
   setInitializeMcpSystemPromise,
 } from "./runtime";
+import Ajv from "ajv";
+import Ajv2020 from "ajv/dist/2020";
+import addFormats from "ajv-formats";
 
 const logger = new MCPClientLogger("MCP Actions");
 const CONFIG_PATH = path.join(process.cwd(), "app/mcp/mcp_config.json");
+let configWriteSequence = 0;
+const RETIRED_MCP_SERVER_IDS = new Set(["jimeng-mcp"]);
 const MCP_INITIALIZATION_RETRY_DELAYS_MS = [500, 1500];
+type McpArgumentValidator = (
+  input: unknown,
+) =>
+  | { valid: true; errorMessage: undefined }
+  | { valid: false; errorMessage: string };
+const mcpArgumentValidators = new WeakMap<object, McpArgumentValidator>();
+const MAX_MCP_ARGUMENT_BYTES = 64 * 1024;
+const MAX_MCP_ARGUMENT_DEPTH = 16;
+const MAX_MCP_ARRAY_LENGTH = 1000;
+const JSON_SCHEMA_DRAFT_07_ID = "http://json-schema.org/draft-07/schema";
+const JSON_SCHEMA_2020_12_ID = "https://json-schema.org/draft/2020-12/schema";
+const DANGEROUS_MCP_ARGUMENT_KEYS = new Set([
+  "__proto__",
+  "prototype",
+  "constructor",
+]);
 const RETRYABLE_MCP_INITIALIZATION_ERROR_CODES = new Set([
   "UND_ERR_CONNECT_TIMEOUT",
   "UND_ERR_HEADERS_TIMEOUT",
@@ -41,6 +64,137 @@ const RETRYABLE_MCP_INITIALIZATION_ERROR_CODES = new Set([
   "ECONNREFUSED",
   "EAI_AGAIN",
 ]);
+
+function getExecutableServerConfig(
+  clientId: string,
+  serverConfig: ServerConfig,
+): ServerConfig {
+  if (serverConfig.status !== "paused") {
+    return serverConfig;
+  }
+
+  throw new Error(`Server ${clientId} is paused`);
+}
+
+function isRetiredMcpServer(clientId: string) {
+  return RETIRED_MCP_SERVER_IDS.has(clientId);
+}
+
+function assertMcpServerIsSupported(clientId: string) {
+  if (isRetiredMcpServer(clientId)) {
+    throw new Error(`Server ${clientId} is retired`);
+  }
+}
+
+function normalizeMcpConfig(config: McpConfigData): McpConfigData {
+  const mcpServers = Object.fromEntries(
+    Object.entries(config.mcpServers).filter(
+      ([clientId]) => !isRetiredMcpServer(clientId),
+    ),
+  );
+  if (
+    Object.keys(mcpServers).length === Object.keys(config.mcpServers).length
+  ) {
+    return config;
+  }
+  return { ...config, mcpServers };
+}
+
+function assertMcpArgumentLimits(value: unknown, depth = 0): void {
+  if (depth > MAX_MCP_ARGUMENT_DEPTH) {
+    throw new Error("MCP tool arguments exceed the maximum depth");
+  }
+  if (Array.isArray(value)) {
+    if (value.length > MAX_MCP_ARRAY_LENGTH) {
+      throw new Error("MCP tool arguments exceed the maximum array length");
+    }
+    value.forEach((item) => assertMcpArgumentLimits(item, depth + 1));
+    return;
+  }
+  if (!value || typeof value !== "object") return;
+  for (const [key, item] of Object.entries(value)) {
+    if (DANGEROUS_MCP_ARGUMENT_KEYS.has(key)) {
+      throw new Error("MCP tool arguments contain a forbidden key");
+    }
+    assertMcpArgumentLimits(item, depth + 1);
+  }
+}
+
+function getMcpSchemaDialect(inputSchema: object) {
+  const schemaId = (inputSchema as { $schema?: unknown }).$schema;
+  if (schemaId === undefined) return "2020-12" as const;
+  if (typeof schemaId !== "string") {
+    throw new Error("MCP tool input schema dialect is invalid");
+  }
+
+  const normalizedSchemaId = schemaId.endsWith("#")
+    ? schemaId.slice(0, -1)
+    : schemaId;
+  if (normalizedSchemaId === JSON_SCHEMA_2020_12_ID) {
+    return "2020-12" as const;
+  }
+  if (normalizedSchemaId === JSON_SCHEMA_DRAFT_07_ID) {
+    return "draft-07" as const;
+  }
+  throw new Error("MCP tool input schema dialect is unsupported");
+}
+
+function createMcpArgumentValidator(inputSchema: object) {
+  const options = {
+    strict: false,
+    validateFormats: true,
+    validateSchema: true,
+    allErrors: true,
+  };
+  const ajv =
+    getMcpSchemaDialect(inputSchema) === "2020-12"
+      ? new Ajv2020(options)
+      : new Ajv(options);
+  addFormats(ajv);
+  const validate = ajv.compile(inputSchema);
+  if ("$async" in validate && validate.$async === true) {
+    throw new Error("MCP tool input schema cannot require async validation");
+  }
+  const validator: McpArgumentValidator = (input) => {
+    if (validate(input) === true) {
+      return { valid: true, errorMessage: undefined };
+    }
+    return {
+      valid: false,
+      errorMessage: ajv.errorsText(validate.errors),
+    };
+  };
+  return validator;
+}
+
+function validateMcpToolArguments(
+  inputSchema: object | undefined,
+  args: Record<string, unknown>,
+) {
+  const serialized = JSON.stringify(args);
+  if (
+    new TextEncoder().encode(serialized).byteLength > MAX_MCP_ARGUMENT_BYTES
+  ) {
+    throw new Error("MCP tool arguments exceed the maximum size");
+  }
+  assertMcpArgumentLimits(args);
+  if (!inputSchema || Array.isArray(inputSchema)) {
+    throw new Error("MCP tool input schema is missing or invalid");
+  }
+  let validate = mcpArgumentValidators.get(inputSchema);
+  try {
+    if (!validate) {
+      validate = createMcpArgumentValidator(inputSchema);
+      mcpArgumentValidators.set(inputSchema, validate);
+    }
+  } catch {
+    throw new Error("MCP tool input schema is invalid");
+  }
+  const validation = validate(args);
+  if (!validation.valid) {
+    throw new Error(`Invalid MCP tool arguments: ${validation.errorMessage}`);
+  }
+}
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -148,33 +302,44 @@ async function createInitializedClientWithRetry(
   throw new Error(`Failed to initialize client [${clientId}]`);
 }
 
-async function auth() {
+type McpAuthScope = "use" | "manage";
+
+async function auth(scope: McpAuthScope = "use") {
   const serverConfig = getServerSideConfig();
   if (!serverConfig.enableMcp) {
     throw new Error("MCP is disabled");
   }
 
   if (!serverConfig.needCode) {
+    if (scope === "manage" && process.env.NODE_ENV === "production") {
+      throw new Error("Administrator access is required to manage MCP");
+    }
     return { authorized: true };
   }
 
   const sessionCookie = cookies().get(ACCESS_SESSION_COOKIE_NAME)?.value;
-  if (!validateAccessSessionCookieValue(sessionCookie)) {
+  const accessProfile = resolveAccessSessionCookieValue(sessionCookie);
+  if (!accessProfile) {
     throw new Error("Unauthorized MCP action");
   }
+  if (scope === "manage" && accessProfile.tier !== "admin") {
+    throw new Error("Administrator access is required to manage MCP");
+  }
 
-  return { authorized: true };
+  return { authorized: true, accessProfile };
 }
 
 async function readMcpConfigFromFile(): Promise<McpConfigData> {
   try {
     const configStr = await fs.readFile(CONFIG_PATH, "utf-8");
-    return mergeMcpConfig(BUILTIN_MCP_CONFIG, JSON.parse(configStr));
+    return normalizeMcpConfig(
+      mergeMcpConfig(BUILTIN_MCP_CONFIG, JSON.parse(configStr)),
+    );
   } catch (error) {
     if ((error as NodeJS.ErrnoException)?.code !== "ENOENT") {
       logger.error(`Failed to load MCP config, using default config: ${error}`);
     }
-    return BUILTIN_MCP_CONFIG;
+    return normalizeMcpConfig(BUILTIN_MCP_CONFIG);
   }
 }
 
@@ -182,7 +347,7 @@ async function readMcpConfigFromFile(): Promise<McpConfigData> {
 export async function getClientsStatus(): Promise<
   Record<string, ServerStatusResponse>
 > {
-  await auth();
+  await auth("manage");
   const config = await readMcpConfigFromFile();
   const result: Record<string, ServerStatusResponse> = {};
 
@@ -232,23 +397,27 @@ export async function getClientsStatus(): Promise<
 
 // 获取客户端工具
 export async function getClientTools(clientId: string) {
-  const session = await auth();
+  await auth("manage");
+  if (isRetiredMcpServer(clientId)) return null;
   return clientsMap.get(clientId)?.tools ?? null;
 }
 
 // 获取可用客户端数量
 export async function getAvailableClientsCount() {
-  const session = await auth();
+  await auth();
   let count = 0;
-  clientsMap.forEach((map) => !map.errorMsg && count++);
+  clientsMap.forEach((map, clientId) => {
+    if (!isRetiredMcpServer(clientId) && !map.errorMsg) count++;
+  });
   return count;
 }
 
 // 获取所有客户端工具
 export async function getAllTools() {
-  const session = await auth();
+  await auth();
   const result = [];
   for (const [clientId, status] of clientsMap.entries()) {
+    if (isRetiredMcpServer(clientId)) continue;
     result.push({
       clientId,
       tools: status.tools,
@@ -257,14 +426,50 @@ export async function getAllTools() {
   return result;
 }
 
+// Chat only needs a non-sensitive projection of the runtime/config state.
+// Raw commands, URLs, headers, arguments, and environment values remain admin-only.
+export async function getMcpChatServerStates(): Promise<
+  Record<string, McpChatServerState>
+> {
+  await auth();
+  const config = await readMcpConfigFromFile();
+  const result: Record<string, McpChatServerState> = {};
+
+  for (const [clientId, serverConfig] of Object.entries(config.mcpServers)) {
+    const runtime = clientsMap.get(clientId);
+    const status =
+      serverConfig.status === "paused"
+        ? "paused"
+        : runtime?.errorMsg
+        ? "error"
+        : runtime?.client
+        ? "active"
+        : runtime && runtime.errorMsg === null
+        ? "initializing"
+        : "undefined";
+    result[clientId] = {
+      status,
+      chatDefaultEnabled: serverConfig.chatDefaultEnabled !== false,
+    };
+  }
+
+  return result;
+}
+
 // 初始化单个客户端
-async function initializeSingleClient(
+async function initializeSingleClientLocked(
   clientId: string,
   serverConfig: ServerConfig,
 ) {
+  assertMcpServerIsSupported(clientId);
   // 如果服务器状态是暂停，则不初始化
   if (serverConfig.status === "paused") {
     logger.info(`Skipping initialization for paused client [${clientId}]`);
+    return;
+  }
+
+  const currentClient = clientsMap.get(clientId);
+  if (currentClient?.client && !currentClient.errorMsg) {
     return;
   }
 
@@ -298,17 +503,50 @@ async function initializeSingleClient(
   }
 }
 
+async function initializeSingleClient(clientId: string) {
+  return runMcpClientLifecycle(clientId, async () => {
+    const currentConfig = await readMcpConfigFromFile();
+    const serverConfig = currentConfig.mcpServers[clientId];
+    if (!serverConfig) {
+      throw new Error(`Server ${clientId} not found`);
+    }
+    return initializeSingleClientLocked(clientId, serverConfig);
+  });
+}
+
+/**
+ * Remove a client from the executable registry before closing its transport.
+ * A transport close can reject (for example when the child process has already
+ * exited), but no caller should be able to execute against that stale client
+ * while the close is pending or after it fails.
+ */
+async function detachClient(clientId: string) {
+  const current = clientsMap.get(clientId);
+  clientsMap.delete(clientId);
+  if (current?.client) {
+    await removeClient(current.client);
+  }
+}
+
+function detachRetiredClientsBestEffort() {
+  RETIRED_MCP_SERVER_IDS.forEach((clientId) => {
+    const current = clientsMap.get(clientId);
+    clientsMap.delete(clientId);
+    if (!current?.client) return;
+    void removeClient(current.client).catch((error) => {
+      logger.error(
+        `Failed to close retired client [${clientId}]: ${formatError(error)}`,
+      );
+    });
+  });
+}
+
 // 初始化系统
 export async function initializeMcpSystem() {
   const authResult = await auth();
   if (!authResult.authorized) {
     throw new Error("Unauthorized MCP action");
   }
-  if (clientsMap.size > 0) {
-    logger.info("MCP system already initialized, skipping...");
-    return;
-  }
-
   const pendingInitializeMcpSystemPromise = getInitializeMcpSystemPromise();
   if (pendingInitializeMcpSystemPromise) {
     logger.info("MCP system initialization already in progress, reusing...");
@@ -318,19 +556,21 @@ export async function initializeMcpSystem() {
   const initializeMcpSystemPromise = (async () => {
     logger.info("MCP Actions starting...");
     try {
-      // 检查是否已有活跃的客户端
-      if (clientsMap.size > 0) {
-        logger.info("MCP system already initialized, skipping...");
-        return;
-      }
-
+      detachRetiredClientsBestEffort();
       const config = await readMcpConfigFromFile();
       // 初始化所有客户端
-      await Promise.all(
-        Object.entries(config.mcpServers).map(([clientId, serverConfig]) =>
-          initializeSingleClient(clientId, serverConfig),
+      const initializationResults = await Promise.allSettled(
+        Object.keys(config.mcpServers).map((clientId) =>
+          initializeSingleClient(clientId),
         ),
       );
+      const failedInitialization = initializationResults.find(
+        (result): result is PromiseRejectedResult =>
+          result.status === "rejected",
+      );
+      if (failedInitialization) {
+        throw failedInitialization.reason;
+      }
       return config;
     } catch (error) {
       logger.error(`Failed to initialize MCP system: ${error}`);
@@ -346,31 +586,39 @@ export async function initializeMcpSystem() {
 
 // 添加服务器
 export async function addMcpServer(clientId: string, config: ServerConfig) {
-  const session = await auth();
+  await auth("manage");
+  assertMcpServerIsSupported(clientId);
   try {
-    const currentConfig = await readMcpConfigFromFile();
-    const isNewServer = !(clientId in currentConfig.mcpServers);
+    return await runMcpClientLifecycle(clientId, async () => {
+      let shouldInitialize = false;
+      const newConfig = await mutateMcpConfig((currentConfig) => {
+        const existingConfig = currentConfig.mcpServers[clientId];
+        const status = config.status ?? existingConfig?.status ?? "active";
+        const nextServerConfig: ServerConfig = {
+          ...config,
+          status,
+        };
+        // Any non-paused edit replaces the runtime client so credentials,
+        // headers, args, URL, and env are never served from an old snapshot.
+        shouldInitialize = nextServerConfig.status !== "paused";
+        return {
+          ...currentConfig,
+          mcpServers: {
+            ...currentConfig.mcpServers,
+            [clientId]: nextServerConfig,
+          },
+        };
+      });
 
-    // 如果是新服务器，设置默认状态为 active
-    if (isNewServer && !config.status) {
-      config.status = "active";
-    }
-
-    const newConfig = {
-      ...currentConfig,
-      mcpServers: {
-        ...currentConfig.mcpServers,
-        [clientId]: config,
-      },
-    };
-    await updateMcpConfig(newConfig);
-
-    // 只有新服务器或状态为 active 的服务器才初始化
-    if (isNewServer || config.status === "active") {
-      await initializeSingleClient(clientId, config);
-    }
-
-    return newConfig;
+      const serverConfig = newConfig.mcpServers[clientId];
+      if (serverConfig) {
+        await detachClient(clientId);
+        if (shouldInitialize) {
+          await initializeSingleClientLocked(clientId, serverConfig);
+        }
+      }
+      return newConfig;
+    });
   } catch (error) {
     logger.error(`Failed to add server [${clientId}]: ${error}`);
     throw error;
@@ -378,67 +626,52 @@ export async function addMcpServer(clientId: string, config: ServerConfig) {
 }
 
 export async function activateMcpClient(clientId: string) {
-  await auth();
-  const currentConfig = await readMcpConfigFromFile();
-  const serverConfig = currentConfig.mcpServers[clientId];
-  if (!serverConfig) {
-    throw new Error(`Server ${clientId} not found`);
-  }
-
-  const currentClient = clientsMap.get(clientId);
-  if (currentClient?.client && !currentClient.errorMsg) {
-    return getClientsStatus();
-  }
-
-  await initializeSingleClient(clientId, {
-    ...serverConfig,
-    status: "active",
-  });
-
-  return getClientsStatus();
-}
-
-export async function deactivateMcpClient(clientId: string) {
-  const session = await auth();
-  const client = clientsMap.get(clientId);
-  if (client?.client) {
-    await removeClient(client.client);
-  }
-  clientsMap.delete(clientId);
-  return getClientsStatus();
-}
-
-// 暂停服务器
-export async function pauseMcpServer(clientId: string) {
-  const session = await auth();
-  try {
+  await auth("manage");
+  await runMcpClientLifecycle(clientId, async () => {
     const currentConfig = await readMcpConfigFromFile();
     const serverConfig = currentConfig.mcpServers[clientId];
     if (!serverConfig) {
       throw new Error(`Server ${clientId} not found`);
     }
+    await initializeSingleClientLocked(
+      clientId,
+      getExecutableServerConfig(clientId, serverConfig),
+    );
+  });
+}
 
-    // 先更新配置
-    const newConfig: McpConfigData = {
-      ...currentConfig,
-      mcpServers: {
-        ...currentConfig.mcpServers,
-        [clientId]: {
-          ...serverConfig,
-          status: "paused",
-        },
-      },
-    };
-    await updateMcpConfig(newConfig);
+export async function deactivateMcpClient(clientId: string) {
+  await auth("manage");
+  await runMcpClientLifecycle(clientId, async () => {
+    await detachClient(clientId);
+  });
+}
 
-    // 然后关闭客户端
-    const client = clientsMap.get(clientId);
-    if (client?.client) {
-      await removeClient(client.client);
-    }
-    clientsMap.delete(clientId);
+// 暂停服务器
+export async function pauseMcpServer(clientId: string) {
+  await auth("manage");
+  try {
+    return await runMcpClientLifecycle(clientId, async () => {
+      const newConfig = await mutateMcpConfig((currentConfig) => {
+        const serverConfig = currentConfig.mcpServers[clientId];
+        if (!serverConfig) {
+          throw new Error(`Server ${clientId} not found`);
+        }
+        return {
+          ...currentConfig,
+          mcpServers: {
+            ...currentConfig.mcpServers,
+            [clientId]: {
+              ...serverConfig,
+              status: "paused",
+            },
+          },
+        };
+      });
 
-    return newConfig;
+      await detachClient(clientId);
+      return newConfig;
+    });
   } catch (error) {
     logger.error(`Failed to pause server [${clientId}]: ${error}`);
     throw error;
@@ -447,55 +680,62 @@ export async function pauseMcpServer(clientId: string) {
 
 // 恢复服务器
 export async function resumeMcpServer(clientId: string): Promise<void> {
-  const session = await auth();
+  await auth("manage");
   try {
-    const currentConfig = await readMcpConfigFromFile();
-    const serverConfig = currentConfig.mcpServers[clientId];
-    if (!serverConfig) {
-      throw new Error(`Server ${clientId} not found`);
-    }
-
-    // 先尝试初始化客户端
-    logger.info(`Trying to initialize client [${clientId}]...`);
-    try {
-      const { client, tools } = await createInitializedClientWithRetry(
-        clientId,
-        serverConfig,
-      );
-      clientsMap.set(clientId, { client, tools, errorMsg: null });
-      logger.success(`Client [${clientId}] initialized successfully`);
-
-      // 初始化成功后更新配置
-      const newConfig: McpConfigData = {
-        ...currentConfig,
-        mcpServers: {
-          ...currentConfig.mcpServers,
-          [clientId]: {
-            ...serverConfig,
-            status: "active" as const,
-          },
-        },
-      };
-      await updateMcpConfig(newConfig);
-    } catch (error) {
+    await runMcpClientLifecycle(clientId, async () => {
       const currentConfig = await readMcpConfigFromFile();
       const serverConfig = currentConfig.mcpServers[clientId];
-
-      // 如果配置中存在该服务器，则更新其状态为 error
-      if (serverConfig) {
-        serverConfig.status = "error";
-        await updateMcpConfig(currentConfig);
+      if (!serverConfig) {
+        throw new Error(`Server ${clientId} not found`);
       }
 
-      // 初始化失败
-      clientsMap.set(clientId, {
-        client: null,
-        tools: null,
-        errorMsg: error instanceof Error ? error.message : String(error),
-      });
-      logger.error(`Failed to initialize client [${clientId}]: ${error}`);
-      throw error;
-    }
+      logger.info(`Trying to initialize client [${clientId}]...`);
+      try {
+        await initializeSingleClientLocked(clientId, {
+          ...serverConfig,
+          status: "active",
+        });
+        await mutateMcpConfig((latestConfig) => {
+          const latestServerConfig = latestConfig.mcpServers[clientId];
+          if (!latestServerConfig) {
+            throw new Error(`Server ${clientId} not found`);
+          }
+          return {
+            ...latestConfig,
+            mcpServers: {
+              ...latestConfig.mcpServers,
+              [clientId]: {
+                ...latestServerConfig,
+                status: "active" as const,
+              },
+            },
+          };
+        });
+      } catch (error) {
+        await mutateMcpConfig((failedConfig) => {
+          const failedServerConfig = failedConfig.mcpServers[clientId];
+          if (!failedServerConfig) return failedConfig;
+          return {
+            ...failedConfig,
+            mcpServers: {
+              ...failedConfig.mcpServers,
+              [clientId]: {
+                ...failedServerConfig,
+                status: "error" as const,
+              },
+            },
+          };
+        });
+
+        clientsMap.set(clientId, {
+          client: null,
+          tools: null,
+          errorMsg: error instanceof Error ? error.message : String(error),
+        });
+        logger.error(`Failed to initialize client [${clientId}]: ${error}`);
+        throw error;
+      }
+    });
   } catch (error) {
     logger.error(`Failed to resume server [${clientId}]: ${error}`);
     throw error;
@@ -504,24 +744,20 @@ export async function resumeMcpServer(clientId: string): Promise<void> {
 
 // 移除服务器
 export async function removeMcpServer(clientId: string) {
-  const session = await auth();
+  await auth("manage");
   try {
-    const currentConfig = await readMcpConfigFromFile();
-    const { [clientId]: _, ...rest } = currentConfig.mcpServers;
-    const newConfig = {
-      ...currentConfig,
-      mcpServers: rest,
-    };
-    await updateMcpConfig(newConfig);
+    return await runMcpClientLifecycle(clientId, async () => {
+      const newConfig = await mutateMcpConfig((currentConfig) => {
+        const { [clientId]: _, ...rest } = currentConfig.mcpServers;
+        return {
+          ...currentConfig,
+          mcpServers: rest,
+        };
+      });
 
-    // 关闭并移除客户端
-    const client = clientsMap.get(clientId);
-    if (client?.client) {
-      await removeClient(client.client);
-    }
-    clientsMap.delete(clientId);
-
-    return newConfig;
+      await detachClient(clientId);
+      return newConfig;
+    });
   } catch (error) {
     logger.error(`Failed to remove server [${clientId}]: ${error}`);
     throw error;
@@ -530,27 +766,30 @@ export async function removeMcpServer(clientId: string) {
 
 // 重启所有客户端
 export async function restartAllClients() {
-  await auth();
+  await auth("manage");
   logger.info("Restarting all clients...");
   try {
-    // 关闭所有客户端
+    detachRetiredClientsBestEffort();
+    const configBeforeRestart = await readMcpConfigFromFile();
+    const clientIds = new Set([
+      ...clientsMap.keys(),
+      ...Object.keys(configBeforeRestart.mcpServers),
+    ]);
+
     await Promise.all(
-      Array.from(clientsMap.values(), (client) =>
-        client.client ? removeClient(client.client) : Promise.resolve(),
+      Array.from(clientIds, (clientId) =>
+        runMcpClientLifecycle(clientId, async () => {
+          await detachClient(clientId);
+
+          const latestConfig = await readMcpConfigFromFile();
+          const latestServerConfig = latestConfig.mcpServers[clientId];
+          if (latestServerConfig) {
+            await initializeSingleClientLocked(clientId, latestServerConfig);
+          }
+        }),
       ),
     );
-
-    // 清空状态
-    clientsMap.clear();
-
-    // 重新初始化
-    const config = await readMcpConfigFromFile();
-    await Promise.all(
-      Object.entries(config.mcpServers).map(([clientId, serverConfig]) =>
-        initializeSingleClient(clientId, serverConfig),
-      ),
-    );
-    return config;
+    return readMcpConfigFromFile();
   } catch (error) {
     logger.error(`Failed to restart clients: ${error}`);
     throw error;
@@ -562,34 +801,50 @@ export async function executeMcpAction(
   clientId: string,
   request: McpRequestMessage,
 ) {
-  const session = await auth();
+  await auth();
+  assertMcpServerIsSupported(clientId);
+  if (
+    request.method !== "tools/call" ||
+    !request.params ||
+    typeof request.params.name !== "string" ||
+    request.params.name.length === 0 ||
+    (request.params.arguments !== undefined &&
+      (typeof request.params.arguments !== "object" ||
+        request.params.arguments === null ||
+        Array.isArray(request.params.arguments)))
+  ) {
+    throw new Error("Invalid MCP tool request");
+  }
   try {
-    let client = clientsMap.get(clientId);
-    if (!client?.client) {
+    return await runMcpClientLifecycle(clientId, async () => {
       const currentConfig = await readMcpConfigFromFile();
       const serverConfig = currentConfig.mcpServers[clientId];
-      if (
-        clientId === JIMENG_MCP_SERVER_ID &&
-        getServerSideConfig().enableMcp &&
-        serverConfig
-      ) {
-        await initializeSingleClient(clientId, {
-          ...serverConfig,
-          status: "active",
-        });
-        client = clientsMap.get(clientId);
+      if (!serverConfig) {
+        throw new Error(`Server ${clientId} not found`);
       }
-    }
+      const executableServerConfig = getExecutableServerConfig(
+        clientId,
+        serverConfig,
+      );
 
-    if (!client?.client) {
-      throw new Error(`Client ${clientId} not found`);
-    }
-    logger.info(`Executing request for [${clientId}]`);
-    const requestToExecute =
-      clientId === JIMENG_MCP_SERVER_ID
-        ? normalizeJimengMcpRequest(request)
-        : request;
-    return await executeRequest(client.client, requestToExecute);
+      const client = clientsMap.get(clientId);
+
+      if (!client?.client) {
+        throw new Error(`Client ${clientId} not found`);
+      }
+      const tool = client.tools?.tools.find(
+        (tool) => tool.name === request.params.name,
+      );
+      if (!tool) {
+        throw new Error("MCP tool is not available");
+      }
+      validateMcpToolArguments(
+        tool.inputSchema,
+        request.params.arguments ?? {},
+      );
+      logger.info(`Executing request for [${clientId}]`);
+      return executeRequest(client.client, request);
+    });
   } catch (error) {
     logger.error(`Failed to execute request for [${clientId}]: ${error}`);
     throw error;
@@ -598,24 +853,44 @@ export async function executeMcpAction(
 
 // 获取 MCP 配置文件
 export async function getMcpConfigFromFile(): Promise<McpConfigData> {
-  const session = await auth();
+  await auth("manage");
   return readMcpConfigFromFile();
+}
+
+async function mutateMcpConfig(
+  mutate: (currentConfig: McpConfigData) => McpConfigData,
+): Promise<McpConfigData> {
+  return runMcpConfigMutation(async () => {
+    const currentConfig = await readMcpConfigFromFile();
+    const nextConfig = normalizeMcpConfig(mutate(currentConfig));
+    await updateMcpConfig(nextConfig);
+    return nextConfig;
+  });
 }
 
 // 更新 MCP 配置文件
 async function updateMcpConfig(config: McpConfigData): Promise<void> {
+  const normalizedConfig = normalizeMcpConfig(config);
+  const temporaryPath = `${CONFIG_PATH}.${
+    process.pid
+  }.${Date.now()}-${configWriteSequence++}.tmp`;
   try {
     // 确保目录存在
     await fs.mkdir(path.dirname(CONFIG_PATH), { recursive: true });
-    await fs.writeFile(CONFIG_PATH, JSON.stringify(config, null, 2));
+    await fs.writeFile(
+      temporaryPath,
+      JSON.stringify(normalizedConfig, null, 2),
+    );
+    await fs.rename(temporaryPath, CONFIG_PATH);
   } catch (error) {
+    await fs.unlink(temporaryPath).catch(() => undefined);
     throw error;
   }
 }
 
 // 检查 MCP 是否启用
 export async function isMcpEnabled() {
-  const session = await auth();
+  await auth();
   try {
     const serverConfig = getServerSideConfig();
     return serverConfig.enableMcp;

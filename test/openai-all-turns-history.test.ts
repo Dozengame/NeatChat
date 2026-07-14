@@ -60,6 +60,18 @@ const recoveryTrace = (suffix: string) => [
   },
 ];
 
+const GPT_56_CONTEXT_WINDOW_TOKENS = 1_050_000;
+const GPT_56_MAX_OUTPUT_TOKENS = 128_000;
+const GPT_56_INPUT_SAFETY_MARGIN_TOKENS = 64_000;
+const GPT_56_MAX_HISTORY_TOKENS =
+  GPT_56_CONTEXT_WINDOW_TOKENS -
+  GPT_56_MAX_OUTPUT_TOKENS -
+  GPT_56_INPUT_SAFETY_MARGIN_TOKENS;
+
+function asciiTextWithEstimatedTokens(tokenCount: number, character = "x") {
+  return character.repeat(Math.ceil(tokenCount * 4));
+}
+
 describe("GPT-5.6 all_turns history", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -84,7 +96,7 @@ describe("GPT-5.6 all_turns history", () => {
     } as any);
   });
 
-  test("keeps every raw turn after clear-context despite history and token limits", async () => {
+  test("keeps every raw turn after clear-context when it fits the input budget", async () => {
     const session = useChatStore.getState().currentSession();
     session.mask.modelConfig = {
       ...useAppConfig.getState().modelConfig,
@@ -109,6 +121,152 @@ describe("GPT-5.6 all_turns history", () => {
       openaiResponseId: "resp_5",
       openaiResponsesOutput: expect.any(Array),
     });
+  });
+
+  test("counts encrypted reasoning and drops the complete oldest turn at the hard budget", async () => {
+    const session = useChatStore.getState().currentSession();
+    session.mask.modelConfig = {
+      ...useAppConfig.getState().modelConfig,
+      max_output_tokens: GPT_56_MAX_OUTPUT_TOKENS,
+    };
+    session.messages = [
+      {
+        ...message(0, "user"),
+        content: "old-user",
+      },
+      {
+        ...message(1, "assistant"),
+        content: "old-assistant",
+        openaiResponsesOutput: [
+          {
+            id: "old-reasoning",
+            type: "reasoning",
+            encrypted_content: "A".repeat(
+              GPT_56_MAX_HISTORY_TOKENS + 10_000,
+            ),
+            summary: [],
+          },
+        ],
+      },
+      {
+        ...message(2, "user"),
+        content: "recent-user",
+      },
+      {
+        ...message(3, "assistant"),
+        content: "recent-assistant",
+      },
+    ] as any;
+
+    const recent = await useChatStore
+      .getState()
+      .getMessagesWithMemory({ session });
+
+    expect(recent.map((item) => item.content)).toEqual([
+      "recent-user",
+      "recent-assistant",
+    ]);
+  });
+
+  test("subtracts the pending user input from the all-turns history budget", async () => {
+    const session = useChatStore.getState().currentSession();
+    session.mask.modelConfig = {
+      ...useAppConfig.getState().modelConfig,
+      max_output_tokens: GPT_56_MAX_OUTPUT_TOKENS,
+    };
+    session.messages = [
+      {
+        ...message(0, "user"),
+        content: asciiTextWithEstimatedTokens(100_000, "h"),
+      },
+      {
+        ...message(1, "assistant"),
+        content: "history-answer",
+        openaiResponsesOutput: undefined,
+      },
+    ] as any;
+    const pendingUserMessage = {
+      id: "pending-user",
+      date: "",
+      role: "user" as const,
+      content: asciiTextWithEstimatedTokens(800_000, "p"),
+    };
+
+    const recent = await useChatStore.getState().getMessagesWithMemory({
+      session,
+      pendingUserMessage,
+    });
+
+    expect(recent).toEqual([]);
+  });
+
+  test("fails locally when fixed input alone exceeds the hard budget", async () => {
+    const session = useChatStore.getState().currentSession();
+    session.mask.modelConfig = {
+      ...useAppConfig.getState().modelConfig,
+      max_output_tokens: GPT_56_MAX_OUTPUT_TOKENS,
+    };
+    const pendingUserMessage = {
+      id: "oversized-pending-user",
+      date: "",
+      role: "user" as const,
+      content: asciiTextWithEstimatedTokens(
+        GPT_56_MAX_HISTORY_TOKENS + 10_000,
+        "p",
+      ),
+    };
+
+    await expect(
+      useChatStore.getState().getMessagesWithMemory({
+        session,
+        pendingUserMessage,
+      }),
+    ).rejects.toThrow(
+      "OpenAI Responses fixed input exceeds the input context budget",
+    );
+  });
+
+  test("fails safely when pinned recovery traces exceed the hard budget", async () => {
+    const session = useChatStore.getState().currentSession();
+    session.mask.modelConfig = {
+      ...useAppConfig.getState().modelConfig,
+      max_output_tokens: GPT_56_MAX_OUTPUT_TOKENS,
+    };
+    session.messages = [
+      {
+        ...message(0, "user"),
+        content: "run side effect",
+        isError: true,
+      },
+      {
+        ...message(1, "assistant"),
+        content: "continuation failed",
+        isError: true,
+        openaiResponsesRecoveryPending: true,
+        openaiResponsesOutput: [
+          {
+            id: "fc_oversized",
+            type: "function_call",
+            call_id: "call_oversized",
+            name: "side_effect",
+            arguments: "{}",
+          },
+          {
+            type: "function_call_output",
+            call_id: "call_oversized",
+            output: asciiTextWithEstimatedTokens(
+              GPT_56_MAX_HISTORY_TOKENS + 10_000,
+            ),
+          },
+        ],
+      },
+    ] as any;
+
+    await expect(
+      useChatStore.getState().getMessagesWithMemory({ session }),
+    ).rejects.toThrow(
+      "OpenAI Responses recovery trace exceeds the input context budget",
+    );
   });
 
   test("builds stateful and stateless continuations from the complete retained trace", async () => {

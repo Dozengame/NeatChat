@@ -3,6 +3,7 @@ import FileIcon from "../icons/file.svg";
 import { getFileIconClass } from "../utils/file";
 import clsx from "clsx";
 import styles from "./file-attachment.module.scss";
+import Locale from "../locales";
 
 export interface FileAttachmentProps {
   fileName: string;
@@ -14,9 +15,12 @@ export interface FileAttachmentProps {
 export function FileAttachment(props: FileAttachmentProps) {
   const { fileName, fileType, fileSize, onClick } = props;
   const formattedFileSize = `${(fileSize / 1024).toFixed(2)} KB`;
-  const attachmentLabel = onClick
-    ? `文件附件：${fileName}，${fileType}，${formattedFileSize}。点击复制文件内容。`
-    : `文件附件：${fileName}，${fileType}，${formattedFileSize}。`;
+  const attachmentLabel = Locale.FileAttachment.Label(
+    fileName,
+    fileType,
+    formattedFileSize,
+    !!onClick,
+  );
   const interactiveProps = onClick
     ? {
         role: "button",
@@ -54,7 +58,7 @@ export function FileAttachment(props: FileAttachmentProps) {
           <span className={styles["file-attachment-name"]}>{fileName}</span>
           <span
             className={styles["file-attachment-meta"]}
-            aria-label={`类型 ${fileType}，大小 ${formattedFileSize}`}
+            aria-label={Locale.FileAttachment.Meta(fileType, formattedFileSize)}
           >
             <span className={styles["file-attachment-size"]}>
               {formattedFileSize}

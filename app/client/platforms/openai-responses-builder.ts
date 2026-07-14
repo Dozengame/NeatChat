@@ -4,7 +4,8 @@ import type { ResponsesFunctionTool } from "./openai-responses-tools";
 import {
   clampOpenAIResponsesMaxOutputTokens,
   isOpenAIGpt56ModelConfig,
-  isOpenAIGpt5OrNewerModelConfig,
+  isOpenAIResponsesReasoningModelConfig,
+  isOpenAIResponsesTextVerbosityModelConfig,
   normalizeOpenAIResponsesReasoningEffort,
   parseOpenAIResponsesInputImageDetail,
   parseOpenAIResponsesPromptCacheKey,
@@ -15,6 +16,7 @@ import {
   OPENAI_RESPONSES_PROMPT_CACHE_TTL,
   OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY,
   supportsOpenAIResponsesSampling,
+  supportsOpenAIResponsesStreaming,
   type OpenAIResponsesReasoningEffort,
   type OpenAIResponsesInputImageDetail,
   type OpenAIResponsesPromptCacheMode,
@@ -87,7 +89,7 @@ export interface ResponsesRequestPayload {
   tool_choice?: "auto" | "required";
   prompt_cache_key?: string;
   prompt_cache_options?: {
-    mode: OpenAIResponsesPromptCacheMode;
+    mode: Exclude<OpenAIResponsesPromptCacheMode, "disabled">;
     ttl: typeof OPENAI_RESPONSES_PROMPT_CACHE_TTL;
   };
 }
@@ -272,6 +274,14 @@ export function buildOpenAIResponsesPayload(params: {
     model: params.modelConfig.model,
     providerName: params.modelConfig.providerName,
   });
+  const supportsReasoning = isOpenAIResponsesReasoningModelConfig({
+    model: params.modelConfig.model,
+    providerName: params.modelConfig.providerName,
+  });
+  const supportsTextVerbosity = isOpenAIResponsesTextVerbosityModelConfig({
+    model: params.modelConfig.model,
+    providerName: params.modelConfig.providerName,
+  });
   const inputImageDetail = isGpt56
     ? parseOpenAIResponsesInputImageDetail(params.modelConfig.inputImageDetail)
     : undefined;
@@ -283,7 +293,9 @@ export function buildOpenAIResponsesPayload(params: {
   const payload: ResponsesRequestPayload = {
     input,
     instructions,
-    stream: params.stream,
+    stream:
+      params.stream &&
+      supportsOpenAIResponsesStreaming(params.modelConfig.model),
     model: params.modelConfig.model,
   };
 
@@ -298,12 +310,7 @@ export function buildOpenAIResponsesPayload(params: {
     );
   }
 
-  if (
-    isOpenAIGpt5OrNewerModelConfig({
-      model: params.modelConfig.model,
-      providerName: params.modelConfig.providerName,
-    })
-  ) {
+  if (supportsReasoning) {
     payload.reasoning = {
       effort: normalizeOpenAIResponsesReasoningEffort(
         params.modelConfig.reasoningEffort ||
@@ -331,27 +338,35 @@ export function buildOpenAIResponsesPayload(params: {
     const configuredCacheMode = parseOpenAIResponsesPromptCacheMode(
       params.modelConfig.promptCacheMode,
     );
-    const hasExplicitBreakpoint =
-      configuredCacheMode === "explicit" &&
-      Array.isArray(payload.input) &&
-      addExplicitPromptCacheBreakpoint(payload.input);
-    const cacheMode = hasExplicitBreakpoint ? "explicit" : "implicit";
-    payload.prompt_cache_options = {
-      mode: cacheMode,
-      ttl: OPENAI_RESPONSES_PROMPT_CACHE_TTL,
-    };
-    const promptCacheKey = parseOpenAIResponsesPromptCacheKey(
-      params.modelConfig.promptCacheKey,
-    );
-    if (promptCacheKey) {
-      payload.prompt_cache_key = promptCacheKey;
+    if (configuredCacheMode === "disabled") {
+      payload.prompt_cache_options = {
+        mode: "explicit",
+        ttl: OPENAI_RESPONSES_PROMPT_CACHE_TTL,
+      };
+    } else {
+      const hasExplicitBreakpoint =
+        configuredCacheMode === "explicit" &&
+        Array.isArray(payload.input) &&
+        addExplicitPromptCacheBreakpoint(payload.input);
+      const cacheMode = hasExplicitBreakpoint ? "explicit" : "implicit";
+      payload.prompt_cache_options = {
+        mode: cacheMode,
+        ttl: OPENAI_RESPONSES_PROMPT_CACHE_TTL,
+      };
+      const promptCacheKey = parseOpenAIResponsesPromptCacheKey(
+        params.modelConfig.promptCacheKey,
+      );
+      if (promptCacheKey) {
+        payload.prompt_cache_key = promptCacheKey;
+      }
     }
   }
 
-  const verbosity =
-    params.textVerbosity ??
-    params.modelConfig.textVerbosity ??
-    OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY;
+  const verbosity = supportsTextVerbosity
+    ? params.textVerbosity ??
+      params.modelConfig.textVerbosity ??
+      OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY
+    : undefined;
   if (verbosity || params.textFormat) {
     payload.text = {
       ...(verbosity ? { verbosity } : {}),

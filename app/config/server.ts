@@ -14,8 +14,10 @@ import {
   parseOpenAIResponsesPromptCacheMode,
   parseOpenAIResponsesReasoningContext,
   parseOpenAIResponsesReasoningEffort,
+  parseOpenAIResponsesReasoningEffortDefaults,
   parseOpenAIResponsesReasoningMode,
   parseOpenAIResponsesTextVerbosity,
+  resolveOpenAIResponsesReasoningEffortDefault,
 } from "../utils/openai-responses";
 
 declare global {
@@ -69,7 +71,7 @@ declare global {
       OPENAI_IMAGES_URL?: string; // custom image generation/edit endpoint base
       OPENAI_RESPONSES_URL?: string; // custom responses endpoint
       OPENAI_STORE_RESPONSES?: string; // store responses for OpenAI dashboard/API logs
-      OPENAI_REASONING_EFFORT?: string; // responses api reasoning effort
+      OPENAI_REASONING_EFFORT?: string; // scalar or per-model responses api reasoning effort defaults
       OPENAI_REASONING_MODE?: string; // GPT-5.6 responses reasoning mode
       OPENAI_REASONING_CONTEXT?: string; // GPT-5.6 responses reasoning context
       OPENAI_INPUT_IMAGE_DETAIL?: string; // GPT-5.6 responses input image detail
@@ -81,6 +83,7 @@ declare global {
       WEBUI_CONFIG_VERSION?: string; // public config version
       WEBUI_LOCKED_FIELDS?: string; // comma separated locked fields
       WEBUI_ALLOWED_MODELS?: string; // comma separated model@Provider list
+      WEBUI_ALLOWED_REASONING_EFFORTS?: string; // global CSV or semicolon-delimited per-model UI allowlist
       WEBUI_ANNOUNCEMENT_JSON?: string; // public update announcement shown after a new build
 
       VERCEL?: string;
@@ -159,7 +162,6 @@ declare global {
       DEFAULT_INPUT_TEMPLATE?: string;
 
       ENABLE_MCP?: string; // enable mcp functionality
-      JIMENG_MCP_TOKEN?: string; // Jimeng MCP bearer token
     }
   }
 }
@@ -221,10 +223,17 @@ export const getServerSideConfig = () => {
   const defaultTemperature =
     parseDefaultTemperature(process.env.OPENAI_TEMPERATURE) ??
     OPENAI_RESPONSES_DEFAULT_TEMPERATURE;
-  const openaiReasoningEffort = parseOpenAIResponsesReasoningEffort(
-    process.env.OPENAI_REASONING_EFFORT,
-    defaultModel,
-  );
+  const openaiReasoningEffortDefaults =
+    parseOpenAIResponsesReasoningEffortDefaults(
+      process.env.OPENAI_REASONING_EFFORT,
+    );
+  const [defaultModelName, defaultProviderName] = defaultModel.split("@");
+  const openaiReasoningEffort =
+    resolveOpenAIResponsesReasoningEffortDefault({
+      model: defaultModelName,
+      providerName: defaultProviderName,
+      defaults: openaiReasoningEffortDefaults,
+    }) ?? parseOpenAIResponsesReasoningEffort(undefined, defaultModelName);
   const openaiMaxOutputTokens = parseOpenAIMaxOutputTokens(
     process.env.OPENAI_MAX_OUTPUT_TOKENS,
     defaultModel,
@@ -307,7 +316,7 @@ export const getServerSideConfig = () => {
 
   const enableMcp = process.env.ENABLE_MCP
     ? parseEnvBoolean(process.env.ENABLE_MCP)
-    : !!process.env.JIMENG_MCP_TOKEN;
+    : false;
 
   return {
     baseUrl: process.env.BASE_URL,
@@ -317,6 +326,7 @@ export const getServerSideConfig = () => {
     openaiResponsesUrl: process.env.OPENAI_RESPONSES_URL,
     openaiStoreResponses,
     openaiReasoningEffort,
+    openaiReasoningEffortDefaults,
     openaiMaxOutputTokens,
     openaiTextVerbosity,
     openaiReasoningMode,
@@ -328,6 +338,7 @@ export const getServerSideConfig = () => {
     webuiConfigVersion: process.env.WEBUI_CONFIG_VERSION?.trim() || undefined,
     webuiLockedFields: process.env.WEBUI_LOCKED_FIELDS,
     webuiAllowedModels: process.env.WEBUI_ALLOWED_MODELS,
+    webuiAllowedReasoningEfforts: process.env.WEBUI_ALLOWED_REASONING_EFFORTS,
 
     isStability,
     stabilityUrl: process.env.STABILITY_URL,

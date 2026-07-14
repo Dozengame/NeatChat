@@ -4,29 +4,30 @@ import {
   IFLYTEK_BASE_URL,
   Iflytek,
   REQUEST_TIMEOUT_MS,
-  } from "@/app/constant";
-import { useAccessStore,
-  useAppConfig,
-  useChatStore } from "@/app/store";
+} from "@/app/constant";
+import { useAccessStore, useAppConfig } from "@/app/store";
 
-import {
-  ChatOptions,
-  LLMApi,
-  LLMModel,
-  SpeechOptions,
-} from "../types";
+import { ChatOptions, LLMApi, LLMModel, SpeechOptions } from "../types";
 import { getHeadersAsync } from "../header-loader";
 import Locale from "../../locales";
 import {
   EventStreamContentType,
   fetchEventSource,
 } from "@fortaine/fetch-event-source";
-import { prettyObject } from "@/app/utils/format";
 import { getClientConfig } from "@/app/config/client";
 import { getMessageTextContent } from "@/app/utils";
 import { fetch } from "@/app/utils/stream";
+import {
+  createStreamingRequestLifecycle,
+  withAbortTimeoutResponse,
+} from "@/app/utils/request-timeout";
+import {
+  getPublicHttpErrorMessage,
+  hasUpstreamErrorPayload,
+} from "@/app/utils/public-error";
 
 import { RequestPayload } from "./openai";
+import { mergeLLMRequestConfig } from "../request-config";
 
 export class SparkApi implements LLMApi {
   private disableListModels = true;
@@ -53,8 +54,6 @@ export class SparkApi implements LLMApi {
       baseUrl = "https://" + baseUrl;
     }
 
-    console.log("[Proxy Endpoint] ", baseUrl, path);
-
     return [baseUrl, path].join("/");
   }
 
@@ -73,14 +72,11 @@ export class SparkApi implements LLMApi {
       messages.push({ role: v.role, content });
     }
 
-    const modelConfig = {
-      ...useAppConfig.getState().modelConfig,
-      ...useChatStore.getState().currentSession().mask.modelConfig,
-      ...{
-        model: options.config.model,
-        providerName: options.config.providerName,
-      },
-    };
+    const modelConfig = mergeLLMRequestConfig(
+      useAppConfig.getState().modelConfig,
+      useAppConfig.getState().modelConfig,
+      options.config,
+    );
 
     const requestPayload: RequestPayload = {
       messages,
@@ -93,8 +89,6 @@ export class SparkApi implements LLMApi {
       // Provider-specific output limits are intentionally not sent here.
     };
 
-    console.log("[Request] Spark payload: ", requestPayload);
-
     const shouldStream = !!options.config.stream;
     const controller = new AbortController();
     options.onController?.(controller);
@@ -105,25 +99,27 @@ export class SparkApi implements LLMApi {
         method: "POST",
         body: JSON.stringify(requestPayload),
         signal: controller.signal,
-        headers: await getHeadersAsync(),
+        headers: await getHeadersAsync(false, modelConfig.providerName),
       };
-
-      // Make a fetch request
-      const requestTimeoutId = setTimeout(
-        () => controller.abort(),
-        REQUEST_TIMEOUT_MS,
-      );
 
       if (shouldStream) {
         let responseText = "";
         let remainText = "";
-        let finished = false;
         let responseRes: Response;
+        const lifecycle = createStreamingRequestLifecycle({
+          controller,
+          timeoutMs: REQUEST_TIMEOUT_MS,
+          getMessage: () => responseText + remainText,
+          getResponse: () => responseRes,
+          onFinish: options.onFinish,
+          onError: options.onError,
+        });
 
         // Animate response text to make it look smooth
         function animateResponseText() {
-          if (finished || controller.signal.aborted) {
+          if (lifecycle.isSettled() || controller.signal.aborted) {
             responseText += remainText;
+            remainText = "";
             console.log("[Response Animation] finished");
             return;
           }
@@ -142,61 +138,71 @@ export class SparkApi implements LLMApi {
         // Start animation
         animateResponseText();
 
-        const finish = () => {
-          if (!finished) {
-            finished = true;
-            options.onFinish(responseText + remainText, responseRes);
-          }
-        };
-
-        controller.signal.onabort = finish;
-
-        fetchEventSource(chatPath, {
+        void fetchEventSource(chatPath, {
           fetch: fetch as any,
           ...chatPayload,
           async onopen(res) {
-            clearTimeout(requestTimeoutId);
+            lifecycle.refresh();
             const contentType = res.headers.get("content-type");
             console.log("[Spark] request response content type: ", contentType);
             responseRes = res;
-            if (contentType?.startsWith("text/plain")) {
-              responseText = await res.clone().text();
-              return finish();
-            }
-
             // Handle different error scenarios
             if (
               !res.ok ||
-              !res.headers
-                .get("content-type")
-                ?.startsWith(EventStreamContentType) ||
-              res.status !== 200
+              (!contentType?.startsWith("text/plain") &&
+                (!contentType?.startsWith(EventStreamContentType) ||
+                  res.status !== 200))
             ) {
-              let extraInfo = await res.clone().text();
+              let responsePayload: unknown;
               try {
-                const resJson = await res.clone().json();
-                extraInfo = prettyObject(resJson);
-              } catch {}
-
-              if (res.status === 401) {
-                extraInfo = Locale.Error.Unauthorized;
+                responsePayload = await res.clone().json();
+              } catch {
+                responsePayload = { message: await res.clone().text() };
               }
 
-              options.onError?.(
+              lifecycle.fail(
                 new Error(
-                  `Request failed with status ${res.status}: ${extraInfo}`,
+                  getPublicHttpErrorMessage({
+                    response: res,
+                    payload: responsePayload,
+                    fallback:
+                      res.status === 401
+                        ? Locale.Error.Unauthorized
+                        : Locale.Error.RequestFailed(
+                            res.ok ? undefined : res.status,
+                          ),
+                    accessRestrictedMessage: Locale.Error.AccessRestricted,
+                  }),
                 ),
               );
-              return finish();
+              return;
+            }
+            if (contentType?.startsWith("text/plain")) {
+              responseText = await res.clone().text();
+              return lifecycle.finish();
             }
           },
           onmessage(msg) {
-            if (msg.data === "[DONE]" || finished) {
-              return finish();
+            lifecycle.refresh();
+            if (msg.data === "[DONE]" || lifecycle.isSettled()) {
+              return lifecycle.finish();
             }
             const text = msg.data;
             try {
               const json = JSON.parse(text);
+              if (hasUpstreamErrorPayload(json)) {
+                lifecycle.fail(
+                  new Error(
+                    getPublicHttpErrorMessage({
+                      response: responseRes,
+                      payload: json,
+                      fallback: Locale.Error.RequestFailed(),
+                      accessRestrictedMessage: Locale.Error.AccessRestricted,
+                    }),
+                  ),
+                );
+                return;
+              }
               const choices = json.choices as Array<{
                 delta: { content: string };
               }>;
@@ -205,38 +211,59 @@ export class SparkApi implements LLMApi {
               if (delta) {
                 remainText += delta;
               }
-            } catch (e) {
-              console.error("[Request] parse error", text);
-              options.onError?.(new Error(`Failed to parse response: ${text}`));
+            } catch {
+              console.error("[Request] failed to parse a streaming event");
+              lifecycle.fail(new Error("Failed to parse streaming response"));
             }
           },
           onclose() {
-            finish();
+            lifecycle.finish();
           },
           onerror(e) {
-            options.onError?.(e);
             throw e;
           },
           openWhenHidden: true,
-        });
+        })
+          .catch(lifecycle.fail)
+          .finally(lifecycle.cancel);
       } else {
-        const res = await fetch(chatPath, chatPayload);
-        clearTimeout(requestTimeoutId);
+        const { response: res, body: responseBody } =
+          await withAbortTimeoutResponse({
+            controller,
+            timeoutMs: REQUEST_TIMEOUT_MS,
+            operation: () => fetch(chatPath, chatPayload),
+            consume: async (response) => {
+              const text = await response.text();
+              let payload: unknown;
+              try {
+                payload = JSON.parse(text);
+              } catch {}
+              return { text, payload };
+            },
+          });
 
-        if (!res.ok) {
-          const errorText = await res.text();
-          options.onError?.(
-            new Error(`Request failed with status ${res.status}: ${errorText}`),
+        const resJson = responseBody.payload;
+        if (!res.ok || !resJson || hasUpstreamErrorPayload(resJson)) {
+          throw new Error(
+            getPublicHttpErrorMessage({
+              response: res,
+              payload: resJson,
+              fallback:
+                res.status === 401
+                  ? Locale.Error.Unauthorized
+                  : Locale.Error.RequestFailed(res.ok ? undefined : res.status),
+              accessRestrictedMessage: Locale.Error.AccessRestricted,
+            }),
           );
-          return;
         }
-
-        const resJson = await res.json();
         const message = this.extractMessage(resJson);
+        if (!message) {
+          throw new Error(Locale.Error.RequestFailed());
+        }
         options.onFinish(message, res);
       }
     } catch (e) {
-      console.log("[Request] failed to make a chat request", e);
+      console.error("[iFlytek] chat request failed");
       options.onError?.(e as Error);
     }
   }

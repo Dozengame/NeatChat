@@ -3,7 +3,7 @@ import { getModelProvider } from "./model";
 import {
   getMaxOutputTokensForReasoningEffort,
   isOpenAIResponsesReasoningEffort,
-  isOpenAIGpt5OrNewerModelConfig,
+  isOpenAIResponsesReasoningModelConfig,
   normalizeOpenAIResponsesReasoningEffort,
   OpenAIChatReasoningEffort,
 } from "./openai-responses";
@@ -54,7 +54,7 @@ export function resolveServerModelConfig(config: ServerModelDefaults) {
 
   if (
     isOpenAIResponsesReasoningEffort(reasoningEffort) &&
-    isOpenAIGpt5OrNewerModelConfig({
+    isOpenAIResponsesReasoningModelConfig({
       model: modelConfig.model,
       providerName: modelConfig.providerName,
     })

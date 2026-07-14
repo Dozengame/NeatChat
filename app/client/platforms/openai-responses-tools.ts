@@ -6,6 +6,11 @@ import {
 import type { ChatMessageTool } from "@/app/store";
 import type { FunctionToolItem } from "@/app/store/plugin";
 import { fetch as tauriFetch } from "@/app/utils/stream";
+import {
+  getAccessRestrictedPublicErrorMessage,
+  getPublicUpstreamErrorMessage,
+} from "@/app/utils/public-error";
+import Locale from "@/app/locales";
 import type { ResponsesRequestPayload } from "./openai-responses-builder";
 
 export type ResponsesFunctionTool = {
@@ -37,6 +42,7 @@ export type PluginFunctionExecutor = (
 type CachedToolExecution = {
   signature: string;
   output: ResponsesFunctionCallOutput;
+  outcome: "completed" | "unknown";
 };
 
 export type ResponsesRoundResult = {
@@ -69,6 +75,15 @@ type ToolCallbacks = {
 const FUNCTION_NAME_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 const DEFAULT_MAX_TOOL_ROUNDS = 4;
 const DEFAULT_MAX_TOOL_CALLS = 8;
+const TOOL_OUTCOME_UNKNOWN_MESSAGE =
+  "Tool execution outcome is unknown; do not retry automatically.";
+
+class ToolExecutionOutcomeUnknownError extends Error {
+  constructor() {
+    super(TOOL_OUTCOME_UNKNOWN_MESSAGE);
+    this.name = "ToolExecutionOutcomeUnknownError";
+  }
+}
 
 function cloneSchema(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object") {
@@ -115,6 +130,14 @@ export function adaptPluginToolsForResponses(
   return { tools: responsesTools, executors };
 }
 
+export function hasPendingResponsesToolRecovery(
+  messages: readonly { openaiResponsesRecoveryPending?: boolean }[],
+) {
+  return messages.some(
+    (message) => message.openaiResponsesRecoveryPending === true,
+  );
+}
+
 export function extractOpenAIResponsesText(response: any) {
   const outputText =
     typeof response?.output_text === "string"
@@ -146,7 +169,7 @@ export function extractOpenAIResponsesText(response: any) {
   const sources = Array.from(citations.entries())
     .map(([url, title]) => `- [${title}](${url})`)
     .join("\n");
-  return `${text}\n\n来源：\n${sources}`;
+  return `${text}\n\n${Locale.Chat.SourcesHeading}:\n${sources}`;
 }
 
 function isResponsesFunctionCall(
@@ -172,20 +195,32 @@ export function createResponsesRoundCollector() {
       if (!event || typeof event !== "object") return undefined;
 
       if (event.type === "response.error" || event.type === "error") {
-        const message =
+        const detail =
           typeof event.error?.message === "string"
             ? event.error.message
             : typeof event.message === "string"
             ? event.message
-            : "OpenAI Responses request failed";
-        throw new Error(message);
+            : undefined;
+        throw new Error(
+          getPublicUpstreamErrorMessage({
+            fallback: "OpenAI Responses request failed",
+            payload: event,
+            detail,
+          }),
+        );
       }
       if (event.type === "response.failed") {
-        const message =
+        const detail =
           typeof event.response?.error?.message === "string"
             ? event.response.error.message
-            : "OpenAI Responses request failed";
-        throw new Error(message);
+            : undefined;
+        throw new Error(
+          getPublicUpstreamErrorMessage({
+            fallback: "OpenAI Responses request failed",
+            payload: event.response,
+            detail,
+          }),
+        );
       }
 
       if (
@@ -293,6 +328,27 @@ function getAbortReason(signal: AbortSignal) {
   return signal.reason instanceof Error ? signal.reason : abortError();
 }
 
+async function executeWithAbort<T>(
+  operation: () => T | Promise<T>,
+  signal: AbortSignal,
+) {
+  if (signal.aborted) throw getAbortReason(signal);
+
+  let removeAbortListener: () => void = () => undefined;
+  const aborted = new Promise<never>((_resolve, reject) => {
+    const rejectAborted = () => reject(getAbortReason(signal));
+    signal.addEventListener("abort", rejectAborted, { once: true });
+    removeAbortListener = () =>
+      signal.removeEventListener("abort", rejectAborted);
+  });
+
+  try {
+    return await Promise.race([Promise.resolve().then(operation), aborted]);
+  } finally {
+    removeAbortListener();
+  }
+}
+
 function callSafely<T extends unknown[]>(
   callback: ((...args: T) => void) | undefined,
   ...args: T
@@ -358,6 +414,9 @@ export async function executeResponsesFunctionCalls(params: {
       if (cached.signature !== signature) {
         throw new Error(`Conflicting reuse of call_id ${call.call_id}`);
       }
+      if (cached.outcome === "unknown") {
+        throw new ToolExecutionOutcomeUnknownError();
+      }
       return cached.output;
     }
     const pending = pendingCalls.get(call.call_id);
@@ -392,7 +451,11 @@ export async function executeResponsesFunctionCalls(params: {
           isError: true,
           errorMsg: message,
         });
-        params.executedCalls.set(call.call_id, { signature, output });
+        params.executedCalls.set(call.call_id, {
+          signature,
+          output,
+          outcome: "completed",
+        });
         return output;
       }
 
@@ -409,18 +472,31 @@ export async function executeResponsesFunctionCalls(params: {
           isError: true,
           errorMsg: message,
         });
-        params.executedCalls.set(call.call_id, { signature, output });
+        params.executedCalls.set(call.call_id, {
+          signature,
+          output,
+          outcome: "completed",
+        });
         return output;
       }
 
       try {
-        const result = await executor({ ...args }, { signal: params.signal });
+        const result = await executeWithAbort(
+          () => executor({ ...args }, { signal: params.signal }),
+          params.signal,
+        );
         if (params.signal.aborted) throw getAbortReason(params.signal);
         const responseLike = result as {
           status?: number;
           statusText?: string;
           data?: unknown;
         };
+        if (
+          typeof responseLike?.status === "number" &&
+          (responseLike.status <= 0 || responseLike.status >= 500)
+        ) {
+          throw new ToolExecutionOutcomeUnknownError();
+        }
         if (
           typeof responseLike?.status === "number" &&
           responseLike.status >= 300
@@ -436,7 +512,11 @@ export async function executeResponsesFunctionCalls(params: {
             isError: true,
             errorMsg: message,
           });
-          params.executedCalls.set(call.call_id, { signature, output });
+          params.executedCalls.set(call.call_id, {
+            signature,
+            output,
+            outcome: "completed",
+          });
           return output;
         }
         const content = stringifyToolResult(
@@ -454,25 +534,35 @@ export async function executeResponsesFunctionCalls(params: {
           content,
           isError: false,
         });
-        params.executedCalls.set(call.call_id, { signature, output });
+        params.executedCalls.set(call.call_id, {
+          signature,
+          output,
+          outcome: "completed",
+        });
         return output;
       } catch (error) {
         if (params.signal.aborted) {
           throw getAbortReason(params.signal);
         }
-        const message = "Tool execution failed.";
         const output = {
           type: "function_call_output" as const,
           call_id: call.call_id,
-          output: toolErrorOutput("tool_error", message),
+          output: toolErrorOutput(
+            "tool_outcome_unknown",
+            TOOL_OUTCOME_UNKNOWN_MESSAGE,
+          ),
         };
         callSafely(params.onAfterTool, {
           ...uiTool,
           isError: true,
-          errorMsg: message,
+          errorMsg: TOOL_OUTCOME_UNKNOWN_MESSAGE,
         });
-        params.executedCalls.set(call.call_id, { signature, output });
-        return output;
+        params.executedCalls.set(call.call_id, {
+          signature,
+          output,
+          outcome: "unknown",
+        });
+        throw new ToolExecutionOutcomeUnknownError();
       }
     })();
 
@@ -480,7 +570,32 @@ export async function executeResponsesFunctionCalls(params: {
     return execution;
   };
 
-  return Promise.all(calls.map(executeOne));
+  const settled = await Promise.all(
+    calls.map(async (call) => {
+      try {
+        return { output: await executeOne(call) } as const;
+      } catch (error) {
+        return { error } as const;
+      }
+    }),
+  );
+  const outputs: ResponsesFunctionCallOutput[] = [];
+  let hasError = false;
+  let firstError: unknown;
+  let outcomeUnknownError: ToolExecutionOutcomeUnknownError | undefined;
+  for (const result of settled) {
+    if ("error" in result) {
+      if (!hasError) firstError = result.error;
+      if (result.error instanceof ToolExecutionOutcomeUnknownError) {
+        outcomeUnknownError = result.error;
+      }
+      hasError = true;
+    } else {
+      outputs.push(result.output);
+    }
+  }
+  if (hasError) throw outcomeUnknownError ?? firstError;
+  return outputs;
 }
 
 function normalizeInputToArray(input: ResponsesRequestPayload["input"]) {
@@ -505,6 +620,7 @@ export async function runOpenAIResponsesToolLoop(params: {
   callbacks: ToolCallbacks;
   maxToolRounds?: number;
   maxToolCalls?: number;
+  timeoutMs?: number;
 }) {
   const maxToolRounds = params.maxToolRounds ?? DEFAULT_MAX_TOOL_ROUNDS;
   const maxToolCalls = params.maxToolCalls ?? DEFAULT_MAX_TOOL_CALLS;
@@ -524,6 +640,15 @@ export async function runOpenAIResponsesToolLoop(params: {
   let visibleText = "";
   let activeCalls: ResponsesFunctionCall[] = [];
   let settled = false;
+  const timeoutId =
+    typeof params.timeoutMs === "number" && params.timeoutMs > 0
+      ? setTimeout(() => {
+          if (params.controller.signal.aborted) return;
+          const error = new Error("OpenAI Responses tool loop timed out");
+          error.name = "TimeoutError";
+          params.controller.abort(error);
+        }, params.timeoutMs)
+      : undefined;
 
   const finish = (message: string, metadata?: OpenAIResponsesTraceMetadata) => {
     if (settled) return;
@@ -549,7 +674,7 @@ export async function runOpenAIResponsesToolLoop(params: {
           openaiResponsesRecoveryPending: true,
         }
       : undefined;
-  const closeActiveCalls = (message: string) => {
+  const closeActiveCalls = (message: string, outcomeUnknown = false) => {
     if (activeCalls.length === 0) return;
     const outputCallIds = new Set(
       trace.flatMap((item) =>
@@ -570,7 +695,10 @@ export async function runOpenAIResponsesToolLoop(params: {
         ({
           type: "function_call_output" as const,
           call_id: call.call_id,
-          output: toolErrorOutput("tool_interrupted", message),
+          output: toolErrorOutput(
+            outcomeUnknown ? "tool_outcome_unknown" : "tool_interrupted",
+            message,
+          ),
         } satisfies ResponsesFunctionCallOutput);
       trace.push(output);
       if (!cached) {
@@ -618,6 +746,7 @@ export async function runOpenAIResponsesToolLoop(params: {
           openaiResponseStored: params.initialPayload.store === true,
           openaiResponsesOutput: trace,
         });
+        if (timeoutId !== undefined) clearTimeout(timeoutId);
         return;
       }
 
@@ -674,10 +803,13 @@ export async function runOpenAIResponsesToolLoop(params: {
     const normalizedError =
       error instanceof Error ? error : new Error(String(error));
     const wasAborted = params.controller.signal.aborted;
+    const outcomeUnknown =
+      normalizedError instanceof ToolExecutionOutcomeUnknownError;
     closeActiveCalls(
-      wasAborted
-        ? "Tool execution outcome is unknown; do not retry automatically."
+      wasAborted || outcomeUnknown
+        ? TOOL_OUTCOME_UNKNOWN_MESSAGE
         : "Tool call was not completed.",
+      wasAborted || outcomeUnknown,
     );
     const metadata = safeTraceMetadata();
     const abortReason = wasAborted
@@ -685,10 +817,12 @@ export async function runOpenAIResponsesToolLoop(params: {
       : normalizedError;
     if (wasAborted && abortReason.name !== "TimeoutError") {
       finish(visibleText, metadata);
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
       return;
     }
     fail(abortReason, metadata);
   }
+  if (timeoutId !== undefined) clearTimeout(timeoutId);
 }
 
 export async function sendOpenAIResponsesSseRound(params: {
@@ -723,7 +857,7 @@ export async function sendOpenAIResponsesSseRound(params: {
         response = res;
         const contentType = res.headers.get("content-type") ?? "";
         if (!res.ok || !contentType.startsWith(EventStreamContentType)) {
-          throw new Error(`OpenAI Responses stream failed (${res.status})`);
+          throw await getOpenAIResponsesStreamError(res);
         }
       },
       onmessage(message) {
@@ -767,4 +901,30 @@ export async function sendOpenAIResponsesSseRound(params: {
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+export async function getOpenAIResponsesStreamError(response: Response) {
+  const statusMessage = getAccessRestrictedPublicErrorMessage({
+    response,
+    message: Locale.Error.AccessRestricted,
+  });
+  if (statusMessage) return new Error(statusMessage);
+
+  let payload: unknown;
+  try {
+    payload = await response.clone().json();
+  } catch {}
+  const accessRestrictedMessage = getAccessRestrictedPublicErrorMessage({
+    response,
+    payload,
+    message: Locale.Error.AccessRestricted,
+  });
+  return new Error(
+    accessRestrictedMessage ??
+      getPublicUpstreamErrorMessage({
+        fallback: `OpenAI Responses stream failed (${response.status})`,
+        payload,
+        headers: response.headers,
+      }),
+  );
 }

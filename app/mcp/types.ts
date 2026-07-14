@@ -6,8 +6,10 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 export interface McpRequestMessage {
   jsonrpc?: "2.0";
   id?: string | number;
-  method: "tools/call" | string;
-  params?: {
+  method: "tools/call";
+  params: {
+    name: string;
+    arguments?: Record<string, unknown>;
     [key: string]: unknown;
   };
 }
@@ -15,8 +17,11 @@ export interface McpRequestMessage {
 const McpRequestMessageSchema: z.ZodType<McpRequestMessage> = z.object({
   jsonrpc: z.literal("2.0").optional(),
   id: z.union([z.string(), z.number()]).optional(),
-  method: z.string(),
-  params: z.record(z.unknown()).optional(),
+  method: z.literal("tools/call"),
+  params: z.object({
+    name: z.string().min(1),
+    arguments: z.record(z.unknown()).optional(),
+  }),
 });
 
 export interface McpResponseMessage {
@@ -32,20 +37,18 @@ export interface McpResponseMessage {
   };
 }
 
-const McpResponseMessageSchema: z.ZodType<McpResponseMessage> = z.object(
-  {
-    jsonrpc: z.literal("2.0").optional(),
-    id: z.union([z.string(), z.number()]).optional(),
-    result: z.record(z.unknown()).optional(),
-    error: z
-      .object({
-        code: z.number(),
-        message: z.string(),
-        data: z.unknown().optional(),
-      })
-      .optional(),
-  },
-);
+const McpResponseMessageSchema: z.ZodType<McpResponseMessage> = z.object({
+  jsonrpc: z.literal("2.0").optional(),
+  id: z.union([z.string(), z.number()]).optional(),
+  result: z.record(z.unknown()).optional(),
+  error: z
+    .object({
+      code: z.number(),
+      message: z.string(),
+      data: z.unknown().optional(),
+    })
+    .optional(),
+});
 
 export interface McpNotifications {
   jsonrpc?: "2.0";
@@ -65,12 +68,12 @@ const McpNotificationsSchema: z.ZodType<McpNotifications> = z.object({
 // Next Chat
 ////////////
 export interface ListToolsResponse {
-  tools: {
+  tools: Array<{
     name?: string;
     description?: string;
     inputSchema?: object;
     [key: string]: any;
-  };
+  }>;
 }
 
 export type McpClientData =
@@ -107,6 +110,11 @@ export type ServerStatus =
 export interface ServerStatusResponse {
   status: ServerStatus;
   errorMsg: string | null;
+}
+
+export interface McpChatServerState {
+  status: ServerStatus;
+  chatDefaultEnabled: boolean;
 }
 
 // MCP 服务器配置相关类型

@@ -116,3 +116,20 @@
     );
   }
 }
+
+@media screen and (max-width: 600px) {
+  .summary-model-item {
+    align-items: stretch;
+    flex-direction: column;
+
+    .select-compress-model {
+      width: 100%;
+
+      select {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
+}

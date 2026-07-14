@@ -4,6 +4,72 @@
 
 import React from "react";
 import { showToast, showModal } from "../components/ui-lib-actions";
+import Locale from "../locales";
+
+const AttachmentReader = Locale.Chat.Attachments.Reader;
+
+function showLegacyDocumentModal({
+  name,
+  extension,
+  app,
+  format,
+  partialMessage,
+}: {
+  name: string;
+  extension: string;
+  app: string;
+  format: string;
+  partialMessage: string;
+}) {
+  const copy = AttachmentReader.Legacy;
+  showModal({
+    title: copy.Title(name),
+    children: React.createElement(
+      "div",
+      null,
+      React.createElement("p", null, copy.Description(extension)),
+      React.createElement("p", null, copy.ConvertIntro),
+      React.createElement(
+        "ol",
+        null,
+        React.createElement("li", null, copy.OpenWith(app)),
+        React.createElement("li", null, copy.SaveAs),
+        React.createElement("li", null, copy.ChooseFormat(format)),
+        React.createElement("li", null, copy.SaveAndUpload),
+      ),
+      React.createElement("p", null, partialMessage),
+    ),
+  });
+}
+
+function showWordFormatErrorModal() {
+  const copy = AttachmentReader.Legacy;
+  showModal({
+    title: copy.FormatErrorTitle,
+    children: React.createElement(
+      "div",
+      null,
+      React.createElement("p", null, copy.FormatErrorDescription),
+      React.createElement("p", null, copy.ConvertDoc),
+      React.createElement(
+        "ol",
+        null,
+        React.createElement(
+          "li",
+          null,
+          copy.OpenWith(AttachmentReader.Word.App),
+        ),
+        React.createElement("li", null, copy.SaveAs),
+        React.createElement(
+          "li",
+          null,
+          copy.ChooseFormat(AttachmentReader.Word.Format),
+        ),
+        React.createElement("li", null, copy.SaveAndUpload),
+      ),
+    ),
+  });
+}
 
 /**
  * 读取文件为文本
@@ -178,15 +244,26 @@ export function getClipboardAttachmentPayload(clipboardData: DataTransfer) {
   const filesFromItems = Array.from(clipboardData.items ?? [])
     .map((item) => (item.kind === "file" ? item.getAsFile() : null))
     .filter((file): file is File => !!file);
-  const seenFiles = new Set<string>();
-  const files = [...filesFromList, ...filesFromItems].filter((file) => {
-    const key = getClipboardFileSignature(file);
-    if (seenFiles.has(key)) {
-      return false;
+  const unmatchedListProjections = new Map<string, number>();
+  for (const file of filesFromList) {
+    const signature = getClipboardFileSignature(file);
+    unmatchedListProjections.set(
+      signature,
+      (unmatchedListProjections.get(signature) ?? 0) + 1,
+    );
+  }
+
+  const files = [...filesFromList];
+  for (const file of filesFromItems) {
+    const signature = getClipboardFileSignature(file);
+    const matchingListProjections =
+      unmatchedListProjections.get(signature) ?? 0;
+    if (matchingListProjections > 0) {
+      unmatchedListProjections.set(signature, matchingListProjections - 1);
+      continue;
     }
-    seenFiles.add(key);
-    return true;
-  });
+    files.push(file);
+  }
   const hasImageFile = files.some((file) => isAttachmentImage(file));
 
   return {
@@ -249,40 +326,12 @@ async function readWordFile(file: File): Promise<string> {
 
         // 检查文件扩展名
         if (file.name.endsWith(".doc")) {
-          // 显示弹窗提醒
-          showModal({
-            title: "检测到旧版 Word 文档",
-            children: React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "p",
-                null,
-                "您上传的是旧版 .doc 格式文件，无法完全解析其内容。",
-              ),
-              React.createElement(
-                "p",
-                null,
-                "为获得最佳效果，请按照以下步骤转换文件：",
-              ),
-              React.createElement(
-                "ol",
-                null,
-                React.createElement(
-                  "li",
-                  null,
-                  "使用 Microsoft Word 或 WPS 打开文件",
-                ),
-                React.createElement("li", null, '点击"文件" > "另存为"'),
-                React.createElement("li", null, '选择"Word 文档 (.docx)"格式'),
-                React.createElement("li", null, "保存并上传新文件"),
-              ),
-              React.createElement(
-                "p",
-                null,
-                "将尝试提取部分文本内容，但效果可能不理想。",
-              ),
-            ),
+          showLegacyDocumentModal({
+            name: AttachmentReader.Word.Name,
+            extension: ".doc",
+            app: AttachmentReader.Word.App,
+            format: AttachmentReader.Word.Format,
+            partialMessage: AttachmentReader.Legacy.PartialTextAttempt,
           });
 
           try {
@@ -315,20 +364,16 @@ async function readWordFile(file: File): Promise<string> {
               // 如果提取到足够的文本，则返回
               resolve(
                 text +
-                  "\n\n【注意】此文件为旧版 .doc 格式，文本提取可能不完整。为获得最佳效果，请将文件转换为 .docx 格式后再上传。",
+                  `\n\n${AttachmentReader.Legacy.Warning(".doc", ".docx")}`,
               );
             } else {
               // 如果提取的文本太少，可能是二进制格式无法正确读取
-              resolve(
-                "【无法读取】此文件为旧版 .doc 格式，无法完全解析其内容。请将文件转换为 .docx 格式后再上传，或复制文件内容后直接粘贴。",
-              );
+              resolve(AttachmentReader.Legacy.CannotFullyRead(".doc", ".docx"));
             }
             return;
           } catch (docError) {
             // 如果二进制读取失败，返回友好提示
-            resolve(
-              "【无法读取】此文件为旧版 .doc 格式，无法解析其内容。请将文件转换为 .docx 格式后再上传，或复制文件内容后直接粘贴。",
-            );
+            resolve(AttachmentReader.Legacy.CannotRead(".doc", ".docx"));
             return;
           }
         }
@@ -341,42 +386,8 @@ async function readWordFile(file: File): Promise<string> {
       } catch (error: any) {
         // 如果是 ZIP 相关错误，提供更友好的错误消息
         if (error.message && error.message.includes("zip file")) {
-          // 显示弹窗提醒
-          showModal({
-            title: "文件格式错误",
-            children: React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "p",
-                null,
-                "无法读取此文件，可能是格式不正确或已损坏。",
-              ),
-              React.createElement(
-                "p",
-                null,
-                "如果这是 .doc 格式文件，请按照以下步骤转换：",
-              ),
-              React.createElement(
-                "ol",
-                null,
-                React.createElement(
-                  "li",
-                  null,
-                  "使用 Microsoft Word 或 WPS 打开文件",
-                ),
-                React.createElement("li", null, '点击"文件" > "另存为"'),
-                React.createElement("li", null, '选择"Word 文档 (.docx)"格式'),
-                React.createElement("li", null, "保存并上传新文件"),
-              ),
-            ),
-          });
-
-          reject(
-            new Error(
-              "文件格式不正确或已损坏。如果是 .doc 格式，请转换为 .docx 格式后再上传。",
-            ),
-          );
+          showWordFormatErrorModal();
+          reject(new Error(AttachmentReader.Legacy.FormatErrorMessage));
         } else {
           reject(error);
         }
@@ -401,44 +412,12 @@ async function readPowerPointFile(file: File): Promise<string> {
 
         // 检查文件扩展名
         if (file.name.endsWith(".ppt")) {
-          // 显示弹窗提醒
-          showModal({
-            title: "检测到旧版 PowerPoint 文档",
-            children: React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "p",
-                null,
-                "您上传的是旧版 .ppt 格式文件，无法完全解析其内容。",
-              ),
-              React.createElement(
-                "p",
-                null,
-                "为获得最佳效果，请按照以下步骤转换文件：",
-              ),
-              React.createElement(
-                "ol",
-                null,
-                React.createElement(
-                  "li",
-                  null,
-                  "使用 PowerPoint 或 WPS 演示打开文件",
-                ),
-                React.createElement("li", null, '点击"文件" > "另存为"'),
-                React.createElement(
-                  "li",
-                  null,
-                  '选择"PowerPoint 演示文稿 (.pptx)"格式',
-                ),
-                React.createElement("li", null, "保存并上传新文件"),
-              ),
-              React.createElement(
-                "p",
-                null,
-                "将尝试提取部分文本内容，但效果可能不理想。",
-              ),
-            ),
+          showLegacyDocumentModal({
+            name: AttachmentReader.PowerPoint.Name,
+            extension: ".ppt",
+            app: AttachmentReader.PowerPoint.App,
+            format: AttachmentReader.PowerPoint.Format,
+            partialMessage: AttachmentReader.Legacy.PartialTextAttempt,
           });
 
           try {
@@ -467,18 +446,14 @@ async function readPowerPointFile(file: File): Promise<string> {
             if (text.length > 100) {
               resolve(
                 text +
-                  "\n\n【注意】此文件为旧版 .ppt 格式，文本提取可能不完整。为获得最佳效果，请将文件转换为 .pptx 格式后再上传。",
+                  `\n\n${AttachmentReader.Legacy.Warning(".ppt", ".pptx")}`,
               );
             } else {
-              resolve(
-                "【无法读取】此文件为旧版 .ppt 格式，无法完全解析其内容。请将文件转换为 .pptx 格式后再上传，或复制文件内容后直接粘贴。",
-              );
+              resolve(AttachmentReader.Legacy.CannotFullyRead(".ppt", ".pptx"));
             }
             return;
           } catch (pptError) {
-            resolve(
-              "【无法读取】此文件为旧版 .ppt 格式，无法解析其内容。请将文件转换为 .pptx 格式后再上传，或复制文件内容后直接粘贴。",
-            );
+            resolve(AttachmentReader.Legacy.CannotRead(".ppt", ".pptx"));
             return;
           }
         }
@@ -492,7 +467,7 @@ async function readPowerPointFile(file: File): Promise<string> {
             const zipContent = await zip.loadAsync(arrayBuffer);
 
             // 提取幻灯片内容
-            let slideTexts: string[] = [];
+            const slides: Array<{ number: number; text: string }> = [];
             let slideCount = 0;
 
             // 查找所有幻灯片 XML 文件
@@ -515,9 +490,7 @@ async function readPowerPointFile(file: File): Promise<string> {
                       .join("\n");
 
                     if (slideText.trim()) {
-                      slideTexts.push(
-                        `--- 幻灯片 ${slideNumber} ---\n${slideText}`,
-                      );
+                      slides.push({ number: slideNumber, text: slideText });
                     }
                   }
                 });
@@ -528,33 +501,31 @@ async function readPowerPointFile(file: File): Promise<string> {
             await Promise.all(slidePromises);
 
             // 按幻灯片编号排序
-            slideTexts.sort((a, b) => {
-              const numA = parseInt(a.match(/幻灯片 (\d+)/)![1]);
-              const numB = parseInt(b.match(/幻灯片 (\d+)/)![1]);
-              return numA - numB;
-            });
+            slides.sort((a, b) => a.number - b.number);
 
-            if (slideTexts.length > 0) {
+            if (slides.length > 0) {
               resolve(
-                `PowerPoint 演示文稿内容：\n\n${slideTexts.join("\n\n")}`,
+                AttachmentReader.PowerPoint.Content(
+                  slides
+                    .map(({ number, text }) =>
+                      AttachmentReader.PowerPoint.Slide(number, text),
+                    )
+                    .join("\n\n"),
+                ),
               );
             } else {
-              resolve(
-                "【提取失败】无法从 PowerPoint 文件中提取文本内容。可能是文件格式不支持或不包含文本。",
-              );
+              resolve(AttachmentReader.PowerPoint.ExtractionFailed);
             }
             return;
           } catch (pptxError) {
             console.error("解析 PPTX 失败:", pptxError);
-            resolve(
-              "【提取失败】无法解析 PowerPoint 文件内容。请尝试将重要内容复制后直接粘贴。",
-            );
+            resolve(AttachmentReader.PowerPoint.ParseFailed);
             return;
           }
         }
 
         // 如果不是 PowerPoint 文件，返回错误
-        reject(new Error("不支持的文件格式"));
+        reject(new Error(AttachmentReader.UnsupportedFileType));
       } catch (error: any) {
         reject(error);
       }
@@ -569,6 +540,31 @@ async function readPowerPointFile(file: File): Promise<string> {
  * @param file 要读取的文件
  * @returns 文件内容的Promise
  */
+export async function mapWithConcurrencyLimit<T, R>(
+  values: readonly T[],
+  concurrency: number,
+  mapper: (value: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const workerCount = Math.max(
+    1,
+    Math.min(Math.floor(concurrency) || 1, values.length),
+  );
+  const results = new Array<R>(values.length);
+  let nextIndex = 0;
+
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < values.length) {
+        const index = nextIndex;
+        nextIndex += 1;
+        results[index] = await mapper(values[index], index);
+      }
+    }),
+  );
+
+  return results;
+}
+
 async function readPdfFile(file: File): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -595,152 +591,167 @@ async function readPdfFile(file: File): Promise<string> {
             }
           }
 
-          // 加载 PDF 文档
-          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-          const pdf = await loadingTask.promise;
+          let loadingTask: ReturnType<typeof pdfjsLib.getDocument> | undefined;
+          try {
+            // 加载 PDF 文档
+            loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdf = await loadingTask.promise;
+            const copy = AttachmentReader.Pdf;
 
-          // 提取文本内容
-          let textContent = `PDF 文档内容 (共 ${pdf.numPages} 页):\n\n`;
-          let hasContent = false;
-          let emptyPageCount = 0;
+            // 提取文本内容
+            let textContent = copy.Content(pdf.numPages);
+            let hasContent = false;
+            let emptyPageCount = 0;
 
-          // 为大型文件设置页面限制
-          const isLargeFile = file.size > 50 * 1024 * 1024; // 50MB
-          const maxPagesToProcess = isLargeFile ? 30 : pdf.numPages;
+            // 为大型文件设置页面限制
+            const isLargeFile = file.size > 50 * 1024 * 1024; // 50MB
+            const maxPagesToProcess = isLargeFile ? 30 : pdf.numPages;
 
-          const pageNumbers = Array.from(
-            { length: Math.min(maxPagesToProcess, pdf.numPages) },
-            (_, index) => index + 1,
-          );
-          const pageResults = await Promise.all(
-            pageNumbers.map(async (i) => {
-              let pageText = "";
-              let isEmpty = false;
+            const pageNumbers = Array.from(
+              { length: Math.min(maxPagesToProcess, pdf.numPages) },
+              (_, index) => index + 1,
+            );
+            const pageResults = await mapWithConcurrencyLimit(
+              pageNumbers,
+              4,
+              async (i) => {
+                let pageText = "";
+                let isEmpty = false;
 
-              try {
-                // 获取页面
-                const page = await pdf.getPage(i);
+                try {
+                  // 获取页面
+                  const page = await pdf.getPage(i);
 
-                // 提取文本
-                const content = await page.getTextContent();
-                pageText = content.items.map((item: any) => item.str).join(" ");
-                isEmpty = pageText.trim().length === 0;
-              } catch (pageError) {
+                  // 提取文本
+                  const content = await page.getTextContent();
+                  pageText = content.items
+                    .map((item: any) => item.str)
+                    .join(" ");
+                  isEmpty = pageText.trim().length === 0;
+                } catch (pageError) {
+                  return {
+                    pageNumber: i,
+                    text: copy.UnreadablePage,
+                    isEmpty: false,
+                  };
+                }
+
                 return {
                   pageNumber: i,
-                  text: `[无法解析此页]`,
-                  isEmpty: false,
+                  text: isEmpty ? copy.BlankPage : pageText,
+                  isEmpty,
                 };
-              }
+              },
+            );
 
-              return {
-                pageNumber: i,
-                text: isEmpty ? "[空白或图像内容]" : pageText,
-                isEmpty,
-              };
-            }),
-          );
-
-          // 按页码顺序拼接，保持原输出顺序
-          for (const pageResult of pageResults) {
-            try {
-              if (!pageResult.isEmpty && pageResult.text !== "[无法解析此页]") {
-                hasContent = true;
-                textContent += `--- 第 ${pageResult.pageNumber} 页 ---\n${pageResult.text}\n\n`;
-              } else if (pageResult.isEmpty) {
-                emptyPageCount++;
-                textContent += `--- 第 ${pageResult.pageNumber} 页 ---\n${pageResult.text}\n\n`;
-              } else {
-                textContent += `--- 第 ${pageResult.pageNumber} 页 ---\n${pageResult.text}\n\n`;
+            // 按页码顺序拼接，保持原输出顺序
+            for (const pageResult of pageResults) {
+              try {
+                if (
+                  !pageResult.isEmpty &&
+                  pageResult.text !== copy.UnreadablePage
+                ) {
+                  hasContent = true;
+                } else if (pageResult.isEmpty) {
+                  emptyPageCount++;
+                }
+                textContent += copy.Page(
+                  pageResult.pageNumber,
+                  pageResult.text,
+                );
+              } catch (pageError) {
+                textContent += copy.Page(
+                  pageResult.pageNumber,
+                  copy.UnreadablePage,
+                );
               }
-            } catch (pageError) {
-              textContent += `--- 第 ${pageResult.pageNumber} 页 ---\n[无法解析此页]\n\n`;
+            }
+
+            // 如果处理的页面数少于总页数
+            if (maxPagesToProcess < pdf.numPages) {
+              textContent += copy.Truncated(maxPagesToProcess, pdf.numPages);
+            }
+
+            // 检查是否所有页面都是空的
+            if (
+              !hasContent ||
+              emptyPageCount === Math.min(maxPagesToProcess, pdf.numPages)
+            ) {
+              // 显示弹窗提醒
+              showModal({
+                title: copy.LimitedTitle,
+                children: React.createElement(
+                  "div",
+                  null,
+                  React.createElement("p", null, copy.LimitedDescription),
+                  React.createElement(
+                    "ul",
+                    null,
+                    React.createElement("li", null, copy.Scanned),
+                    React.createElement("li", null, copy.Protected),
+                    React.createElement("li", null, copy.Damaged),
+                  ),
+                  React.createElement("p", null, copy.Suggestions),
+                  React.createElement(
+                    "ol",
+                    null,
+                    React.createElement("li", null, copy.UseOcr),
+                    React.createElement("li", null, copy.CopyManually),
+                    React.createElement("li", null, copy.UseSmallerFile),
+                  ),
+                ),
+              });
+
+              resolve(
+                copy.LimitedContent(
+                  file.name,
+                  (file.size / (1024 * 1024)).toFixed(2),
+                  pdf.numPages,
+                ),
+              );
+              return;
+            }
+
+            resolve(textContent);
+          } finally {
+            if (loadingTask) {
+              try {
+                await loadingTask.destroy();
+              } catch (cleanupError) {
+                console.warn("释放 PDF 资源失败:", cleanupError);
+              }
             }
           }
-
-          // 如果处理的页面数少于总页数
-          if (maxPagesToProcess < pdf.numPages) {
-            textContent += `\n[文件过大，仅处理了前 ${maxPagesToProcess} 页。总页数: ${pdf.numPages}]\n`;
-          }
-
-          // 检查是否所有页面都是空的
-          if (
-            !hasContent ||
-            emptyPageCount === Math.min(maxPagesToProcess, pdf.numPages)
-          ) {
-            // 显示弹窗提醒
-            showModal({
-              title: "PDF 内容提取受限",
-              children: React.createElement(
-                "div",
-                null,
-                React.createElement(
-                  "p",
-                  null,
-                  "无法从 PDF 提取文本内容，可能是以下原因：",
-                ),
-                React.createElement(
-                  "ul",
-                  null,
-                  React.createElement(
-                    "li",
-                    null,
-                    "PDF 是扫描版（图像而非文本）",
-                  ),
-                  React.createElement("li", null, "PDF 使用了内容保护或加密"),
-                  React.createElement("li", null, "PDF 格式特殊或已损坏"),
-                ),
-                React.createElement("p", null, "建议："),
-                React.createElement(
-                  "ol",
-                  null,
-                  React.createElement("li", null, "使用 OCR 软件处理此 PDF"),
-                  React.createElement("li", null, "手动复制需要的内容后粘贴"),
-                  React.createElement("li", null, "尝试使用较小的 PDF 文件"),
-                ),
-              ),
-            });
-
-            resolve(
-              `【PDF 内容提取受限】\n\n此 PDF 文件（${
-                file.name
-              }）无法提取文本内容，可能是扫描版或受保护的 PDF。\n\n文件信息：\n- 大小：${(
-                file.size /
-                (1024 * 1024)
-              ).toFixed(2)} MB\n- 页数：${
-                pdf.numPages
-              } 页\n\n建议使用 OCR 软件处理此文件，或手动复制需要的内容。`,
-            );
-            return;
-          }
-
-          resolve(textContent);
         } catch (pdfError: any) {
           console.error("解析 PDF 失败:", pdfError);
 
           // 显示弹窗提醒
           showModal({
-            title: "PDF 解析失败",
+            title: AttachmentReader.Pdf.ParseFailedTitle,
             children: React.createElement(
               "div",
               null,
-              React.createElement("p", null, "无法解析 PDF 文件内容。"),
               React.createElement(
                 "p",
                 null,
-                "错误信息: " + (pdfError.message || "未知错误"),
+                AttachmentReader.Pdf.ParseFailedDescription,
               ),
               React.createElement(
                 "p",
                 null,
-                "请尝试使用其他 PDF 查看器打开文件，然后复制内容后直接粘贴。",
+                AttachmentReader.Pdf.Error(
+                  pdfError.message || AttachmentReader.UnknownError,
+                ),
+              ),
+              React.createElement(
+                "p",
+                null,
+                AttachmentReader.Pdf.ParseFailedHelp,
               ),
             ),
           });
 
-          resolve(
-            "【PDF 解析失败】无法提取 PDF 文件内容。请尝试使用 PDF 查看器打开文件，然后复制内容后直接粘贴。",
-          );
+          resolve(AttachmentReader.Pdf.ParseFailedContent);
         }
       } catch (error: any) {
         reject(error);
@@ -873,7 +884,9 @@ async function readZipFile(file: File): Promise<string> {
                   const truncatedContent =
                     content.length > maxContentLength
                       ? content.substring(0, maxContentLength) +
-                        `\n\n[文件过大，已截断。原文件大小: ${content.length} 字符]`
+                        `\n\n${AttachmentReader.ContentTruncated(
+                          content.length,
+                        )}`
                       : content;
 
                   fileContents.push(
@@ -884,11 +897,15 @@ async function readZipFile(file: File): Promise<string> {
                   // 使用 JSZip 的 API
                   const metadata = await zipEntry.async("uint8array");
                   fileContents.push(
-                    `=== ${path} ===\n[二进制文件，大小: ${metadata.length} 字节]\n\n`,
+                    `=== ${path} ===\n${AttachmentReader.Zip.BinaryFile(
+                      metadata.length,
+                    )}\n\n`,
                   );
                 }
               } catch (fileError) {
-                fileContents.push(`=== ${path} ===\n[无法读取此文件]\n\n`);
+                fileContents.push(
+                  `=== ${path} ===\n${AttachmentReader.Zip.UnreadableFile}\n\n`,
+                );
               }
             })();
 
@@ -898,41 +915,44 @@ async function readZipFile(file: File): Promise<string> {
           await Promise.all(filePromises);
 
           // 构建结果
-          let result = `ZIP 文件内容 (${file.name}):\n`;
-          result += `总文件数: ${fileCount}`;
+          let result = AttachmentReader.Zip.Content(file.name);
+          result += AttachmentReader.Zip.TotalFiles(fileCount);
 
           if (isLargeZip) {
-            result += ` (仅显示前 ${maxFilesToProcess} 个文件)`;
+            result += AttachmentReader.Zip.ShowingFirst(maxFilesToProcess);
           }
 
-          result += `\n文本文件数: ${textFileCount}\n\n`;
+          result += AttachmentReader.Zip.TextFiles(textFileCount);
           result += fileContents.join("");
 
           if (isLargeZip) {
-            result += `\n[ZIP 文件过大，仅处理了前 ${maxFilesToProcess} 个文件。总文件数: ${fileCount}]\n`;
+            result += AttachmentReader.Zip.Truncated(
+              maxFilesToProcess,
+              fileCount,
+            );
           }
 
           if (textFileCount === 0) {
             // 显示弹窗提醒
             showModal({
-              title: "ZIP 文件内容提取受限",
+              title: AttachmentReader.Zip.LimitedTitle,
               children: React.createElement(
                 "div",
                 null,
                 React.createElement(
                   "p",
                   null,
-                  "此 ZIP 文件不包含可读取的文本文件，或文件格式不受支持。",
+                  AttachmentReader.Zip.NoReadableText,
                 ),
                 React.createElement(
                   "p",
                   null,
-                  "我们只能提取常见文本文件的内容，如 .txt, .md, .js, .py 等。",
+                  AttachmentReader.Zip.SupportedTextOnly,
                 ),
                 React.createElement(
                   "p",
                   null,
-                  "建议解压 ZIP 文件后，单独上传需要的文本文件。",
+                  AttachmentReader.Zip.ExtractHelp,
                 ),
               ),
             });
@@ -944,27 +964,31 @@ async function readZipFile(file: File): Promise<string> {
 
           // 显示弹窗提醒
           showModal({
-            title: "ZIP 解析失败",
+            title: AttachmentReader.Zip.ParseFailedTitle,
             children: React.createElement(
               "div",
               null,
-              React.createElement("p", null, "无法解析 ZIP 文件内容。"),
               React.createElement(
                 "p",
                 null,
-                "错误信息: " + (zipError.message || "未知错误"),
+                AttachmentReader.Zip.ParseFailedDescription,
               ),
               React.createElement(
                 "p",
                 null,
-                "请确保上传的是有效的 ZIP 文件，或尝试解压后单独上传文件。",
+                AttachmentReader.Pdf.Error(
+                  zipError.message || AttachmentReader.UnknownError,
+                ),
+              ),
+              React.createElement(
+                "p",
+                null,
+                AttachmentReader.Zip.ParseFailedHelp,
               ),
             ),
           });
 
-          resolve(
-            "【ZIP 解析失败】无法提取 ZIP 文件内容。请确保上传的是有效的 ZIP 文件，或尝试解压后单独上传文件。",
-          );
+          resolve(AttachmentReader.Zip.ParseFailedContent);
         }
       } catch (error: any) {
         reject(error);
@@ -989,44 +1013,12 @@ async function readExcelFile(file: File): Promise<string> {
 
         // 检查文件扩展名
         if (file.name.endsWith(".xls")) {
-          // 显示弹窗提醒
-          showModal({
-            title: "检测到旧版 Excel 文档",
-            children: React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "p",
-                null,
-                "您上传的是旧版 .xls 格式文件，可能无法完全解析其内容。",
-              ),
-              React.createElement(
-                "p",
-                null,
-                "为获得最佳效果，请按照以下步骤转换文件：",
-              ),
-              React.createElement(
-                "ol",
-                null,
-                React.createElement(
-                  "li",
-                  null,
-                  "使用 Microsoft Excel 或 WPS 表格打开文件",
-                ),
-                React.createElement("li", null, '点击"文件" > "另存为"'),
-                React.createElement(
-                  "li",
-                  null,
-                  '选择"Excel 工作簿 (.xlsx)"格式',
-                ),
-                React.createElement("li", null, "保存并上传新文件"),
-              ),
-              React.createElement(
-                "p",
-                null,
-                "将尝试提取表格内容，但效果可能不理想。",
-              ),
-            ),
+          showLegacyDocumentModal({
+            name: AttachmentReader.Excel.Name,
+            extension: ".xls",
+            app: AttachmentReader.Excel.App,
+            format: AttachmentReader.Excel.Format,
+            partialMessage: AttachmentReader.Legacy.PartialTableAttempt,
           });
         }
 
@@ -1040,16 +1032,16 @@ async function readExcelFile(file: File): Promise<string> {
           });
 
           // 提取所有工作表内容
-          let result = `Excel 表格内容 (${file.name}):\n\n`;
+          let result = AttachmentReader.Excel.Content(file.name);
 
           // 获取所有工作表名称
           const sheetNames = workbook.SheetNames;
-          result += `工作表数量: ${sheetNames.length}\n\n`;
+          result += AttachmentReader.Excel.SheetCount(sheetNames.length);
 
           // 遍历每个工作表
           for (let i = 0; i < sheetNames.length; i++) {
             const sheetName = sheetNames[i];
-            result += `=== 工作表: ${sheetName} ===\n\n`;
+            result += AttachmentReader.Excel.Sheet(sheetName);
 
             // 获取工作表
             const worksheet = workbook.Sheets[sheetName];
@@ -1059,7 +1051,7 @@ async function readExcelFile(file: File): Promise<string> {
 
             // 检查是否有数据
             if (jsonData.length === 0) {
-              result += "[空工作表]\n\n";
+              result += AttachmentReader.Excel.EmptySheet;
               continue;
             }
 
@@ -1109,27 +1101,31 @@ async function readExcelFile(file: File): Promise<string> {
 
           // 显示弹窗提醒
           showModal({
-            title: "Excel 解析失败",
+            title: AttachmentReader.Excel.ParseFailedTitle,
             children: React.createElement(
               "div",
               null,
-              React.createElement("p", null, "无法解析 Excel 文件内容。"),
               React.createElement(
                 "p",
                 null,
-                "错误信息: " + (excelError.message || "未知错误"),
+                AttachmentReader.Excel.ParseFailedDescription,
               ),
               React.createElement(
                 "p",
                 null,
-                "请尝试使用 Excel 打开文件，然后复制内容后直接粘贴。",
+                AttachmentReader.Pdf.Error(
+                  excelError.message || AttachmentReader.UnknownError,
+                ),
+              ),
+              React.createElement(
+                "p",
+                null,
+                AttachmentReader.Excel.ParseFailedHelp,
               ),
             ),
           });
 
-          resolve(
-            "【Excel 解析失败】无法提取 Excel 文件内容。请尝试使用 Excel 打开文件，然后复制内容后直接粘贴。",
-          );
+          resolve(AttachmentReader.Excel.ParseFailedContent);
         }
       } catch (error: any) {
         reject(error);
@@ -1206,7 +1202,7 @@ async function uploadImage(file: File): Promise<string> {
         resolve(dataUrl);
       };
       img.onerror = () => {
-        reject(new Error("图片加载失败"));
+        reject(new Error(AttachmentReader.ImageLoadFailed));
       };
       img.src = e.target?.result as string;
     };
@@ -1255,8 +1251,8 @@ export function isAttachmentImage(file: File) {
   );
 }
 
-const DRAG_ATTACHMENT_ADD_HINT = "释放后添加到输入框 · 最多3张图片、5个文件";
-const DRAG_ATTACHMENT_BLOCKED_HINT = "释放后不会添加新附件";
+const DRAG_ATTACHMENT_ADD_HINT = Locale.Chat.Attachments.Drag.AddHint;
+const DRAG_ATTACHMENT_BLOCKED_HINT = Locale.Chat.Attachments.Drag.BlockedHint;
 
 type DraggedAttachmentEntry = {
   file?: File;
@@ -1306,13 +1302,15 @@ function getDraggedAttachmentLimitText(
   const blockedParts: string[] = [];
 
   if (imageCount > 0 && remainingImageSlots <= 0) {
-    blockedParts.push("图片已达 3 张上限");
+    blockedParts.push(Locale.Chat.Attachments.Drag.ImageLimit);
   }
   if (fileCount > 0 && remainingFileSlots <= 0) {
-    blockedParts.push("文件已达 5 个上限");
+    blockedParts.push(Locale.Chat.Attachments.Drag.FileLimit);
   }
 
-  return blockedParts.length === 1 ? blockedParts[0] : "附件数量已达上限";
+  return blockedParts.length === 1
+    ? blockedParts[0]
+    : Locale.Chat.Attachments.Drag.Limit;
 }
 
 export function getDraggedAttachmentSummary(
@@ -1324,7 +1322,7 @@ export function getDraggedAttachmentSummary(
 
   if (draggedEntries.length === 0) {
     return {
-      text: "释放后识别附件",
+      text: Locale.Chat.Attachments.Drag.Detect,
       hint: DRAG_ATTACHMENT_ADD_HINT,
       willAdd: true,
     };
@@ -1341,10 +1339,14 @@ export function getDraggedAttachmentSummary(
   const acceptedParts: string[] = [];
 
   if (acceptedImageCount > 0) {
-    acceptedParts.push(`${acceptedImageCount} 张图片`);
+    acceptedParts.push(
+      Locale.Chat.Attachments.Drag.ImageCount(acceptedImageCount),
+    );
   }
   if (acceptedFileCount > 0) {
-    acceptedParts.push(`${acceptedFileCount} 个文件`);
+    acceptedParts.push(
+      Locale.Chat.Attachments.Drag.FileCount(acceptedFileCount),
+    );
   }
   if (acceptedParts.length === 0) {
     return {
@@ -1363,9 +1365,7 @@ export function getDraggedAttachmentSummary(
     imageCount > remainingImageSlots || fileCount > remainingFileSlots;
 
   return {
-    text: hasOverflow
-      ? `将添加 ${acceptedParts.join("、")}，其余会自动忽略`
-      : `将添加 ${acceptedParts.join("、")}`,
+    text: Locale.Chat.Attachments.Drag.WillAdd(acceptedParts, hasOverflow),
     hint: DRAG_ATTACHMENT_ADD_HINT,
     willAdd: true,
   };
@@ -1405,7 +1405,7 @@ export function isSupportedAttachmentFile(file: File) {
 function truncateAttachmentText(text: string) {
   return text.length > MAX_ATTACHMENT_TEXT_LENGTH
     ? text.substring(0, MAX_ATTACHMENT_TEXT_LENGTH) +
-        `\n\n[文件过大，已截断。原文件大小: ${text.length} 字符]`
+        `\n\n${AttachmentReader.ContentTruncated(text.length)}`
     : text;
 }
 
@@ -1437,11 +1437,11 @@ export async function readAttachmentFile(file: File): Promise<FileInfo> {
   } else if (lowerName === "dockerfile" || isSupportedAttachmentFile(file)) {
     text = await readFileAsText(file);
   } else {
-    throw new Error("不支持的文件类型");
+    throw new Error(AttachmentReader.UnsupportedFileType);
   }
 
   return {
-    name: file.name || "粘贴的文件.txt",
+    name: file.name || AttachmentReader.PastedFileName,
     type: file.type || getFileTypeByExtension(file.name),
     size: file.size,
     content: truncateAttachmentText(text),
@@ -1453,7 +1453,7 @@ export async function processAttachmentFiles(files: File[]) {
   const processedFiles = await Promise.all(
     files.map(async (file) => {
       if (!isSupportedAttachmentFile(file)) {
-        showToast(`${file.name || "该文件"} 类型不支持`);
+        showToast(AttachmentReader.UnsupportedFile(file.name));
         return null;
       }
 
@@ -1471,7 +1471,12 @@ export async function processAttachmentFiles(files: File[]) {
         };
       } catch (error: any) {
         console.error(`读取文件 ${file.name} 失败:`, error);
-        showToast(`读取文件 ${file.name} 失败: ${error.message || "未知错误"}`);
+        showToast(
+          AttachmentReader.ReadFailed(
+            file.name,
+            error.message || AttachmentReader.UnknownError,
+          ),
+        );
         return null;
       }
     }),
@@ -1525,7 +1530,7 @@ export function uploadAttachments(
       if (fileInfos.length > 0 || imageUrls.length > 0) {
         onSuccess(fileInfos, imageUrls);
       } else {
-        onError(new Error("没有成功读取任何文件"));
+        onError(new Error(AttachmentReader.NoFilesRead));
       }
     } catch (error) {
       console.error("处理文件失败:", error);
@@ -1681,7 +1686,7 @@ export function getFileTypeByExtension(filename: string): string {
     case "svg":
       return "image/svg+xml";
     default:
-      return "文本文件";
+      return AttachmentReader.TextFileType;
   }
 }
 
@@ -1712,12 +1717,12 @@ function uploadTextFile(
       const truncatedText =
         text.length > maxLength
           ? text.substring(0, maxLength) +
-            `\n\n[文件过大，已截断。原文件大小: ${text.length} 字符]`
+            `\n\n${AttachmentReader.ContentTruncated(text.length)}`
           : text;
 
       onSuccess({
         name: file.name,
-        type: file.type || "文本文件",
+        type: file.type || AttachmentReader.TextFileType,
         size: file.size,
         content: truncatedText,
         originalFile: file,

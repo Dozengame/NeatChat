@@ -8,7 +8,7 @@ import EyeIcon from "../icons/eye.svg";
 
 import { useLocation, useNavigate } from "react-router-dom";
 import { Mask, useMaskStore } from "../store/mask";
-import Locale from "../locales";
+import Locale, { getLang } from "../locales";
 import { useChatStore } from "../store/chat";
 import { useAppConfig } from "../store/config";
 import { MaskAvatar } from "./mask";
@@ -37,7 +37,9 @@ export function NewChat() {
   const maskStore = useMaskStore();
 
   const masks = maskStore.getAll();
-  const featuredMasks = masks.slice(0, 6);
+  const featuredMasks = masks
+    .filter((mask) => !mask.builtin || mask.lang === getLang())
+    .slice(0, 6);
 
   const navigate = useNavigate();
   const config = useAppConfig();

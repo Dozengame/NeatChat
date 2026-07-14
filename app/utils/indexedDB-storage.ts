@@ -5,6 +5,8 @@ import { safeLocalStorage } from "@/app/utils/storage";
 const localStorage = safeLocalStorage();
 
 class IndexedDBStorage implements StateStorage {
+  constructor(private readonly validateHydration = true) {}
+
   public async getItem(name: string): Promise<string | null> {
     try {
       const value = (await get(name)) || localStorage.getItem(name);
@@ -16,11 +18,14 @@ class IndexedDBStorage implements StateStorage {
 
   public async setItem(name: string, value: string): Promise<void> {
     try {
-      const _value = JSON.parse(value);
-      if (!_value?.state?._hasHydrated) {
-        return;
+      if (this.validateHydration) {
+        const parsedValue = JSON.parse(value);
+        if (!parsedValue?.state?._hasHydrated) {
+          return;
+        }
       }
       await set(name, value);
+      localStorage.removeItem(name);
     } catch (error) {
       localStorage.setItem(name, value);
     }
@@ -30,17 +35,20 @@ class IndexedDBStorage implements StateStorage {
     try {
       await del(name);
     } catch (error) {
-      localStorage.removeItem(name);
+      // The local fallback is authoritative while IndexedDB is unavailable.
     }
+    localStorage.removeItem(name);
   }
 
   public async clear(): Promise<void> {
     try {
       await clear();
     } catch (error) {
-      localStorage.clear();
+      // Always clear the fallback even when IndexedDB cannot be reached.
     }
+    localStorage.clear();
   }
 }
 
 export const indexedDBStorage = new IndexedDBStorage();
+export const rawIndexedDBStorage = new IndexedDBStorage(false);

@@ -18,7 +18,7 @@ import dynamic from "next/dynamic";
 import { Path, SlotID } from "../constant";
 import { ErrorBoundary } from "./error";
 
-import { getISOLang, getLang } from "../locales";
+import Locale, { getISOLang, getLang } from "../locales";
 
 import {
   HashRouter as Router,
@@ -31,7 +31,6 @@ import { SideBar } from "./sidebar";
 import { useAppConfig } from "../store/config";
 import { AuthPage } from "./auth";
 import { getClientConfig } from "../config/client";
-import { type ClientApi, getClientApi } from "../client/api";
 import { useAccessStore } from "../store/access";
 import clsx from "clsx";
 import { UpdateAnnouncement } from "./update-announcement";
@@ -323,7 +322,7 @@ function ScreenContent(props: {
         <button
           type="button"
           className={styles["sidebar-backdrop"]}
-          aria-label="关闭侧边栏"
+          aria-label={Locale.UI.CloseSidebar}
           aria-controls="mobile-sidebar-drawer"
           aria-expanded={isMobileDrawerOpen}
           onClick={closeMobileSidebar}
@@ -471,11 +470,6 @@ function useLoadData() {
   const needCode = useAccessStore((state) => state.needCode);
   const clientConfig = useMemo(() => getClientConfig(), []);
 
-  const api: ClientApi = useMemo(
-    () => getClientApi(providerName),
-    [providerName],
-  );
-
   useEffect(() => {
     const accessStore = useAccessStore.getState();
     if (
@@ -488,6 +482,9 @@ function useLoadData() {
 
     let cancelled = false;
     (async () => {
+      const { getClientApi } = await import("../client/api");
+      if (cancelled) return;
+      const api = getClientApi(providerName);
       const models = await api.llm.models();
       if (!cancelled) {
         useAppConfig.getState().mergeModels(models);
@@ -497,7 +494,7 @@ function useLoadData() {
     return () => {
       cancelled = true;
     };
-  }, [accessCodeValidatedAt, api.llm, clientConfig?.isApp, needCode]);
+  }, [accessCodeValidatedAt, clientConfig?.isApp, needCode, providerName]);
 }
 
 export function Home() {

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useAccessStore } from "../store/access";
 import { useAppConfig } from "../store/config";
-import { collectModelsWithDefaultModel } from "./model";
+import { collectModelsWithDefaultModelAndPolicy } from "./model";
 
 export function useAllModels() {
   const accessStore = useAccessStore();
@@ -11,23 +11,12 @@ export function useAllModels() {
       ? configStore.customModels
       : accessStore.customModels || "";
 
-    const allowedModels = new Set(accessStore.allowedModels ?? []);
-    const models = collectModelsWithDefaultModel(
+    return collectModelsWithDefaultModelAndPolicy(
       configStore.models,
       customModelsString,
       accessStore.defaultModel,
+      accessStore.allowedModels,
     );
-
-    if (allowedModels.size === 0) {
-      return models;
-    }
-
-    return models.map((model) => ({
-      ...model,
-      available:
-        model.available &&
-        allowedModels.has(`${model.name}@${model.provider?.providerName}`),
-    }));
   }, [
     accessStore.allowedModels,
     accessStore.customModels,
