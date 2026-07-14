@@ -58,15 +58,9 @@ import {
 } from "../mcp/actions";
 import { extractMcpJson, hasMcpJsonStart, isMcpJson } from "../mcp/utils";
 import {
-  combineMcpToolResults,
   formatFailedMcpRequestForChat,
-  formatJimengMcpRequestForChat,
   formatMcpToolResultForChat,
-  getJimengQuerySubmitId,
-  mergeJimengProgressWithResult,
-  mergeJimengResultIntoReply,
 } from "../mcp/display";
-import { JIMENG_MCP_SERVER_ID } from "../mcp/jimeng";
 import { registerChatStore } from "./chat-state-link";
 import { isOpenAIGpt56ModelConfig } from "../utils/openai-responses";
 import { selectOpenAIAllTurnsHistory } from "../utils/openai-history";
@@ -79,6 +73,7 @@ import { resolveSummaryRequestConfig } from "../utils/summary-request";
 import { useAccessStore } from "./access";
 import { collectModelsWithDefaultModelAndPolicy } from "../utils/model";
 import { getPublicUpstreamErrorMessage } from "../utils/public-error";
+import { migrateLegacyBuiltinMask } from "../masks/migration";
 
 const localStorage = safeLocalStorage();
 const chatPersistStorage = createTrailingThrottledJSONStorage<any>(
@@ -86,11 +81,13 @@ const chatPersistStorage = createTrailingThrottledJSONStorage<any>(
   {
     intervalMs: 1000,
     shouldPersist: (value) => value.state?._hasHydrated === true,
+    onError: () => {
+      console.error("[Chat] failed to persist conversation state");
+      showToast(Locale.Chat.PersistenceFailed);
+    },
   },
 );
 const CHAT_PERSIST_SEMANTIC_DEADLINE_MS = 250;
-const JIMENG_RESULT_POLL_INTERVAL_MS = 3000;
-const JIMENG_RESULT_MAX_POLLS = 40;
 const MCP_REINITIALIZATION_COOLDOWN_MS = 30_000;
 
 function flushChatPersistence() {
@@ -180,10 +177,6 @@ function refreshEmptySessionCustomInstructions(session: ChatSession) {
   if (session.messages.length === 0) {
     session.customInstructions = getCurrentCustomInstructions();
   }
-}
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function createEmptySession(): ChatSession {
@@ -709,13 +702,16 @@ export const useChatStore = createPersistStore(
         options?: {
           mcpClientIds?: string[];
           systemPrompt?: string;
-          visibleMcpResult?: string;
           targetSession?: ChatSession;
         },
       ) {
         const session =
           options?.targetSession ?? get().ensureCurrentSessionSaved();
         const modelConfig = { ...session.mask.modelConfig };
+        const requestPluginIds = [...(session.mask.plugin ?? [])];
+        const openaiResponsesRecoveryPending = session.messages.some(
+          (message) => message.openaiResponsesRecoveryPending === true,
+        );
         const isOpenAIImageGeneration = isOpenAIImageGenerationModelConfig({
           model: modelConfig.model,
           providerName: modelConfig.providerName,
@@ -935,6 +931,8 @@ export const useChatStore = createPersistStore(
             messages: sendMessages,
             config: { ...modelConfig, stream: true },
             allowTools: true,
+            pluginIds: requestPluginIds,
+            openaiResponsesRecoveryPending,
             onUpdate(message) {
               if (requestSettled) return;
               botMessage.streaming = true;
@@ -948,14 +946,7 @@ export const useChatStore = createPersistStore(
                 const metadataChanged = applyResponseMetadata(metadata);
                 if (requestTerminal === "user-abort") {
                   streamUpdateCoalescer?.cancel();
-                  if (message || options?.visibleMcpResult) {
-                    botMessage.content = options?.visibleMcpResult
-                      ? mergeJimengResultIntoReply(
-                          message || "",
-                          options.visibleMcpResult,
-                        )
-                      : message;
-                  }
+                  if (message) botMessage.content = message;
                   botMessage.streaming = false;
                   botMessage.date = new Date().toLocaleString();
                   notifyRequestMutation();
@@ -985,17 +976,8 @@ export const useChatStore = createPersistStore(
                     });
                   });
                 }
-                if (
-                  message ||
-                  options?.visibleMcpResult ||
-                  metadata?.openaiResponsesOutput?.length
-                ) {
-                  botMessage.content = options?.visibleMcpResult
-                    ? mergeJimengResultIntoReply(
-                        message || "",
-                        options.visibleMcpResult,
-                      )
-                    : message;
+                if (message || metadata?.openaiResponsesOutput?.length) {
+                  botMessage.content = message;
                   applyResponseMetadata(metadata);
                   botMessage.date = new Date().toLocaleString();
                   get().onNewMessage(botMessage, session);
@@ -1151,14 +1133,6 @@ export const useChatStore = createPersistStore(
           } catch {
             console.error("[MCP] failed to resolve chat tools");
           }
-        }
-        const requiresJimengSchema =
-          options?.mcpClientIds?.includes(JIMENG_MCP_SERVER_ID);
-        const hasJimengSchema = mcpSystemPrompt.includes(
-          `[clientId]\n${JIMENG_MCP_SERVER_ID}\n[tools]\n`,
-        );
-        if (requiresJimengSchema && !hasJimengSchema) {
-          throw new Error(Locale.Chat.ImageGeneration.EnableFailed);
         }
         const extraSystemPrompt = options?.systemPrompt?.trim() ?? "";
         const composedMcpSystemPrompt = [mcpSystemPrompt, extraSystemPrompt]
@@ -1621,7 +1595,7 @@ export const useChatStore = createPersistStore(
               session.lastUpdate = Date.now();
             });
             flushChatPersistence();
-            showToast(Locale.Chat.ImageGeneration.Display.ToolFailure);
+            showToast(Locale.Mcp.Chat.ToolFailure);
           };
 
           if (!isMcpJson(content)) {
@@ -1633,118 +1607,6 @@ export const useChatStore = createPersistStore(
           try {
             const mcpRequest = extractMcpJson(content);
             if (mcpRequest) {
-              if (mcpRequest.clientId === JIMENG_MCP_SERVER_ID) {
-                const progressText =
-                  formatJimengMcpRequestForChat(content) ||
-                  [
-                    Locale.Chat.ImageGeneration.Task,
-                    "",
-                    Locale.Chat.ImageGeneration.Progress.Preparing,
-                    `- ${Locale.Chat.ImageGeneration.Submitting}`,
-                  ].join("\n");
-                const updateJimengMessage = (nextContent: string) => {
-                  get().updateTargetSession(
-                    targetSession ?? get().currentSession(),
-                    (session) => {
-                      const targetMessage = session.messages.find(
-                        (item) => item.id === message.id,
-                      );
-                      if (targetMessage) {
-                        targetMessage.content = nextContent;
-                        targetMessage.streaming = false;
-                        targetMessage.date = new Date().toLocaleString();
-                      }
-                      session.messages = session.messages.concat();
-                      session.lastUpdate = Date.now();
-                    },
-                  );
-                };
-
-                updateJimengMessage(progressText);
-
-                executeMcpAction(mcpRequest.clientId, mcpRequest.mcp)
-                  .then(async (result) => {
-                    let resultForChat = result;
-                    let querySubmitId = getJimengQuerySubmitId(resultForChat, {
-                      // 首次成功响应可能只有本地 MEDIA 路径，因此允许带
-                      // download 参数补查一次；终态查询不得继续轮询成超时。
-                      querySuccessfulResultWithoutMedia: true,
-                    });
-                    updateJimengMessage(
-                      mergeJimengProgressWithResult(
-                        progressText,
-                        resultForChat,
-                        { includeMedia: !querySubmitId },
-                      ),
-                    );
-
-                    let pollCount = 0;
-                    while (
-                      querySubmitId &&
-                      pollCount < JIMENG_RESULT_MAX_POLLS
-                    ) {
-                      pollCount += 1;
-                      await delay(JIMENG_RESULT_POLL_INTERVAL_MS);
-                      const queryResult = await executeMcpAction(
-                        JIMENG_MCP_SERVER_ID,
-                        {
-                          method: "tools/call",
-                          params: {
-                            name: "dreamina_query_result",
-                            arguments: {
-                              submit_id: querySubmitId,
-                              download: true,
-                            },
-                          },
-                        },
-                      );
-                      resultForChat = combineMcpToolResults(
-                        resultForChat,
-                        queryResult,
-                      );
-                      querySubmitId = getJimengQuerySubmitId(resultForChat);
-                      updateJimengMessage(
-                        mergeJimengProgressWithResult(
-                          progressText,
-                          resultForChat,
-                          { includeMedia: !querySubmitId },
-                        ),
-                      );
-                    }
-
-                    if (querySubmitId) {
-                      updateJimengMessage(
-                        mergeJimengProgressWithResult(
-                          progressText,
-                          combineMcpToolResults(
-                            resultForChat,
-                            [
-                              "gen_status: timeout",
-                              `error_message: ${Locale.Chat.ImageGeneration.QueryTimeout}`,
-                            ].join("\n"),
-                          ),
-                          { includeMedia: false },
-                        ),
-                      );
-                    }
-                  })
-                  .catch(() => {
-                    console.warn("[MCP] failed to run Jimeng task");
-                    updateJimengMessage(
-                      mergeJimengProgressWithResult(
-                        progressText,
-                        [
-                          "gen_status: failed",
-                          `error_message: ${Locale.Chat.ImageGeneration.SubmitOrQueryFailed}`,
-                        ].join("\n"),
-                        { includeMedia: false },
-                      ),
-                    );
-                    showToast(Locale.Chat.ImageGeneration.Failed);
-                  });
-                return;
-              }
-
               executeMcpAction(mcpRequest.clientId, mcpRequest.mcp)
                 .then(async (result) => {
                   const formattedResult = formatMcpToolResultForChat(
@@ -1780,7 +1642,7 @@ export const useChatStore = createPersistStore(
   {
     name: StoreKey.Chat,
     storage: chatPersistStorage,
-    version: 3.5,
+    version: 3.6,
     partialize(state) {
       const {
         temporarySession,
@@ -1894,6 +1756,17 @@ export const useChatStore = createPersistStore(
                 : useAppConfig.getState().modelConfig.max_output_tokens;
           }
           delete modelConfig.max_tokens;
+        });
+      }
+
+      if (version < 3.6) {
+        const config = useAppConfig.getState();
+        newState.sessions.forEach((session) => {
+          session.mask = migrateLegacyBuiltinMask(
+            session.mask,
+            config.modelConfig,
+            config.modelConfigMeta,
+          );
         });
       }
 

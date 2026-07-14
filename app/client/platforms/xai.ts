@@ -4,7 +4,6 @@ import { ApiPath, XAI_BASE_URL, XAI, REQUEST_TIMEOUT_MS } from "@/app/constant";
 import {
   useAccessStore,
   useAppConfig,
-  useChatStore,
   ChatMessageTool,
   usePluginStore,
 } from "@/app/store";
@@ -69,7 +68,7 @@ export class XAIApi implements LLMApi {
 
     const modelConfig = mergeLLMRequestConfig(
       useAppConfig.getState().modelConfig,
-      useChatStore.getState().currentSession().mask.modelConfig,
+      useAppConfig.getState().modelConfig,
       options.config,
     );
 
@@ -99,11 +98,7 @@ export class XAIApi implements LLMApi {
       if (shouldStream) {
         const [tools, funcs] =
           options.allowTools === true
-            ? usePluginStore
-                .getState()
-                .getAsTools(
-                  useChatStore.getState().currentSession().mask?.plugin || [],
-                )
+            ? usePluginStore.getState().getAsTools(options.pluginIds ?? [])
             : [[], {}];
         return stream(
           chatPath,

@@ -80,6 +80,7 @@ export function Mermaid(props: { code: string }) {
       <div
         className="markdown-mermaid-fallback"
         data-markdown-width="normal"
+        data-chat-horizontal-scroll="true"
         role="status"
         aria-live="polite"
       >
@@ -100,6 +101,7 @@ export function Mermaid(props: { code: string }) {
       ref={figureRef}
       className="markdown-mermaid-figure"
       data-markdown-width={isWide ? "wide" : "normal"}
+      data-chat-horizontal-scroll="true"
     >
       <figcaption className="markdown-mermaid-caption">
         {Locale.NewChat.Mermaid.Caption}

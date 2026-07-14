@@ -99,30 +99,6 @@ describe("chat render messages", () => {
     expect(shouldRenderLoadingPreview(visibleMessages, false)).toBe(false);
   });
 
-  test("keeps a malformed Jimeng tool call visible as a terminal failure", () => {
-    const visibleMessages = getVisibleChatMessages([
-      message({
-        id: "malformed-jimeng",
-        role: "assistant",
-        content: [
-          "```json:mcp:jimeng-mcp",
-          '{"method":"tools/call" "params":{}}',
-          "```",
-        ].join("\n"),
-        streaming: false,
-      }),
-    ]);
-
-    expect(visibleMessages).toHaveLength(1);
-    expect(visibleMessages[0]).toMatchObject({
-      id: "malformed-jimeng",
-      streaming: false,
-      isError: true,
-      content: expect.stringContaining("Tool call failed"),
-    });
-    expect(visibleMessages[0].content).not.toContain("```json:mcp");
-  });
-
   test("keeps a historical malformed generic MCP call visible as a terminal failure", () => {
     const visibleMessages = getVisibleChatMessages([
       message({
@@ -146,34 +122,12 @@ describe("chat render messages", () => {
     expect(visibleMessages[0].content).not.toContain("json:mcp");
   });
 
-  test("keeps the deployed Jimeng EOF truncation visible as generation progress", () => {
-    const visibleMessages = getVisibleChatMessages([
-      message({
-        id: "recoverable-jimeng",
-        role: "assistant",
-        content: [
-          "我先优化生成提示词。",
-          "```json:mcp:jimeng-mcp",
-          '{"method":"tools/call","params":{"name":"dreamina_text2image","arguments":{"prompt":"sunrise over a lake","ratio":"16:9","poll":0}}',
-          "```",
-          "正在提交。",
-        ].join("\n"),
-        streaming: false,
-      }),
-    ]);
-
-    expect(visibleMessages).toHaveLength(1);
-    expect(visibleMessages[0].content).toContain("Image generation task");
-    expect(visibleMessages[0].content).toContain("sunrise over a lake");
-    expect(visibleMessages[0].content).not.toContain("```json:mcp");
-  });
-
   test("does not expose an incomplete final MCP protocol message", () => {
     const visibleMessages = getVisibleChatMessages([
       message({
         id: "incomplete-mcp",
         role: "assistant",
-        content: '```json:mcp:jimeng-mcp\n{"method":"tools/call"',
+        content: '```json:mcp:demo\n{"method":"tools/call"',
         streaming: false,
       }),
     ]);
@@ -185,33 +139,6 @@ describe("chat render messages", () => {
       content: expect.stringContaining("Tool call failed"),
     });
     expect(visibleMessages[0].content).not.toContain("json:mcp");
-  });
-
-  test("projects a Jimeng video result into the following assistant reply", () => {
-    const videoUrl = "https://example.com/jimeng/video-1.mp4";
-    const visibleMessages = getVisibleChatMessages([
-      message({
-        id: "jimeng-result",
-        role: "assistant",
-        isMcpResponse: true,
-        content: [
-          "submit_id: video-1",
-          "gen_status: success",
-          "public_urls:",
-          videoUrl,
-        ].join("\n"),
-      }),
-      message({
-        id: "assistant-final",
-        role: "assistant",
-        content: "视频已生成。",
-      }),
-    ]);
-
-    expect(visibleMessages).toHaveLength(1);
-    expect(visibleMessages[0].content).toContain(
-      `[generated video 1](${videoUrl})`,
-    );
   });
 
   test("reprocesses only the mutable tail during streaming updates", () => {

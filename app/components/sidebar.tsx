@@ -355,71 +355,28 @@ export function SideBar(props: {
       </SideBarBody>
       <SideBarTail
         primaryAction={
-          isCompactScreen ? (
-            <div className={styles["sidebar-mobile-account"]}>
-              <div
-                className={clsx(
-                  styles["sidebar-mobile-account-avatar"],
-                  "no-dark",
-                )}
+          <div className={styles["sidebar-action"]}>
+            <Link
+              to={Path.Settings}
+              className={clsx(styles["sidebar-settings-link"], {
+                [styles["sidebar-settings-link-active"]]:
+                  location.pathname === Path.Settings,
+              })}
+              aria-current={
+                location.pathname === Path.Settings ? "page" : undefined
+              }
+            >
+              <span
+                className={styles["sidebar-settings-icon"]}
+                aria-hidden="true"
               >
-                <span
-                  className={styles["sidebar-mobile-pixel-face"]}
-                  aria-hidden="true"
-                >
-                  <span className={styles["sidebar-mobile-pixel-eye-left"]} />
-                  <span className={styles["sidebar-mobile-pixel-eye-right"]} />
-                  <span className={styles["sidebar-mobile-pixel-mouth"]} />
-                </span>
-              </div>
-              <div className={styles["sidebar-mobile-account-copy"]}>
-                <div className={styles["sidebar-mobile-account-name"]}>
-                  NeatChat
-                </div>
-                <div className={styles["sidebar-mobile-account-meta"]}>
-                  Local
-                </div>
-              </div>
-              <Link
-                to={Path.Settings}
-                className={clsx(styles["sidebar-mobile-account-settings"], {
-                  [styles["sidebar-settings-link-active"]]:
-                    location.pathname === Path.Settings,
-                })}
-                aria-label={Locale.Settings.Title}
-                aria-current={
-                  location.pathname === Path.Settings ? "page" : undefined
-                }
-              >
-                <span aria-hidden="true">
-                  <SettingsIcon />
-                </span>
-              </Link>
-            </div>
-          ) : (
-            <div className={styles["sidebar-action"]}>
-              <Link
-                to={Path.Settings}
-                className={clsx(styles["sidebar-settings-link"], {
-                  [styles["sidebar-settings-link-active"]]:
-                    location.pathname === Path.Settings,
-                })}
-                aria-current={
-                  location.pathname === Path.Settings ? "page" : undefined
-                }
-              >
-                <span
-                  className={styles["sidebar-settings-icon"]}
-                  aria-hidden="true"
-                >
-                  <SettingsIcon />
-                </span>
-                <span className={styles["sidebar-settings-label"]}>
-                  {Locale.Settings.Title}
-                </span>
-              </Link>
-            </div>
-          )
+                <SettingsIcon />
+              </span>
+              <span className={styles["sidebar-settings-label"]}>
+                {Locale.Settings.Title}
+              </span>
+            </Link>
+          </div>
         }
         secondaryAction={null}
       />

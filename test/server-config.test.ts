@@ -926,10 +926,11 @@ describe("OpenAI Responses config", () => {
     expect(config.hideUserApiKey).toBe(true);
   });
 
-  test("enables MCP when Jimeng token is configured", () => {
+  test("enables MCP only when explicitly configured", () => {
     delete process.env.ENABLE_MCP;
-    process.env.JIMENG_MCP_TOKEN = "test-jimeng-token";
+    expect(getServerSideConfig().enableMcp).toBe(false);
 
+    process.env.ENABLE_MCP = "true";
     expect(getServerSideConfig().enableMcp).toBe(true);
 
     process.env.ENABLE_MCP = "false";

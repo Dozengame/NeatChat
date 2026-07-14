@@ -128,6 +128,7 @@ describe("PreCode language labels", () => {
 
     const pre = document.querySelector("pre");
     expect(pre).toHaveAttribute("data-wrap-state", "scroll");
+    expect(pre).toHaveAttribute("data-chat-horizontal-scroll", "true");
     expect(pre).not.toHaveClass("markdown-code-block-wrap");
 
     const wrapButton = screen.getByRole("button", {

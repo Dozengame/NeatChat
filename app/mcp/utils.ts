@@ -1,5 +1,3 @@
-import { JIMENG_MCP_SERVER_ID } from "./jimeng";
-
 const MCP_JSON_PATTERN = /```json:mcp:([^{\s]+)([\s\S]*?)```/;
 const MCP_JSON_GLOBAL_PATTERN = /```json:mcp:([^{\s]+)([\s\S]*?)```/g;
 const MCP_JSON_START_PATTERN = /```json:mcp(?=[:\s`]|$)(?::[^\s`]*)?/;
@@ -103,7 +101,7 @@ export function extractMcpJson(content: string) {
   if (match?.length === 3) {
     return {
       clientId: match[1],
-      mcp: parseMcpJsonPayload(match[2], match[1] === JIMENG_MCP_SERVER_ID),
+      mcp: parseMcpJsonPayload(match[2], false),
     };
   }
   return null;

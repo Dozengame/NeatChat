@@ -34,6 +34,10 @@ describe("Mermaid diagram rendering", () => {
       expect(screen.getByText("Diagram preview unavailable")).toBeVisible(),
     );
 
+    expect(screen.getByRole("status")).toHaveAttribute(
+      "data-chat-horizontal-scroll",
+      "true",
+    );
     expect(runMermaid).toHaveBeenCalledWith({
       nodes: [expect.any(HTMLButtonElement)],
     });
@@ -51,6 +55,10 @@ describe("Mermaid diagram rendering", () => {
 
     expect(previewButton).toHaveClass("mermaid");
     expect(previewButton).toHaveTextContent("graph TD; A-->B");
+    expect(previewButton.closest("figure")).toHaveAttribute(
+      "data-chat-horizontal-scroll",
+      "true",
+    );
     await waitFor(() => expect(runMermaid).toHaveBeenCalledTimes(1));
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });

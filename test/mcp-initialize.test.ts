@@ -42,7 +42,6 @@ import {
   listTools,
   removeClient,
 } from "../app/mcp/client";
-import { JIMENG_MCP_SERVER_ID } from "../app/mcp/jimeng";
 import { clientsMap, setInitializeMcpSystemPromise } from "../app/mcp/runtime";
 import { hashWithSecret } from "../app/utils/hmac";
 
@@ -85,59 +84,26 @@ const twoActiveClientsConfig = JSON.stringify({
   },
 });
 
-const activeJimengConfig = JSON.stringify({
-  mcpServers: {
-    [JIMENG_MCP_SERVER_ID]: {
-      type: "streamable-http",
-      url: "https://jimeng.example.test/mcp",
-      status: "active",
-    },
-  },
-});
-
-const pausedJimengConfig = JSON.stringify({
-  mcpServers: {
-    [JIMENG_MCP_SERVER_ID]: {
-      type: "streamable-http",
-      url: "https://jimeng.example.test/mcp",
-      status: "paused",
-    },
-  },
-});
-
-const currentJimengToolNames = [
-  "dreamina_version",
-  "dreamina_user_credit",
-  "dreamina_text2image",
-  "dreamina_text2video",
-  "dreamina_image2image",
-  "dreamina_image2video",
-  "dreamina_frames2video",
-  "dreamina_image_upscale",
-  "dreamina_multiframe2video",
-  "dreamina_multimodal2video",
-  "dreamina_query_result",
-  "dreamina_list_task",
-  "dreamina_session_list",
-  "dreamina_session_search",
-  "dreamina_session_create",
-  "dreamina_session_rename",
-  "dreamina_session_delete",
-];
-
-function currentJimengTools() {
-  return {
-    tools: currentJimengToolNames.map((name) => ({
-      name,
-      inputSchema: { type: "object", properties: {} },
-    })),
-  };
-}
-
 async function flushAsyncWork() {
   for (let i = 0; i < 25; i += 1) {
     await Promise.resolve();
   }
+}
+
+function setActiveDemoTool(inputSchema?: object, name = "lookup") {
+  clientsMap.set("demo", {
+    client: { id: "active-client" } as any,
+    tools: { tools: [{ name, inputSchema }] },
+    errorMsg: null,
+  });
+}
+
+async function callDemoTool(args: Record<string, unknown>, name = "lookup") {
+  const { executeMcpAction } = await import("../app/mcp/actions");
+  return executeMcpAction("demo", {
+    method: "tools/call",
+    params: { name, arguments: args },
+  });
 }
 
 describe("MCP initialization", () => {
@@ -220,187 +186,13 @@ describe("MCP initialization", () => {
     });
   });
 
-  test("serializes activate and lazy execution through one client initialization", async () => {
-    (fs.readFile as jest.Mock).mockResolvedValue(activeJimengConfig);
-    let resolveClient!: (client: { id: string }) => void;
-    (createClient as jest.Mock).mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolveClient = resolve;
-        }),
-    );
-    const { activateMcpClient, executeMcpAction } = await import(
-      "../app/mcp/actions"
-    );
-    (listTools as jest.Mock).mockResolvedValueOnce(currentJimengTools());
-
-    const activation = activateMcpClient(JIMENG_MCP_SERVER_ID);
-    await flushAsyncWork();
-    const execution = executeMcpAction(JIMENG_MCP_SERVER_ID, {
-      jsonrpc: "2.0",
-      id: "request-1",
-      method: "tools/call",
-      params: { name: "dreamina_session_list", arguments: {} },
-    });
-    await flushAsyncWork();
-
-    resolveClient({ id: "deferred-client" });
-    const outcomes = await Promise.allSettled([activation, execution]);
-
-    expect(outcomes.map((outcome) => outcome.status)).toEqual([
-      "fulfilled",
-      "fulfilled",
-    ]);
-    expect(createClient).toHaveBeenCalledTimes(1);
-    expect(listTools).toHaveBeenCalledTimes(1);
-    expect(executeRequest).toHaveBeenCalledTimes(2);
-    expect(executeRequest).toHaveBeenNthCalledWith(
-      1,
-      { id: "deferred-client" },
-      expect.objectContaining({
-        method: "tools/call",
-        params: { name: "dreamina_version", arguments: {} },
-      }),
-    );
-    expect(executeRequest).toHaveBeenNthCalledWith(
-      2,
-      { id: "deferred-client" },
-      expect.objectContaining({ id: "request-1", method: "tools/call" }),
-    );
-  });
-
-  test("reconnects Jimeng activation and replaces a stale tool snapshot", async () => {
-    (fs.readFile as jest.Mock).mockResolvedValue(pausedJimengConfig);
-    const oldClient = { id: "old-jimeng-client" };
-    clientsMap.set(JIMENG_MCP_SERVER_ID, {
-      client: oldClient as any,
-      tools: {
-        tools: Array.from({ length: 7 }, (_, index) => ({
-          name: `dreamina_old_${index + 1}`,
-        })),
-      },
-      errorMsg: null,
-    });
-    (createClient as jest.Mock).mockResolvedValueOnce({
-      id: "refreshed-jimeng-client",
-    });
-    (listTools as jest.Mock).mockResolvedValueOnce(currentJimengTools());
-    const { activateMcpClient } = await import("../app/mcp/actions");
-
-    await activateMcpClient(JIMENG_MCP_SERVER_ID);
-
-    expect(removeClient).toHaveBeenCalledWith(oldClient);
-    expect(createClient).toHaveBeenCalledTimes(1);
-    expect(listTools).toHaveBeenCalledTimes(1);
-    expect(clientsMap.get(JIMENG_MCP_SERVER_ID)).toMatchObject({
-      client: { id: "refreshed-jimeng-client" },
-      errorMsg: null,
-    });
-    expect(
-      clientsMap
-        .get(JIMENG_MCP_SERVER_ID)
-        ?.tools?.tools.some((tool) => tool.name === "dreamina_version"),
-    ).toBe(true);
-    expect(
-      clientsMap.get(JIMENG_MCP_SERVER_ID)?.tools?.tools,
-    ).toHaveLength(17);
-    expect(executeRequest).toHaveBeenCalledWith(
-      { id: "refreshed-jimeng-client" },
-      {
-        method: "tools/call",
-        params: { name: "dreamina_version", arguments: {} },
-      },
-    );
-    expect(fs.writeFile).not.toHaveBeenCalled();
-  });
-
-  test("rejects an outdated Jimeng tool snapshot after reconnect", async () => {
-    (fs.readFile as jest.Mock).mockResolvedValue(pausedJimengConfig);
-    (createClient as jest.Mock).mockResolvedValueOnce({
-      id: "outdated-jimeng-client",
-    });
-    (listTools as jest.Mock).mockResolvedValueOnce({
-      tools: Array.from({ length: 7 }, (_, index) => ({
-        name: `dreamina_old_${index + 1}`,
-      })),
-    });
-    const { activateMcpClient } = await import("../app/mcp/actions");
-
-    await expect(activateMcpClient(JIMENG_MCP_SERVER_ID)).rejects.toThrow(
-      "expected at least 17 dreamina_* tools, received 7",
-    );
-
-    expect(removeClient).toHaveBeenCalledWith({ id: "outdated-jimeng-client" });
-    expect(executeRequest).not.toHaveBeenCalled();
-    expect(clientsMap.get(JIMENG_MCP_SERVER_ID)).toMatchObject({
-      client: null,
-      tools: null,
-      errorMsg: expect.stringContaining("expected at least 17"),
-    });
-  });
-
-  test("temporarily activates the paused built-in Jimeng client for explicit execution", async () => {
-    (fs.readFile as jest.Mock).mockResolvedValue(pausedJimengConfig);
-    const {
-      activateMcpClient,
-      deactivateMcpClient,
-      executeMcpAction,
-      getMcpChatServerStates,
-    } = await import("../app/mcp/actions");
-    (listTools as jest.Mock).mockResolvedValueOnce(currentJimengTools());
-
-    await expect(getMcpChatServerStates()).resolves.toMatchObject({
-      [JIMENG_MCP_SERVER_ID]: { status: "paused" },
-    });
-    await activateMcpClient(JIMENG_MCP_SERVER_ID);
-    await expect(getMcpChatServerStates()).resolves.toMatchObject({
-      [JIMENG_MCP_SERVER_ID]: { status: "active" },
-    });
-    await executeMcpAction(JIMENG_MCP_SERVER_ID, {
-      jsonrpc: "2.0",
-      id: "jimeng-request",
-      method: "tools/call",
-      params: { name: "dreamina_text2image", arguments: { poll: 60 } },
-    });
-    await deactivateMcpClient(JIMENG_MCP_SERVER_ID);
-    await expect(getMcpChatServerStates()).resolves.toMatchObject({
-      [JIMENG_MCP_SERVER_ID]: { status: "paused" },
-    });
-
-    expect(createClient).toHaveBeenCalledTimes(1);
-    expect(createClient).toHaveBeenCalledWith(
-      JIMENG_MCP_SERVER_ID,
-      expect.objectContaining({ status: "active" }),
-    );
-    expect(executeRequest).toHaveBeenCalledTimes(2);
-    expect(executeRequest).toHaveBeenNthCalledWith(
-      1,
-      { id: "demo-client" },
-      {
-        method: "tools/call",
-        params: { name: "dreamina_version", arguments: {} },
-      },
-    );
-    expect(executeRequest).toHaveBeenNthCalledWith(
-      2,
-      { id: "demo-client" },
-      expect.objectContaining({
-        id: "jimeng-request",
-        params: expect.objectContaining({
-          arguments: expect.objectContaining({ poll: 0 }),
-        }),
-      }),
-    );
-    expect(removeClient).toHaveBeenCalledWith({ id: "demo-client" });
-    expect(clientsMap.has(JIMENG_MCP_SERVER_ID)).toBe(false);
-    expect(fs.writeFile).not.toHaveBeenCalled();
-  });
-
   test("keeps a generic paused server paused when a stale runtime remains", async () => {
     (fs.readFile as jest.Mock).mockResolvedValue(pausedDemoConfig);
     clientsMap.set("demo", {
       client: { id: "stale-active-client" } as any,
-      tools: { tools: [{ name: "stale-tool" }] },
+      tools: {
+        tools: [{ name: "stale-tool", inputSchema: { type: "object" } }],
+      },
       errorMsg: null,
     });
     const { getMcpChatServerStates } = await import("../app/mcp/actions");
@@ -408,6 +200,120 @@ describe("MCP initialization", () => {
     await expect(getMcpChatServerStates()).resolves.toEqual({
       demo: { status: "paused", chatDefaultEnabled: true },
     });
+  });
+
+  test.each(["active", "paused"] as const)(
+    "tombstones a retired Jimeng %s config from config and runtime projections",
+    async (status) => {
+      (fs.readFile as jest.Mock).mockResolvedValue(
+        JSON.stringify({
+          mcpServers: {
+            demo: JSON.parse(activeDemoConfig).mcpServers.demo,
+            "jimeng-mcp": {
+              type: "stdio",
+              command: "jimeng",
+              status,
+            },
+          },
+        }),
+      );
+      clientsMap.set("jimeng-mcp", {
+        client: { id: "stale-jimeng" } as any,
+        tools: {
+          tools: [
+            { name: "stale-jimeng-tool", inputSchema: { type: "object" } },
+          ],
+        },
+        errorMsg: null,
+      });
+      const actions = await import("../app/mcp/actions");
+
+      await expect(actions.getMcpConfigFromFile()).resolves.toEqual({
+        mcpServers: {
+          demo: JSON.parse(activeDemoConfig).mcpServers.demo,
+        },
+      });
+      await expect(actions.getClientsStatus()).resolves.not.toHaveProperty(
+        "jimeng-mcp",
+      );
+      await expect(
+        actions.getMcpChatServerStates(),
+      ).resolves.not.toHaveProperty("jimeng-mcp");
+      await expect(actions.getAllTools()).resolves.toEqual([]);
+      await expect(actions.getAvailableClientsCount()).resolves.toBe(0);
+      await expect(actions.getClientTools("jimeng-mcp")).resolves.toBeNull();
+    },
+  );
+
+  test("detaches a stale Jimeng runtime without waiting for its transport to close", async () => {
+    (fs.readFile as jest.Mock).mockResolvedValue(
+      JSON.stringify({
+        mcpServers: {
+          demo: JSON.parse(activeDemoConfig).mcpServers.demo,
+          "jimeng-mcp": {
+            type: "stdio",
+            command: "jimeng",
+            status: "active",
+          },
+        },
+      }),
+    );
+    clientsMap.set("jimeng-mcp", {
+      client: { id: "stale-jimeng" } as any,
+      tools: { tools: [] },
+      errorMsg: null,
+    });
+    (removeClient as jest.Mock).mockImplementationOnce(
+      () => new Promise(() => undefined),
+    );
+    const { initializeMcpSystem } = await import("../app/mcp/actions");
+
+    await expect(initializeMcpSystem()).resolves.toEqual({
+      mcpServers: {
+        demo: JSON.parse(activeDemoConfig).mcpServers.demo,
+      },
+    });
+
+    expect(removeClient).toHaveBeenCalledWith({ id: "stale-jimeng" });
+    expect(clientsMap.has("jimeng-mcp")).toBe(false);
+    expect(createClient).toHaveBeenCalledTimes(1);
+    expect(createClient).toHaveBeenCalledWith(
+      "demo",
+      expect.objectContaining({ command: "demo" }),
+    );
+  });
+
+  test("never writes a retired Jimeng config back and rejects re-adding it", async () => {
+    (fs.readFile as jest.Mock).mockResolvedValue(
+      JSON.stringify({
+        mcpServers: {
+          demo: JSON.parse(activeDemoConfig).mcpServers.demo,
+          "jimeng-mcp": {
+            type: "stdio",
+            command: "jimeng",
+            status: "active",
+          },
+        },
+      }),
+    );
+    const actions = await import("../app/mcp/actions");
+
+    const nextConfig = await actions.pauseMcpServer("demo");
+    expect(nextConfig).not.toHaveProperty("mcpServers.jimeng-mcp");
+    const writtenConfig = JSON.parse(
+      (fs.writeFile as jest.Mock).mock.calls.at(-1)?.[1] ?? "{}",
+    );
+    expect(writtenConfig).not.toHaveProperty("mcpServers.jimeng-mcp");
+    expect(writtenConfig).toMatchObject({
+      mcpServers: { demo: { status: "paused" } },
+    });
+
+    await expect(
+      actions.addMcpServer("jimeng-mcp", {
+        type: "stdio",
+        command: "jimeng",
+      }),
+    ).rejects.toThrow("Server jimeng-mcp is retired");
   });
 
   test("applies deactivate after an in-flight activation completes", async () => {
@@ -613,7 +519,9 @@ describe("MCP initialization", () => {
   test("waits for an in-flight tool request before deactivating the client", async () => {
     clientsMap.set("demo", {
       client: { id: "active-client" } as any,
-      tools: { tools: [{ name: "side-effect" }] },
+      tools: {
+        tools: [{ name: "side-effect", inputSchema: { type: "object" } }],
+      },
       errorMsg: null,
     });
     let resolveExecution!: (result: { result: object }) => void;
@@ -648,19 +556,18 @@ describe("MCP initialization", () => {
   test("only executes listed tools through the tools/call method", async () => {
     clientsMap.set("demo", {
       client: { id: "active-client" } as any,
-      tools: { tools: [{ name: "allowed-tool" }] },
+      tools: {
+        tools: [{ name: "allowed-tool", inputSchema: { type: "object" } }],
+      },
       errorMsg: null,
     });
     const { executeMcpAction } = await import("../app/mcp/actions");
 
     await expect(
-      executeMcpAction(
-        "demo",
-        {
-          method: "resources/read",
-          params: { name: "allowed-tool", arguments: {} },
-        } as any,
-      ),
+      executeMcpAction("demo", {
+        method: "resources/read",
+        params: { name: "allowed-tool", arguments: {} },
+      } as any),
     ).rejects.toThrow("Invalid MCP tool request");
     await expect(
       executeMcpAction("demo", {
@@ -669,16 +576,235 @@ describe("MCP initialization", () => {
       }),
     ).rejects.toThrow("MCP tool is not available");
     await expect(
-      executeMcpAction(
-        "demo",
-        {
-          method: "tools/call",
-          params: { name: "allowed-tool", arguments: [] },
-        } as any,
-      ),
+      executeMcpAction("demo", {
+        method: "tools/call",
+        params: { name: "allowed-tool", arguments: [] },
+      } as any),
     ).rejects.toThrow("Invalid MCP tool request");
 
     expect(executeRequest).not.toHaveBeenCalled();
+  });
+
+  test("validates tool arguments against discovered schemas and limits", async () => {
+    const { executeMcpAction } = await import("../app/mcp/actions");
+
+    setActiveDemoTool({
+      type: "object",
+      additionalProperties: false,
+      required: ["query"],
+      properties: { query: { type: "string" } },
+    });
+    await expect(
+      executeMcpAction("demo", {
+        method: "tools/call",
+        params: { name: "lookup", arguments: { query: "panda" } },
+      }),
+    ).resolves.toEqual({ result: {} });
+
+    await expect(
+      executeMcpAction("demo", {
+        method: "tools/call",
+        params: { name: "lookup", arguments: { query: 1 } },
+      }),
+    ).rejects.toThrow("Invalid MCP tool arguments");
+
+    setActiveDemoTool();
+    await expect(
+      executeMcpAction("demo", {
+        method: "tools/call",
+        params: { name: "lookup", arguments: {} },
+      }),
+    ).rejects.toThrow("input schema is missing or invalid");
+
+    setActiveDemoTool({ type: "not-a-json-schema-type" });
+    await expect(
+      executeMcpAction("demo", {
+        method: "tools/call",
+        params: { name: "lookup", arguments: {} },
+      }),
+    ).rejects.toThrow("input schema is invalid");
+
+    setActiveDemoTool({ type: "object" });
+    await expect(
+      executeMcpAction("demo", {
+        method: "tools/call",
+        params: {
+          name: "lookup",
+          arguments: JSON.parse('{"__proto__":{"polluted":true}}'),
+        },
+      }),
+    ).rejects.toThrow("forbidden key");
+    await expect(
+      executeMcpAction("demo", {
+        method: "tools/call",
+        params: { name: "lookup", arguments: { query: "x".repeat(70_000) } },
+      }),
+    ).rejects.toThrow("maximum size");
+  });
+
+  test("defaults MCP schemas without $schema to 2020-12 semantics", async () => {
+    setActiveDemoTool({
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        creditCard: { type: "string" },
+        billingAddress: { type: "string" },
+      },
+      dependentRequired: {
+        creditCard: ["billingAddress"],
+      },
+    });
+
+    await expect(
+      callDemoTool({
+        creditCard: "4111",
+        billingAddress: "Singapore",
+      }),
+    ).resolves.toEqual({ result: {} });
+    await expect(callDemoTool({ creditCard: "4111" })).rejects.toThrow(
+      "Invalid MCP tool arguments",
+    );
+
+    expect(executeRequest).toHaveBeenCalledTimes(1);
+  });
+
+  test("validates explicit 2020-12 tuple schemas", async () => {
+    setActiveDemoTool({
+      $schema: "https://json-schema.org/draft/2020-12/schema",
+      type: "object",
+      additionalProperties: false,
+      required: ["coordinates"],
+      properties: {
+        coordinates: {
+          type: "array",
+          prefixItems: [{ type: "number" }, { type: "number" }],
+          items: false,
+        },
+      },
+    });
+
+    await expect(callDemoTool({ coordinates: [1, 2] })).resolves.toEqual({
+      result: {},
+    });
+    await expect(callDemoTool({ coordinates: [1, 2, 3] })).rejects.toThrow(
+      "Invalid MCP tool arguments",
+    );
+
+    expect(executeRequest).toHaveBeenCalledTimes(1);
+  });
+
+  test("keeps explicit draft-07 tuple validation compatible", async () => {
+    setActiveDemoTool({
+      $schema: "http://json-schema.org/draft-07/schema#",
+      type: "object",
+      additionalProperties: false,
+      required: ["coordinates"],
+      properties: {
+        coordinates: {
+          type: "array",
+          items: [{ type: "number" }, { type: "number" }],
+          additionalItems: false,
+        },
+      },
+    });
+
+    await expect(callDemoTool({ coordinates: [1, 2] })).resolves.toEqual({
+      result: {},
+    });
+    await expect(callDemoTool({ coordinates: [1, 2, 3] })).rejects.toThrow(
+      "Invalid MCP tool arguments",
+    );
+
+    expect(executeRequest).toHaveBeenCalledTimes(1);
+  });
+
+  test("fails closed for an unknown JSON Schema dialect", async () => {
+    setActiveDemoTool({
+      $schema: "https://example.com/schemas/unknown",
+      type: "object",
+      additionalProperties: false,
+    });
+
+    await expect(callDemoTool({})).rejects.toThrow(
+      "MCP tool input schema is invalid",
+    );
+    expect(executeRequest).not.toHaveBeenCalled();
+  });
+
+  test("rejects async schemas before tool execution", async () => {
+    for (const asyncMarker of [true, "true"]) {
+      setActiveDemoTool({
+        $async: asyncMarker,
+        type: "object",
+        additionalProperties: false,
+        required: ["confirm"],
+        properties: { confirm: { type: "boolean" } },
+      });
+
+      await expect(callDemoTool({})).rejects.toThrow(
+        "MCP tool input schema is invalid",
+      );
+    }
+    expect(executeRequest).not.toHaveBeenCalled();
+  });
+
+  test("isolates tool schemas that reuse the same schema id", async () => {
+    const sharedSchemaId = "urn:neatchat:test:mcp-tool-input";
+    clientsMap.set("demo", {
+      client: { id: "active-client" } as any,
+      tools: {
+        tools: [
+          {
+            name: "search",
+            inputSchema: {
+              $id: sharedSchemaId,
+              type: "object",
+              additionalProperties: false,
+              required: ["query"],
+              properties: { query: { type: "string" } },
+            },
+          },
+          {
+            name: "paginate",
+            inputSchema: {
+              $id: sharedSchemaId,
+              type: "object",
+              additionalProperties: false,
+              required: ["count"],
+              properties: { count: { type: "number" } },
+            },
+          },
+        ],
+      },
+      errorMsg: null,
+    });
+    const { executeMcpAction } = await import("../app/mcp/actions");
+
+    await expect(
+      executeMcpAction("demo", {
+        method: "tools/call",
+        params: { name: "search", arguments: { query: "panda" } },
+      }),
+    ).resolves.toEqual({ result: {} });
+    await expect(
+      executeMcpAction("demo", {
+        method: "tools/call",
+        params: { name: "paginate", arguments: { count: 10 } },
+      }),
+    ).resolves.toEqual({ result: {} });
+
+    await expect(
+      executeMcpAction("demo", {
+        method: "tools/call",
+        params: { name: "search", arguments: { count: 10 } },
+      }),
+    ).rejects.toThrow("Invalid MCP tool arguments");
+    await expect(
+      executeMcpAction("demo", {
+        method: "tools/call",
+        params: { name: "paginate", arguments: { query: "panda" } },
+      }),
+    ).rejects.toThrow("Invalid MCP tool arguments");
   });
 
   test("separates normal MCP use from administrator management", async () => {
@@ -721,7 +847,9 @@ describe("MCP initialization", () => {
     );
     clientsMap.set("demo", {
       client: { id: "active-client" } as any,
-      tools: { tools: [{ name: "allowed-tool" }] },
+      tools: {
+        tools: [{ name: "allowed-tool", inputSchema: { type: "object" } }],
+      },
       errorMsg: null,
     });
     const actions = await import("../app/mcp/actions");
@@ -831,24 +959,27 @@ describe("MCP initialization", () => {
     ["pause", "pauseMcpServer"],
     ["remove", "removeMcpServer"],
     ["deactivate", "deactivateMcpClient"],
-  ])("detaches the client before a %s close rejection", async (_label, actionName) => {
-    clientsMap.set("demo", {
-      client: { id: "stale-client" } as any,
-      tools: { tools: [] },
-      errorMsg: null,
-    });
-    (removeClient as jest.Mock).mockRejectedValueOnce(
-      new Error("transport already closed"),
-    );
-    const actions = await import("../app/mcp/actions");
-    const action = actions[actionName as keyof typeof actions] as (
-      clientId: string,
-    ) => Promise<unknown>;
+  ])(
+    "detaches the client before a %s close rejection",
+    async (_label, actionName) => {
+      clientsMap.set("demo", {
+        client: { id: "stale-client" } as any,
+        tools: { tools: [] },
+        errorMsg: null,
+      });
+      (removeClient as jest.Mock).mockRejectedValueOnce(
+        new Error("transport already closed"),
+      );
+      const actions = await import("../app/mcp/actions");
+      const action = actions[actionName as keyof typeof actions] as (
+        clientId: string,
+      ) => Promise<unknown>;
 
-    await expect(action("demo")).rejects.toThrow("transport already closed");
-    expect(clientsMap.has("demo")).toBe(false);
-    expect(executeRequest).not.toHaveBeenCalled();
-  });
+      await expect(action("demo")).rejects.toThrow("transport already closed");
+      expect(clientsMap.has("demo")).toBe(false);
+      expect(executeRequest).not.toHaveBeenCalled();
+    },
+  );
 
   test("detaches before a restart close rejection", async () => {
     clientsMap.set("demo", {
@@ -861,7 +992,9 @@ describe("MCP initialization", () => {
     );
     const { restartAllClients } = await import("../app/mcp/actions");
 
-    await expect(restartAllClients()).rejects.toThrow("transport already closed");
+    await expect(restartAllClients()).rejects.toThrow(
+      "transport already closed",
+    );
     expect(clientsMap.has("demo")).toBe(false);
   });
 

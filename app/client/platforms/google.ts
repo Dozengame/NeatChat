@@ -10,7 +10,6 @@ import { getHeadersAsync } from "../header-loader";
 import {
   useAccessStore,
   useAppConfig,
-  useChatStore,
   usePluginStore,
   ChatMessageTool,
 } from "@/app/store";
@@ -95,10 +94,9 @@ export class GeminiProApi implements LLMApi {
     let multimodal = false;
 
     // 添加联网状态日志
-    const session = useChatStore.getState().currentSession();
     console.log(
       "[Chat] Web Access:",
-      session.mask?.plugin?.includes("googleSearch") ? "Enabled" : "Disabled",
+      options.pluginIds?.includes("googleSearch") ? "Enabled" : "Disabled",
     );
 
     // try get base64image from local cache image_url
@@ -111,8 +109,7 @@ export class GeminiProApi implements LLMApi {
 
     // 只有当用户选择了 googleSearch 时才创建 tools
     const tools =
-      options.allowTools === true &&
-      session.mask?.plugin?.includes("googleSearch")
+      options.allowTools === true && options.pluginIds?.includes("googleSearch")
         ? [
             {
               googleSearch: {},
@@ -167,7 +164,7 @@ export class GeminiProApi implements LLMApi {
 
     const modelConfig = mergeLLMRequestConfig(
       useAppConfig.getState().modelConfig,
-      session.mask.modelConfig,
+      useAppConfig.getState().modelConfig,
       options.config,
     );
     const requestPayload = {
@@ -218,11 +215,7 @@ export class GeminiProApi implements LLMApi {
       if (shouldStream) {
         const [, funcs] =
           options.allowTools === true
-            ? usePluginStore
-                .getState()
-                .getAsTools(
-                  useChatStore.getState().currentSession().mask?.plugin || [],
-                )
+            ? usePluginStore.getState().getAsTools(options.pluginIds ?? [])
             : [[], {}];
         return stream(
           chatPath,

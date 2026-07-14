@@ -89,6 +89,7 @@ describe("Markdown table semantics and adaptive width", () => {
     const viewport = shell.querySelector(
       ".markdown-table-scroll-viewport",
     ) as HTMLDivElement;
+    expect(viewport).toHaveAttribute("data-chat-horizontal-scroll", "true");
     const table = shell.querySelector("table") as HTMLTableElement;
     Object.defineProperties(viewport, {
       clientWidth: { configurable: true, value: 780 },
@@ -101,6 +102,10 @@ describe("Markdown table semantics and adaptive width", () => {
     act(() => window.dispatchEvent(new Event("resize")));
     await waitFor(() =>
       expect(shell).toHaveAttribute("data-markdown-width", "wide"),
+    );
+    expect(shell.querySelector(".markdown-table-scrollbar")).toHaveAttribute(
+      "data-chat-horizontal-scroll",
+      "true",
     );
 
     const framesBeforeStreamingUpdate = animationFrameSpy.mock.calls.length;
@@ -319,7 +324,9 @@ describe("Markdown table semantics and adaptive width", () => {
     const initialViewport = initialShell.querySelector(
       ".markdown-table-scroll-viewport",
     ) as HTMLDivElement;
-    const initialTable = initialShell.querySelector("table") as HTMLTableElement;
+    const initialTable = initialShell.querySelector(
+      "table",
+    ) as HTMLTableElement;
     Object.defineProperties(initialViewport, {
       clientWidth: { configurable: true, value: 780 },
       scrollWidth: { configurable: true, value: 980 },
@@ -334,7 +341,9 @@ describe("Markdown table semantics and adaptive width", () => {
     const expandButton = await screen.findByRole("button", {
       name: /view table full screen/i,
     });
-    expect(screen.getByRole("toolbar", { name: /table reading tools/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("toolbar", { name: /table reading tools/i }),
+    ).toBeInTheDocument();
     expect(expandButton).toHaveAttribute("aria-haspopup", "dialog");
     const scrollbar = screen.getByRole("slider", {
       name: /scroll table horizontally/i,

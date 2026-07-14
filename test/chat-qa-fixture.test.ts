@@ -34,9 +34,6 @@ describe("development-only chat QA fixture", () => {
     expect(fixtureSource).toContain('IMAGE_GALLERY_QA_PARAM = "image-gallery"');
     expect(fixtureSource).toContain("getImageGalleryQaMessages");
     expect(fixtureSource).toContain('model: "gpt-image-2"');
-    expect(fixtureSource).toContain('JIMENG_PARSER_QA_PARAM = "jimeng-parser"');
-    expect(fixtureSource).toContain("getJimengParserQaMessages");
-    expect(fixtureSource).toContain('"model_version":"4.6","poll":0}}');
   });
 
   test("creates compact rows for tall-viewport underfill QA", async () => {

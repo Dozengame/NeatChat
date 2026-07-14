@@ -279,22 +279,30 @@
       }
 
       @media screen and (max-width: 600px) {
-        display: flex;
-        flex-direction: column;
-        padding-bottom: 10px;
+        gap: 12px;
+        padding: 12px;
         border-radius: 8px;
-        margin-bottom: 20px;
-        box-shadow: 0 12px 30px var(--mask-list-shadow-color);
+        margin-bottom: 10px;
+        box-shadow: 0 8px 22px var(--mask-list-shadow-color);
 
         &:not(:last-child) {
           border-bottom: 1px solid var(--mask-list-border-color);
         }
 
+        .mask-header {
+          flex: 1 1 auto;
+          min-width: 0;
+        }
+
         .mask-actions {
-          width: 100%;
+          flex: 0 1 auto;
           flex-wrap: wrap;
           justify-content: flex-start;
-          padding-top: 10px;
+
+          .mask-action {
+            min-height: 40px;
+            padding: 8px;
+          }
         }
       }
     }
@@ -420,10 +428,27 @@
 }
 
 @media only screen and (max-width: 600px) {
+  .mask-page {
+    :global(.window-header) {
+      gap: 10px;
+      padding: 8px 12px;
+    }
+
+    :global(.window-header-title) {
+      min-width: 0;
+    }
+
+    .mask-page-body {
+      padding: 12px;
+    }
+  }
+
   .mask-page .mask-page-body .mask-filter {
     height: auto;
     align-items: stretch;
     flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
 
     .mask-search-box {
       flex-basis: 100%;
@@ -433,6 +458,51 @@
     .mask-create {
       height: 40px;
       flex: 1 1 128px;
+    }
+  }
+}
+
+@media only screen and (max-width: 420px) {
+  .mask-page {
+    :global(.window-header) {
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    :global(.window-header-title),
+    :global(.window-actions) {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    :global(.window-actions) {
+      justify-content: flex-end;
+    }
+
+    .mask-page-body .mask-item {
+      align-items: stretch;
+      justify-content: flex-start;
+      flex-direction: column;
+      gap: 10px;
+
+      .mask-header {
+        width: 100%;
+      }
+
+      .mask-actions {
+        width: 100%;
+      }
+    }
+  }
+}
+
+@media only screen and (max-width: 358px) {
+  .mask-page .mask-page-body .mask-filter {
+    .mask-filter-lang,
+    .mask-create {
+      flex-basis: 100%;
+      width: 100%;
+      min-width: 0;
     }
   }
 }

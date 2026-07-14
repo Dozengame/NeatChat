@@ -13,7 +13,6 @@ import {
   ChatMessageTool,
   useAccessStore,
   useAppConfig,
-  useChatStore,
   usePluginStore,
 } from "@/app/store";
 import type { ModelConfig } from "@/app/store/config";
@@ -41,7 +40,6 @@ import {
 import {
   adaptPluginToolsForResponses,
   extractOpenAIResponsesText,
-  hasPendingResponsesToolRecovery,
   runOpenAIResponsesToolLoop,
   sendOpenAIResponsesSseRound,
   type PluginFunctionExecutor,
@@ -290,7 +288,7 @@ export class ChatGPTApi implements LLMApi {
   async chat(options: ChatOptions) {
     const modelConfig = mergeLLMRequestConfig(
       useAppConfig.getState().modelConfig,
-      useChatStore.getState().currentSession().mask.modelConfig,
+      useAppConfig.getState().modelConfig,
       options.config,
     ) as ModelConfig;
     const accessStore = useAccessStore.getState();
@@ -323,12 +321,11 @@ export class ChatGPTApi implements LLMApi {
         providerName: modelConfig.providerName,
       })
     ) {
-      const session = useChatStore.getState().currentSession();
       try {
-        if (!hasPendingResponsesToolRecovery(session.messages)) {
+        if (!options.openaiResponsesRecoveryPending) {
           const [pluginTools, pluginExecutors] = usePluginStore
             .getState()
-            .getAsTools(session.mask?.plugin || []);
+            .getAsTools(options.pluginIds ?? []);
           if (Array.isArray(pluginTools) && pluginTools.length > 0) {
             const adapted = adaptPluginToolsForResponses(
               pluginTools,
@@ -528,12 +525,10 @@ export class ChatGPTApi implements LLMApi {
         let index = -1;
         let isInThinking = false;
         let hasResponsesOutput = false;
-        const session = useChatStore.getState().currentSession();
-
         // 获取所有插件工具
         const [allTools, funcs] =
           options.allowTools === true
-            ? usePluginStore.getState().getAsTools(session.mask?.plugin || [])
+            ? usePluginStore.getState().getAsTools(options.pluginIds ?? [])
             : [[], {}];
 
         const webAccessState = useResponses
@@ -543,7 +538,7 @@ export class ChatGPTApi implements LLMApi {
             })
             ? "Auto"
             : "Unsupported"
-          : session.mask?.plugin?.includes("googleSearch")
+          : options.pluginIds?.includes("googleSearch")
           ? "Enabled"
           : "Disabled";
 
@@ -555,7 +550,7 @@ export class ChatGPTApi implements LLMApi {
         // 否则使用常规插件tools
         const useGoogleSearch =
           options.allowTools === true &&
-          session.mask?.plugin?.includes("googleSearch");
+          options.pluginIds?.includes("googleSearch");
         const isGeminiFlash = modelConfig.model === "gemini-2.0-flash-exp";
 
         const tools = useResponses

@@ -103,24 +103,15 @@ describe("frontend performance and compatibility contracts", () => {
     const homeStyles = readSource("app/components/home.module.scss");
     const chatStyles = readSource("app/components/chat.module.scss");
 
-    const mobileSettings = sidebar.slice(
-      sidebar.indexOf('styles["sidebar-mobile-account-settings"]'),
-      sidebar.indexOf(
-        "</Link>",
-        sidebar.indexOf('styles["sidebar-mobile-account-settings"]'),
-      ),
+    const settingsStart = sidebar.indexOf('styles["sidebar-settings-link"]');
+    const settings = sidebar.slice(
+      settingsStart,
+      sidebar.indexOf("</Link>", settingsStart),
     );
-    expect(mobileSettings).not.toContain("<IconButton");
-    expect(mobileSettings).toContain("<SettingsIcon />");
-    const desktopSettingsStart = sidebar.indexOf(
-      'styles["sidebar-settings-link"]',
-    );
-    const desktopSettings = sidebar.slice(
-      desktopSettingsStart,
-      sidebar.indexOf("</Link>", desktopSettingsStart),
-    );
-    expect(desktopSettings).not.toContain("<IconButton");
-    expect(desktopSettings).toContain('styles["sidebar-settings-icon"]');
+    expect(settings).not.toContain("<IconButton");
+    expect(settings).toContain('styles["sidebar-settings-icon"]');
+    expect(settings).toContain("<SettingsIcon />");
+    expect(sidebar).not.toContain("sidebar-mobile-account");
     expect(sidebar).not.toContain("isIOSMobile");
     expect(homeStyles).toMatch(/transform:\s*translate3d\(-100%, 0, 0\)/);
     expect(homeStyles).toMatch(/transition:\s*transform 0\.2s/);

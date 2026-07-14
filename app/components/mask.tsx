@@ -13,7 +13,14 @@ import EyeIcon from "../icons/eye.svg";
 import CopyIcon from "../icons/copy.svg";
 import DragIcon from "../icons/drag.svg";
 
-import { DEFAULT_MASK_AVATAR, Mask, useMaskStore } from "../store/mask";
+import {
+  DEFAULT_MASK_AVATAR,
+  MASK_LANGUAGE_FILTER_ALL,
+  MASK_LANGUAGE_FILTER_APP,
+  Mask,
+  resolveMaskLanguageFilter,
+  useMaskStore,
+} from "../store/mask";
 import { ChatMessage, createMessage, useChatStore } from "../store/chat";
 import { ModelConfig, ModelType, useAppConfig } from "../store/config";
 import { MultimodalContent, ROLES } from "../client/types";
@@ -21,7 +28,7 @@ import { Input, List, ListItem, Modal, Popover, Select } from "./ui-lib";
 import { showConfirm } from "./ui-lib-actions";
 import { AvatarPicker } from "./emoji";
 import { Avatar } from "./avatar";
-import Locale, { AllLangs, ALL_LANG_OPTIONS, Lang } from "../locales";
+import Locale, { AllLangs, ALL_LANG_OPTIONS, getLang, Lang } from "../locales";
 import { useNavigate } from "react-router-dom";
 
 import chatStyle from "./chat.module.scss";
@@ -464,27 +471,28 @@ export function MaskPage() {
   const maskStore = useMaskStore();
   const chatStore = useChatStore();
 
-  const filterLang = maskStore.language;
+  const filterLang = resolveMaskLanguageFilter(maskStore);
+  const filterValue =
+    maskStore.languageFilterMode === "app"
+      ? MASK_LANGUAGE_FILTER_APP
+      : maskStore.languageFilterMode === "all"
+      ? MASK_LANGUAGE_FILTER_ALL
+      : filterLang ?? getLang();
 
   const allMasks = maskStore
     .getAll()
     .filter((m) => !filterLang || m.lang === filterLang);
 
-  const [searchMasks, setSearchMasks] = useState<Mask[]>([]);
   const [searchText, setSearchText] = useState("");
-  const masks = searchText.length > 0 ? searchMasks : allMasks;
+  const normalizedSearchText = searchText.trim().toLowerCase();
+  const masks = normalizedSearchText
+    ? allMasks.filter((mask) =>
+        mask.name.toLowerCase().includes(normalizedSearchText),
+      )
+    : allMasks;
 
-  // refactored already, now it accurate
   const onSearch = (text: string) => {
     setSearchText(text);
-    if (text.length > 0) {
-      const result = allMasks.filter((m) =>
-        m.name.toLowerCase().includes(text.toLowerCase()),
-      );
-      setSearchMasks(result);
-    } else {
-      setSearchMasks(allMasks);
-    }
   };
   const clearSearch = () => onSearch("");
 
@@ -525,7 +533,7 @@ export function MaskPage() {
             <div className="window-header-main-title">
               {Locale.Mask.Page.Title}
             </div>
-            <div className="window-header-submai-title">
+            <div className="window-header-sub-title">
               {Locale.Mask.Page.SubTitle(allMasks.length)}
             </div>
           </div>
@@ -537,12 +545,14 @@ export function MaskPage() {
                 bordered
                 onClick={downloadAll}
                 text={Locale.UI.Export}
+                aria={Locale.UI.Export}
               />
             </div>
             <div className="window-action-button">
               <IconButton
                 icon={<UploadIcon />}
                 text={Locale.UI.Import}
+                aria={Locale.UI.Import}
                 bordered
                 onClick={() => importFromFile()}
               />
@@ -551,6 +561,7 @@ export function MaskPage() {
               <IconButton
                 icon={<CloseIcon />}
                 bordered
+                aria={Locale.UI.Close}
                 onClick={() => navigate(-1)}
               />
             </div>
@@ -582,17 +593,22 @@ export function MaskPage() {
             </div>
             <Select
               className={styles["mask-filter-lang"]}
-              value={filterLang ?? Locale.Settings.Lang.All}
+              value={filterValue}
               onChange={(e) => {
                 const value = e.currentTarget.value;
-                if (value === Locale.Settings.Lang.All) {
+                if (value === MASK_LANGUAGE_FILTER_APP) {
+                  maskStore.followAppLanguage();
+                } else if (value === MASK_LANGUAGE_FILTER_ALL) {
                   maskStore.setLanguage(undefined);
                 } else {
                   maskStore.setLanguage(value as Lang);
                 }
               }}
             >
-              <option key="all" value={Locale.Settings.Lang.All}>
+              <option key="app" value={MASK_LANGUAGE_FILTER_APP}>
+                {Locale.Settings.Lang.FollowApp}
+              </option>
+              <option key="all" value={MASK_LANGUAGE_FILTER_ALL}>
                 {Locale.Settings.Lang.All}
               </option>
               {AllLangs.map((lang) => (

@@ -137,6 +137,7 @@ function ScrollableFormulaSpan({
       {...spanProps}
       className={className}
       ref={formulaRef}
+      data-chat-horizontal-scroll="true"
       data-scrollable={formulaIsScrollable ? "true" : "false"}
       tabIndex={formulaIsScrollable ? 0 : undefined}
       role={formulaIsScrollable ? "region" : undefined}
@@ -404,6 +405,7 @@ function MarkdownArtifactPreview({ htmlCode }: { htmlCode: string }) {
         <HTMLPreview
           code={htmlCode}
           accessibleTitle={Locale.Markdown.HtmlPreview}
+          runLabel={Locale.Markdown.RunHtmlPreview}
           autoHeight={autoHeight}
           height={autoHeight ? 600 : viewportHeight}
           onLayoutMetrics={syncWidth}
@@ -585,6 +587,7 @@ export function PreCode(props: { children: any }) {
         )}
         data-overflow-start={codeScrollHint.start ? "true" : "false"}
         data-overflow-end={codeScrollHint.end ? "true" : "false"}
+        data-chat-horizontal-scroll="true"
         data-wrap-state={wrapState}
         data-markdown-width={codeSurfaceWidth}
         data-line-numbers={codeLineNumbers}
@@ -1237,6 +1240,7 @@ export function MarkdownTable({
         id={tableScrollViewportId}
         ref={tableScrollRef}
         className="markdown-table-scroll-viewport"
+        data-chat-horizontal-scroll="true"
         tabIndex={tableScrollbar.max > 1 ? 0 : undefined}
         role={tableScrollbar.max > 1 ? "region" : undefined}
         aria-label={
@@ -1259,6 +1263,7 @@ export function MarkdownTable({
         <div
           ref={tableScrollbarRef}
           className="markdown-table-scrollbar"
+          data-chat-horizontal-scroll="true"
           role="slider"
           tabIndex={0}
           aria-controls={tableScrollViewportId}
@@ -2072,7 +2077,10 @@ function MarkDownContentInner(
           }
 
           return (
-            <span className="markdown-image-frame">
+            <span
+              className="markdown-image-frame"
+              data-chat-horizontal-scroll="true"
+            >
               <button
                 type="button"
                 className="markdown-image-preview-button"
@@ -2247,7 +2255,7 @@ export function Markdown(
         }
       >
         {loading ? (
-          <>
+          <div className="markdown-loading-track">
             <div
               className="markdown-loading-status"
               role="status"
@@ -2262,7 +2270,7 @@ export function Markdown(
                 {Locale.Chat.Typing}
               </span>
             </div>
-          </>
+          </div>
         ) : (
           <MarkdownFeatureContext.Provider value={markdownFeatures}>
             <MarkdownContent

@@ -455,10 +455,6 @@ describe("Gemini visual migration shell", () => {
       ".chat-scroll-to-bottom",
     );
     const scrollToBottomRootBlock = readRootDeclarations(scrollToBottomBlock);
-    const scrollToBottomSafeLaneBlock = readCssBlock(
-      chatStyles,
-      ".chat-input-panel:has(> .chat-scroll-to-bottom)::before",
-    );
     const desktopChatBodyRootBlock = readRootDeclarations(
       readCssBlock(desktopStyles, ".chat-body"),
     );
@@ -1198,24 +1194,7 @@ describe("Gemini visual migration shell", () => {
       "--sidebar-action-active-ring-shadow",
       "--sidebar-action-active-drop-shadow",
       "--sidebar-tail-border-color",
-      "--sidebar-avatar-background",
-      "--sidebar-avatar-shadow",
-      "--sidebar-avatar-face-background",
-      "--sidebar-avatar-face-shadow",
-      "--sidebar-avatar-feature-color",
       "--sidebar-avatar-count-shadow",
-      "--sidebar-mobile-account-background",
-      "--sidebar-mobile-account-border-color",
-      "--sidebar-mobile-account-hover-background",
-      "--sidebar-mobile-account-shadow-color",
-      "--sidebar-mobile-account-focus-shadow-color",
-      "--sidebar-mobile-account-name-color",
-      "--sidebar-mobile-account-meta-color",
-      "--sidebar-mobile-account-settings-background",
-      "--sidebar-mobile-account-settings-border-color",
-      "--sidebar-mobile-account-settings-hover-background",
-      "--sidebar-mobile-account-settings-focus-shadow-color",
-      "--sidebar-mobile-account-settings-icon-color",
       "--sidebar-on-primary",
     ]);
     const sidebarDarkOverrideTokenNames = [
@@ -1224,16 +1203,6 @@ describe("Gemini visual migration shell", () => {
       "--sidebar-card-hover-background",
       "--sidebar-card-hover-shadow",
       "--sidebar-action-active-drop-shadow",
-      "--sidebar-mobile-account-background",
-      "--sidebar-mobile-account-border-color",
-      "--sidebar-mobile-account-hover-background",
-      "--sidebar-mobile-account-shadow-color",
-      "--sidebar-mobile-account-focus-shadow-color",
-      "--sidebar-mobile-account-meta-color",
-      "--sidebar-mobile-account-settings-background",
-      "--sidebar-mobile-account-settings-border-color",
-      "--sidebar-mobile-account-settings-hover-background",
-      "--sidebar-mobile-account-settings-focus-shadow-color",
     ];
     const darkSidebarOverrideBlock = readCssBlock(
       sidebarBlock,
@@ -1281,44 +1250,6 @@ describe("Gemini visual migration shell", () => {
       ".sidebar-settings-link-active",
     );
     const sidebarTailBlock = readRootCssBlock(homeStyles, ".sidebar-tail");
-    const sidebarMobileAccountBlock = readCssBlock(
-      homeStyles,
-      ".sidebar-mobile-account",
-    );
-    const sidebarMobileAccountHoverBlock = readCssBlock(
-      sidebarMobileAccountBlock,
-      "&:hover,\n  &:focus-within",
-    );
-    const sidebarMobileAccountAvatarBlock = readCssBlock(
-      homeStyles,
-      ".sidebar-mobile-account-avatar",
-    );
-    const sidebarMobilePixelFaceBlock = readCssBlock(
-      homeStyles,
-      ".sidebar-mobile-pixel-face",
-    );
-    const sidebarMobilePixelEyesBlock = readCssBlock(
-      homeStyles,
-      ".sidebar-mobile-pixel-eye-left,\n.sidebar-mobile-pixel-eye-right",
-    );
-    const sidebarMobilePixelMouthBlock = readCssBlock(
-      homeStyles,
-      ".sidebar-mobile-pixel-mouth",
-    );
-    const sidebarMobileAccountSettingsBlock = readCssBlock(
-      homeStyles,
-      ".sidebar-mobile-account-settings",
-    );
-    const sidebarMobileAccountSettingsButtonBlock =
-      sidebarMobileAccountSettingsBlock;
-    const sidebarMobileAccountSettingsButtonHoverBlock = readCssBlock(
-      sidebarMobileAccountSettingsButtonBlock,
-      "&:hover",
-    );
-    const sidebarMobileAccountSettingsActiveBlock = readCssBlock(
-      homeStyles,
-      ".sidebar-settings-link-active.sidebar-mobile-account-settings",
-    );
     const darkSidebarContentCardActiveBlock = readCssBlock(
       homeStyles,
       ":global(.dark) .sidebar-content-card-active",
@@ -1432,10 +1363,6 @@ describe("Gemini visual migration shell", () => {
       chat,
       "const onInput = (text: string) =>",
     );
-    const setImageGenerationModeBlock = readFunctionBlock(
-      chat,
-      "const setImageGenerationMode = async (intent: BooleanIntent) =>",
-    );
     const doSubmitBlock = readFunctionBlock(
       chat,
       "const doSubmit = (userInput: string) =>",
@@ -1475,11 +1402,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).not.toContain('styles["chat-empty-halo"]');
     expect(chat).not.toContain("EmptySuggestion");
     expect(chat).not.toContain('styles["chat-empty-suggestion');
-    expect(chat).toMatch(
-      /const showEmptyHero\s*=\s*showEmptyState\s*&&\s*!hasActiveInputContent\s*&&\s*!showChatActionMenu;/,
-    );
+    expect(chat).toContain("const showEmptyComposer = showEmptyState;");
     expect(chat).toContain(
-      "const showEmptyComposer = showEmptyState && !hasActiveInputContent;",
+      "const showEmptyHero = showEmptyState && !showChatActionMenu;",
     );
     expect(chatStyles).toMatch(
       /@media only screen and \(min-width: 601px\)[\s\S]*\.chat-input-panel\.chat-input-panel-empty:not\(\.chat-input-panel-collapsed\)\s*\{[\s\S]*width:\s*min\(880px, calc\(100% - 48px\)\);[\s\S]*\.chat-input-panel-inner:not\(\.chat-input-panel-inner-collapsed\)\s*\{[\s\S]*border-radius:\s*30px;/,
@@ -1505,12 +1430,6 @@ describe("Gemini visual migration shell", () => {
       "text={Locale.Chat.ChatToolMenu.UploadAttachment}",
     );
     expect(chatActionsViewBlock).toContain(
-      "Locale.Chat.ChatToolMenu.DisableImageGeneration",
-    );
-    expect(chatActionsViewBlock).toContain(
-      "Locale.Chat.ChatToolMenu.ImageGeneration",
-    );
-    expect(chatActionsViewBlock).toContain(
       "text={Locale.Chat.InputActions.ToBottom}",
     );
     expect(chatActionsViewBlock).toContain(
@@ -1526,10 +1445,7 @@ describe("Gemini visual migration shell", () => {
       'if (n === 1 && text === "/" && config.enablePromptHints)',
     );
     expect(chat).toContain("handleUploadAttachments");
-    expect(chat).toContain("setImageGenerationEnabled");
     expect(chat).toContain('styles["chat-input-status-row"]');
-    expect(chat).toContain('styles["chat-input-mode-chip"]');
-    expect(chat).toContain('styles["chat-input-image-mode-chip"]');
     expect(chat).toContain(
       "aria-label={Locale.Chat.ModelMenu.CurrentInputMode}",
     );
@@ -1539,10 +1455,6 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /className=\{clsx\([\s\S]*styles\["chat-input-mode-chip"\][\s\S]*styles\["chat-input-reasoning"\][\s\S]*\)\}[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.SelectedReasoning\(\s*reasoningLabels\[currentReasoningEffort\],?\s*\)\}[\s\S]*aria-haspopup="dialog"[\s\S]*aria-expanded=\{showReasoningSelectorModal\}/,
     );
-    expect(chat).toContain(
-      "aria-label={Locale.Chat.ImageGeneration.ModeEnabled}",
-    );
-    expect(chat).toContain("{showJimengModeUi && (");
     expect(chat).toContain('styles["chat-multimodal-tray"]');
     expect(chat).toContain('styles["chat-multimodal-section"]');
     expect(chat).toContain('role="dialog"');
@@ -1566,15 +1478,10 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /aria-label=\{Locale\.Chat\.ChatToolMenu\.SessionTools\}[\s\S]*className=\{styles\["chat-multimodal-section-header"\]\}[\s\S]*className=\{styles\["chat-multimodal-section-title"\]\}[\s\S]*<span>\{Locale\.Chat\.ChatToolMenu\.Session\}<\/span>[\s\S]*className=\{styles\["chat-multimodal-section-subtitle"\]\}[\s\S]*<span>\{Locale\.Chat\.ChatToolMenu\.ModelsAndSettings\}<\/span>/,
     );
-    expect(chat).toContain("ariaPressed={props.imageGenerationEnabled}");
     expect(chat).toContain("aria-pressed={props.ariaPressed}");
     expect(chat).toContain("const hasSessionActions =");
     expect(chat).toContain('styles["chat-multimodal-section-primary"]');
     expect(chat).toContain('styles["chat-multimodal-section-session"]');
-    expect(chat).toContain("isMcpEnabled()");
-    expect(chat).toContain("activateMcpClient(JIMENG_MCP_SERVER_ID)");
-    expect(chat).not.toContain("deactivateMcpClient(JIMENG_MCP_SERVER_ID)");
-    expect(chat).toContain("JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT");
     expect(chat).toContain("uploadAttachments(");
     expect(chat).toContain('styles["attachments-container"]');
     expect(chat).toContain("aria-label={Locale.Chat.Attachments.Preview}");
@@ -1732,7 +1639,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('aria-controls="chat-model-menu"');
     expect(chat).toContain('styles["chat-input-model-button-open"]');
     expect(chat).toMatch(
-      /\{showMobileModelSelector && \(\s*<>\s*<span className=\{styles\["chat-input-model-name"\]\}>/,
+      /ref=\{modelSelectorButtonRef\}[\s\S]*aria-expanded=\{showMobileModelSelector\}[\s\S]*\{showMobileModelSelector && \(\s*<>\s*<span className=\{styles\["chat-input-model-name"\]\}>\s*\{headerCurrentModelName\}/,
     );
     expect(chat).toMatch(
       /\{\(isReasoningSectionExpanded \|\| isImageOptionsExpanded\) && \(\s*<div className=\{styles\["chat-model-menu-header"\]\}>[\s\S]*className=\{styles\["chat-model-menu-current-model"\]\}[\s\S]*\{headerCurrentModelName\}[\s\S]*className=\{styles\["chat-model-menu-switch-model"\]\}[\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.SwitchModel\}[\s\S]*data-model-menu-control="true"[\s\S]*onClick=\{returnToModelList\}[\s\S]*<ResetIcon \/>[\s\S]*Locale\.Chat\.ModelMenu\.SwitchModel/,
@@ -2160,8 +2067,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("Locale.Chat.MobileInput");
     expect(chat).toContain("rows={shouldExpandChatInput ? inputRows : 1}");
     expect(chat).toContain("onPointerDown={expandInput}");
+    expect(chat).toContain("onClick={expandInput}");
     expect(chat).toMatch(
-      /onClick=\{\(\) => \{\s*expandInput\(\);\s*scrollToBottom\(\);\s*\}\}/,
+      /onFocus=\{\(\) => \{\s*setIsChatInputFocused\(true\);\s*\}\}/,
     );
     expect(chat).toMatch(
       /className=\{styles\["chat-input"\]\}[\s\S]*aria-label=\{\s*isCompactScreen\s*\?\s*Locale\.Chat\.MobileInput\s*:\s*Locale\.Chat\.Input\(submitKey\)\s*\}/,
@@ -2244,17 +2152,17 @@ describe("Gemini visual migration shell", () => {
     expect(scrollToBottomRootBlock).toMatch(
       /--chat-scroll-bottom-size:\s*42px;/,
     );
-    expect(chatInputPanelRootBlock).toMatch(
-      /--chat-scroll-bottom-safe-lane:\s*66px;/,
+    expect(chatInputPanelRootBlock).not.toContain(
+      "--chat-scroll-bottom-safe-lane",
+    );
+    expect(chatInputPanelRootBlock).not.toContain(
+      "--chat-scroll-bottom-lane-background",
     );
     expect(chatInputPanelRootBlock).toMatch(
       /--chat-scroll-bottom-composer-gap:\s*12px;/,
     );
-    expect(scrollToBottomSafeLaneBlock).toMatch(
-      /height:\s*var\(--chat-scroll-bottom-safe-lane\);/,
-    );
-    expect(scrollToBottomSafeLaneBlock).toMatch(
-      /background:\s*linear-gradient\([\s\S]*var\(--chat-scroll-bottom-lane-background\)/,
+    expect(chatStyles).not.toContain(
+      ".chat-input-panel:has(> .chat-scroll-to-bottom)::before",
     );
     expect(scrollToBottomRootBlock).toMatch(/top:\s*auto;/);
     expect(scrollToBottomRootBlock).toMatch(
@@ -2277,11 +2185,11 @@ describe("Gemini visual migration shell", () => {
       /--chat-scroll-bottom-size:\s*40px;/,
     );
     expect(mobileStyles).toMatch(
-      /\.chat-input-panel\s*\{[\s\S]*?--chat-scroll-bottom-safe-lane:\s*60px;[\s\S]*?--chat-scroll-bottom-composer-gap:\s*10px;/,
+      /\.chat-input-panel\s*\{[\s\S]*?--chat-scroll-bottom-composer-gap:\s*10px;/,
     );
     expect(chatStyles).toContain("container-name: chat-body-container;");
     expect(chatStyles).toMatch(
-      /@container chat-body-container \(min-width:\s*1032px\)[\s\S]*left:\s*calc\(100% \+ 24px\);[\s\S]*\.chat-input-panel:has\(> \.chat-scroll-to-bottom\)::before\s*\{[\s\S]*display:\s*none;/,
+      /@container chat-body-container \(min-width:\s*1032px\)[\s\S]*left:\s*calc\(100% \+ 24px\);/,
     );
     expect(mobileScrollToBottomBlock).not.toMatch(/top:\s*-\d/);
     expect(desktopChatBodyRootBlock).toMatch(
@@ -2475,12 +2383,6 @@ describe("Gemini visual migration shell", () => {
     expect(utils).toMatch(
       /finally \{[\s\S]*document\.body\.removeChild\(textArea\);[\s\S]*\}/,
     );
-    expect(chat).toMatch(
-      /ariaPressed=\{props\.imageGenerationEnabled\}[\s\S]*onClick=\{async \(\) => \{[\s\S]*const intent = imageGenerationIntent\.next\(\);[\s\S]*await reconcileImageGenerationIntent\(intent\)[\s\S]*completeMobileAction\(\);[\s\S]*\}\}[\s\S]*text=\{[\s\S]*Locale\.Chat\.ChatToolMenu\.DisableImageGeneration[\s\S]*Locale\.Chat\.ChatToolMenu\.ImageGeneration[\s\S]*\}/,
-    );
-    expect(chat).not.toMatch(
-      /text=\{[\s\S]*Locale\.Chat\.ChatToolMenu\.DisableImageGeneration[\s\S]*Locale\.Chat\.ChatToolMenu\.ImageGeneration[\s\S]*\}[\s\S]*ariaHasPopup=\{isCompactScreen \? undefined : "(?:menu|listbox)"\}/,
-    );
     expect(chat).not.toContain("actionModals.imageGeneration");
     expect(chat).toMatch(
       /text=\{currentModelName\}[\s\S]*ariaHasPopup="listbox"[\s\S]*ariaExpanded=\{actionModals\.model\}/,
@@ -2531,9 +2433,8 @@ describe("Gemini visual migration shell", () => {
     );
     expect(sidebar).not.toContain('styles["sidebar-content-card"]');
     expect(sidebar).not.toContain("openDiscoverySelector");
-    expect(sidebar).toMatch(
-      /className=\{clsx\([\s\S]*styles\["sidebar-mobile-account-settings"\][\s\S]*\[styles\["sidebar-settings-link-active"\]\]:\s*location\.pathname === Path\.Settings[\s\S]*aria-current=\{[\s\S]*location\.pathname === Path\.Settings \? "page" : undefined[\s\S]*\}/,
-    );
+    expect(sidebar).not.toContain("sidebar-mobile-account");
+    expect(sidebar).not.toContain("sidebar-mobile-pixel");
     expect(sidebar).toMatch(
       /<Link[\s\S]*to=\{Path\.Settings\}[\s\S]*className=\{clsx\([\s\S]*styles\["sidebar-settings-link"\][\s\S]*\[styles\["sidebar-settings-link-active"\]\]:\s*location\.pathname === Path\.Settings[\s\S]*aria-current=\{[\s\S]*location\.pathname === Path\.Settings \? "page" : undefined[\s\S]*\}/,
     );
@@ -3945,18 +3846,8 @@ describe("Gemini visual migration shell", () => {
     );
     expect(mobileActionMenuBlock).not.toContain("border-radius: 22px");
     expect(onInputBlock).toMatch(/setShowChatActionMenu\(false\);/);
-    expect(setImageGenerationModeBlock).toContain("isMcpEnabled()");
-    expect(setImageGenerationModeBlock).toContain(
-      "activateMcpClient(JIMENG_MCP_SERVER_ID)",
-    );
-    expect(setImageGenerationModeBlock).not.toContain(
-      "deactivateMcpClient(JIMENG_MCP_SERVER_ID)",
-    );
-    expect(setImageGenerationModeBlock).toMatch(
-      /chatStore\.resetMcpCache\(\);/,
-    );
     expect(doSubmitBlock).toContain("attachImages");
-    expect(doSubmitBlock).toContain("JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT");
+    expect(doSubmitBlock).not.toContain("mcpClientIds");
     expect(chatStyles).toContain(
       ".chat-input-panel-inner-reasoning:not(.chat-input-panel-inner-collapsed)",
     );
@@ -4187,58 +4078,7 @@ describe("Gemini visual migration shell", () => {
     expect(sidebarTokens["--sidebar-tail-border-color"]).toContain(
       "var(--black)",
     );
-    expect(sidebarTokens["--sidebar-avatar-background"]).toContain(
-      "var(--primary)",
-    );
-    expect(sidebarTokens["--sidebar-avatar-shadow"]).toContain(
-      "var(--primary)",
-    );
-    expect(sidebarTokens["--sidebar-avatar-face-background"]).toContain(
-      "var(--surface-elevated)",
-    );
-    expect(sidebarTokens["--sidebar-avatar-face-shadow"]).toContain(
-      "var(--primary)",
-    );
-    expect(sidebarTokens["--sidebar-avatar-feature-color"]).toBe(
-      "var(--primary)",
-    );
     expect(sidebarTokens["--sidebar-avatar-count-shadow"]).toContain(
-      "var(--black)",
-    );
-    expect(sidebarTokens["--sidebar-mobile-account-background"]).toContain(
-      "var(--surface-elevated)",
-    );
-    expect(sidebarTokens["--sidebar-mobile-account-border-color"]).toContain(
-      "var(--black)",
-    );
-    expect(
-      sidebarTokens["--sidebar-mobile-account-hover-background"],
-    ).toContain("var(--primary)");
-    expect(sidebarTokens["--sidebar-mobile-account-shadow-color"]).toContain(
-      "var(--black-50)",
-    );
-    expect(
-      sidebarTokens["--sidebar-mobile-account-focus-shadow-color"],
-    ).toContain("var(--primary)");
-    expect(sidebarTokens["--sidebar-mobile-account-name-color"]).toBe(
-      "var(--black)",
-    );
-    expect(sidebarTokens["--sidebar-mobile-account-meta-color"]).toContain(
-      "var(--black-50)",
-    );
-    expect(
-      sidebarTokens["--sidebar-mobile-account-settings-background"],
-    ).toContain("var(--surface-elevated)");
-    expect(
-      sidebarTokens["--sidebar-mobile-account-settings-border-color"],
-    ).toContain("var(--black-50)");
-    expect(
-      sidebarTokens["--sidebar-mobile-account-settings-hover-background"],
-    ).toContain("var(--primary)");
-    expect(
-      sidebarTokens["--sidebar-mobile-account-settings-focus-shadow-color"],
-    ).toContain("var(--primary)");
-    expect(sidebarTokens["--sidebar-mobile-account-settings-icon-color"]).toBe(
       "var(--black)",
     );
     expect(sidebarTokens["--sidebar-on-primary"]).toBe("rgb(255, 255, 255)");
@@ -4251,12 +4091,6 @@ describe("Gemini visual migration shell", () => {
     expect(darkSidebarOverrideTokens["--sidebar-mobile-shadow"]).not.toMatch(
       /rgb\(|rgba\(|#/,
     );
-    expect(
-      darkSidebarOverrideTokens["--sidebar-mobile-account-shadow-color"],
-    ).toContain("var(--surface)");
-    expect(
-      darkSidebarOverrideTokens["--sidebar-mobile-account-shadow-color"],
-    ).not.toMatch(/rgb\(|rgba\(|#/);
     expect(
       darkSidebarOverrideTokens["--sidebar-card-hover-background"],
     ).toContain("var(--surface-elevated)");
@@ -4440,103 +4274,8 @@ describe("Gemini visual migration shell", () => {
     expect(sidebarTailBlock).toMatch(
       /border-top:\s*1px solid var\(--sidebar-tail-border-color\);/,
     );
-    expect(sidebarMobileAccountAvatarBlock).toMatch(
-      /background:\s*var\(--sidebar-avatar-background\);/,
-    );
-    expect(sidebarMobileAccountBlock).toMatch(/box-sizing:\s*border-box;/);
-    expect(sidebarMobileAccountBlock).toMatch(/max-width:\s*100%;/);
-    expect(sidebarMobileAccountBlock).toMatch(/overflow:\s*hidden;/);
-    expect(sidebarMobileAccountBlock).toMatch(
-      /background:\s*var\(--sidebar-mobile-account-background\);/,
-    );
-    expect(sidebarMobileAccountBlock).toMatch(
-      /border:\s*1px solid var\(--sidebar-mobile-account-border-color\);/,
-    );
-    expect(sidebarMobileAccountBlock).toMatch(/border-radius:\s*8px;/);
-    expect(sidebarMobileAccountBlock).toMatch(
-      /box-shadow:\s*0 1px 2px var\(--sidebar-mobile-account-shadow-color\);/,
-    );
-    expect(sidebarMobileAccountHoverBlock).toMatch(
-      /background:\s*var\(--sidebar-mobile-account-hover-background\);/,
-    );
-    expect(sidebarMobileAccountHoverBlock).toMatch(
-      /box-shadow:\s*0 0 0 3px var\(--sidebar-mobile-account-focus-shadow-color\),\s*0 1px 2px var\(--sidebar-mobile-account-shadow-color\);/,
-    );
-    expect(sidebarMobileAccountAvatarBlock).toMatch(
-      /box-shadow:\s*var\(--sidebar-avatar-shadow\);/,
-    );
-    expect(sidebarMobilePixelFaceBlock).toMatch(
-      /background:\s*var\(--sidebar-avatar-face-background\);/,
-    );
-    expect(sidebarMobilePixelFaceBlock).toMatch(
-      /box-shadow:\s*var\(--sidebar-avatar-face-shadow\);/,
-    );
-    expect(sidebarMobilePixelEyesBlock).toMatch(
-      /background:\s*var\(--sidebar-avatar-feature-color\);/,
-    );
-    expect(sidebarMobilePixelMouthBlock).toMatch(
-      /background:\s*var\(--sidebar-avatar-feature-color\);/,
-    );
-    expect(homeStyles).toMatch(
-      /\.sidebar-mobile-account-name\s*\{[\s\S]*color:\s*var\(--sidebar-mobile-account-name-color\);[\s\S]*white-space:\s*nowrap;/,
-    );
-    expect(homeStyles).toMatch(
-      /\.sidebar-mobile-account-meta\s*\{[\s\S]*color:\s*var\(--sidebar-mobile-account-meta-color\);[\s\S]*white-space:\s*nowrap;/,
-    );
-    expect(sidebarMobileAccountSettingsBlock).toMatch(
-      /border-radius:\s*999px;/,
-    );
-    expect(sidebarMobileAccountSettingsBlock).toMatch(
-      /&:focus-visible[\s\S]*outline:\s*var\(--focus-ring\);[\s\S]*box-shadow:\s*var\(--focus-ring-shadow\);/,
-    );
-    expect(sidebarMobileAccountSettingsButtonBlock).toMatch(
-      /background:\s*var\(--sidebar-mobile-account-settings-background\);/,
-    );
-    expect(sidebarMobileAccountSettingsButtonBlock).toMatch(
-      /border:\s*1px solid var\(--sidebar-mobile-account-settings-border-color\);/,
-    );
-    expect(sidebarMobileAccountSettingsButtonBlock).toMatch(
-      /color:\s*var\(--sidebar-mobile-account-settings-icon-color\);/,
-    );
-    expect(sidebarMobileAccountSettingsButtonBlock).toMatch(
-      /svg\s*\{[\s\S]*filter:\s*none !important;[\s\S]*color:\s*currentColor;/,
-    );
-    expect(sidebarMobileAccountSettingsButtonBlock).toMatch(
-      /svg \[style\*="stroke"\],\s*svg path\s*\{[\s\S]*stroke:\s*currentColor !important;/,
-    );
-    expect(sidebarMobileAccountSettingsButtonBlock).toMatch(
-      /svg \[stroke="#333"\],\s*svg \[stroke="#333333"\],\s*svg \[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
-    );
-    expect(sidebarMobileAccountSettingsButtonBlock).toMatch(
-      /svg \[fill="#333"\],\s*svg \[fill="#333333"\],\s*svg \[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
-    );
-    expect(sidebarMobileAccountSettingsButtonBlock).toMatch(
-      /svg\[stroke="#333"\],\s*svg\[stroke="#333333"\],\s*svg\[stroke="black"\]\s*\{[\s\S]*stroke:\s*currentColor !important;/,
-    );
-    expect(sidebarMobileAccountSettingsButtonBlock).toMatch(
-      /svg\[fill="#333"\],\s*svg\[fill="#333333"\],\s*svg\[fill="black"\]\s*\{[\s\S]*fill:\s*currentColor !important;/,
-    );
-    expect(sidebarMobileAccountSettingsButtonHoverBlock).toMatch(
-      /background:\s*var\(--sidebar-mobile-account-settings-hover-background\);/,
-    );
-    expect(sidebarMobileAccountSettingsButtonHoverBlock).toMatch(
-      /box-shadow:\s*0 0 0 3px\s*var\(--sidebar-mobile-account-settings-focus-shadow-color\);/,
-    );
-    expect(sidebarMobileAccountSettingsActiveBlock).toMatch(
-      /color:\s*var\(--primary\);/,
-    );
-    expect(sidebarMobileAccountSettingsActiveBlock).toMatch(
-      /background:\s*var\(--sidebar-action-active-background\);/,
-    );
-    expect(sidebarMobileAccountSettingsActiveBlock).toMatch(
-      /border-color:\s*var\(--sidebar-action-active-ring-shadow\);/,
-    );
-    expect(sidebarMobileAccountSettingsActiveBlock).toMatch(
-      /0 0 0 1px var\(--sidebar-action-active-ring-shadow\),[\s\S]*0 6px 20px var\(--sidebar-action-active-drop-shadow\);/,
-    );
-    expect(homeStyles).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.sidebar-mobile-account,[\s\S]*\.sidebar-mobile-account-settings[\s\S]*transition:\s*none !important;/,
-    );
+    expect(homeStyles).not.toContain("sidebar-mobile-account");
+    expect(homeStyles).not.toContain("sidebar-mobile-pixel");
     expect(homeReducedMotionBlock).toMatch(/\.sidebar-drag,/);
     expect(homeReducedMotionBlock).toMatch(/\.sidebar-drag svg,/);
     expect(homeReducedMotionBlock).toMatch(/\.narrow-sidebar \.chat-item,/);
@@ -7628,29 +7367,61 @@ describe("Gemini visual migration shell", () => {
     );
 
     expect(chat).toMatch(
-      /<div\s+className=\{styles\.chat\}[\s\S]*key=\{session\.id\}[\s\S]*onTouchStart=\{handleTouchStart\}[\s\S]*onTouchMove=\{handleTouchMove\}[\s\S]*onTouchEnd=\{handleTouchEnd\}/,
+      /<div\s+className=\{styles\.chat\}[\s\S]*key=\{session\.id\}[\s\S]*onTouchStart=\{handleTouchStart\}[\s\S]*onTouchMove=\{handleTouchMove\}[\s\S]*onTouchEnd=\{handleTouchEnd\}[\s\S]*onTouchCancel=\{resetChatSwipe\}/,
     );
     expect(chat).toContain("const ignoreChatSwipeRef = useRef(false);");
     expect(chat).toMatch(
-      /const isAttachmentStripTouch = \(target: EventTarget \| null\) => \{[\s\S]*const touchTarget =[\s\S]*target instanceof Element[\s\S]*target[\s\S]*target instanceof Node[\s\S]*target\.parentElement[\s\S]*return Boolean\([\s\S]*touchTarget\?\.closest\('\[data-composer-attachment-strip="true"\]'\)[\s\S]*\);[\s\S]*\};/,
+      /const isExcludedChatSwipeTarget = \(target: EventTarget \| null\) => \{[\s\S]*touchTarget\?\.closest\([\s\S]*data-composer-attachment-strip[\s\S]*data-chat-horizontal-scroll/,
+    );
+    expect(chat).not.toMatch(
+      /touchTarget\?\.closest\([\s\S]*markdown-table-scroll-viewport/,
+    );
+    const markdown = read("app/components/markdown.tsx");
+    const mermaid = read("app/components/mermaid.tsx");
+    const messageImageGallery = read(
+      "app/components/message-image-gallery.tsx",
+    );
+    expect(markdown).toMatch(
+      /className=\{className\}[\s\S]*data-chat-horizontal-scroll="true"[\s\S]*data-scrollable=\{formulaIsScrollable/,
+    );
+    expect(markdown).toMatch(
+      /className=\{clsx\([\s\S]*"markdown-code-block"[\s\S]*data-chat-horizontal-scroll="true"/,
+    );
+    expect(markdown).toMatch(
+      /className="markdown-table-scroll-viewport"[\s\S]*data-chat-horizontal-scroll="true"/,
+    );
+    expect(markdown).toMatch(
+      /className="markdown-table-scrollbar"[\s\S]*data-chat-horizontal-scroll="true"/,
+    );
+    expect(messageImageGallery).toMatch(
+      /className=\{styles\["chat-message-image-frame"\]\}[\s\S]*data-chat-horizontal-scroll="true"/,
+    );
+    expect(markdown).toMatch(
+      /className="markdown-image-frame"[\s\S]*data-chat-horizontal-scroll="true"/,
+    );
+    expect(mermaid).toMatch(
+      /className="markdown-mermaid-fallback"[\s\S]*data-chat-horizontal-scroll="true"/,
+    );
+    expect(mermaid).toMatch(
+      /className="markdown-mermaid-figure"[\s\S]*data-chat-horizontal-scroll="true"/,
     );
     expect(chat).toMatch(
       /className=\{styles\["attachments-scroll-shell"\]\}[\s\S]*data-composer-attachment-strip="true"[\s\S]*<div[\s\S]*className=\{styles\["attachments-container"\]\}/,
     );
     expect(touchStartBlock).toMatch(
-      /if \(isAttachmentStripTouch\(e\.target\)\) \{[\s\S]*ignoreChatSwipeRef\.current = true;[\s\S]*touchStartXRef\.current = 0;[\s\S]*touchEndXRef\.current = 0;[\s\S]*return;[\s\S]*\}/,
+      /!touch \|\|[\s\S]*touch\.clientX > 32 \|\|[\s\S]*isExcludedChatSwipeTarget\(e\.target\)/,
     );
     expect(touchStartBlock).toMatch(
-      /ignoreChatSwipeRef\.current = false;[\s\S]*touchStartXRef\.current = e\.touches\[0\]\.clientX;[\s\S]*touchEndXRef\.current = e\.touches\[0\]\.clientX;/,
+      /ignoreChatSwipeRef\.current = false;[\s\S]*touchStartXRef\.current = touch\.clientX;[\s\S]*touchStartYRef\.current = touch\.clientY;[\s\S]*touchEndXRef\.current = touch\.clientX;[\s\S]*touchEndYRef\.current = touch\.clientY;/,
     );
     expect(touchMoveBlock).toMatch(
       /if \(ignoreChatSwipeRef\.current\) \{[\s\S]*return;[\s\S]*\}/,
     );
     expect(touchEndBlock).toMatch(
-      /if \(ignoreChatSwipeRef\.current\) \{[\s\S]*ignoreChatSwipeRef\.current = false;[\s\S]*touchStartXRef\.current = 0;[\s\S]*touchEndXRef\.current = 0;[\s\S]*return;[\s\S]*\}/,
+      /if \(ignoreChatSwipeRef\.current\) \{[\s\S]*resetChatSwipe\(\);[\s\S]*return;[\s\S]*\}/,
     );
     expect(touchEndBlock).toMatch(
-      /if \(!isCompactScreen\) return;[\s\S]*const swipeDistance = touchEndXRef\.current - touchStartXRef\.current;[\s\S]*if \(swipeDistance > minSwipeDistance\) \{[\s\S]*navigate\(Path\.Home\);/,
+      /if \(!isCompactScreen\) \{[\s\S]*resetChatSwipe\(\);[\s\S]*return;[\s\S]*\}[\s\S]*const swipeDistanceX =[\s\S]*const swipeDistanceY =[\s\S]*swipeDistanceX > minSwipeDistance[\s\S]*Math\.abs\(swipeDistanceX\) > 1\.2 \* Math\.abs\(swipeDistanceY\)[\s\S]*navigate\(Path\.Home\);/,
     );
   });
 
@@ -9937,9 +9708,7 @@ describe("Gemini visual migration shell", () => {
     );
     expect(gallery).toContain("aria-label={props.actionLabels.preview}");
     expect(gallery).toContain("aria-label={props.actionLabels.download}");
-    expect(chat).toMatch(
-      /const messageImages = Array\.from\([\s\S]*\.\.\.getMessageImages\(message\),[\s\S]*\.\.\.jimengGalleryDisplay\.images/,
-    );
+    expect(chat).toContain("const messageImages = getMessageImages(message);");
     expect(chat).toMatch(
       /const singleMessageImageLabel = getMessageImageLabel\(0, 1\);[\s\S]*src=\{messageImages\[0\]\}[\s\S]*actionLabels=\{getImageActionLabels\(\s*singleMessageImageLabel,\s*\)\}/,
     );
@@ -13034,6 +12803,9 @@ describe("Gemini visual migration shell", () => {
     expect(newChat).toContain("navigate(Path.Chat)");
     expect(newChat).toContain("navigate(Path.Masks)");
     expect(newChat).toContain("dontShowMaskSplashScreen");
+    expect(newChat).toContain(
+      ".filter((mask) => !mask.builtin || mask.lang === getLang())",
+    );
     expect(newChatStyles).not.toContain("radial-gradient");
     expect(newChatStyles).not.toContain("rgba(49, 94, 248");
     expect(newChatStyles).not.toContain("fill: white !important");
@@ -14459,10 +14231,25 @@ describe("Gemini visual migration shell", () => {
       maskItemBlock,
       "@media screen and (max-width: 600px)",
     );
+    const mobileHeaderBlock = readCssBlock(mobileItemBlock, ".mask-header");
     const mobileActionsBlock = readCssBlock(mobileItemBlock, ".mask-actions");
     const mobileFilterBlock = readCssBlock(
       readCssBlock(maskStyles, "@media only screen and (max-width: 600px)"),
       ".mask-page .mask-page-body .mask-filter",
+    );
+    const narrowMaskBlock = readCssBlock(
+      maskStyles,
+      "@media only screen and (max-width: 420px)",
+    );
+    const narrowItemBlock = readCssBlock(
+      narrowMaskBlock,
+      ".mask-page-body .mask-item",
+    );
+    const narrowHeaderBlock = readCssBlock(narrowItemBlock, ".mask-header");
+    const narrowActionsBlock = readCssBlock(narrowItemBlock, ".mask-actions");
+    const veryNarrowMaskBlock = readCssBlock(
+      maskStyles,
+      "@media only screen and (max-width: 358px)",
     );
     const reducedMotionBlock = readCssBlock(
       maskStyles,
@@ -14529,11 +14316,21 @@ describe("Gemini visual migration shell", () => {
     expect(maskPage).toContain('styles["mask-filter"]');
     expect(maskPage).toContain('styles["mask-search-box"]');
     expect(maskPage).toContain('styles["mask-search-clear"]');
+    expect(maskPage).toContain("const normalizedSearchText =");
+    expect(maskPage).toMatch(
+      /const masks = normalizedSearchText[\s\S]*allMasks\.filter\([\s\S]*mask\.name\.toLowerCase\(\)\.includes\(normalizedSearchText\)/,
+    );
+    expect(maskPage).not.toContain("searchMasks");
     expect(maskPage).toContain('styles["mask-empty"]');
     expect(maskPage).toContain('styles["mask-filter-lang"]');
     expect(maskPage).toContain('styles["mask-create"]');
     expect(maskPage).toContain('styles["mask-item"]');
     expect(maskPage).toContain('styles["mask-actions"]');
+    expect(maskPage).toContain('className="window-header-sub-title"');
+    expect(maskPage).not.toContain("window-header-submai-title");
+    expect(maskPage).toContain("aria={Locale.UI.Export}");
+    expect(maskPage).toContain("aria={Locale.UI.Import}");
+    expect(maskPage).toContain("aria={Locale.UI.Close}");
     expect(maskPage).toContain("maskStore.setLanguage(undefined)");
     expect(maskPage).toContain("maskStore.setLanguage(value as Lang)");
     expect(maskPage).toContain("maskStore.create()");
@@ -14568,6 +14365,8 @@ describe("Gemini visual migration shell", () => {
     expect(pluginPage).toContain('styles["mask-create"]');
     expect(pluginPage).toContain('styles["mask-item"]');
     expect(pluginPage).toContain('styles["mask-actions"]');
+    expect(pluginPage).toContain('className="window-header-sub-title"');
+    expect(pluginPage).not.toContain("window-header-submai-title");
     expect(pluginPage).toContain("pluginStore.create()");
     expect(pluginPage).toContain("setEditingPluginId(createdPlugin.id)");
     expect(pluginPage).toContain("setEditingPluginId(m.id)");
@@ -14681,18 +14480,31 @@ describe("Gemini visual migration shell", () => {
     expect(actionBlock).toMatch(/color:\s*var\(--mask-list-action-color\);/);
     expect(actionBlock).toMatch(/min-width:\s*0;/);
     expect(mobileItemBlock).toMatch(/border-radius:\s*8px;/);
+    expect(mobileItemBlock).toMatch(/padding:\s*12px;/);
+    expect(mobileItemBlock).toMatch(/margin-bottom:\s*10px;/);
     expect(mobileItemBlock).toMatch(
-      /box-shadow:\s*0 12px 30px var\(--mask-list-shadow-color\);/,
+      /box-shadow:\s*0 8px 22px var\(--mask-list-shadow-color\);/,
     );
     expect(mobileItemBlock).toMatch(
       /border-bottom:\s*1px solid var\(--mask-list-border-color\);/,
     );
+    expect(mobileHeaderBlock).toMatch(/flex:\s*1 1 auto;/);
+    expect(mobileHeaderBlock).toMatch(/min-width:\s*0;/);
+    expect(mobileActionsBlock).toMatch(/flex:\s*0 1 auto;/);
     expect(mobileActionsBlock).toMatch(/flex-wrap:\s*wrap;/);
     expect(mobileActionsBlock).toMatch(/justify-content:\s*flex-start;/);
     expect(mobileFilterBlock).toMatch(/height:\s*auto;/);
     expect(mobileFilterBlock).toMatch(/align-items:\s*stretch;/);
     expect(mobileFilterBlock).toMatch(
       /\.mask-search-box[\s\S]*flex-basis:\s*100%;/,
+    );
+    expect(narrowItemBlock).toMatch(/align-items:\s*stretch;/);
+    expect(narrowItemBlock).toMatch(/justify-content:\s*flex-start;/);
+    expect(narrowItemBlock).toMatch(/flex-direction:\s*column;/);
+    expect(narrowHeaderBlock).toMatch(/width:\s*100%;/);
+    expect(narrowActionsBlock).toMatch(/width:\s*100%;/);
+    expect(veryNarrowMaskBlock).toMatch(
+      /\.mask-filter-lang,[\s\S]*\.mask-create[\s\S]*flex-basis:\s*100%;[\s\S]*width:\s*100%;/,
     );
     expect(darkMaskSurfaceTokens).toMatchObject({
       "--mask-list-item-background":
@@ -15477,9 +15289,12 @@ describe("Gemini visual migration shell", () => {
     ].join("\n");
 
     expect(artifacts).toContain(
-      "async function loadArtifactContent(id: string)",
+      "async function loadArtifactContent(id: string, signal: AbortSignal)",
     );
-    expect(artifacts).toContain("fetch(`${ApiPath.Artifacts}?id=${id}`)");
+    expect(artifacts).toContain(
+      "fetch(`${ApiPath.Artifacts}?id=${id}`, { signal })",
+    );
+    expect(artifacts).toContain("return () => controller.abort()");
     expect(artifacts).toContain("showToast(Locale.Export.Artifacts.Error)");
     expect(artifacts).toContain("previewRef.current?.reload()");
     expect(artifacts).toContain("<ArtifactsShareButton");
@@ -15511,9 +15326,12 @@ describe("Gemini visual migration shell", () => {
     expect(artifactsPreview).toContain("event.data.id !== frameId");
     expect(artifactsPreview).toContain("accessibleTitle?: string;");
     expect(artifactsPreview).toContain("const [previewId] = useState");
-    expect(artifactsPreview).toContain(
-      'sandbox="allow-forms allow-modals allow-scripts"',
-    );
+    expect(artifactsPreview).toContain('sandbox="allow-scripts"');
+    expect(artifactsPreview).toContain("const documentIdentity = useMemo");
+    expect(artifactsPreview).toContain("approvedDocumentIdentity");
+    expect(artifactsPreview).not.toContain("setIsRunning(false)");
+    expect(artifactsPreview).toContain("default-src 'none'");
+    expect(artifactsPreview).toContain("connect-src 'none'");
     expect(artifactsPreview).toContain("srcDoc={srcDoc}");
     expect(artifactsPreview).toContain(
       'title={`${accessibleTitle} ${previewId}${title ? `: ${title}` : ""}`}',
@@ -17389,7 +17207,6 @@ describe("Gemini visual migration shell", () => {
     const errorTitleBlock = readCssBlock(errorBlock, ".error-title");
     const errorDetailsBlock = readCssBlock(errorBlock, ".error-details");
     const errorActionsBlock = readCssBlock(errorBlock, ".error-actions");
-    const errorReportBlock = readCssBlock(errorBlock, ".error-report-link");
     const errorActionButtonBlock = readCssBlock(
       errorBlock,
       ".error-action-button",
@@ -17457,7 +17274,6 @@ describe("Gemini visual migration shell", () => {
       errorTitleBlock,
       errorDetailsBlock,
       errorActionsBlock,
-      errorReportBlock,
       errorActionButtonBlock,
     ].join("\n");
 
@@ -17465,13 +17281,12 @@ describe("Gemini visual migration shell", () => {
     expect(errorBoundary).toContain('className="error-title"');
     expect(errorBoundary).toContain('className="error-details"');
     expect(errorBoundary).toContain('className="error-actions"');
-    expect(errorBoundary).toContain('className="error-report-link"');
     expect(errorBoundary).toContain('className="error-action-button"');
     expect(errorBoundary).not.toContain('style={{ display: "flex"');
-    expect(errorBoundary).toContain("href={ISSUE_URL}");
-    expect(errorBoundary).toMatch(
-      /<IconButton[\s\S]*text="Report This Error"[\s\S]*icon=\{<GithubIcon \/>\}[\s\S]*bordered/,
-    );
+    expect(errorBoundary).not.toContain("Report This Error");
+    expect(errorBoundary).not.toContain("ISSUE_URL");
+    expect(errorBoundary).not.toContain("GithubIcon");
+    expect(errorActionsBlock).toMatch(/justify-content:\s*flex-end;/);
     expect(errorBoundary).toMatch(
       /<IconButton[\s\S]*icon=\{<ResetIcon \/>\}[\s\S]*text="Clear All Data"[\s\S]*showConfirm\(Locale\.Settings\.Danger\.Reset\.Confirm\)[\s\S]*this\.clearAndSaveData\(\);/,
     );
@@ -17542,9 +17357,8 @@ describe("Gemini visual migration shell", () => {
     expect(errorDetailsBlock).toMatch(/user-select:\s*text;/);
     expect(errorActionsBlock).toMatch(/display:\s*flex;/);
     expect(errorActionsBlock).toMatch(/flex-wrap:\s*wrap;/);
-    expect(errorActionsBlock).toMatch(/justify-content:\s*space-between;/);
+    expect(errorActionsBlock).toMatch(/justify-content:\s*flex-end;/);
     expect(errorActionsBlock).toMatch(/gap:\s*var\(--error-action-gap\);/);
-    expect(errorReportBlock).toMatch(/text-decoration:\s*none;/);
     expect(errorActionButtonBlock).toMatch(/min-width:\s*0;/);
     expect(errorActionButtonBlock).toMatch(/flex:\s*0 1 auto;/);
     expect(mobileErrorBlock).toMatch(/width:\s*calc\(100vw - 24px\);/);
@@ -19830,10 +19644,7 @@ describe("Gemini visual migration shell", () => {
     const chat = read("app/components/chat.tsx");
     const gallery = read("app/components/message-image-gallery.tsx");
     const chatStyles = read("app/components/chat.module.scss");
-    const messageMediaBlock = readCssBlock(
-      chatStyles,
-      ".chat-message-media",
-    );
+    const messageMediaBlock = readCssBlock(chatStyles, ".chat-message-media");
     const singleMessageImageBlock = readCssBlock(
       chatStyles,
       ".chat-message-item-image",
@@ -19956,27 +19767,14 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /messageImages\.length > 0[\s\S]*styles\["chat-message-media"\][\s\S]*messageImages\.length === 1[\s\S]*<MessageImagePreview[\s\S]*messageImages\.length > 1[\s\S]*<MessageImageGallery[\s\S]*images=\{messageImages\}[\s\S]*onPreview=\{openImagePreview\}[\s\S]*onDownload=\{downloadImage\}/,
     );
-    expect(chat).toMatch(
-      /getJimengGalleryDisplay\(messageTextContent\)[\s\S]*new Set\(\[[\s\S]*\.\.\.getMessageImages\(message\),[\s\S]*\.\.\.jimengGalleryDisplay\.images/,
-    );
-    expect(chat).toContain("content={jimengGalleryDisplay.text}");
+    expect(chat).toContain("content={messageTextContent}");
     expect(chat).not.toContain("chat-message-item-images");
     expect(chat).not.toContain("chat-message-item-image-multi");
     expect(chat).not.toContain('"--image-count"');
 
-    expect(submitBlock).toMatch(
-      /const useJimengForSubmit =\s*imageGenerationEnabled &&\s*!isOpenAIImageGenerationModelConfig\(/,
-    );
-    expect(submitBlock).toMatch(
-      /useJimengForSubmit\s*\?\s*\{[\s\S]*mcpClientIds:\s*\[JIMENG_MCP_SERVER_ID\],[\s\S]*systemPrompt:\s*JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,[\s\S]*\}\s*:\s*undefined/,
-    );
-    expect(chat).toMatch(
-      /\{!isOpenAIImageGeneration && \([\s\S]*Locale\.Chat\.ChatToolMenu\.ImageGeneration/,
-    );
-    expect(chat).toContain("{showJimengModeUi && (");
+    expect(submitBlock).not.toContain("mcpClientIds");
     expect(homeModeBlock).toContain("selectHeaderModel(");
     expect(homeModeBlock).not.toContain("activateMcpClient");
-    expect(homeModeBlock).not.toContain("JIMENG_MCP_SERVER_ID");
 
     expect(gallery).toMatch(
       /export function MessageImageGallery[\s\S]*useState\(0\)[\s\S]*selectedImage[\s\S]*<MessageImagePreview[\s\S]*src=\{selectedImage\}/,
@@ -20009,12 +19807,8 @@ describe("Gemini visual migration shell", () => {
       /--chat-message-image-radius:\s*14px;/,
     );
     expect(messageImageFrameRootBlock).toMatch(/overflow:\s*visible;/);
-    expect(previewButtonActiveBlock).toMatch(
-      /transform:\s*scale\(0\.99\);/,
-    );
-    expect(previewButtonFocusBlock).toMatch(
-      /outline:\s*var\(--focus-ring\);/,
-    );
+    expect(previewButtonActiveBlock).toMatch(/transform:\s*scale\(0\.99\);/);
+    expect(previewButtonFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
 
     expect(galleryBlock).toMatch(
       /grid-template-columns:\s*minmax\(0, 1fr\) 72px;/,
@@ -20024,19 +19818,13 @@ describe("Gemini visual migration shell", () => {
     expect(galleryBlock).toMatch(/max-width:\s*100%;/);
     expect(galleryOptionsBlock).toMatch(/flex-direction:\s*column;/);
     expect(galleryOptionsBlock).toMatch(/width:\s*72px;/);
-    expect(galleryOptionsBlock).toMatch(
-      /max-height:\s*min\(52vh, 520px\);/,
-    );
+    expect(galleryOptionsBlock).toMatch(/max-height:\s*min\(52vh, 520px\);/);
     expect(galleryOptionsBlock).toMatch(/overflow-y:\s*auto;/);
     expect(galleryOptionBlock).toMatch(/width:\s*100%;/);
     expect(galleryOptionBlock).toMatch(/height:\s*64px;/);
     expect(galleryOptionBlock).toMatch(/border-radius:\s*10px;/);
-    expect(galleryOptionActiveBlock).toMatch(
-      /transform:\s*scale\(0\.97\);/,
-    );
-    expect(galleryOptionFocusBlock).toMatch(
-      /outline:\s*var\(--focus-ring\);/,
-    );
+    expect(galleryOptionActiveBlock).toMatch(/transform:\s*scale\(0\.97\);/);
+    expect(galleryOptionFocusBlock).toMatch(/outline:\s*var\(--focus-ring\);/);
     expect(galleryOptionSelectedBlock).toMatch(
       /border-color:\s*color-mix\(in srgb, var\(--primary\) 72%, transparent\);/,
     );
@@ -21197,7 +20985,7 @@ describe("Gemini visual migration shell", () => {
     expect(reducedMotionBlock).toMatch(/transform:\s*none !important;/);
   });
 
-  test("keeps streaming wait state as a polished Gemini-style skeleton", () => {
+  test("keeps one compact wait indicator and preserves streaming reveal", () => {
     const chat = read("app/components/chat.tsx");
     const chatStyles = read("app/components/chat.module.scss");
     const markdown = read("app/components/markdown.tsx");
@@ -21207,11 +20995,6 @@ describe("Gemini visual migration shell", () => {
     const autoDarkRootBlock = readCssBlock(
       readCssBlock(markdownStyles, "@media (prefers-color-scheme: dark)"),
       ":root",
-    );
-    const shimmerBlock = readCssBlock(chatStyles, ".chat-message-shimmer");
-    const darkShimmerBlock = readCssBlock(
-      chatStyles,
-      ":global(.dark) .chat-message-shimmer",
     );
     const streamingRevealBlock = readCssBlock(
       chatStyles,
@@ -21225,13 +21008,6 @@ describe("Gemini visual migration shell", () => {
       chatStyles,
       ":global(.dark) .chat-message-streaming-reveal",
     );
-    const autoDarkShimmerSelector =
-      ":global(body:not(.light)) .chat-message-shimmer";
-    const autoDarkShimmerBlock = readCssBlockInside(
-      chatStyles,
-      "@media (prefers-color-scheme: dark)",
-      autoDarkShimmerSelector,
-    );
     const autoDarkStreamingRevealSelector =
       ":global(body:not(.light)) .chat-message-streaming-reveal";
     const autoDarkStreamingRevealBlock = readCssBlockInside(
@@ -21239,13 +21015,6 @@ describe("Gemini visual migration shell", () => {
       "@media (prefers-color-scheme: dark)",
       autoDarkStreamingRevealSelector,
     );
-    const streamingDarkShimmerTokenNames = [
-      "--chat-streaming-wait-border-color",
-      "--chat-streaming-wait-line-start",
-      "--chat-streaming-wait-line-highlight",
-      "--chat-streaming-wait-line-tail",
-      "--chat-streaming-wait-line-end",
-    ];
     const streamingDarkRevealTokenNames = [
       "--chat-streaming-reveal-strip-primary",
       "--chat-streaming-reveal-strip-surface",
@@ -21269,14 +21038,6 @@ describe("Gemini visual migration shell", () => {
       "--markdown-streaming-caret-border-color",
       "--markdown-streaming-caret-shadow-color",
     ];
-    const darkShimmerTokenMap = readCustomProperties(
-      darkShimmerBlock,
-      streamingDarkShimmerTokenNames,
-    );
-    const autoDarkShimmerTokenMap = readCustomProperties(
-      autoDarkShimmerBlock,
-      streamingDarkShimmerTokenNames,
-    );
     const darkRevealTokenMap = readCustomProperties(
       darkStreamingRevealBlock,
       streamingDarkRevealTokenNames,
@@ -21302,15 +21063,12 @@ describe("Gemini visual migration shell", () => {
       markdownStreamingTokenNames,
     );
     const streamingToneScope = [
-      shimmerBlock,
-      darkShimmerBlock,
       streamingRevealBlock,
       darkStreamingRevealBlock,
-      autoDarkShimmerBlock,
       autoDarkStreamingRevealBlock,
       streamingSurfaceHandoffBlock,
     ].join("\n");
-    const streamingTokenScope = [shimmerBlock, streamingRevealBlock].join("\n");
+    const streamingTokenScope = streamingRevealBlock;
     const legacyStreamingPaint =
       /rgba\((?:66,\s*133,\s*244|138,\s*180,\s*248|155,\s*81,\s*224|233,\s*30,\s*99|196,\s*140,\s*255|255,\s*139,\s*180)/;
     const reducedMotionBlock = chatStyles.slice(
@@ -21330,6 +21088,10 @@ describe("Gemini visual migration shell", () => {
     const markdownLoadingStatusBlock = readCssBlock(
       markdownStyles,
       ".markdown-body .markdown-loading-status",
+    );
+    const markdownLoadingTrackBlock = readCssBlock(
+      markdownStyles,
+      ".markdown-body .markdown-loading-track",
     );
     const markdownLoadingVisualBlock = readCssBlock(
       markdownStyles,
@@ -21433,15 +21195,11 @@ describe("Gemini visual migration shell", () => {
       mobileMarkdownStreamingImageBoundaryOverrideSelector,
     );
     const streamingMobileScope = chatStyles.slice(
-      chatStyles.indexOf(".chat-message-shimmer"),
+      chatStyles.indexOf(".chat-message-streaming-reveal"),
     );
     const mobileStreamingBlock = readCssBlock(
       streamingMobileScope,
       "@media (max-width: 600px)",
-    );
-    const mobileShimmerBlock = readCssBlock(
-      mobileStreamingBlock,
-      ".chat-message-shimmer",
     );
     const mobileStreamingRevealBlock = readCssBlock(
       mobileStreamingBlock,
@@ -21458,6 +21216,8 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /isStreamingReveal &&\s*styles\["chat-message-streaming-reveal"\]/,
     );
+    expect(chat).not.toContain('styles["chat-message-shimmer"]');
+    expect(chatStyles).not.toContain(".chat-message-shimmer");
     expect(chat).toMatch(/loading=\{isWaiting\}/);
     expect(chat).toMatch(/streaming=\{message\.streaming\}/);
     expect(markdown).toContain('className="markdown-loading-status"');
@@ -21465,9 +21225,10 @@ describe("Gemini visual migration shell", () => {
       /role="status"[\s\S]*aria-live="polite"[\s\S]*aria-atomic="true"/,
     );
     expect(markdown).toMatch(/\{Locale\.Chat\.Typing\}/);
+    expect(markdown).toContain('className="markdown-loading-track"');
     expect(markdown).toContain('className="markdown-loading-visual"');
     expect(markdown).toMatch(
-      /className="markdown-loading-visual"[\s\S]*aria-hidden="true"[\s\S]*className="markdown-loading-dot"[\s\S]*className="markdown-loading-label"[\s\S]*\{Locale\.Chat\.Typing\}/,
+      /className="markdown-loading-track"[\s\S]*className="markdown-loading-visual"[\s\S]*aria-hidden="true"[\s\S]*className="markdown-loading-dot"[\s\S]*className="markdown-loading-label"[\s\S]*\{Locale\.Chat\.Typing\}/,
     );
     expect(markdown).toMatch(
       /data-streaming=\{\s*streaming && !loading && !isUser && content\.length > 0\s*\? "true"\s*:\s*undefined\s*\}/,
@@ -21481,6 +21242,10 @@ describe("Gemini visual migration shell", () => {
     expect(markdownLoadingStatusBlock).toMatch(/overflow:\s*hidden;/);
     expect(markdownLoadingStatusBlock).toMatch(/clip:\s*rect\(0 0 0 0\);/);
     expect(markdownLoadingStatusBlock).not.toMatch(/min-height/);
+    expect(markdownLoadingTrackBlock).toMatch(
+      /width:\s*min\(100%, var\(--markdown-prose-max-width\)\);/,
+    );
+    expect(markdownLoadingTrackBlock).toMatch(/margin-inline:\s*auto;/);
     for (const tokenName of markdownLoadingTokenNames) {
       expect(lightMarkdownLoadingTokens[tokenName]).toBeTruthy();
       expect(darkMarkdownLoadingTokens[tokenName]).toBeTruthy();
@@ -21645,36 +21410,8 @@ describe("Gemini visual migration shell", () => {
     expect(mobileStreamingImageBoundaryOverrideBlock).toMatch(/right:\s*auto;/);
     expect(mobileStreamingImageBoundaryOverrideBlock).toMatch(/left:\s*8px;/);
     expect(streamingToneScope).not.toMatch(legacyStreamingPaint);
-    expect(shimmerBlock).toMatch(/min-height:\s*72px;/);
-    expect(shimmerBlock).toContain("&::after");
-    expect(shimmerBlock).toContain(":global(.markdown-body)::before");
-    expect(shimmerBlock).toContain(":global(.markdown-body)::after");
-    expect(shimmerBlock).toMatch(/display:\s*none !important;/);
-    expect(shimmerBlock).toMatch(/animation:\s*shimmer 1\.6s infinite linear/);
-    expect(shimmerBlock).not.toContain("* {");
-    expect(mobileShimmerBlock).toMatch(/min-height:\s*56px;/);
-    expect(mobileShimmerBlock).toMatch(
-      /:global\(\.markdown-body-container\),[\s\S]*:global\(\.markdown-body\)[\s\S]*min-height:\s*38px;/,
-    );
-    expect(mobileShimmerBlock).toMatch(
-      /&::after,[\s\S]*:global\(\.markdown-body\)::before,[\s\S]*:global\(\.markdown-body\)::after[\s\S]*height:\s*10px;/,
-    );
-    expect(mobileShimmerBlock).toMatch(
-      /:global\(\.markdown-body\)::before[\s\S]*width:\s*min\(84%,\s*100%\);[\s\S]*margin:\s*0 0 10px;/,
-    );
-    expect(mobileShimmerBlock).toMatch(
-      /:global\(\.markdown-body\)::after[\s\S]*width:\s*min\(66%,\s*100%\);/,
-    );
-    expect(mobileShimmerBlock).toMatch(
-      /&::after[\s\S]*width:\s*min\(44%,\s*132px\);[\s\S]*height:\s*9px;[\s\S]*margin-top:\s*10px;/,
-    );
+    expect(chatStyles).not.toContain("@keyframes shimmer");
     [
-      "--chat-streaming-wait-border-color",
-      "--chat-streaming-wait-line-base",
-      "--chat-streaming-wait-line-start",
-      "--chat-streaming-wait-line-highlight",
-      "--chat-streaming-wait-line-tail",
-      "--chat-streaming-wait-line-end",
       "--chat-streaming-reveal-strip-primary",
       "--chat-streaming-reveal-strip-surface",
       "--chat-streaming-reveal-strip-secondary",
@@ -21687,32 +21424,6 @@ describe("Gemini visual migration shell", () => {
     ].forEach((tokenName) => {
       expect(streamingTokenScope).toContain(tokenName);
     });
-    expect(shimmerBlock).toMatch(
-      /--chat-streaming-wait-border-color:\s*color-mix\(in srgb,\s*var\(--primary\) 18%,\s*transparent\);/,
-    );
-    expect(shimmerBlock).toMatch(
-      /border-color:\s*var\(--chat-streaming-wait-border-color\) !important;/,
-    );
-    expect(shimmerBlock).toMatch(
-      /background-color:\s*var\(--chat-streaming-wait-line-base\);/,
-    );
-    expect(shimmerBlock).toMatch(
-      /background-image:\s*linear-gradient\(\s*90deg,[\s\S]*var\(--chat-streaming-wait-line-start\) 0%,[\s\S]*var\(--chat-streaming-wait-line-highlight\) 38%,[\s\S]*var\(--chat-streaming-wait-line-tail\) 68%,[\s\S]*var\(--chat-streaming-wait-line-end\) 100%/,
-    );
-    expect(shimmerBlock).not.toContain("rgba(155, 81, 224");
-    expect(shimmerBlock).not.toContain("rgba(233, 30, 99");
-    expect(darkShimmerBlock).toMatch(
-      /--chat-streaming-wait-line-highlight:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 82%,\s*var\(--primary\) 18%\);/,
-    );
-    expect(darkShimmerBlock).not.toContain("rgba(196, 140, 255");
-    expect(darkShimmerBlock).not.toContain("rgba(255, 139, 180");
-    expect(autoDarkShimmerBlock).toContain(
-      "--chat-streaming-wait-border-color",
-    );
-    expect(autoDarkShimmerBlock).toMatch(
-      /--chat-streaming-wait-line-highlight:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 82%,\s*var\(--primary\) 18%\);/,
-    );
-    expect(autoDarkShimmerTokenMap).toEqual(darkShimmerTokenMap);
     expect(chatStyles).toContain("@keyframes streamingShimmerFade");
     expect(chatStyles).toContain("@keyframes streamingSurfaceHandoff");
     expect(chatStyles).toMatch(
@@ -21776,7 +21487,7 @@ describe("Gemini visual migration shell", () => {
       /--chat-streaming-reveal-strip-surface:\s*color-mix\(in srgb,\s*var\(--surface-elevated\) 64%,\s*transparent\);/,
     );
     expect(autoDarkRevealTokenMap).toEqual(darkRevealTokenMap);
-    expect(reducedMotionBlock).toContain(".chat-message-shimmer");
+    expect(reducedMotionBlock).not.toContain(".chat-message-shimmer");
     expect(reducedMotionBlock).toContain(".chat-message-streaming-reveal");
     expect(reducedMotionBlock).toContain("animation: none !important");
     expect(reducedMotionBlock).toMatch(

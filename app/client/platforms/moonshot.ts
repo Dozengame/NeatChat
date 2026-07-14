@@ -9,7 +9,6 @@ import {
 import {
   useAccessStore,
   useAppConfig,
-  useChatStore,
   ChatMessageTool,
   usePluginStore,
 } from "@/app/store";
@@ -74,7 +73,7 @@ export class MoonshotApi implements LLMApi {
 
     const modelConfig = mergeLLMRequestConfig(
       useAppConfig.getState().modelConfig,
-      useChatStore.getState().currentSession().mask.modelConfig,
+      useAppConfig.getState().modelConfig,
       options.config,
     );
 
@@ -105,11 +104,7 @@ export class MoonshotApi implements LLMApi {
       if (shouldStream) {
         const [tools, funcs] =
           options.allowTools === true
-            ? usePluginStore
-                .getState()
-                .getAsTools(
-                  useChatStore.getState().currentSession().mask?.plugin || [],
-                )
+            ? usePluginStore.getState().getAsTools(options.pluginIds ?? [])
             : [[], {}];
         return stream(
           chatPath,

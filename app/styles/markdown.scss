@@ -2162,6 +2162,11 @@ summary,
   border: 0;
 }
 
+.markdown-body .markdown-loading-track {
+  width: min(100%, var(--markdown-prose-max-width));
+  margin-inline: auto;
+}
+
 .markdown-body .markdown-loading-visual {
   display: inline-flex;
   align-items: center;

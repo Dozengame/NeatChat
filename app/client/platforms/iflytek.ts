@@ -5,7 +5,7 @@ import {
   Iflytek,
   REQUEST_TIMEOUT_MS,
 } from "@/app/constant";
-import { useAccessStore, useAppConfig, useChatStore } from "@/app/store";
+import { useAccessStore, useAppConfig } from "@/app/store";
 
 import { ChatOptions, LLMApi, LLMModel, SpeechOptions } from "../types";
 import { getHeadersAsync } from "../header-loader";
@@ -74,7 +74,7 @@ export class SparkApi implements LLMApi {
 
     const modelConfig = mergeLLMRequestConfig(
       useAppConfig.getState().modelConfig,
-      useChatStore.getState().currentSession().mask.modelConfig,
+      useAppConfig.getState().modelConfig,
       options.config,
     );
 

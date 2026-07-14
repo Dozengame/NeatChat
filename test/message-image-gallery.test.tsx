@@ -7,7 +7,10 @@ jest.mock("../app/icons/download.svg", () => {
   };
 });
 
-import { MessageImageGallery } from "../app/components/message-image-gallery";
+import {
+  MessageImageGallery,
+  MessageImagePreview,
+} from "../app/components/message-image-gallery";
 import Locale from "../app/locales";
 import {
   getImageActionLabels,
@@ -40,6 +43,25 @@ function getOption(index: number) {
 }
 
 describe("MessageImageGallery", () => {
+  test("marks a single image preview as a horizontal swipe surface", () => {
+    const labels = getImageActionLabels("Generated image");
+    const { container } = render(
+      <MessageImagePreview
+        src={images[0]}
+        alt="Generated image"
+        className="message-image"
+        actionLabels={labels}
+        onPreview={jest.fn()}
+        onDownload={jest.fn()}
+      />,
+    );
+
+    expect(container.firstChild).toHaveAttribute(
+      "data-chat-horizontal-scroll",
+      "true",
+    );
+  });
+
   test("exposes one labelled option group without duplicating thumbnail speech", () => {
     renderGallery();
 

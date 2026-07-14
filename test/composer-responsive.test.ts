@@ -67,5 +67,15 @@ describe("composer responsive layout", () => {
     expect(mobileStyles).not.toContain(
       ".chat-input-panel.chat-input-panel-empty:not(.chat-input-panel-collapsed)",
     );
+    expect(mobileStyles).toMatch(
+      /\.chat-input-panel\.chat-input-panel-empty\s*\{[\s\S]*?width:\s*calc\(100% - 20px\);[\s\S]*?max-width:\s*calc\(100% - 20px\);/,
+    );
+    expect(mobileStyles).not.toContain("min(376px");
+    expect(mobileStyles).toMatch(
+      /\.chat-input-panel\.chat-input-panel-empty\s*\n\s*\.chat-input-panel-inner-home-image\s*\{[\s\S]*?padding-right:\s*184px;/,
+    );
+    expect(mobileStyles).toMatch(
+      /\.chat-input-panel\.chat-input-panel-empty\s*\n\s*\.chat-input-panel-inner-home-chat,[\s\S]*?padding-right:\s*154px;/,
+    );
   });
 });

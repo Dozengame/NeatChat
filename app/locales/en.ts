@@ -29,6 +29,8 @@ const en: LocaleType = {
     ChatItemCount: (count: number) => `${count} messages`,
   },
   Chat: {
+    PersistenceFailed:
+      "Failed to save this conversation. Recent changes may be lost after refresh",
     SubTitle: (count: number) => `${count} messages`,
     EditMessage: {
       Title: "Edit All Messages",
@@ -128,10 +130,6 @@ const en: LocaleType = {
       Full: "Full",
       UploadAttachment: "Upload attachment",
       AttachmentFull: "Attachments full: up to 3 images and 5 files",
-      ImageGeneration: "Image generation",
-      DisableImageGeneration: "Turn off image generation",
-      EnablingImageGeneration: "Enabling image generation...",
-      DisablingImageGeneration: "Turning off image generation...",
       SessionTools: "Conversation tools",
       Session: "Conversation",
       ModelsAndSettings: "Models and settings",
@@ -325,53 +323,13 @@ const en: LocaleType = {
       },
     },
     ImageGeneration: {
-      NotEnabled: "Image generation is not enabled",
-      EnableFailed: "Failed to enable image generation",
-      DisableFailed: "Failed to disable image generation",
-      Enabled: "Image generation enabled",
-      Disabled: "Image generation disabled",
       Failed: "Image generation failed",
-      ModeEnabled: "Image generation mode is enabled",
-      ModeLabel: "Image generation",
-      Task: "Image generation task",
-      Submitting: "Submitting to jimeng-mcp",
-      QueryTimeout: "Result query timed out. Please try again later",
-      SubmitOrQueryFailed:
-        "Task submission or result query failed. Please try again later",
       Progress: {
         Model: (model: string) => (model ? `\n\nModel: ${model}` : ""),
         Preparing: "Preparing the image generation request...",
         Generating: "Generating the image. Please wait...",
         Saving: "Image generated. Saving the image...",
         Cancelled: "Image generation cancelled",
-      },
-      Display: {
-        Task: "Image generation task",
-        ToolCall: "Tool call",
-        GenerationType: "Generation type: ",
-        OptimizedPrompt: "Optimized Prompt:",
-        Parameters: "Parameters:",
-        Progress: "Progress:",
-        Status: "Status: ",
-        Submitting: "Submitting to jimeng-mcp",
-        PreparingTool: "Preparing to run the tool",
-        PreparingSubmission: "Preparing to submit to jimeng-mcp",
-        TextToImage: "Text to image",
-        ImageToImage: "Image to image",
-        TextToVideo: "Text to video",
-        ImageToVideo: "Image to video",
-        AspectRatio: "Aspect ratio: ",
-        Resolution: "Resolution: ",
-        ModelVersion: "Model version: ",
-        Duration: "Duration: ",
-        Submitted: "Submitted; waiting for status",
-        Success: "Generation succeeded",
-        Generating: "Generating",
-        ToolFailure: "Tool call failed. Please retry",
-        Failure: "Generation failed",
-        Cancelled: "Cancelled",
-        Timeout: "Query timed out",
-        Unknown: "Unknown",
       },
     },
     ModelMenu: {
@@ -516,6 +474,7 @@ const en: LocaleType = {
     },
     Lang: {
       Name: "Language", // ATTENTION: if you wanna add a new translation, please do not translate this value, leave it as `Language`
+      FollowApp: "Follow App Language",
       All: "All Languages",
     },
     FontSize: {
@@ -1234,6 +1193,7 @@ const en: LocaleType = {
       headers ? `Full-screen table: ${headers}` : "Full-screen Markdown table",
     ScrollableFormula: "Display formula, horizontally scrollable",
     HtmlPreview: "HTML preview",
+    RunHtmlPreview: "Run HTML preview",
     Audio: "Audio",
     Video: "Video",
     MediaAttachment: (type: string, label: string) =>
@@ -1294,6 +1254,12 @@ const en: LocaleType = {
   },
   Mcp: {
     Name: "MCP",
+    Chat: {
+      ToolCall: "Tool call",
+      Progress: "Progress:",
+      PreparingTool: "Preparing to run the tool",
+      ToolFailure: "Tool call failed. Please retry",
+    },
     Market: {
       Title: "MCP Market",
       SubTitle: (count: number) => `${count} servers configured`,

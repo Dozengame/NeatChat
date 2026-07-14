@@ -1,10 +1,7 @@
 import type { McpConfigData } from "./types";
-import { JIMENG_MCP_SERVER_CONFIG, JIMENG_MCP_SERVER_ID } from "./jimeng";
 
 export const BUILTIN_MCP_CONFIG: McpConfigData = {
-  mcpServers: {
-    [JIMENG_MCP_SERVER_ID]: JIMENG_MCP_SERVER_CONFIG,
-  },
+  mcpServers: {},
 };
 
 export function mergeMcpConfig(

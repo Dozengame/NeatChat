@@ -4,7 +4,6 @@ import { getHeadersAsync } from "../header-loader";
 import {
   useAccessStore,
   useAppConfig,
-  useChatStore,
   usePluginStore,
   ChatMessageTool,
 } from "@/app/store";
@@ -99,7 +98,7 @@ export class ClaudeApi implements LLMApi {
 
     const modelConfig = mergeLLMRequestConfig(
       useAppConfig.getState().modelConfig,
-      useChatStore.getState().currentSession().mask.modelConfig,
+      useAppConfig.getState().modelConfig,
       options.config,
     );
 
@@ -212,11 +211,7 @@ export class ClaudeApi implements LLMApi {
       let index = -1;
       const [tools, funcs] =
         options.allowTools === true
-          ? usePluginStore
-              .getState()
-              .getAsTools(
-                useChatStore.getState().currentSession().mask?.plugin || [],
-              )
+          ? usePluginStore.getState().getAsTools(options.pluginIds ?? [])
           : [[], {}];
       return stream(
         path,

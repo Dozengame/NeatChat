@@ -162,7 +162,6 @@ declare global {
       DEFAULT_INPUT_TEMPLATE?: string;
 
       ENABLE_MCP?: string; // enable mcp functionality
-      JIMENG_MCP_TOKEN?: string; // Jimeng MCP bearer token
     }
   }
 }
@@ -317,7 +316,7 @@ export const getServerSideConfig = () => {
 
   const enableMcp = process.env.ENABLE_MCP
     ? parseEnvBoolean(process.env.ENABLE_MCP)
-    : !!process.env.JIMENG_MCP_TOKEN;
+    : false;
 
   return {
     baseUrl: process.env.BASE_URL,

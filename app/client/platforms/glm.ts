@@ -8,7 +8,6 @@ import {
 import {
   useAccessStore,
   useAppConfig,
-  useChatStore,
   ChatMessageTool,
   usePluginStore,
 } from "@/app/store";
@@ -73,7 +72,7 @@ export class ChatGLMApi implements LLMApi {
 
     const modelConfig = mergeLLMRequestConfig(
       useAppConfig.getState().modelConfig,
-      useChatStore.getState().currentSession().mask.modelConfig,
+      useAppConfig.getState().modelConfig,
       options.config,
     );
 
@@ -103,11 +102,7 @@ export class ChatGLMApi implements LLMApi {
       if (shouldStream) {
         const [tools, funcs] =
           options.allowTools === true
-            ? usePluginStore
-                .getState()
-                .getAsTools(
-                  useChatStore.getState().currentSession().mask?.plugin || [],
-                )
+            ? usePluginStore.getState().getAsTools(options.pluginIds ?? [])
             : [[], {}];
         return stream(
           chatPath,

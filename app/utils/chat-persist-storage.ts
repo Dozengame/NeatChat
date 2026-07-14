@@ -6,9 +6,12 @@ import type {
 
 type ThrottledStorageOptions<S> = {
   intervalMs?: number;
+  maxRetries?: number;
+  retryDelayMs?: number;
   serialize?: (value: StorageValue<S>) => string;
   deserialize?: (value: string) => StorageValue<S>;
   shouldPersist?: (value: StorageValue<S>) => boolean;
+  onError?: (error: Error, name: string) => void;
 };
 
 export type FlushablePersistStorage<S> = PersistStorage<S> & {
@@ -19,9 +22,11 @@ export type FlushablePersistStorage<S> = PersistStorage<S> & {
 
 type PendingValue<S> = {
   value: StorageValue<S>;
+  snapshotGeneration: number;
   timer?: ReturnType<typeof setTimeout>;
   cancelIdle?: () => void;
   idleTimeoutMs?: number;
+  retryAttempts?: number;
 };
 
 const LARGE_SERIALIZED_STATE_LENGTH = 5 * 1024 * 1024;
@@ -51,6 +56,8 @@ export function createTrailingThrottledJSONStorage<S>(
   options: ThrottledStorageOptions<S> = {},
 ): FlushablePersistStorage<S> {
   const intervalMs = options.intervalMs ?? 250;
+  const maxRetries = options.maxRetries ?? 2;
+  const retryDelayMs = options.retryDelayMs ?? intervalMs;
   const serialize = options.serialize ?? JSON.stringify;
   const deserialize = options.deserialize ?? JSON.parse;
   const shouldPersist = options.shouldPersist ?? (() => true);
@@ -58,6 +65,9 @@ export function createTrailingThrottledJSONStorage<S>(
   const writeChains = new Map<string, Promise<void>>();
   const lastSerializedLengths = new Map<string, number>();
   const suspendedWrites = new Set<string>();
+  const reportedErrors = new Set<string>();
+  const writeGenerations = new Map<string, number>();
+  const snapshotGenerations = new Map<string, number>();
 
   const cancelPending = (name: string) => {
     const pending = pendingValues.get(name);
@@ -110,14 +120,49 @@ export function createTrailingThrottledJSONStorage<S>(
     pending.cancelIdle?.();
     pending.idleTimeoutMs = undefined;
     pendingValues.delete(name);
+    const writeGeneration = writeGenerations.get(name) ?? 0;
     const serializedValue = serialize(pending.value);
     lastSerializedLengths.set(name, serializedValue.length);
     const previousWrite = writeChains.get(name) ?? Promise.resolve();
     const write = previousWrite
       .catch(() => undefined)
       .then(() => storage.setItem(name, serializedValue))
-      .then(() => undefined);
-    await trackWrite(name, write);
+      .then(() => {
+        reportedErrors.delete(name);
+      });
+    try {
+      await trackWrite(name, write);
+    } catch (cause) {
+      const error = cause instanceof Error ? cause : new Error(String(cause));
+      if (
+        suspendedWrites.has(name) ||
+        (writeGenerations.get(name) ?? 0) !== writeGeneration
+      ) {
+        throw error;
+      }
+
+      const latestPending = pendingValues.get(name);
+      const isLatestSnapshot =
+        (snapshotGenerations.get(name) ?? 0) === pending.snapshotGeneration;
+      if (!latestPending && isLatestSnapshot) {
+        const retryAttempts = (pending.retryAttempts ?? 0) + 1;
+        pending.retryAttempts = retryAttempts;
+        pendingValues.set(name, pending);
+        if (retryAttempts <= maxRetries) {
+          pending.timer = setTimeout(
+            () => {
+              pending.timer = undefined;
+              scheduleOne(name, 0);
+            },
+            retryDelayMs * 2 ** (retryAttempts - 1),
+          );
+        } else if (!reportedErrors.has(name)) {
+          reportedErrors.add(name);
+          options.onError?.(error, name);
+        }
+      }
+      throw error;
+    }
   };
 
   const flushNow = async (name?: string) => {
@@ -178,13 +223,31 @@ export function createTrailingThrottledJSONStorage<S>(
     setItem(name, value) {
       if (suspendedWrites.has(name)) return;
       if (!shouldPersist(value)) return;
+      const snapshotGeneration = (snapshotGenerations.get(name) ?? 0) + 1;
+      snapshotGenerations.set(name, snapshotGeneration);
       const currentPending = pendingValues.get(name);
       if (currentPending) {
         currentPending.value = value;
+        currentPending.snapshotGeneration = snapshotGeneration;
+        if (
+          currentPending.retryAttempts === undefined ||
+          currentPending.retryAttempts > maxRetries
+        ) {
+          currentPending.retryAttempts = 0;
+        }
+        if (
+          currentPending.timer === undefined &&
+          currentPending.cancelIdle === undefined
+        ) {
+          currentPending.timer = setTimeout(() => {
+            currentPending.timer = undefined;
+            scheduleOne(name, getInterval(name));
+          }, getInterval(name));
+        }
         return;
       }
 
-      const pending: PendingValue<S> = { value };
+      const pending: PendingValue<S> = { value, snapshotGeneration };
       pending.timer = setTimeout(() => {
         pending.timer = undefined;
         scheduleOne(name, getInterval(name));
@@ -192,8 +255,10 @@ export function createTrailingThrottledJSONStorage<S>(
       pendingValues.set(name, pending);
     },
     async removeItem(name) {
+      writeGenerations.set(name, (writeGenerations.get(name) ?? 0) + 1);
       cancelPending(name);
       lastSerializedLengths.delete(name);
+      reportedErrors.delete(name);
       const previousWrite = writeChains.get(name) ?? Promise.resolve();
       const remove = previousWrite
         .catch(() => undefined)
@@ -205,7 +270,9 @@ export function createTrailingThrottledJSONStorage<S>(
     flushNow,
     suspendWrites(name) {
       suspendedWrites.add(name);
+      writeGenerations.set(name, (writeGenerations.get(name) ?? 0) + 1);
       cancelPending(name);
+      reportedErrors.delete(name);
     },
   };
 }

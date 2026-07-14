@@ -66,6 +66,8 @@ export interface ChatOptions {
   messages: RequestMessage[];
   config: LLMConfig;
   allowTools?: boolean;
+  pluginIds?: string[];
+  openaiResponsesRecoveryPending?: boolean;
 
   onUpdate?: (message: string, chunk: string) => void;
   onFinish: (

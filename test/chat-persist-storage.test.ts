@@ -1,5 +1,7 @@
 import type { StateStorage, StorageValue } from "zustand/middleware";
 import { createTrailingThrottledJSONStorage } from "../app/utils/chat-persist-storage";
+import fs from "fs";
+import path from "path";
 
 type PersistedChat = { revision: number; content: string };
 
@@ -25,6 +27,15 @@ function value(revision: number): StorageValue<PersistedChat> {
 }
 
 describe("chat trailing-throttled JSON persistence", () => {
+  test("wires terminal persistence failures to a one-time user-visible warning", () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "app/store/chat.ts"),
+      "utf8",
+    );
+    expect(source).toContain("onError: () => {");
+    expect(source).toContain("showToast(Locale.Chat.PersistenceFailed)");
+  });
+
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -249,6 +260,53 @@ describe("chat trailing-throttled JSON persistence", () => {
     ]);
   });
 
+  test("does not requeue an older failed snapshot after a newer flush is queued", async () => {
+    const values = new Map<string, string>();
+    const writes: string[] = [];
+    let rejectFirstWrite!: (error: Error) => void;
+    const firstWrite = new Promise<void>((_resolve, reject) => {
+      rejectFirstWrite = reject;
+    });
+    let writeCount = 0;
+    const storage: StateStorage = {
+      getItem: jest.fn(async (name) => values.get(name) ?? null),
+      setItem: jest.fn(async (name, serialized) => {
+        writeCount += 1;
+        writes.push(serialized);
+        if (writeCount === 1) {
+          await firstWrite;
+        }
+        values.set(name, serialized);
+      }),
+      removeItem: jest.fn(async (name) => {
+        values.delete(name);
+      }),
+    };
+    const throttled = createTrailingThrottledJSONStorage<PersistedChat>(
+      storage,
+      { intervalMs: 250, retryDelayMs: 10 },
+    );
+
+    throttled.setItem("chat", value(1));
+    const olderFlush = throttled.flushNow("chat");
+    await Promise.resolve();
+    throttled.setItem("chat", value(2));
+    const newerFlush = throttled.flushNow("chat");
+    await Promise.resolve();
+
+    rejectFirstWrite(new Error("older write failed"));
+    await expect(olderFlush).rejects.toThrow("older write failed");
+    await expect(newerFlush).resolves.toBeUndefined();
+    await jest.runAllTimersAsync();
+    await throttled.flushNow("chat");
+
+    expect(writes.map((entry) => JSON.parse(entry))).toEqual([
+      value(1),
+      value(2),
+    ]);
+    await expect(throttled.getItem("chat")).resolves.toEqual(value(2));
+  });
+
   test("remove cancels pending data so it cannot be written after deletion", async () => {
     const { storage } = createStateStorage();
     const throttled = createTrailingThrottledJSONStorage<PersistedChat>(
@@ -326,5 +384,96 @@ describe("chat trailing-throttled JSON persistence", () => {
     expect(JSON.parse((storage.setItem as jest.Mock).mock.calls[1][1])).toEqual(
       value(2),
     );
+  });
+
+  test("keeps the latest snapshot for a bounded retry and reports terminal failure once", async () => {
+    const onError = jest.fn();
+    const storage: StateStorage = {
+      getItem: jest.fn(async () => null),
+      setItem: jest
+        .fn()
+        .mockRejectedValueOnce(new Error("temporary failure"))
+        .mockRejectedValueOnce(new Error("terminal failure")),
+      removeItem: jest.fn(async () => undefined),
+    };
+    const throttled = createTrailingThrottledJSONStorage<PersistedChat>(
+      storage,
+      { intervalMs: 10, maxRetries: 1, retryDelayMs: 10, onError },
+    );
+
+    throttled.setItem("chat", value(1));
+    await expect(throttled.flushNow("chat")).rejects.toThrow(
+      "temporary failure",
+    );
+    throttled.setItem("chat", value(2));
+    await expect(throttled.flushNow("chat")).rejects.toThrow(
+      "terminal failure",
+    );
+
+    expect(onError).toHaveBeenCalledTimes(1);
+    await expect(throttled.getItem("chat")).resolves.toEqual(value(2));
+    jest.advanceTimersByTime(1000);
+    expect(storage.setItem).toHaveBeenCalledTimes(2);
+  });
+
+  test("does not resurrect a failed in-flight write after remove", async () => {
+    let rejectWrite!: (error: Error) => void;
+    const failedWrite = new Promise<void>((_resolve, reject) => {
+      rejectWrite = reject;
+    });
+    const storage: StateStorage = {
+      getItem: jest.fn(async () => null),
+      setItem: jest.fn(() => failedWrite),
+      removeItem: jest.fn(async () => undefined),
+    };
+    const throttled = createTrailingThrottledJSONStorage<PersistedChat>(
+      storage,
+      { intervalMs: 10, retryDelayMs: 10 },
+    );
+
+    throttled.setItem("chat", value(1));
+    const flush = throttled.flushNow("chat");
+    await Promise.resolve();
+    const remove = throttled.removeItem("chat");
+    rejectWrite(new Error("write failed during remove"));
+
+    await expect(flush).rejects.toThrow("write failed during remove");
+    await expect(remove).resolves.toBeUndefined();
+    await jest.runAllTimersAsync();
+    expect(storage.setItem).toHaveBeenCalledTimes(1);
+    expect(storage.removeItem).toHaveBeenCalledTimes(1);
+    await expect(throttled.getItem("chat")).resolves.toBeNull();
+
+    (storage.setItem as jest.Mock).mockResolvedValueOnce(undefined);
+    throttled.setItem("chat", value(2));
+    await expect(throttled.flushNow("chat")).resolves.toBeUndefined();
+    expect(storage.setItem).toHaveBeenCalledTimes(2);
+  });
+
+  test("does not requeue a failed write after writes are suspended", async () => {
+    let rejectWrite!: (error: Error) => void;
+    const failedWrite = new Promise<void>((_resolve, reject) => {
+      rejectWrite = reject;
+    });
+    const storage: StateStorage = {
+      getItem: jest.fn(async () => null),
+      setItem: jest.fn(() => failedWrite),
+      removeItem: jest.fn(async () => undefined),
+    };
+    const throttled = createTrailingThrottledJSONStorage<PersistedChat>(
+      storage,
+      { intervalMs: 10, retryDelayMs: 10 },
+    );
+
+    throttled.setItem("chat", value(1));
+    const flush = throttled.flushNow("chat");
+    await Promise.resolve();
+    throttled.suspendWrites("chat");
+    rejectWrite(new Error("write failed after suspend"));
+
+    await expect(flush).rejects.toThrow("write failed after suspend");
+    await jest.runAllTimersAsync();
+    expect(storage.setItem).toHaveBeenCalledTimes(1);
+    await expect(throttled.getItem("chat")).resolves.toBeNull();
   });
 });

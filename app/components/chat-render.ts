@@ -4,11 +4,7 @@ import { deepClone } from "../utils/clone";
 import { hasMcpJsonStart, isMcpJson, tryExtractMcpJson } from "../mcp/utils";
 import {
   formatFailedMcpRequestForChat,
-  formatJimengMcpRequestForChat,
   formatPendingMcpRequestForChat,
-  hasJimengDisplayableMedia,
-  mergeJimengProgressWithResult,
-  mergeJimengResultIntoReply,
 } from "../mcp/display";
 
 export type RenderMessage = ChatMessage & { preview?: boolean };
@@ -45,8 +41,6 @@ export function findMessageForRenderSource(
 
 type VisibleMessageProjectionState = {
   visibleMessages: RenderMessage[];
-  pendingJimengResult?: string;
-  pendingJimengProgressIndex?: number;
 };
 
 function createProjectionState(): VisibleMessageProjectionState {
@@ -68,37 +62,10 @@ function projectMessage(
 ) {
   const textContent = getMessageTextContent(message);
 
-  if (message.isMcpResponse) {
-    if (state.pendingJimengProgressIndex !== undefined) {
-      state.visibleMessages[state.pendingJimengProgressIndex] = {
-        ...state.visibleMessages[state.pendingJimengProgressIndex],
-        content: mergeJimengProgressWithResult(
-          getMessageTextContent(
-            state.visibleMessages[state.pendingJimengProgressIndex],
-          ),
-          textContent,
-          { includeMedia: false },
-        ),
-      };
-      state.pendingJimengResult = textContent;
-      return;
-    }
-
-    if (hasJimengDisplayableMedia(textContent)) {
-      state.pendingJimengResult = textContent;
-    }
-    return;
-  }
+  if (message.isMcpResponse) return;
 
   if (message.role === "assistant" && isMcpJson(textContent)) {
-    const jimengProgress = formatJimengMcpRequestForChat(textContent);
-    if (jimengProgress) {
-      state.pendingJimengProgressIndex = state.visibleMessages.length;
-      state.visibleMessages.push({
-        ...message,
-        content: jimengProgress,
-      });
-    } else if (!tryExtractMcpJson(textContent)) {
+    if (!tryExtractMcpJson(textContent)) {
       state.visibleMessages.push({
         ...message,
         content: formatFailedMcpRequestForChat(),
@@ -134,46 +101,11 @@ function projectMessage(
     return;
   }
 
-  if (message.role === "assistant" && state.pendingJimengResult) {
-    const mergedContent = mergeJimengResultIntoReply(
-      textContent,
-      state.pendingJimengResult,
-    );
-    state.pendingJimengResult = undefined;
-    state.pendingJimengProgressIndex = undefined;
-
-    if (mergedContent !== textContent) {
-      state.visibleMessages.push({
-        ...message,
-        content: mergedContent,
-      });
-      return;
-    }
-  }
-
   state.visibleMessages.push(message);
 }
 
 function finalizeProjection(state: VisibleMessageProjectionState) {
-  const visibleMessages = state.visibleMessages;
-
-  if (
-    state.pendingJimengProgressIndex !== undefined &&
-    state.pendingJimengResult !== undefined
-  ) {
-    visibleMessages[state.pendingJimengProgressIndex] = {
-      ...visibleMessages[state.pendingJimengProgressIndex],
-      content: mergeJimengProgressWithResult(
-        getMessageTextContent(
-          visibleMessages[state.pendingJimengProgressIndex],
-        ),
-        state.pendingJimengResult,
-        { includeMedia: true },
-      ),
-    };
-  }
-
-  return visibleMessages;
+  return state.visibleMessages;
 }
 
 export function getVisibleChatMessages(messages: RenderMessage[]) {

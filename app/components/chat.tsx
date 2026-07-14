@@ -34,7 +34,6 @@ import ConfirmIcon from "../icons/confirm.svg";
 import CancelIcon from "../icons/cancel.svg";
 import FileIcon from "../icons/file.svg";
 import AttachmentIcon from "../icons/attachment.svg";
-import ImageIcon from "../icons/image.svg";
 import DownloadIcon from "../icons/download.svg";
 import AddIcon from "../icons/add.svg";
 import NeatIcon from "../icons/neat.svg";
@@ -173,20 +172,10 @@ import {
   uploadAttachments,
 } from "../utils/file";
 import { formatAttachmentForPrompt } from "../utils/attachment-wire";
-import { activateMcpClient, isMcpEnabled } from "../mcp/actions";
 import {
   type ConfigSource,
   createConfigFieldMeta,
 } from "../utils/public-app-config";
-import {
-  createLatestBooleanIntent,
-  type BooleanIntent,
-} from "../utils/latest-boolean-intent";
-import {
-  JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
-  JIMENG_MCP_SERVER_ID,
-} from "../mcp/jimeng";
-import { getJimengGalleryDisplay } from "../mcp/display";
 import {
   createPinnedContextMessage,
   createVisibleChatMessagesProjector,
@@ -329,27 +318,6 @@ function getImageDownloadName(src: string) {
   }
 }
 
-function isJimengPublicImage(src: string) {
-  try {
-    const url = new URL(src, window.location.href);
-    return (
-      url.protocol === "https:" &&
-      url.hostname === "123.207.69.230" &&
-      url.pathname.startsWith("/jimeng-media/")
-    );
-  } catch {
-    return false;
-  }
-}
-
-function getDownloadSource(src: string) {
-  if (!isJimengPublicImage(src)) {
-    return src;
-  }
-
-  return `/api/image-download?url=${encodeURIComponent(src)}`;
-}
-
 function triggerFileDownload(url: string, fileName: string) {
   if (!url) return;
 
@@ -395,10 +363,8 @@ async function downloadImage(src: string) {
   if (!src) return;
 
   const fileName = getImageDownloadName(src);
-  const downloadSource = getDownloadSource(src);
-
   try {
-    const response = await fetch(downloadSource);
+    const response = await fetch(src);
     if (!response.ok) {
       throw new Error(`Failed to fetch image: ${response.status}`);
     }
@@ -896,8 +862,6 @@ type ChatActionsProps = {
   openShortcutKeyModal: () => void;
   setUserInput: (input: string) => void;
   setShowChatSidePanel: React.Dispatch<React.SetStateAction<boolean>>;
-  imageGenerationEnabled: boolean;
-  setImageGenerationEnabled: React.Dispatch<React.SetStateAction<boolean>>;
   onActionComplete?: () => void;
 };
 
@@ -908,23 +872,6 @@ function useChatActionsView(props: ChatActionsProps) {
   const chatStore = useChatStore();
   const pluginStore = usePluginStore();
   const session = chatStore.currentSession();
-  const imageGenerationIntentRef = useRef<
-    ReturnType<typeof createLatestBooleanIntent> | undefined
-  >(undefined);
-  if (!imageGenerationIntentRef.current) {
-    imageGenerationIntentRef.current = createLatestBooleanIntent(
-      props.imageGenerationEnabled,
-    );
-  }
-  const imageGenerationIntent = imageGenerationIntentRef.current;
-  const imageGenerationOperationRef = useRef<Promise<void>>(Promise.resolve());
-  const imageGenerationPendingTokenRef = useRef<number | undefined>(undefined);
-  const [imageGenerationPendingValue, setImageGenerationPendingValue] =
-    useState<boolean | undefined>(undefined);
-  const imageGenerationPending = imageGenerationPendingValue !== undefined;
-  useEffect(() => {
-    imageGenerationIntent.syncCommitted(props.imageGenerationEnabled);
-  }, [imageGenerationIntent, props.imageGenerationEnabled]);
 
   // switch themes
   const theme = config.theme;
@@ -1073,78 +1020,6 @@ function useChatActionsView(props: ChatActionsProps) {
       props.onActionComplete?.();
     }
   };
-  const setImageGenerationMode = async (intent: BooleanIntent) => {
-    const isCurrentIntent = () => imageGenerationIntent.isCurrent(intent.token);
-    const settleFailedIntent = () => {
-      if (!imageGenerationIntent.settle(intent.token, false)) return false;
-      props.setImageGenerationEnabled(imageGenerationIntent.value());
-      return true;
-    };
-    if (!isCurrentIntent()) return false;
-
-    if (intent.value) {
-      let mcpEnabled = false;
-      try {
-        mcpEnabled = await isMcpEnabled();
-      } catch (error) {
-        if (!settleFailedIntent()) return false;
-        console.warn("[MCP] Failed to check MCP status", error);
-        showToast(Locale.Chat.ImageGeneration.NotEnabled);
-        return false;
-      }
-
-      if (!isCurrentIntent()) return false;
-      if (!mcpEnabled) {
-        if (!settleFailedIntent()) return false;
-        showToast(Locale.Chat.ImageGeneration.NotEnabled);
-        return false;
-      }
-
-      try {
-        await activateMcpClient(JIMENG_MCP_SERVER_ID);
-      } catch (error) {
-        if (!settleFailedIntent()) return false;
-        showToast(
-          error instanceof Error
-            ? error.message
-            : Locale.Chat.ImageGeneration.EnableFailed,
-        );
-        return false;
-      }
-    }
-
-    imageGenerationIntent.markApplied(intent.value);
-    chatStore.resetMcpCache();
-    if (!isCurrentIntent()) return false;
-    if (!imageGenerationIntent.settle(intent.token, true)) return false;
-
-    props.setImageGenerationEnabled(intent.value);
-    showToast(
-      intent.value
-        ? Locale.Chat.ImageGeneration.Enabled
-        : Locale.Chat.ImageGeneration.Disabled,
-    );
-    return true;
-  };
-  const reconcileImageGenerationIntent = (intent: BooleanIntent) => {
-    imageGenerationPendingTokenRef.current = intent.token;
-    setImageGenerationPendingValue(intent.value);
-    const operation = imageGenerationOperationRef.current
-      .catch(() => undefined)
-      .then(() => setImageGenerationMode(intent));
-    imageGenerationOperationRef.current = operation.then(
-      () => undefined,
-      () => undefined,
-    );
-    const settlePendingState = () => {
-      if (imageGenerationPendingTokenRef.current === intent.token) {
-        imageGenerationPendingTokenRef.current = undefined;
-        setImageGenerationPendingValue(undefined);
-      }
-    };
-    void operation.then(settlePendingState, settlePendingState);
-    return operation;
-  };
   const hasSessionActions =
     couldStop ||
     !props.hitBottom ||
@@ -1198,33 +1073,6 @@ function useChatActionsView(props: ChatActionsProps) {
                 : undefined
             }
           />
-
-          {!isOpenAIImageGeneration && (
-            <ChatAction
-              active={props.imageGenerationEnabled}
-              ariaPressed={props.imageGenerationEnabled}
-              ariaBusy={imageGenerationPending}
-              disabled={imageGenerationPending}
-              onClick={async () => {
-                const intent = imageGenerationIntent.next();
-                if (await reconcileImageGenerationIntent(intent)) {
-                  completeMobileAction();
-                }
-              }}
-              text={
-                imageGenerationPendingValue === true
-                  ? Locale.Chat.ChatToolMenu.EnablingImageGeneration
-                  : imageGenerationPendingValue === false
-                  ? Locale.Chat.ChatToolMenu.DisablingImageGeneration
-                  : props.imageGenerationEnabled
-                  ? Locale.Chat.ChatToolMenu.DisableImageGeneration
-                  : Locale.Chat.ChatToolMenu.ImageGeneration
-              }
-              icon={
-                imageGenerationPending ? <LoadingButtonIcon /> : <ImageIcon />
-              }
-            />
-          )}
         </div>
 
         {hasSessionActions && (
@@ -1868,18 +1716,13 @@ function useChatInnerView() {
   const pendingQuickJumpTargetRef = useRef<ChatScrollTarget | null>(null);
   const msgRenderIndexRef = useRef(0);
   const attachWithTopRef = useRef(false);
-  const isTyping = userInput !== "";
-
-  // if user is typing, should auto scroll to bottom
-  // if user is not typing, should auto scroll to bottom only if already at bottom
   const lastSessionMessage = session.messages.at(-1);
   const messageScrollSignal = `${session.messages.length}:${
     lastSessionMessage?.id ?? ""
   }:${
     lastSessionMessage ? getMessageTextContent(lastSessionMessage).length : 0
   }:${lastSessionMessage?.streaming ? 1 : 0}`;
-  const shouldFollowLatestMessage =
-    hitBottom || attachWithTopRef.current || isTyping;
+  const shouldFollowLatestMessage = hitBottom || attachWithTopRef.current;
   const { autoScroll, setAutoScroll, scrollDomToBottom } = useScrollToBottom(
     scrollRef,
     shouldFollowLatestMessage,
@@ -1948,10 +1791,6 @@ function useChatInnerView() {
     () => chatQaFixture?.isImageGalleryQaEnabled(location.search) ?? false,
     [chatQaFixture, location.search],
   );
-  const jimengParserQaEnabled = useMemo(
-    () => chatQaFixture?.isJimengParserQaEnabled(location.search) ?? false,
-    [chatQaFixture, location.search],
-  );
   const markdownStressQaDropzonePreview = useMemo(
     () =>
       markdownStressQaEnabled
@@ -1984,14 +1823,6 @@ function useChatInnerView() {
     start: false,
     end: false,
   });
-  const [imageGenerationEnabled, setImageGenerationEnabled] = useState(false);
-  const showJimengModeUi =
-    imageGenerationEnabled &&
-    !isOpenAIImageGenerationModelConfig({
-      model: session.mask.modelConfig.model,
-      providerName:
-        session.mask.modelConfig.providerName || ServiceProvider.OpenAI,
-    });
   const [dragActive, setDragActive] = useState(false);
   const [dragPayloadSummary, setDragPayloadSummary] =
     useState<DraggedAttachmentSummary | null>(null);
@@ -2105,7 +1936,6 @@ function useChatInnerView() {
     userInput.trim().length > 0 ||
     attachImages.length > 0 ||
     attachedFiles.length > 0 ||
-    showJimengModeUi ||
     promptHints.length > 0;
   const canSubmitComposer =
     !markdownStressQaEnabled &&
@@ -2296,26 +2126,9 @@ function useChatInnerView() {
       return;
     }
 
-    const useJimengForSubmit =
-      imageGenerationEnabled &&
-      !isOpenAIImageGenerationModelConfig({
-        model: session.mask.modelConfig.model,
-        providerName:
-          session.mask.modelConfig.providerName || ServiceProvider.OpenAI,
-      });
     setIsLoading(true);
     chatStore
-      .onUserInput(
-        finalUserInput,
-        attachImages,
-        false,
-        useJimengForSubmit
-          ? {
-              mcpClientIds: [JIMENG_MCP_SERVER_ID],
-              systemPrompt: JIMENG_IMAGE_GENERATION_SYSTEM_PROMPT,
-            }
-          : undefined,
-      )
+      .onUserInput(finalUserInput, attachImages)
       .then(() => setIsLoading(false));
 
     setAttachImages([]);
@@ -3075,10 +2888,6 @@ function useChatInnerView() {
       return chatQaFixture.getImageGalleryQaMessages();
     }
 
-    if (jimengParserQaEnabled && chatQaFixture) {
-      return chatQaFixture.getJimengParserQaMessages(location.search);
-    }
-
     const visibleSessionMessages = projectVisibleChatMessages(
       session.messages as RenderMessage[],
       chatStore.messageProjectionRevision,
@@ -3121,7 +2930,6 @@ function useChatInnerView() {
     context,
     isLoading,
     imageGalleryQaEnabled,
-    jimengParserQaEnabled,
     location.search,
     markdownStressQaEnabled,
     chatStore.messageProjectionRevision,
@@ -3152,8 +2960,6 @@ function useChatInnerView() {
     ? `markdown:${location.search}`
     : imageGalleryQaEnabled
     ? `gallery:${location.search}`
-    : jimengParserQaEnabled
-    ? `jimeng:${location.search}`
     : undefined;
   const previousQaMessageWindowKeyRef = useRef<string>();
   useLayoutEffect(() => {
@@ -3227,14 +3033,12 @@ function useChatInnerView() {
   const showEmptyState =
     !markdownStressQaEnabled &&
     !imageGalleryQaEnabled &&
-    !jimengParserQaEnabled &&
     session.messages.length === 0 &&
     context.length === 1 &&
     getMessageTextContent(context[0]) === BOT_HELLO.content &&
     !isLoading;
-  const showEmptyComposer = showEmptyState && !hasActiveInputContent;
-  const showEmptyHero =
-    showEmptyState && !hasActiveInputContent && !showChatActionMenu;
+  const showEmptyComposer = showEmptyState;
+  const showEmptyHero = showEmptyState && !showChatActionMenu;
   const showDesktopChatHeader = !isCompactScreen && !showEmptyState;
   useEffect(() => {
     if (!showMobileModelSelector) return;
@@ -4300,9 +4104,11 @@ function useChatInnerView() {
 
   // 添加触摸滑动相关的状态
   const touchStartXRef = useRef(0);
+  const touchStartYRef = useRef(0);
   const touchEndXRef = useRef(0);
+  const touchEndYRef = useRef(0);
   const ignoreChatSwipeRef = useRef(false);
-  const isAttachmentStripTouch = (target: EventTarget | null) => {
+  const isExcludedChatSwipeTarget = (target: EventTarget | null) => {
     const touchTarget =
       target instanceof Element
         ? target
@@ -4311,22 +4117,33 @@ function useChatInnerView() {
         : null;
 
     return Boolean(
-      touchTarget?.closest('[data-composer-attachment-strip="true"]'),
+      touchTarget?.closest(
+        '[data-composer-attachment-strip="true"], [data-chat-horizontal-scroll="true"]',
+      ),
     );
+  };
+
+  const resetChatSwipe = () => {
+    ignoreChatSwipeRef.current = false;
+    touchStartXRef.current = 0;
+    touchStartYRef.current = 0;
+    touchEndXRef.current = 0;
+    touchEndYRef.current = 0;
   };
 
   // 处理触摸事件
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (isAttachmentStripTouch(e.target)) {
+    const touch = e.touches[0];
+    if (!touch || touch.clientX > 32 || isExcludedChatSwipeTarget(e.target)) {
       ignoreChatSwipeRef.current = true;
-      touchStartXRef.current = 0;
-      touchEndXRef.current = 0;
       return;
     }
 
     ignoreChatSwipeRef.current = false;
-    touchStartXRef.current = e.touches[0].clientX;
-    touchEndXRef.current = e.touches[0].clientX;
+    touchStartXRef.current = touch.clientX;
+    touchStartYRef.current = touch.clientY;
+    touchEndXRef.current = touch.clientX;
+    touchEndYRef.current = touch.clientY;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -4334,30 +4151,35 @@ function useChatInnerView() {
       return;
     }
 
-    touchEndXRef.current = e.touches[0].clientX;
+    const touch = e.touches[0];
+    if (!touch) return;
+    touchEndXRef.current = touch.clientX;
+    touchEndYRef.current = touch.clientY;
   };
 
   const handleTouchEnd = () => {
     if (ignoreChatSwipeRef.current) {
-      ignoreChatSwipeRef.current = false;
-      touchStartXRef.current = 0;
-      touchEndXRef.current = 0;
+      resetChatSwipe();
       return;
     }
 
-    if (!isCompactScreen) return;
+    if (!isCompactScreen) {
+      resetChatSwipe();
+      return;
+    }
 
-    const swipeDistance = touchEndXRef.current - touchStartXRef.current;
+    const swipeDistanceX = touchEndXRef.current - touchStartXRef.current;
+    const swipeDistanceY = touchEndYRef.current - touchStartYRef.current;
     const minSwipeDistance = 100; // 最小滑动距离
 
-    // 向右滑动且距离足够
-    if (swipeDistance > minSwipeDistance) {
+    if (
+      swipeDistanceX > minSwipeDistance &&
+      Math.abs(swipeDistanceX) > 1.2 * Math.abs(swipeDistanceY)
+    ) {
       navigate(Path.Home);
     }
 
-    // 重置触摸状态
-    touchStartXRef.current = 0;
-    touchEndXRef.current = 0;
+    resetChatSwipe();
   };
 
   const syncAttachmentScrollHint = useCallback(() => {
@@ -4841,7 +4663,7 @@ function useChatInnerView() {
   }, [closeImagePreview, previewImage]);
 
   const showInputReasoningAction = false;
-  const showInputStatusRow = showInputReasoningAction || showJimengModeUi;
+  const showInputStatusRow = showInputReasoningAction;
   const isMobileSidebarOpen = location.pathname === Path.Home;
   const promptToast = (
     <PromptToast
@@ -4859,6 +4681,7 @@ function useChatInnerView() {
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      onTouchCancel={resetChatSwipe}
     >
       <span
         className={styles["chat-dropzone-live-status"]}
@@ -5431,15 +5254,7 @@ function useChatInnerView() {
                     ? `${messageLabel} ${Locale.Copy.Success}`
                     : "";
                   const messageTextContent = getMessageTextContent(message);
-                  const jimengGalleryDisplay = isUser
-                    ? { text: messageTextContent, images: [] as string[] }
-                    : getJimengGalleryDisplay(messageTextContent);
-                  const messageImages = Array.from(
-                    new Set([
-                      ...getMessageImages(message),
-                      ...jimengGalleryDisplay.images,
-                    ]),
-                  );
+                  const messageImages = getMessageImages(message);
                   const singleMessageImageLabel = getMessageImageLabel(0, 1);
 
                   return (
@@ -5550,14 +5365,13 @@ function useChatInnerView() {
                           <div
                             className={clsx(
                               styles["chat-message-item"],
-                              isWaiting && styles["chat-message-shimmer"],
                               isStreamingReveal &&
                                 styles["chat-message-streaming-reveal"],
                             )}
                           >
                             <Markdown
                               key={message.streaming ? "loading" : "done"}
-                              content={jimengGalleryDisplay.text}
+                              content={messageTextContent}
                               loading={isWaiting}
                               fontSize={fontSize}
                               fontFamily={fontFamily}
@@ -5800,8 +5614,6 @@ function useChatInnerView() {
                   }
                   setUserInput={setUserInput}
                   setShowChatSidePanel={setShowChatSidePanel}
-                  imageGenerationEnabled={imageGenerationEnabled}
-                  setImageGenerationEnabled={setImageGenerationEnabled}
                   onActionComplete={() => setShowChatActionMenu(false)}
                 />
               )}
@@ -5887,14 +5699,10 @@ function useChatInnerView() {
                   }
                   onFocus={() => {
                     setIsChatInputFocused(true);
-                    scrollToBottom();
                   }}
                   onBlur={() => setIsChatInputFocused(false)}
                   onPointerDown={expandInput}
-                  onClick={() => {
-                    expandInput();
-                    scrollToBottom();
-                  }}
+                  onClick={expandInput}
                   onPaste={markdownStressQaEnabled ? undefined : handlePaste}
                   rows={shouldExpandChatInput ? inputRows : 1}
                   autoFocus={autoFocus}
@@ -5970,18 +5778,6 @@ function useChatInnerView() {
                     aria-label={Locale.Chat.ModelMenu.CurrentInputMode}
                   >
                     {showInputReasoningAction && <ChatInputReasoningAction />}
-                    {showJimengModeUi && (
-                      <span
-                        className={clsx(
-                          styles["chat-input-mode-chip"],
-                          styles["chat-input-image-mode-chip"],
-                        )}
-                        aria-label={Locale.Chat.ImageGeneration.ModeEnabled}
-                      >
-                        <ImageIcon />
-                        <span>{Locale.Chat.ImageGeneration.ModeLabel}</span>
-                      </span>
-                    )}
                   </div>
                 )}
 

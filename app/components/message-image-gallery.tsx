@@ -25,7 +25,10 @@ type MessageImagePreviewProps = {
 
 export function MessageImagePreview(props: MessageImagePreviewProps) {
   return (
-    <span className={styles["chat-message-image-frame"]}>
+    <span
+      className={styles["chat-message-image-frame"]}
+      data-chat-horizontal-scroll="true"
+    >
       <button
         type="button"
         className={styles["chat-message-image-preview-button"]}
@@ -115,7 +118,10 @@ export function MessageImageGallery(props: {
   if (!selectedImage) return null;
 
   return (
-    <div className={styles["chat-message-gallery"]}>
+    <div
+      className={styles["chat-message-gallery"]}
+      data-chat-horizontal-scroll="true"
+    >
       <div className={styles["chat-message-gallery-main"]}>
         <MessageImagePreview
           className={styles["chat-message-item-image"]}

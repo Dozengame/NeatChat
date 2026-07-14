@@ -136,6 +136,10 @@ describe("Markdown performance", () => {
       </MarkdownSpan>,
     );
     expect(resizeObserver).toHaveBeenCalledTimes(1);
+    expect(document.querySelector(".katex-display")).toHaveAttribute(
+      "data-chat-horizontal-scroll",
+      "true",
+    );
 
     Object.defineProperty(global, "ResizeObserver", {
       configurable: true,

@@ -144,7 +144,7 @@ function usePluginPageView() {
             <div className="window-header-main-title">
               {Locale.Plugin.Page.Title}
             </div>
-            <div className="window-header-submai-title">
+            <div className="window-header-sub-title">
               {Locale.Plugin.Page.SubTitle(plugins.length)}
             </div>
           </div>
@@ -156,13 +156,18 @@ function usePluginPageView() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <IconButton icon={<GithubIcon />} bordered />
+                <IconButton
+                  icon={<GithubIcon />}
+                  bordered
+                  aria={Locale.Plugin.Page.Title}
+                />
               </a>
             </div>
             <div className="window-action-button">
               <IconButton
                 icon={<CloseIcon />}
                 bordered
+                aria={Locale.UI.Close}
                 onClick={() => navigate(-1)}
               />
             </div>

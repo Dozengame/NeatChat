@@ -14,7 +14,10 @@ describe("chat scroll performance contract", () => {
     expect(chatInner).not.toContain("const isScrolledToBottom =");
     expect(chatInner).not.toContain("const isAttachWithTop = (() =>");
     expect(chatInner).toContain("attachWithTopRef.current");
-    expect(chatInner).toContain("const shouldFollowLatestMessage =");
+    expect(chatInner).toContain(
+      "const shouldFollowLatestMessage = hitBottom || attachWithTopRef.current;",
+    );
+    expect(chatInner).not.toContain("const isTyping =");
     expect(chatInner).toMatch(
       /getMessageTextContent\(lastSessionMessage\)\.length/,
     );

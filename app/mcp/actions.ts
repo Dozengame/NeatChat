@@ -17,7 +17,6 @@ import fs from "fs/promises";
 import path from "path";
 import { getServerSideConfig } from "../config/server";
 import { BUILTIN_MCP_CONFIG, mergeMcpConfig } from "./config";
-import { JIMENG_MCP_SERVER_ID, normalizeJimengMcpRequest } from "./jimeng";
 import { cookies } from "next/headers";
 import {
   ACCESS_SESSION_COOKIE_NAME,
@@ -30,13 +29,31 @@ import {
   runMcpClientLifecycle,
   setInitializeMcpSystemPromise,
 } from "./runtime";
+import Ajv from "ajv";
+import Ajv2020 from "ajv/dist/2020";
+import addFormats from "ajv-formats";
 
 const logger = new MCPClientLogger("MCP Actions");
 const CONFIG_PATH = path.join(process.cwd(), "app/mcp/mcp_config.json");
 let configWriteSequence = 0;
+const RETIRED_MCP_SERVER_IDS = new Set(["jimeng-mcp"]);
 const MCP_INITIALIZATION_RETRY_DELAYS_MS = [500, 1500];
-const JIMENG_MINIMUM_DISCOVERED_TOOL_COUNT = 17;
-const JIMENG_VERSION_TOOL_NAME = "dreamina_version";
+type McpArgumentValidator = (
+  input: unknown,
+) =>
+  | { valid: true; errorMessage: undefined }
+  | { valid: false; errorMessage: string };
+const mcpArgumentValidators = new WeakMap<object, McpArgumentValidator>();
+const MAX_MCP_ARGUMENT_BYTES = 64 * 1024;
+const MAX_MCP_ARGUMENT_DEPTH = 16;
+const MAX_MCP_ARRAY_LENGTH = 1000;
+const JSON_SCHEMA_DRAFT_07_ID = "http://json-schema.org/draft-07/schema";
+const JSON_SCHEMA_2020_12_ID = "https://json-schema.org/draft/2020-12/schema";
+const DANGEROUS_MCP_ARGUMENT_KEYS = new Set([
+  "__proto__",
+  "prototype",
+  "constructor",
+]);
 const RETRYABLE_MCP_INITIALIZATION_ERROR_CODES = new Set([
   "UND_ERR_CONNECT_TIMEOUT",
   "UND_ERR_HEADERS_TIMEOUT",
@@ -56,11 +73,127 @@ function getExecutableServerConfig(
     return serverConfig;
   }
 
-  if (clientId === JIMENG_MCP_SERVER_ID) {
-    return { ...serverConfig, status: "active" };
+  throw new Error(`Server ${clientId} is paused`);
+}
+
+function isRetiredMcpServer(clientId: string) {
+  return RETIRED_MCP_SERVER_IDS.has(clientId);
+}
+
+function assertMcpServerIsSupported(clientId: string) {
+  if (isRetiredMcpServer(clientId)) {
+    throw new Error(`Server ${clientId} is retired`);
+  }
+}
+
+function normalizeMcpConfig(config: McpConfigData): McpConfigData {
+  const mcpServers = Object.fromEntries(
+    Object.entries(config.mcpServers).filter(
+      ([clientId]) => !isRetiredMcpServer(clientId),
+    ),
+  );
+  if (
+    Object.keys(mcpServers).length === Object.keys(config.mcpServers).length
+  ) {
+    return config;
+  }
+  return { ...config, mcpServers };
+}
+
+function assertMcpArgumentLimits(value: unknown, depth = 0): void {
+  if (depth > MAX_MCP_ARGUMENT_DEPTH) {
+    throw new Error("MCP tool arguments exceed the maximum depth");
+  }
+  if (Array.isArray(value)) {
+    if (value.length > MAX_MCP_ARRAY_LENGTH) {
+      throw new Error("MCP tool arguments exceed the maximum array length");
+    }
+    value.forEach((item) => assertMcpArgumentLimits(item, depth + 1));
+    return;
+  }
+  if (!value || typeof value !== "object") return;
+  for (const [key, item] of Object.entries(value)) {
+    if (DANGEROUS_MCP_ARGUMENT_KEYS.has(key)) {
+      throw new Error("MCP tool arguments contain a forbidden key");
+    }
+    assertMcpArgumentLimits(item, depth + 1);
+  }
+}
+
+function getMcpSchemaDialect(inputSchema: object) {
+  const schemaId = (inputSchema as { $schema?: unknown }).$schema;
+  if (schemaId === undefined) return "2020-12" as const;
+  if (typeof schemaId !== "string") {
+    throw new Error("MCP tool input schema dialect is invalid");
   }
 
-  throw new Error(`Server ${clientId} is paused`);
+  const normalizedSchemaId = schemaId.endsWith("#")
+    ? schemaId.slice(0, -1)
+    : schemaId;
+  if (normalizedSchemaId === JSON_SCHEMA_2020_12_ID) {
+    return "2020-12" as const;
+  }
+  if (normalizedSchemaId === JSON_SCHEMA_DRAFT_07_ID) {
+    return "draft-07" as const;
+  }
+  throw new Error("MCP tool input schema dialect is unsupported");
+}
+
+function createMcpArgumentValidator(inputSchema: object) {
+  const options = {
+    strict: false,
+    validateFormats: true,
+    validateSchema: true,
+    allErrors: true,
+  };
+  const ajv =
+    getMcpSchemaDialect(inputSchema) === "2020-12"
+      ? new Ajv2020(options)
+      : new Ajv(options);
+  addFormats(ajv);
+  const validate = ajv.compile(inputSchema);
+  if ("$async" in validate && validate.$async === true) {
+    throw new Error("MCP tool input schema cannot require async validation");
+  }
+  const validator: McpArgumentValidator = (input) => {
+    if (validate(input) === true) {
+      return { valid: true, errorMessage: undefined };
+    }
+    return {
+      valid: false,
+      errorMessage: ajv.errorsText(validate.errors),
+    };
+  };
+  return validator;
+}
+
+function validateMcpToolArguments(
+  inputSchema: object | undefined,
+  args: Record<string, unknown>,
+) {
+  const serialized = JSON.stringify(args);
+  if (
+    new TextEncoder().encode(serialized).byteLength > MAX_MCP_ARGUMENT_BYTES
+  ) {
+    throw new Error("MCP tool arguments exceed the maximum size");
+  }
+  assertMcpArgumentLimits(args);
+  if (!inputSchema || Array.isArray(inputSchema)) {
+    throw new Error("MCP tool input schema is missing or invalid");
+  }
+  let validate = mcpArgumentValidators.get(inputSchema);
+  try {
+    if (!validate) {
+      validate = createMcpArgumentValidator(inputSchema);
+      mcpArgumentValidators.set(inputSchema, validate);
+    }
+  } catch {
+    throw new Error("MCP tool input schema is invalid");
+  }
+  const validation = validate(args);
+  if (!validation.valid) {
+    throw new Error(`Invalid MCP tool arguments: ${validation.errorMessage}`);
+  }
 }
 
 function delay(ms: number) {
@@ -199,12 +332,14 @@ async function auth(scope: McpAuthScope = "use") {
 async function readMcpConfigFromFile(): Promise<McpConfigData> {
   try {
     const configStr = await fs.readFile(CONFIG_PATH, "utf-8");
-    return mergeMcpConfig(BUILTIN_MCP_CONFIG, JSON.parse(configStr));
+    return normalizeMcpConfig(
+      mergeMcpConfig(BUILTIN_MCP_CONFIG, JSON.parse(configStr)),
+    );
   } catch (error) {
     if ((error as NodeJS.ErrnoException)?.code !== "ENOENT") {
       logger.error(`Failed to load MCP config, using default config: ${error}`);
     }
-    return BUILTIN_MCP_CONFIG;
+    return normalizeMcpConfig(BUILTIN_MCP_CONFIG);
   }
 }
 
@@ -263,6 +398,7 @@ export async function getClientsStatus(): Promise<
 // 获取客户端工具
 export async function getClientTools(clientId: string) {
   await auth("manage");
+  if (isRetiredMcpServer(clientId)) return null;
   return clientsMap.get(clientId)?.tools ?? null;
 }
 
@@ -270,7 +406,9 @@ export async function getClientTools(clientId: string) {
 export async function getAvailableClientsCount() {
   await auth();
   let count = 0;
-  clientsMap.forEach((map) => !map.errorMsg && count++);
+  clientsMap.forEach((map, clientId) => {
+    if (!isRetiredMcpServer(clientId) && !map.errorMsg) count++;
+  });
   return count;
 }
 
@@ -279,6 +417,7 @@ export async function getAllTools() {
   await auth();
   const result = [];
   for (const [clientId, status] of clientsMap.entries()) {
+    if (isRetiredMcpServer(clientId)) continue;
     result.push({
       clientId,
       tools: status.tools,
@@ -298,21 +437,16 @@ export async function getMcpChatServerStates(): Promise<
 
   for (const [clientId, serverConfig] of Object.entries(config.mcpServers)) {
     const runtime = clientsMap.get(clientId);
-    const hasActiveEphemeralJimengRuntime =
-      clientId === JIMENG_MCP_SERVER_ID &&
-      Boolean(runtime?.client) &&
-      !runtime?.errorMsg;
-    const status = hasActiveEphemeralJimengRuntime
-      ? "active"
-      : serverConfig.status === "paused"
-      ? "paused"
-      : runtime?.errorMsg
-      ? "error"
-      : runtime?.client
-      ? "active"
-      : runtime && runtime.errorMsg === null
-      ? "initializing"
-      : "undefined";
+    const status =
+      serverConfig.status === "paused"
+        ? "paused"
+        : runtime?.errorMsg
+        ? "error"
+        : runtime?.client
+        ? "active"
+        : runtime && runtime.errorMsg === null
+        ? "initializing"
+        : "undefined";
     result[clientId] = {
       status,
       chatDefaultEnabled: serverConfig.chatDefaultEnabled !== false,
@@ -327,6 +461,7 @@ async function initializeSingleClientLocked(
   clientId: string,
   serverConfig: ServerConfig,
 ) {
+  assertMcpServerIsSupported(clientId);
   // 如果服务器状态是暂停，则不初始化
   if (serverConfig.status === "paused") {
     logger.info(`Skipping initialization for paused client [${clientId}]`);
@@ -393,41 +528,17 @@ async function detachClient(clientId: string) {
   }
 }
 
-async function verifyJimengClientLocked(clientId: string) {
-  const runtime = clientsMap.get(clientId);
-  if (!runtime?.client || !runtime.tools) {
-    throw new Error("Jimeng MCP client did not finish initialization");
-  }
-
-  const dreaminaTools = runtime.tools.tools.filter(
-    (tool) =>
-      typeof tool.name === "string" && tool.name.startsWith("dreamina_"),
-  );
-  if (dreaminaTools.length < JIMENG_MINIMUM_DISCOVERED_TOOL_COUNT) {
-    throw new Error(
-      `Jimeng MCP tool schema is outdated: expected at least ${JIMENG_MINIMUM_DISCOVERED_TOOL_COUNT} dreamina_* tools, received ${dreaminaTools.length}`,
-    );
-  }
-  if (!dreaminaTools.some((tool) => tool.name === JIMENG_VERSION_TOOL_NAME)) {
-    throw new Error("Jimeng MCP tool schema is missing dreamina_version");
-  }
-
-  const versionResult = await executeRequest(runtime.client, {
-    method: "tools/call",
-    params: { name: JIMENG_VERSION_TOOL_NAME, arguments: {} },
+function detachRetiredClientsBestEffort() {
+  RETIRED_MCP_SERVER_IDS.forEach((clientId) => {
+    const current = clientsMap.get(clientId);
+    clientsMap.delete(clientId);
+    if (!current?.client) return;
+    void removeClient(current.client).catch((error) => {
+      logger.error(
+        `Failed to close retired client [${clientId}]: ${formatError(error)}`,
+      );
+    });
   });
-  if (
-    versionResult &&
-    typeof versionResult === "object" &&
-    "isError" in versionResult &&
-    versionResult.isError === true
-  ) {
-    throw new Error("Jimeng MCP dreamina_version verification failed");
-  }
-
-  logger.success(
-    `Jimeng MCP verified with ${dreaminaTools.length} discovered tools`,
-  );
 }
 
 // 初始化系统
@@ -445,6 +556,7 @@ export async function initializeMcpSystem() {
   const initializeMcpSystemPromise = (async () => {
     logger.info("MCP Actions starting...");
     try {
+      detachRetiredClientsBestEffort();
       const config = await readMcpConfigFromFile();
       // 初始化所有客户端
       const initializationResults = await Promise.allSettled(
@@ -475,6 +587,7 @@ export async function initializeMcpSystem() {
 // 添加服务器
 export async function addMcpServer(clientId: string, config: ServerConfig) {
   await auth("manage");
+  assertMcpServerIsSupported(clientId);
   try {
     return await runMcpClientLifecycle(clientId, async () => {
       let shouldInitialize = false;
@@ -513,50 +626,22 @@ export async function addMcpServer(clientId: string, config: ServerConfig) {
 }
 
 export async function activateMcpClient(clientId: string) {
-  await auth(clientId === JIMENG_MCP_SERVER_ID ? "use" : "manage");
+  await auth("manage");
   await runMcpClientLifecycle(clientId, async () => {
     const currentConfig = await readMcpConfigFromFile();
     const serverConfig = currentConfig.mcpServers[clientId];
     if (!serverConfig) {
       throw new Error(`Server ${clientId} not found`);
     }
-    const shouldRefreshJimeng = clientId === JIMENG_MCP_SERVER_ID;
-    if (shouldRefreshJimeng) {
-      await detachClient(clientId);
-    }
-
-    try {
-      await initializeSingleClientLocked(
-        clientId,
-        getExecutableServerConfig(clientId, serverConfig),
-      );
-      if (shouldRefreshJimeng) {
-        await verifyJimengClientLocked(clientId);
-      }
-    } catch (error) {
-      if (shouldRefreshJimeng) {
-        try {
-          await detachClient(clientId);
-        } catch (closeError) {
-          logger.error(
-            `Failed to close Jimeng client after verification error: ${formatError(
-              closeError,
-            )}`,
-          );
-        }
-        clientsMap.set(clientId, {
-          client: null,
-          tools: null,
-          errorMsg: error instanceof Error ? error.message : String(error),
-        });
-      }
-      throw error;
-    }
+    await initializeSingleClientLocked(
+      clientId,
+      getExecutableServerConfig(clientId, serverConfig),
+    );
   });
 }
 
 export async function deactivateMcpClient(clientId: string) {
-  await auth(clientId === JIMENG_MCP_SERVER_ID ? "use" : "manage");
+  await auth("manage");
   await runMcpClientLifecycle(clientId, async () => {
     await detachClient(clientId);
   });
@@ -684,6 +769,7 @@ export async function restartAllClients() {
   await auth("manage");
   logger.info("Restarting all clients...");
   try {
+    detachRetiredClientsBestEffort();
     const configBeforeRestart = await readMcpConfigFromFile();
     const clientIds = new Set([
       ...clientsMap.keys(),
@@ -716,6 +802,7 @@ export async function executeMcpAction(
   request: McpRequestMessage,
 ) {
   await auth();
+  assertMcpServerIsSupported(clientId);
   if (
     request.method !== "tools/call" ||
     !request.params ||
@@ -740,33 +827,23 @@ export async function executeMcpAction(
         serverConfig,
       );
 
-      let client = clientsMap.get(clientId);
-      if (!client?.client) {
-        if (
-          clientId === JIMENG_MCP_SERVER_ID &&
-          getServerSideConfig().enableMcp &&
-          serverConfig
-        ) {
-          await initializeSingleClientLocked(clientId, executableServerConfig);
-          client = clientsMap.get(clientId);
-        }
-      }
+      const client = clientsMap.get(clientId);
 
       if (!client?.client) {
         throw new Error(`Client ${clientId} not found`);
       }
-      const toolIsAvailable = client.tools?.tools.some(
+      const tool = client.tools?.tools.find(
         (tool) => tool.name === request.params.name,
       );
-      if (!toolIsAvailable) {
+      if (!tool) {
         throw new Error("MCP tool is not available");
       }
+      validateMcpToolArguments(
+        tool.inputSchema,
+        request.params.arguments ?? {},
+      );
       logger.info(`Executing request for [${clientId}]`);
-      const requestToExecute =
-        clientId === JIMENG_MCP_SERVER_ID
-          ? normalizeJimengMcpRequest(request)
-          : request;
-      return executeRequest(client.client, requestToExecute);
+      return executeRequest(client.client, request);
     });
   } catch (error) {
     logger.error(`Failed to execute request for [${clientId}]: ${error}`);
@@ -785,7 +862,7 @@ async function mutateMcpConfig(
 ): Promise<McpConfigData> {
   return runMcpConfigMutation(async () => {
     const currentConfig = await readMcpConfigFromFile();
-    const nextConfig = mutate(currentConfig);
+    const nextConfig = normalizeMcpConfig(mutate(currentConfig));
     await updateMcpConfig(nextConfig);
     return nextConfig;
   });
@@ -793,13 +870,17 @@ async function mutateMcpConfig(
 
 // 更新 MCP 配置文件
 async function updateMcpConfig(config: McpConfigData): Promise<void> {
+  const normalizedConfig = normalizeMcpConfig(config);
   const temporaryPath = `${CONFIG_PATH}.${
     process.pid
   }.${Date.now()}-${configWriteSequence++}.tmp`;
   try {
     // 确保目录存在
     await fs.mkdir(path.dirname(CONFIG_PATH), { recursive: true });
-    await fs.writeFile(temporaryPath, JSON.stringify(config, null, 2));
+    await fs.writeFile(
+      temporaryPath,
+      JSON.stringify(normalizedConfig, null, 2),
+    );
     await fs.rename(temporaryPath, CONFIG_PATH);
   } catch (error) {
     await fs.unlink(temporaryPath).catch(() => undefined);

@@ -1,4 +1,4 @@
-import { BUILTIN_MASKS } from "../masks";
+import { BUILTIN_MASKS, materializeBuiltinMask } from "../masks";
 import { getLang, Lang } from "../locales";
 import { DEFAULT_TOPIC, type ChatMessage } from "./chat-types";
 import { ModelConfig, ModelConfigMeta, useAppConfig } from "./config";
@@ -23,14 +23,31 @@ export type Mask = {
   enableCodeFold?: boolean;
 };
 
+export type MaskLanguageFilterMode = "app" | "all" | "fixed";
+
+export const MASK_LANGUAGE_FILTER_APP = "app";
+export const MASK_LANGUAGE_FILTER_ALL = "all";
+
 const DEFAULT_MASK_STATE = {
   masks: {} as Record<string, Mask>,
-  language: undefined as Lang | undefined,
+  language: getLang() as Lang | undefined,
+  languageFilterMode: "app" as MaskLanguageFilterMode,
 };
 
 export type MaskState = typeof DEFAULT_MASK_STATE & {
   language?: Lang | undefined;
 };
+
+export function resolveMaskLanguageFilter(
+  state: Pick<MaskState, "language" | "languageFilterMode">,
+  appLanguage = getLang(),
+): Lang | undefined {
+  if (state.languageFilterMode === "all") return undefined;
+  if (state.languageFilterMode === "fixed") {
+    return state.language ?? appLanguage;
+  }
+  return appLanguage;
+}
 
 export const DEFAULT_MASK_AVATAR = "gpt-bot";
 export const createEmptyMask = () =>
@@ -47,6 +64,47 @@ export const createEmptyMask = () =>
     createdAt: Date.now(),
     plugin: [],
   }) as Mask;
+
+export function migrateMaskState(state: unknown, version: number): MaskState {
+  const newState = JSON.parse(JSON.stringify(state ?? {})) as MaskState;
+  newState.masks ??= {};
+
+  // migrate mask id to nanoid
+  if (version < 3) {
+    Object.values(newState.masks).forEach((m) => (m.id = nanoid()));
+  }
+
+  if (version < 3.1) {
+    const updatedMasks: Record<string, Mask> = {};
+    Object.values(newState.masks).forEach((m) => {
+      updatedMasks[m.id] = m;
+    });
+    newState.masks = updatedMasks;
+  }
+
+  if (version < 3.2) {
+    Object.values(newState.masks).forEach((m) => {
+      const modelConfig = m.modelConfig as
+        | (ModelConfig & { max_tokens?: number })
+        | undefined;
+      if (!modelConfig) return;
+      if (typeof modelConfig.max_output_tokens !== "number") {
+        modelConfig.max_output_tokens =
+          typeof modelConfig.max_tokens === "number"
+            ? modelConfig.max_tokens
+            : useAppConfig.getState().modelConfig.max_output_tokens;
+      }
+      delete modelConfig.max_tokens;
+    });
+  }
+
+  if (version < 3.3) {
+    newState.languageFilterMode =
+      newState.language === undefined ? "app" : "fixed";
+  }
+
+  return newState;
+}
 
 export const useMaskStore = createPersistStore(
   { ...DEFAULT_MASK_STATE },
@@ -93,16 +151,7 @@ export const useMaskStore = createPersistStore(
       );
       const config = useAppConfig.getState();
       if (config.hideBuiltinMasks) return userMasks;
-      const buildinMasks = BUILTIN_MASKS.map(
-        (m) =>
-          ({
-            ...m,
-            modelConfig: {
-              ...config.modelConfig,
-              ...m.modelConfig,
-            },
-          }) as Mask,
-      );
+      const buildinMasks = BUILTIN_MASKS.map(materializeBuiltinMask);
       return userMasks.concat(buildinMasks);
     },
     search(text: string) {
@@ -111,46 +160,22 @@ export const useMaskStore = createPersistStore(
     setLanguage(language: Lang | undefined) {
       set({
         language,
+        languageFilterMode: language ? "fixed" : "all",
+      });
+    },
+    followAppLanguage() {
+      set({
+        language: getLang(),
+        languageFilterMode: "app",
       });
     },
   }),
   {
     name: StoreKey.Mask,
-    version: 3.2,
+    version: 3.3,
 
     migrate(state, version) {
-      const newState = JSON.parse(JSON.stringify(state)) as MaskState;
-
-      // migrate mask id to nanoid
-      if (version < 3) {
-        Object.values(newState.masks).forEach((m) => (m.id = nanoid()));
-      }
-
-      if (version < 3.1) {
-        const updatedMasks: Record<string, Mask> = {};
-        Object.values(newState.masks).forEach((m) => {
-          updatedMasks[m.id] = m;
-        });
-        newState.masks = updatedMasks;
-      }
-
-      if (version < 3.2) {
-        Object.values(newState.masks).forEach((m) => {
-          const modelConfig = m.modelConfig as
-            | (ModelConfig & { max_tokens?: number })
-            | undefined;
-          if (!modelConfig) return;
-          if (typeof modelConfig.max_output_tokens !== "number") {
-            modelConfig.max_output_tokens =
-              typeof modelConfig.max_tokens === "number"
-                ? modelConfig.max_tokens
-                : useAppConfig.getState().modelConfig.max_output_tokens;
-          }
-          delete modelConfig.max_tokens;
-        });
-      }
-
-      return newState as any;
+      return migrateMaskState(state, version) as any;
     },
   },
 );

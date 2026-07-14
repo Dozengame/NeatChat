@@ -87,7 +87,13 @@ describe("OpenAI Responses function tools", () => {
     expect(source).toContain("runOpenAIResponsesToolLoop");
     expect(source).toContain("sendOpenAIResponsesSseRound");
     expect(source).toContain("if (useResponses)");
-    expect(source).toContain("hasPendingResponsesToolRecovery");
+    expect(source).toContain("options.openaiResponsesRecoveryPending");
+    expect(source).toContain("options.pluginIds ?? []");
+    expect(chatSource).toContain(
+      "const requestPluginIds = [...(session.mask.plugin ?? [])]",
+    );
+    expect(chatSource).toContain("pluginIds: requestPluginIds");
+    expect(chatSource).toContain("const openaiResponsesRecoveryPending =");
     expect(source).toContain("options.allowTools === true");
     expect(source).toContain("openaiResponseId: v.openaiResponseId");
     expect(source).toContain("openaiResponsesOutput: v.openaiResponsesOutput");

@@ -2,6 +2,7 @@ import {
   forwardRef,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -16,6 +17,9 @@ type HTMLPreviewProps = {
   height?: number | string;
   onLoad?: (title?: string) => void;
   onLayoutMetrics?: (metrics: HTMLPreviewLayoutMetrics) => void;
+  onApprovalChange?: (isApproved: boolean) => void;
+  runLabel?: string;
+  executionKey?: string;
 };
 
 export type HTMLPreviewLayoutMetrics = {
@@ -36,17 +40,57 @@ export const HTMLPreview = forwardRef<HTMLPreviewHander, HTMLPreviewProps>(
       height: configuredHeight,
       onLoad,
       onLayoutMetrics,
+      onApprovalChange,
+      runLabel = "Run preview",
+      executionKey = "",
     } = props;
     const iframeRef = useRef<HTMLIFrameElement>(null);
+    const runButtonRef = useRef<HTMLButtonElement>(null);
     const loadedFrameRef = useRef<string | null>(null);
+    const focusIframeAfterApprovalRef = useRef(false);
+    const previewHadFocusRef = useRef(false);
     const [previewId] = useState(() => nanoid(6));
     const [reloadRevision, setReloadRevision] = useState(0);
+    const documentIdentity = useMemo(
+      () => ({ token: nanoid(8), code, executionKey }),
+      [code, executionKey],
+    );
+    const [approvedDocumentIdentity, setApprovedDocumentIdentity] = useState<
+      string | null
+    >(null);
+    const isApproved = approvedDocumentIdentity === documentIdentity.token;
+    const previousDocumentIdentityRef = useRef(documentIdentity.token);
     const frameId = useMemo(
-      () => `${previewId}-${nanoid(8)}-${reloadRevision}-${code.length}`,
-      [code, previewId, reloadRevision],
+      () =>
+        `${previewId}-${nanoid(8)}-${reloadRevision}-${documentIdentity.token}`,
+      [documentIdentity, previewId, reloadRevision],
     );
     const [iframeHeight, setIframeHeight] = useState(600);
     const [title, setTitle] = useState("");
+
+    useEffect(() => {
+      onApprovalChange?.(isApproved);
+    }, [isApproved, onApprovalChange]);
+
+    useLayoutEffect(() => {
+      const identityChanged =
+        previousDocumentIdentityRef.current !== documentIdentity.token;
+      previousDocumentIdentityRef.current = documentIdentity.token;
+
+      if (identityChanged) {
+        focusIframeAfterApprovalRef.current = false;
+        if (previewHadFocusRef.current) {
+          previewHadFocusRef.current = false;
+          runButtonRef.current?.focus();
+        }
+        return;
+      }
+
+      if (isApproved && focusIframeAfterApprovalRef.current) {
+        focusIframeAfterApprovalRef.current = false;
+        iframeRef.current?.focus();
+      }
+    }, [documentIdentity.token, isApproved]);
 
     useEffect(() => {
       loadedFrameRef.current = null;
@@ -97,11 +141,16 @@ export const HTMLPreview = forwardRef<HTMLPreviewHander, HTMLPreviewProps>(
       };
     }, [accessibleTitle, frameId, onLayoutMetrics, onLoad]);
 
-    useImperativeHandle(ref, () => ({
-      reload: () => {
-        setReloadRevision((revision) => revision + 1);
-      },
-    }));
+    useImperativeHandle(
+      ref,
+      () => ({
+        reload: () => {
+          if (!isApproved) return;
+          setReloadRevision((revision) => revision + 1);
+        },
+      }),
+      [isApproved],
+    );
 
     const height = useMemo(() => {
       if (!autoHeight) return configuredHeight || 600;
@@ -115,12 +164,30 @@ export const HTMLPreview = forwardRef<HTMLPreviewHander, HTMLPreviewProps>(
     }, [autoHeight, configuredHeight, iframeHeight]);
 
     const srcDoc = useMemo(() => {
-      const script = `<script>window.addEventListener("DOMContentLoaded", () => { const body = document.body; const root = document.documentElement; const report = () => parent.postMessage({id: '${frameId}', height: body.clientHeight, title: document.title, scrollWidth: Math.max(body.scrollWidth, root.scrollWidth), clientWidth: window.innerWidth}, '*'); const observer = new ResizeObserver(report); observer.observe(body); observer.observe(root); window.addEventListener('load', report, { once: true }); report(); })</script>`;
-      if (code.includes("<!DOCTYPE html>")) {
-        return code.replace("<!DOCTYPE html>", "<!DOCTYPE html>" + script);
-      }
-      return script + code;
+      const policy =
+        "default-src 'none'; img-src data: blob:; media-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-src 'none'";
+      const safetyHeader = `<meta http-equiv="Content-Security-Policy" content="${policy}"><script>window.addEventListener("DOMContentLoaded", () => { const body = document.body; const root = document.documentElement; const report = () => parent.postMessage({id: '${frameId}', height: body.clientHeight, title: document.title, scrollWidth: Math.max(body.scrollWidth, root.scrollWidth), clientWidth: window.innerWidth}, '*'); const observer = new ResizeObserver(report); observer.observe(body); observer.observe(root); window.addEventListener('load', report, { once: true }); report(); })</script>`;
+      const source = code.replace(/^\s*<!doctype\s+html[^>]*>/i, "");
+      return `<!DOCTYPE html>${safetyHeader}${source}`;
     }, [code, frameId]);
+
+    if (!isApproved) {
+      return (
+        <div className={styles["artifacts-preview-gate"]} style={{ height }}>
+          <button
+            ref={runButtonRef}
+            type="button"
+            className={styles["artifacts-preview-run"]}
+            onClick={(event) => {
+              focusIframeAfterApprovalRef.current = event.detail === 0;
+              setApprovedDocumentIdentity(documentIdentity.token);
+            }}
+          >
+            {runLabel}
+          </button>
+        </div>
+      );
+    }
 
     return (
       <iframe
@@ -128,7 +195,13 @@ export const HTMLPreview = forwardRef<HTMLPreviewHander, HTMLPreviewProps>(
         className={styles["artifacts-iframe"]}
         key={frameId}
         ref={iframeRef}
-        sandbox="allow-forms allow-modals allow-scripts"
+        onFocus={() => {
+          previewHadFocusRef.current = true;
+        }}
+        onBlur={() => {
+          previewHadFocusRef.current = false;
+        }}
+        sandbox="allow-scripts"
         style={{ height }}
         srcDoc={srcDoc}
       />

@@ -294,76 +294,8 @@
     var(--black) 10%,
     transparent
   );
-  --sidebar-avatar-background: linear-gradient(
-    135deg,
-    var(--primary),
-    color-mix(in srgb, var(--primary) 66%, var(--surface-elevated))
-  );
-  --sidebar-avatar-shadow: 0 10px 24px
-    color-mix(in srgb, var(--primary) 22%, transparent);
-  --sidebar-avatar-face-background: color-mix(
-    in srgb,
-    var(--surface-elevated) 88%,
-    var(--primary) 12%
-  );
-  --sidebar-avatar-face-shadow: inset 0 -3px 0 color-mix(in srgb, var(--primary)
-          12%, transparent),
-    0 2px 8px color-mix(in srgb, var(--black-50) 20%, transparent);
-  --sidebar-avatar-feature-color: var(--primary);
   --sidebar-avatar-count-shadow: 0 1px 3px
     color-mix(in srgb, var(--black) 20%, transparent);
-  --sidebar-mobile-account-background: color-mix(
-    in srgb,
-    var(--surface-elevated) 78%,
-    transparent
-  );
-  --sidebar-mobile-account-border-color: color-mix(
-    in srgb,
-    var(--black) 8%,
-    transparent
-  );
-  --sidebar-mobile-account-hover-background: color-mix(
-    in srgb,
-    var(--surface-elevated) 92%,
-    var(--primary) 4%
-  );
-  --sidebar-mobile-account-shadow-color: color-mix(
-    in srgb,
-    var(--black-50) 8%,
-    transparent
-  );
-  --sidebar-mobile-account-focus-shadow-color: color-mix(
-    in srgb,
-    var(--primary) 14%,
-    transparent
-  );
-  --sidebar-mobile-account-name-color: var(--black);
-  --sidebar-mobile-account-meta-color: color-mix(
-    in srgb,
-    var(--black-50) 78%,
-    transparent
-  );
-  --sidebar-mobile-account-settings-background: color-mix(
-    in srgb,
-    var(--surface-elevated) 72%,
-    transparent
-  );
-  --sidebar-mobile-account-settings-border-color: color-mix(
-    in srgb,
-    var(--black-50) 12%,
-    transparent
-  );
-  --sidebar-mobile-account-settings-hover-background: color-mix(
-    in srgb,
-    var(--surface-elevated) 88%,
-    var(--primary) 10%
-  );
-  --sidebar-mobile-account-settings-focus-shadow-color: color-mix(
-    in srgb,
-    var(--primary) 18%,
-    transparent
-  );
-  --sidebar-mobile-account-settings-icon-color: var(--black);
   --sidebar-on-primary: rgb(255, 255, 255);
 
   top: 0;
@@ -437,56 +369,6 @@
       var(--primary) 14%,
       transparent
     );
-    --sidebar-mobile-account-background: color-mix(
-      in srgb,
-      var(--surface-elevated) 70%,
-      transparent
-    );
-    --sidebar-mobile-account-border-color: color-mix(
-      in srgb,
-      var(--black) 10%,
-      transparent
-    );
-    --sidebar-mobile-account-hover-background: color-mix(
-      in srgb,
-      var(--surface-elevated) 82%,
-      var(--primary) 12%
-    );
-    --sidebar-mobile-account-shadow-color: color-mix(
-      in srgb,
-      var(--surface) 18%,
-      transparent
-    );
-    --sidebar-mobile-account-focus-shadow-color: color-mix(
-      in srgb,
-      var(--primary) 24%,
-      transparent
-    );
-    --sidebar-mobile-account-meta-color: color-mix(
-      in srgb,
-      var(--black-50) 82%,
-      transparent
-    );
-    --sidebar-mobile-account-settings-background: color-mix(
-      in srgb,
-      var(--surface-elevated) 78%,
-      transparent
-    );
-    --sidebar-mobile-account-settings-border-color: color-mix(
-      in srgb,
-      var(--black) 12%,
-      transparent
-    );
-    --sidebar-mobile-account-settings-hover-background: color-mix(
-      in srgb,
-      var(--surface-elevated) 78%,
-      var(--primary) 16%
-    );
-    --sidebar-mobile-account-settings-focus-shadow-color: color-mix(
-      in srgb,
-      var(--primary) 24%,
-      transparent
-    );
   }
 
   .sidebar-header-bar {
@@ -534,56 +416,6 @@
     --sidebar-action-active-drop-shadow: color-mix(
       in srgb,
       var(--primary) 14%,
-      transparent
-    );
-    --sidebar-mobile-account-background: color-mix(
-      in srgb,
-      var(--surface-elevated) 70%,
-      transparent
-    );
-    --sidebar-mobile-account-border-color: color-mix(
-      in srgb,
-      var(--black) 10%,
-      transparent
-    );
-    --sidebar-mobile-account-hover-background: color-mix(
-      in srgb,
-      var(--surface-elevated) 82%,
-      var(--primary) 12%
-    );
-    --sidebar-mobile-account-shadow-color: color-mix(
-      in srgb,
-      var(--surface) 18%,
-      transparent
-    );
-    --sidebar-mobile-account-focus-shadow-color: color-mix(
-      in srgb,
-      var(--primary) 24%,
-      transparent
-    );
-    --sidebar-mobile-account-meta-color: color-mix(
-      in srgb,
-      var(--black-50) 82%,
-      transparent
-    );
-    --sidebar-mobile-account-settings-background: color-mix(
-      in srgb,
-      var(--surface-elevated) 78%,
-      transparent
-    );
-    --sidebar-mobile-account-settings-border-color: color-mix(
-      in srgb,
-      var(--black) 12%,
-      transparent
-    );
-    --sidebar-mobile-account-settings-hover-background: color-mix(
-      in srgb,
-      var(--surface-elevated) 78%,
-      var(--primary) 16%
-    );
-    --sidebar-mobile-account-settings-focus-shadow-color: color-mix(
-      in srgb,
-      var(--primary) 24%,
       transparent
     );
   }
@@ -1627,200 +1459,6 @@
   }
 }
 
-.sidebar-mobile-account {
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  min-height: 56px;
-  padding: 6px;
-  overflow: hidden;
-  border: 1px solid var(--sidebar-mobile-account-border-color);
-  border-radius: 8px;
-  background: var(--sidebar-mobile-account-background);
-  box-shadow: 0 1px 2px var(--sidebar-mobile-account-shadow-color);
-  transition:
-    background-color 0.16s ease,
-    border-color 0.16s ease,
-    box-shadow 0.16s ease;
-
-  &:hover,
-  &:focus-within {
-    background: var(--sidebar-mobile-account-hover-background);
-    box-shadow:
-      0 0 0 3px var(--sidebar-mobile-account-focus-shadow-color),
-      0 1px 2px var(--sidebar-mobile-account-shadow-color);
-  }
-}
-
-.sidebar-mobile-account-avatar {
-  flex: 0 0 44px;
-  width: 44px;
-  height: 44px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--sidebar-avatar-background);
-  box-shadow: var(--sidebar-avatar-shadow);
-  overflow: hidden;
-
-  svg {
-    width: 22px;
-    height: 22px;
-    filter: brightness(0) invert(1);
-  }
-}
-
-.sidebar-mobile-pixel-face {
-  width: 28px;
-  height: 28px;
-  border-radius: 10px;
-  background: var(--sidebar-avatar-face-background);
-  box-shadow: var(--sidebar-avatar-face-shadow);
-  display: block;
-  position: relative;
-}
-
-.sidebar-mobile-pixel-eye-left,
-.sidebar-mobile-pixel-eye-right {
-  position: absolute;
-  top: 8px;
-  width: 5px;
-  height: 5px;
-  border-radius: 2px;
-  background: var(--sidebar-avatar-feature-color);
-}
-
-.sidebar-mobile-pixel-eye-left {
-  left: 7px;
-}
-
-.sidebar-mobile-pixel-eye-right {
-  right: 7px;
-}
-
-.sidebar-mobile-pixel-mouth {
-  position: absolute;
-  left: 9px;
-  bottom: 8px;
-  width: 10px;
-  height: 4px;
-  border-radius: 999px;
-  background: var(--sidebar-avatar-feature-color);
-}
-
-.sidebar-mobile-account-copy {
-  min-width: 0;
-  flex: 1;
-}
-
-.sidebar-mobile-account-name {
-  color: var(--sidebar-mobile-account-name-color);
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sidebar-mobile-account-meta {
-  margin-top: 2px;
-  color: var(--sidebar-mobile-account-meta-color);
-  font-size: 12px;
-  line-height: 1.2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sidebar-mobile-account-settings {
-  flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
-  color: var(--sidebar-mobile-account-settings-icon-color);
-  text-decoration: none;
-  border-radius: 999px;
-  border: 1px solid var(--sidebar-mobile-account-settings-border-color);
-  background: var(--sidebar-mobile-account-settings-background);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    background-color 0.16s ease,
-    border-color 0.16s ease,
-    box-shadow 0.16s ease,
-    transform 0.1s ease-out;
-
-  &:hover {
-    background: var(--sidebar-mobile-account-settings-hover-background);
-    box-shadow: 0 0 0 3px
-      var(--sidebar-mobile-account-settings-focus-shadow-color);
-  }
-
-  &:active {
-    transform: scale(0.97);
-  }
-
-  &:focus-visible {
-    outline: var(--focus-ring);
-    outline-offset: 2px;
-    box-shadow: var(--focus-ring-shadow);
-  }
-
-  span {
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    svg {
-      width: 20px;
-      height: 20px;
-      filter: none !important;
-      color: currentColor;
-    }
-
-    svg [style*="stroke"],
-    svg path {
-      stroke: currentColor !important;
-    }
-
-    svg [style*="fill"] {
-      fill: currentColor !important;
-    }
-
-    svg [stroke="#333"],
-    svg [stroke="#333333"],
-    svg [stroke="black"] {
-      stroke: currentColor !important;
-    }
-
-    svg[stroke="#333"],
-    svg[stroke="#333333"],
-    svg[stroke="black"] {
-      stroke: currentColor !important;
-    }
-
-    svg [fill="#333"],
-    svg [fill="#333333"],
-    svg [fill="black"] {
-      fill: currentColor !important;
-    }
-
-    svg[fill="#333"],
-    svg[fill="#333333"],
-    svg[fill="black"] {
-      fill: currentColor !important;
-    }
-  }
-}
-
 .sidebar-action:not(:last-child) {
   margin-right: 15px;
 }
@@ -1903,15 +1541,6 @@
   }
 }
 
-.sidebar-settings-link-active.sidebar-mobile-account-settings {
-  color: var(--primary);
-  border-color: var(--sidebar-action-active-ring-shadow);
-  background: var(--sidebar-action-active-background);
-  box-shadow:
-    0 0 0 1px var(--sidebar-action-active-ring-shadow),
-    0 6px 20px var(--sidebar-action-active-drop-shadow);
-}
-
 :global(.dark) .sidebar-settings-link-active {
   .sidebar-settings-icon {
     background: var(--sidebar-action-active-background);
@@ -1952,9 +1581,7 @@
   .sidebar-drag,
   .sidebar-drag svg,
   .narrow-sidebar .chat-item,
-  .narrow-sidebar .chat-item-narrow,
-  .sidebar-mobile-account,
-  .sidebar-mobile-account-settings {
+  .narrow-sidebar .chat-item-narrow {
     transition: none !important;
     transform: none !important;
   }
