@@ -35,19 +35,23 @@ export function createAccessSessionCookieValue(accessCode: string) {
   return `${codeHash}.${signAccessSession(codeHash)}`;
 }
 
-export function validateAccessSessionCookieValue(value?: string) {
-  if (!value) return false;
+export function resolveAccessSessionCookieValue(value?: string) {
+  if (!value) return undefined;
 
   const [codeHash, signature] = value.split(".");
-  if (!codeHash || !signature) return false;
+  if (!codeHash || !signature) return undefined;
 
   const serverConfig = getServerSideConfig();
-  const knownHash = serverConfig.accessControl.profiles.some(
+  const profile = serverConfig.accessControl.profiles.find(
     (profile) => profile.codeHash === codeHash,
   );
-  if (!knownHash) return false;
+  if (!profile) return undefined;
 
-  return signature === signAccessSession(codeHash);
+  return signature === signAccessSession(codeHash) ? profile : undefined;
+}
+
+export function validateAccessSessionCookieValue(value?: string) {
+  return !!resolveAccessSessionCookieValue(value);
 }
 
 export const accessSessionCookieOptions = {

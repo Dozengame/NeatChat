@@ -6,6 +6,7 @@ import ConfirmIcon from "../icons/confirm.svg";
 import type { PublicUpdateAnnouncement } from "../utils/update-announcement";
 import { IconButton } from "./button";
 import styles from "./update-announcement.module.scss";
+import Locale from "../locales";
 
 const SEEN_KEY_PREFIX = "neatchat:update-announcement:seen";
 
@@ -62,7 +63,7 @@ export function UpdateAnnouncement(props: {
     return null;
   }
 
-  const title = `${announcement.date} 更新内容`;
+  const title = Locale.UpdateAnnouncement.Title(announcement.date);
   const onConfirm = () => {
     markAnnouncementSeen(seenKey);
     setDismissedKey(seenKey);
@@ -87,7 +88,9 @@ export function UpdateAnnouncement(props: {
               className={styles.section}
               key={`${section.title}-${sectionIndex}`}
             >
-              <div className={styles["section-title"]}>{section.title}</div>
+              <div className={styles["section-title"]}>
+                {section.title || Locale.UpdateAnnouncement.SectionTitle}
+              </div>
               <ul className={styles.items}>
                 {section.items.map((item, itemIndex) => (
                   <li className={styles.item} key={`${item}-${itemIndex}`}>
@@ -108,8 +111,8 @@ export function UpdateAnnouncement(props: {
             className={styles.confirm}
             type="primary"
             icon={<ConfirmIcon />}
-            text="我知道了"
-            aria="我知道了"
+            text={Locale.UpdateAnnouncement.Acknowledge}
+            aria={Locale.UpdateAnnouncement.Acknowledge}
             onClick={onConfirm}
             bordered
             shadow

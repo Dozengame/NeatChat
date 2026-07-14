@@ -3,6 +3,7 @@ import { webcrypto } from "crypto";
 import {
   checkAccessUsage,
   createSignedAccessDeviceId,
+  getVerifiedAccessDeviceId,
   markSystemAccessCodeRequest,
   resetAccessUsageForTests,
   usageErrorResponse,
@@ -69,17 +70,14 @@ async function recordUsage(req: any, totalTokens: number) {
     },
   });
 
-  await withUsageAccounting(
-    req,
-    {
-      status: 200,
-      statusText: "OK",
-      headers: new Headers({
-        "content-type": "application/json",
-      }),
-      text: async () => body,
-    } as any,
-  );
+  await withUsageAccounting(req, {
+    status: 200,
+    statusText: "OK",
+    headers: new Headers({
+      "content-type": "application/json",
+    }),
+    text: async () => body,
+  } as any);
 }
 
 describe("access control tiers", () => {
@@ -130,21 +128,20 @@ describe("access control tiers", () => {
 
   beforeEach(() => {
     process.env = { ...originalEnv };
-    delete process.env.CODE;
-    delete process.env.ACCESS_CODE_ADMIN;
-    delete process.env.ACCESS_CODE_ADVANCED;
-    delete process.env.ACCESS_CODE_NORMAL;
-    delete process.env.ACCESS_IP_WHITELIST;
-    delete process.env.ACCESS_DEVICE_ID_ENABLED;
-    delete process.env.ACCESS_DEVICE_ID_SECRET;
-    delete process.env.ACCESS_DEVICE_ID_COOKIE_NAME;
-    delete process.env.ACCESS_DEVICE_ID_MAX_AGE_DAYS;
-    delete process.env.ACCESS_IP_BURST_GUARD_ENABLED;
-    delete process.env.ACCESS_IP_BURST_TOKEN_LIMIT;
-    delete process.env.ACCESS_IP_BURST_WINDOW_SECONDS;
-    delete process.env.ACCESS_USAGE_REDIS_URL;
-    delete process.env.ACCESS_USAGE_REDIS_TOKEN;
-    delete process.env.ACCESS_USAGE_STATE_VERSION;
+    for (const key of Object.keys(process.env)) {
+      if (key.startsWith("ACCESS_")) {
+        delete process.env[key];
+      }
+    }
+    for (const key of [
+      "CODE",
+      "ADMIN_ACCESS_CODE",
+      "ADVANCED_ACCESS_CODE",
+      "NORMAL_ACCESS_CODE",
+      "IP_WHITELIST",
+    ]) {
+      delete process.env[key];
+    }
     delete process.env.NEATCHAT_REDIS_KV_REST_API_URL;
     delete process.env.NEATCHAT_REDIS_KV_REST_API_TOKEN;
     delete process.env.NEATCHAT_REDIS_KV_REST_API_READ_ONLY_TOKEN;
@@ -315,6 +312,39 @@ describe("access control tiers", () => {
       error: "daily_token_limit_exceeded",
       status: 429,
     });
+  });
+
+  test("returns only the verified raw access device ID", async () => {
+    process.env.ACCESS_DEVICE_ID_ENABLED = "true";
+    process.env.ACCESS_DEVICE_ID_SECRET = "test-device-secret";
+    const config = buildAccessControlConfig(process.env);
+    const rawDeviceId = "device-one-000001";
+    const signedDeviceId = await createSignedAccessDeviceId(
+      config,
+      rawDeviceId,
+    );
+
+    expect(
+      await getVerifiedAccessDeviceId(
+        makeRequest("normal-key", "8.8.8.8", {
+          cookies: { neatchat_device_id: signedDeviceId },
+        }),
+      ),
+    ).toBe(rawDeviceId);
+    expect(
+      await getVerifiedAccessDeviceId(
+        makeRequest("normal-key", "8.8.8.8", {
+          cookies: { neatchat_device_id: `${signedDeviceId}tampered` },
+        }),
+      ),
+    ).toBeUndefined();
+    expect(
+      await getVerifiedAccessDeviceId(
+        makeRequest("normal-key", "8.8.8.8", {
+          cookies: { neatchat_device_id: rawDeviceId },
+        }),
+      ),
+    ).toBeUndefined();
   });
 
   test("keeps the same signed device ID scoped by IP", async () => {
@@ -494,7 +524,10 @@ describe("access control tiers", () => {
     const body = JSON.parse(await response.text());
 
     expect(response.status).toBe(429);
-    expect(body.msg).toBe("当前访问暂时受限，请稍后再试。");
+    expect(body).toMatchObject({
+      code: "access_restricted",
+      msg: "access_restricted",
+    });
     expect(JSON.stringify(body)).not.toContain("daily_token_limit_exceeded");
   });
 

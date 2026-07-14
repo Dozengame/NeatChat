@@ -9,8 +9,13 @@ import {
   EventStreamContentType,
   fetchEventSource,
 } from "@fortaine/fetch-event-source";
-import { prettyObject } from "./format";
 import { fetch as tauriFetch } from "./stream";
+import { createAbortTimeout } from "./request-timeout";
+import {
+  getPublicHttpErrorMessage,
+  getPublicUpstreamErrorMessage,
+  hasUpstreamErrorPayload,
+} from "./public-error";
 
 function compressImage(file: Blob, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -84,7 +89,7 @@ export async function preProcessImageContent(
         const url = await cacheImageToBase64Image(part?.image_url?.url);
         return { type: part.type, image_url: { url } };
       } catch (error) {
-        console.error("Error processing image URL:", error);
+        console.error("[Image] failed to process image URL");
         return null;
       }
     }),
@@ -189,15 +194,15 @@ export function stream(
   let running = false;
   let runTools: any[] = [];
   let responseRes: Response;
+  let animationFrameId: number | undefined;
+  let cancelActiveRequestTimeout: () => void = () => undefined;
 
   // animate response to make it looks smooth
   function animateResponseText() {
     if (finished || controller.signal.aborted) {
       responseText += remainText;
+      remainText = "";
       console.log("[Response Animation] finished");
-      if (responseText?.length === 0) {
-        options.onError?.(new Error("empty response from server"));
-      }
       return;
     }
 
@@ -209,15 +214,35 @@ export function stream(
       options.onUpdate?.(responseText, fetchText);
     }
 
-    requestAnimationFrame(animateResponseText);
+    animationFrameId = requestAnimationFrame(animateResponseText);
   }
 
   // start animaion
   animateResponseText();
 
-  const finish = () => {
+  const stopAnimation = () => {
+    if (animationFrameId !== undefined) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = undefined;
+    }
+    responseText += remainText;
+    remainText = "";
+  };
+
+  const fail = (error: Error) => {
+    if (finished) return;
+    finished = true;
+    stopAnimation();
+    if (!controller.signal.aborted) controller.abort(error);
+    options.onError?.(error);
+  };
+
+  const finish = ({
+    allowTools = true,
+    allowEmpty = false,
+  }: { allowTools?: boolean; allowEmpty?: boolean } = {}) => {
     if (!finished) {
-      if (!running && runTools.length > 0) {
+      if (allowTools && !running && runTools.length > 0) {
         const toolCallMessage = {
           role: "assistant",
           tool_calls: [...runTools],
@@ -257,12 +282,16 @@ export function stream(
                 return content;
               })
               .catch((e) => {
+                const publicError = getPublicUpstreamErrorMessage({
+                  fallback: Locale.Error.RequestFailed(),
+                  detail: e instanceof Error ? e.message : String(e),
+                });
                 options?.onAfterTool?.({
                   ...tool,
                   isError: true,
-                  errorMsg: e.toString(),
+                  errorMsg: publicError,
                 });
-                return e.toString();
+                return publicError;
               })
               .then((content) => ({
                 name: tool.function.name,
@@ -272,8 +301,10 @@ export function stream(
               }));
           }),
         ).then((toolCallResult) => {
+          if (finished || controller.signal.aborted) return;
           processToolMessage(requestPayload, toolCallMessage, toolCallResult);
           setTimeout(() => {
+            if (finished || controller.signal.aborted) return;
             // call again
             console.debug("[ChatAPI] restart");
             running = false;
@@ -282,20 +313,38 @@ export function stream(
         });
         return;
       }
-      if (running) {
+      if (allowTools && running) {
         return;
       }
       console.debug("[ChatAPI] end");
+      stopAnimation();
+      const finalMessage = responseText + remainText;
+      if (!allowEmpty && finalMessage.length === 0) {
+        fail(new Error("empty response from server"));
+        return;
+      }
       finished = true;
       options.onFinish(
-        responseText + remainText,
+        finalMessage,
         responseRes,
         responseMetadata?.getMetadata?.(),
       ); // 将res传递给onFinish
     }
   };
 
-  controller.signal.onabort = finish;
+  controller.signal.addEventListener(
+    "abort",
+    () => {
+      cancelActiveRequestTimeout();
+      const reason = controller.signal.reason;
+      if (reason instanceof Error && reason.name === "TimeoutError") {
+        fail(reason);
+        return;
+      }
+      finish({ allowTools: false, allowEmpty: true });
+    },
+    { once: true },
+  );
 
   function chatApi(
     chatPath: string,
@@ -309,57 +358,91 @@ export function stream(
       signal: controller.signal,
       headers,
     };
-    const requestTimeoutId = setTimeout(() => controller.abort(), timeoutMs);
-    fetchEventSource(chatPath, {
+    let cancelRequestTimeout: () => void = () => undefined;
+    const cancelThisRequestTimeout = () => cancelRequestTimeout();
+    cancelActiveRequestTimeout = cancelThisRequestTimeout;
+    const refreshRequestTimeout = () => {
+      cancelRequestTimeout();
+      cancelRequestTimeout = createAbortTimeout({
+        controller,
+        timeoutMs,
+        onTimeout: () => {
+          if (controller.signal.aborted) return;
+          const error = new Error("Chat stream request timed out");
+          error.name = "TimeoutError";
+          controller.abort(error);
+        },
+      });
+    };
+    refreshRequestTimeout();
+    void fetchEventSource(chatPath, {
       fetch: tauriFetch as any,
       ...chatPayload,
       async onopen(res) {
-        clearTimeout(requestTimeoutId);
+        refreshRequestTimeout();
         const contentType = res.headers.get("content-type");
         console.log("[Request] response content type: ", contentType);
         responseRes = res;
 
+        if (
+          !res.ok ||
+          (!contentType?.startsWith("text/plain") &&
+            (!contentType?.startsWith(EventStreamContentType) ||
+              res.status !== 200))
+        ) {
+          let responsePayload: unknown;
+          try {
+            responsePayload = await res.clone().json();
+          } catch {
+            responsePayload = { message: await res.clone().text() };
+          }
+
+          fail(
+            new Error(
+              getPublicHttpErrorMessage({
+                response: res,
+                payload: responsePayload,
+                fallback:
+                  res.status === 401
+                    ? Locale.Error.Unauthorized
+                    : Locale.Error.RequestFailed(
+                        res.ok ? undefined : res.status,
+                      ),
+                accessRestrictedMessage: Locale.Error.AccessRestricted,
+              }),
+            ),
+          );
+          return;
+        }
         if (contentType?.startsWith("text/plain")) {
           responseText = await res.clone().text();
           return finish();
         }
-
-        if (
-          !res.ok ||
-          !res.headers
-            .get("content-type")
-            ?.startsWith(EventStreamContentType) ||
-          res.status !== 200
-        ) {
-          const responseTexts = [responseText];
-          let extraInfo = await res.clone().text();
-          try {
-            const resJson = await res.clone().json();
-            extraInfo = prettyObject(resJson);
-          } catch {}
-
-          if (res.status === 429) {
-            responseTexts.push(Locale.Error.AccessRestricted);
-            extraInfo = "";
-          } else if (res.status === 401) {
-            responseTexts.push(Locale.Error.Unauthorized);
-          }
-
-          if (extraInfo) {
-            responseTexts.push(extraInfo);
-          }
-
-          responseText = responseTexts.join("\n\n");
-
-          return finish();
-        }
       },
       onmessage(msg) {
+        refreshRequestTimeout();
         if (msg.data === "[DONE]" || finished) {
           return finish();
         }
         const text = msg.data;
         try {
+          let eventPayload: unknown;
+          try {
+            eventPayload = JSON.parse(text);
+          } catch {}
+          if (hasUpstreamErrorPayload(eventPayload)) {
+            fail(
+              new Error(
+                getPublicHttpErrorMessage({
+                  response: responseRes,
+                  payload: eventPayload,
+                  fallback: Locale.Error.RequestFailed(),
+                  accessRestrictedMessage: Locale.Error.AccessRestricted,
+                }),
+              ),
+            );
+            return;
+          }
           const chunk = parseSSE(msg.data, runTools);
           if (chunk) {
             if (typeof chunk === "string") {
@@ -373,18 +456,28 @@ export function stream(
             }
           }
         } catch (e) {
-          console.error("[Request] parse error", text, msg, e);
+          console.error("[Request] failed to parse a streaming event");
         }
       },
       onclose() {
         finish();
       },
       onerror(e) {
-        options?.onError?.(e);
         throw e;
       },
       openWhenHidden: true,
-    });
+    })
+      .catch((error) => {
+        if (!finished) {
+          fail(error instanceof Error ? error : new Error(String(error)));
+        }
+      })
+      .finally(() => {
+        cancelThisRequestTimeout();
+        if (cancelActiveRequestTimeout === cancelThisRequestTimeout) {
+          cancelActiveRequestTimeout = () => undefined;
+        }
+      });
   }
   console.debug("[ChatAPI] start");
   chatApi(chatPath, headers, requestPayload, tools); // call fetchEventSource

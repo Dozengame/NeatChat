@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { ImageEditor } from "../app/components/image-editor";
+import Locale from "../app/locales";
 
 jest.mock("../app/icons/confirm.svg", () => {
   const React = require("react");
@@ -93,7 +94,9 @@ describe("ImageEditor context", () => {
     );
 
     expect(screen.getByText("编辑第 1 张图片附件")).toBeInTheDocument();
-    expect(screen.queryByText("编辑图片")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(Locale.ImageEditor.Title),
+    ).not.toBeInTheDocument();
   });
 
   test("falls back to the generic image editor title", () => {
@@ -105,7 +108,7 @@ describe("ImageEditor context", () => {
       />,
     );
 
-    expect(screen.getByText("编辑图片")).toBeInTheDocument();
+    expect(screen.getByText(Locale.ImageEditor.Title)).toBeInTheDocument();
   });
 
   test("exposes Gemini-style grouped editor controls", () => {
@@ -119,24 +122,29 @@ describe("ImageEditor context", () => {
     );
 
     expect(
-      screen.getByRole("toolbar", { name: "图片编辑工具" }),
+      screen.getByRole("toolbar", { name: Locale.ImageEditor.Toolbar }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("group", { name: "绘图工具" }),
+      screen.getByRole("group", { name: Locale.ImageEditor.DrawingTools }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "颜色" })).toBeInTheDocument();
     expect(
-      screen.getByRole("group", { name: "笔刷大小" }),
+      screen.getByRole("group", { name: Locale.ImageEditor.Color }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "画笔工具" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
     expect(
-      screen.getByRole("button", { name: "选择颜色 #FF0000" }),
+      screen.getByRole("group", { name: Locale.ImageEditor.BrushSize }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: Locale.ImageEditor.Brush }),
     ).toHaveAttribute("aria-pressed", "true");
     expect(
-      screen.getByRole("button", { name: "选择笔刷大小 5" }),
+      screen.getByRole("button", {
+        name: Locale.ImageEditor.ChooseColor("#FF0000"),
+      }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByRole("button", {
+        name: Locale.ImageEditor.ChooseBrushSize(5),
+      }),
     ).toHaveAttribute("aria-pressed", "true");
   });
 });

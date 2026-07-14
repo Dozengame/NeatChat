@@ -1,5 +1,5 @@
 import OpenAPIClientAxios from "openapi-client-axios";
-import { ACCESS_CODE_PREFIX, StoreKey } from "../constant";
+import { ACCESS_CODE_PREFIX, REQUEST_TIMEOUT_MS, StoreKey } from "../constant";
 import { nanoid } from "nanoid";
 import { createPersistStore } from "../utils/store";
 import { getClientConfig } from "../config/client";
@@ -82,6 +82,7 @@ export const FunctionToolService = {
         adapter: (window.__TAURI__ ? adapter : ["xhr"]) as any,
         baseURL,
         headers,
+        timeout: REQUEST_TIMEOUT_MS,
       },
     });
     try {
@@ -132,7 +133,11 @@ export const FunctionToolService = {
       }),
       funcs: operations.reduce((s, o) => {
         // @ts-ignore
-        s[getOperationId(o)] = function (args) {
+        s[getOperationId(o)] = function (
+          inputArgs: Record<string, any>,
+          options?: { signal?: AbortSignal },
+        ) {
+          const args = { ...inputArgs };
           const parameters: Record<string, any> = {};
           if (o.parameters instanceof Array) {
             o.parameters.forEach((p) => {
@@ -148,11 +153,10 @@ export const FunctionToolService = {
             args[headerName] = tokenValue;
           }
           // @ts-ignore if o.operationId is null, then using o.path and o.method
-          return api.client.paths[o.path][o.method](
-            parameters,
-            args,
-            api.axiosConfigDefaults,
-          );
+          return api.client.paths[o.path][o.method](parameters, args, {
+            ...api.axiosConfigDefaults,
+            signal: options?.signal,
+          });
         };
         return s;
       }, {}),

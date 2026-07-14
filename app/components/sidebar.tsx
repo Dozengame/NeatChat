@@ -1,8 +1,7 @@
-import React, { useEffect, useRef, useMemo, Fragment } from "react";
+import React, { useEffect, useRef, Fragment } from "react";
 
 import styles from "./home.module.scss";
 
-import { IconButton } from "./button";
 import SettingsIcon from "../icons/settings.svg";
 import AddIcon from "../icons/add.svg";
 import MaskIcon from "../icons/mask.svg";
@@ -25,7 +24,7 @@ import {
 } from "../constant";
 
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { isIOS, useCompactScreen, useMobileScreen } from "../utils";
+import { useCompactScreen } from "../utils";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
 
@@ -36,22 +35,20 @@ const ChatList = dynamic(async () => (await import("./chat-list")).ChatList, {
 const limitSideBarWidth = (x: number) => Math.min(MAX_SIDEBAR_WIDTH, x);
 
 export function useHotKey() {
-  const chatStore = useChatStore();
-
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.altKey || e.ctrlKey) {
         if (e.key === "ArrowUp") {
-          chatStore.nextSession(-1);
+          useChatStore.getState().nextSession(-1);
         } else if (e.key === "ArrowDown") {
-          chatStore.nextSession(1);
+          useChatStore.getState().nextSession(1);
         }
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  });
+  }, []);
 }
 
 export function useDragSideBar() {
@@ -137,12 +134,6 @@ export function SideBarContainer(props: {
   isMobileHidden?: boolean;
   isMobileOpen?: boolean;
 }) {
-  const isMobileScreen = useMobileScreen();
-  const isCompactScreen = useCompactScreen();
-  const isIOSMobile = useMemo(
-    () => isIOS() && isMobileScreen,
-    [isMobileScreen],
-  );
   const {
     children,
     className,
@@ -163,10 +154,7 @@ export function SideBarContainer(props: {
         [styles["narrow-sidebar"]]: shouldNarrow,
       })}
       style={{
-        // #3016 disable transition on ios mobile screen
-        transition: isCompactScreen && isIOSMobile ? "none" : undefined,
         display: isMobileHidden ? "none" : undefined,
-        left: isMobileOpen ? 0 : undefined,
       }}
     >
       {children}
@@ -202,8 +190,12 @@ export function SideBarHeader(props: {
             type="button"
             className={clsx("clickable", styles["sidebar-toggle-button"])}
             onClick={onToggle}
-            aria-label={shouldNarrow ? "展开栏" : "折叠栏"}
-            title={shouldNarrow ? "展开栏" : "折叠栏"}
+            aria-label={
+              shouldNarrow ? Locale.UI.ExpandSidebar : Locale.UI.CollapseSidebar
+            }
+            title={
+              shouldNarrow ? Locale.UI.ExpandSidebar : Locale.UI.CollapseSidebar
+            }
           >
             <MenuIcon />
           </button>
@@ -264,11 +256,10 @@ export function SideBar(props: {
   const navigate = useNavigate();
   const location = useLocation();
   const config = useAppConfig();
-  const chatStore = useChatStore();
 
   const startNewChat = () => {
     if (config.dontShowMaskSplashScreen) {
-      chatStore.newSession();
+      useChatStore.getState().newSession();
       navigate(Path.Chat);
     } else {
       navigate(Path.NewChat);
@@ -364,72 +355,28 @@ export function SideBar(props: {
       </SideBarBody>
       <SideBarTail
         primaryAction={
-          isCompactScreen ? (
-            <div className={styles["sidebar-mobile-account"]}>
-              <div
-                className={clsx(
-                  styles["sidebar-mobile-account-avatar"],
-                  "no-dark",
-                )}
+          <div className={styles["sidebar-action"]}>
+            <Link
+              to={Path.Settings}
+              className={clsx(styles["sidebar-settings-link"], {
+                [styles["sidebar-settings-link-active"]]:
+                  location.pathname === Path.Settings,
+              })}
+              aria-current={
+                location.pathname === Path.Settings ? "page" : undefined
+              }
+            >
+              <span
+                className={styles["sidebar-settings-icon"]}
+                aria-hidden="true"
               >
-                <span
-                  className={styles["sidebar-mobile-pixel-face"]}
-                  aria-hidden="true"
-                >
-                  <span className={styles["sidebar-mobile-pixel-eye-left"]} />
-                  <span className={styles["sidebar-mobile-pixel-eye-right"]} />
-                  <span className={styles["sidebar-mobile-pixel-mouth"]} />
-                </span>
-              </div>
-              <div className={styles["sidebar-mobile-account-copy"]}>
-                <div className={styles["sidebar-mobile-account-name"]}>
-                  NeatChat
-                </div>
-                <div className={styles["sidebar-mobile-account-meta"]}>
-                  Local
-                </div>
-              </div>
-              <Link
-                to={Path.Settings}
-                className={clsx(styles["sidebar-mobile-account-settings"], {
-                  [styles["sidebar-settings-link-active"]]:
-                    location.pathname === Path.Settings,
-                })}
-                aria-label={Locale.Settings.Title}
-                aria-current={
-                  location.pathname === Path.Settings ? "page" : undefined
-                }
-              >
-                <IconButton
-                  aria={Locale.Settings.Title}
-                  icon={<SettingsIcon />}
-                  bordered
-                />
-              </Link>
-            </div>
-          ) : (
-            <div className={styles["sidebar-action"]}>
-              <Link
-                to={Path.Settings}
-                className={clsx(styles["sidebar-settings-link"], {
-                  [styles["sidebar-settings-link-active"]]:
-                    location.pathname === Path.Settings,
-                })}
-                aria-current={
-                  location.pathname === Path.Settings ? "page" : undefined
-                }
-              >
-                <IconButton
-                  aria={Locale.Settings.Title}
-                  icon={<SettingsIcon />}
-                  shadow
-                />
-                <span className={styles["sidebar-settings-label"]}>
-                  {Locale.Settings.Title}
-                </span>
-              </Link>
-            </div>
-          )
+                <SettingsIcon />
+              </span>
+              <span className={styles["sidebar-settings-label"]}>
+                {Locale.Settings.Title}
+              </span>
+            </Link>
+          </div>
         }
         secondaryAction={null}
       />

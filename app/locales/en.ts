@@ -11,6 +11,8 @@ const en: LocaleType = {
       ? "Invalid access code. Please enter it again."
       : "Invalid access code. Please enter it again.",
     AccessRestricted: "Access is temporarily limited. Please try again later.",
+    RequestFailed: (status?: number) =>
+      status ? `Request failed (${status}).` : "Request failed.",
   },
   Auth: {
     Return: "Return",
@@ -27,6 +29,8 @@ const en: LocaleType = {
     ChatItemCount: (count: number) => `${count} messages`,
   },
   Chat: {
+    PersistenceFailed:
+      "Failed to save this conversation. Recent changes may be lost after refresh",
     SubTitle: (count: number) => `${count} messages`,
     EditMessage: {
       Title: "Edit All Messages",
@@ -42,6 +46,8 @@ const en: LocaleType = {
       Copy: "Copy",
       Stop: "Stop",
       Retry: "Retry",
+      RetryToolTraceBlocked:
+        "A tool may already have run. Send a new message to continue without repeating the action.",
       Pin: "Pin",
       PinToastContent: "Pinned 1 messages to contextual prompts",
       PinToastAction: "View",
@@ -64,6 +70,7 @@ const en: LocaleType = {
     },
     InputActions: {
       Stop: "Stop",
+      ToTop: "To Earliest",
       ToBottom: "To Latest",
       Theme: {
         auto: "Auto",
@@ -79,12 +86,11 @@ const en: LocaleType = {
     Rename: "Rename Chat",
     Typing: "Typing…",
     EmptyTitle: "Hello! What would you like to discuss?",
-    EmptySuggestions: [
-      "Summarize this content",
-      "Plan my day",
-      "Create a product poster",
-      "Analyze this file",
-    ] as string[],
+    HomeMode: {
+      Label: "New chat mode",
+      Chat: "Chat",
+      Image: "Image",
+    },
     Input: (submitKey: string) => {
       var inputHints = `${submitKey} to send`;
       if (submitKey === String(SubmitKey.Enter)) {
@@ -112,6 +118,259 @@ const en: LocaleType = {
     TokenInfo: {
       TokenCount: (count: number) => `${count} Tokens`,
       FirstDelay: (delay: number) => `First Response: ${delay}ms`,
+      Label: (details?: string) =>
+        details ? `Token info, ${details}` : "Token info",
+    },
+    SourcesHeading: "Sources",
+    ChatToolMenu: {
+      MultimodalTools: "Multimodal tools",
+      AddContent: "Add",
+      FilesAndImages: "Files & images",
+      Capacity: "3 img · 5 files",
+      Full: "Full",
+      UploadAttachment: "Upload attachment",
+      AttachmentFull: "Attachments full: up to 3 images and 5 files",
+      SessionTools: "Conversation tools",
+      Session: "Conversation",
+      ModelsAndSettings: "Models and settings",
+      Close: "Close conversation tools",
+      Open: "Open conversation tools",
+      MenuLabel: "Conversation tools menu",
+    },
+    Attachments: {
+      TextConverted: "Long text was converted to a file attachment",
+      ContentTruncated: (limit: number) =>
+        `File content was truncated to ${limit} characters`,
+      AddedFiles: (count: number) =>
+        `Added ${count} ${count === 1 ? "file" : "files"}`,
+      MaxFiles: "You can upload up to 5 files; only the first 5 were kept",
+      FileSlotsFull: "You can upload up to 5 files",
+      AddedImages: (count: number) =>
+        `Added ${count} ${count === 1 ? "image" : "images"}`,
+      MaxImages: "You can upload up to 3 images; only the first 3 were kept",
+      ImageSlotsFull: "You can upload up to 3 images",
+      FileTooLarge: (name: string) =>
+        `File ${name} exceeds the 15 MB limit and was ignored`,
+      DragReadFailed: "Failed to read dropped attachments",
+      PasteReadFailed: "Failed to read pasted attachments",
+      FileReadFailed: "Failed to read file",
+      LongTextConverted: "Long text was converted to an attachment",
+      InputTextFile: (timestamp?: string) =>
+        `Input text${timestamp ? `_${timestamp}` : ""}.txt`,
+      LongTextFile: "Long text.txt",
+      PastedTextFile: "Pasted text.txt",
+      LongTextMessage:
+        "I sent a long text file. Its content was converted to an attachment.",
+      FileMetadata: {
+        Name: "File name",
+        Type: "Type",
+        Size: "Size",
+      },
+      JoinMessages: (messages: string[]) => messages.join(", "),
+      LiveStatus: (text: string, hint: string) => `${text}, ${hint}.`,
+      Full: "Attachments full: up to 3 images and 5 files",
+      DropTitle: "Drop files or images here to upload",
+      DropDetect: "Detect dropped attachments",
+      Preview: "Attachment preview",
+      AddMore: "Add more attachments",
+      FullShort: "Full",
+      EditImage: (index: number) => `Edit image attachment ${index}`,
+      DeleteImage: (index: number) => `Delete image attachment ${index}`,
+      EditFile: (index: number, name: string) =>
+        `Edit file attachment ${index}: ${name}`,
+      EditFileContent: (name: string) => `Edit file content: ${name}`,
+      DeleteFile: (index: number, name: string) =>
+        `Delete file attachment ${index}: ${name}`,
+      Reader: {
+        UnknownError: "Unknown error",
+        UnsupportedFileType: "Unsupported file type",
+        UnsupportedFile: (name: string) =>
+          `${name || "This file"} is not a supported file type`,
+        PastedFileName: "Pasted file.txt",
+        ReadFailed: (name: string, error: string) =>
+          `Failed to read ${name}: ${error}`,
+        NoFilesRead: "No files were read successfully",
+        TextFileType: "Text file",
+        ContentTruncated: (length: number) =>
+          `[File truncated. Original length: ${length} characters]`,
+        ImageLoadFailed: "Failed to load image",
+        Legacy: {
+          Title: (name: string) => `Legacy ${name} document detected`,
+          Description: (extension: string) =>
+            `This legacy ${extension} file cannot be parsed completely.`,
+          ConvertIntro: "For best results, convert the file as follows:",
+          OpenWith: (app: string) => `Open the file with ${app}`,
+          SaveAs: "Choose File > Save As",
+          ChooseFormat: (format: string) => `Select ${format}`,
+          SaveAndUpload: "Save and upload the new file",
+          PartialTextAttempt:
+            "NeatChat will try to extract some text, but the result may be incomplete.",
+          PartialTableAttempt:
+            "NeatChat will try to extract the table content, but the result may be incomplete.",
+          Warning: (extension: string, target: string) =>
+            `[Notice] Text extracted from this legacy ${extension} file may be incomplete. Convert it to ${target} and upload it again for best results.`,
+          CannotFullyRead: (extension: string, target: string) =>
+            `[Unable to read] This legacy ${extension} file could not be parsed completely. Convert it to ${target} and upload it again, or paste its content directly.`,
+          CannotRead: (extension: string, target: string) =>
+            `[Unable to read] This legacy ${extension} file could not be parsed. Convert it to ${target} and upload it again, or paste its content directly.`,
+          FormatErrorTitle: "Invalid file format",
+          FormatErrorDescription:
+            "The file could not be read because its format is invalid or it is damaged.",
+          ConvertDoc: "If this is a .doc file, convert it as follows:",
+          FormatErrorMessage:
+            "The file format is invalid or damaged. Convert .doc files to .docx and upload them again.",
+        },
+        Word: {
+          Name: "Word",
+          App: "Microsoft Word or WPS Writer",
+          Format: "Word document (.docx)",
+        },
+        PowerPoint: {
+          Name: "PowerPoint",
+          App: "PowerPoint or WPS Presentation",
+          Format: "PowerPoint presentation (.pptx)",
+          Slide: (number: number, text: string) =>
+            `--- Slide ${number} ---\n${text}`,
+          Content: (slides: string) =>
+            `PowerPoint presentation content:\n\n${slides}`,
+          ExtractionFailed:
+            "[Extraction failed] No text could be extracted from the PowerPoint file. The format may be unsupported or the file may contain no text.",
+          ParseFailed:
+            "[Extraction failed] The PowerPoint file could not be parsed. Copy and paste the important content instead.",
+        },
+        Pdf: {
+          Content: (pages: number) => `PDF content (${pages} pages):\n\n`,
+          UnreadablePage: "[Unable to parse this page]",
+          BlankPage: "[Blank or image-only content]",
+          Page: (number: number, text: string) =>
+            `--- Page ${number} ---\n${text}\n\n`,
+          Truncated: (processed: number, total: number) =>
+            `\n[Large file: processed the first ${processed} of ${total} pages.]\n`,
+          LimitedTitle: "Limited PDF text extraction",
+          LimitedDescription:
+            "Text could not be extracted from the PDF. Possible reasons:",
+          Scanned: "The PDF is scanned and contains images instead of text",
+          Protected: "The PDF is protected or encrypted",
+          Damaged: "The PDF uses an unusual format or is damaged",
+          Suggestions: "Suggestions:",
+          UseOcr: "Process the PDF with OCR software",
+          CopyManually: "Copy and paste the required content manually",
+          UseSmallerFile: "Try a smaller PDF file",
+          LimitedContent: (name: string, sizeMb: string, pages: number) =>
+            `[Limited PDF text extraction]\n\nNo text could be extracted from ${name}; it may be scanned or protected.\n\nFile information:\n- Size: ${sizeMb} MB\n- Pages: ${pages}\n\nUse OCR software or copy and paste the required content manually.`,
+          ParseFailedTitle: "Failed to parse PDF",
+          ParseFailedDescription: "The PDF content could not be parsed.",
+          Error: (message: string) => `Error: ${message}`,
+          ParseFailedHelp:
+            "Open the file in another PDF viewer, then copy and paste its content.",
+          ParseFailedContent:
+            "[Failed to parse PDF] The PDF content could not be extracted. Open it in a PDF viewer, then copy and paste its content.",
+        },
+        Zip: {
+          BinaryFile: (size: number) => `[Binary file, ${size} bytes]`,
+          UnreadableFile: "[Unable to read this file]",
+          Content: (name: string) => `ZIP content (${name}):\n`,
+          TotalFiles: (count: number) => `Total files: ${count}`,
+          ShowingFirst: (count: number) => ` (showing the first ${count})`,
+          TextFiles: (count: number) => `\nText files: ${count}\n\n`,
+          Truncated: (processed: number, total: number) =>
+            `\n[Large ZIP: processed the first ${processed} of ${total} files.]\n`,
+          LimitedTitle: "Limited ZIP text extraction",
+          NoReadableText:
+            "This ZIP contains no readable text files, or its file formats are unsupported.",
+          SupportedTextOnly:
+            "Only common text files such as .txt, .md, .js, and .py can be extracted.",
+          ExtractHelp:
+            "Extract the ZIP and upload the required text files separately.",
+          ParseFailedTitle: "Failed to parse ZIP",
+          ParseFailedDescription: "The ZIP content could not be parsed.",
+          ParseFailedHelp:
+            "Make sure this is a valid ZIP file, or extract it and upload files separately.",
+          ParseFailedContent:
+            "[Failed to parse ZIP] The ZIP content could not be extracted. Make sure it is a valid ZIP file, or extract it and upload files separately.",
+        },
+        Excel: {
+          Name: "Excel",
+          App: "Microsoft Excel or WPS Spreadsheets",
+          Format: "Excel workbook (.xlsx)",
+          Content: (name: string) => `Excel workbook content (${name}):\n\n`,
+          SheetCount: (count: number) => `Worksheets: ${count}\n\n`,
+          Sheet: (name: string) => `=== Worksheet: ${name} ===\n\n`,
+          EmptySheet: "[Empty worksheet]\n\n",
+          ParseFailedTitle: "Failed to parse Excel file",
+          ParseFailedDescription: "The Excel content could not be parsed.",
+          ParseFailedHelp:
+            "Open the file in Excel, then copy and paste its content.",
+          ParseFailedContent:
+            "[Failed to parse Excel file] The Excel content could not be extracted. Open it in Excel, then copy and paste its content.",
+        },
+      },
+      Drag: {
+        AddHint: "Release to add · up to 3 images and 5 files",
+        BlockedHint: "Release will not add new attachments",
+        ImageLimit: "The 3-image limit has been reached",
+        FileLimit: "The 5-file limit has been reached",
+        Limit: "Attachment limit reached",
+        Detect: "Release to detect attachments",
+        ImageCount: (count: number) =>
+          `${count} ${count === 1 ? "image" : "images"}`,
+        FileCount: (count: number) =>
+          `${count} ${count === 1 ? "file" : "files"}`,
+        WillAdd: (parts: string[], overflow: boolean) =>
+          overflow
+            ? `Will add ${parts.join(" and ")}; the rest will be ignored`
+            : `Will add ${parts.join(" and ")}`,
+      },
+    },
+    ImageGeneration: {
+      Failed: "Image generation failed",
+      Progress: {
+        Model: (model: string) => (model ? `\n\nModel: ${model}` : ""),
+        Preparing: "Preparing the image generation request...",
+        Generating: "Generating the image. Please wait...",
+        Saving: "Image generated. Saving the image...",
+        Cancelled: "Image generation cancelled",
+      },
+    },
+    ModelMenu: {
+      SelectModel: (model: string, detail: string) =>
+        `Select model: ${model}, ${detail}`,
+      SelectModelAndParams: "Select model and parameters",
+      SwitchModel: "Switch model",
+      Close: "Close model selector",
+      ModelAndReasoning: "Model and reasoning effort",
+      ImageOptions: "Image options",
+      AvailableModels: "Available models",
+      Empty: "No models available",
+      ChatModelUnavailable: "No GPT-5.x chat model is available",
+      ImageModelUnavailable: "No image model is available",
+      ReasoningEffort: "Reasoning effort",
+      ReasoningOptions: "Reasoning effort options",
+      ImageSize: "Image size",
+      ImageSizeOptions: "Image size options",
+      ImageSizeDescription: (size: string) =>
+        size === "auto"
+          ? "Let the model choose a suitable size"
+          : `Popular size: ${size.replace("x", " × ")}`,
+      ImageQuality: "Image quality",
+      ImageQualityOptions: "Image quality options",
+      ImageQualityDescription: (quality: string) =>
+        quality === "auto"
+          ? "Let the model balance speed and detail"
+          : `Use ${quality} image quality`,
+      CurrentInputMode: "Current input mode",
+      SelectedReasoning: (label: string) => `Reasoning effort: ${label}`,
+      SelectedImageOptions: (summary: string) => `Image options: ${summary}`,
+    },
+    Accessibility: {
+      PromptSuggestions: "Prompt suggestions",
+      ChatMessages: "Chat messages",
+      MessageList: "Conversation message list",
+      UserMessage: (index: number) => `User message ${index}`,
+      AssistantMessage: (index: number) => `Assistant message ${index}`,
+      MessageActions: (label: string) => `${label} actions`,
+      CombinedLabels: (labels: string[]) => labels.join(", "),
+      ActionLabel: (group: string, action: string) => `${group}: ${action}`,
     },
   },
   Export: {
@@ -175,6 +434,30 @@ const en: LocaleType = {
     Title: "Settings",
     SubTitle: "All Settings",
     ShowPassword: "ShowPassword",
+    Sections: {
+      General: {
+        Title: "General preferences",
+        Description: "Input, theme, language, and font.",
+      },
+      Chat: {
+        Title: "Chat experience",
+        Description:
+          "Manage titles, preview bubbles, Artifacts, code reading, and conversation tools.",
+      },
+      Data: {
+        Title: "Data",
+        Description: "Cloud sync, local import/export, masks, and prompts.",
+      },
+      Model: {
+        Title: "Model",
+        Description:
+          "Access code, providers, model parameters, and compression.",
+      },
+      Advanced: {
+        Title: "Advanced preferences",
+        Description: "Reset and clear actions.",
+      },
+    },
     Danger: {
       Reset: {
         Title: "Reset All Settings",
@@ -191,6 +474,7 @@ const en: LocaleType = {
     },
     Lang: {
       Name: "Language", // ATTENTION: if you wanna add a new translation, please do not translate this value, leave it as `Language`
+      FollowApp: "Follow App Language",
       All: "All Languages",
     },
     FontSize: {
@@ -288,7 +572,7 @@ const en: LocaleType = {
 
       LocalState: "Local Data",
       Overview: (overview: any) => {
-        return `${overview.chat} chats，${overview.message} messages，${overview.prompt} prompts，${overview.mask} masks`;
+        return `${overview.chat} chats, ${overview.message} messages, ${overview.prompt} prompts, ${overview.mask} masks`;
       },
       ImportFailed: "Failed to import from file",
     },
@@ -623,9 +907,63 @@ const en: LocaleType = {
     },
 
     Model: "Model",
+    ImageGeneration: {
+      Size: "Image Size",
+      Quality: "Image Quality",
+      Auto: "Auto",
+      Low: "Low",
+      Medium: "Medium",
+      High: "High",
+      Standard: "Standard",
+      HD: "HD",
+      SizeLabel: (size: string) =>
+        ({
+          auto: "Auto",
+          "1024x1024": "Square",
+          "1536x1024": "Landscape",
+          "1024x1536": "Portrait",
+          "2048x2048": "2K Square",
+          "2048x1152": "2K Landscape",
+          "3840x2160": "4K Landscape",
+          "2160x3840": "4K Portrait",
+        })[size] ?? size,
+      SizeOption: (size: string) => {
+        const label =
+          {
+            auto: "Auto",
+            "1024x1024": "Square",
+            "1536x1024": "Landscape",
+            "1024x1536": "Portrait",
+            "2048x2048": "2K Square",
+            "2048x1152": "2K Landscape",
+            "3840x2160": "4K Landscape",
+            "2160x3840": "4K Portrait",
+          }[size] ?? size;
+        return size === "auto" ? label : `${label} (${size})`;
+      },
+      QualityOption: (quality: string) =>
+        ({
+          auto: "Auto",
+          low: "Low",
+          medium: "Medium",
+          high: "High",
+          standard: "Standard",
+          hd: "HD",
+        })[quality] ?? quality,
+    },
+    TextVerbosity: {
+      Title: "Response Detail (text.verbosity)",
+      SubTitle: "Controls response detail in the Responses API",
+      Low: "Concise",
+      Medium: "Balanced",
+      High: "Detailed",
+    },
     CompressModel: {
       Title: "Summary Model",
       SubTitle: "Model used to compress history and generate title",
+      FollowDefault: (model: string) =>
+        `Follow default model (current: ${model})`,
+      Unavailable: (model: string) => `${model} (currently unavailable)`,
     },
     Temperature: {
       Title: "Temperature",
@@ -638,9 +976,67 @@ const en: LocaleType = {
     ReasoningEffort: {
       Title: "Reasoning Effort",
       SubTitle: "Used by GPT-5.x and newer models",
-      Low: "Standard",
-      Medium: "Advanced",
-      High: "Deep",
+      None: "Fast",
+      Minimal: "Minimal",
+      Low: "Low",
+      Medium: "Medium",
+      High: "High",
+      XHigh: "Extra High",
+      Max: "Max",
+      NoneDescription: "Uses no extra reasoning and prioritizes speed",
+      MinimalDescription: "Uses minimal reasoning for speed and basic judgment",
+      LowDescription: "Best for most questions",
+      MediumDescription: "Handles complex tasks more carefully",
+      HighDescription: "For difficult reasoning tasks",
+      XHighDescription: "For tasks needing more exploration and verification",
+      MaxDescription: "For the hardest quality-first tasks",
+    },
+    GPT56Capabilities: {
+      ConfigSource: {
+        Prefix: "Source: ",
+        Separator: ". ",
+        Locked: "This setting is locked by the administrator",
+        AdminForced: "Administrator locked",
+        ServerDefault: "Administrator default",
+        UserOverride: "Personal setting",
+        ConversationOverride: "Current conversation",
+        Fallback: "System default",
+      },
+      ReasoningMode: {
+        Title: "Reasoning Mode",
+        SubTitle: "Standard balances speed and quality; Pro prioritizes depth",
+        Standard: "Standard",
+        Pro: "Pro",
+      },
+      ReasoningContext: {
+        Title: "Reasoning Context",
+        SubTitle: "Controls current-turn or cross-turn reasoning context",
+        Auto: "Auto",
+        CurrentTurn: "Current turn",
+        AllTurns: "All turns",
+      },
+      InputImageDetail: {
+        Title: "Input Image Detail",
+        SubTitle:
+          "Defaults to High so GPT-5.6 Auto does not increase cost and latency with Original",
+        Low: "Low",
+        High: "High",
+        Original: "Original",
+        Auto: "Auto",
+      },
+      PromptCacheMode: {
+        Title: "Prompt Cache Mode",
+        SubTitle:
+          "Disabled uses Explicit with no breakpoint to avoid cache writes; Implicit caches automatically; Explicit marks the latest input breakpoint",
+        Disabled: "Disabled",
+        Implicit: "Implicit",
+        Explicit: "Explicit",
+      },
+      PromptCacheKey: {
+        Title: "Prompt Cache Key",
+        SubTitle:
+          "Optional routing key sent to OpenAI; do not enter secrets or personal data",
+      },
     },
     MaxTokens: {
       Title: "Max Output Tokens",
@@ -740,6 +1136,89 @@ const en: LocaleType = {
       SubTitle: "Show shortcuts button in chat",
     },
   },
+  ImageActions: {
+    Image: "Image",
+    Gallery: "Image options",
+    ShowGalleryImage: (index: number, total: number) =>
+      `Show image ${index} of ${total}`,
+    Preview: "Preview image",
+    Download: "Download original image",
+    PreviewWithLabel: (label: string) => `Preview ${label}`,
+    DownloadWithLabel: (label: string) => `Download original ${label}`,
+    PreviewAlt: "Image preview",
+    PreviewDialog: "Image preview",
+    PreviewDialogWithLabel: (label: string) => `Image preview: ${label}`,
+    Message: (index: number, total: number) =>
+      total > 1 ? `Image ${index} of ${total}` : "Image",
+    OpenedOriginal: "Could not save the image directly; opened the original",
+    ClosePreview: "Close preview",
+  },
+  ImageEditor: {
+    Title: "Edit image",
+    Undo: "Undo",
+    Redo: "Redo",
+    Toolbar: "Image editing tools",
+    DrawingTools: "Drawing tools",
+    Brush: "Brush tool",
+    Eraser: "Eraser",
+    Line: "Line tool",
+    Arrow: "Arrow tool",
+    Rectangle: "Rectangle tool",
+    Circle: "Circle tool",
+    Color: "Color",
+    BrushSize: "Brush size",
+    ChooseColor: (color: string) => `Choose color ${color}`,
+    ChooseBrushSize: (size: number) => `Choose brush size ${size}`,
+  },
+  Markdown: {
+    CopyCode: (language: string, copied: boolean) =>
+      copied
+        ? `Copied${language ? ` ${language}` : ""} code`
+        : `Copy${language ? ` ${language}` : ""} code`,
+    WrapCode: (language: string, enabled: boolean) =>
+      `${enabled ? "Disable" : "Enable"} wrapping for${
+        language ? ` ${language}` : ""
+      } code`,
+    ScrollableTable: (headers: string) =>
+      headers
+        ? `Markdown table (${headers}), horizontally scrollable`
+        : "Markdown table, horizontally scrollable",
+    ScrollableTableHint: "Swipe horizontally to see more columns",
+    TableToolbar: "Table reading tools",
+    TableScrollbar: "Scroll table horizontally",
+    TableScrollPosition: (percent: number) => `${percent}% scrolled`,
+    ExpandTable: "View table full screen",
+    CollapseTable: "Exit table full screen",
+    TableDialog: (headers: string) =>
+      headers ? `Full-screen table: ${headers}` : "Full-screen Markdown table",
+    ScrollableFormula: "Display formula, horizontally scrollable",
+    HtmlPreview: "HTML preview",
+    RunHtmlPreview: "Run HTML preview",
+    Audio: "Audio",
+    Video: "Video",
+    MediaAttachment: (type: string, label: string) =>
+      `${type} attachment: ${label}`,
+    MediaFallback: (type: string) =>
+      `${type} cannot be previewed right now. Open the original file instead.`,
+    OpenOriginal: "Open original file",
+    UnknownType: "Unknown type",
+    FileCopied: "File content copied to clipboard",
+    FileCopyFailed: "Failed to copy file content",
+    FileNotFound: "File content could not be found",
+    FileLoadFailed: "Failed to load file attachment",
+  },
+  FileAttachment: {
+    Label: (name: string, type: string, size: string, interactive: boolean) =>
+      `File attachment: ${name}, ${type}, ${size}.${
+        interactive ? " Press to copy file content." : ""
+      }`,
+    Meta: (type: string, size: string) => `Type ${type}, size ${size}`,
+  },
+  UpdateAnnouncement: {
+    Title: (date: string) => `${date} Update`,
+    SectionTitle: "Update",
+    Acknowledge: "Got it",
+  },
   Store: {
     DefaultTopic: "New Conversation",
     BotHello: "Hello! How can I assist you today?",
@@ -763,6 +1242,8 @@ const en: LocaleType = {
   },
   Context: {
     Toast: (x: any) => `With ${x} contextual prompts`,
+    SettingsWithPrompts: (x: number) =>
+      `Chat settings, ${x} contextual prompts`,
     Edit: "Current Chat Settings",
     Add: "Add a Prompt",
     Clear: "Context Cleared",
@@ -773,6 +1254,12 @@ const en: LocaleType = {
   },
   Mcp: {
     Name: "MCP",
+    Chat: {
+      ToolCall: "Tool call",
+      Progress: "Progress:",
+      PreparingTool: "Preparing to run the tool",
+      ToolFailure: "Tool call failed. Please retry",
+    },
     Market: {
       Title: "MCP Market",
       SubTitle: (count: number) => `${count} servers configured`,
@@ -952,11 +1439,12 @@ const en: LocaleType = {
     CodeBlockExpand: "Show full code block",
     Mermaid: {
       Preview: "Preview Mermaid diagram",
+      Caption: "Mermaid diagram",
       Unavailable: "Diagram preview unavailable",
       SourceLabel: "Mermaid source",
     },
     NotShow: "Never Show Again",
-    ConfirmNoShow: "Confirm to disable？You can enable it in settings later.",
+    ConfirmNoShow: "Confirm to disable? You can enable it in settings later.",
     Thinking: "Thinking...",
     Think: "Deep Thought",
     ThinkingTime: (seconds: number) => ` (took ${seconds} seconds)`,
@@ -975,6 +1463,12 @@ const en: LocaleType = {
     Config: "Config",
     Search: "Search",
     All: "All",
+    CloseSidebar: "Close sidebar",
+    ExpandSidebar: "Expand sidebar",
+    CollapseSidebar: "Collapse sidebar",
+    Selector: "Choose option",
+    CloseSelector: "Close selector",
+    SearchModels: "Search models",
   },
   Exporter: {
     Description: {

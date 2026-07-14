@@ -205,6 +205,31 @@ export function collectModelsWithDefaultModel(
   return allModels;
 }
 
+export function collectModelsWithDefaultModelAndPolicy(
+  models: readonly LLMModel[],
+  customModels: string,
+  defaultModel: string,
+  allowedModels: readonly string[] = [],
+) {
+  const collectedModels = collectModelsWithDefaultModel(
+    models,
+    customModels,
+    defaultModel,
+  );
+  const allowedModelRefs = new Set(allowedModels);
+
+  if (allowedModelRefs.size === 0) {
+    return collectedModels;
+  }
+
+  return collectedModels.map((model) => ({
+    ...model,
+    available:
+      model.available &&
+      allowedModelRefs.has(`${model.name}@${model.provider?.providerName}`),
+  }));
+}
+
 export function isModelAvailableInServer(
   customModels: string,
   modelName: string,
@@ -223,5 +248,18 @@ export function isModelAvailableInServer(
     return false;
   }
 
-  return matchingModels.some((model) => model.available === false);
+  if (matchingModels.some((model) => model.available === false)) {
+    return true;
+  }
+
+  let modelsAvailableByDefault = true;
+  for (const customModel of customModels.split(",")) {
+    if (customModel === "all" || customModel === "+all") {
+      modelsAvailableByDefault = true;
+    } else if (customModel === "-all") {
+      modelsAvailableByDefault = false;
+    }
+  }
+
+  return !modelsAvailableByDefault;
 }

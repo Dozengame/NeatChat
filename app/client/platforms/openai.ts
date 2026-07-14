@@ -13,9 +13,9 @@ import {
   ChatMessageTool,
   useAccessStore,
   useAppConfig,
-  useChatStore,
   usePluginStore,
 } from "@/app/store";
+import type { ModelConfig } from "@/app/store/config";
 import { collectModelsWithDefaultModel } from "@/app/utils/model";
 import {
   preProcessImageContent,
@@ -29,12 +29,22 @@ import {
   shouldUseOpenAIResponses,
   shouldRequireOpenAIResponsesWebSearch,
   shouldEnableOpenAIResponsesWebSearch,
+  isOpenAIGpt56ModelConfig,
+  supportsOpenAIResponsesStreaming,
   supportsOpenAIResponsesWebSearch,
 } from "@/app/utils/openai-responses";
 import {
   buildOpenAIResponsesPayload,
   ResponsesRequestPayload,
 } from "./openai-responses-builder";
+import {
+  adaptPluginToolsForResponses,
+  extractOpenAIResponsesText,
+  runOpenAIResponsesToolLoop,
+  sendOpenAIResponsesSseRound,
+  type PluginFunctionExecutor,
+  type ResponsesFunctionTool,
+} from "./openai-responses-tools";
 
 import {
   ChatOptions,
@@ -55,12 +65,22 @@ import {
   getMessageTextContentWithoutThinking,
 } from "@/app/utils";
 import { fetch } from "@/app/utils/stream";
+import { withAbortTimeoutResponse } from "@/app/utils/request-timeout";
+import {
+  getAccessRestrictedPublicErrorMessage,
+  getPublicUpstreamErrorMessage,
+  hasUpstreamErrorPayload,
+  isAccessRestrictedPublicError,
+  readResponsePayload,
+} from "@/app/utils/public-error";
+import { mergeLLMRequestConfig } from "../request-config";
 import {
   OPENAI_IMAGE_REQUEST_TIMEOUT_MS,
   abortOpenAIImageRequest,
   buildOpenAIImageEditFormData,
   buildOpenAIImageGenerationPayload,
   getOpenAIImageGenerationProgressContent,
+  getOpenAIImageErrorMessage,
   getOpenAIImageOutputContentType,
   isGptImageGenerationModel,
   isOpenAIImageGenerationModelConfig,
@@ -125,32 +145,12 @@ async function loadOpenAIImageInput(imageUrl: string, index: number) {
       return { blob, filename: getImageFilename(index, blob) };
     }
   } catch (error) {
-    console.warn("[OpenAI Image] failed to load image url directly", error);
+    console.warn("[OpenAI Image] failed to load image url directly");
   }
 
   const dataUrl = await cacheImageToBase64Image(imageUrl);
   const blob = dataUrlToBlob(dataUrl);
   return { blob, filename: getImageFilename(index, blob) };
-}
-
-function getOpenAIErrorMessage(resJson: any, status: number) {
-  const detail =
-    typeof resJson?.error?.message === "string"
-      ? resJson.error.message
-      : typeof resJson?.message === "string"
-      ? resJson.message
-      : typeof resJson?.msg === "string"
-      ? resJson.msg
-      : "";
-  const code =
-    typeof resJson?.error?.code === "string"
-      ? resJson.error.code
-      : typeof resJson?.code === "string"
-      ? resJson.code
-      : String(status);
-  return detail
-    ? `OpenAI image generation failed (${code}): ${detail}`
-    : `OpenAI image generation failed (${code})`;
 }
 
 export interface AzureChatRequestPayload {
@@ -164,66 +164,6 @@ export interface AzureChatRequestPayload {
   presence_penalty: number;
   frequency_penalty: number;
   top_p: number;
-}
-
-function extractResponsesText(res: any) {
-  const outputText =
-    typeof res?.output_text === "string" ? res.output_text : undefined;
-  const parts: string[] = [];
-  const citations = new Map<string, string>();
-  for (const output of res?.output ?? []) {
-    if (Array.isArray(output?.content)) {
-      for (const content of output.content) {
-        if (content?.type === "output_text" && content.text) {
-          parts.push(content.text);
-          for (const annotation of content.annotations ?? []) {
-            if (annotation?.type === "url_citation" && annotation.url) {
-              citations.set(annotation.url, annotation.title || annotation.url);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  const text = parts.join("") || outputText || "";
-  if (citations.size === 0) {
-    return text;
-  }
-
-  const sources = Array.from(citations.entries())
-    .map(([url, title]) => `- [${title}](${url})`)
-    .join("\n");
-
-  return `${text}\n\n来源：\n${sources}`;
-}
-
-function parseResponsesSSE(text: string) {
-  const json = JSON.parse(text);
-
-  if (
-    json.type === "response.output_text.delta" ||
-    json.type === "response.refusal.delta"
-  ) {
-    return json.delta as string | undefined;
-  }
-
-  if (json.type === "response.reasoning_summary_text.delta") {
-    return json.delta as string | undefined;
-  }
-
-  if (
-    json.type === "response.created" ||
-    json.type === "response.queued" ||
-    json.type === "response.in_progress" ||
-    json.type === "response.reasoning_summary_part.added"
-  ) {
-    return "<think>\n正在推理...";
-  }
-
-  if (json.type === "response.error" && json.error) {
-    return "```\n" + JSON.stringify(json.error, null, 4) + "\n```";
-  }
 }
 
 export class ChatGPTApi implements LLMApi {
@@ -266,8 +206,6 @@ export class ChatGPTApi implements LLMApi {
       baseUrl = "https://" + baseUrl;
     }
 
-    console.log("[Proxy Endpoint] ", baseUrl, path);
-
     // try rebuild url, when using cloudflare ai gateway in client
     return cloudflareAIGatewayUrl([baseUrl, path].join("/"));
   }
@@ -279,12 +217,15 @@ export class ChatGPTApi implements LLMApi {
     },
   ) {
     if (res.error) {
-      if (typeof res.msg === "string" && res.msg.trim()) {
-        return res.msg;
+      if (isAccessRestrictedPublicError(res)) {
+        return Locale.Error.AccessRestricted;
       }
-      return "```\n" + JSON.stringify(res, null, 4) + "\n```";
+      return getPublicUpstreamErrorMessage({
+        fallback: Locale.Error.RequestFailed(),
+        payload: res,
+      });
     }
-    const responsesText = extractResponsesText(res);
+    const responsesText = extractOpenAIResponsesText(res);
     if (responsesText) {
       return responsesText;
     }
@@ -307,7 +248,7 @@ export class ChatGPTApi implements LLMApi {
         },
       ];
     }
-    return res.choices?.at(0)?.message?.content ?? res;
+    return res.choices?.at(0)?.message?.content ?? "";
   }
 
   async speech(options: SpeechOptions): Promise<ArrayBuffer> {
@@ -318,8 +259,6 @@ export class ChatGPTApi implements LLMApi {
       response_format: options.response_format,
       speed: options.speed,
     };
-
-    console.log("[Request] openai speech payload: ", requestPayload);
 
     const controller = new AbortController();
     options.onController?.(controller);
@@ -333,47 +272,76 @@ export class ChatGPTApi implements LLMApi {
         headers: await getHeadersAsync(),
       };
 
-      // make a fetch request
-      const requestTimeoutId = setTimeout(
-        () => controller.abort(),
-        REQUEST_TIMEOUT_MS,
-      );
-
-      const res = await fetch(speechPath, speechPayload);
-      clearTimeout(requestTimeoutId);
-      return await res.arrayBuffer();
+      const { body } = await withAbortTimeoutResponse({
+        controller,
+        timeoutMs: REQUEST_TIMEOUT_MS,
+        operation: () => fetch(speechPath, speechPayload),
+        consume: (response) => response.arrayBuffer(),
+      });
+      return body;
     } catch (e) {
-      console.log("[Request] failed to make a speech request", e);
+      console.error("[OpenAI] speech request failed");
       throw e;
     }
   }
 
   async chat(options: ChatOptions) {
-    const modelConfig = {
-      ...useAppConfig.getState().modelConfig,
-      ...useChatStore.getState().currentSession().mask.modelConfig,
-      ...{
-        model: options.config.model,
-        providerName: options.config.providerName,
-      },
-    };
+    const modelConfig = mergeLLMRequestConfig(
+      useAppConfig.getState().modelConfig,
+      useAppConfig.getState().modelConfig,
+      options.config,
+    ) as ModelConfig;
     const accessStore = useAccessStore.getState();
     const isImageGeneration = isOpenAIImageGenerationModelConfig({
       model: options.config.model,
       providerName: options.config.providerName,
     });
-    let openaiResponseId: string | undefined;
-    let openaiResponsesOutput: unknown[] | undefined;
     const useResponses =
       !isImageGeneration &&
       shouldUseOpenAIResponses({
         model: modelConfig.model,
         providerName: modelConfig.providerName,
       });
+    const effectiveStream =
+      useResponses && !supportsOpenAIResponsesStreaming(modelConfig.model)
+        ? false
+        : options.config.stream;
     const storeResponses =
       modelConfig.store ??
       accessStore.serverConfigSnapshot?.defaults.store ??
       false;
+    let responsesFunctionTools: ResponsesFunctionTool[] = [];
+    let responsesFunctionExecutors: Record<string, PluginFunctionExecutor> = {};
+    if (
+      useResponses &&
+      effectiveStream &&
+      options.allowTools === true &&
+      isOpenAIGpt56ModelConfig({
+        model: modelConfig.model,
+        providerName: modelConfig.providerName,
+      })
+    ) {
+      try {
+        if (!options.openaiResponsesRecoveryPending) {
+          const [pluginTools, pluginExecutors] = usePluginStore
+            .getState()
+            .getAsTools(options.pluginIds ?? []);
+          if (Array.isArray(pluginTools) && pluginTools.length > 0) {
+            const adapted = adaptPluginToolsForResponses(
+              pluginTools,
+              pluginExecutors as Record<string, PluginFunctionExecutor>,
+            );
+            responsesFunctionTools = adapted.tools;
+            responsesFunctionExecutors = adapted.executors;
+          }
+        }
+      } catch (error) {
+        options.onError?.(
+          error instanceof Error ? error : new Error(String(error)),
+        );
+        return;
+      }
+    }
     let requestPayload:
       | AzureChatRequestPayload
       | ResponsesRequestPayload
@@ -414,15 +382,26 @@ export class ChatGPTApi implements LLMApi {
               : v.role === "assistant" // 如果 role 是 assistant
               ? getMessageTextContentWithoutThinking(v) // 调用 getMessageTextContentWithoutThinking
               : getMessageTextContent(v); // 否则调用 getMessageTextContent
-          return { role: v.role, content };
+          return {
+            role: v.role,
+            content,
+            ...(useResponses
+              ? {
+                  openaiResponseId: v.openaiResponseId,
+                  openaiResponseStored: v.openaiResponseStored,
+                  openaiResponsesOutput: v.openaiResponsesOutput,
+                }
+              : {}),
+          };
         }),
       );
 
       if (useResponses) {
-        const enableWebSearch = supportsOpenAIResponsesWebSearch({
-          model: modelConfig.model,
-          providerName: modelConfig.providerName || ServiceProvider.OpenAI,
-        });
+        const enableWebSearch =
+          supportsOpenAIResponsesWebSearch({
+            model: modelConfig.model,
+            providerName: modelConfig.providerName || ServiceProvider.OpenAI,
+          }) && options.allowTools === true;
         const latestUserText =
           messages.reduce<string | undefined>(
             (latest, message) =>
@@ -439,6 +418,10 @@ export class ChatGPTApi implements LLMApi {
           shouldRequireOpenAIResponsesWebSearch(latestUserText)
             ? "required"
             : undefined;
+        if (webSearchMode === "required") {
+          responsesFunctionTools = [];
+          responsesFunctionExecutors = {};
+        }
 
         requestPayload = buildOpenAIResponsesPayload({
           messages,
@@ -453,17 +436,18 @@ export class ChatGPTApi implements LLMApi {
               modelConfig.textVerbosity ??
               (accessStore.openaiTextVerbosity as any),
           },
-          stream: options.config.stream,
+          stream: effectiveStream,
           reasoningSummary: "auto",
           truncation: "disabled",
           store: storeResponses,
           enableWebSearch: shouldEnableWebSearch,
           webSearchMode,
+          functionTools: responsesFunctionTools,
         });
       } else {
         requestPayload = {
           messages,
-          stream: options.config.stream,
+          stream: effectiveStream,
           model: modelConfig.model,
           temperature: modelConfig.temperature,
           presence_penalty: modelConfig.presence_penalty,
@@ -473,14 +457,7 @@ export class ChatGPTApi implements LLMApi {
       }
     }
 
-    console.log(
-      useResponses
-        ? "[Request] openai responses payload: "
-        : "[Request] openai payload: ",
-      requestPayload,
-    );
-
-    const shouldStream = !isImageGeneration && !!options.config.stream;
+    const shouldStream = !isImageGeneration && !!effectiveStream;
     const controller = new AbortController();
     options.onController?.(controller);
 
@@ -521,15 +498,38 @@ export class ChatGPTApi implements LLMApi {
         );
       }
       if (shouldStream) {
+        if (useResponses) {
+          const headers = await getHeadersAsync(
+            false,
+            modelConfig.providerName,
+          );
+          await runOpenAIResponsesToolLoop({
+            initialPayload: requestPayload as ResponsesRequestPayload,
+            executors: responsesFunctionExecutors,
+            controller,
+            sendRound: (payload) =>
+              sendOpenAIResponsesSseRound({
+                url: chatPath,
+                headers,
+                payload,
+                controller,
+                timeoutMs: OPENAI_RESPONSES_TIMEOUT_MS,
+                onUpdate: options.onUpdate,
+              }),
+            callbacks: options,
+            timeoutMs: OPENAI_RESPONSES_TIMEOUT_MS,
+          });
+          return;
+        }
+
         let index = -1;
         let isInThinking = false;
         let hasResponsesOutput = false;
-        const session = useChatStore.getState().currentSession();
-
         // 获取所有插件工具
-        const [allTools, funcs] = usePluginStore
-          .getState()
-          .getAsTools(session.mask?.plugin || []);
+        const [allTools, funcs] =
+          options.allowTools === true
+            ? usePluginStore.getState().getAsTools(options.pluginIds ?? [])
+            : [[], {}];
 
         const webAccessState = useResponses
           ? supportsOpenAIResponsesWebSearch({
@@ -538,7 +538,7 @@ export class ChatGPTApi implements LLMApi {
             })
             ? "Auto"
             : "Unsupported"
-          : session.mask?.plugin?.includes("googleSearch")
+          : options.pluginIds?.includes("googleSearch")
           ? "Enabled"
           : "Disabled";
 
@@ -548,7 +548,9 @@ export class ChatGPTApi implements LLMApi {
         // 特殊处理gemini模型的联网功能
         // 如果是gemini-2.0-flash-exp且用户选择了googleSearch，使用特定的tools
         // 否则使用常规插件tools
-        const useGoogleSearch = session.mask?.plugin?.includes("googleSearch");
+        const useGoogleSearch =
+          options.allowTools === true &&
+          options.pluginIds?.includes("googleSearch");
         const isGeminiFlash = modelConfig.model === "gemini-2.0-flash-exp";
 
         const tools = useResponses
@@ -572,77 +574,12 @@ export class ChatGPTApi implements LLMApi {
             ...requestPayload,
             ...(Array.isArray(tools) && tools.length > 0 ? { tools } : {}),
           },
-          await getHeadersAsync(),
+          await getHeadersAsync(false, modelConfig.providerName),
           Array.isArray(tools) ? tools : [],
           funcs,
           controller,
           // parseSSE
           (text: string, runTools: ChatMessageTool[]) => {
-            if (useResponses) {
-              const json = JSON.parse(text);
-              if (typeof json.response?.id === "string") {
-                openaiResponseId = json.response.id;
-              }
-              if (Array.isArray(json.response?.output)) {
-                openaiResponsesOutput = json.response.output;
-              }
-              if (
-                json.type === "response.output_text.delta" ||
-                json.type === "response.refusal.delta"
-              ) {
-                const chunk = json.delta as string | undefined;
-                if (!chunk) return;
-                const replace = !hasResponsesOutput;
-                hasResponsesOutput = true;
-                isInThinking = false;
-                return { content: chunk, replace };
-              }
-
-              if (json.type === "response.reasoning_summary_text.delta") {
-                const reasoning = json.delta as string | undefined;
-                if (!reasoning) return;
-                if (!isInThinking) {
-                  isInThinking = true;
-                  return "<think>\n" + reasoning;
-                }
-                return reasoning;
-              }
-
-              if (
-                !hasResponsesOutput &&
-                (json.type === "response.created" ||
-                  json.type === "response.queued" ||
-                  json.type === "response.in_progress" ||
-                  json.type === "response.reasoning_summary_part.added")
-              ) {
-                if (!isInThinking) {
-                  isInThinking = true;
-                  return "<think>\n正在推理...";
-                }
-                return;
-              }
-
-              if (json.type === "response.completed" && json.response) {
-                const finalText = extractResponsesText(json.response);
-                if (finalText) {
-                  return {
-                    content: finalText,
-                    replace: true,
-                  };
-                }
-              }
-
-              if (json.type === "response.error" && json.error) {
-                return {
-                  content:
-                    "```\n" + JSON.stringify(json.error, null, 4) + "\n```",
-                  replace: true,
-                };
-              }
-
-              return parseResponsesSSE(text);
-            }
-
             // console.log("parseSSE", text, runTools);
             const json = JSON.parse(text);
             const choices = json.choices as Array<{
@@ -715,14 +652,7 @@ export class ChatGPTApi implements LLMApi {
             );
           },
           options,
-          useResponses ? OPENAI_RESPONSES_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
-          {
-            getMetadata: () => ({
-              openaiResponseId,
-              openaiResponseStored: storeResponses,
-              openaiResponsesOutput,
-            }),
-          },
+          REQUEST_TIMEOUT_MS,
         );
       } else {
         const multipartPayload =
@@ -739,7 +669,10 @@ export class ChatGPTApi implements LLMApi {
           method: "POST",
           body: multipartPayload ?? JSON.stringify(requestPayload),
           signal: controller.signal,
-          headers: await getHeadersAsync(isMultipartRequest),
+          headers: await getHeadersAsync(
+            isMultipartRequest,
+            modelConfig.providerName,
+          ),
         };
 
         if (isImageGeneration) {
@@ -747,6 +680,7 @@ export class ChatGPTApi implements LLMApi {
             getOpenAIImageGenerationProgressContent({
               model: modelConfig.model,
               phase: "generating",
+              copy: Locale.Chat.ImageGeneration.Progress,
             }),
             "",
           );
@@ -758,31 +692,77 @@ export class ChatGPTApi implements LLMApi {
           : isImageGeneration
           ? OPENAI_IMAGE_REQUEST_TIMEOUT_MS
           : REQUEST_TIMEOUT_MS;
-        const requestTimeoutId = setTimeout(() => {
-          if (isImageGeneration) {
-            abortOpenAIImageRequest(controller, requestTimeoutMs);
-            return;
-          }
-          controller.abort();
-        }, requestTimeoutMs);
-
-        const res = await fetch(chatPath, chatPayload);
-        clearTimeout(requestTimeoutId);
-
+        const { response: res, body: responseBody } =
+          await withAbortTimeoutResponse({
+            controller,
+            timeoutMs: requestTimeoutMs,
+            onTimeout: isImageGeneration
+              ? () => abortOpenAIImageRequest(controller, requestTimeoutMs)
+              : undefined,
+            operation: () => fetch(chatPath, chatPayload),
+            consume: async (response) =>
+              isImageGeneration
+                ? parseOpenAIImageResponsePayload({
+                    status: response.status,
+                    bodyText: await response.text(),
+                  })
+                : readResponsePayload(response),
+          });
+        const parsedResponseBody = responseBody as any;
         const resJson = isImageGeneration
-          ? parseOpenAIImageResponsePayload({
-              status: res.status,
-              bodyText: await res.text(),
-            })
-          : await res.json();
+          ? parsedResponseBody
+          : parsedResponseBody.payload;
         if (isImageGeneration && (!res.ok || resJson?.error)) {
-          throw new Error(getOpenAIErrorMessage(resJson, res.status));
+          throw new Error(
+            getOpenAIImageErrorMessage({
+              status: res.status,
+              payload: resJson,
+              accessRestrictedMessage: Locale.Error.AccessRestricted,
+            }),
+          );
+        }
+        if (
+          !isImageGeneration &&
+          (!res.ok ||
+            !parsedResponseBody.isJson ||
+            hasUpstreamErrorPayload(resJson))
+        ) {
+          const errorPayload = resJson ?? {
+            message: parsedResponseBody.text as string,
+          };
+          const accessRestrictedMessage = getAccessRestrictedPublicErrorMessage(
+            {
+              response: res,
+              payload: errorPayload,
+              message: Locale.Error.AccessRestricted,
+            },
+          );
+          throw new Error(
+            accessRestrictedMessage ??
+              getPublicUpstreamErrorMessage({
+                fallback: Locale.Error.RequestFailed(
+                  res.ok ? undefined : res.status,
+                ),
+                payload: errorPayload,
+                headers: res.headers,
+              }),
+          );
+        }
+        if (useResponses && resJson?.status === "incomplete") {
+          throw new Error(
+            getPublicUpstreamErrorMessage({
+              fallback: Locale.Error.RequestFailed(),
+              detail: resJson?.incomplete_details?.reason,
+              headers: res.headers,
+            }),
+          );
         }
         if (isImageGeneration) {
           options.onUpdate?.(
             getOpenAIImageGenerationProgressContent({
               model: modelConfig.model,
               phase: "saving",
+              copy: Locale.Chat.ImageGeneration.Progress,
             }),
             "",
           );
@@ -793,6 +773,12 @@ export class ChatGPTApi implements LLMApi {
               ? getOpenAIImageOutputContentType(imageOutputFormat)
               : undefined,
         });
+        if (
+          !isImageGeneration &&
+          (typeof message !== "string" || message.length === 0)
+        ) {
+          throw new Error(Locale.Error.RequestFailed());
+        }
         options.onFinish(
           message,
           res,
@@ -809,7 +795,7 @@ export class ChatGPTApi implements LLMApi {
         );
       }
     } catch (e) {
-      console.log("[Request] failed to make a chat request", e);
+      console.error("[OpenAI] chat request failed");
       options.onError?.(e as Error);
     }
   }
@@ -895,8 +881,6 @@ export class ChatGPTApi implements LLMApi {
     const chatModels = resJson.data?.filter(
       (m) => m.id.startsWith("gpt-") || m.id.startsWith("chatgpt-"),
     );
-    console.log("[Models]", chatModels);
-
     if (!chatModels) {
       return [];
     }

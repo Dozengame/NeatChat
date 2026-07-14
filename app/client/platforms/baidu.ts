@@ -4,10 +4,8 @@ import {
   Baidu,
   BAIDU_BASE_URL,
   REQUEST_TIMEOUT_MS,
-  } from "@/app/constant";
-import { useAccessStore,
-  useAppConfig,
-  useChatStore } from "@/app/store";
+} from "@/app/constant";
+import { useAccessStore, useAppConfig } from "@/app/store";
 import { getAccessToken } from "@/app/utils/baidu";
 
 import {
@@ -23,10 +21,20 @@ import {
   EventStreamContentType,
   fetchEventSource,
 } from "@fortaine/fetch-event-source";
-import { prettyObject } from "@/app/utils/format";
 import { getClientConfig } from "@/app/config/client";
 import { getMessageTextContent } from "@/app/utils";
 import { fetch } from "@/app/utils/stream";
+import {
+  createStreamingRequestLifecycle,
+  withAbortTimeoutResponse,
+} from "@/app/utils/request-timeout";
+import {
+  getAccessRestrictedPublicErrorMessage,
+  getPublicHttpErrorMessage,
+  hasUpstreamErrorPayload,
+  readResponsePayload,
+} from "@/app/utils/public-error";
+import { mergeLLMRequestConfig } from "../request-config";
 
 export interface OpenAIListModelResponse {
   object: string;
@@ -74,8 +82,6 @@ export class ErnieApi implements LLMApi {
       baseUrl = "https://" + baseUrl;
     }
 
-    console.log("[Proxy Endpoint] ", baseUrl, path);
-
     return [baseUrl, path].join("/");
   }
 
@@ -105,13 +111,11 @@ export class ErnieApi implements LLMApi {
       }
     }
 
-    const modelConfig = {
-      ...useAppConfig.getState().modelConfig,
-      ...useChatStore.getState().currentSession().mask.modelConfig,
-      ...{
-        model: options.config.model,
-      },
-    };
+    const modelConfig = mergeLLMRequestConfig(
+      useAppConfig.getState().modelConfig,
+      useAppConfig.getState().modelConfig,
+      options.config,
+    );
 
     const shouldStream = !!options.config.stream;
     const requestPayload: RequestPayload = {
@@ -123,8 +127,6 @@ export class ErnieApi implements LLMApi {
       frequency_penalty: modelConfig.frequency_penalty,
       top_p: modelConfig.top_p,
     };
-
-    console.log("[Request] Baidu payload: ", requestPayload);
 
     const controller = new AbortController();
     options.onController?.(controller);
@@ -151,29 +153,28 @@ export class ErnieApi implements LLMApi {
         method: "POST",
         body: JSON.stringify(requestPayload),
         signal: controller.signal,
-        headers: await getHeadersAsync(),
+        headers: await getHeadersAsync(false, modelConfig.providerName),
       };
-
-      // make a fetch request
-      const requestTimeoutId = setTimeout(
-        () => controller.abort(),
-        REQUEST_TIMEOUT_MS,
-      );
 
       if (shouldStream) {
         let responseText = "";
         let remainText = "";
-        let finished = false;
         let responseRes: Response;
+        const lifecycle = createStreamingRequestLifecycle({
+          controller,
+          timeoutMs: REQUEST_TIMEOUT_MS,
+          getMessage: () => responseText + remainText,
+          getResponse: () => responseRes,
+          onFinish: options.onFinish,
+          onError: options.onError,
+        });
 
         // animate response to make it looks smooth
         function animateResponseText() {
-          if (finished || controller.signal.aborted) {
+          if (lifecycle.isSettled() || controller.signal.aborted) {
             responseText += remainText;
+            remainText = "";
             console.log("[Response Animation] finished");
-            if (responseText?.length === 0) {
-              options.onError?.(new Error("empty response from server"));
-            }
             return;
           }
 
@@ -191,89 +192,129 @@ export class ErnieApi implements LLMApi {
         // start animaion
         animateResponseText();
 
-        const finish = () => {
-          if (!finished) {
-            finished = true;
-            options.onFinish(responseText + remainText, responseRes);
-          }
-        };
-
-        controller.signal.onabort = finish;
-
-        fetchEventSource(chatPath, {
+        void fetchEventSource(chatPath, {
           fetch: fetch as any,
           ...chatPayload,
           async onopen(res) {
-            clearTimeout(requestTimeoutId);
+            lifecycle.refresh();
             const contentType = res.headers.get("content-type");
             console.log("[Baidu] request response content type: ", contentType);
             responseRes = res;
-            if (contentType?.startsWith("text/plain")) {
-              responseText = await res.clone().text();
-              return finish();
-            }
-
             if (
               !res.ok ||
-              !res.headers
-                .get("content-type")
-                ?.startsWith(EventStreamContentType) ||
-              res.status !== 200
+              (!contentType?.startsWith("text/plain") &&
+                (!contentType?.startsWith(EventStreamContentType) ||
+                  res.status !== 200))
             ) {
-              const responseTexts = [responseText];
-              let extraInfo = await res.clone().text();
+              let responsePayload: unknown;
               try {
-                const resJson = await res.clone().json();
-                extraInfo = prettyObject(resJson);
-              } catch {}
-
-              if (res.status === 401) {
-                responseTexts.push(Locale.Error.Unauthorized);
+                responsePayload = await res.clone().json();
+              } catch {
+                responsePayload = { message: await res.clone().text() };
               }
 
-              if (extraInfo) {
-                responseTexts.push(extraInfo);
-              }
-
-              responseText = responseTexts.join("\n\n");
-
-              return finish();
+              lifecycle.fail(
+                new Error(
+                  getPublicHttpErrorMessage({
+                    response: res,
+                    payload: responsePayload,
+                    fallback:
+                      res.status === 401
+                        ? Locale.Error.Unauthorized
+                        : Locale.Error.RequestFailed(
+                            res.ok ? undefined : res.status,
+                          ),
+                    accessRestrictedMessage: Locale.Error.AccessRestricted,
+                  }),
+                ),
+              );
+              return;
+            }
+            if (contentType?.startsWith("text/plain")) {
+              responseText = await res.clone().text();
+              return lifecycle.finish();
             }
           },
           onmessage(msg) {
-            if (msg.data === "[DONE]" || finished) {
-              return finish();
+            lifecycle.refresh();
+            if (msg.data === "[DONE]" || lifecycle.isSettled()) {
+              return lifecycle.finish();
             }
             const text = msg.data;
             try {
               const json = JSON.parse(text);
+              if (hasUpstreamErrorPayload(json)) {
+                lifecycle.fail(
+                  new Error(
+                    getPublicHttpErrorMessage({
+                      response: responseRes,
+                      payload: json,
+                      fallback: Locale.Error.RequestFailed(),
+                      accessRestrictedMessage: Locale.Error.AccessRestricted,
+                    }),
+                  ),
+                );
+                return;
+              }
               const delta = json?.result;
               if (delta) {
                 remainText += delta;
               }
-            } catch (e) {
-              console.error("[Request] parse error", text, msg);
+            } catch {
+              console.error("[Request] failed to parse a streaming event");
             }
           },
           onclose() {
-            finish();
+            lifecycle.finish();
           },
           onerror(e) {
-            options.onError?.(e);
             throw e;
           },
           openWhenHidden: true,
-        });
+        })
+          .catch(lifecycle.fail)
+          .finally(lifecycle.cancel);
       } else {
-        const res = await fetch(chatPath, chatPayload);
-        clearTimeout(requestTimeoutId);
+        const { response: res, body: responseBody } =
+          await withAbortTimeoutResponse({
+            controller,
+            timeoutMs: REQUEST_TIMEOUT_MS,
+            operation: () => fetch(chatPath, chatPayload),
+            consume: readResponsePayload,
+          });
+        const resJson = responseBody.payload as any;
 
-        const resJson = await res.json();
-        const message = resJson?.result;
+        if (
+          !res.ok ||
+          !responseBody.isJson ||
+          hasUpstreamErrorPayload(resJson)
+        ) {
+          throw new Error(
+            getPublicHttpErrorMessage({
+              response: res,
+              payload: resJson ?? { message: responseBody.text },
+              fallback:
+                res.status === 401
+                  ? Locale.Error.Unauthorized
+                  : Locale.Error.RequestFailed(res.ok ? undefined : res.status),
+              accessRestrictedMessage: Locale.Error.AccessRestricted,
+            }),
+          );
+        }
+
+        const message =
+          getAccessRestrictedPublicErrorMessage({
+            response: res,
+            payload: resJson,
+            message: Locale.Error.AccessRestricted,
+          }) ?? resJson?.result;
+        if (typeof message !== "string" || message.length === 0) {
+          throw new Error(Locale.Error.RequestFailed());
+        }
         options.onFinish(message, res);
       }
     } catch (e) {
-      console.log("[Request] failed to make a chat request", e);
+      console.error("[Baidu] chat request failed");
       options.onError?.(e as Error);
     }
   }

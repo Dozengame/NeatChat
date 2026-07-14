@@ -6,6 +6,7 @@ import RehypeKatex from "rehype-katex";
 import RemarkGfm from "remark-gfm";
 import RehypeRaw from "rehype-raw";
 import RehypeHighlight from "rehype-highlight";
+import RehypeSanitize from "rehype-sanitize";
 import React, {
   createContext,
   useContext,
@@ -24,14 +25,29 @@ import DownloadIcon from "../icons/download.svg";
 import CopyIcon from "../icons/copy.svg";
 import ConfirmIcon from "../icons/confirm.svg";
 import ReturnIcon from "../icons/return.svg";
+import MaxIcon from "../icons/max.svg";
+import MinIcon from "../icons/min.svg";
 import { useDebouncedCallback } from "use-debounce";
 import { showToast } from "./ui-lib-actions";
 
 import { useAppConfig } from "../store/config";
 import { FileAttachment } from "./file-attachment";
-import { encode } from "../utils/token";
+import { estimateTokenLengthInLLM } from "../utils/token";
 import dynamic from "next/dynamic";
 import clsx from "clsx";
+import {
+  isSafeMarkdownImageSource,
+  markdownSanitizeSchema,
+} from "../utils/markdown-sanitize";
+import { ATTACHMENT_WIRE_LABELS } from "../utils/attachment-wire";
+import { shouldPromoteMarkdownSurface } from "../utils/markdown-surface-width";
+import {
+  findMarkdownAnchorTarget,
+  isMarkdownFragmentHref,
+  rehypeMarkdownHeadingAnchors,
+} from "../utils/markdown-anchor";
+
+export { isSafeMarkdownImageSource, markdownSanitizeSchema };
 
 const Mermaid = dynamic(async () => (await import("./mermaid")).Mermaid, {
   loading: () => null,
@@ -44,16 +60,28 @@ const HTMLPreview = dynamic(
   },
 );
 
-const MarkdownFeatureContext = createContext({
+export const MarkdownFeatureContext = createContext({
   enableArtifacts: true,
   enableCodeFold: true,
+  streaming: false,
 });
+
+const REHYPE_HIGHLIGHT_PLUGIN: [
+  typeof RehypeHighlight,
+  { detect: boolean; ignoreMissing: boolean },
+] = [
+  RehypeHighlight,
+  {
+    detect: false,
+    ignoreMissing: true,
+  },
+];
 
 function Details({
   node: _node,
   ...props
 }: React.DetailsHTMLAttributes<HTMLDetailsElement> & { node?: unknown }) {
-  return <details {...props} open />;
+  return <details {...props} />;
 }
 
 function Summary({
@@ -61,6 +89,76 @@ function Summary({
   ...props
 }: React.HTMLAttributes<HTMLElement> & { node?: unknown }) {
   return <summary {...props} />;
+}
+
+function ScrollableFormulaSpan({
+  node: _node,
+  className,
+  ...spanProps
+}: React.HTMLAttributes<HTMLSpanElement> & { node?: unknown }) {
+  const formulaRef = useRef<HTMLSpanElement>(null);
+  const [formulaIsScrollable, setFormulaIsScrollable] = useState(false);
+
+  const syncFormulaOverflow = useCallback(() => {
+    const formula = formulaRef.current;
+    const nextIsScrollable = Boolean(
+      formula && formula.scrollWidth - formula.clientWidth > 1,
+    );
+    setFormulaIsScrollable((current) =>
+      current === nextIsScrollable ? current : nextIsScrollable,
+    );
+  }, []);
+
+  useLayoutEffect(() => {
+    const frame = requestAnimationFrame(syncFormulaOverflow);
+    return () => cancelAnimationFrame(frame);
+  }, [spanProps.children, syncFormulaOverflow]);
+
+  useEffect(() => {
+    const formula = formulaRef.current;
+    if (!formula || typeof ResizeObserver === "undefined") {
+      syncFormulaOverflow();
+      window.addEventListener("resize", syncFormulaOverflow);
+      return () => window.removeEventListener("resize", syncFormulaOverflow);
+    }
+
+    const resizeObserver = new ResizeObserver(syncFormulaOverflow);
+    resizeObserver.observe(formula);
+    if (formula.firstElementChild) {
+      resizeObserver.observe(formula.firstElementChild);
+    }
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [syncFormulaOverflow]);
+
+  return (
+    <span
+      {...spanProps}
+      className={className}
+      ref={formulaRef}
+      data-chat-horizontal-scroll="true"
+      data-scrollable={formulaIsScrollable ? "true" : "false"}
+      tabIndex={formulaIsScrollable ? 0 : undefined}
+      role={formulaIsScrollable ? "region" : undefined}
+      aria-label={
+        formulaIsScrollable ? Locale.Markdown.ScrollableFormula : undefined
+      }
+    />
+  );
+}
+
+export function MarkdownSpan({
+  node: _node,
+  className,
+  ...spanProps
+}: React.HTMLAttributes<HTMLSpanElement> & { node?: unknown }) {
+  const isDisplayFormula = className?.split(/\s+/).includes("katex-display");
+  if (!isDisplayFormula) {
+    return <span {...spanProps} className={className} />;
+  }
+
+  return <ScrollableFormulaSpan {...spanProps} className={className} />;
 }
 
 function formatCodeLanguage(language: string) {
@@ -277,10 +375,51 @@ function splitChildrenIntoLines(
   return lines;
 }
 
+function MarkdownArtifactPreview({ htmlCode }: { htmlCode: string }) {
+  const { height: viewportHeight } = useWindowSize();
+  const [isWide, setIsWide] = useState(false);
+  const syncWidth = useCallback(
+    (metrics: { scrollWidth: number; clientWidth: number }) => {
+      setIsWide(
+        (current) =>
+          current ||
+          shouldPromoteMarkdownSurface(
+            metrics.scrollWidth,
+            metrics.clientWidth,
+          ),
+      );
+    },
+    [],
+  );
+  const autoHeight = !document.fullscreenElement;
+
+  return (
+    <figure
+      className="markdown-artifact-preview"
+      data-markdown-width={isWide ? "wide" : "normal"}
+    >
+      <figcaption className="markdown-artifact-preview-caption">
+        {Locale.Markdown.HtmlPreview}
+      </figcaption>
+      <div className="markdown-artifact-preview-frame">
+        <HTMLPreview
+          code={htmlCode}
+          accessibleTitle={Locale.Markdown.HtmlPreview}
+          runLabel={Locale.Markdown.RunHtmlPreview}
+          autoHeight={autoHeight}
+          height={autoHeight ? 600 : viewportHeight}
+          onLayoutMetrics={syncWidth}
+        />
+      </div>
+    </figure>
+  );
+}
+
 export function PreCode(props: { children: any }) {
   const ref = useRef<HTMLPreElement>(null);
   const [mermaidCode, setMermaidCode] = useState("");
   const [htmlCode, setHtmlCode] = useState("");
+  const [codeIsWide, setCodeIsWide] = useState(false);
   const [copied, setCopied] = useState(false);
   const [userWrapCode, setUserWrapCode] = useState<boolean | null>(null);
   const [codeScrollHint, setCodeScrollHint] = useState({
@@ -288,7 +427,6 @@ export function PreCode(props: { children: any }) {
     end: false,
   });
   const copyResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { height } = useWindowSize();
 
   const getCodeScrollElement = useCallback(() => ref.current, []);
 
@@ -309,6 +447,14 @@ export function PreCode(props: { children: any }) {
       0,
       codeScroller.scrollWidth - codeScroller.clientWidth,
     );
+    setCodeIsWide(
+      (current) =>
+        current ||
+        shouldPromoteMarkdownSurface(
+          codeScroller.scrollWidth,
+          codeScroller.clientWidth,
+        ),
+    );
     const nextHint = {
       start: codeScroller.scrollLeft > 1,
       end: maxScrollLeft - codeScroller.scrollLeft > 1,
@@ -324,9 +470,7 @@ export function PreCode(props: { children: any }) {
   const renderArtifacts = useDebouncedCallback(() => {
     if (!ref.current) return;
     const mermaidDom = ref.current.querySelector("code.language-mermaid");
-    if (mermaidDom) {
-      setMermaidCode((mermaidDom as HTMLElement).innerText);
-    }
+    setMermaidCode(mermaidDom ? (mermaidDom as HTMLElement).innerText : "");
     const htmlDom = ref.current.querySelector("code.language-html");
     const refText = ref.current.querySelector("code")?.innerText;
     if (htmlDom) {
@@ -337,23 +481,32 @@ export function PreCode(props: { children: any }) {
       refText?.startsWith("<?xml")
     ) {
       setHtmlCode(refText);
+    } else {
+      setHtmlCode("");
     }
   }, 600);
 
-  const config = useAppConfig();
+  const enableArtifactsInConfig = useAppConfig(
+    (state) => state.enableArtifacts,
+  );
   const features = useContext(MarkdownFeatureContext);
-  const enableArtifacts = features.enableArtifacts && config.enableArtifacts;
+  const streaming = features.streaming;
+  const enableArtifacts = features.enableArtifacts && enableArtifactsInConfig;
   const rawCodeLanguage = getRawCodeLanguage(props.children);
   const codeLanguage = getCodeLanguage(props.children);
   const shouldWrapCodeBlock = shouldWrapCodeLanguage(rawCodeLanguage);
   const isCodeWrapped = userWrapCode ?? shouldWrapCodeBlock;
+  const codeContentKey = useMemo(
+    () => `${rawCodeLanguage}\u0000${getNormalizedCodeText(props.children)}`,
+    [props.children, rawCodeLanguage],
+  );
   const codeLineNumbers = useMemo(
-    () => getCodeLineNumbers(props.children),
-    [props.children],
+    () => (streaming ? "" : getCodeLineNumbers(props.children)),
+    [props.children, streaming],
   );
   const codeLineCount = useMemo(
-    () => getCodeLineCount(props.children),
-    [props.children],
+    () => (streaming ? undefined : getCodeLineCount(props.children)),
+    [props.children, streaming],
   );
 
   useEffect(() => {
@@ -361,6 +514,11 @@ export function PreCode(props: { children: any }) {
   }, [rawCodeLanguage]);
 
   useLayoutEffect(() => {
+    setCodeIsWide(false);
+  }, [codeContentKey]);
+
+  useLayoutEffect(() => {
+    if (streaming) return;
     const scrollHintFrame = requestAnimationFrame(() => {
       if (isCodeWrapped && ref.current) {
         ref.current.scrollLeft = 0;
@@ -368,15 +526,17 @@ export function PreCode(props: { children: any }) {
       syncCodeScrollHint();
     });
     return () => cancelAnimationFrame(scrollHintFrame);
-  }, [isCodeWrapped, props.children, syncCodeScrollHint]);
+  }, [codeContentKey, isCodeWrapped, streaming, syncCodeScrollHint]);
 
   useEffect(() => {
+    if (streaming) return;
     if (!ref.current) return;
     const timer = setTimeout(renderArtifacts, 1);
     return () => clearTimeout(timer);
-  }, [props.children, renderArtifacts]);
+  }, [props.children, renderArtifacts, streaming]);
 
   useEffect(() => {
+    if (streaming) return;
     const codeScroller = getCodeScrollElement() ?? ref.current;
     if (!codeScroller) {
       window.addEventListener("resize", syncCodeScrollHint);
@@ -392,18 +552,16 @@ export function PreCode(props: { children: any }) {
       if (ref.current && ref.current !== codeScroller) {
         codeResizeObserver.observe(ref.current);
       }
+    } else {
+      window.addEventListener("resize", syncCodeScrollHint);
     }
-    codeScroller.addEventListener("scroll", syncCodeScrollHint, {
-      passive: true,
-    });
-    window.addEventListener("resize", syncCodeScrollHint);
-
     return () => {
       codeResizeObserver?.disconnect();
-      codeScroller.removeEventListener("scroll", syncCodeScrollHint);
-      window.removeEventListener("resize", syncCodeScrollHint);
+      if (!codeResizeObserver) {
+        window.removeEventListener("resize", syncCodeScrollHint);
+      }
     };
-  }, [getCodeScrollElement, props.children, syncCodeScrollHint]);
+  }, [getCodeScrollElement, props.children, streaming, syncCodeScrollHint]);
 
   useEffect(() => {
     return () => {
@@ -413,21 +571,10 @@ export function PreCode(props: { children: any }) {
     };
   }, []);
 
-  const codeCopyLabel = codeLanguage
-    ? copied
-      ? `已复制 ${codeLanguage} 代码`
-      : `复制 ${codeLanguage} 代码`
-    : copied
-    ? "已复制代码"
-    : "复制代码";
-  const codeWrapLabel = codeLanguage
-    ? isCodeWrapped
-      ? `关闭自动换行 ${codeLanguage} 代码`
-      : `自动换行 ${codeLanguage} 代码`
-    : isCodeWrapped
-    ? "关闭自动换行代码"
-    : "自动换行代码";
+  const codeCopyLabel = Locale.Markdown.CopyCode(codeLanguage, copied);
+  const codeWrapLabel = Locale.Markdown.WrapCode(codeLanguage, isCodeWrapped);
   const wrapState = isCodeWrapped ? "wrapped" : "scroll";
+  const codeSurfaceWidth = !isCodeWrapped && codeIsWide ? "wide" : "normal";
 
   return (
     <>
@@ -440,7 +587,9 @@ export function PreCode(props: { children: any }) {
         )}
         data-overflow-start={codeScrollHint.start ? "true" : "false"}
         data-overflow-end={codeScrollHint.end ? "true" : "false"}
+        data-chat-horizontal-scroll="true"
         data-wrap-state={wrapState}
+        data-markdown-width={codeSurfaceWidth}
         data-line-numbers={codeLineNumbers}
         data-line-count={codeLineCount}
         onScroll={syncCodeScrollHint}
@@ -453,48 +602,50 @@ export function PreCode(props: { children: any }) {
             {codeLanguage}
           </span>
         )}
-        <button
-          type="button"
-          className="wrap-code-button"
-          aria-label={codeWrapLabel}
-          aria-pressed={isCodeWrapped}
-          title={codeWrapLabel}
-          data-wrap-state={wrapState}
-          onClick={() => {
-            setUserWrapCode((current) => !(current ?? shouldWrapCodeBlock));
-          }}
-        >
-          <ReturnIcon />
-        </button>
-        <button
-          type="button"
-          className="copy-code-button"
-          aria-label={codeCopyLabel}
-          aria-live="polite"
-          aria-atomic="true"
-          title={codeCopyLabel}
-          data-copy-state={copied ? "copied" : "idle"}
-          onClick={() => {
-            if (ref.current) {
-              const codeElement = ref.current.querySelector("code");
-              copyToClipboard(
-                codeElement?.innerText ?? codeElement?.textContent ?? "",
-              );
-              setCopied(true);
+        <span className="markdown-code-actions">
+          <button
+            type="button"
+            className="wrap-code-button"
+            aria-label={codeWrapLabel}
+            aria-pressed={isCodeWrapped}
+            title={codeWrapLabel}
+            data-wrap-state={wrapState}
+            onClick={() => {
+              setUserWrapCode((current) => !(current ?? shouldWrapCodeBlock));
+            }}
+          >
+            <ReturnIcon />
+          </button>
+          <button
+            type="button"
+            className="copy-code-button"
+            aria-label={codeCopyLabel}
+            aria-live="polite"
+            aria-atomic="true"
+            title={codeCopyLabel}
+            data-copy-state={copied ? "copied" : "idle"}
+            onClick={() => {
+              if (ref.current) {
+                const codeElement = ref.current.querySelector("code");
+                copyToClipboard(
+                  codeElement?.innerText ?? codeElement?.textContent ?? "",
+                );
+                setCopied(true);
 
-              if (copyResetTimerRef.current) {
-                clearTimeout(copyResetTimerRef.current);
+                if (copyResetTimerRef.current) {
+                  clearTimeout(copyResetTimerRef.current);
+                }
+
+                copyResetTimerRef.current = setTimeout(() => {
+                  setCopied(false);
+                  copyResetTimerRef.current = null;
+                }, 1400);
               }
-
-              copyResetTimerRef.current = setTimeout(() => {
-                setCopied(false);
-                copyResetTimerRef.current = null;
-              }, 1400);
-            }
-          }}
-        >
-          {copied ? <ConfirmIcon /> : <CopyIcon />}
-        </button>
+            }}
+          >
+            {copied ? <ConfirmIcon /> : <CopyIcon />}
+          </button>
+        </span>
         <span
           className="copy-code-status"
           role="status"
@@ -521,15 +672,7 @@ export function PreCode(props: { children: any }) {
         <Mermaid code={mermaidCode} key={mermaidCode} />
       )}
       {htmlCode.length > 0 && enableArtifacts && (
-        <figure className="markdown-artifact-preview">
-          <div className="markdown-artifact-preview-frame">
-            <HTMLPreview
-              code={htmlCode}
-              autoHeight={!document.fullscreenElement}
-              height={!document.fullscreenElement ? 600 : height}
-            />
-          </div>
-        </figure>
+        <MarkdownArtifactPreview key={htmlCode} htmlCode={htmlCode} />
       )}
     </>
   );
@@ -543,6 +686,7 @@ export function CustomCode(props: {
   const config = useAppConfig();
   const features = useContext(MarkdownFeatureContext);
   const enableCodeFold = features.enableCodeFold && config.enableCodeFold;
+  const streaming = features.streaming;
 
   const codeBlockId = useId();
   const ref = useRef<HTMLPreElement>(null);
@@ -550,21 +694,22 @@ export function CustomCode(props: {
   const [showToggle, setShowToggle] = useState(false);
 
   useLayoutEffect(() => {
+    if (streaming) return;
     if (ref.current && !props.inline) {
       const codeHeight = ref.current.scrollHeight;
       setShowToggle(codeHeight > 400);
       ref.current.scrollTop = ref.current.scrollHeight;
     }
-  }, [props.children, props.inline]);
+  }, [props.children, props.inline, streaming]);
 
   const toggleCollapsed = () => {
     setCollapsed((collapsed) => !collapsed);
   };
 
   const lines = useMemo(() => {
-    if (props.inline) return null;
+    if (props.inline || streaming) return null;
     return splitChildrenIntoLines(props.children);
-  }, [props.children, props.inline]);
+  }, [props.children, props.inline, streaming]);
 
   const showMoreButton =
     !props.inline && showToggle && enableCodeFold && collapsed;
@@ -616,22 +761,198 @@ export function CustomCode(props: {
   );
 }
 
-function MarkdownTable({
+export function MarkdownTableHeader({
+  node: _node,
+  isHeader: _isHeader,
+  scope,
+  ...headerProps
+}: React.ThHTMLAttributes<HTMLTableCellElement> & {
+  node?: unknown;
+  isHeader?: boolean;
+}) {
+  return <th {...headerProps} scope={scope ?? "col"} />;
+}
+
+function parseCompactTableCellList(children: React.ReactNode) {
+  const parts = React.Children.toArray(children);
+  if (parts.length < 3 || parts.length % 2 === 0) return null;
+
+  const items: string[] = [];
+  for (let index = 0; index < parts.length; index += 1) {
+    const part = parts[index];
+    if (index % 2 === 1) {
+      if (!React.isValidElement(part) || part.type !== "br") return null;
+      continue;
+    }
+
+    if (typeof part !== "string") return null;
+    const match = part.match(/^\s*-\s+(\S(?:[\s\S]*\S)?)\s*$/);
+    if (!match) return null;
+    items.push(match[1]);
+  }
+
+  return items.length > 1 ? items : null;
+}
+
+export function MarkdownTableCell({
+  node: _node,
+  isHeader: _isHeader,
+  children,
+  ...cellProps
+}: React.TdHTMLAttributes<HTMLTableCellElement> & {
+  node?: unknown;
+  isHeader?: boolean;
+}) {
+  const compactListItems = parseCompactTableCellList(children);
+
+  return (
+    <td {...cellProps}>
+      {compactListItems ? (
+        <ul className="markdown-table-cell-list">
+          {compactListItems.map((item, index) => (
+            <li key={`${item}-${index}`}>{item}</li>
+          ))}
+        </ul>
+      ) : (
+        children
+      )}
+    </td>
+  );
+}
+
+function getMarkdownTableHeaderSummary(children: React.ReactNode) {
+  const headers: string[] = [];
+
+  const visit = (node: React.ReactNode) => {
+    if (headers.length >= 4 || !React.isValidElement(node)) return;
+    if (node.type === "th" || node.type === MarkdownTableHeader) {
+      const text = getReactTextContent(
+        (node.props as { children?: React.ReactNode }).children,
+      ).trim();
+      if (text) headers.push(text);
+      return;
+    }
+    React.Children.forEach(
+      (node.props as { children?: React.ReactNode }).children,
+      visit,
+    );
+  };
+
+  React.Children.forEach(children, visit);
+  return headers.join(", ");
+}
+
+function getMarkdownTableContentKey(node: React.ReactNode): string {
+  if (node == null || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") {
+    return `text:${String(node).length}:${String(node)}`;
+  }
+  if (Array.isArray(node)) {
+    return `[${node.map(getMarkdownTableContentKey).join("|")}]`;
+  }
+  if (!React.isValidElement(node)) return typeof node;
+
+  const props = node.props as {
+    children?: React.ReactNode;
+    className?: string;
+    colSpan?: number;
+    rowSpan?: number;
+    style?: React.CSSProperties;
+  };
+  let elementType = "element";
+  if (typeof node.type === "string") {
+    elementType = node.type;
+  } else if (node.type === MarkdownTableHeader) {
+    elementType = "th";
+  } else if (node.type === MarkdownTableCell) {
+    elementType = "td";
+  } else if (typeof node.type === "function") {
+    const componentType = node.type as {
+      displayName?: string;
+      name?: string;
+    };
+    elementType =
+      componentType.displayName || componentType.name || "component";
+  }
+
+  return [
+    `<${elementType}`,
+    `class=${props.className ?? ""}`,
+    `align=${String(props.style?.textAlign ?? "")}`,
+    `colSpan=${props.colSpan ?? ""}`,
+    `rowSpan=${props.rowSpan ?? ""}>`,
+    getMarkdownTableContentKey(props.children),
+    `</${elementType}>`,
+  ].join("|");
+}
+
+export function MarkdownTable({
   node: _node,
   ...tableProps
 }: React.TableHTMLAttributes<HTMLTableElement> & { node?: unknown }) {
+  const { streaming } = useContext(MarkdownFeatureContext);
+  const tableShellRef = useRef<HTMLDivElement>(null);
   const tableScrollRef = useRef<HTMLDivElement>(null);
+  const tableScrollbarRef = useRef<HTMLDivElement>(null);
+  const tableScrollbarThumbRef = useRef<HTMLSpanElement>(null);
+  const tableScrollbarDragRef = useRef<{
+    pointerId: number;
+    grabOffset: number;
+  } | null>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
+  const tableDialogRef = useRef<HTMLDialogElement>(null);
+  const tableExpandButtonRef = useRef<HTMLButtonElement>(null);
+  const tableCollapseButtonRef = useRef<HTMLButtonElement>(null);
+  const tableScrollPositionRef = useRef(0);
+  const tableIsExpandedRef = useRef(false);
+  const shouldRestoreTableFocusRef = useRef(false);
+  const tableDialogTitleId = useId();
+  const tableScrollViewportId = useId();
   const [tableScrollHint, setTableScrollHint] = useState({
     start: false,
     end: false,
   });
+  const [tableScrollbar, setTableScrollbar] = useState({
+    max: 0,
+    left: 0,
+    thumbProgress: 0,
+    thumbWidth: 100,
+  });
+  const [tableIsScrollable, setTableIsScrollable] = useState(false);
+  const [tableIsWide, setTableIsWide] = useState(false);
+  const [tableHintDismissed, setTableHintDismissed] = useState(false);
+  const [tableIsExpanded, setTableIsExpanded] = useState(false);
+  const [tablePlaceholderHeight, setTablePlaceholderHeight] = useState(0);
+  const tableHeaderSummary = useMemo(
+    () => getMarkdownTableHeaderSummary(tableProps.children),
+    [tableProps.children],
+  );
+  const tableContentKey = useMemo(
+    () =>
+      streaming
+        ? "streaming-table"
+        : getMarkdownTableContentKey(tableProps.children),
+    [streaming, tableProps.children],
+  );
 
   const syncTableScrollHint = useCallback(() => {
     const tableShell = tableScrollRef.current;
     if (!tableShell) {
+      setTableIsScrollable(false);
+      setTableScrollbar((current) =>
+        current.max ||
+        current.left ||
+        current.thumbProgress ||
+        current.thumbWidth !== 100
+          ? { max: 0, left: 0, thumbProgress: 0, thumbWidth: 100 }
+          : current,
+      );
       setTableScrollHint((current) =>
         current.start || current.end ? { start: false, end: false } : current,
       );
+      return;
+    }
+    if (tableShell.clientWidth <= 0 && tableShell.scrollWidth <= 0) {
       return;
     }
 
@@ -639,11 +960,56 @@ function MarkdownTable({
       0,
       tableShell.scrollWidth - tableShell.clientWidth,
     );
+    const nextIsScrollable = maxScrollLeft > 1;
     const nextHint = {
       start: tableShell.scrollLeft > 1,
       end: maxScrollLeft - tableShell.scrollLeft > 1,
     };
+    const tableScrollWidth = Math.max(
+      tableShell.clientWidth,
+      tableShell.scrollWidth,
+    );
+    const nextScrollbar = {
+      max: maxScrollLeft,
+      left: Math.min(maxScrollLeft, Math.max(0, tableShell.scrollLeft)),
+      thumbProgress:
+        maxScrollLeft > 0
+          ? (Math.max(0, tableShell.scrollLeft) / maxScrollLeft) * 100
+          : 0,
+      thumbWidth:
+        tableScrollWidth > 0
+          ? Math.min(100, (tableShell.clientWidth / tableScrollWidth) * 100)
+          : 100,
+    };
 
+    setTableIsScrollable((current) => {
+      const resolvedIsScrollable = tableIsExpandedRef.current
+        ? current || nextIsScrollable
+        : nextIsScrollable;
+      return current === resolvedIsScrollable ? current : resolvedIsScrollable;
+    });
+    if (!nextIsScrollable) {
+      setTableHintDismissed(false);
+    }
+    setTableScrollbar((current) =>
+      current.max === nextScrollbar.max &&
+      current.left === nextScrollbar.left &&
+      Math.abs(current.thumbProgress - nextScrollbar.thumbProgress) < 0.01 &&
+      Math.abs(current.thumbWidth - nextScrollbar.thumbWidth) < 0.01
+        ? current
+        : nextScrollbar,
+    );
+    const table = tableRef.current;
+    if (table) {
+      setTableIsWide(
+        (current) =>
+          current ||
+          shouldPromoteMarkdownSurface(
+            table.scrollWidth,
+            tableShell.clientWidth,
+          ),
+      );
+    }
     setTableScrollHint((current) =>
       current.start === nextHint.start && current.end === nextHint.end
         ? current
@@ -651,10 +1017,152 @@ function MarkdownTable({
     );
   }, []);
 
+  const scrollTableTo = useCallback(
+    (nextScrollLeft: number) => {
+      const tableViewport = tableScrollRef.current;
+      if (!tableViewport) return;
+      const maxScrollLeft = Math.max(
+        0,
+        tableViewport.scrollWidth - tableViewport.clientWidth,
+      );
+      const resolvedScrollLeft = Math.min(
+        maxScrollLeft,
+        Math.max(0, Math.round(nextScrollLeft)),
+      );
+      tableViewport.scrollLeft = resolvedScrollLeft;
+      tableScrollPositionRef.current = resolvedScrollLeft;
+      if (resolvedScrollLeft > 1) setTableHintDismissed(true);
+      syncTableScrollHint();
+    },
+    [syncTableScrollHint],
+  );
+
+  const scrollTableFromPointer = useCallback(
+    (clientX: number, grabOffset: number) => {
+      const tableViewport = tableScrollRef.current;
+      const scrollbar = tableScrollbarRef.current;
+      const thumb = tableScrollbarThumbRef.current;
+      if (!tableViewport || !scrollbar || !thumb) return;
+
+      const trackBounds = scrollbar.getBoundingClientRect();
+      const thumbBounds = thumb.getBoundingClientRect();
+      const thumbTravel = Math.max(0, trackBounds.width - thumbBounds.width);
+      const maxScrollLeft = Math.max(
+        0,
+        tableViewport.scrollWidth - tableViewport.clientWidth,
+      );
+      if (thumbTravel <= 0 || maxScrollLeft <= 0) return;
+
+      const nextThumbLeft = Math.min(
+        thumbTravel,
+        Math.max(0, clientX - trackBounds.left - grabOffset),
+      );
+      scrollTableTo((nextThumbLeft / thumbTravel) * maxScrollLeft);
+    },
+    [scrollTableTo],
+  );
+
+  const openExpandedTable = useCallback(() => {
+    if (streaming) return;
+    tableScrollPositionRef.current = tableScrollRef.current?.scrollLeft ?? 0;
+    tableIsExpandedRef.current = true;
+    setTablePlaceholderHeight(
+      tableShellRef.current?.getBoundingClientRect().height ?? 0,
+    );
+    setTableIsExpanded(true);
+  }, [streaming]);
+
+  const closeExpandedTable = useCallback(() => {
+    tableScrollPositionRef.current = tableScrollRef.current?.scrollLeft ?? 0;
+    tableIsExpandedRef.current = false;
+    shouldRestoreTableFocusRef.current = true;
+    setTableIsExpanded(false);
+  }, []);
+
+  const handleTableDialogKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDialogElement>) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        closeExpandedTable();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+      const dialog = tableDialogRef.current;
+      if (!dialog) return;
+      const focusableElements = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        dialog.focus({ preventScroll: true });
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus({ preventScroll: true });
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus({ preventScroll: true });
+      }
+    },
+    [closeExpandedTable],
+  );
+
   useLayoutEffect(() => {
+    if (!streaming) {
+      setTableIsWide(false);
+      setTableHintDismissed(false);
+    }
     const scrollHintFrame = requestAnimationFrame(syncTableScrollHint);
     return () => cancelAnimationFrame(scrollHintFrame);
-  }, [tableProps.children, syncTableScrollHint]);
+  }, [streaming, syncTableScrollHint, tableContentKey]);
+
+  useLayoutEffect(() => {
+    const tableViewport = tableScrollRef.current;
+    if (tableViewport) {
+      tableViewport.scrollLeft = tableScrollPositionRef.current;
+    }
+    const scrollHintFrame = requestAnimationFrame(syncTableScrollHint);
+    return () => cancelAnimationFrame(scrollHintFrame);
+  }, [tableIsExpanded, syncTableScrollHint]);
+
+  useLayoutEffect(() => {
+    if (!tableIsExpanded) {
+      if (shouldRestoreTableFocusRef.current) {
+        shouldRestoreTableFocusRef.current = false;
+        tableExpandButtonRef.current?.focus({ preventScroll: true });
+      }
+      return;
+    }
+
+    const dialog = tableDialogRef.current;
+    if (!dialog) return;
+    if (!dialog.open) {
+      try {
+        if (typeof dialog.showModal === "function") {
+          dialog.showModal();
+        } else {
+          dialog.setAttribute("open", "");
+        }
+      } catch {
+        dialog.setAttribute("open", "");
+      }
+    }
+    tableCollapseButtonRef.current?.focus({ preventScroll: true });
+
+    return () => {
+      if (dialog.open && typeof dialog.close === "function") {
+        dialog.close();
+      }
+    };
+  }, [tableIsExpanded]);
 
   useEffect(() => {
     const tableShell = tableScrollRef.current;
@@ -667,30 +1175,208 @@ function MarkdownTable({
       syncTableScrollHint();
     });
     tableResizeObserver.observe(tableShell);
-    window.addEventListener("resize", syncTableScrollHint);
-
+    if (tableRef.current) {
+      tableResizeObserver.observe(tableRef.current);
+    }
     return () => {
       tableResizeObserver.disconnect();
-      window.removeEventListener("resize", syncTableScrollHint);
     };
-  }, [syncTableScrollHint]);
+  }, [syncTableScrollHint, tableIsExpanded]);
 
-  return (
+  const tableSurface = (
     <div
+      ref={tableShellRef}
       className="markdown-table-scroll-shell"
+      data-markdown-width={tableIsWide ? "wide" : "normal"}
+      data-scrollable={tableIsScrollable ? "true" : "false"}
+      data-expanded={tableIsExpanded ? "true" : "false"}
+      data-scroll-hint={
+        tableIsScrollable && !tableHintDismissed && !tableIsExpanded
+          ? "true"
+          : "false"
+      }
       data-overflow-start={tableScrollHint.start ? "true" : "false"}
       data-overflow-end={tableScrollHint.end ? "true" : "false"}
     >
+      {!streaming && (tableIsScrollable || tableIsExpanded) && (
+        <div
+          className="markdown-table-toolbar"
+          role="toolbar"
+          aria-label={Locale.Markdown.TableToolbar}
+        >
+          <span
+            id={tableIsExpanded ? tableDialogTitleId : undefined}
+            className="markdown-table-toolbar-label"
+          >
+            {tableIsExpanded
+              ? Locale.Markdown.TableDialog(tableHeaderSummary)
+              : Locale.Markdown.ScrollableTableHint}
+          </span>
+          <button
+            ref={
+              tableIsExpanded ? tableCollapseButtonRef : tableExpandButtonRef
+            }
+            type="button"
+            className="markdown-table-toolbar-button"
+            aria-haspopup={tableIsExpanded ? undefined : "dialog"}
+            aria-expanded={tableIsExpanded ? undefined : false}
+            aria-label={
+              tableIsExpanded
+                ? Locale.Markdown.CollapseTable
+                : Locale.Markdown.ExpandTable
+            }
+            title={
+              tableIsExpanded
+                ? Locale.Markdown.CollapseTable
+                : Locale.Markdown.ExpandTable
+            }
+            onClick={tableIsExpanded ? closeExpandedTable : openExpandedTable}
+          >
+            {tableIsExpanded ? <MinIcon /> : <MaxIcon />}
+          </button>
+        </div>
+      )}
       <div
+        id={tableScrollViewportId}
         ref={tableScrollRef}
         className="markdown-table-scroll-viewport"
-        tabIndex={0}
-        role="region"
-        aria-label="Markdown 表格，可横向滚动"
-        onScroll={syncTableScrollHint}
+        data-chat-horizontal-scroll="true"
+        tabIndex={tableScrollbar.max > 1 ? 0 : undefined}
+        role={tableScrollbar.max > 1 ? "region" : undefined}
+        aria-label={
+          tableScrollbar.max > 1
+            ? Locale.Markdown.ScrollableTable(tableHeaderSummary)
+            : undefined
+        }
+        onScroll={() => {
+          tableScrollPositionRef.current =
+            tableScrollRef.current?.scrollLeft ?? 0;
+          if (Math.abs(tableScrollPositionRef.current) > 1) {
+            setTableHintDismissed(true);
+          }
+          syncTableScrollHint();
+        }}
       >
-        <table {...tableProps} />
+        <table {...tableProps} ref={tableRef} />
       </div>
+      {tableScrollbar.max > 1 && (
+        <div
+          ref={tableScrollbarRef}
+          className="markdown-table-scrollbar"
+          data-chat-horizontal-scroll="true"
+          role="slider"
+          tabIndex={0}
+          aria-controls={tableScrollViewportId}
+          aria-label={Locale.Markdown.TableScrollbar}
+          aria-orientation="horizontal"
+          aria-valuemin={0}
+          aria-valuemax={tableScrollbar.max}
+          aria-valuenow={Math.min(tableScrollbar.left, tableScrollbar.max)}
+          aria-valuetext={Locale.Markdown.TableScrollPosition(
+            tableScrollbar.max > 0
+              ? Math.round((tableScrollbar.left / tableScrollbar.max) * 100)
+              : 0,
+          )}
+          onKeyDown={(event) => {
+            const tableViewport = tableScrollRef.current;
+            if (!tableViewport) return;
+            const arrowStep = Math.max(
+              24,
+              Math.round(tableViewport.clientWidth * 0.08),
+            );
+            const pageStep = Math.max(
+              arrowStep,
+              Math.round(tableViewport.clientWidth * 0.8),
+            );
+            let nextScrollLeft: number | undefined;
+
+            if (event.key === "Home") nextScrollLeft = 0;
+            if (event.key === "End") nextScrollLeft = tableScrollbar.max;
+            if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
+              nextScrollLeft = tableScrollbar.left - arrowStep;
+            }
+            if (event.key === "ArrowRight" || event.key === "ArrowUp") {
+              nextScrollLeft = tableScrollbar.left + arrowStep;
+            }
+            if (event.key === "PageUp") {
+              nextScrollLeft = tableScrollbar.left + pageStep;
+            }
+            if (event.key === "PageDown") {
+              nextScrollLeft = tableScrollbar.left - pageStep;
+            }
+            if (nextScrollLeft === undefined) return;
+            event.preventDefault();
+            scrollTableTo(nextScrollLeft);
+          }}
+          onPointerDown={(event) => {
+            if (
+              event.isPrimary === false ||
+              (event.pointerType === "mouse" && event.button !== 0)
+            ) {
+              return;
+            }
+            const thumb = tableScrollbarThumbRef.current;
+            if (!thumb) return;
+            const thumbBounds = thumb.getBoundingClientRect();
+            const grabbedThumb =
+              event.clientX >= thumbBounds.left &&
+              event.clientX <= thumbBounds.right;
+            const grabOffset = grabbedThumb
+              ? event.clientX - thumbBounds.left
+              : thumbBounds.width / 2;
+
+            event.preventDefault();
+            event.currentTarget.focus({ preventScroll: true });
+            tableScrollbarDragRef.current = {
+              pointerId: event.pointerId,
+              grabOffset,
+            };
+            event.currentTarget.setPointerCapture?.(event.pointerId);
+            if (!grabbedThumb) {
+              scrollTableFromPointer(event.clientX, grabOffset);
+            }
+          }}
+          onPointerMove={(event) => {
+            const drag = tableScrollbarDragRef.current;
+            if (!drag || drag.pointerId !== event.pointerId) return;
+            scrollTableFromPointer(event.clientX, drag.grabOffset);
+          }}
+          onPointerUp={(event) => {
+            const drag = tableScrollbarDragRef.current;
+            if (!drag || drag.pointerId !== event.pointerId) return;
+            scrollTableFromPointer(event.clientX, drag.grabOffset);
+            tableScrollbarDragRef.current = null;
+            if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+          }}
+          onPointerCancel={(event) => {
+            if (tableScrollbarDragRef.current?.pointerId !== event.pointerId) {
+              return;
+            }
+            tableScrollbarDragRef.current = null;
+            if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+          }}
+          onLostPointerCapture={(event) => {
+            if (tableScrollbarDragRef.current?.pointerId === event.pointerId) {
+              tableScrollbarDragRef.current = null;
+            }
+          }}
+        >
+          <span
+            ref={tableScrollbarThumbRef}
+            aria-hidden="true"
+            className="markdown-table-scrollbar-thumb"
+            style={{
+              left: `${tableScrollbar.thumbProgress}%`,
+              transform: `translateX(-${tableScrollbar.thumbProgress}%)`,
+              width: `${tableScrollbar.thumbWidth}%`,
+            }}
+          />
+        </div>
+      )}
       {tableScrollHint.start && (
         <span
           aria-hidden="true"
@@ -703,7 +1389,43 @@ function MarkdownTable({
           className="markdown-table-scroll-fade markdown-table-scroll-fade-end"
         />
       )}
+      {tableIsScrollable && !tableHintDismissed && !tableIsExpanded && (
+        <div className="markdown-table-scroll-hint" aria-hidden="true">
+          {Locale.Markdown.ScrollableTableHint}
+        </div>
+      )}
     </div>
+  );
+
+  if (!tableIsExpanded) return tableSurface;
+
+  return (
+    <>
+      <div
+        aria-hidden="true"
+        className="markdown-table-fullscreen-placeholder"
+        data-markdown-width={tableIsWide ? "wide" : "normal"}
+        style={{ height: tablePlaceholderHeight }}
+      />
+      <dialog
+        ref={tableDialogRef}
+        className="markdown-table-fullscreen-dialog"
+        aria-modal="true"
+        aria-labelledby={tableDialogTitleId}
+        onCancel={(event) => {
+          event.preventDefault();
+          closeExpandedTable();
+        }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            closeExpandedTable();
+          }
+        }}
+        onKeyDown={handleTableDialogKeyDown}
+      >
+        {tableSurface}
+      </dialog>
+    </>
   );
 }
 
@@ -903,6 +1625,8 @@ type DetectedFileAttachment = {
   fileType: string;
   fileSize: number;
   content: string;
+  startIndex: number;
+  endIndex: number;
 };
 
 const fileAttachmentHrefPrefix = "#neatchat-file-attachment?";
@@ -914,6 +1638,8 @@ const videoMediaExtensions = new Set([
   "ogv",
   "mpeg",
   "mp4",
+  "m4v",
+  "mov",
   "avi",
 ]);
 
@@ -973,11 +1699,12 @@ function MarkdownMediaCard({
   children: React.ReactNode;
 }) {
   const [hasError, setHasError] = useState(false);
-  const typeLabel = kind === "audio" ? "音频" : "视频";
+  const typeLabel =
+    kind === "audio" ? Locale.Markdown.Audio : Locale.Markdown.Video;
   const mediaLabel =
     getReactTextContent(children).trim() || getMediaFileName(href) || href;
-  const mediaAriaLabel = `${typeLabel}附件：${mediaLabel}`;
-  const fallbackText = `${typeLabel}暂时无法预览，可打开原文件查看。`;
+  const mediaAriaLabel = Locale.Markdown.MediaAttachment(typeLabel, mediaLabel);
+  const fallbackText = Locale.Markdown.MediaFallback(typeLabel);
 
   return (
     <span
@@ -1007,10 +1734,10 @@ function MarkdownMediaCard({
           src={href}
           aria-label={mediaAriaLabel}
           onError={() => setHasError(true)}
-        >
-          <track kind="captions" />
-        </audio>
+        ></audio>
       ) : (
+        // The Markdown media model does not currently carry caption resources.
+        // eslint-disable-next-line jsx-a11y/media-has-caption
         <video
           className="markdown-video-player"
           controls
@@ -1019,7 +1746,6 @@ function MarkdownMediaCard({
           onError={() => setHasError(true)}
         >
           <source src={href} onError={() => setHasError(true)} />
-          <track kind="captions" />
         </video>
       )}
       <span className="markdown-media-footer">
@@ -1029,7 +1755,7 @@ function MarkdownMediaCard({
           target="_blank"
           rel="noopener noreferrer"
         >
-          打开原文件
+          {Locale.Markdown.OpenOriginal}
         </a>
       </span>
     </span>
@@ -1037,21 +1763,55 @@ function MarkdownMediaCard({
 }
 
 function detectFileAttachments(content: string): DetectedFileAttachment[] {
-  const fileRegex =
-    /文件名: (.+?)\n类型: (.+?)\n大小: (.+?) KB\n\n([\s\S]+?)(?=\n\n---|$)/g;
-  let match;
+  const escapePattern = (value: string) =>
+    value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const currentLabels = Locale.Chat.Attachments.FileMetadata;
+  const labelSets = [
+    [currentLabels.Name, currentLabels.Type, currentLabels.Size],
+    [
+      ATTACHMENT_WIRE_LABELS.name,
+      ATTACHMENT_WIRE_LABELS.type,
+      ATTACHMENT_WIRE_LABELS.size,
+    ],
+    ["File name", "Type", "Size"],
+  ].filter(
+    (labels, index, allLabels) =>
+      allLabels.findIndex(
+        (candidate) => candidate.join("\u0000") === labels.join("\u0000"),
+      ) === index,
+  );
   const files: DetectedFileAttachment[] = [];
 
-  while ((match = fileRegex.exec(content)) !== null) {
-    files.push({
-      fileName: match[1],
-      fileType: match[2],
-      fileSize: parseFloat(match[3]) * 1024,
-      content: match[4],
-    });
-  }
+  labelSets.forEach(([nameLabel, typeLabel, sizeLabel]) => {
+    const fileRegex = new RegExp(
+      `${escapePattern(nameLabel)}: (.+?)\\n${escapePattern(
+        typeLabel,
+      )}: (.+?)\\n${escapePattern(
+        sizeLabel,
+      )}: (.+?) KB\\n\\n([\\s\\S]+?)(?=\\n\\n---|$)`,
+      "g",
+    );
+    let match: RegExpExecArray | null;
+    while ((match = fileRegex.exec(content)) !== null) {
+      files.push({
+        fileName: match[1],
+        fileType: match[2],
+        fileSize: parseFloat(match[3]) * 1024,
+        content: match[4],
+        startIndex: match.index,
+        endIndex: fileRegex.lastIndex,
+      });
+    }
+  });
 
-  return files;
+  return files
+    .sort((left, right) => left.startIndex - right.startIndex)
+    .filter(
+      (file, index, allFiles) =>
+        allFiles.findIndex(
+          (candidate) => candidate.startIndex === file.startIndex,
+        ) === index,
+    );
 }
 
 function replaceFileAttachments(content: string) {
@@ -1063,26 +1823,18 @@ function replaceFileAttachments(content: string) {
 
   let newContent = content;
 
-  files.forEach((file) => {
-    const fileMarker = `文件名: ${file.fileName}\n类型: ${
-      file.fileType
-    }\n大小: ${(file.fileSize / 1024).toFixed(2)} KB\n\n`;
-    const replacement = `[📄 ${file.fileName}](${createFileAttachmentHref(
-      file,
-    )})`;
-    const startIndex = newContent.indexOf(fileMarker);
-
-    if (startIndex >= 0) {
-      const contentStart = startIndex + fileMarker.length;
-      let contentEnd = newContent.indexOf("\n\n---\n\n", contentStart);
-      if (contentEnd < 0) contentEnd = newContent.length;
-
+  files
+    .slice()
+    .sort((left, right) => right.startIndex - left.startIndex)
+    .forEach((file) => {
+      const replacement = `[📄 ${file.fileName}](${createFileAttachmentHref(
+        file,
+      )})`;
       newContent =
-        newContent.substring(0, startIndex) +
+        newContent.substring(0, file.startIndex) +
         replacement +
-        newContent.substring(contentEnd);
-    }
-  });
+        newContent.substring(file.endIndex);
+    });
 
   return newContent;
 }
@@ -1090,9 +1842,11 @@ function replaceFileAttachments(content: string) {
 function MarkDownContentInner(
   props: {
     content: string;
+    streaming?: boolean;
   } & MarkdownImageActionProps,
 ) {
-  const { content } = props;
+  const { content, streaming = false } = props;
+  const markdownAnchorScope = useId();
   const escapedContent = useMemo(() => {
     // 检查是否是 base64 图像数据
     try {
@@ -1154,14 +1908,10 @@ function MarkDownContentInner(
       remarkPlugins={[RemarkMath, RemarkGfm, RemarkBreaks]}
       rehypePlugins={[
         RehypeRaw,
+        [RehypeSanitize, markdownSanitizeSchema],
+        [rehypeMarkdownHeadingAnchors, { scope: markdownAnchorScope }],
         RehypeKatex,
-        [
-          RehypeHighlight,
-          {
-            detect: false,
-            ignoreMissing: true,
-          },
-        ],
+        ...(!streaming ? [REHYPE_HIGHLIGHT_PLUGIN] : []),
       ]}
       components={{
         // 添加自定义组件处理
@@ -1181,7 +1931,8 @@ function MarkDownContentInner(
                 href.slice(fileAttachmentHrefPrefix.length),
               );
               const fileName = params.get("name") || "";
-              const fileType = params.get("type") || "未知类型";
+              const fileType =
+                params.get("type") || Locale.Markdown.UnknownType;
               const fileSize = parseFloat(params.get("size") || "0");
 
               // 忽略链接文本，直接使用 FileAttachment 组件
@@ -1193,40 +1944,31 @@ function MarkDownContentInner(
                   onClick={() => {
                     try {
                       // 点击时显示文件内容
-                      showToast("文件内容已复制到剪贴板");
-                      // 使用更安全的方式查找文件内容
-                      const fileMarker = `文件名: ${fileName}\n类型: ${fileType}\n大小: ${(
-                        fileSize / 1024
-                      ).toFixed(2)} KB\n\n`;
-                      const startIndex = props.content.indexOf(fileMarker);
+                      showToast(Locale.Markdown.FileCopied);
+                      const detectedFile = detectFileAttachments(
+                        props.content,
+                      ).find(
+                        (file) =>
+                          file.fileName === fileName &&
+                          file.fileType === fileType &&
+                          Math.abs(file.fileSize - fileSize) < 1,
+                      );
 
-                      if (startIndex >= 0) {
-                        const contentStart =
-                          props.content.indexOf("\n\n", startIndex) + 2;
-                        let contentEnd = props.content.indexOf(
-                          "\n\n---\n\n",
-                          contentStart,
-                        );
-                        if (contentEnd < 0) contentEnd = props.content.length;
-
-                        const fileContent = props.content.substring(
-                          contentStart,
-                          contentEnd,
-                        );
-                        copyToClipboard(fileContent);
+                      if (detectedFile) {
+                        copyToClipboard(detectedFile.content);
                       } else {
-                        copyToClipboard("无法找到文件内容");
+                        copyToClipboard(Locale.Markdown.FileNotFound);
                       }
                     } catch (error) {
                       console.error("复制文件内容时出错:", error);
-                      showToast("复制文件内容失败");
+                      showToast(Locale.Markdown.FileCopyFailed);
                     }
                   }}
                 />
               );
             } catch (error) {
               console.error("解析文件附件链接出错:", error);
-              return <span>文件附件加载失败</span>;
+              return <span>{Locale.Markdown.FileLoadFailed}</span>;
             }
           }
 
@@ -1250,6 +1992,46 @@ function MarkDownContentInner(
             );
           }
 
+          if (isMarkdownFragmentHref(href)) {
+            return (
+              <a
+                {...aProps}
+                href={href}
+                target={undefined}
+                rel={undefined}
+                onClick={(event) => {
+                  event.preventDefault();
+                  const markdownRoot =
+                    event.currentTarget.closest(".markdown-body");
+                  if (!markdownRoot) return;
+
+                  const target = findMarkdownAnchorTarget(markdownRoot, href);
+                  if (!target) return;
+
+                  if (!target.hasAttribute("tabindex")) {
+                    target.tabIndex = -1;
+                  }
+                  try {
+                    target.focus({ preventScroll: true });
+                  } catch {
+                    target.focus();
+                  }
+                  target.scrollIntoView({
+                    behavior: window.matchMedia?.(
+                      "(prefers-reduced-motion: reduce)",
+                    ).matches
+                      ? "auto"
+                      : "smooth",
+                    block: "start",
+                    inline: "nearest",
+                  });
+                }}
+              >
+                {aProps.children || href}
+              </a>
+            );
+          }
+
           // 处理其他安全链接
           const isInternal = /^\/#/i.test(href);
           const target = isInternal ? "_self" : aProps.target ?? "_blank";
@@ -1264,23 +2046,41 @@ function MarkDownContentInner(
         pre: PreCode,
         code: CustomCode,
         table: MarkdownTable,
+        th: MarkdownTableHeader,
+        td: MarkdownTableCell,
         img: (imgProps) => {
-          const src =
+          const candidateSrc =
             typeof imgProps.src === "string" ? imgProps.src.trim() : "";
+          const src = isSafeMarkdownImageSource(candidateSrc)
+            ? candidateSrc
+            : "";
           const alt = typeof imgProps.alt === "string" ? imgProps.alt : "";
           const imageActionLabels = getImageActionLabels(alt);
+
+          if (!src) {
+            return <span>{alt}</span>;
+          }
 
           if (!src || (!props.onPreviewImage && !props.onDownloadImage)) {
             return (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img {...imgProps} alt={alt} src={src} />
+                <img
+                  {...imgProps}
+                  alt={alt}
+                  src={src}
+                  loading="lazy"
+                  decoding="async"
+                />
               </>
             );
           }
 
           return (
-            <span className="markdown-image-frame">
+            <span
+              className="markdown-image-frame"
+              data-chat-horizontal-scroll="true"
+            >
               <button
                 type="button"
                 className="markdown-image-preview-button"
@@ -1296,6 +2096,8 @@ function MarkDownContentInner(
                   alt={alt}
                   src={src}
                   className="markdown-image-preview"
+                  loading="lazy"
+                  decoding="async"
                 />
               </button>
               {props.onDownloadImage && (
@@ -1317,6 +2119,7 @@ function MarkDownContentInner(
           );
         },
         p: (pProps) => <p {...pProps} dir="auto" />,
+        span: MarkdownSpan,
         details: Details,
         summary: Summary,
       }}
@@ -1338,10 +2141,8 @@ export function Markdown(
     isUser?: boolean;
     messageId?: string;
     streaming?: boolean;
-    shouldAutoScroll?: boolean;
     enableArtifacts?: boolean;
     enableCodeFold?: boolean;
-    onContentChange?: () => void;
   } & MarkdownImageActionProps,
 ) {
   const {
@@ -1352,15 +2153,12 @@ export function Markdown(
     loading,
     messageId,
     streaming,
-    shouldAutoScroll,
     enableArtifacts = true,
     enableCodeFold = true,
-    onContentChange,
     onPreviewImage,
     onDownloadImage,
   } = props;
   const mdRef = useRef<HTMLDivElement>(null);
-  const lastContentRef = useRef(content);
 
   // 添加token计数状态和首字延迟状态
   const tokenInfo = useMemo<{
@@ -1378,7 +2176,7 @@ export function Markdown(
         : null;
 
       return {
-        count: encode(content).length,
+        count: estimateTokenLengthInLLM(content),
         isUser: isUser ?? false,
         firstCharDelay: storedDelay ? parseInt(storedDelay) : undefined,
       };
@@ -1388,8 +2186,8 @@ export function Markdown(
     }
   }, [content, isUser, messageId, streaming]);
   const markdownFeatures = useMemo(
-    () => ({ enableArtifacts, enableCodeFold }),
-    [enableArtifacts, enableCodeFold],
+    () => ({ enableArtifacts, enableCodeFold, streaming: !!streaming }),
+    [enableArtifacts, enableCodeFold, streaming],
   );
   const messageStartTimeRef = useRef<number | null>(null);
   const firstCharReceivedTimeRef = useRef<number | null>(null);
@@ -1397,32 +2195,26 @@ export function Markdown(
   // 添加鼠标悬停状态
   const [isHovering, setIsHovering] = useState(false);
   const tokenFirstCharDelay = tokenInfo?.firstCharDelay;
-  const showTokenDelay = Boolean(tokenFirstCharDelay && isHovering);
-  const tokenDelayText = tokenFirstCharDelay
-    ? Locale.Chat.TokenInfo.FirstDelay(tokenFirstCharDelay)
+  const hasTokenFirstCharDelay =
+    Number.isFinite(tokenFirstCharDelay) && (tokenFirstCharDelay ?? -1) >= 0;
+  const showTokenDelay = hasTokenFirstCharDelay && isHovering;
+  const tokenDelayText = hasTokenFirstCharDelay
+    ? Locale.Chat.TokenInfo.FirstDelay(tokenFirstCharDelay!)
     : "";
   const tokenCountText = tokenInfo
     ? Locale.Chat.TokenInfo.TokenCount(tokenInfo.count)
     : "";
-  const tokenInfoLabel = tokenInfo
-    ? ["Token 信息", tokenCountText, tokenDelayText].filter(Boolean).join("，")
-    : "Token 信息";
+  const tokenInfoLabel = Locale.Chat.TokenInfo.Label(
+    [tokenCountText, tokenDelayText].filter(Boolean).join(", "),
+  );
 
   // 初始化消息发送时间
   useLayoutEffect(() => {
     if (loading && !isUser && !messageStartTimeRef.current) {
       // 记录消息开始请求的时间
       messageStartTimeRef.current = Date.now();
-
-      // 保存到localStorage
-      if (messageId) {
-        localStorage.setItem(
-          `msg_start_${messageId}`,
-          messageStartTimeRef.current.toString(),
-        );
-      }
     }
-  }, [loading, isUser, messageId]);
+  }, [loading, isUser]);
 
   useLayoutEffect(() => {
     if (
@@ -1446,17 +2238,6 @@ export function Markdown(
     }
   }, [content, isUser, messageId]);
 
-  // 自动滚动效果
-  useLayoutEffect(() => {
-    if (content === lastContentRef.current) return;
-
-    if (shouldAutoScroll) {
-      onContentChange?.();
-    }
-
-    lastContentRef.current = content;
-  }, [content, onContentChange, shouldAutoScroll]);
-
   return (
     <div className="markdown-body-container">
       <div
@@ -1474,7 +2255,7 @@ export function Markdown(
         }
       >
         {loading ? (
-          <>
+          <div className="markdown-loading-track">
             <div
               className="markdown-loading-status"
               role="status"
@@ -1489,11 +2270,12 @@ export function Markdown(
                 {Locale.Chat.Typing}
               </span>
             </div>
-          </>
+          </div>
         ) : (
           <MarkdownFeatureContext.Provider value={markdownFeatures}>
             <MarkdownContent
               content={content}
+              streaming={streaming}
               onPreviewImage={onPreviewImage}
               onDownloadImage={onDownloadImage}
             />
@@ -1502,24 +2284,30 @@ export function Markdown(
       </div>
 
       {/* Token信息显示 */}
-      {!loading && tokenInfo && (
+      {!loading && tokenInfo && hasTokenFirstCharDelay && (
         <button
           type="button"
           className="token-info"
           aria-label={tokenInfoLabel}
           aria-pressed={showTokenDelay}
           data-token-info-expanded={showTokenDelay ? "true" : "false"}
-          onMouseEnter={() => tokenFirstCharDelay && setIsHovering(true)}
+          onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
           onClick={() => {
             // 点击时切换显示状态
-            if (tokenFirstCharDelay) {
-              setIsHovering(!isHovering);
-            }
+            setIsHovering(!isHovering);
           }}
         >
           {showTokenDelay ? tokenDelayText : tokenCountText}
         </button>
+      )}
+      {!loading && tokenInfo && !hasTokenFirstCharDelay && (
+        <span
+          className="token-info token-info-static"
+          aria-label={tokenInfoLabel}
+        >
+          {tokenCountText}
+        </span>
       )}
     </div>
   );

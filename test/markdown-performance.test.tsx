@@ -1,5 +1,5 @@
 jest.mock("../app/utils/token", () => ({
-  encode: jest.fn((text: string) => text.split("")),
+  estimateTokenLengthInLLM: jest.fn((text: string) => text.length),
 }));
 
 jest.mock("../app/store", () => ({
@@ -16,31 +16,44 @@ jest.mock("../app/store/config", () => ({
   })),
 }));
 
-jest.mock("react-markdown", () => {
-  const React = require("react");
-  return {
-    __esModule: true,
-    default: ({ children }: { children: any }) =>
-      React.createElement("div", null, children),
-  };
-});
+type ReactMarkdownMockProps = {
+  children: React.ReactNode;
+  rehypePlugins?: unknown[];
+};
+
+const mockReactMarkdown = jest.fn(({ children }: ReactMarkdownMockProps) => (
+  <div>{children}</div>
+));
+
+jest.mock("react-markdown", () => ({
+  __esModule: true,
+  default: (props: ReactMarkdownMockProps) => mockReactMarkdown(props),
+}));
 
 jest.mock("remark-math", () => jest.fn());
 jest.mock("remark-breaks", () => jest.fn());
 jest.mock("remark-gfm", () => jest.fn());
 jest.mock("rehype-katex", () => jest.fn());
 jest.mock("rehype-raw", () => jest.fn());
-jest.mock("rehype-highlight", () => jest.fn());
+jest.mock("rehype-highlight", () => ({ __esModule: true, default: jest.fn() }));
+jest.mock("rehype-sanitize", () => ({
+  __esModule: true,
+  default: jest.fn(),
+  defaultSchema: { tagNames: [], attributes: {}, protocols: {} },
+}));
 
 jest.mock("next/dynamic", () => {
-  return () => function DynamicPlaceholder() {
-    return null;
-  };
+  return () =>
+    function DynamicPlaceholder() {
+      return null;
+    };
 });
 
 import { fireEvent, render, screen } from "@testing-library/react";
-import { encode } from "../app/utils/token";
-import { Markdown } from "../app/components/markdown";
+import { estimateTokenLengthInLLM } from "../app/utils/token";
+import { Markdown, MarkdownSpan } from "../app/components/markdown";
+import Locale from "../app/locales";
+import RehypeHighlight from "rehype-highlight";
 
 describe("Markdown performance", () => {
   beforeEach(() => {
@@ -55,86 +68,131 @@ describe("Markdown performance", () => {
 
     rerender(<Markdown content="hello world" messageId="m1" streaming />);
 
-    expect(encode).not.toHaveBeenCalled();
+    expect(estimateTokenLengthInLLM).not.toHaveBeenCalled();
 
     rerender(
       <Markdown content="hello world" messageId="m1" streaming={false} />,
     );
 
-    expect(encode).toHaveBeenCalledTimes(1);
-    expect(encode).toHaveBeenCalledWith("hello world");
+    expect(estimateTokenLengthInLLM).toHaveBeenCalledTimes(1);
+    expect(estimateTokenLengthInLLM).toHaveBeenCalledWith("hello world");
   });
 
-  test("delegates content-change scrolling to the chat container", () => {
-    const onContentChange = jest.fn();
-
+  test("defers syntax highlighting until streaming finishes", () => {
     const { rerender } = render(
-      <Markdown
-        content="hello"
-        messageId="m1"
-        streaming
-        shouldAutoScroll
-        onContentChange={onContentChange}
-      />,
+      <Markdown content={"```ts\nconst n = 1;\n```"} streaming />,
     );
+
+    const streamingPlugins =
+      mockReactMarkdown.mock.calls.at(-1)?.[0].rehypePlugins ?? [];
+    expect(
+      streamingPlugins.some((plugin: unknown) =>
+        Array.isArray(plugin)
+          ? plugin[0] === RehypeHighlight
+          : plugin === RehypeHighlight,
+      ),
+    ).toBe(false);
 
     rerender(
-      <Markdown
-        content="hello world"
-        messageId="m1"
-        streaming
-        shouldAutoScroll
-        onContentChange={onContentChange}
-      />,
+      <Markdown content={"```ts\nconst n = 1;\n```"} streaming={false} />,
     );
 
-    expect(onContentChange).toHaveBeenCalledTimes(1);
+    const completedPlugins =
+      mockReactMarkdown.mock.calls.at(-1)?.[0].rehypePlugins ?? [];
+    expect(
+      completedPlugins.some((plugin: unknown) =>
+        Array.isArray(plugin)
+          ? plugin[0] === RehypeHighlight
+          : plugin === RehypeHighlight,
+      ),
+    ).toBe(true);
+  });
+
+  test("keeps ordinary highlight spans off the formula measurement path", () => {
+    const originalResizeObserver = global.ResizeObserver;
+    const observe = jest.fn();
+    const disconnect = jest.fn();
+    const resizeObserver = jest.fn(() => ({ observe, disconnect }));
+    Object.defineProperty(global, "ResizeObserver", {
+      configurable: true,
+      value: resizeObserver,
+    });
+
+    const { rerender } = render(
+      <div>
+        {Array.from({ length: 1500 }, (_, index) => (
+          <MarkdownSpan key={index} className="hljs-keyword">
+            token-{index}
+          </MarkdownSpan>
+        ))}
+      </div>,
+    );
+
+    expect(resizeObserver).not.toHaveBeenCalled();
+
+    rerender(
+      <MarkdownSpan className="katex-display">
+        <span>formula</span>
+      </MarkdownSpan>,
+    );
+    expect(resizeObserver).toHaveBeenCalledTimes(1);
+    expect(document.querySelector(".katex-display")).toHaveAttribute(
+      "data-chat-horizontal-scroll",
+      "true",
+    );
+
+    Object.defineProperty(global, "ResizeObserver", {
+      configurable: true,
+      value: originalResizeObserver,
+    });
   });
 
   test("presents token info as a toggled metadata chip", () => {
     window.localStorage.setItem("first_char_delay_m2", "512");
-
-    render(
-      <Markdown content="hello world" messageId="m2" streaming={false} />,
+    const tokenCountText = Locale.Chat.TokenInfo.TokenCount(11);
+    const tokenDelayText = Locale.Chat.TokenInfo.FirstDelay(512);
+    const tokenInfoLabel = Locale.Chat.TokenInfo.Label(
+      [tokenCountText, tokenDelayText].join(", "),
     );
+
+    render(<Markdown content="hello world" messageId="m2" streaming={false} />);
 
     const tokenChip = screen.getByRole("button", {
-      name: "Token 信息，11 Tokens，First Response: 512ms",
+      name: tokenInfoLabel,
     });
 
-    expect(tokenChip.textContent).toBe("11 Tokens");
-    expect(tokenChip.getAttribute("aria-label")).toBe(
-      "Token 信息，11 Tokens，First Response: 512ms",
-    );
+    expect(tokenChip.textContent).toBe(tokenCountText);
+    expect(tokenChip.getAttribute("aria-label")).toBe(tokenInfoLabel);
     expect(tokenChip.getAttribute("aria-pressed")).toBe("false");
     expect(tokenChip.getAttribute("data-token-info-expanded")).toBe("false");
-    expect(encode).toHaveBeenCalledWith("hello world");
+    expect(estimateTokenLengthInLLM).toHaveBeenCalledWith("hello world");
 
     fireEvent.mouseEnter(tokenChip);
-    expect(tokenChip.textContent).toContain("512ms");
+    expect(tokenChip.textContent).toBe(tokenDelayText);
     expect(tokenChip.getAttribute("aria-pressed")).toBe("true");
     expect(tokenChip.getAttribute("data-token-info-expanded")).toBe("true");
 
     fireEvent.mouseLeave(tokenChip);
-    expect(tokenChip.textContent).toBe("11 Tokens");
+    expect(tokenChip.textContent).toBe(tokenCountText);
     expect(tokenChip.getAttribute("aria-pressed")).toBe("false");
 
     fireEvent.click(tokenChip);
-    expect(tokenChip.textContent).toContain("512ms");
+    expect(tokenChip.textContent).toBe(tokenDelayText);
     expect(tokenChip.getAttribute("aria-pressed")).toBe("true");
   });
 
-  test("includes token count in the metadata chip accessible name without latency", () => {
-    render(
-      <Markdown content="hello world" messageId="m3" streaming={false} />,
-    );
+  test("renders token count as static metadata without latency", () => {
+    const tokenCountText = Locale.Chat.TokenInfo.TokenCount(11);
+    const tokenInfoLabel = Locale.Chat.TokenInfo.Label(tokenCountText);
 
-    const tokenChip = screen.getByRole("button", {
-      name: "Token 信息，11 Tokens",
-    });
+    render(<Markdown content="hello world" messageId="m3" streaming={false} />);
 
-    expect(tokenChip.textContent).toBe("11 Tokens");
-    expect(tokenChip.getAttribute("aria-pressed")).toBe("false");
-    expect(tokenChip.getAttribute("data-token-info-expanded")).toBe("false");
+    const tokenChip = screen.getByLabelText(tokenInfoLabel);
+
+    expect(tokenChip.textContent).toBe(tokenCountText);
+    expect(tokenChip.tagName).toBe("SPAN");
+    expect(tokenChip.classList.contains("token-info-static")).toBe(true);
+    expect(tokenChip.getAttribute("aria-pressed")).toBeNull();
+    expect(tokenChip.getAttribute("data-token-info-expanded")).toBeNull();
   });
 });

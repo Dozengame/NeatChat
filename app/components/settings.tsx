@@ -124,6 +124,7 @@ function SettingsSelect<T extends string>(props: {
       </button>
       {showSettingsSelectSheet && (
         <SimpleSelector
+          ariaLabel={props.ariaLabel}
           items={props.options.map((option) => ({
             title: option.label,
             value: option.value,
@@ -157,6 +158,12 @@ function useSettingsView() {
           publicConfig: config.serverConfigSnapshot,
         });
       });
+    });
+  };
+  const clearModelConfigOverride = (fields: string[]) => {
+    updateConfig((config) => {
+      config.modelConfigMeta = { ...(config.modelConfigMeta ?? {}) };
+      fields.forEach((field) => delete config.modelConfigMeta![field]);
     });
   };
 
@@ -223,7 +230,11 @@ function useSettingsView() {
 
   useEffect(() => {
     const keydownEvent = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (
+        e.key === "Escape" &&
+        !e.defaultPrevented &&
+        !document.querySelector('[role="dialog"][aria-modal="true"]')
+      ) {
         navigate(Path.Home);
       }
     };
@@ -272,7 +283,7 @@ function useSettingsView() {
         title={Locale.Settings.Access.CustomEndpoint.Title}
         subTitle={
           accessStore.lockedFields?.includes("baseUrl")
-            ? "该项已由管理员锁定"
+            ? Locale.Settings.GPT56Capabilities.ConfigSource.Locked
             : Locale.Settings.Access.CustomEndpoint.SubTitle
         }
       >
@@ -950,7 +961,7 @@ function useSettingsView() {
         <div className={styles["settings-page-head"]} data-tauri-drag-region>
           <div className={styles["settings-title-stack"]}>
             <h1>{Locale.Settings.Title}</h1>
-            <p>所有设置选项</p>
+            <p>{Locale.Settings.SubTitle}</p>
           </div>
           <IconButton
             className={styles["settings-close"]}
@@ -965,8 +976,8 @@ function useSettingsView() {
           <div className={styles["settings-stack"]}>
             <SettingsSection
               id="settings-section-general"
-              title="常规偏好"
-              description="输入方式、主题、语言和字体。"
+              title={Locale.Settings.Sections.General.Title}
+              description={Locale.Settings.Sections.General.Description}
             >
               <div className={styles["settings-preferences-surface"]}>
                 <List className={styles["settings-preference-list"]}>
@@ -1077,8 +1088,8 @@ function useSettingsView() {
 
             <SettingsSection
               id="settings-section-dialog"
-              title="对话体验"
-              description="控制聊天标题、预览气泡、Artifacts、代码阅读和会话工具。"
+              title={Locale.Settings.Sections.Chat.Title}
+              description={Locale.Settings.Sections.Chat.Description}
             >
               <div className={styles["settings-preferences-surface"]}>
                 <List className={styles["settings-preference-list"]}>
@@ -1327,8 +1338,8 @@ function useSettingsView() {
 
             <SettingsSection
               id="settings-section-data"
-              title="数据"
-              description="云端同步、本地导入导出、面具和提示词。"
+              title={Locale.Settings.Sections.Data.Title}
+              description={Locale.Settings.Sections.Data.Description}
             >
               <div className={styles["settings-preferences-surface"]}>
                 <SyncItems />
@@ -1417,8 +1428,8 @@ function useSettingsView() {
 
             <SettingsSection
               id="settings-section-model"
-              title="模型"
-              description="访问密码、服务来源、模型参数和压缩设置。"
+              title={Locale.Settings.Sections.Model.Title}
+              description={Locale.Settings.Sections.Model.Description}
             >
               <div className={styles["settings-access-surface"]}>
                 <List id={SlotID.CustomModel}>
@@ -1505,6 +1516,7 @@ function useSettingsView() {
                   modelConfig={config.modelConfig}
                   modelConfigMeta={config.modelConfigMeta}
                   markOverride={markModelConfigOverride}
+                  clearOverride={clearModelConfigOverride}
                   updateConfig={(updater) => {
                     const modelConfig = { ...config.modelConfig };
                     updater(modelConfig);
@@ -1518,8 +1530,8 @@ function useSettingsView() {
 
             <SettingsSection
               id="settings-section-advanced"
-              title="高级偏好"
-              description="重置和清除操作。"
+              title={Locale.Settings.Sections.Advanced.Title}
+              description={Locale.Settings.Sections.Advanced.Description}
             >
               <DangerItems />
             </SettingsSection>

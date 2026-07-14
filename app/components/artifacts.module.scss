@@ -125,6 +125,33 @@
     box-shadow 0.18s ease;
 }
 
+.artifacts-preview-gate {
+  display: grid;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 144px;
+  place-items: center;
+  border: 1px solid var(--artifacts-iframe-border-color);
+  border-radius: 8px;
+  background: var(--artifacts-iframe-background);
+}
+
+.artifacts-preview-run {
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid var(--artifacts-iframe-border-color);
+  border-radius: 999px;
+  background: var(--surface-elevated);
+  color: var(--black);
+  cursor: pointer;
+  font: inherit;
+
+  &:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+}
+
 :global(.dark) .artifacts {
   --artifacts-background: color-mix(
     in srgb,

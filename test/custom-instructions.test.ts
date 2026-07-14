@@ -2,7 +2,7 @@ jest.mock("nanoid", () => ({ nanoid: () => "test-id" }));
 jest.mock("../app/mcp/actions", () => ({
   executeMcpAction: jest.fn(),
   getAllTools: jest.fn(() => Promise.resolve([])),
-  getClientsStatus: jest.fn(() => Promise.resolve({})),
+  getMcpChatServerStates: jest.fn(() => Promise.resolve({})),
   initializeMcpSystem: jest.fn(() => Promise.resolve()),
   isMcpEnabled: jest.fn(() => Promise.resolve(false)),
 }));
@@ -13,7 +13,7 @@ jest.mock("../app/client/api", () => ({
 }));
 
 import { getClientApi } from "../app/client/api";
-import { isMcpEnabled } from "../app/mcp/actions";
+import { getAllTools, isMcpEnabled } from "../app/mcp/actions";
 import {
   applyCustomInstructionsDefaults,
   DEFAULT_CONFIG,
@@ -21,6 +21,8 @@ import {
   useAppConfig,
 } from "../app/store/config";
 import { useChatStore } from "../app/store/chat";
+import { ChatControllerPool } from "../app/client/controller";
+import Locale from "../app/locales";
 
 const PREVIOUS_DEFAULT_CUSTOM_INSTRUCTIONS = `回答前先在内部理清问题，不展示完整推理过程、内部标签或逐步思考。
 默认用自然、像真人的中文表达：少官腔、少模板，直白克制，不油腻、不居高临下。先给结论/建议，再给 2–4 条关键理由；必要时补步骤、风险和注意事项。除非我要求“展开”，否则优先短而有用。
@@ -35,15 +37,32 @@ const PREVIOUS_DEFAULT_CUSTOM_INSTRUCTIONS = `回答前先在内部理清问题�
 需要联网检索时，优先英文或非中文来源；如必须用中文来源，标注“中文来源，需谨慎核对”。`;
 
 describe("custom instructions", () => {
-  const chatMock = jest.fn(() => Promise.resolve());
+  const chatMock = jest.fn<Promise<void>, [any]>(() => Promise.resolve());
+
+  async function waitForMcpPreload(
+    readResolver: () => ((tools: any[]) => void) | undefined,
+  ) {
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const resolver = readResolver();
+      if (resolver) return resolver;
+      await Promise.resolve();
+    }
+    throw new Error("MCP prompt preflight did not start");
+  }
+
+  const waitForMacrotask = () =>
+    new Promise<void>((resolve) => setTimeout(resolve, 0));
 
   function getSentMessages() {
     expect(chatMock).toHaveBeenCalled();
     return (chatMock.mock.calls[0] as any[])[0].messages as any[];
   }
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
+    chatMock.mockReset();
+    chatMock.mockResolvedValue(undefined);
+    ChatControllerPool.controllers = {};
     (isMcpEnabled as jest.Mock).mockResolvedValue(false);
     (getClientApi as jest.Mock).mockReturnValue({
       llm: {
@@ -64,6 +83,7 @@ describe("custom instructions", () => {
       currentSessionIndex: -1,
       lastInput: "",
     } as any);
+    await useChatStore.getState().resetMcpCache();
   });
 
   test("does not send saved instructions when disabled", async () => {
@@ -75,9 +95,9 @@ describe("custom instructions", () => {
     await useChatStore.getState().onUserInput("Hello");
 
     const messages = getSentMessages();
-    expect(messages.some((m: any) => m.content === "Do not include this.")).toBe(
-      false,
-    );
+    expect(
+      messages.some((m: any) => m.content === "Do not include this."),
+    ).toBe(false);
   });
 
   test("queues visible messages before async prompt preparation finishes", async () => {
@@ -132,6 +152,278 @@ describe("custom instructions", () => {
     expect(session.messages[1].content).toContain("MCP config unavailable");
   });
 
+  test.each([
+    ["a rejected request promise", false],
+    ["a synchronous request throw", true],
+  ])("settles the queued assistant after %s", async (_label, synchronous) => {
+    const consoleErrorSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const failure = new Error(
+      "Authorization: Bearer upstream-secret should not be visible",
+    );
+    if (synchronous) {
+      chatMock.mockImplementationOnce(() => {
+        throw failure;
+      });
+    } else {
+      chatMock.mockRejectedValueOnce(failure);
+    }
+
+    try {
+      await useChatStore.getState().onUserInput("Hello");
+      await Promise.resolve();
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
+
+    const session = useChatStore.getState().currentSession();
+    expect(session.messages[0]).toMatchObject({ isError: true });
+    expect(session.messages[1]).toMatchObject({
+      streaming: false,
+      isError: true,
+    });
+    expect(session.messages[1].content).toContain("Request failed");
+    expect(session.messages[1].content).not.toContain("upstream-secret");
+    expect(ChatControllerPool.hasPending()).toBe(false);
+  });
+
+  test("settles only once when a provider callback is followed by rejection", async () => {
+    const consoleErrorSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    chatMock.mockImplementationOnce((options: any) => {
+      options.onError(new Error("provider failed"));
+      return Promise.reject(new Error("second failure"));
+    });
+
+    try {
+      await useChatStore.getState().onUserInput("Hello");
+      await Promise.resolve();
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
+
+    const content = String(
+      useChatStore.getState().currentSession().messages[1].content,
+    );
+    expect(content.match(/provider failed/g)).toHaveLength(1);
+    expect(ChatControllerPool.hasPending()).toBe(false);
+  });
+
+  test.each(["ProviderError", "TimeoutError"])(
+    "does not misclassify an active-controller %s as user cancellation",
+    async (errorName) => {
+      const consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      const metadata = {
+        openaiResponseId: "resp-failed",
+        openaiResponseStored: false,
+        openaiResponsesOutput: [{ type: "function_call", call_id: "call-1" }],
+        openaiResponsesRecoveryPending: true,
+      };
+      chatMock.mockImplementationOnce((options: any) => {
+        const controller = new AbortController();
+        options.onController(controller);
+        const failure = new Error(
+          "Authorization: Bearer upstream-secret request aborted upstream",
+        );
+        failure.name = errorName;
+        controller.abort(failure);
+        options.onError(failure, metadata);
+        return Promise.resolve();
+      });
+
+      try {
+        await useChatStore.getState().onUserInput("Hello");
+        await waitForMacrotask();
+      } finally {
+        consoleErrorSpy.mockRestore();
+      }
+
+      const session = useChatStore.getState().currentSession();
+      expect(session.messages[0]).toMatchObject({ isError: true });
+      expect(session.messages[1]).toMatchObject({
+        streaming: false,
+        isError: true,
+        openaiResponseId: "resp-failed",
+        openaiResponseStored: false,
+        openaiResponsesOutput: metadata.openaiResponsesOutput,
+        openaiResponsesRecoveryPending: true,
+      });
+      expect(String(session.messages[1].content)).toContain("Request failed");
+      expect(String(session.messages[1].content)).not.toContain(
+        "upstream-secret",
+      );
+      expect(ChatControllerPool.hasPending()).toBe(false);
+    },
+  );
+
+  test("retains late partial output and safe Responses metadata after stop", async () => {
+    let callbacks: any;
+    let controller: AbortController | undefined;
+    chatMock.mockImplementationOnce((options: any) => {
+      callbacks = options;
+      controller = new AbortController();
+      options.onController(controller);
+      options.onUpdate("partial stream");
+      return Promise.resolve();
+    });
+
+    await useChatStore.getState().onUserInput("Hello");
+    const session = useChatStore.getState().currentSession();
+    const botMessage = session.messages.at(-1)!;
+    ChatControllerPool.stop(session.id, botMessage.id!);
+    await waitForMacrotask();
+
+    expect(controller?.signal.aborted).toBe(true);
+    expect(botMessage).toMatchObject({
+      content: "partial stream",
+      streaming: false,
+      isError: false,
+    });
+
+    callbacks.onFinish("partial stream with tool trace", {} as Response, {
+      openaiResponseId: "resp-partial",
+      openaiResponseStored: false,
+      openaiResponsesOutput: [{ type: "function_call", call_id: "call-1" }],
+      openaiResponsesRecoveryPending: true,
+    });
+
+    expect(botMessage).toMatchObject({
+      content: "partial stream with tool trace",
+      streaming: false,
+      isError: false,
+      openaiResponseId: "resp-partial",
+      openaiResponseStored: false,
+      openaiResponsesRecoveryPending: true,
+    });
+    expect(botMessage.openaiResponsesOutput).toHaveLength(1);
+  });
+
+  test("stops during prompt preflight without dispatching the provider", async () => {
+    (isMcpEnabled as jest.Mock).mockResolvedValue(true);
+    await useChatStore.getState().resetMcpCache();
+    let resolveTools!: (tools: any[]) => void;
+    (getAllTools as jest.Mock).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveTools = resolve;
+        }),
+    );
+
+    try {
+      const pending = useChatStore
+        .getState()
+        .onUserInput("Hello", undefined, false, {
+          mcpClientIds: ["deferred"],
+        });
+      const finishPreflight = await waitForMcpPreload(() => resolveTools);
+      const session = useChatStore.getState().currentSession();
+      const botMessage = session.messages.at(-1)!;
+
+      ChatControllerPool.stop(session.id, botMessage.id!);
+      expect(botMessage).toMatchObject({ streaming: false, isError: false });
+
+      finishPreflight([]);
+      await pending;
+      expect(chatMock).not.toHaveBeenCalled();
+      expect(ChatControllerPool.hasPending()).toBe(false);
+    } finally {
+      (isMcpEnabled as jest.Mock).mockResolvedValue(false);
+      await useChatStore.getState().resetMcpCache();
+    }
+  });
+
+  test("replaces image progress with a cancelled terminal state during preflight", async () => {
+    useAppConfig.setState({
+      modelConfig: {
+        ...DEFAULT_CONFIG.modelConfig,
+        model: "gpt-image-2" as any,
+        providerName: "OpenAI" as any,
+      },
+    });
+    (isMcpEnabled as jest.Mock).mockResolvedValue(true);
+    await useChatStore.getState().resetMcpCache();
+    let resolveTools!: (tools: any[]) => void;
+    (getAllTools as jest.Mock).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveTools = resolve;
+        }),
+    );
+
+    try {
+      const pending = useChatStore
+        .getState()
+        .onUserInput("Draw a panda", undefined, false, {
+          mcpClientIds: ["deferred"],
+        });
+      const finishPreflight = await waitForMcpPreload(() => resolveTools);
+      const session = useChatStore.getState().currentSession();
+      const botMessage = session.messages.at(-1)!;
+
+      ChatControllerPool.stop(session.id, botMessage.id!);
+      expect(botMessage).toMatchObject({
+        content: Locale.Chat.ImageGeneration.Progress.Cancelled,
+        streaming: false,
+        isError: false,
+      });
+
+      finishPreflight([]);
+      await pending;
+      expect(chatMock).not.toHaveBeenCalled();
+    } finally {
+      (isMcpEnabled as jest.Mock).mockResolvedValue(false);
+      await useChatStore.getState().resetMcpCache();
+    }
+  });
+
+  test("freezes model and provider selection across async preflight", async () => {
+    useAppConfig.setState({
+      modelConfig: {
+        ...DEFAULT_CONFIG.modelConfig,
+        model: "gpt-5.6-terra" as any,
+        providerName: "OpenAI" as any,
+      },
+    });
+    (isMcpEnabled as jest.Mock).mockResolvedValue(true);
+    await useChatStore.getState().resetMcpCache();
+    let resolveTools!: (tools: any[]) => void;
+    (getAllTools as jest.Mock).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveTools = resolve;
+        }),
+    );
+
+    try {
+      const pending = useChatStore
+        .getState()
+        .onUserInput("Hello", undefined, false, {
+          mcpClientIds: ["deferred"],
+        });
+      const finishPreflight = await waitForMcpPreload(() => resolveTools);
+      const session = useChatStore.getState().currentSession();
+      session.mask.modelConfig.model = "gemini-2.0-flash" as any;
+      session.mask.modelConfig.providerName = "Google" as any;
+      finishPreflight([]);
+      await pending;
+
+      expect(getClientApi).toHaveBeenCalledWith("OpenAI");
+      expect(chatMock.mock.calls[0][0].config).toMatchObject({
+        model: "gpt-5.6-terra",
+        providerName: "OpenAI",
+      });
+      expect(session.messages.at(-1)?.model).toBe("gpt-5.6-terra");
+      expect(session.mask.modelConfig.model).toBe("gemini-2.0-flash");
+    } finally {
+      (isMcpEnabled as jest.Mock).mockResolvedValue(false);
+      await useChatStore.getState().resetMcpCache();
+    }
+  });
+
   test("sends the default preset with a new chat", async () => {
     await useChatStore.getState().onUserInput("Hello");
 
@@ -160,6 +452,28 @@ describe("custom instructions", () => {
         expect.objectContaining({
           role: "system",
           content: "Always answer with concise bullet points.",
+        }),
+      ]),
+    );
+  });
+
+  test("injects the official GPT-5.6 knowledge cutoff", async () => {
+    useAppConfig.setState({
+      modelConfig: {
+        ...DEFAULT_CONFIG.modelConfig,
+        model: "gpt-5.6-terra" as any,
+        providerName: "OpenAI" as any,
+        enableInjectSystemPrompts: true,
+      },
+    });
+
+    await useChatStore.getState().onUserInput("Hello");
+
+    expect(getSentMessages()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: "system",
+          content: expect.stringContaining("Knowledge cutoff: 2026-02-16"),
         }),
       ]),
     );

@@ -1,10 +1,9 @@
-import { Anthropic, ApiPath } from "@/app/constant";
+import { Anthropic, ApiPath, REQUEST_TIMEOUT_MS } from "@/app/constant";
 import { ChatOptions, LLMApi, SpeechOptions } from "../types";
 import { getHeadersAsync } from "../header-loader";
 import {
   useAccessStore,
   useAppConfig,
-  useChatStore,
   usePluginStore,
   ChatMessageTool,
 } from "@/app/store";
@@ -15,6 +14,14 @@ import { preProcessImageContent, stream } from "@/app/utils/chat";
 import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
 import { RequestPayload } from "./openai";
 import { fetch } from "@/app/utils/stream";
+import { mergeLLMRequestConfig } from "../request-config";
+import { withAbortTimeoutResponse } from "@/app/utils/request-timeout";
+import {
+  getPublicHttpErrorMessage,
+  hasUpstreamErrorPayload,
+  readResponsePayload,
+} from "@/app/utils/public-error";
+import Locale from "../../locales";
 
 export type MultiBlockContent = {
   type: "image" | "text";
@@ -80,8 +87,6 @@ export class ClaudeApi implements LLMApi {
   }
 
   extractMessage(res: any) {
-    console.log("[Response] claude response: ", res);
-
     return res?.content?.[0]?.text;
   }
   async chat(options: ChatOptions): Promise<void> {
@@ -91,13 +96,11 @@ export class ClaudeApi implements LLMApi {
 
     const shouldStream = !!options.config.stream;
 
-    const modelConfig = {
-      ...useAppConfig.getState().modelConfig,
-      ...useChatStore.getState().currentSession().mask.modelConfig,
-      ...{
-        model: options.config.model,
-      },
-    };
+    const modelConfig = mergeLLMRequestConfig(
+      useAppConfig.getState().modelConfig,
+      useAppConfig.getState().modelConfig,
+      options.config,
+    );
 
     // try get base64image from local cache image_url
     const messages: ChatOptions["messages"] = await Promise.all(
@@ -206,16 +209,15 @@ export class ClaudeApi implements LLMApi {
 
     if (shouldStream) {
       let index = -1;
-      const [tools, funcs] = usePluginStore
-        .getState()
-        .getAsTools(
-          useChatStore.getState().currentSession().mask?.plugin || [],
-        );
+      const [tools, funcs] =
+        options.allowTools === true
+          ? usePluginStore.getState().getAsTools(options.pluginIds ?? [])
+          : [[], {}];
       return stream(
         path,
         requestBody,
         {
-          ...(await getHeadersAsync()),
+          ...(await getHeadersAsync(false, modelConfig.providerName)),
           "anthropic-version": accessStore.anthropicApiVersion,
         },
         // @ts-ignore
@@ -317,25 +319,75 @@ export class ClaudeApi implements LLMApi {
         body: JSON.stringify(requestBody),
         signal: controller.signal,
         headers: {
-          ...(await getHeadersAsync()), // get common headers
+          ...(await getHeadersAsync(false, modelConfig.providerName)), // get common headers
           "anthropic-version": accessStore.anthropicApiVersion,
           // do not send `anthropicApiKey` in browser!!!
           // Authorization: getAuthKey(accessStore.anthropicApiKey),
         },
       };
 
-      try {
-        controller.signal.onabort = () =>
-          options.onFinish("", new Response(null, { status: 400 }));
+      let settled = false;
+      const handleAbort = () => {
+        const reason = controller.signal.reason;
+        if (reason instanceof Error && reason.name === "TimeoutError") return;
+        if (!settled) {
+          settled = true;
+          options.onFinish("", { ok: false, status: 400 } as Response);
+        }
+      };
+      controller.signal.addEventListener("abort", handleAbort, { once: true });
+      if (controller.signal.aborted) {
+        handleAbort();
+      }
 
-        const res = await fetch(path, payload);
-        const resJson = await res.json();
+      try {
+        const { response: res, body: responseBody } =
+          await withAbortTimeoutResponse({
+            controller,
+            timeoutMs: REQUEST_TIMEOUT_MS,
+            onTimeout: () => {
+              const error = new Error("Anthropic request timed out");
+              error.name = "TimeoutError";
+              controller.abort(error);
+            },
+            operation: () => fetch(path, payload),
+            consume: readResponsePayload,
+          });
+        const resJson = responseBody.payload as any;
+
+        if (settled) return;
+        if (
+          !res.ok ||
+          !responseBody.isJson ||
+          hasUpstreamErrorPayload(resJson)
+        ) {
+          throw new Error(
+            getPublicHttpErrorMessage({
+              response: res,
+              payload: resJson ?? { message: responseBody.text },
+              fallback:
+                res.status === 401
+                  ? Locale.Error.Unauthorized
+                  : Locale.Error.RequestFailed(res.ok ? undefined : res.status),
+              accessRestrictedMessage: Locale.Error.AccessRestricted,
+            }),
+          );
+        }
 
         const message = this.extractMessage(resJson);
+        if (!message) {
+          throw new Error(Locale.Error.RequestFailed());
+        }
+        settled = true;
         options.onFinish(message, res);
       } catch (e) {
-        console.error("failed to chat", e);
-        options.onError?.(e as Error);
+        console.error("[Anthropic] request failed");
+        if (!settled) {
+          settled = true;
+          options.onError?.(e as Error);
+        }
+      } finally {
+        controller.signal.removeEventListener("abort", handleAbort);
       }
     }
   }

@@ -4,22 +4,24 @@ import { ApiPath, XAI_BASE_URL, XAI, REQUEST_TIMEOUT_MS } from "@/app/constant";
 import {
   useAccessStore,
   useAppConfig,
-  useChatStore,
   ChatMessageTool,
   usePluginStore,
-  } from "@/app/store";
+} from "@/app/store";
 import { stream } from "@/app/utils/chat";
-import {
-  ChatOptions,
-  LLMApi,
-  LLMModel,
-  SpeechOptions,
-} from "../types";
+import { ChatOptions, LLMApi, LLMModel, SpeechOptions } from "../types";
 import { getHeadersAsync } from "../header-loader";
 import { getClientConfig } from "@/app/config/client";
 import { getMessageTextContent } from "@/app/utils";
 import { RequestPayload } from "./openai";
 import { fetch } from "@/app/utils/stream";
+import { withAbortTimeoutResponse } from "@/app/utils/request-timeout";
+import {
+  getPublicHttpErrorMessage,
+  hasUpstreamErrorPayload,
+  readResponsePayload,
+} from "@/app/utils/public-error";
+import Locale from "../../locales";
+import { mergeLLMRequestConfig } from "../request-config";
 
 export class XAIApi implements LLMApi {
   private disableListModels = true;
@@ -46,8 +48,6 @@ export class XAIApi implements LLMApi {
       baseUrl = "https://" + baseUrl;
     }
 
-    console.log("[Proxy Endpoint] ", baseUrl, path);
-
     return [baseUrl, path].join("/");
   }
 
@@ -66,14 +66,11 @@ export class XAIApi implements LLMApi {
       messages.push({ role: v.role, content });
     }
 
-    const modelConfig = {
-      ...useAppConfig.getState().modelConfig,
-      ...useChatStore.getState().currentSession().mask.modelConfig,
-      ...{
-        model: options.config.model,
-        providerName: options.config.providerName,
-      },
-    };
+    const modelConfig = mergeLLMRequestConfig(
+      useAppConfig.getState().modelConfig,
+      useAppConfig.getState().modelConfig,
+      options.config,
+    );
 
     const requestPayload: RequestPayload = {
       messages,
@@ -85,8 +82,6 @@ export class XAIApi implements LLMApi {
       top_p: modelConfig.top_p,
     };
 
-    console.log("[Request] xai payload: ", requestPayload);
-
     const shouldStream = !!options.config.stream;
     const controller = new AbortController();
     options.onController?.(controller);
@@ -97,25 +92,18 @@ export class XAIApi implements LLMApi {
         method: "POST",
         body: JSON.stringify(requestPayload),
         signal: controller.signal,
-        headers: await getHeadersAsync(),
+        headers: await getHeadersAsync(false, modelConfig.providerName),
       };
 
-      // make a fetch request
-      const requestTimeoutId = setTimeout(
-        () => controller.abort(),
-        REQUEST_TIMEOUT_MS,
-      );
-
       if (shouldStream) {
-        const [tools, funcs] = usePluginStore
-          .getState()
-          .getAsTools(
-            useChatStore.getState().currentSession().mask?.plugin || [],
-          );
+        const [tools, funcs] =
+          options.allowTools === true
+            ? usePluginStore.getState().getAsTools(options.pluginIds ?? [])
+            : [[], {}];
         return stream(
           chatPath,
           requestPayload,
-          await getHeadersAsync(),
+          await getHeadersAsync(false, modelConfig.providerName),
           tools as any,
           funcs,
           controller,
@@ -168,15 +156,41 @@ export class XAIApi implements LLMApi {
           options,
         );
       } else {
-        const res = await fetch(chatPath, chatPayload);
-        clearTimeout(requestTimeoutId);
+        const { response: res, body: responseBody } =
+          await withAbortTimeoutResponse({
+            controller,
+            timeoutMs: REQUEST_TIMEOUT_MS,
+            operation: () => fetch(chatPath, chatPayload),
+            consume: readResponsePayload,
+          });
+        const resJson = responseBody.payload;
 
-        const resJson = await res.json();
+        if (
+          !res.ok ||
+          !responseBody.isJson ||
+          hasUpstreamErrorPayload(resJson)
+        ) {
+          throw new Error(
+            getPublicHttpErrorMessage({
+              response: res,
+              payload: resJson ?? { message: responseBody.text },
+              fallback:
+                res.status === 401
+                  ? Locale.Error.Unauthorized
+                  : Locale.Error.RequestFailed(res.ok ? undefined : res.status),
+              accessRestrictedMessage: Locale.Error.AccessRestricted,
+            }),
+          );
+        }
+
         const message = this.extractMessage(resJson);
+        if (!message) {
+          throw new Error(Locale.Error.RequestFailed());
+        }
         options.onFinish(message, res);
       }
     } catch (e) {
-      console.log("[Request] failed to make a chat request", e);
+      console.error("[xAI] chat request failed");
       options.onError?.(e as Error);
     }
   }

@@ -1,7 +1,16 @@
 import { getServerSideConfig } from "./server";
 import { DEFAULT_INPUT_TEMPLATE, ServiceProvider } from "../constant";
 import {
+  clampOpenAIResponsesMaxOutputTokens,
+  getConfiguredOpenAIResponsesReasoningEffort,
+  getConfiguredOpenAIResponsesReasoningEfforts,
   getMaxOutputTokensForReasoningEffort,
+  normalizeOpenAIResponsesReasoningEffort,
+  normalizeReasoningEffortModelKey,
+  OPENAI_RESPONSES_REASONING_EFFORTS,
+  OPENAI_RESPONSES_DEFAULT_MODEL,
+  parseOpenAIResponsesReasoningEffortAllowlist,
+  resolveOpenAIResponsesReasoningEffortDefault,
   type OpenAIResponsesReasoningEffort,
 } from "../utils/openai-responses";
 import {
@@ -45,20 +54,101 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
       typeof serverConfig.openaiMaxOutputTokens === "number",
   });
   const [requestedModel, requestedProviderName] = splitModelRef(
-    serverConfig.defaultModel || "gpt-5.5@OpenAI",
+    serverConfig.defaultModel || `${OPENAI_RESPONSES_DEFAULT_MODEL}@OpenAI`,
   );
   const forcedModelRef = resolveAllowedModelRef({
     model: requestedModel,
     providerName: requestedProviderName || ServiceProvider.OpenAI,
     allowedModels,
-    fallbackModelRef: "gpt-5.5@OpenAI",
+    fallbackModelRef: `${OPENAI_RESPONSES_DEFAULT_MODEL}@OpenAI`,
   });
   const [model, providerName] = splitModelRef(forcedModelRef);
-  const reasoningEffort =
-    serverConfig.openaiReasoningEffort as OpenAIResponsesReasoningEffort;
-  const defaultMaxOutputTokens =
+  const reasoningEffort = (resolveOpenAIResponsesReasoningEffortDefault({
+    model,
+    providerName,
+    defaults: serverConfig.openaiReasoningEffortDefaults,
+  }) ??
+    normalizeOpenAIResponsesReasoningEffort(
+      serverConfig.openaiReasoningEffort,
+      model,
+    )) as OpenAIResponsesReasoningEffort;
+  const configuredReasoningEfforts =
+    parseOpenAIResponsesReasoningEffortAllowlist(
+      serverConfig.webuiAllowedReasoningEfforts,
+    );
+  const configuredDefaultModelEfforts =
+    getConfiguredOpenAIResponsesReasoningEfforts(
+      model,
+      configuredReasoningEfforts,
+    );
+  if (
+    configuredReasoningEfforts &&
+    configuredDefaultModelEfforts &&
+    !configuredDefaultModelEfforts.some((effort) => effort === reasoningEffort)
+  ) {
+    const defaultModelKey = normalizeReasoningEffortModelKey(model);
+    const mergedEfforts = OPENAI_RESPONSES_REASONING_EFFORTS.filter(
+      (effort) =>
+        effort === reasoningEffort ||
+        configuredDefaultModelEfforts.some(
+          (configuredEffort) => configuredEffort === effort,
+        ),
+    );
+    if (defaultModelKey) {
+      configuredReasoningEfforts.models[defaultModelKey] = mergedEfforts;
+    }
+  }
+  if (
+    configuredReasoningEfforts &&
+    serverConfig.openaiReasoningEffortDefaults
+  ) {
+    const configuredDefault =
+      serverConfig.openaiReasoningEffortDefaults.default;
+    if (configuredDefault && configuredReasoningEfforts.default) {
+      configuredReasoningEfforts.default =
+        OPENAI_RESPONSES_REASONING_EFFORTS.filter(
+          (effort) =>
+            effort === configuredDefault ||
+            configuredReasoningEfforts.default?.includes(effort),
+        );
+    }
+
+    for (const modelKey of Object.keys(
+      serverConfig.openaiReasoningEffortDefaults.models,
+    )) {
+      const hasExplicitModelAllowlist = Object.prototype.hasOwnProperty.call(
+        configuredReasoningEfforts.models,
+        modelKey,
+      );
+      if (!hasExplicitModelAllowlist && !configuredReasoningEfforts.default) {
+        continue;
+      }
+      const modelDefault = getConfiguredOpenAIResponsesReasoningEffort(
+        modelKey,
+        serverConfig.openaiReasoningEffortDefaults,
+      );
+      const configuredModelEfforts =
+        getConfiguredOpenAIResponsesReasoningEfforts(
+          modelKey,
+          configuredReasoningEfforts,
+        )!;
+      configuredReasoningEfforts.models[modelKey] =
+        OPENAI_RESPONSES_REASONING_EFFORTS.filter(
+          (effort) =>
+            effort === modelDefault || configuredModelEfforts.includes(effort),
+        );
+    }
+  }
+  const effectiveMaxOutputTokens =
     typeof serverConfig.openaiMaxOutputTokens === "number"
-      ? serverConfig.openaiMaxOutputTokens
+      ? clampOpenAIResponsesMaxOutputTokens(
+          serverConfig.openaiMaxOutputTokens,
+          model,
+        )
+      : undefined;
+  const defaultMaxOutputTokens =
+    typeof effectiveMaxOutputTokens === "number"
+      ? effectiveMaxOutputTokens
       : getMaxOutputTokensForReasoningEffort(reasoningEffort);
 
   const hashInput = {
@@ -69,6 +159,11 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
       temperature: serverConfig.defaultTemperature,
       max_output_tokens: defaultMaxOutputTokens,
       reasoningEffort,
+      reasoningMode: serverConfig.openaiReasoningMode,
+      reasoningContext: serverConfig.openaiReasoningContext,
+      inputImageDetail: serverConfig.openaiInputImageDetail,
+      promptCacheMode: serverConfig.openaiPromptCacheMode,
+      promptCacheKey: serverConfig.openaiPromptCacheKey ?? "",
       reasoningSummary: "auto" as const,
       textVerbosity: serverConfig.openaiTextVerbosity,
       truncation: "disabled" as const,
@@ -88,12 +183,29 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
       apiKeyLocked: lockedFields.includes("apiKey"),
       temperature: serverConfig.defaultTemperature,
       ...(lockedFields.includes("reasoningEffort") ? { reasoningEffort } : {}),
+      ...(lockedFields.includes("reasoningMode")
+        ? { reasoningMode: serverConfig.openaiReasoningMode }
+        : {}),
+      ...(lockedFields.includes("reasoningContext")
+        ? { reasoningContext: serverConfig.openaiReasoningContext }
+        : {}),
+      ...(lockedFields.includes("inputImageDetail")
+        ? { inputImageDetail: serverConfig.openaiInputImageDetail }
+        : {}),
+      ...(lockedFields.includes("promptCacheMode")
+        ? { promptCacheMode: serverConfig.openaiPromptCacheMode }
+        : {}),
+      ...(lockedFields.includes("promptCacheKey")
+        ? { promptCacheKey: serverConfig.openaiPromptCacheKey ?? "" }
+        : {}),
       textVerbosity: serverConfig.openaiTextVerbosity,
-      ...(typeof serverConfig.openaiMaxOutputTokens === "number"
-        ? { max_output_tokens: serverConfig.openaiMaxOutputTokens }
+      ...(typeof effectiveMaxOutputTokens === "number"
+        ? { max_output_tokens: effectiveMaxOutputTokens }
         : {}),
     },
     allowedModels,
+    reasoningEffortAllowlist: configuredReasoningEfforts,
+    reasoningEffortDefaults: serverConfig.openaiReasoningEffortDefaults,
     lockedFields,
     serverFlags: {
       needCode: serverConfig.needCode,
@@ -110,7 +222,7 @@ export function buildPublicAppConfig(now = new Date()): PublicAppConfig {
       defaultModel: serverConfig.defaultModel,
       defaultTemperature: serverConfig.defaultTemperature,
       openaiReasoningEffort: serverConfig.openaiReasoningEffort,
-      openaiMaxOutputTokens: serverConfig.openaiMaxOutputTokens,
+      openaiMaxOutputTokens: effectiveMaxOutputTokens,
       openaiTextVerbosity: serverConfig.openaiTextVerbosity,
       compressMessageLengthThreshold:
         serverConfig.openaiCompressMessageLengthThreshold,

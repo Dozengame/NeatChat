@@ -43,6 +43,7 @@ export interface LLMConfig {
   presence_penalty?: number;
   frequency_penalty?: number;
   reasoningEffort?: OpenAIChatReasoningEffort;
+  max_output_tokens?: number;
   size?: OpenAIImageSize;
   quality?: OpenAIImageQuality;
   style?: DalleStyle;
@@ -64,6 +65,9 @@ export interface SpeechOptions {
 export interface ChatOptions {
   messages: RequestMessage[];
   config: LLMConfig;
+  allowTools?: boolean;
+  pluginIds?: string[];
+  openaiResponsesRecoveryPending?: boolean;
 
   onUpdate?: (message: string, chunk: string) => void;
   onFinish: (
@@ -73,9 +77,18 @@ export interface ChatOptions {
       openaiResponseId?: string;
       openaiResponseStored?: boolean;
       openaiResponsesOutput?: unknown[];
+      openaiResponsesRecoveryPending?: boolean;
     },
   ) => void;
-  onError?: (err: Error) => void;
+  onError?: (
+    err: Error,
+    metadata?: {
+      openaiResponseId?: string;
+      openaiResponseStored?: boolean;
+      openaiResponsesOutput?: unknown[];
+      openaiResponsesRecoveryPending?: boolean;
+    },
+  ) => void;
   onController?: (controller: AbortController) => void;
   onBeforeTool?: (tool: ChatMessageTool) => void;
   onAfterTool?: (tool: ChatMessageTool) => void;

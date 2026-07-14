@@ -6,7 +6,7 @@ import {
   type ModelConfig,
   type ModelConfigMeta,
 } from "../store/config";
-import { useAccessStore } from "../store/access";
+import { MODEL_CONFIG_FIELDS, useAccessStore } from "../store/access";
 
 import Locale from "../locales";
 import { InputRange } from "./input-range";
@@ -16,53 +16,102 @@ import { groupBy } from "lodash-es";
 import styles from "./model-config.module.scss";
 import { getModelProvider } from "../utils/model";
 import {
+  applyOpenAIResponsesModelConstraints,
+  applyConfiguredOpenAIResponsesReasoningEffortDefault,
+  filterOpenAIResponsesReasoningEfforts,
   getMaxOutputTokensForReasoningEffort,
+  getOpenAIResponsesMaxOutputTokensLimit,
+  includeCurrentOpenAIResponsesReasoningEffort,
+  isOpenAIGpt56ModelConfig,
   isOpenAIGpt5OrNewerModelConfig,
+  isOpenAIResponsesReasoningModelConfig,
+  isOpenAIResponsesTextVerbosityModelConfig,
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
+  normalizeOpenAIResponsesReasoningEffort,
   OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY,
+  supportsOpenAIResponsesSampling,
 } from "../utils/openai-responses";
 import {
   applyOpenAIImageGenerationDefaults,
-  DALLE_IMAGE_COMPATIBLE_SIZES,
-  DALLE3_IMAGE_QUALITIES,
-  DALLE3_IMAGE_SIZES,
   DALLE3_IMAGE_STYLES,
-  GPT_IMAGE_2_QUALITIES,
-  GPT_IMAGE_2_SIZES,
+  getOpenAIImageGenerationOptions,
   isDalle3,
-  isGptImageGenerationModel,
   isOpenAIImageGenerationModelConfig,
+  normalizeOpenAIImageQuality,
+  normalizeOpenAIImageSize,
 } from "../utils/openai-image";
 import type {
   OpenAIChatReasoningEffort,
+  OpenAIResponsesInputImageDetail,
+  OpenAIResponsesPromptCacheMode,
+  OpenAIResponsesReasoningContext,
+  OpenAIResponsesReasoningMode,
   OpenAIResponsesTextVerbosity,
 } from "../utils/openai-responses";
+import { resolveSummaryRequestConfig } from "../utils/summary-request";
 
 const SOURCE_LABELS: Record<ConfigSource, string> = {
-  admin_forced: "管理员锁定",
-  server_default: "管理员默认",
-  user_override: "个人设置",
-  conversation_override: "当前会话",
-  fallback: "系统默认",
+  admin_forced: Locale.Settings.GPT56Capabilities.ConfigSource.AdminForced,
+  server_default: Locale.Settings.GPT56Capabilities.ConfigSource.ServerDefault,
+  user_override: Locale.Settings.GPT56Capabilities.ConfigSource.UserOverride,
+  conversation_override:
+    Locale.Settings.GPT56Capabilities.ConfigSource.ConversationOverride,
+  fallback: Locale.Settings.GPT56Capabilities.ConfigSource.Fallback,
 };
 
 const REASONING_LABELS: Record<OpenAIChatReasoningEffort, string> = {
+  none: Locale.Settings.ReasoningEffort.None,
+  minimal: Locale.Settings.ReasoningEffort.Minimal,
   low: Locale.Settings.ReasoningEffort.Low,
   medium: Locale.Settings.ReasoningEffort.Medium,
   high: Locale.Settings.ReasoningEffort.High,
+  xhigh: Locale.Settings.ReasoningEffort.XHigh,
+  max: Locale.Settings.ReasoningEffort.Max,
 };
 
 const TEXT_VERBOSITY_LABELS: Record<OpenAIResponsesTextVerbosity, string> = {
-  low: "简洁",
-  medium: "适中",
-  high: "详细",
+  low: Locale.Settings.TextVerbosity.Low,
+  medium: Locale.Settings.TextVerbosity.Medium,
+  high: Locale.Settings.TextVerbosity.High,
 };
+
+const REASONING_MODE_LABELS: Record<OpenAIResponsesReasoningMode, string> = {
+  standard: Locale.Settings.GPT56Capabilities.ReasoningMode.Standard,
+  pro: Locale.Settings.GPT56Capabilities.ReasoningMode.Pro,
+};
+
+const REASONING_CONTEXT_LABELS: Record<
+  OpenAIResponsesReasoningContext,
+  string
+> = {
+  auto: Locale.Settings.GPT56Capabilities.ReasoningContext.Auto,
+  current_turn: Locale.Settings.GPT56Capabilities.ReasoningContext.CurrentTurn,
+  all_turns: Locale.Settings.GPT56Capabilities.ReasoningContext.AllTurns,
+};
+
+const INPUT_IMAGE_DETAIL_LABELS: Record<
+  OpenAIResponsesInputImageDetail,
+  string
+> = {
+  low: Locale.Settings.GPT56Capabilities.InputImageDetail.Low,
+  high: Locale.Settings.GPT56Capabilities.InputImageDetail.High,
+  original: Locale.Settings.GPT56Capabilities.InputImageDetail.Original,
+  auto: Locale.Settings.GPT56Capabilities.InputImageDetail.Auto,
+};
+
+const PROMPT_CACHE_MODE_LABELS: Record<OpenAIResponsesPromptCacheMode, string> =
+  {
+    disabled: Locale.Settings.GPT56Capabilities.PromptCacheMode.Disabled,
+    implicit: Locale.Settings.GPT56Capabilities.PromptCacheMode.Implicit,
+    explicit: Locale.Settings.GPT56Capabilities.PromptCacheMode.Explicit,
+  };
 
 export function ModelConfigList(props: {
   modelConfig: ModelConfig;
   updateConfig: (updater: (config: ModelConfig) => void) => void;
   modelConfigMeta?: ModelConfigMeta;
   markOverride?: (fields: string[]) => void;
+  clearOverride?: (fields: string[]) => void;
 }) {
   return useModelConfigListView(props);
 }
@@ -72,22 +121,32 @@ function useModelConfigListView(props: {
   updateConfig: (updater: (config: ModelConfig) => void) => void;
   modelConfigMeta?: ModelConfigMeta;
   markOverride?: (fields: string[]) => void;
+  clearOverride?: (fields: string[]) => void;
 }) {
   const accessStore = useAccessStore();
   const appConfig = useAppConfig();
   const modelConfigMeta =
     props.modelConfigMeta ?? appConfig.modelConfigMeta ?? {};
   const lockedFields = new Set(accessStore.lockedFields ?? []);
+  const serverConfigurableFields = new Set<string>(MODEL_CONFIG_FIELDS);
   const allowedModels = new Set(accessStore.allowedModels ?? []);
   const isLocked = (field: string) =>
-    modelConfigMeta[field]?.locked || lockedFields.has(field);
+    modelConfigMeta[field]?.locked ||
+    (serverConfigurableFields.has(field) && lockedFields.has(field));
   const sourceText = (field: string) => {
     const source = isLocked(field)
       ? "admin_forced"
       : modelConfigMeta[field]?.source ?? "fallback";
-    const text = `来源：${SOURCE_LABELS[source]}`;
-    return isLocked(field) ? `${text}。该项已由管理员锁定` : text;
+    const sourceLocale = Locale.Settings.GPT56Capabilities.ConfigSource;
+    const text = `${sourceLocale.Prefix}${SOURCE_LABELS[source]}`;
+    return isLocked(field)
+      ? `${text}${sourceLocale.Separator}${sourceLocale.Locked}`
+      : text;
   };
+  const withSourceText = (description: string, field: string) =>
+    `${description}${
+      Locale.Settings.GPT56Capabilities.ConfigSource.Separator
+    }${sourceText(field)}`;
   const updateUnlocked = (
     fields: string[],
     updater: (config: ModelConfig) => void,
@@ -107,29 +166,103 @@ function useModelConfigListView(props: {
     "provider.providerName",
   );
   const value = `${props.modelConfig.model}@${props.modelConfig?.providerName}`;
-  const compressModelValue = `${props.modelConfig.compressModel}@${props.modelConfig?.compressProviderName}`;
+  const persistedCompressModelValue =
+    props.modelConfig.compressModel && props.modelConfig.compressProviderName
+      ? `${props.modelConfig.compressModel}@${props.modelConfig.compressProviderName}`
+      : "";
+  const summarySelectionLocked = isLocked("model") || isLocked("providerName");
+  const persistedSummaryModel = allModels.find(
+    (model) =>
+      `${model.name}@${model.provider?.providerName}` ===
+      persistedCompressModelValue,
+  );
+  const persistedSummaryModelSelectable =
+    !!persistedCompressModelValue &&
+    !!persistedSummaryModel?.available &&
+    (allowedModels.size === 0 ||
+      allowedModels.has(persistedCompressModelValue));
+  const showUnavailableSummaryOverride =
+    !summarySelectionLocked &&
+    !!persistedCompressModelValue &&
+    !persistedSummaryModelSelectable;
+  const compressModelValue = summarySelectionLocked
+    ? ""
+    : persistedCompressModelValue;
+  const summaryDefault = resolveSummaryRequestConfig({
+    targetModelConfig: {
+      ...props.modelConfig,
+      compressModel: "",
+      compressProviderName: "",
+    },
+    fallbackModelConfig: appConfig.modelConfig,
+    publicConfig: appConfig.serverConfigSnapshot,
+  });
+  const [summaryDefaultModel, summaryDefaultProvider] = getModelProvider(
+    summaryDefault.defaultModelRef,
+  );
+  const summaryDefaultDisplayModel =
+    allModels.find(
+      (model) =>
+        model.name === summaryDefaultModel &&
+        model.provider?.providerName === summaryDefaultProvider,
+    )?.displayName ?? summaryDefaultModel;
+  const summaryDefaultLabel = `${summaryDefaultDisplayModel}(${summaryDefaultProvider})`;
   const isOpenAIGpt5OrNewer = isOpenAIGpt5OrNewerModelConfig({
     model: props.modelConfig.model,
     providerName: props.modelConfig?.providerName,
   });
+  const supportsReasoning = isOpenAIResponsesReasoningModelConfig({
+    model: props.modelConfig.model,
+    providerName: props.modelConfig?.providerName,
+  });
+  const supportsTextVerbosity = isOpenAIResponsesTextVerbosityModelConfig({
+    model: props.modelConfig.model,
+    providerName: props.modelConfig?.providerName,
+  });
+  const isOpenAIGpt56 = isOpenAIGpt56ModelConfig({
+    model: props.modelConfig.model,
+    providerName: props.modelConfig?.providerName,
+  });
+  const normalizedProviderName = props.modelConfig?.providerName
+    ?.trim()
+    .toLowerCase();
+  const isOpenAIProvider =
+    !normalizedProviderName ||
+    normalizedProviderName === ServiceProvider.OpenAI.toLowerCase() ||
+    normalizedProviderName === "chatgpt";
+  const supportsSamplingControls =
+    !isOpenAIProvider ||
+    supportsOpenAIResponsesSampling(props.modelConfig.model);
   const isOpenAIImageGeneration = isOpenAIImageGenerationModelConfig({
     model: props.modelConfig.model,
     providerName: props.modelConfig?.providerName,
   });
-  const isGptImageModel = isGptImageGenerationModel(props.modelConfig.model);
   const isDalle3Model = isDalle3(props.modelConfig.model);
-  const imageSizeOptions = isGptImageModel
-    ? GPT_IMAGE_2_SIZES
-    : isDalle3Model
-    ? DALLE3_IMAGE_SIZES
-    : DALLE_IMAGE_COMPATIBLE_SIZES;
-  const imageQualityOptions = isGptImageModel
-    ? GPT_IMAGE_2_QUALITIES
-    : isDalle3Model
-    ? DALLE3_IMAGE_QUALITIES
-    : [];
-  const reasoningEffort = (props.modelConfig.reasoningEffort ??
-    OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT) as OpenAIChatReasoningEffort;
+  const imageOptions = getOpenAIImageGenerationOptions(props.modelConfig.model);
+  const imageSizeOptions = imageOptions.sizes;
+  const imageQualityOptions = imageOptions.qualities;
+  const currentImageSize = normalizeOpenAIImageSize(
+    props.modelConfig.model,
+    props.modelConfig.size,
+  );
+  const currentImageQuality = normalizeOpenAIImageQuality(
+    props.modelConfig.model,
+    props.modelConfig.quality,
+  );
+  const reasoningEffortOptions = filterOpenAIResponsesReasoningEfforts(
+    props.modelConfig.model,
+    accessStore.serverConfigSnapshot?.reasoningEffortAllowlist,
+  );
+  const reasoningEffort = normalizeOpenAIResponsesReasoningEffort(
+    props.modelConfig.reasoningEffort ??
+      OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
+    props.modelConfig.model,
+  );
+  const visibleReasoningEffortOptions =
+    includeCurrentOpenAIResponsesReasoningEffort(
+      reasoningEffortOptions,
+      reasoningEffort,
+    );
   const getReasoningMaxOutputTokens = (effort: OpenAIChatReasoningEffort) =>
     accessStore.openaiMaxOutputTokens ??
     getMaxOutputTokensForReasoningEffort(effort);
@@ -137,9 +270,27 @@ function useModelConfigListView(props: {
     typeof accessStore.openaiMaxOutputTokens === "number";
   const maxOutputTokensValue =
     accessStore.openaiMaxOutputTokens ?? props.modelConfig.max_output_tokens;
+  const maxOutputTokensLimit = getOpenAIResponsesMaxOutputTokensLimit(
+    props.modelConfig.model,
+  );
   const textVerbosity = (props.modelConfig.textVerbosity ||
     accessStore.openaiTextVerbosity ||
     OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY) as OpenAIResponsesTextVerbosity;
+  const reasoningMode = ModalConfigValidator.reasoningMode(
+    props.modelConfig.reasoningMode ?? "",
+  );
+  const reasoningContext = ModalConfigValidator.reasoningContext(
+    props.modelConfig.reasoningContext ?? "",
+  );
+  const inputImageDetail = ModalConfigValidator.inputImageDetail(
+    props.modelConfig.inputImageDetail ?? "",
+  );
+  const promptCacheMode = ModalConfigValidator.promptCacheMode(
+    props.modelConfig.promptCacheMode ?? "",
+  );
+  const promptCacheKey = ModalConfigValidator.promptCacheKey(
+    props.modelConfig.promptCacheKey ?? "",
+  );
 
   return (
     <>
@@ -157,19 +308,14 @@ function useModelConfigListView(props: {
             updateUnlocked(["model", "providerName"], (config) => {
               config.model = ModalConfigValidator.model(model);
               config.providerName = providerName as ServiceProvider;
+              applyConfiguredOpenAIResponsesReasoningEffortDefault({
+                config,
+                configMeta: modelConfigMeta,
+                defaults:
+                  accessStore.serverConfigSnapshot?.reasoningEffortDefaults,
+              });
+              applyOpenAIResponsesModelConstraints(config);
               applyOpenAIImageGenerationDefaults(config);
-              if (
-                isOpenAIGpt5OrNewerModelConfig({
-                  model: config.model,
-                  providerName: config.providerName,
-                }) &&
-                !isLocked("max_output_tokens")
-              ) {
-                const effort =
-                  config.reasoningEffort ??
-                  OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT;
-                config.max_output_tokens = getReasoningMaxOutputTokens(effort);
-              }
             });
           }}
         >
@@ -190,10 +336,13 @@ function useModelConfigListView(props: {
 
       {isOpenAIImageGeneration ? (
         <>
-          <ListItem title="图像尺寸" subTitle={sourceText("size")}>
+          <ListItem
+            title={Locale.Settings.ImageGeneration.Size}
+            subTitle={sourceText("size")}
+          >
             <Select
-              aria-label="图像尺寸"
-              value={props.modelConfig.size}
+              aria-label={Locale.Settings.ImageGeneration.Size}
+              value={currentImageSize}
               onChange={(e) => {
                 updateUnlocked(["size"], (config) => {
                   config.size = e.currentTarget.value as typeof config.size;
@@ -202,16 +351,19 @@ function useModelConfigListView(props: {
             >
               {imageSizeOptions.map((size) => (
                 <option value={size} key={size}>
-                  {size}
+                  {Locale.Settings.ImageGeneration.SizeOption(size)}
                 </option>
               ))}
             </Select>
           </ListItem>
           {imageQualityOptions.length > 0 && (
-            <ListItem title="图像质量" subTitle={sourceText("quality")}>
+            <ListItem
+              title={Locale.Settings.ImageGeneration.Quality}
+              subTitle={sourceText("quality")}
+            >
               <Select
-                aria-label="图像质量"
-                value={props.modelConfig.quality}
+                aria-label={Locale.Settings.ImageGeneration.Quality}
+                value={currentImageQuality}
                 onChange={(e) => {
                   updateUnlocked(["quality"], (config) => {
                     config.quality = e.currentTarget
@@ -221,7 +373,7 @@ function useModelConfigListView(props: {
               >
                 {imageQualityOptions.map((quality) => (
                   <option value={quality} key={quality}>
-                    {quality}
+                    {Locale.Settings.ImageGeneration.QualityOption(quality)}
                   </option>
                 ))}
               </Select>
@@ -250,70 +402,245 @@ function useModelConfigListView(props: {
             </ListItem>
           )}
         </>
-      ) : isOpenAIGpt5OrNewer ? (
+      ) : supportsReasoning || supportsTextVerbosity || isOpenAIGpt56 ? (
         <>
-          <ListItem
-            title={Locale.Settings.ReasoningEffort.Title}
-            subTitle={`${
-              Locale.Settings.ReasoningEffort.SubTitle
-            }。${sourceText("reasoningEffort")}`}
-          >
-            <Select
-              aria-label={Locale.Settings.ReasoningEffort.Title}
-              value={reasoningEffort}
-              disabled={isLocked("reasoningEffort")}
-              onChange={(e) => {
-                updateUnlocked(["reasoningEffort"], (config) => {
-                  const effort = e.currentTarget
-                    .value as OpenAIChatReasoningEffort;
-                  config.reasoningEffort = effort;
-                  if (!isLocked("max_output_tokens")) {
-                    config.max_output_tokens =
-                      getReasoningMaxOutputTokens(effort);
+          {supportsReasoning && visibleReasoningEffortOptions.length > 0 && (
+            <ListItem
+              title={Locale.Settings.ReasoningEffort.Title}
+              subTitle={withSourceText(
+                Locale.Settings.ReasoningEffort.SubTitle,
+                "reasoningEffort",
+              )}
+            >
+              <Select
+                aria-label={Locale.Settings.ReasoningEffort.Title}
+                value={reasoningEffort}
+                disabled={
+                  isLocked("reasoningEffort") ||
+                  reasoningEffortOptions.length === 0
+                }
+                onChange={(e) => {
+                  updateUnlocked(["reasoningEffort"], (config) => {
+                    const effort = e.currentTarget
+                      .value as OpenAIChatReasoningEffort;
+                    config.reasoningEffort = effort;
+                    if (!isLocked("max_output_tokens")) {
+                      config.max_output_tokens =
+                        getReasoningMaxOutputTokens(effort);
+                    }
+                  });
+                }}
+              >
+                {visibleReasoningEffortOptions.map((effort) => (
+                  <option
+                    value={effort}
+                    key={effort}
+                    disabled={
+                      !reasoningEffortOptions.some(
+                        (allowedEffort) => allowedEffort === effort,
+                      )
+                    }
+                  >
+                    {REASONING_LABELS[effort]}
+                  </option>
+                ))}
+              </Select>
+            </ListItem>
+          )}
+          {supportsTextVerbosity && (
+            <ListItem
+              title={Locale.Settings.TextVerbosity.Title}
+              subTitle={withSourceText(
+                Locale.Settings.TextVerbosity.SubTitle,
+                "textVerbosity",
+              )}
+            >
+              <Select
+                aria-label={Locale.Settings.TextVerbosity.Title}
+                value={textVerbosity}
+                disabled={isLocked("textVerbosity")}
+                onChange={(e) => {
+                  updateUnlocked(["textVerbosity"], (config) => {
+                    config.textVerbosity = ModalConfigValidator.textVerbosity(
+                      e.currentTarget.value,
+                    );
+                  });
+                }}
+              >
+                {(["low", "medium", "high"] as const).map((verbosity) => (
+                  <option value={verbosity} key={verbosity}>
+                    {TEXT_VERBOSITY_LABELS[verbosity]}
+                  </option>
+                ))}
+              </Select>
+            </ListItem>
+          )}
+          {isOpenAIGpt56 && (
+            <>
+              <ListItem
+                title={Locale.Settings.GPT56Capabilities.ReasoningMode.Title}
+                subTitle={`${
+                  Locale.Settings.GPT56Capabilities.ReasoningMode.SubTitle
+                }${
+                  Locale.Settings.GPT56Capabilities.ConfigSource.Separator
+                }${sourceText("reasoningMode")}`}
+              >
+                <Select
+                  className={styles["gpt56-capability-select"]}
+                  aria-label={
+                    Locale.Settings.GPT56Capabilities.ReasoningMode.Title
                   }
-                });
-              }}
-            >
-              {(["low", "medium", "high"] as const).map((effort) => (
-                <option value={effort} key={effort}>
-                  {REASONING_LABELS[effort]}
-                </option>
-              ))}
-            </Select>
-          </ListItem>
-          <ListItem
-            title="回答详细程度 (text.verbosity)"
-            subTitle={`控制 Responses API 的回答详略。${sourceText(
-              "textVerbosity",
-            )}`}
-          >
-            <Select
-              aria-label="回答详细程度 (text.verbosity)"
-              value={textVerbosity}
-              disabled={isLocked("textVerbosity")}
-              onChange={(e) => {
-                updateUnlocked(["textVerbosity"], (config) => {
-                  config.textVerbosity = ModalConfigValidator.textVerbosity(
-                    e.currentTarget.value,
-                  );
-                });
-              }}
-            >
-              {(["low", "medium", "high"] as const).map((verbosity) => (
-                <option value={verbosity} key={verbosity}>
-                  {TEXT_VERBOSITY_LABELS[verbosity]}
-                </option>
-              ))}
-            </Select>
-          </ListItem>
+                  value={reasoningMode}
+                  disabled={isLocked("reasoningMode")}
+                  onChange={(e) => {
+                    updateUnlocked(["reasoningMode"], (config) => {
+                      config.reasoningMode = ModalConfigValidator.reasoningMode(
+                        e.currentTarget.value,
+                      );
+                    });
+                  }}
+                >
+                  {(["standard", "pro"] as const).map((mode) => (
+                    <option value={mode} key={mode}>
+                      {REASONING_MODE_LABELS[mode]}
+                    </option>
+                  ))}
+                </Select>
+              </ListItem>
+              <ListItem
+                title={Locale.Settings.GPT56Capabilities.ReasoningContext.Title}
+                subTitle={`${
+                  Locale.Settings.GPT56Capabilities.ReasoningContext.SubTitle
+                }${
+                  Locale.Settings.GPT56Capabilities.ConfigSource.Separator
+                }${sourceText("reasoningContext")}`}
+              >
+                <Select
+                  className={styles["gpt56-capability-select"]}
+                  aria-label={
+                    Locale.Settings.GPT56Capabilities.ReasoningContext.Title
+                  }
+                  value={reasoningContext}
+                  disabled={isLocked("reasoningContext")}
+                  onChange={(e) => {
+                    updateUnlocked(["reasoningContext"], (config) => {
+                      config.reasoningContext =
+                        ModalConfigValidator.reasoningContext(
+                          e.currentTarget.value,
+                        );
+                    });
+                  }}
+                >
+                  {(["auto", "current_turn", "all_turns"] as const).map(
+                    (context) => (
+                      <option value={context} key={context}>
+                        {REASONING_CONTEXT_LABELS[context]}
+                      </option>
+                    ),
+                  )}
+                </Select>
+              </ListItem>
+              <ListItem
+                title={Locale.Settings.GPT56Capabilities.InputImageDetail.Title}
+                subTitle={`${
+                  Locale.Settings.GPT56Capabilities.InputImageDetail.SubTitle
+                }${
+                  Locale.Settings.GPT56Capabilities.ConfigSource.Separator
+                }${sourceText("inputImageDetail")}`}
+              >
+                <Select
+                  className={styles["gpt56-capability-select"]}
+                  aria-label={
+                    Locale.Settings.GPT56Capabilities.InputImageDetail.Title
+                  }
+                  value={inputImageDetail}
+                  disabled={isLocked("inputImageDetail")}
+                  onChange={(e) => {
+                    updateUnlocked(["inputImageDetail"], (config) => {
+                      config.inputImageDetail =
+                        ModalConfigValidator.inputImageDetail(
+                          e.currentTarget.value,
+                        );
+                    });
+                  }}
+                >
+                  {(["low", "high", "original", "auto"] as const).map(
+                    (detail) => (
+                      <option value={detail} key={detail}>
+                        {INPUT_IMAGE_DETAIL_LABELS[detail]}
+                      </option>
+                    ),
+                  )}
+                </Select>
+              </ListItem>
+              <ListItem
+                title={Locale.Settings.GPT56Capabilities.PromptCacheMode.Title}
+                subTitle={`${
+                  Locale.Settings.GPT56Capabilities.PromptCacheMode.SubTitle
+                }${
+                  Locale.Settings.GPT56Capabilities.ConfigSource.Separator
+                }${sourceText("promptCacheMode")}`}
+              >
+                <Select
+                  className={styles["gpt56-capability-select"]}
+                  aria-label={
+                    Locale.Settings.GPT56Capabilities.PromptCacheMode.Title
+                  }
+                  value={promptCacheMode}
+                  disabled={isLocked("promptCacheMode")}
+                  onChange={(e) => {
+                    updateUnlocked(["promptCacheMode"], (config) => {
+                      config.promptCacheMode =
+                        ModalConfigValidator.promptCacheMode(
+                          e.currentTarget.value,
+                        );
+                    });
+                  }}
+                >
+                  {(["disabled", "implicit", "explicit"] as const).map(
+                    (mode) => (
+                      <option value={mode} key={mode}>
+                        {PROMPT_CACHE_MODE_LABELS[mode]}
+                      </option>
+                    ),
+                  )}
+                </Select>
+              </ListItem>
+              <ListItem
+                title={Locale.Settings.GPT56Capabilities.PromptCacheKey.Title}
+                subTitle={`${
+                  Locale.Settings.GPT56Capabilities.PromptCacheKey.SubTitle
+                }${
+                  Locale.Settings.GPT56Capabilities.ConfigSource.Separator
+                }${sourceText("promptCacheKey")}`}
+              >
+                <input
+                  aria-label={
+                    Locale.Settings.GPT56Capabilities.PromptCacheKey.Title
+                  }
+                  type="text"
+                  value={promptCacheKey}
+                  disabled={
+                    isLocked("promptCacheKey") || promptCacheMode === "disabled"
+                  }
+                  onChange={(e) => {
+                    updateUnlocked(["promptCacheKey"], (config) => {
+                      config.promptCacheKey = e.currentTarget.value;
+                    });
+                  }}
+                />
+              </ListItem>
+            </>
+          )}
         </>
-      ) : (
+      ) : supportsSamplingControls ? (
         <>
           <ListItem
             title={Locale.Settings.Temperature.Title}
-            subTitle={`${Locale.Settings.Temperature.SubTitle}。${sourceText(
+            subTitle={withSourceText(
+              Locale.Settings.Temperature.SubTitle,
               "temperature",
-            )}`}
+            )}
           >
             <InputRange
               aria={Locale.Settings.Temperature.Title}
@@ -333,9 +660,7 @@ function useModelConfigListView(props: {
           </ListItem>
           <ListItem
             title={Locale.Settings.TopP.Title}
-            subTitle={`${Locale.Settings.TopP.SubTitle}。${sourceText(
-              "top_p",
-            )}`}
+            subTitle={withSourceText(Locale.Settings.TopP.SubTitle, "top_p")}
           >
             <InputRange
               aria={Locale.Settings.TopP.Title}
@@ -353,21 +678,22 @@ function useModelConfigListView(props: {
             />
           </ListItem>
         </>
-      )}
+      ) : null}
 
       {!isOpenAIImageGeneration && (
         <ListItem
           title={Locale.Settings.MaxTokens.Title}
-          subTitle={`${Locale.Settings.MaxTokens.SubTitle}。${sourceText(
+          subTitle={withSourceText(
+            Locale.Settings.MaxTokens.SubTitle,
             "max_output_tokens",
-          )}`}
+          )}
         >
           <input
             aria-label={Locale.Settings.MaxTokens.Title}
             type="number"
             min={1024}
-            max={512000}
-            value={maxOutputTokensValue}
+            max={maxOutputTokensLimit}
+            value={Math.min(maxOutputTokensValue, maxOutputTokensLimit)}
             disabled={forcedMaxOutputTokens || isLocked("max_output_tokens")}
             onChange={(e) => {
               if (forcedMaxOutputTokens || isLocked("max_output_tokens"))
@@ -376,6 +702,7 @@ function useModelConfigListView(props: {
                 config.max_output_tokens =
                   ModalConfigValidator.max_output_tokens(
                     e.currentTarget.valueAsNumber,
+                    config.model,
                   );
               });
             }}
@@ -386,7 +713,7 @@ function useModelConfigListView(props: {
       {props.modelConfig?.providerName == ServiceProvider.Google ||
       isOpenAIImageGeneration ? null : (
         <>
-          {!isOpenAIGpt5OrNewer && (
+          {!isOpenAIGpt5OrNewer && !supportsReasoning && (
             <>
               <ListItem
                 title={Locale.Settings.PresencePenalty.Title}
@@ -436,14 +763,16 @@ function useModelConfigListView(props: {
 
           <ListItem
             title={Locale.Settings.InjectSystemPrompts.Title}
-            subTitle={`${
-              Locale.Settings.InjectSystemPrompts.SubTitle
-            }。${sourceText("enableInjectSystemPrompts")}`}
+            subTitle={withSourceText(
+              Locale.Settings.InjectSystemPrompts.SubTitle,
+              "enableInjectSystemPrompts",
+            )}
           >
             <input
               aria-label={Locale.Settings.InjectSystemPrompts.Title}
               type="checkbox"
               checked={props.modelConfig.enableInjectSystemPrompts}
+              disabled={isLocked("enableInjectSystemPrompts")}
               onChange={(e) => {
                 updateUnlocked(["enableInjectSystemPrompts"], (config) => {
                   config.enableInjectSystemPrompts = e.currentTarget.checked;
@@ -454,14 +783,16 @@ function useModelConfigListView(props: {
 
           <ListItem
             title={Locale.Settings.InputTemplate.Title}
-            subTitle={`${Locale.Settings.InputTemplate.SubTitle}。${sourceText(
+            subTitle={withSourceText(
+              Locale.Settings.InputTemplate.SubTitle,
               "template",
-            )}`}
+            )}
           >
             <input
               aria-label={Locale.Settings.InputTemplate.Title}
               type="text"
               value={props.modelConfig.template}
+              disabled={isLocked("template")}
               onChange={(e) => {
                 updateUnlocked(["template"], (config) => {
                   config.template = e.currentTarget.value;
@@ -476,9 +807,10 @@ function useModelConfigListView(props: {
         <>
           <ListItem
             title={Locale.Settings.HistoryCount.Title}
-            subTitle={`${Locale.Settings.HistoryCount.SubTitle}。${sourceText(
+            subTitle={withSourceText(
+              Locale.Settings.HistoryCount.SubTitle,
               "historyMessageCount",
-            )}`}
+            )}
           >
             <InputRange
               aria={Locale.Settings.HistoryCount.Title}
@@ -487,6 +819,7 @@ function useModelConfigListView(props: {
               min="0"
               max="64"
               step="1"
+              disabled={isLocked("historyMessageCount")}
               onChange={(e) => {
                 updateUnlocked(["historyMessageCount"], (config) => {
                   config.historyMessageCount = e.target.valueAsNumber;
@@ -497,9 +830,10 @@ function useModelConfigListView(props: {
 
           <ListItem
             title={Locale.Settings.CompressThreshold.Title}
-            subTitle={`${
-              Locale.Settings.CompressThreshold.SubTitle
-            }。${sourceText("compressMessageLengthThreshold")}`}
+            subTitle={withSourceText(
+              Locale.Settings.CompressThreshold.SubTitle,
+              "compressMessageLengthThreshold",
+            )}
           >
             <input
               aria-label={Locale.Settings.CompressThreshold.Title}
@@ -521,12 +855,13 @@ function useModelConfigListView(props: {
 
           <ListItem
             title={Locale.Memory.Title}
-            subTitle={`${Locale.Memory.Send}。${sourceText("sendMemory")}`}
+            subTitle={withSourceText(Locale.Memory.Send, "sendMemory")}
           >
             <input
               aria-label={Locale.Memory.Title}
               type="checkbox"
               checked={props.modelConfig.sendMemory}
+              disabled={isLocked("sendMemory")}
               onChange={(e) => {
                 updateUnlocked(["sendMemory"], (config) => {
                   config.sendMemory = e.currentTarget.checked;
@@ -536,6 +871,7 @@ function useModelConfigListView(props: {
           </ListItem>
 
           <ListItem
+            className={styles["summary-model-item"]}
             title={Locale.Settings.CompressModel.Title}
             subTitle={Locale.Settings.CompressModel.SubTitle}
           >
@@ -543,7 +879,20 @@ function useModelConfigListView(props: {
               className={styles["select-compress-model"]}
               aria-label={Locale.Settings.CompressModel.Title}
               value={compressModelValue}
+              disabled={summarySelectionLocked}
               onChange={(e) => {
+                if (summarySelectionLocked) return;
+                if (!e.currentTarget.value) {
+                  props.updateConfig((config) => {
+                    config.compressModel = "";
+                    config.compressProviderName = "";
+                  });
+                  props.clearOverride?.([
+                    "compressModel",
+                    "compressProviderName",
+                  ]);
+                  return;
+                }
                 const [model, providerName] = getModelProvider(
                   e.currentTarget.value,
                 );
@@ -554,8 +903,25 @@ function useModelConfigListView(props: {
                 props.markOverride?.(["compressModel", "compressProviderName"]);
               }}
             >
+              <option value="">
+                {Locale.Settings.CompressModel.FollowDefault(
+                  summaryDefaultLabel,
+                )}
+              </option>
+              {showUnavailableSummaryOverride && (
+                <option value={persistedCompressModelValue} disabled>
+                  {Locale.Settings.CompressModel.Unavailable(
+                    `${
+                      persistedSummaryModel?.displayName ??
+                      props.modelConfig.compressModel
+                    }(${props.modelConfig.compressProviderName})`,
+                  )}
+                </option>
+              )}
               {allModels.flatMap((v) =>
-                v.available
+                v.available &&
+                (allowedModels.size === 0 ||
+                  allowedModels.has(`${v.name}@${v.provider?.providerName}`))
                   ? [
                       <option
                         value={`${v.name}@${v.provider?.providerName}`}

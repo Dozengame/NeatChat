@@ -25,11 +25,25 @@ import { createPersistStore } from "../utils/store";
 import type { Voice } from "rt-client";
 import {
   getMaxOutputTokensForReasoningEffort,
+  getOpenAIResponsesMaxOutputTokensLimit,
   OPENAI_RESPONSES_DEFAULT_MODEL,
+  OPENAI_RESPONSES_DEFAULT_INPUT_IMAGE_DETAIL,
+  OPENAI_RESPONSES_DEFAULT_PROMPT_CACHE_MODE,
+  OPENAI_RESPONSES_DEFAULT_REASONING_CONTEXT,
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
+  OPENAI_RESPONSES_DEFAULT_REASONING_MODE,
   OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY,
   OPENAI_RESPONSES_DEFAULT_TEMPERATURE,
+  parseOpenAIResponsesInputImageDetail,
+  parseOpenAIResponsesPromptCacheKey,
+  parseOpenAIResponsesPromptCacheMode,
+  parseOpenAIResponsesReasoningContext,
+  parseOpenAIResponsesReasoningMode,
   type OpenAIChatReasoningEffort,
+  type OpenAIResponsesInputImageDetail,
+  type OpenAIResponsesPromptCacheMode,
+  type OpenAIResponsesReasoningContext,
+  type OpenAIResponsesReasoningMode,
   type OpenAIResponsesTextVerbosity,
 } from "../utils/openai-responses";
 import type {
@@ -101,6 +115,11 @@ export type ModelConfig = {
   template: string;
   store: boolean;
   reasoningEffort?: OpenAIChatReasoningEffort;
+  reasoningMode?: OpenAIResponsesReasoningMode;
+  reasoningContext?: OpenAIResponsesReasoningContext;
+  inputImageDetail?: OpenAIResponsesInputImageDetail;
+  promptCacheMode?: OpenAIResponsesPromptCacheMode;
+  promptCacheKey?: string;
   textVerbosity?: OpenAIResponsesTextVerbosity;
   size: OpenAIImageSize;
   quality: OpenAIImageQuality;
@@ -148,7 +167,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   lastUpdate: Date.now(),
   submitKey: SubmitKey.Enter,
   avatar: "1f603",
-  fontSize: 14,
+  fontSize: 15,
   fontFamily: "",
   theme: Theme.Auto,
   tightBorder: !!config?.isApp,
@@ -185,6 +204,11 @@ export const DEFAULT_CONFIG: AppConfig = {
     template: config?.template ?? DEFAULT_INPUT_TEMPLATE,
     store: false,
     reasoningEffort: OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
+    reasoningMode: OPENAI_RESPONSES_DEFAULT_REASONING_MODE,
+    reasoningContext: OPENAI_RESPONSES_DEFAULT_REASONING_CONTEXT,
+    inputImageDetail: OPENAI_RESPONSES_DEFAULT_INPUT_IMAGE_DETAIL,
+    promptCacheMode: OPENAI_RESPONSES_DEFAULT_PROMPT_CACHE_MODE,
+    promptCacheKey: "",
     textVerbosity: OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY,
     size: "1024x1024" as OpenAIImageSize,
     quality: "standard" as OpenAIImageQuality,
@@ -306,8 +330,13 @@ export const ModalConfigValidator = {
   model(x: string) {
     return x as ModelType;
   },
-  max_output_tokens(x: number) {
-    return limitNumber(x, 0, 512000, 1024);
+  max_output_tokens(x: number, model?: string) {
+    return limitNumber(
+      x,
+      0,
+      getOpenAIResponsesMaxOutputTokensLimit(model),
+      1024,
+    );
   },
   compressMessageLengthThreshold(x: number) {
     return limitNumber(x, 500, 4000, 1000);
@@ -328,6 +357,13 @@ export const ModalConfigValidator = {
     return ["low", "medium", "high"].includes(x)
       ? (x as OpenAIResponsesTextVerbosity)
       : OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY;
+  },
+  reasoningMode: parseOpenAIResponsesReasoningMode,
+  reasoningContext: parseOpenAIResponsesReasoningContext,
+  inputImageDetail: parseOpenAIResponsesInputImageDetail,
+  promptCacheMode: parseOpenAIResponsesPromptCacheMode,
+  promptCacheKey(x: string) {
+    return parseOpenAIResponsesPromptCacheKey(x) ?? "";
   },
 };
 

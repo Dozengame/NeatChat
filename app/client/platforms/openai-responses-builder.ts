@@ -1,11 +1,27 @@
 import type { ChatOptions, MultimodalContent } from "../types";
 import type { ModelConfig } from "@/app/store";
+import type { ResponsesFunctionTool } from "./openai-responses-tools";
 import {
-  isOpenAIGpt5OrNewerModelConfig,
+  clampOpenAIResponsesMaxOutputTokens,
+  isOpenAIGpt56ModelConfig,
+  isOpenAIResponsesReasoningModelConfig,
+  isOpenAIResponsesTextVerbosityModelConfig,
+  normalizeOpenAIResponsesReasoningEffort,
+  parseOpenAIResponsesInputImageDetail,
+  parseOpenAIResponsesPromptCacheKey,
+  parseOpenAIResponsesPromptCacheMode,
+  parseOpenAIResponsesReasoningContext,
+  parseOpenAIResponsesReasoningMode,
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
+  OPENAI_RESPONSES_PROMPT_CACHE_TTL,
   OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY,
   supportsOpenAIResponsesSampling,
+  supportsOpenAIResponsesStreaming,
   type OpenAIResponsesReasoningEffort,
+  type OpenAIResponsesInputImageDetail,
+  type OpenAIResponsesPromptCacheMode,
+  type OpenAIResponsesReasoningContext,
+  type OpenAIResponsesReasoningMode,
   type OpenAIResponsesTextVerbosity,
   type OpenAIResponsesWebSearchMode,
 } from "@/app/utils/openai-responses";
@@ -14,10 +30,13 @@ export type ResponsesInputContent =
   | {
       type: "input_text";
       text: string;
+      prompt_cache_breakpoint?: { mode: "explicit" };
     }
   | {
       type: "input_image";
       image_url: string;
+      detail?: OpenAIResponsesInputImageDetail;
+      prompt_cache_breakpoint?: { mode: "explicit" };
     };
 
 export type ResponsesOutputContent =
@@ -41,9 +60,7 @@ export type ResponsesInputItem =
     }
   | Record<string, unknown>;
 
-export type ResponsesTool = {
-  type: "web_search";
-};
+export type ResponsesTool = { type: "web_search" } | ResponsesFunctionTool;
 
 export interface ResponsesRequestPayload {
   input: string | ResponsesInputItem[];
@@ -56,6 +73,8 @@ export interface ResponsesRequestPayload {
   reasoning?: {
     effort: OpenAIResponsesReasoningEffort;
     summary?: "auto" | "concise" | "detailed";
+    mode?: OpenAIResponsesReasoningMode;
+    context?: OpenAIResponsesReasoningContext;
   };
   text?: {
     verbosity?: OpenAIResponsesTextVerbosity;
@@ -68,6 +87,11 @@ export interface ResponsesRequestPayload {
   top_p?: number;
   tools?: ResponsesTool[];
   tool_choice?: "auto" | "required";
+  prompt_cache_key?: string;
+  prompt_cache_options?: {
+    mode: Exclude<OpenAIResponsesPromptCacheMode, "disabled">;
+    ttl: typeof OPENAI_RESPONSES_PROMPT_CACHE_TTL;
+  };
 }
 
 function contentToText(content: string | MultimodalContent[]) {
@@ -80,7 +104,10 @@ function contentToText(content: string | MultimodalContent[]) {
     .join("\n");
 }
 
-function toResponsesInputContent(content: string | MultimodalContent[]) {
+function toResponsesInputContent(
+  content: string | MultimodalContent[],
+  imageDetail?: OpenAIResponsesInputImageDetail,
+) {
   if (typeof content === "string") {
     return [
       {
@@ -107,6 +134,7 @@ function toResponsesInputContent(content: string | MultimodalContent[]) {
         {
           type: "input_image" as const,
           image_url: part.image_url.url,
+          ...(imageDetail ? { detail: imageDetail } : {}),
         },
       ];
     }
@@ -129,7 +157,11 @@ function toResponsesOutputContent(content: string | MultimodalContent[]) {
   ];
 }
 
-function toResponsesInput(messages: ChatOptions["messages"], store?: boolean) {
+function toResponsesInput(
+  messages: ChatOptions["messages"],
+  store?: boolean,
+  imageDetail?: OpenAIResponsesInputImageDetail,
+) {
   const instructions = messages
     .flatMap((message) => {
       if (message.role !== "system") return [];
@@ -183,7 +215,7 @@ function toResponsesInput(messages: ChatOptions["messages"], store?: boolean) {
     const content =
       message.role === "assistant"
         ? toResponsesOutputContent(message.content)
-        : toResponsesInputContent(message.content);
+        : toResponsesInputContent(message.content, imageDetail);
     if (content.length > 0) {
       input.push({
         role: message.role as "user" | "assistant",
@@ -199,6 +231,31 @@ function toResponsesInput(messages: ChatOptions["messages"], store?: boolean) {
   };
 }
 
+function addExplicitPromptCacheBreakpoint(input: ResponsesInputItem[]) {
+  for (let itemIndex = input.length - 1; itemIndex >= 0; itemIndex -= 1) {
+    const item = input[itemIndex] as {
+      role?: string;
+      content?: ResponsesMessageContent[];
+    };
+    if (item.role !== "user" || !Array.isArray(item.content)) continue;
+
+    for (
+      let contentIndex = item.content.length - 1;
+      contentIndex >= 0;
+      contentIndex -= 1
+    ) {
+      const content = item.content[contentIndex];
+      if (content.type !== "input_text" && content.type !== "input_image") {
+        continue;
+      }
+      content.prompt_cache_breakpoint = { mode: "explicit" };
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export function buildOpenAIResponsesPayload(params: {
   messages: ChatOptions["messages"];
   modelConfig: ModelConfig;
@@ -211,15 +268,34 @@ export function buildOpenAIResponsesPayload(params: {
   serviceTier?: string;
   enableWebSearch?: boolean;
   webSearchMode?: OpenAIResponsesWebSearchMode;
+  functionTools?: ResponsesFunctionTool[];
 }): ResponsesRequestPayload {
+  const isGpt56 = isOpenAIGpt56ModelConfig({
+    model: params.modelConfig.model,
+    providerName: params.modelConfig.providerName,
+  });
+  const supportsReasoning = isOpenAIResponsesReasoningModelConfig({
+    model: params.modelConfig.model,
+    providerName: params.modelConfig.providerName,
+  });
+  const supportsTextVerbosity = isOpenAIResponsesTextVerbosityModelConfig({
+    model: params.modelConfig.model,
+    providerName: params.modelConfig.providerName,
+  });
+  const inputImageDetail = isGpt56
+    ? parseOpenAIResponsesInputImageDetail(params.modelConfig.inputImageDetail)
+    : undefined;
   const { instructions, input, previousResponseId } = toResponsesInput(
     params.messages,
     params.store,
+    inputImageDetail,
   );
   const payload: ResponsesRequestPayload = {
     input,
     instructions,
-    stream: params.stream,
+    stream:
+      params.stream &&
+      supportsOpenAIResponsesStreaming(params.modelConfig.model),
     model: params.modelConfig.model,
   };
 
@@ -228,29 +304,69 @@ export function buildOpenAIResponsesPayload(params: {
   }
 
   if (params.modelConfig.max_output_tokens > 0) {
-    payload.max_output_tokens = params.modelConfig.max_output_tokens;
+    payload.max_output_tokens = clampOpenAIResponsesMaxOutputTokens(
+      params.modelConfig.max_output_tokens,
+      params.modelConfig.model,
+    );
   }
 
-  if (
-    isOpenAIGpt5OrNewerModelConfig({
-      model: params.modelConfig.model,
-      providerName: params.modelConfig.providerName,
-    })
-  ) {
+  if (supportsReasoning) {
     payload.reasoning = {
-      effort: (params.modelConfig.reasoningEffort ||
-        OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT) as OpenAIResponsesReasoningEffort,
+      effort: normalizeOpenAIResponsesReasoningEffort(
+        params.modelConfig.reasoningEffort ||
+          OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
+        params.modelConfig.model,
+      ) as OpenAIResponsesReasoningEffort,
       summary: params.reasoningSummary,
+      ...(isGpt56
+        ? {
+            mode: parseOpenAIResponsesReasoningMode(
+              params.modelConfig.reasoningMode,
+            ),
+            context: parseOpenAIResponsesReasoningContext(
+              params.modelConfig.reasoningContext,
+            ),
+          }
+        : {}),
     };
-    if (params.store === false) {
+    if (isGpt56 || params.store === false) {
       payload.include = ["reasoning.encrypted_content"];
     }
   }
 
-  const verbosity =
-    params.textVerbosity ??
-    params.modelConfig.textVerbosity ??
-    OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY;
+  if (isGpt56) {
+    const configuredCacheMode = parseOpenAIResponsesPromptCacheMode(
+      params.modelConfig.promptCacheMode,
+    );
+    if (configuredCacheMode === "disabled") {
+      payload.prompt_cache_options = {
+        mode: "explicit",
+        ttl: OPENAI_RESPONSES_PROMPT_CACHE_TTL,
+      };
+    } else {
+      const hasExplicitBreakpoint =
+        configuredCacheMode === "explicit" &&
+        Array.isArray(payload.input) &&
+        addExplicitPromptCacheBreakpoint(payload.input);
+      const cacheMode = hasExplicitBreakpoint ? "explicit" : "implicit";
+      payload.prompt_cache_options = {
+        mode: cacheMode,
+        ttl: OPENAI_RESPONSES_PROMPT_CACHE_TTL,
+      };
+      const promptCacheKey = parseOpenAIResponsesPromptCacheKey(
+        params.modelConfig.promptCacheKey,
+      );
+      if (promptCacheKey) {
+        payload.prompt_cache_key = promptCacheKey;
+      }
+    }
+  }
+
+  const verbosity = supportsTextVerbosity
+    ? params.textVerbosity ??
+      params.modelConfig.textVerbosity ??
+      OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY
+    : undefined;
   if (verbosity || params.textFormat) {
     payload.text = {
       ...(verbosity ? { verbosity } : {}),
@@ -270,8 +386,16 @@ export function buildOpenAIResponsesPayload(params: {
     payload.service_tier = params.serviceTier;
   }
 
+  const functionTools =
+    params.webSearchMode === "required" ? [] : params.functionTools ?? [];
+  const tools: ResponsesTool[] = [
+    ...(params.enableWebSearch ? [{ type: "web_search" as const }] : []),
+    ...functionTools,
+  ];
+  if (tools.length > 0) {
+    payload.tools = tools;
+  }
   if (params.enableWebSearch) {
-    payload.tools = [{ type: "web_search" }];
     if (params.webSearchMode === "required") {
       payload.tool_choice = "required";
     }

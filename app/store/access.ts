@@ -35,10 +35,20 @@ import {
   type PublicAppConfig,
 } from "../utils/public-app-config";
 import {
+  applyConfiguredOpenAIResponsesReasoningEffortDefault,
+  applyOpenAIResponsesModelConstraints,
+  getMaxOutputTokensForReasoningEffort,
+  OPENAI_RESPONSES_DEFAULT_MODEL,
+  resolveOpenAIResponsesReasoningEffortDefault,
+} from "../utils/openai-responses";
+import {
   getAccessCodeValidationServerId,
   isAccessCodeValidationCurrent,
 } from "../utils/access-code-validation";
-import { applyChatStateUpdate, getRegisteredChatStore } from "./chat-state-link";
+import {
+  applyChatStateUpdate,
+  getRegisteredChatStore,
+} from "./chat-state-link";
 
 let isFetchingConfig = false;
 let hasFetchedConfig = false;
@@ -171,12 +181,17 @@ export function sanitizeAccessPersistedState<T extends Record<string, any>>(
   };
 }
 
-const MODEL_CONFIG_FIELDS = [
+export const MODEL_CONFIG_FIELDS = [
   "model",
   "providerName",
   "temperature",
   "max_output_tokens",
   "reasoningEffort",
+  "reasoningMode",
+  "reasoningContext",
+  "inputImageDetail",
+  "promptCacheMode",
+  "promptCacheKey",
   "textVerbosity",
   "compressMessageLengthThreshold",
   "historyMessageCount",
@@ -213,21 +228,44 @@ function getServerModelConfig(publicConfig: PublicAppConfig) {
     providerName:
       publicConfig.forced.providerName ?? publicConfig.defaults.providerName,
     allowedModels: publicConfig.allowedModels,
-    fallbackModelRef: "gpt-5.5@OpenAI",
+    fallbackModelRef: `${OPENAI_RESPONSES_DEFAULT_MODEL}@OpenAI`,
   });
   const [model, providerName] = splitModelRef(modelRef);
+  const configuredReasoningEffort =
+    resolveOpenAIResponsesReasoningEffortDefault({
+      model,
+      providerName,
+      defaults: publicConfig.reasoningEffortDefaults,
+    }) ??
+    publicConfig.forced.reasoningEffort ??
+    publicConfig.defaults.reasoningEffort;
+  const configuredMaxOutputTokens =
+    publicConfig.forced.max_output_tokens ??
+    (publicConfig.reasoningEffortDefaults && configuredReasoningEffort
+      ? getMaxOutputTokensForReasoningEffort(configuredReasoningEffort)
+      : publicConfig.defaults.max_output_tokens);
 
   return {
     model,
     providerName,
     temperature:
       publicConfig.forced.temperature ?? publicConfig.defaults.temperature,
-    max_output_tokens:
-      publicConfig.forced.max_output_tokens ??
-      publicConfig.defaults.max_output_tokens,
-    reasoningEffort:
-      publicConfig.forced.reasoningEffort ??
-      publicConfig.defaults.reasoningEffort,
+    max_output_tokens: configuredMaxOutputTokens,
+    reasoningEffort: configuredReasoningEffort,
+    reasoningMode:
+      publicConfig.forced.reasoningMode ?? publicConfig.defaults.reasoningMode,
+    reasoningContext:
+      publicConfig.forced.reasoningContext ??
+      publicConfig.defaults.reasoningContext,
+    inputImageDetail:
+      publicConfig.forced.inputImageDetail ??
+      publicConfig.defaults.inputImageDetail,
+    promptCacheMode:
+      publicConfig.forced.promptCacheMode ??
+      publicConfig.defaults.promptCacheMode,
+    promptCacheKey:
+      publicConfig.forced.promptCacheKey ??
+      publicConfig.defaults.promptCacheKey,
     textVerbosity:
       publicConfig.forced.textVerbosity ?? publicConfig.defaults.textVerbosity,
     compressMessageLengthThreshold:
@@ -288,15 +326,7 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
   hasFetchedConfig = true;
 
   const oldSnapshot = useAppConfig.getState().serverConfigSnapshot;
-  if (
-    oldSnapshot?.configHash === publicConfig.configHash &&
-    oldSnapshot?.configVersion === publicConfig.configVersion &&
-    oldSnapshot?.deploymentId === publicConfig.deploymentId
-  ) {
-    useAccessStore.setState(() => publicConfigToAccessState(publicConfig));
-    return;
-  }
-
+  const oldAccessState = useAccessStore.getState();
   const serverModelConfig = getServerModelConfig(publicConfig);
 
   useAppConfig.setState((state) => {
@@ -389,6 +419,14 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
       );
     }
 
+    applyConfiguredOpenAIResponsesReasoningEffortDefault({
+      config: modelConfig,
+      configMeta: modelConfigMeta,
+      defaults: publicConfig.reasoningEffortDefaults,
+    });
+
+    applyOpenAIResponsesModelConstraints(modelConfig);
+
     return {
       customModels: publicConfig.legacy.customModels,
       serverConfigSnapshot: publicConfig,
@@ -428,6 +466,62 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
         }
 
         if (!session.mask.syncGlobalConfig) {
+          if (modelConfig[field] === undefined) {
+            modelConfig = {
+              ...modelConfig,
+              [field]: globalConfig.modelConfig[field] ?? serverValue,
+            };
+            modelConfigMeta = {
+              ...modelConfigMeta,
+              [field]:
+                globalConfig.modelConfigMeta?.[field] ??
+                createConfigFieldMeta({
+                  source: "server_default",
+                  publicConfig,
+                }),
+            };
+            continue;
+          }
+
+          const fieldSource = modelConfigMeta[field]?.source;
+          const oldServerValue =
+            oldSnapshot?.forced?.[field as keyof PublicAppConfig["forced"]] ??
+            oldSnapshot?.defaults?.[field as keyof PublicAppConfig["defaults"]];
+          const isLegacyInheritedValue =
+            fieldSource === undefined &&
+            ((field === "reasoningEffort" &&
+              (modelConfig.reasoningEffort ===
+                DEFAULT_CONFIG.modelConfig.reasoningEffort ||
+                modelConfig.reasoningEffort ===
+                  oldAccessState.openaiReasoningEffort ||
+                modelConfig.reasoningEffort === oldServerValue)) ||
+              (field === "max_output_tokens" &&
+                (modelConfig.max_output_tokens ===
+                  DEFAULT_CONFIG.modelConfig.max_output_tokens ||
+                  modelConfig.max_output_tokens ===
+                    oldAccessState.openaiMaxOutputTokens ||
+                  modelConfig.max_output_tokens === oldServerValue ||
+                  modelConfig.max_output_tokens ===
+                    getMaxOutputTokensForReasoningEffort(
+                      modelConfig.reasoningEffort,
+                    ))));
+          if (
+            (field === "reasoningEffort" || field === "max_output_tokens") &&
+            (fieldSource === "server_default" ||
+              fieldSource === "fallback" ||
+              isLegacyInheritedValue)
+          ) {
+            if (isLegacyInheritedValue) {
+              modelConfigMeta = setFieldMeta(
+                modelConfigMeta,
+                field,
+                publicConfig,
+                "server_default",
+              );
+            }
+            continue;
+          }
+
           modelConfigMeta = setFieldMeta(
             modelConfigMeta,
             field,
@@ -479,6 +573,14 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
           true,
         );
       }
+
+      applyConfiguredOpenAIResponsesReasoningEffortDefault({
+        config: modelConfig,
+        configMeta: modelConfigMeta,
+        defaults: publicConfig.reasoningEffortDefaults,
+      });
+
+      applyOpenAIResponsesModelConstraints(modelConfig);
 
       return {
         ...session,
@@ -725,7 +827,11 @@ export const useAccessStore = createPersistStore(
           "Content-Type": "application/json",
           Accept: "application/json",
           ...(get().accessCode
-            ? { Authorization: `Bearer ${ACCESS_CODE_PREFIX}${get().accessCode}` }
+            ? {
+                Authorization: `Bearer ${ACCESS_CODE_PREFIX}${
+                  get().accessCode
+                }`,
+              }
             : {}),
         },
       })

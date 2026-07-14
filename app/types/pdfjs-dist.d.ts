@@ -1,6 +1,7 @@
 declare module "pdfjs-dist" {
   export function getDocument(options: { data: ArrayBuffer }): {
     promise: Promise<PDFDocumentProxy>;
+    destroy(): Promise<void>;
   };
 
   export interface PDFDocumentProxy {

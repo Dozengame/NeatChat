@@ -10,6 +10,8 @@ const cn = {
       ? "访问密码无效，请重新输入。"
       : "访问密码无效，请重新输入。",
     AccessRestricted: "当前访问暂时受限，请稍后再试。",
+    RequestFailed: (status?: number) =>
+      status ? `请求失败（${status}）。` : "请求失败。",
   },
   Auth: {
     Return: "返回",
@@ -26,6 +28,7 @@ const cn = {
     ChatItemCount: (count: number) => `${count} 条对话`,
   },
   Chat: {
+    PersistenceFailed: "会话保存失败，最近的更改可能会在刷新后丢失",
     SubTitle: (count: number) => `共 ${count} 条对话`,
     EditMessage: {
       Title: "编辑消息记录",
@@ -41,6 +44,8 @@ const cn = {
       Copy: "复制",
       Stop: "停止",
       Retry: "重试",
+      RetryToolTraceBlocked:
+        "工具可能已经执行。为避免重复操作，请发送一条新消息继续。",
       Pin: "固定",
       PinToastContent: "已将 1 条对话固定至预设提示词",
       PinToastAction: "查看",
@@ -63,6 +68,7 @@ const cn = {
     },
     InputActions: {
       Stop: "停止响应",
+      ToTop: "滚到最早",
       ToBottom: "滚到最新",
       Theme: {
         auto: "自动主题",
@@ -78,12 +84,11 @@ const cn = {
     Rename: "重命名对话",
     Typing: "正在输入…",
     EmptyTitle: "你好！想聊点什么？",
-    EmptySuggestions: [
-      "总结这段内容",
-      "帮我规划今天的任务",
-      "生成一张产品海报",
-      "分析这份文件",
-    ] as string[],
+    HomeMode: {
+      Label: "新聊天模式",
+      Chat: "聊天",
+      Image: "生图",
+    },
     Input: (submitKey: string) => {
       var inputHints = `${submitKey} 发送`;
       if (submitKey === String(SubmitKey.Enter)) {
@@ -111,6 +116,252 @@ const cn = {
     TokenInfo: {
       TokenCount: (count: number) => `${count} Tokens`,
       FirstDelay: (delay: number) => `首字延迟: ${delay}ms`,
+      Label: (details?: string) =>
+        details ? `Token 信息，${details}` : "Token 信息",
+    },
+    SourcesHeading: "来源",
+    ChatToolMenu: {
+      MultimodalTools: "多模态工具",
+      AddContent: "添加内容",
+      FilesAndImages: "文件和图片",
+      Capacity: "3 图 · 5 文件",
+      Full: "已满",
+      UploadAttachment: "上传附件",
+      AttachmentFull: "附件已满：最多 3 张图片、5 个文件",
+      SessionTools: "会话工具",
+      Session: "会话",
+      ModelsAndSettings: "模型和设置",
+      Close: "关闭对话工具",
+      Open: "打开对话工具",
+      MenuLabel: "对话工具菜单",
+    },
+    Attachments: {
+      TextConverted: "文本过长，已自动转换为文件附件",
+      ContentTruncated: (limit: number) =>
+        `文件内容过大，已截断至 ${limit} 字符`,
+      AddedFiles: (count: number) => `已添加 ${count} 个文件`,
+      MaxFiles: "最多只能上传5个文件，已保留前5个",
+      FileSlotsFull: "最多只能上传5个文件",
+      AddedImages: (count: number) => `已添加 ${count} 张图片`,
+      MaxImages: "最多只能上传3张图片，已保留前3张",
+      ImageSlotsFull: "最多只能上传3张图片",
+      FileTooLarge: (name: string) => `文件 ${name} 超过 15MB 限制，已忽略`,
+      DragReadFailed: "读取拖拽附件失败",
+      PasteReadFailed: "读取粘贴附件失败",
+      FileReadFailed: "读取文件失败",
+      LongTextConverted: "已将长文本转为附件",
+      InputTextFile: (timestamp?: string) =>
+        `输入文本${timestamp ? `_${timestamp}` : ""}.txt`,
+      LongTextFile: "长文本.txt",
+      PastedTextFile: "粘贴的文本.txt",
+      LongTextMessage: "我发送了一个长文本文件，内容已自动转换为附件。",
+      FileMetadata: {
+        Name: "文件名",
+        Type: "类型",
+        Size: "大小",
+      },
+      JoinMessages: (messages: string[]) => messages.join("，"),
+      LiveStatus: (text: string, hint: string) => `${text}，${hint}。`,
+      Full: "附件已满：最多 3 张图片、5 个文件",
+      DropTitle: "拖拽文件或图片到此处上传",
+      DropDetect: "检测拖拽附件",
+      Preview: "附件预览",
+      AddMore: "继续添加附件",
+      FullShort: "已满",
+      EditImage: (index: number) => `编辑第 ${index} 张图片附件`,
+      DeleteImage: (index: number) => `删除第 ${index} 张图片附件`,
+      EditFile: (index: number, name: string) =>
+        `编辑第 ${index} 个文件附件：${name}`,
+      EditFileContent: (name: string) => `编辑文件内容: ${name}`,
+      DeleteFile: (index: number, name: string) =>
+        `删除第 ${index} 个文件附件：${name}`,
+      Reader: {
+        UnknownError: "未知错误",
+        UnsupportedFileType: "不支持的文件类型",
+        UnsupportedFile: (name: string) => `${name || "该文件"} 类型不支持`,
+        PastedFileName: "粘贴的文件.txt",
+        ReadFailed: (name: string, error: string) =>
+          `读取文件 ${name} 失败：${error}`,
+        NoFilesRead: "没有成功读取任何文件",
+        TextFileType: "文本文件",
+        ContentTruncated: (length: number) =>
+          `[文件过大，已截断。原文件大小：${length} 字符]`,
+        ImageLoadFailed: "图片加载失败",
+        Legacy: {
+          Title: (name: string) => `检测到旧版 ${name} 文档`,
+          Description: (extension: string) =>
+            `您上传的是旧版 ${extension} 格式文件，无法完全解析其内容。`,
+          ConvertIntro: "为获得最佳效果，请按照以下步骤转换文件：",
+          OpenWith: (app: string) => `使用 ${app} 打开文件`,
+          SaveAs: "点击“文件” > “另存为”",
+          ChooseFormat: (format: string) => `选择“${format}”格式`,
+          SaveAndUpload: "保存并上传新文件",
+          PartialTextAttempt: "将尝试提取部分文本内容，但效果可能不理想。",
+          PartialTableAttempt: "将尝试提取表格内容，但效果可能不理想。",
+          Warning: (extension: string, target: string) =>
+            `【注意】此文件为旧版 ${extension} 格式，文本提取可能不完整。为获得最佳效果，请将文件转换为 ${target} 格式后再上传。`,
+          CannotFullyRead: (extension: string, target: string) =>
+            `【无法读取】此文件为旧版 ${extension} 格式，无法完全解析其内容。请将文件转换为 ${target} 格式后再上传，或复制文件内容后直接粘贴。`,
+          CannotRead: (extension: string, target: string) =>
+            `【无法读取】此文件为旧版 ${extension} 格式，无法解析其内容。请将文件转换为 ${target} 格式后再上传，或复制文件内容后直接粘贴。`,
+          FormatErrorTitle: "文件格式错误",
+          FormatErrorDescription: "无法读取此文件，可能是格式不正确或已损坏。",
+          ConvertDoc: "如果这是 .doc 格式文件，请按照以下步骤转换：",
+          FormatErrorMessage:
+            "文件格式不正确或已损坏。如果是 .doc 格式，请转换为 .docx 格式后再上传。",
+        },
+        Word: {
+          Name: "Word",
+          App: "Microsoft Word 或 WPS",
+          Format: "Word 文档 (.docx)",
+        },
+        PowerPoint: {
+          Name: "PowerPoint",
+          App: "PowerPoint 或 WPS 演示",
+          Format: "PowerPoint 演示文稿 (.pptx)",
+          Slide: (number: number, text: string) =>
+            `--- 幻灯片 ${number} ---\n${text}`,
+          Content: (slides: string) => `PowerPoint 演示文稿内容：\n\n${slides}`,
+          ExtractionFailed:
+            "【提取失败】无法从 PowerPoint 文件中提取文本内容。可能是文件格式不支持或不包含文本。",
+          ParseFailed:
+            "【提取失败】无法解析 PowerPoint 文件内容。请尝试将重要内容复制后直接粘贴。",
+        },
+        Pdf: {
+          Content: (pages: number) => `PDF 文档内容（共 ${pages} 页）：\n\n`,
+          UnreadablePage: "[无法解析此页]",
+          BlankPage: "[空白或图像内容]",
+          Page: (number: number, text: string) =>
+            `--- 第 ${number} 页 ---\n${text}\n\n`,
+          Truncated: (processed: number, total: number) =>
+            `\n[文件过大，仅处理了前 ${processed} 页。总页数：${total}]\n`,
+          LimitedTitle: "PDF 内容提取受限",
+          LimitedDescription: "无法从 PDF 提取文本内容，可能是以下原因：",
+          Scanned: "PDF 是扫描版（图像而非文本）",
+          Protected: "PDF 使用了内容保护或加密",
+          Damaged: "PDF 格式特殊或已损坏",
+          Suggestions: "建议：",
+          UseOcr: "使用 OCR 软件处理此 PDF",
+          CopyManually: "手动复制需要的内容后粘贴",
+          UseSmallerFile: "尝试使用较小的 PDF 文件",
+          LimitedContent: (name: string, sizeMb: string, pages: number) =>
+            `【PDF 内容提取受限】\n\n此 PDF 文件（${name}）无法提取文本内容，可能是扫描版或受保护的 PDF。\n\n文件信息：\n- 大小：${sizeMb} MB\n- 页数：${pages} 页\n\n建议使用 OCR 软件处理此文件，或手动复制需要的内容。`,
+          ParseFailedTitle: "PDF 解析失败",
+          ParseFailedDescription: "无法解析 PDF 文件内容。",
+          Error: (message: string) => `错误信息：${message}`,
+          ParseFailedHelp:
+            "请尝试使用其他 PDF 查看器打开文件，然后复制内容后直接粘贴。",
+          ParseFailedContent:
+            "【PDF 解析失败】无法提取 PDF 文件内容。请尝试使用 PDF 查看器打开文件，然后复制内容后直接粘贴。",
+        },
+        Zip: {
+          BinaryFile: (size: number) => `[二进制文件，大小：${size} 字节]`,
+          UnreadableFile: "[无法读取此文件]",
+          Content: (name: string) => `ZIP 文件内容（${name}）：\n`,
+          TotalFiles: (count: number) => `总文件数：${count}`,
+          ShowingFirst: (count: number) => `（仅显示前 ${count} 个文件）`,
+          TextFiles: (count: number) => `\n文本文件数：${count}\n\n`,
+          Truncated: (processed: number, total: number) =>
+            `\n[ZIP 文件过大，仅处理了前 ${processed} 个文件。总文件数：${total}]\n`,
+          LimitedTitle: "ZIP 文件内容提取受限",
+          NoReadableText:
+            "此 ZIP 文件不包含可读取的文本文件，或文件格式不受支持。",
+          SupportedTextOnly:
+            "只能提取常见文本文件的内容，如 .txt、.md、.js、.py 等。",
+          ExtractHelp: "建议解压 ZIP 文件后，单独上传需要的文本文件。",
+          ParseFailedTitle: "ZIP 解析失败",
+          ParseFailedDescription: "无法解析 ZIP 文件内容。",
+          ParseFailedHelp:
+            "请确保上传的是有效的 ZIP 文件，或尝试解压后单独上传文件。",
+          ParseFailedContent:
+            "【ZIP 解析失败】无法提取 ZIP 文件内容。请确保上传的是有效的 ZIP 文件，或尝试解压后单独上传文件。",
+        },
+        Excel: {
+          Name: "Excel",
+          App: "Microsoft Excel 或 WPS 表格",
+          Format: "Excel 工作簿 (.xlsx)",
+          Content: (name: string) => `Excel 表格内容（${name}）：\n\n`,
+          SheetCount: (count: number) => `工作表数量：${count}\n\n`,
+          Sheet: (name: string) => `=== 工作表：${name} ===\n\n`,
+          EmptySheet: "[空工作表]\n\n",
+          ParseFailedTitle: "Excel 解析失败",
+          ParseFailedDescription: "无法解析 Excel 文件内容。",
+          ParseFailedHelp:
+            "请尝试使用 Excel 打开文件，然后复制内容后直接粘贴。",
+          ParseFailedContent:
+            "【Excel 解析失败】无法提取 Excel 文件内容。请尝试使用 Excel 打开文件，然后复制内容后直接粘贴。",
+        },
+      },
+      Drag: {
+        AddHint: "释放后添加到输入框 · 最多3张图片、5个文件",
+        BlockedHint: "释放后不会添加新附件",
+        ImageLimit: "图片已达 3 张上限",
+        FileLimit: "文件已达 5 个上限",
+        Limit: "附件数量已达上限",
+        Detect: "释放后识别附件",
+        ImageCount: (count: number) => `${count} 张图片`,
+        FileCount: (count: number) => `${count} 个文件`,
+        WillAdd: (parts: string[], overflow: boolean) =>
+          overflow
+            ? `将添加 ${parts.join("、")}，其余会自动忽略`
+            : `将添加 ${parts.join("、")}`,
+      },
+    },
+    ImageGeneration: {
+      Failed: "图片生成失败",
+      Progress: {
+        Model: (model: string) => (model ? `\n\n模型：${model}` : ""),
+        Preparing: "正在准备图片生成请求...",
+        Generating: "正在生成图片，请稍候...",
+        Saving: "图片已生成，正在保存图片...",
+        Cancelled: "图片生成已取消",
+      },
+    },
+    ModelMenu: {
+      SelectModel: (model: string, detail: string) =>
+        `选择模型：${model}，${detail}`,
+      SelectModelAndParams: "选择模型和参数",
+      SwitchModel: "切换模型",
+      Close: "关闭模型选择",
+      ModelAndReasoning: "模型和思考等级",
+      ImageOptions: "图片选项",
+      AvailableModels: "可选模型",
+      Empty: "暂无可用模型",
+      ChatModelUnavailable: "暂无可用的 GPT-5.x 聊天模型",
+      ImageModelUnavailable: "暂无可用的生图模型",
+      ReasoningEffort: "思考等级",
+      ReasoningOptions: "思考等级选项",
+      ImageSize: "图片尺寸",
+      ImageSizeOptions: "图片尺寸选项",
+      ImageSizeDescription: (size: string) =>
+        size === "auto"
+          ? "由模型自动选择合适尺寸"
+          : `常用尺寸：${size.replace("x", " × ")}`,
+      ImageQuality: "图片清晰度",
+      ImageQualityOptions: "图片清晰度选项",
+      ImageQualityDescription: (quality: string) =>
+        quality === "auto"
+          ? "由模型自动平衡速度与细节"
+          : quality === "hd"
+          ? "使用高清渲染质量"
+          : quality === "standard"
+          ? "使用标准渲染质量"
+          : `使用${
+              quality === "high" ? "高" : quality === "medium" ? "中" : "低"
+            }清晰度`,
+      CurrentInputMode: "当前输入模式",
+      SelectedReasoning: (label: string) => `思考等级：${label}`,
+      SelectedImageOptions: (summary: string) => `图片选项：${summary}`,
+    },
+    Accessibility: {
+      PromptSuggestions: "提示词建议",
+      ChatMessages: "聊天消息",
+      MessageList: "会话消息列表",
+      UserMessage: (index: number) => `用户消息 ${index}`,
+      AssistantMessage: (index: number) => `助手消息 ${index}`,
+      MessageActions: (label: string) => `${label} 操作`,
+      CombinedLabels: (labels: string[]) => labels.join("，"),
+      ActionLabel: (group: string, action: string) => `${group}：${action}`,
     },
   },
   Export: {
@@ -173,6 +424,28 @@ const cn = {
     Title: "设置",
     SubTitle: "所有设置选项",
     ShowPassword: "显示密码",
+    Sections: {
+      General: {
+        Title: "常规偏好",
+        Description: "输入方式、主题、语言和字体。",
+      },
+      Chat: {
+        Title: "对话体验",
+        Description: "控制聊天标题、预览气泡、Artifacts、代码阅读和会话工具。",
+      },
+      Data: {
+        Title: "数据",
+        Description: "云端同步、本地导入导出、面具和提示词。",
+      },
+      Model: {
+        Title: "模型",
+        Description: "访问密码、服务来源、模型参数和压缩设置。",
+      },
+      Advanced: {
+        Title: "高级偏好",
+        Description: "重置和清除操作。",
+      },
+    },
 
     Danger: {
       Reset: {
@@ -190,6 +463,7 @@ const cn = {
     },
     Lang: {
       Name: "Language", // ATTENTION: if you wanna add a new translation, please do not translate this value, leave it as `Language`
+      FollowApp: "跟随应用语言",
       All: "所有语言",
     },
     FontSize: {
@@ -619,9 +893,62 @@ const cn = {
     },
 
     Model: "模型 (model)",
+    ImageGeneration: {
+      Size: "图像尺寸",
+      Quality: "渲染质量",
+      Auto: "自动",
+      Low: "低",
+      Medium: "中",
+      High: "高",
+      Standard: "标准",
+      HD: "高清",
+      SizeLabel: (size: string) =>
+        ({
+          auto: "自动",
+          "1024x1024": "方形 · 1K",
+          "1536x1024": "横向 · 1.5K",
+          "1024x1536": "纵向 · 1.5K",
+          "2048x2048": "方形 · 2K",
+          "2048x1152": "横向 · 2K",
+          "3840x2160": "横向 · 4K",
+          "2160x3840": "纵向 · 4K",
+        })[size] ?? size,
+      SizeOption: (size: string) => {
+        const label =
+          {
+            auto: "自动",
+            "1024x1024": "方形 · 1K",
+            "1536x1024": "横向 · 1.5K",
+            "1024x1536": "纵向 · 1.5K",
+            "2048x2048": "方形 · 2K",
+            "2048x1152": "横向 · 2K",
+            "3840x2160": "横向 · 4K",
+            "2160x3840": "纵向 · 4K",
+          }[size] ?? size;
+        return size === "auto" ? label : `${label}（${size}）`;
+      },
+      QualityOption: (quality: string) =>
+        ({
+          auto: "自动",
+          low: "低",
+          medium: "中",
+          high: "高",
+          standard: "标准",
+          hd: "高清",
+        })[quality] ?? quality,
+    },
+    TextVerbosity: {
+      Title: "回答详细程度 (text.verbosity)",
+      SubTitle: "控制 Responses API 的回答详略",
+      Low: "简洁",
+      Medium: "适中",
+      High: "详细",
+    },
     CompressModel: {
       Title: "对话摘要模型",
       SubTitle: "用于压缩历史记录、生成对话标题的模型",
+      FollowDefault: (model: string) => `跟随默认模型（当前：${model}）`,
+      Unavailable: (model: string) => `${model}（当前不可用）`,
     },
     Temperature: {
       Title: "随机性 (temperature)",
@@ -634,9 +961,65 @@ const cn = {
     ReasoningEffort: {
       Title: "思考深度",
       SubTitle: "适用于 GPT-5.x 及以上模型",
-      Low: "标准",
-      Medium: "进阶",
-      High: "深入",
+      None: "快速",
+      Minimal: "最简",
+      Low: "低",
+      Medium: "中",
+      High: "高",
+      XHigh: "极高",
+      Max: "MAX",
+      NoneDescription: "不使用额外推理，优先速度",
+      MinimalDescription: "使用最少推理，兼顾速度与基础判断",
+      LowDescription: "最适合回答大多数问题",
+      MediumDescription: "更稳妥处理复杂任务",
+      HighDescription: "用于高难度推理",
+      XHighDescription: "用于需要更多探索和校验的任务",
+      MaxDescription: "用于最困难且质量优先的任务",
+    },
+    GPT56Capabilities: {
+      ConfigSource: {
+        Prefix: "来源：",
+        Separator: "。",
+        Locked: "该项已由管理员锁定",
+        AdminForced: "管理员锁定",
+        ServerDefault: "管理员默认",
+        UserOverride: "个人设置",
+        ConversationOverride: "当前会话",
+        Fallback: "系统默认",
+      },
+      ReasoningMode: {
+        Title: "推理模式",
+        SubTitle: "Standard 平衡速度与质量；Pro 优先深度推理",
+        Standard: "Standard",
+        Pro: "Pro",
+      },
+      ReasoningContext: {
+        Title: "推理上下文",
+        SubTitle: "控制模型在当前轮或跨轮保留推理上下文",
+        Auto: "自动",
+        CurrentTurn: "仅当前轮",
+        AllTurns: "全部轮次",
+      },
+      InputImageDetail: {
+        Title: "图片理解精度",
+        SubTitle: "默认 High，避免 GPT-5.6 Auto 使用 Original 增加成本与延迟",
+        Low: "Low",
+        High: "High",
+        Original: "Original",
+        Auto: "Auto",
+      },
+      PromptCacheMode: {
+        Title: "Prompt Cache 模式",
+        SubTitle:
+          "关闭使用无断点的 Explicit 策略以避免缓存写入；Implicit 自动缓存；Explicit 在最新输入处设置缓存断点",
+        Disabled: "关闭",
+        Implicit: "Implicit",
+        Explicit: "Explicit",
+      },
+      PromptCacheKey: {
+        Title: "Prompt Cache Key",
+        SubTitle: "可选路由键；会发送到 OpenAI，请勿填写密钥或个人信息",
+      },
     },
     MaxTokens: {
       Title: "输出上限 (max_output_tokens)",
@@ -731,6 +1114,87 @@ const cn = {
       SubTitle: "是否在对话框中显示快捷键按钮",
     },
   },
+  ImageActions: {
+    Image: "图片",
+    Gallery: "图片方案",
+    ShowGalleryImage: (index: number, total: number) =>
+      `展示第 ${index} 张图片，共 ${total} 张`,
+    Preview: "预览图片",
+    Download: "下载图片原图",
+    PreviewWithLabel: (label: string) => `预览 ${label}`,
+    DownloadWithLabel: (label: string) => `下载 ${label} 原图`,
+    PreviewAlt: "图片预览",
+    PreviewDialog: "图片预览",
+    PreviewDialogWithLabel: (label: string) => `图片预览：${label}`,
+    Message: (index: number, total: number) =>
+      total > 1 ? `第 ${index} 张图片` : "图片",
+    OpenedOriginal: "无法直接保存图片，已打开原图",
+    ClosePreview: "关闭预览",
+  },
+  ImageEditor: {
+    Title: "编辑图片",
+    Undo: "撤销",
+    Redo: "重做",
+    Toolbar: "图片编辑工具",
+    DrawingTools: "绘图工具",
+    Brush: "画笔工具",
+    Eraser: "橡皮擦",
+    Line: "直线工具",
+    Arrow: "箭头工具",
+    Rectangle: "矩形工具",
+    Circle: "圆形工具",
+    Color: "颜色",
+    BrushSize: "笔刷大小",
+    ChooseColor: (color: string) => `选择颜色 ${color}`,
+    ChooseBrushSize: (size: number) => `选择笔刷大小 ${size}`,
+  },
+  Markdown: {
+    CopyCode: (language: string, copied: boolean) =>
+      copied
+        ? `已复制${language ? ` ${language}` : ""}代码`
+        : `复制${language ? ` ${language}` : ""}代码`,
+    WrapCode: (language: string, enabled: boolean) =>
+      `${enabled ? "关闭" : "开启"}${
+        language ? ` ${language}` : ""
+      }代码自动换行`,
+    ScrollableTable: (headers: string) =>
+      headers
+        ? `Markdown 表格（${headers}），可横向滚动`
+        : "Markdown 表格，可横向滚动",
+    ScrollableTableHint: "横向滑动查看更多列",
+    TableToolbar: "表格阅读工具",
+    TableScrollbar: "横向滚动表格",
+    TableScrollPosition: (percent: number) => `已滚动 ${percent}%`,
+    ExpandTable: "全屏查看表格",
+    CollapseTable: "退出表格全屏",
+    TableDialog: (headers: string) =>
+      headers ? `全屏表格：${headers}` : "全屏 Markdown 表格",
+    ScrollableFormula: "块级公式，可横向滚动",
+    HtmlPreview: "HTML 预览",
+    RunHtmlPreview: "运行 HTML 预览",
+    Audio: "音频",
+    Video: "视频",
+    MediaAttachment: (type: string, label: string) => `${type}附件：${label}`,
+    MediaFallback: (type: string) => `${type}暂时无法预览，可打开原文件查看。`,
+    OpenOriginal: "打开原文件",
+    UnknownType: "未知类型",
+    FileCopied: "文件内容已复制到剪贴板",
+    FileCopyFailed: "复制文件内容失败",
+    FileNotFound: "无法找到文件内容",
+    FileLoadFailed: "文件附件加载失败",
+  },
+  FileAttachment: {
+    Label: (name: string, type: string, size: string, interactive: boolean) =>
+      `文件附件：${name}，${type}，${size}。${
+        interactive ? "点击复制文件内容。" : ""
+      }`,
+    Meta: (type: string, size: string) => `类型 ${type}，大小 ${size}`,
+  },
+  UpdateAnnouncement: {
+    Title: (date: string) => `${date} 更新内容`,
+    SectionTitle: "更新",
+    Acknowledge: "我知道了",
+  },
   Store: {
     DefaultTopic: "新的聊天",
     BotHello: "有什么可以帮你的吗",
@@ -753,6 +1217,7 @@ const cn = {
   },
   Context: {
     Toast: (x: any) => `包含 ${x} 条预设提示词`,
+    SettingsWithPrompts: (x: number) => `对话设置，包含 ${x} 条预设提示词`,
     Edit: "当前对话设置",
     Add: "新增一条对话",
     Clear: "上下文已清除",
@@ -763,6 +1228,12 @@ const cn = {
   },
   Mcp: {
     Name: "MCP",
+    Chat: {
+      ToolCall: "工具调用",
+      Progress: "当前进度：",
+      PreparingTool: "正在准备执行工具",
+      ToolFailure: "工具调用失败，请重试",
+    },
     Market: {
       Title: "MCP 市场",
       SubTitle: (count: number) => `${count} 个服务器已配置`,
@@ -942,6 +1413,7 @@ const cn = {
     CodeBlockExpand: "展开完整代码块",
     Mermaid: {
       Preview: "预览 Mermaid 图表",
+      Caption: "Mermaid 图表",
       Unavailable: "图表暂不可用",
       SourceLabel: "Mermaid 源码",
     },
@@ -968,6 +1440,12 @@ const cn = {
     Config: "配置",
     Search: "搜索",
     All: "全部",
+    CloseSidebar: "关闭侧边栏",
+    ExpandSidebar: "展开栏",
+    CollapseSidebar: "折叠栏",
+    Selector: "选择选项",
+    CloseSelector: "关闭选择器",
+    SearchModels: "搜索模型",
   },
   Exporter: {
     Description: {
