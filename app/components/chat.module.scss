@@ -3655,17 +3655,12 @@
 }
 
 .chat-message-action-rail {
-  --message-action-rail-border-color: color-mix(in srgb, var(--black-50) 9%, transparent);
-  --message-action-rail-background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
-  --message-action-rail-shadow-color: color-mix(in srgb, var(--black-50) 6%, transparent);
-  --message-action-button-background: color-mix(in srgb, var(--surface) 2%, transparent);
-  --message-action-button-color: color-mix(in srgb, var(--black-50) 78%, var(--black));
-  --message-action-button-hover-background: color-mix(in srgb, var(--primary) 8%, var(--surface-elevated));
-  --message-action-button-hover-color: color-mix(in srgb, var(--primary) 66%, var(--black));
-  --message-action-button-hover-shadow-color: color-mix(in srgb, var(--primary) 8%, transparent);
-  --message-action-button-active-background: color-mix(in srgb, var(--primary) 12%, var(--surface-elevated));
+  --message-action-button-background: transparent;
+  --message-action-button-color: color-mix(in srgb, var(--black-50) 86%, transparent);
+  --message-action-button-hover-background: color-mix(in srgb, var(--black-50) 8%, transparent);
+  --message-action-button-hover-color: color-mix(in srgb, var(--black) 90%, transparent);
+  --message-action-button-active-background: color-mix(in srgb, var(--primary) 10%, transparent);
   --message-action-button-active-color: color-mix(in srgb, var(--primary) 74%, var(--black));
-  --message-action-button-focus-shadow-color: color-mix(in srgb, var(--primary) 18%, transparent);
   --message-action-copy-success-background: var(--copy-success-background);
   --message-action-copy-success-color: var(--copy-success-color);
 
@@ -3673,13 +3668,13 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-start;
-  gap: 4px;
+  gap: 2px;
   max-width: 100%;
-  padding: 3px;
-  border: 1px solid var(--message-action-rail-border-color);
-  border-radius: 999px;
-  background: var(--message-action-rail-background);
-  box-shadow: 0 8px 24px var(--message-action-rail-shadow-color);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 
   .chat-input-action {
     appearance: none;
@@ -3699,6 +3694,7 @@
     font: inherit;
     line-height: 1;
     overflow: hidden;
+    filter: none !important;
     animation: none;
     transition:
       background-color 0.16s ease,
@@ -3710,21 +3706,20 @@
       width: 34px;
       background: var(--message-action-button-hover-background);
       color: var(--message-action-button-hover-color);
-      box-shadow: 0 6px 18px var(--message-action-button-hover-shadow-color);
+      box-shadow: none;
     }
 
     &:active {
       background: var(--message-action-button-active-background);
       color: var(--message-action-button-active-color);
-      box-shadow: inset 0 0 0 1px var(--message-action-button-hover-shadow-color);
+      box-shadow: none;
+      transform: scale(0.97);
     }
 
     &:focus-visible {
       outline: var(--focus-ring);
       outline-offset: 2px;
-      box-shadow:
-        var(--focus-ring-shadow),
-        0 8px 22px var(--message-action-button-focus-shadow-color);
+      box-shadow: var(--focus-ring-shadow);
     }
   }
 
@@ -3797,34 +3792,24 @@
 }
 
 :global(.dark) .chat-message-action-rail {
-  --message-action-rail-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-  --message-action-rail-background: color-mix(in srgb, var(--surface-soft) 58%, transparent);
-  --message-action-rail-shadow-color: color-mix(in srgb, rgb(0, 0, 0) 22%, transparent);
-  --message-action-button-background: color-mix(in srgb, var(--black) 2%, transparent);
+  --message-action-button-background: transparent;
   --message-action-button-color: color-mix(in srgb, var(--black) 72%, transparent);
   --message-action-button-hover-background: color-mix(in srgb, var(--primary) 14%, var(--surface));
   --message-action-button-hover-color: color-mix(in srgb, var(--primary) 72%, var(--black));
-  --message-action-button-hover-shadow-color: color-mix(in srgb, var(--primary) 12%, transparent);
   --message-action-button-active-background: color-mix(in srgb, var(--primary) 18%, var(--surface));
   --message-action-button-active-color: color-mix(in srgb, var(--primary) 82%, var(--black));
-  --message-action-button-focus-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
   --message-action-copy-success-background: var(--copy-success-background);
   --message-action-copy-success-color: var(--copy-success-color);
 }
 
 @media (prefers-color-scheme: dark) {
   :global(body:not(.light)) .chat-message-action-rail {
-    --message-action-rail-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-    --message-action-rail-background: color-mix(in srgb, var(--surface-soft) 58%, transparent);
-    --message-action-rail-shadow-color: color-mix(in srgb, rgb(0, 0, 0) 22%, transparent);
-    --message-action-button-background: color-mix(in srgb, var(--black) 2%, transparent);
+    --message-action-button-background: transparent;
     --message-action-button-color: color-mix(in srgb, var(--black) 72%, transparent);
     --message-action-button-hover-background: color-mix(in srgb, var(--primary) 14%, var(--surface));
     --message-action-button-hover-color: color-mix(in srgb, var(--primary) 72%, var(--black));
-    --message-action-button-hover-shadow-color: color-mix(in srgb, var(--primary) 12%, transparent);
     --message-action-button-active-background: color-mix(in srgb, var(--primary) 18%, var(--surface));
     --message-action-button-active-color: color-mix(in srgb, var(--primary) 82%, var(--black));
-    --message-action-button-focus-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
     --message-action-copy-success-background: var(--copy-success-background);
     --message-action-copy-success-color: var(--copy-success-color);
   }
@@ -3848,7 +3833,7 @@
     &:active {
       background: var(--message-action-button-active-background);
       color: var(--message-action-button-active-color);
-      box-shadow: inset 0 0 0 1px var(--message-action-button-hover-shadow-color);
+      box-shadow: none;
     }
   }
 }
@@ -4871,6 +4856,24 @@
     .chat-input-action {
       margin-bottom: 0;
     }
+  }
+}
+
+.chat-input-panel-model-open {
+  z-index: 60;
+  pointer-events: none;
+
+  .chat-input-menu-button,
+  .chat-input,
+  .chat-input-send {
+    filter: blur(2px);
+    opacity: 0.64;
+  }
+
+  .chat-input-model-button {
+    pointer-events: auto;
+    filter: none;
+    opacity: 1;
   }
 }
 
@@ -6120,9 +6123,6 @@
   }
 
   .chat-message-action-rail {
-    gap: 3px;
-    padding: 2px 0;
-
     .chat-input-action {
       width: 44px;
       height: 44px;
