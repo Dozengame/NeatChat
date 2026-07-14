@@ -78,4 +78,47 @@ describe("composer responsive layout", () => {
       /\.chat-input-panel\.chat-input-panel-empty\s*\n\s*\.chat-input-panel-inner-home-chat,[\s\S]*?padding-right:\s*154px;/,
     );
   });
+
+  test("keeps long-draft textarea height consistent across composer states", () => {
+    const styles = read("app/components/chat.module.scss");
+
+    expect(styles.match(/--chat-input-max-height:/g) ?? []).toHaveLength(1);
+    expect(styles).toContain("--chat-input-max-height: min(120px, 30dvh);");
+    expect(styles).toContain("max-height: var(--chat-input-max-height);");
+    expect(styles).toContain("overflow-y: auto;");
+    expect(styles).not.toContain("max-height: 120px;");
+    expect(styles).not.toContain("max-height: 30vh;");
+  });
+
+  test("gives expanded drafts full-width text above a dedicated controls row", () => {
+    const styles = read("app/components/chat.module.scss");
+
+    expect(styles).toMatch(
+      /\.chat-input-panel\s+\.chat-input-panel-inner:not\(\.chat-input-panel-inner-collapsed\)\s*\{[\s\S]*?padding-right:\s*18px;[\s\S]*?padding-bottom:\s*66px;/,
+    );
+    expect(styles).toMatch(
+      /@media screen and \(max-width: 600px\)\s*\{[\s\S]*?\.chat-input-panel:not\(\.chat-input-panel-collapsed\)\s*\{[\s\S]*?\.chat-input-panel-inner:not\(\.chat-input-panel-inner-collapsed\)\s*\{[\s\S]*?padding-left:\s*6px;[\s\S]*?padding-right:\s*6px;/,
+    );
+  });
+
+  test("keeps compact expanded composers on one balanced visual surface", () => {
+    const styles = read("app/components/chat.module.scss");
+    const compactExpandedStart = styles.lastIndexOf(
+      "@media only screen and (max-width: 900px)",
+    );
+    const compactExpandedStyles = styles.slice(compactExpandedStart);
+
+    expect(compactExpandedStyles).toMatch(
+      /\.chat-input-panel:not\(\.chat-input-panel-collapsed\)\s*\{[\s\S]*?\.chat-input-row\s*\{[\s\S]*?position:\s*relative;/,
+    );
+    expect(compactExpandedStyles).toMatch(
+      /\.chat-input-menu-button\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?left:\s*7px;[\s\S]*?bottom:\s*7px;[\s\S]*?margin:\s*0;/,
+    );
+    expect(compactExpandedStyles).toMatch(
+      /\.chat-input-panel-inner:not\(\.chat-input-panel-inner-collapsed\)\s*\{[\s\S]*?width:\s*100%;[\s\S]*?padding-left:\s*18px;[\s\S]*?padding-right:\s*18px;[\s\S]*?border:\s*0;[\s\S]*?border-radius:\s*0;[\s\S]*?background:\s*transparent;[\s\S]*?box-shadow:\s*none;/,
+    );
+    expect(compactExpandedStyles).toMatch(
+      /\.chat-input-panel\.chat-input-panel-empty:not\(\.chat-input-panel-collapsed\)\s+\.chat-input-panel-inner:not\(\.chat-input-panel-inner-collapsed\)\s*\{[\s\S]*?border-radius:\s*0;/,
+    );
+  });
 });
