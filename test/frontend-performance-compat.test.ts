@@ -102,6 +102,7 @@ describe("frontend performance and compatibility contracts", () => {
     const sidebar = readSource("app/components/sidebar.tsx");
     const homeStyles = readSource("app/components/home.module.scss");
     const chatStyles = readSource("app/components/chat.module.scss");
+    const settingsIcon = readSource("app/icons/settings.svg");
 
     const settingsStart = sidebar.indexOf('styles["sidebar-settings-link"]');
     const settings = sidebar.slice(
@@ -111,6 +112,8 @@ describe("frontend performance and compatibility contracts", () => {
     expect(settings).not.toContain("<IconButton");
     expect(settings).toContain('styles["sidebar-settings-icon"]');
     expect(settings).toContain("<SettingsIcon />");
+    expect(settingsIcon).toContain("stroke:currentColor");
+    expect(settingsIcon).not.toContain("stroke:#333");
     expect(sidebar).not.toContain("sidebar-mobile-account");
     expect(sidebar).not.toContain("isIOSMobile");
     expect(homeStyles).toMatch(/transform:\s*translate3d\(-100%, 0, 0\)/);
