@@ -118,6 +118,12 @@
   text-align: center;
 }
 
+.settings {
+  min-height: 0;
+  padding: 16px 32px 40px;
+  overflow: auto;
+}
+
 :global(.dark) .settings-page {
   --settings-section-background: color-mix(
     in srgb,
@@ -163,11 +169,15 @@
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: start;
     min-height: auto;
-    padding: 18px 14px 10px;
+    padding: calc(14px + env(safe-area-inset-top, 0px))
+      max(14px, env(safe-area-inset-right, 0px)) 10px
+      max(14px, env(safe-area-inset-left, 0px));
   }
 
   .settings {
-    padding: 12px 14px 28px;
+    padding: 10px max(10px, env(safe-area-inset-right, 0px))
+      calc(24px + env(safe-area-inset-bottom, 0px))
+      max(10px, env(safe-area-inset-left, 0px));
   }
 
   .settings-stack {
@@ -180,14 +190,8 @@
   }
 
   .settings-section-head {
-    padding: 16px 16px 12px;
+    padding: 14px 14px 12px;
   }
-}
-
-.settings {
-  min-height: 0;
-  padding: 16px 32px 40px;
-  overflow: auto;
 }
 
 .settings-preferences-surface {

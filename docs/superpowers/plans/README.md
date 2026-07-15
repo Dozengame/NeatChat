@@ -14,6 +14,8 @@ Do not read all iteration files by default. Use `rg` first, then open the smalle
 
 ## Routing
 
+- 2026-07-15 composer 长草稿回归：统一空白页与已有会话的高度上限，恢复展开态正文全宽，把 controls 下沉到独立底栏，并在移动/平板断点只保留一层对称输入表面：`iterations/2026-07-15-composer-long-draft-layout.md`。
+- 2026-07-14 Browser 注释收口：模型面板打开时保留真实触发按钮清晰可操作、模型弹框关闭无残影、Retry 图标稳定、桌面/移动消息操作栏统一降噪，以及移动 Settings 横向空间与 safe-area 优化：`iterations/2026-07-14-mobile-browser-annotations.md`。
 - 2026-07-14 Browser 验收回归：composer 草稿/阅读位置/移动宽度、模型按钮渐进披露、面具语言与移动布局、移动侧栏 Settings、quick-jump 遮罩、单一且对齐的等待反馈，以及错误页回报入口移除：`iterations/2026-07-14-browser-acceptance-regressions.md`。
 - Jimeng MCP 全量移除、请求会话快照、持久化有界重试、HTML artifact 主动授权、移动端边缘手势、通用 MCP 校验与内置面具精简：`iterations/2026-07-14-jimeng-removal-p1-masks.md`。
 - 已被 2026-07-14 全量移除方案取代的 Jimeng 历史实现与图库记录，仅用于历史追溯：`iterations/2026-07-13-jimeng-image-gallery.md`。

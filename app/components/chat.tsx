@@ -4883,50 +4883,50 @@ function useChatInnerView() {
         </div>
       ) : null}
 
-      <button
-        type="button"
-        className={clsx(
-          isCompactScreen
-            ? styles["chat-mobile-model-menu-backdrop"]
-            : styles["chat-desktop-model-menu-backdrop"],
-          {
-            [styles["chat-model-menu-visible"]]: showMobileModelSelector,
-          },
-        )}
-        aria-label={Locale.Chat.ModelMenu.Close}
-        tabIndex={showMobileModelSelector ? 0 : -1}
-        onClick={() => {
-          closeMobileModelSelector();
-          restoreModelSelectorFocus();
-        }}
-      />
-      <div
-        id="chat-model-menu"
-        ref={modelMenuRef}
-        className={clsx(
-          isCompactScreen
-            ? styles["chat-mobile-model-menu"]
-            : styles["chat-desktop-model-menu"],
-          styles["chat-desktop-model-menu-composer"],
-          {
-            [styles["chat-model-menu-visible"]]: showMobileModelSelector,
-            [styles["chat-model-menu-reasoning"]]:
-              isReasoningSectionExpanded || isImageOptionsExpanded,
-          },
-        )}
-        style={composerModelMenuStyle}
-        onKeyDown={handleModelMenuKeyDown}
-        tabIndex={-1}
-        role="dialog"
-        aria-modal={showMobileModelSelector ? true : undefined}
-        aria-label={
-          isImageOptionsExpanded
-            ? Locale.Chat.ModelMenu.ImageOptions
-            : isReasoningSectionExpanded
-            ? Locale.Chat.ModelMenu.ReasoningOptions
-            : Locale.Chat.ModelMenu.SelectModelAndParams
-        }
-      >
+      {showMobileModelSelector ? (
+        <>
+          <button
+            type="button"
+            className={clsx(
+              isCompactScreen
+                ? styles["chat-mobile-model-menu-backdrop"]
+                : styles["chat-desktop-model-menu-backdrop"],
+              styles["chat-model-menu-visible"],
+            )}
+            aria-label={Locale.Chat.ModelMenu.Close}
+            tabIndex={0}
+            onClick={() => {
+              closeMobileModelSelector();
+              restoreModelSelectorFocus();
+            }}
+          />
+          <div
+            id="chat-model-menu"
+            ref={modelMenuRef}
+            className={clsx(
+              isCompactScreen
+                ? styles["chat-mobile-model-menu"]
+                : styles["chat-desktop-model-menu"],
+              styles["chat-desktop-model-menu-composer"],
+              styles["chat-model-menu-visible"],
+              {
+                [styles["chat-model-menu-reasoning"]]:
+                  isReasoningSectionExpanded || isImageOptionsExpanded,
+              },
+            )}
+            style={composerModelMenuStyle}
+            onKeyDown={handleModelMenuKeyDown}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal={true}
+            aria-label={
+              isImageOptionsExpanded
+                ? Locale.Chat.ModelMenu.ImageOptions
+                : isReasoningSectionExpanded
+                ? Locale.Chat.ModelMenu.ReasoningOptions
+                : Locale.Chat.ModelMenu.SelectModelAndParams
+            }
+          >
         {(isReasoningSectionExpanded || isImageOptionsExpanded) && (
           <div className={styles["chat-model-menu-header"]}>
             <div className={styles["chat-model-menu-current-model"]}>
@@ -5101,7 +5101,9 @@ function useChatInnerView() {
             )}
           </>
         )}
-      </div>
+          </div>
+        </>
+      ) : null}
 
       <div className={styles["chat-main"]}>
         <div className={styles["chat-body-container"]}>
@@ -5540,12 +5542,15 @@ function useChatInnerView() {
             className={clsx(styles["chat-input-panel"], {
               [styles["chat-input-panel-collapsed"]]: !shouldExpandChatInput,
               [styles["chat-input-panel-empty"]]: showEmptyComposer,
+              [styles["chat-input-panel-model-open"]]:
+                isCompactScreen && showMobileModelSelector,
             })}
             data-drag-active={isDropzonePreviewActive ? "true" : undefined}
           >
             {!showEmptyState &&
               !(quickJumpTarget === "top" ? hitTop : hitBottom) &&
-              !showChatActionMenu && (
+              !showChatActionMenu &&
+              !showMobileModelSelector && (
                 <button
                   type="button"
                   className={styles["chat-scroll-to-bottom"]}

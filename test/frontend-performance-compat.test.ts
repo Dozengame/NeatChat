@@ -142,7 +142,7 @@ describe("frontend performance and compatibility contracts", () => {
       /\.chat-mobile-header-button[\s\S]*width:\s*44px;[\s\S]*height:\s*44px;/,
     );
     expect(chatStyles).toMatch(
-      /\.chat-message-action-rail[\s\S]*\.chat-input-action\s*\{[\s\S]*width:\s*44px;[\s\S]*height:\s*44px;/,
+      /@media only screen and \(max-width:\s*600px\)[\s\S]*\.chat-message-action-rail\s*\{[\s\S]*\.chat-input-action\s*\{[\s\S]*width:\s*44px;[\s\S]*height:\s*44px;/,
     );
     expect(markdownStyles).toContain("--markdown-code-action-size: 44px");
     expect(chatStyles).toMatch(
