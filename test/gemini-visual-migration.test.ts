@@ -1550,9 +1550,17 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chat).toContain('[styles["chat-input-panel-model-open"]]:');
     expect(chat).toContain("isCompactScreen && showMobileModelSelector");
-    expect(chatStyles).toMatch(
-      /\.chat-input-panel-model-open\s*\{[\s\S]*z-index:\s*60;[\s\S]*pointer-events:\s*none;[\s\S]*\.chat-input-menu-button,[\s\S]*\.chat-input,[\s\S]*\.chat-input-send\s*\{[\s\S]*filter:\s*blur\(2px\);[\s\S]*opacity:\s*0\.64;[\s\S]*\.chat-input-model-button\s*\{[\s\S]*pointer-events:\s*auto;[\s\S]*filter:\s*none;[\s\S]*opacity:\s*1;/,
+    const modelOpenComposerBlock = chatStyles.slice(
+      chatStyles.indexOf(".chat-input-panel-model-open"),
+      chatStyles.indexOf(":global(.dark) .chat-input-panel"),
     );
+    expect(modelOpenComposerBlock).toContain("z-index: 60;");
+    expect(modelOpenComposerBlock).toContain("pointer-events: none;");
+    expect(modelOpenComposerBlock).toMatch(
+      /\.chat-input-model-button\s*\{[\s\S]*pointer-events:\s*auto;/,
+    );
+    expect(modelOpenComposerBlock).not.toContain("filter: blur");
+    expect(modelOpenComposerBlock).not.toContain("opacity: 0.64");
     expect(chatStyles).toMatch(
       /\.chat-mobile-model-menu\s*\{[\s\S]*visibility:\s*hidden;[\s\S]*&\.chat-model-menu-visible\s*\{[\s\S]*visibility:\s*visible;/,
     );
@@ -2073,9 +2081,11 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("setShowChatActionMenu(false)");
     expect(chat).toContain('id="chat-input"');
     expect(chat).toContain("Locale.Chat.MobileInput");
-    expect(chat).toContain("rows={shouldExpandChatInput ? inputRows : 1}");
-    expect(chat).toContain("onPointerDown={expandInput}");
-    expect(chat).toContain("onClick={expandInput}");
+    expect(chat).toContain("rows={1}");
+    expect(chat).not.toContain("onPointerDown={expandInput}");
+    expect(chat).not.toContain("onClick={expandInput}");
+    expect(chat).toContain("inputRef.current.scrollHeight");
+    expect(chat).toContain("new ResizeObserver");
     expect(chat).toMatch(
       /onFocus=\{\(\) => \{\s*setIsChatInputFocused\(true\);\s*\}\}/,
     );
@@ -3555,7 +3565,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /window\.visualViewport\?\.addEventListener\(\s*"scroll",\s*updateModelMenuPlacement\s*\);/,
     );
-    expect(chat).toContain('button.closest("label")?.getBoundingClientRect()');
+    expect(chat).toContain(
+      ".closest<HTMLElement>('[data-composer-shell=\"true\"]')",
+    );
     expect(chat).toContain("getComposerModelMenuPlacement({");
     expect(composerModelMenuPlacement).toContain(
       "composerRect.left + composerRect.width / 2",
@@ -3588,9 +3600,13 @@ describe("Gemini visual migration shell", () => {
     expect(mobileStyles).toMatch(
       /\.chat-input-model-button-open\s*\{[\s\S]*width:\s*min\(132px, calc\(100% - 196px\)\);[\s\S]*\.chat-input-model-separator,[\s\S]*\.chat-input-model-detail\s*\{[\s\S]*display:\s*none;[\s\S]*\.chat-input-model-name\s*\{[\s\S]*text-overflow:\s*clip;/,
     );
-    expect(mobileStyles).toMatch(
-      /\.chat-input-panel\.chat-input-panel-empty[\s\S]*\.chat-input-panel-inner-model-open\.chat-input-panel-inner-home-chat\s*\{[\s\S]*padding-right:\s*176px;/,
+    expect(chatStyles).toContain(
+      'grid-template-areas: "leading input model send";',
     );
+    expect(chatStyles).toContain(
+      '"attachments attachments attachments attachments"',
+    );
+    expect(mobileStyles).not.toMatch(/padding-right:\s*176px;/);
     expect(chatStyles).toMatch(
       /\.chat-model-menu-header\s*\{[\s\S]*display:\s*flex;[\s\S]*align-items:\s*center;[\s\S]*padding:\s*9px 12px;[\s\S]*border-radius:\s*14px;[\s\S]*background:\s*var\(--surface-elevated\);/,
     );

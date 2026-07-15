@@ -43,82 +43,90 @@ describe("composer responsive layout", () => {
     expect(shouldUseCompactLayout(869, 230)).toBe(true);
   });
 
-  test("expanded mobile and tablet composers use expansion state instead of empty-state styling", () => {
+  test("uses one grid shell across empty, conversation, and compact layouts", () => {
     const styles = read("app/components/chat.module.scss");
-    const mobileStart = styles.lastIndexOf(
-      "@media only screen and (max-width: 600px)",
-    );
-    const tabletStart = styles.indexOf(
-      "@media only screen and (min-width: 601px) and (max-width: 900px)",
-      mobileStart,
-    );
-    const mobileStyles = styles.slice(mobileStart, tabletStart);
-    const tabletStyles = styles.slice(tabletStart);
-    const expandedSelector =
-      ".chat-input-panel:not(.chat-input-panel-collapsed)";
 
-    for (const responsiveStyles of [mobileStyles, tabletStyles]) {
-      expect(responsiveStyles).toContain(expandedSelector);
-      expect(responsiveStyles).toMatch(
-        /\.chat-input-panel:not\(\.chat-input-panel-collapsed\)\s*\{[\s\S]*?\.chat-input-row\s*\{[\s\S]*?align-items:\s*flex-end;[\s\S]*?border-radius:\s*24px;/,
-      );
-    }
-
-    expect(mobileStyles).not.toContain(
-      ".chat-input-panel.chat-input-panel-empty:not(.chat-input-panel-collapsed)",
+    expect(styles).toContain("container-name: chat-composer");
+    expect(styles).toContain("container-type: inline-size");
+    expect(styles).toContain("display: grid");
+    expect(styles).toContain('"leading input model send"');
+    expect(styles).toContain('"input input input input"');
+    expect(styles).toContain(
+      '"attachments attachments attachments attachments"',
     );
-    expect(mobileStyles).toMatch(
-      /\.chat-input-panel\.chat-input-panel-empty\s*\{[\s\S]*?width:\s*calc\(100% - 20px\);[\s\S]*?max-width:\s*calc\(100% - 20px\);/,
-    );
-    expect(mobileStyles).not.toContain("min(376px");
-    expect(mobileStyles).toMatch(
-      /\.chat-input-panel\.chat-input-panel-empty\s*\n\s*\.chat-input-panel-inner-home-image\s*\{[\s\S]*?padding-right:\s*184px;/,
-    );
-    expect(mobileStyles).toMatch(
-      /\.chat-input-panel\.chat-input-panel-empty\s*\n\s*\.chat-input-panel-inner-home-chat,[\s\S]*?padding-right:\s*154px;/,
-    );
+    expect(styles).toContain('"leading status model send"');
+    expect(styles).toContain("min-height: 64px");
+    expect(styles).toContain("height: 64px");
   });
 
   test("keeps long-draft textarea height consistent across composer states", () => {
     const styles = read("app/components/chat.module.scss");
 
     expect(styles.match(/--chat-input-max-height:/g) ?? []).toHaveLength(1);
-    expect(styles).toContain("--chat-input-max-height: min(120px, 30dvh);");
+    expect(styles).toContain("--chat-input-max-height: min(174px, 24dvh);");
     expect(styles).toContain("max-height: var(--chat-input-max-height);");
-    expect(styles).toContain("overflow-y: auto;");
+    expect(styles).toContain('data-composer-scroll="true"');
     expect(styles).not.toContain("max-height: 120px;");
     expect(styles).not.toContain("max-height: 30vh;");
   });
 
-  test("gives expanded drafts full-width text above a dedicated controls row", () => {
+  test("resolves textarea line height from the configured font size", () => {
     const styles = read("app/components/chat.module.scss");
+    const composerStyles = styles.slice(
+      styles.lastIndexOf(".chat-input-panel .chat-input-row .chat-input"),
+    );
 
-    expect(styles).toMatch(
-      /\.chat-input-panel\s+\.chat-input-panel-inner:not\(\.chat-input-panel-inner-collapsed\)\s*\{[\s\S]*?padding-right:\s*18px;[\s\S]*?padding-bottom:\s*66px;/,
-    );
-    expect(styles).toMatch(
-      /@media screen and \(max-width: 600px\)\s*\{[\s\S]*?\.chat-input-panel:not\(\.chat-input-panel-collapsed\)\s*\{[\s\S]*?\.chat-input-panel-inner:not\(\.chat-input-panel-inner-collapsed\)\s*\{[\s\S]*?padding-left:\s*6px;[\s\S]*?padding-right:\s*6px;/,
-    );
+    expect(composerStyles).toContain("height: max(24px, 1.5em);");
+    expect(composerStyles).toContain("min-height: max(24px, 1.5em);");
+    expect(composerStyles).toContain("line-height: max(24px, 1.5em);");
+    expect(composerStyles).not.toContain("line-height: 24px;");
   });
 
-  test("keeps compact expanded composers on one balanced visual surface", () => {
-    const styles = read("app/components/chat.module.scss");
-    const compactExpandedStart = styles.lastIndexOf(
-      "@media only screen and (max-width: 900px)",
+  test("remeasures after attachment state changes reallocate input width", () => {
+    const source = read("app/components/chat.tsx");
+    const measurementEffectStart = source.indexOf(
+      "useLayoutEffect(() => {\n    const measureFrame",
     );
-    const compactExpandedStyles = styles.slice(compactExpandedStart);
+    const measurementEffectEnd = source.indexOf("]);", measurementEffectStart);
+    const measurementEffect = source.slice(
+      measurementEffectStart,
+      measurementEffectEnd,
+    );
 
-    expect(compactExpandedStyles).toMatch(
-      /\.chat-input-panel:not\(\.chat-input-panel-collapsed\)\s*\{[\s\S]*?\.chat-input-row\s*\{[\s\S]*?position:\s*relative;/,
+    expect(measurementEffectStart).toBeGreaterThan(-1);
+    expect(measurementEffect).toContain("attachImages.length");
+    expect(measurementEffect).toContain("attachedFiles.length");
+  });
+
+  test("keeps textarea and controls in normal grid flow", () => {
+    const styles = read("app/components/chat.module.scss");
+
+    expect(styles).toMatch(
+      /\.chat-input-model-button\s*\{[\s\S]*?position:\s*static;/,
     );
-    expect(compactExpandedStyles).toMatch(
-      /\.chat-input-menu-button\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?left:\s*7px;[\s\S]*?bottom:\s*7px;[\s\S]*?margin:\s*0;/,
+    expect(styles).toMatch(/\.chat-input-send\s*\{[\s\S]*?position:\s*static;/);
+    expect(styles).not.toMatch(
+      /padding-right:\s*(?:136|154|176|184|202|204|206|218|300|366)px/,
     );
-    expect(compactExpandedStyles).toMatch(
-      /\.chat-input-panel-inner:not\(\.chat-input-panel-inner-collapsed\)\s*\{[\s\S]*?width:\s*100%;[\s\S]*?padding-left:\s*18px;[\s\S]*?padding-right:\s*18px;[\s\S]*?border:\s*0;[\s\S]*?border-radius:\s*0;[\s\S]*?background:\s*transparent;[\s\S]*?box-shadow:\s*none;/,
+    const modelOpenStyles = styles.slice(
+      styles.indexOf(".chat-input-panel-model-open"),
+      styles.indexOf(":global(.dark) .chat-input-panel"),
     );
-    expect(compactExpandedStyles).toMatch(
-      /\.chat-input-panel\.chat-input-panel-empty:not\(\.chat-input-panel-collapsed\)\s+\.chat-input-panel-inner:not\(\.chat-input-panel-inner-collapsed\)\s*\{[\s\S]*?border-radius:\s*0;/,
-    );
+    expect(modelOpenStyles).not.toContain("filter: blur");
+  });
+
+  test("uses semantic composer markup without a label wrapping controls", () => {
+    const source = read("app/components/chat.tsx");
+    const composerStart = source.indexOf('data-composer-shell="true"');
+    const composerEnd = source.indexOf("</div>", composerStart);
+    const composerSource = source.slice(composerStart, composerEnd);
+
+    expect(composerStart).toBeGreaterThan(-1);
+    expect(composerSource).not.toContain("<label");
+    expect(source).not.toContain("autoGrowTextArea(inputRef.current)");
+    expect(source).toContain("inputRef.current.scrollHeight");
+    expect(source).toContain("new ResizeObserver");
+    expect(source).not.toContain("onPointerDown={expandInput}");
+    expect(source).not.toContain("onClick={expandInput}");
   });
 });

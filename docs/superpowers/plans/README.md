@@ -14,6 +14,7 @@ Do not read all iteration files by default. Use `rg` first, then open the smalle
 
 ## Routing
 
+- 2026-07-15 Composer 2.2 continuity 全量改造：统一 Grid Shell、真实 textarea 测量、Tools/Prompt Library、四态 Model Chip、离散参数 Rail、统一菜单定位、Safe Area/Container Query 与完整 Browser QA：`iterations/2026-07-15-composer-2-2.md`。
 - 2026-07-15 composer 长草稿回归：统一空白页与已有会话的高度上限，恢复展开态正文全宽，把 controls 下沉到独立底栏，并在移动/平板断点只保留一层对称输入表面：`iterations/2026-07-15-composer-long-draft-layout.md`。
 - 2026-07-14 Browser 注释收口：模型面板打开时保留真实触发按钮清晰可操作、模型弹框关闭无残影、Retry 图标稳定、桌面/移动消息操作栏统一降噪，以及移动 Settings 横向空间与 safe-area 优化：`iterations/2026-07-14-mobile-browser-annotations.md`。
 - 2026-07-14 Browser 验收回归：composer 草稿/阅读位置/移动宽度、模型按钮渐进披露、面具语言与移动布局、移动侧栏 Settings、quick-jump 遮罩、单一且对齐的等待反馈，以及错误页回报入口移除：`iterations/2026-07-14-browser-acceptance-regressions.md`。
