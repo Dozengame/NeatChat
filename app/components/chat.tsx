@@ -1968,10 +1968,20 @@ function useChatInnerView() {
       body.classList.add(resolvedTheme);
     };
     const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
+    const classObserver = new MutationObserver(() => {
+      const resolvedTheme =
+        theme === "system" ? (colorScheme.matches ? "dark" : "light") : theme;
+      if (!body.classList.contains(resolvedTheme)) applyTheme();
+    });
     applyTheme();
+    classObserver.observe(body, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
     if (theme === "system") colorScheme.addEventListener("change", applyTheme);
 
     return () => {
+      classObserver.disconnect();
       if (theme === "system") {
         colorScheme.removeEventListener("change", applyTheme);
       }
@@ -3070,6 +3080,13 @@ function useChatInnerView() {
     }
 
     setUserInput(composerQaSeed.input);
+    composerTextareaExpandedRef.current = false;
+    setIsTextareaExpanded(false);
+    setIsTextareaScrolling(false);
+    if (inputRef.current) {
+      inputRef.current.style.height = "";
+      inputRef.current.style.overflowY = "hidden";
+    }
     setUploading(composerQaSeed.uploading);
     setShowChatActionMenu(
       composerQaSeed.menu === "tools" ||
@@ -3279,6 +3296,7 @@ function useChatInnerView() {
     if (
       composerQaScenario &&
       composerQaScenario.state !== "empty" &&
+      composerQaScenario.surface !== "empty" &&
       chatQaFixture
     ) {
       return chatQaFixture.getComposerQaMessages();
@@ -3430,7 +3448,8 @@ function useChatInnerView() {
     scrollDom.scrollTop = nextScrollTop;
   }, [messageRenderStartIndex, messages, scrollRef]);
   const showEmptyState = composerQaScenario
-    ? composerQaScenario.state === "empty"
+    ? composerQaScenario.state === "empty" ||
+      composerQaScenario.surface === "empty"
     : !markdownStressQaEnabled &&
       !imageGalleryQaEnabled &&
       session.messages.length === 0 &&
@@ -3438,7 +3457,7 @@ function useChatInnerView() {
       getMessageTextContent(context[0]) === BOT_HELLO.content &&
       !isLoading;
   const showEmptyComposer = showEmptyState;
-  const showEmptyHero = showEmptyState && !showChatActionMenu;
+  const showEmptyHero = showEmptyState;
   const showDesktopChatHeader = !isCompactScreen && !showEmptyState;
   useLayoutEffect(() => {
     const inputPanel = chatInputPanelRef.current;
@@ -3572,85 +3591,86 @@ function useChatInnerView() {
     if (!showChatActionMenu && !showMobileModelSelector) return;
 
     let updateFrame = 0;
+    const applyPopoverPlacement = () => {
+      const kind = showMobileModelSelector ? "model" : "tools";
+      const trigger = showMobileModelSelector
+        ? modelSelectorButtonRef.current
+        : chatInputMenuButtonRef.current;
+      const menu = showMobileModelSelector
+        ? modelMenuRef.current
+        : chatInputActionMenuRef.current;
+      const composerShell = chatComposerShellRef.current;
+      const inputPanel = chatInputPanelRef.current;
+      if (!trigger || !menu || !composerShell || !inputPanel) return;
+
+      const visualViewport = window.visualViewport;
+      const inputPanelStyle = window.getComputedStyle(inputPanel);
+      const parseInset = (property: string) => {
+        const value = Number.parseFloat(
+          inputPanelStyle.getPropertyValue(property),
+        );
+        return Number.isFinite(value) ? value : 0;
+      };
+      const segmentProbe = composerViewportSegmentRef.current;
+      const probeStyle = segmentProbe
+        ? window.getComputedStyle(segmentProbe)
+        : null;
+      const probeSegmentActive =
+        probeStyle
+          ?.getPropertyValue("--chat-composer-segment-active")
+          .trim() === "1";
+      const segmentProvider = window as Window & {
+        getWindowSegments?: () => DOMRect[];
+      };
+      const rawSegments =
+        probeSegmentActive && segmentProbe
+          ? [segmentProbe.getBoundingClientRect()]
+          : segmentProvider.getWindowSegments?.() ?? [];
+      const composerRect = composerShell.getBoundingClientRect();
+      const placement = getComposerPopoverPlacement({
+        kind,
+        triggerRect: trigger.getBoundingClientRect(),
+        composerRect,
+        panelHeight: Math.max(
+          menu.getBoundingClientRect().height,
+          menu.scrollHeight,
+        ),
+        compact: composerRect.width < 600,
+        preferBelowOnDesktop: false,
+        viewport: {
+          left: visualViewport?.offsetLeft ?? 0,
+          top: visualViewport?.offsetTop ?? 0,
+          width: visualViewport?.width ?? window.innerWidth,
+          height: visualViewport?.height ?? window.innerHeight,
+          layoutHeight: window.innerHeight,
+          safeArea: {
+            top: parseInset("--chat-composer-safe-area-top"),
+            right: parseInset("--chat-composer-safe-area-right"),
+            bottom: parseInset("--chat-composer-safe-area-bottom"),
+            left: parseInset("--chat-composer-safe-area-left"),
+          },
+          segments: rawSegments.map((segment) => ({
+            left: segment.left,
+            top: segment.top,
+            width: segment.width,
+            height: segment.height,
+          })),
+        },
+      });
+      const cssVariables = toComposerPopoverCssVariables(
+        placement,
+        kind === "tools" ? inputPanel.getBoundingClientRect() : undefined,
+      );
+      for (const [property, value] of Object.entries(cssVariables)) {
+        if (menu.style.getPropertyValue(property) !== value) {
+          menu.style.setProperty(property, value);
+        }
+      }
+      menu.dataset.popoverSide = placement.openBelow ? "below" : "above";
+    };
     const updatePopoverPlacement = () => {
       cancelAnimationFrame(updateFrame);
-      updateFrame = requestAnimationFrame(() => {
-        const kind = showMobileModelSelector ? "model" : "tools";
-        const trigger = showMobileModelSelector
-          ? modelSelectorButtonRef.current
-          : chatInputMenuButtonRef.current;
-        const menu = showMobileModelSelector
-          ? modelMenuRef.current
-          : chatInputActionMenuRef.current;
-        const composerShell = chatComposerShellRef.current;
-        const inputPanel = chatInputPanelRef.current;
-        if (!trigger || !menu || !composerShell || !inputPanel) return;
-
-        const visualViewport = window.visualViewport;
-        const inputPanelStyle = window.getComputedStyle(inputPanel);
-        const parseInset = (property: string) => {
-          const value = Number.parseFloat(
-            inputPanelStyle.getPropertyValue(property),
-          );
-          return Number.isFinite(value) ? value : 0;
-        };
-        const segmentProbe = composerViewportSegmentRef.current;
-        const probeStyle = segmentProbe
-          ? window.getComputedStyle(segmentProbe)
-          : null;
-        const probeSegmentActive =
-          probeStyle
-            ?.getPropertyValue("--chat-composer-segment-active")
-            .trim() === "1";
-        const segmentProvider = window as Window & {
-          getWindowSegments?: () => DOMRect[];
-        };
-        const rawSegments =
-          probeSegmentActive && segmentProbe
-            ? [segmentProbe.getBoundingClientRect()]
-            : segmentProvider.getWindowSegments?.() ?? [];
-        const composerRect = composerShell.getBoundingClientRect();
-        const placement = getComposerPopoverPlacement({
-          kind,
-          triggerRect: trigger.getBoundingClientRect(),
-          composerRect,
-          panelHeight: Math.max(
-            menu.getBoundingClientRect().height,
-            menu.scrollHeight,
-          ),
-          compact: composerRect.width < 600,
-          preferBelowOnDesktop: showEmptyComposer,
-          viewport: {
-            left: visualViewport?.offsetLeft ?? 0,
-            top: visualViewport?.offsetTop ?? 0,
-            width: visualViewport?.width ?? window.innerWidth,
-            height: visualViewport?.height ?? window.innerHeight,
-            layoutHeight: window.innerHeight,
-            safeArea: {
-              top: parseInset("--chat-composer-safe-area-top"),
-              right: parseInset("--chat-composer-safe-area-right"),
-              bottom: parseInset("--chat-composer-safe-area-bottom"),
-              left: parseInset("--chat-composer-safe-area-left"),
-            },
-            segments: rawSegments.map((segment) => ({
-              left: segment.left,
-              top: segment.top,
-              width: segment.width,
-              height: segment.height,
-            })),
-          },
-        });
-        const cssVariables = toComposerPopoverCssVariables(
-          placement,
-          kind === "tools" ? inputPanel.getBoundingClientRect() : undefined,
-        );
-        for (const [property, value] of Object.entries(cssVariables)) {
-          if (menu.style.getPropertyValue(property) !== value) {
-            menu.style.setProperty(property, value);
-          }
-        }
-        menu.dataset.popoverSide = placement.openBelow ? "below" : "above";
-      });
+      updateFrame = requestAnimationFrame(applyPopoverPlacement);
     };
 
     const menu = showMobileModelSelector
@@ -3667,7 +3687,7 @@ function useChatInnerView() {
     if (chatInputPanelRef.current) {
       resizeObserver?.observe(chatInputPanelRef.current);
     }
-    updatePopoverPlacement();
+    applyPopoverPlacement();
     window.addEventListener("resize", updatePopoverPlacement);
     window.addEventListener("orientationchange", updatePopoverPlacement);
     window.visualViewport?.addEventListener("resize", updatePopoverPlacement);
@@ -6427,6 +6447,26 @@ function useChatInnerView() {
               data-composer-submit-state={displayedComposerSubmitState}
               data-composer-uploading={uploading ? "true" : "false"}
             >
+              <div className={styles["chat-composer-aura"]} aria-hidden="true">
+                <span
+                  className={clsx(
+                    styles["chat-composer-aura-blob"],
+                    styles["chat-composer-aura-blob-blue"],
+                  )}
+                />
+                <span
+                  className={clsx(
+                    styles["chat-composer-aura-blob"],
+                    styles["chat-composer-aura-blob-cyan"],
+                  )}
+                />
+                <span
+                  className={clsx(
+                    styles["chat-composer-aura-blob"],
+                    styles["chat-composer-aura-blob-violet"],
+                  )}
+                />
+              </div>
               <button
                 type="button"
                 ref={chatInputMenuButtonRef}

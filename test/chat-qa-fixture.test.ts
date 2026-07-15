@@ -65,9 +65,14 @@ describe("development-only chat QA fixture", () => {
 
     expect(
       fixture.getComposerQaScenario(
-        "?codex_qa=composer&composer_state=reasoning&composer_posture=book&composer_theme=dark",
+        "?codex_qa=composer&composer_state=reasoning&composer_posture=book&composer_theme=dark&composer_surface=empty",
       ),
-    ).toEqual({ state: "reasoning", posture: "book", theme: "dark" });
+    ).toEqual({
+      state: "reasoning",
+      posture: "book",
+      theme: "dark",
+      surface: "empty",
+    });
     expect(
       fixture.getComposerQaScenario(
         "?codex_qa=composer&composer_state=unknown&composer_posture=watch&composer_theme=sepia",
@@ -99,6 +104,13 @@ describe("development-only chat QA fixture", () => {
     expect(
       fixture.getComposerQaSeed("multiline").input.split("\n"),
     ).toHaveLength(4);
+    expect(
+      fixture.getComposerQaSeed("scrolling").input.split("\n"),
+    ).toHaveLength(14);
+    expect(fixture.getComposerQaSeed("mixed").input.split("\n")).toHaveLength(
+      2,
+    );
+    expect(fixture.getComposerQaSeed("mixed").attachments).toBe("mixed");
 
     const mixed = fixture.createComposerQaAttachments("mixed");
     const full = fixture.createComposerQaAttachments("full");

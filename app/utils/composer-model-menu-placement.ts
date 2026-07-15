@@ -204,8 +204,8 @@ export function getComposerPopoverPlacement(input: {
   compact: boolean;
   preferBelowOnDesktop: boolean;
 }): ComposerPopoverPlacement {
-  const edgePadding = input.compact ? 12 : 16;
-  const gap = input.compact ? 10 : 12;
+  const edgePadding = input.compact ? 10 : 16;
+  const gap = 12;
   const { bounds, segmentIndex } = getComposerCollisionBounds({
     composerRect: input.composerRect,
     triggerRect: input.triggerRect,
@@ -213,11 +213,12 @@ export function getComposerPopoverPlacement(input: {
     edgePadding,
   });
   const availableWidth = Math.max(1, bounds.right - bounds.left);
+  const useMobileModelWidth = input.compact && input.viewport.width <= 600;
   const targetWidth =
     input.kind === "model"
-      ? input.compact
-        ? Math.min(360, input.composerRect.width)
-        : 500
+      ? useMobileModelWidth
+        ? input.composerRect.width
+        : Math.min(460, input.composerRect.width)
       : input.compact
       ? Math.min(280, input.composerRect.width)
       : 268;
@@ -225,14 +226,12 @@ export function getComposerPopoverPlacement(input: {
   const idealLeft =
     input.kind === "tools"
       ? input.triggerRect.left
-      : input.compact
-      ? input.composerRect.left + (input.composerRect.width - width) / 2
       : getRectRight(input.composerRect) - width;
   const left = Math.max(bounds.left, Math.min(idealLeft, bounds.right - width));
   const belowTop = input.composerRect.bottom + gap;
   const belowSpace = Math.max(0, bounds.bottom - belowTop);
   const aboveSpace = Math.max(0, input.composerRect.top - gap - bounds.top);
-  const maximumHeight = input.kind === "tools" ? 380 : 420;
+  const maximumHeight = input.kind === "tools" ? 380 : 500;
   const measuredHeight = Math.max(
     1,
     input.panelHeight ?? (input.kind === "tools" ? 228 : 250),

@@ -9,6 +9,7 @@ const COMPOSER_QA_PARAM = "composer";
 const COMPOSER_QA_STATE_PARAM = "composer_state";
 const COMPOSER_QA_POSTURE_PARAM = "composer_posture";
 const COMPOSER_QA_THEME_PARAM = "composer_theme";
+const COMPOSER_QA_SURFACE_PARAM = "composer_surface";
 const MARKDOWN_STRESS_QA_BOUNDARY_PARAM = "streaming_boundary";
 const MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_PARAM = "dropzone_preview";
 const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_PARAM =
@@ -43,6 +44,7 @@ export type ComposerQaState =
   | "focus"
   | "ready"
   | "multiline"
+  | "scrolling"
   | "image"
   | "file"
   | "mixed"
@@ -65,10 +67,12 @@ export type ComposerQaPosture =
   | "tabletop"
   | "split";
 export type ComposerQaTheme = "light" | "dark" | "system";
+export type ComposerQaSurface = "empty" | "conversation";
 export type ComposerQaScenario = {
   state: ComposerQaState;
   posture?: ComposerQaPosture;
   theme?: ComposerQaTheme;
+  surface?: ComposerQaSurface;
 };
 export type ComposerQaSeed = {
   input: string;
@@ -92,6 +96,7 @@ const COMPOSER_QA_STATES: ComposerQaState[] = [
   "focus",
   "ready",
   "multiline",
+  "scrolling",
   "image",
   "file",
   "mixed",
@@ -116,6 +121,7 @@ const COMPOSER_QA_POSTURES: ComposerQaPosture[] = [
   "split",
 ];
 const COMPOSER_QA_THEMES: ComposerQaTheme[] = ["light", "dark", "system"];
+const COMPOSER_QA_SURFACES: ComposerQaSurface[] = ["empty", "conversation"];
 const COMPOSER_QA_MESSAGES: RenderMessage[] = [
   {
     id: "codex-qa-composer-user",
@@ -534,6 +540,7 @@ export function getComposerQaScenario(
   const requestedState = params.get(COMPOSER_QA_STATE_PARAM);
   const requestedPosture = params.get(COMPOSER_QA_POSTURE_PARAM);
   const requestedTheme = params.get(COMPOSER_QA_THEME_PARAM);
+  const requestedSurface = params.get(COMPOSER_QA_SURFACE_PARAM);
 
   return {
     state: COMPOSER_QA_STATES.includes(requestedState as ComposerQaState)
@@ -546,6 +553,11 @@ export function getComposerQaScenario(
       : undefined,
     theme: COMPOSER_QA_THEMES.includes(requestedTheme as ComposerQaTheme)
       ? (requestedTheme as ComposerQaTheme)
+      : undefined,
+    surface: COMPOSER_QA_SURFACES.includes(
+      requestedSurface as ComposerQaSurface,
+    )
+      ? (requestedSurface as ComposerQaSurface)
       : undefined,
   };
 }
@@ -569,12 +581,25 @@ export function getComposerQaSeed(state: ComposerQaState): ComposerQaSeed {
         input:
           "Review the Composer 2.2 implementation.\nConfirm the responsive layout.\nCheck the menu collision boundary.\nPreserve the current provider request path.",
       };
+    case "scrolling":
+      return {
+        ...seed,
+        input: Array.from(
+          { length: 14 },
+          (_, index) => `Composer scrolling QA line ${index + 1}.`,
+        ).join("\n"),
+      };
     case "image":
       return { ...seed, attachments: "image" };
     case "file":
       return { ...seed, attachments: "file" };
     case "mixed":
-      return { ...seed, attachments: "mixed" };
+      return {
+        ...seed,
+        input:
+          "Review the selected Composer references.\nKeep the response concise and actionable.",
+        attachments: "mixed",
+      };
     case "overflow":
       return { ...seed, attachments: "overflow" };
     case "full-attachments":

@@ -123,7 +123,16 @@ describe("frontend performance and compatibility contracts", () => {
     );
     expect(chatStyles).toContain("container-type: inline-size;");
     expect(chatStyles).toMatch(
-      /\.chat-input-row \.chat-input-model-button,[\s\S]*width:\s*clamp\(92px, 18cqw, 132px\);[\s\S]*min-width:\s*0;/,
+      /\.chat-input-model-button\s*\{[\s\S]*?position:\s*static;[\s\S]*?width:\s*clamp\(92px, 18cqw, 132px\);[\s\S]*?min-width:\s*0;/,
+    );
+    expect(chatStyles).toMatch(
+      /@container chat-composer \(max-width: 599px\)[\s\S]*?\.chat-input-row \.chat-input-model-button,[\s\S]*?width:\s*clamp\(116px, 34cqw, 124px\);/,
+    );
+    expect(chatStyles).toMatch(
+      /@container chat-composer \(min-width: 600px\) and \(max-width: 839px\)[\s\S]*?\.chat-input-row \.chat-input-model-button\s*\{[\s\S]*?width:\s*clamp\(108px, 18cqw, 124px\);/,
+    );
+    expect(chatStyles).toMatch(
+      /@container chat-composer \(min-width: 840px\)[\s\S]*?\.chat-input-row \.chat-input-model-button\s*\{[\s\S]*?width:\s*132px;/,
     );
     expect(chatStyles).not.toContain("padding-right: 136px;");
   });

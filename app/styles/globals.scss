@@ -62,7 +62,7 @@
   --composer-border-focus: rgba(49, 94, 248, 0.42);
   --composer-shadow: 0 2px 14px rgba(60, 64, 67, 0.12);
   --composer-shadow-focus: 0 8px 24px rgba(38, 55, 100, 0.15),
-    0 0 0 4px rgba(49, 94, 248, 0.12);
+    0 0 0 3px rgba(49, 94, 248, 0.12);
   --composer-control-surface: rgba(255, 255, 255, 0.92);
   --composer-control-hover: rgba(60, 64, 67, 0.08);
   --composer-control-active: rgba(49, 94, 248, 0.12);
@@ -78,6 +78,10 @@
   --composer-aura-blue: rgba(49, 94, 248, 0.24);
   --composer-aura-cyan: rgba(69, 191, 226, 0.18);
   --composer-aura-violet: rgba(113, 88, 255, 0.16);
+  --composer-hero-cyan: rgb(27, 167, 224);
+  --composer-aura-idle-opacity: 0.48;
+  --composer-aura-focus-opacity: 0.74;
+  --composer-aura-ready-opacity: 0.68;
   --composer-on-accent: white;
   --composer-rail-thumb-surface: white;
   --composer-rail-accent-text: rgb(112, 65, 205);
@@ -139,7 +143,7 @@
   --composer-border-focus: rgba(138, 180, 248, 0.52);
   --composer-shadow: 0 2px 14px rgba(0, 0, 0, 0.28);
   --composer-shadow-focus: 0 18px 48px rgba(0, 0, 0, 0.4),
-    0 0 0 4px rgba(138, 180, 248, 0.16);
+    0 0 0 3px rgba(138, 180, 248, 0.16);
   --composer-control-surface: rgba(36, 39, 43, 0.86);
   --composer-control-hover: rgba(232, 234, 237, 0.08);
   --composer-control-active: rgba(85, 120, 255, 0.18);
@@ -155,6 +159,10 @@
   --composer-aura-blue: rgba(77, 115, 255, 0.14);
   --composer-aura-cyan: rgba(69, 191, 226, 0.1);
   --composer-aura-violet: rgba(130, 101, 255, 0.09);
+  --composer-hero-cyan: rgb(75, 190, 230);
+  --composer-aura-idle-opacity: 0.3;
+  --composer-aura-focus-opacity: 0.52;
+  --composer-aura-ready-opacity: 0.46;
   --composer-on-accent: white;
   --composer-rail-thumb-surface: white;
   --composer-rail-accent-text: rgb(178, 143, 249);

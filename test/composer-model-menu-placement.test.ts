@@ -42,7 +42,7 @@ describe("composer model menu placement", () => {
       openBelow: false,
       bottom: 88,
       gap: 12,
-      width: 500,
+      width: 460,
     });
     expect(placement).not.toHaveProperty("top");
     for (const menuHeight of [217, 350, 420]) {
@@ -52,7 +52,7 @@ describe("composer model menu placement", () => {
     }
   });
 
-  test("keeps compact reasoning and image panels ten pixels above", () => {
+  test("keeps compact reasoning and image panels twelve pixels above", () => {
     const composerRect = rect({
       left: 63,
       top: 776,
@@ -80,17 +80,135 @@ describe("composer model menu placement", () => {
 
     expect(placement).toMatchObject({
       openBelow: false,
-      bottom: 78,
-      gap: 10,
+      bottom: 80,
+      gap: 12,
       left: 63,
       width: 308,
     });
     expect(placement).not.toHaveProperty("top");
     for (const menuHeight of [225, 386]) {
       const menuBottom = 844 - placement.bottom!;
-      expect(composerRect.top - menuBottom).toBe(10);
+      expect(composerRect.top - menuBottom).toBe(12);
       expect(menuBottom - menuHeight).toBeGreaterThanOrEqual(12);
     }
+  });
+
+  test("right-aligns a phone model panel and uses the full composer width", () => {
+    const composerRect = rect({
+      left: 10,
+      top: 768,
+      bottom: 832,
+      width: 370,
+    });
+    const placement = getComposerModelMenuPlacement({
+      buttonRect: rect({
+        left: 204,
+        top: 778,
+        bottom: 822,
+        width: 126,
+      }),
+      composerRect,
+      compact: true,
+      preferBelowOnDesktop: false,
+      viewport: {
+        left: 0,
+        top: 0,
+        width: 390,
+        height: 844,
+        layoutHeight: 844,
+      },
+    });
+
+    expect(placement).toMatchObject({
+      openBelow: false,
+      left: 10,
+      width: 370,
+      gap: 12,
+    });
+    expect(placement.left + placement.width).toBe(
+      composerRect.left + composerRect.width,
+    );
+    expect(placement.collisionBounds).toMatchObject({ left: 10, right: 380 });
+  });
+
+  test("keeps the full composer width on a wide phone viewport", () => {
+    const composerRect = rect({
+      left: 10,
+      top: 904,
+      bottom: 968,
+      width: 500,
+    });
+    const placement = getComposerModelMenuPlacement({
+      buttonRect: rect({
+        left: 336,
+        top: 914,
+        bottom: 958,
+        width: 126,
+      }),
+      composerRect,
+      compact: true,
+      preferBelowOnDesktop: false,
+      viewport: {
+        left: 0,
+        top: 0,
+        width: 520,
+        height: 980,
+        layoutHeight: 980,
+      },
+    });
+
+    expect(placement).toMatchObject({
+      openBelow: false,
+      left: 10,
+      width: 500,
+      gap: 12,
+    });
+    expect(placement.left + placement.width).toBe(
+      composerRect.left + composerRect.width,
+    );
+  });
+
+  test("right-aligns a desktop-width panel inside a compact book segment", () => {
+    const composerRect = rect({
+      left: 628,
+      top: 774,
+      bottom: 838,
+      width: 556,
+    });
+    const placement = getComposerModelMenuPlacement({
+      buttonRect: rect({
+        left: 1008,
+        top: 784,
+        bottom: 828,
+        width: 126,
+      }),
+      composerRect,
+      compact: true,
+      preferBelowOnDesktop: false,
+      viewport: {
+        left: 0,
+        top: 0,
+        width: 1200,
+        height: 850,
+        layoutHeight: 850,
+        segments: [
+          { left: 0, top: 0, width: 588, height: 850 },
+          { left: 612, top: 0, width: 588, height: 850 },
+        ],
+      },
+    });
+
+    expect(placement).toMatchObject({
+      openBelow: false,
+      left: 724,
+      width: 460,
+      gap: 12,
+      segmentIndex: 1,
+    });
+    expect(placement.left + placement.width).toBe(
+      composerRect.left + composerRect.width,
+    );
+    expect(placement.collisionBounds).toMatchObject({ left: 622, right: 1190 });
   });
 
   test("opens an empty desktop composer below with a twelve-pixel gap", () => {
@@ -123,7 +241,7 @@ describe("composer model menu placement", () => {
       openBelow: true,
       top: 497,
       gap: 12,
-      width: 500,
+      width: 460,
     });
     expect(placement).not.toHaveProperty("bottom");
     expect(placement.top! - composerRect.bottom).toBe(12);
@@ -254,8 +372,8 @@ describe("composer model menu placement", () => {
 
     expect(placement).toMatchObject({
       openBelow: false,
-      left: 650,
-      width: 500,
+      left: 690,
+      width: 460,
       bottom: 112,
       segmentIndex: 1,
     });
