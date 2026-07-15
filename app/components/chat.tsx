@@ -196,7 +196,10 @@ import {
   RenderMessage,
   shouldRenderLoadingPreview,
 } from "./chat-render";
-import { getComposerModelMenuPlacement } from "../utils/composer-model-menu-placement";
+import {
+  getComposerPopoverPlacement,
+  toComposerPopoverCssVariables,
+} from "../utils/composer-model-menu-placement";
 
 import {
   DiscreteOptionRail,
@@ -1895,6 +1898,10 @@ function useChatInnerView() {
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const chatComposerShellRef = useRef<HTMLDivElement>(null);
+  const chatInputPanelRef = useRef<HTMLDivElement>(null);
+  const chatInputMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const chatInputActionMenuRef = useRef<HTMLDivElement>(null);
+  const composerViewportSegmentRef = useRef<HTMLSpanElement>(null);
   const unfinishedInputKey = UNFINISHED_INPUT(session.id);
   const [userInput, setUserInput] = useState(
     () => localStorage.getItem(unfinishedInputKey) ?? "",
@@ -1991,6 +1998,47 @@ function useChatInnerView() {
     () => chatQaFixture?.isImageGalleryQaEnabled(location.search) ?? false,
     [chatQaFixture, location.search],
   );
+  const composerQaScenario = useMemo(
+    () => chatQaFixture?.getComposerQaScenario(location.search),
+    [chatQaFixture, location.search],
+  );
+  const composerQaSeed = useMemo(
+    () =>
+      composerQaScenario
+        ? chatQaFixture?.getComposerQaSeed(composerQaScenario.state)
+        : undefined,
+    [chatQaFixture, composerQaScenario],
+  );
+  useEffect(() => {
+    const theme = composerQaScenario?.theme;
+    if (!theme) return;
+
+    const body = document.body;
+    const previousLight = body.classList.contains("light");
+    const previousDark = body.classList.contains("dark");
+    const applyTheme = () => {
+      const resolvedTheme =
+        theme === "system"
+          ? window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light"
+          : theme;
+      body.classList.remove("light", "dark");
+      body.classList.add(resolvedTheme);
+    };
+    const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
+    applyTheme();
+    if (theme === "system") colorScheme.addEventListener("change", applyTheme);
+
+    return () => {
+      if (theme === "system") {
+        colorScheme.removeEventListener("change", applyTheme);
+      }
+      body.classList.remove("light", "dark");
+      if (previousLight) body.classList.add("light");
+      if (previousDark) body.classList.add("dark");
+    };
+  }, [composerQaScenario?.theme]);
   const markdownStressQaDropzonePreview = useMemo(
     () =>
       markdownStressQaEnabled
@@ -2026,11 +2074,14 @@ function useChatInnerView() {
   const [dragPayloadSummary, setDragPayloadSummary] =
     useState<DraggedAttachmentSummary | null>(null);
   const dragCounter = useRef(0);
+  const composerQaDropzoneSummary = composerQaScenario
+    ? chatQaFixture?.getComposerQaDropzoneSummary(composerQaScenario.state)
+    : undefined;
   const dropzonePreviewSummary = markdownStressQaDropzonePreview
     ? chatQaFixture?.MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_SUMMARIES[
         markdownStressQaDropzonePreview
       ]
-    : null;
+    : composerQaDropzoneSummary;
   const dropzonePayloadSummary = dropzonePreviewSummary ?? dragPayloadSummary;
   const isDropzonePreviewActive = dragActive || dropzonePreviewSummary != null;
 
@@ -2160,6 +2211,8 @@ function useChatInnerView() {
     loading: isLoading,
     streamingMessageIds,
   });
+  const displayedComposerSubmitState =
+    composerQaSeed?.submitState ?? composerSubmitState;
   const showComposerVoice =
     ENABLE_REALTIME_CHAT && config.realtimeConfig.enable;
   const canAddMoreAttachments =
@@ -2538,9 +2591,6 @@ function useChatInnerView() {
   const [showMobileModelSelector, setShowMobileModelSelector] = useState(false);
   const [expandedMobileModelSection, setExpandedMobileModelSection] =
     useState<ComposerModelMenuSection | null>(null);
-  const [composerModelMenuStyle, setComposerModelMenuStyle] = useState<
-    React.CSSProperties | undefined
-  >(undefined);
   composerMeasurementFrozenRef.current =
     showChatActionMenu || showMobileModelSelector;
   const modelSelectorButtonRef = useRef<HTMLButtonElement>(null);
@@ -2549,52 +2599,6 @@ function useChatInnerView() {
   const lastHomeChatModelRef = useRef<string>();
   const lastHomeImageModelRef = useRef<string>();
   const homeModeInitializedRef = useRef(false);
-  const getComposerModelMenuStyle = useCallback(
-    (button: HTMLButtonElement, preferBelowOnDesktop: boolean) => {
-      const visualViewport = window.visualViewport;
-      const viewportLeft = visualViewport?.offsetLeft ?? 0;
-      const viewportTop = visualViewport?.offsetTop ?? 0;
-      const viewportWidth = visualViewport?.width ?? window.innerWidth;
-      const viewportHeight = visualViewport?.height ?? window.innerHeight;
-      const buttonRect = button.getBoundingClientRect();
-      const composerRect =
-        button
-          .closest<HTMLElement>('[data-composer-shell="true"]')
-          ?.getBoundingClientRect() ?? buttonRect;
-      const placement = getComposerModelMenuPlacement({
-        buttonRect,
-        composerRect,
-        compact: isCompactScreen,
-        preferBelowOnDesktop,
-        viewport: {
-          left: viewportLeft,
-          top: viewportTop,
-          width: viewportWidth,
-          height: viewportHeight,
-          layoutHeight: window.innerHeight,
-        },
-      });
-
-      return {
-        "--chat-model-menu-composer-left": `${placement.left}px`,
-        "--chat-model-menu-composer-top": placement.openBelow
-          ? `${placement.top}px`
-          : "auto",
-        "--chat-model-menu-composer-bottom": placement.openBelow
-          ? "auto"
-          : `${placement.bottom}px`,
-        "--chat-model-menu-composer-width": `${placement.width}px`,
-        "--chat-model-menu-composer-max-height": `${placement.maxHeight}px`,
-        "--chat-model-menu-composer-origin": placement.openBelow
-          ? "top center"
-          : "bottom center",
-        "--chat-model-menu-composer-shift": placement.openBelow
-          ? "8px"
-          : "-8px",
-      } as React.CSSProperties;
-    },
-    [isCompactScreen],
-  );
   const measureComposerTextarea = useCallback(() => {
     const textarea = inputRef.current;
     if (!textarea || composerMeasurementFrozenRef.current) return;
@@ -2945,6 +2949,47 @@ function useChatInnerView() {
     showMobileModelSelector,
     expandedMobileModelSection,
   );
+  useEffect(() => {
+    if (!composerQaSeed || !chatQaFixture) return;
+
+    setUserInput(composerQaSeed.input);
+    setUploading(composerQaSeed.uploading);
+    setShowChatActionMenu(
+      composerQaSeed.menu === "tools" ||
+        composerQaSeed.menu === "prompt-library",
+    );
+    setChatActionMenuView(
+      composerQaSeed.menu === "prompt-library" ? "prompt-library" : "main",
+    );
+    const modelMenuOpen =
+      composerQaSeed.menu === "reasoning" ||
+      composerQaSeed.menu === "image-options" ||
+      composerQaSeed.menu === "models";
+    setShowMobileModelSelector(modelMenuOpen);
+    setExpandedMobileModelSection(
+      composerQaSeed.menu === "reasoning"
+        ? "reasoning"
+        : composerQaSeed.menu === "image-options"
+        ? "image-options"
+        : null,
+    );
+
+    const attachments = composerQaSeed.attachments
+      ? chatQaFixture.createComposerQaAttachments(composerQaSeed.attachments)
+      : { images: [], files: [] };
+    setAttachImages(attachments.images);
+    setAttachedFiles(attachments.files);
+
+    const focusFrame = requestAnimationFrame(() => {
+      if (composerQaSeed.focus) {
+        inputRef.current?.focus({ preventScroll: true });
+      } else {
+        inputRef.current?.blur();
+        setIsChatInputFocused(false);
+      }
+    });
+    return () => cancelAnimationFrame(focusFrame);
+  }, [chatQaFixture, composerQaSeed]);
   const stepBackOrCloseModelMenu = useCallback(() => {
     const nextLayer = getComposerModelMenuEscapeLayer(
       currentModelMenuLayer,
@@ -3212,6 +3257,14 @@ function useChatInnerView() {
       return chatQaFixture.getImageGalleryQaMessages();
     }
 
+    if (
+      composerQaScenario &&
+      composerQaScenario.state !== "empty" &&
+      chatQaFixture
+    ) {
+      return chatQaFixture.getComposerQaMessages();
+    }
+
     const visibleSessionMessages = projectVisibleChatMessages(
       session.messages as RenderMessage[],
       chatStore.messageProjectionRevision,
@@ -3251,6 +3304,7 @@ function useChatInnerView() {
       );
   }, [
     chatQaFixture,
+    composerQaScenario,
     context,
     isLoading,
     imageGalleryQaEnabled,
@@ -3284,6 +3338,8 @@ function useChatInnerView() {
     ? `markdown:${location.search}`
     : imageGalleryQaEnabled
     ? `gallery:${location.search}`
+    : composerQaScenario
+    ? `composer:${location.search}`
     : undefined;
   const previousQaMessageWindowKeyRef = useRef<string>();
   useLayoutEffect(() => {
@@ -3354,49 +3410,271 @@ function useChatInnerView() {
     scrollDirectionAccumulatorRef.current = 0;
     scrollDom.scrollTop = nextScrollTop;
   }, [messageRenderStartIndex, messages, scrollRef]);
-  const showEmptyState =
-    !markdownStressQaEnabled &&
-    !imageGalleryQaEnabled &&
-    session.messages.length === 0 &&
-    context.length === 1 &&
-    getMessageTextContent(context[0]) === BOT_HELLO.content &&
-    !isLoading;
+  const showEmptyState = composerQaScenario
+    ? composerQaScenario.state === "empty"
+    : !markdownStressQaEnabled &&
+      !imageGalleryQaEnabled &&
+      session.messages.length === 0 &&
+      context.length === 1 &&
+      getMessageTextContent(context[0]) === BOT_HELLO.content &&
+      !isLoading;
   const showEmptyComposer = showEmptyState;
   const showEmptyHero = showEmptyState && !showChatActionMenu;
   const showDesktopChatHeader = !isCompactScreen && !showEmptyState;
-  useEffect(() => {
-    if (!showMobileModelSelector) return;
+  useLayoutEffect(() => {
+    const inputPanel = chatInputPanelRef.current;
+    const segmentProbe = composerViewportSegmentRef.current;
+    const containingBlock = inputPanel?.parentElement;
+    if (!inputPanel || !segmentProbe || !containingBlock) return;
 
     let updateFrame = 0;
-    const updateModelMenuPlacement = () => {
+    const updateViewportFrame = () => {
       cancelAnimationFrame(updateFrame);
       updateFrame = requestAnimationFrame(() => {
-        const trigger = modelSelectorButtonRef.current;
-        if (!trigger) return;
-        setComposerModelMenuStyle(
-          getComposerModelMenuStyle(trigger, showEmptyComposer),
+        const visualViewport = window.visualViewport;
+        const viewportTop = visualViewport?.offsetTop ?? 0;
+        const viewportHeight = visualViewport?.height ?? window.innerHeight;
+        const viewportBottom = viewportTop + viewportHeight;
+        const viewportBottomInset = Math.max(
+          0,
+          window.innerHeight - viewportBottom,
         );
+        inputPanel.style.setProperty(
+          "--chat-composer-viewport-top",
+          `${viewportTop}px`,
+        );
+        inputPanel.style.setProperty(
+          "--chat-composer-viewport-height",
+          `${viewportHeight}px`,
+        );
+        inputPanel.style.setProperty(
+          "--chat-composer-viewport-bottom-inset",
+          `${viewportBottomInset}px`,
+        );
+
+        const segmentProbeStyle = window.getComputedStyle(segmentProbe);
+        const simulatedSegmentActive =
+          segmentProbeStyle
+            .getPropertyValue("--chat-composer-segment-active")
+            .trim() === "1";
+        const segmentProvider = window as Window & {
+          getWindowSegments?: () => DOMRect[];
+        };
+        const segments = simulatedSegmentActive
+          ? [segmentProbe.getBoundingClientRect()]
+          : segmentProvider.getWindowSegments?.() ?? [];
+        const containingRect = containingBlock.getBoundingClientRect();
+        const selectedSegment = segments
+          .map((segment) => {
+            const left = Math.max(containingRect.left, segment.left);
+            const top = Math.max(containingRect.top, segment.top);
+            const right = Math.min(containingRect.right, segment.right);
+            const bottom = Math.min(containingRect.bottom, segment.bottom);
+            return {
+              segment,
+              overlap: Math.max(0, right - left) * Math.max(0, bottom - top),
+            };
+          })
+          .sort((first, second) => second.overlap - first.overlap)[0];
+
+        if (selectedSegment && selectedSegment.overlap > 0) {
+          const segment = selectedSegment.segment;
+          const segmentLeft = Math.max(segment.left, containingRect.left);
+          const segmentRight = Math.min(segment.right, containingRect.right);
+          const segmentTop = Math.max(segment.top, containingRect.top);
+          const segmentBottom = Math.min(segment.bottom, containingRect.bottom);
+          const isHorizontalSplit =
+            segmentRight - segmentLeft < containingRect.width - 1;
+          const isVerticalSplit =
+            segmentBottom - segmentTop < containingRect.height - 1;
+          inputPanel.dataset.composerSegment = "true";
+          inputPanel.dataset.composerSegmentAxis =
+            isHorizontalSplit && isVerticalSplit
+              ? "both"
+              : isVerticalSplit
+              ? "vertical"
+              : "horizontal";
+          inputPanel.style.setProperty(
+            "--chat-composer-segment-left",
+            `${segmentLeft - containingRect.left}px`,
+          );
+          inputPanel.style.setProperty(
+            "--chat-composer-segment-width",
+            `${Math.max(1, segmentRight - segmentLeft)}px`,
+          );
+          inputPanel.style.setProperty(
+            "--chat-composer-segment-top",
+            `${segmentTop - containingRect.top}px`,
+          );
+          inputPanel.style.setProperty(
+            "--chat-composer-segment-height",
+            `${Math.max(1, segmentBottom - segmentTop)}px`,
+          );
+          inputPanel.style.setProperty(
+            "--chat-composer-segment-bottom-inset",
+            `${Math.max(0, containingRect.bottom - segmentBottom)}px`,
+          );
+        } else {
+          delete inputPanel.dataset.composerSegment;
+          delete inputPanel.dataset.composerSegmentAxis;
+          inputPanel.style.removeProperty("--chat-composer-segment-left");
+          inputPanel.style.removeProperty("--chat-composer-segment-width");
+          inputPanel.style.removeProperty("--chat-composer-segment-top");
+          inputPanel.style.removeProperty("--chat-composer-segment-height");
+          inputPanel.style.removeProperty(
+            "--chat-composer-segment-bottom-inset",
+          );
+        }
       });
     };
 
-    updateModelMenuPlacement();
-    window.addEventListener("resize", updateModelMenuPlacement);
-    window.visualViewport?.addEventListener("resize", updateModelMenuPlacement);
-    window.visualViewport?.addEventListener("scroll", updateModelMenuPlacement);
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(updateViewportFrame);
+    resizeObserver?.observe(containingBlock);
+    resizeObserver?.observe(segmentProbe);
+    updateViewportFrame();
+    window.addEventListener("resize", updateViewportFrame);
+    window.addEventListener("orientationchange", updateViewportFrame);
+    window.visualViewport?.addEventListener("resize", updateViewportFrame);
+    window.visualViewport?.addEventListener("scroll", updateViewportFrame);
 
     return () => {
       cancelAnimationFrame(updateFrame);
-      window.removeEventListener("resize", updateModelMenuPlacement);
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", updateViewportFrame);
+      window.removeEventListener("orientationchange", updateViewportFrame);
+      window.visualViewport?.removeEventListener("resize", updateViewportFrame);
+      window.visualViewport?.removeEventListener("scroll", updateViewportFrame);
+    };
+  }, []);
+  useLayoutEffect(() => {
+    if (!showChatActionMenu && !showMobileModelSelector) return;
+
+    let updateFrame = 0;
+    const updatePopoverPlacement = () => {
+      cancelAnimationFrame(updateFrame);
+      updateFrame = requestAnimationFrame(() => {
+        const kind = showMobileModelSelector ? "model" : "tools";
+        const trigger = showMobileModelSelector
+          ? modelSelectorButtonRef.current
+          : chatInputMenuButtonRef.current;
+        const menu = showMobileModelSelector
+          ? modelMenuRef.current
+          : chatInputActionMenuRef.current;
+        const composerShell = chatComposerShellRef.current;
+        const inputPanel = chatInputPanelRef.current;
+        if (!trigger || !menu || !composerShell || !inputPanel) return;
+
+        const visualViewport = window.visualViewport;
+        const inputPanelStyle = window.getComputedStyle(inputPanel);
+        const parseInset = (property: string) => {
+          const value = Number.parseFloat(
+            inputPanelStyle.getPropertyValue(property),
+          );
+          return Number.isFinite(value) ? value : 0;
+        };
+        const segmentProbe = composerViewportSegmentRef.current;
+        const probeStyle = segmentProbe
+          ? window.getComputedStyle(segmentProbe)
+          : null;
+        const probeSegmentActive =
+          probeStyle
+            ?.getPropertyValue("--chat-composer-segment-active")
+            .trim() === "1";
+        const segmentProvider = window as Window & {
+          getWindowSegments?: () => DOMRect[];
+        };
+        const rawSegments =
+          probeSegmentActive && segmentProbe
+            ? [segmentProbe.getBoundingClientRect()]
+            : segmentProvider.getWindowSegments?.() ?? [];
+        const composerRect = composerShell.getBoundingClientRect();
+        const placement = getComposerPopoverPlacement({
+          kind,
+          triggerRect: trigger.getBoundingClientRect(),
+          composerRect,
+          panelHeight: Math.max(
+            menu.getBoundingClientRect().height,
+            menu.scrollHeight,
+          ),
+          compact: composerRect.width < 600,
+          preferBelowOnDesktop: showEmptyComposer,
+          viewport: {
+            left: visualViewport?.offsetLeft ?? 0,
+            top: visualViewport?.offsetTop ?? 0,
+            width: visualViewport?.width ?? window.innerWidth,
+            height: visualViewport?.height ?? window.innerHeight,
+            layoutHeight: window.innerHeight,
+            safeArea: {
+              top: parseInset("--chat-composer-safe-area-top"),
+              right: parseInset("--chat-composer-safe-area-right"),
+              bottom: parseInset("--chat-composer-safe-area-bottom"),
+              left: parseInset("--chat-composer-safe-area-left"),
+            },
+            segments: rawSegments.map((segment) => ({
+              left: segment.left,
+              top: segment.top,
+              width: segment.width,
+              height: segment.height,
+            })),
+          },
+        });
+        const cssVariables = toComposerPopoverCssVariables(
+          placement,
+          kind === "tools" ? inputPanel.getBoundingClientRect() : undefined,
+        );
+        for (const [property, value] of Object.entries(cssVariables)) {
+          if (menu.style.getPropertyValue(property) !== value) {
+            menu.style.setProperty(property, value);
+          }
+        }
+        menu.dataset.popoverSide = placement.openBelow ? "below" : "above";
+      });
+    };
+
+    const menu = showMobileModelSelector
+      ? modelMenuRef.current
+      : chatInputActionMenuRef.current;
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(updatePopoverPlacement);
+    if (menu) resizeObserver?.observe(menu);
+    if (chatComposerShellRef.current) {
+      resizeObserver?.observe(chatComposerShellRef.current);
+    }
+    if (chatInputPanelRef.current) {
+      resizeObserver?.observe(chatInputPanelRef.current);
+    }
+    updatePopoverPlacement();
+    window.addEventListener("resize", updatePopoverPlacement);
+    window.addEventListener("orientationchange", updatePopoverPlacement);
+    window.visualViewport?.addEventListener("resize", updatePopoverPlacement);
+    window.visualViewport?.addEventListener("scroll", updatePopoverPlacement);
+
+    return () => {
+      cancelAnimationFrame(updateFrame);
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", updatePopoverPlacement);
+      window.removeEventListener("orientationchange", updatePopoverPlacement);
       window.visualViewport?.removeEventListener(
         "resize",
-        updateModelMenuPlacement,
+        updatePopoverPlacement,
       );
       window.visualViewport?.removeEventListener(
         "scroll",
-        updateModelMenuPlacement,
+        updatePopoverPlacement,
       );
     };
-  }, [getComposerModelMenuStyle, showEmptyComposer, showMobileModelSelector]);
+  }, [
+    chatActionMenuView,
+    currentModelMenuLayer,
+    showChatActionMenu,
+    showEmptyComposer,
+    showMobileModelSelector,
+  ]);
   const configuredChatHomeDefault = useMemo(
     () =>
       config.serverConfigSnapshot
@@ -3700,7 +3978,6 @@ function useChatInnerView() {
     scrollDomToBottom();
   }, [renderMessages.length, scrollDomToBottom, scrollRef, setMsgRenderIndex]);
   const clearContextDividerRef = useRef<HTMLButtonElement>(null);
-  const chatInputPanelRef = useRef<HTMLDivElement>(null);
   const [chatBodyBottomSafeArea, setChatBodyBottomSafeArea] = useState<
     number | null
   >(null);
@@ -3743,10 +4020,26 @@ function useChatInnerView() {
     if (inputPanel) resizeObserver?.observe(inputPanel);
     if (scrollDom) resizeObserver?.observe(scrollDom);
     window.addEventListener("resize", syncChatBodyBottomSafeArea);
+    window.visualViewport?.addEventListener(
+      "resize",
+      syncChatBodyBottomSafeArea,
+    );
+    window.visualViewport?.addEventListener(
+      "scroll",
+      syncChatBodyBottomSafeArea,
+    );
 
     return () => {
       resizeObserver?.disconnect();
       window.removeEventListener("resize", syncChatBodyBottomSafeArea);
+      window.visualViewport?.removeEventListener(
+        "resize",
+        syncChatBodyBottomSafeArea,
+      );
+      window.visualViewport?.removeEventListener(
+        "scroll",
+        syncChatBodyBottomSafeArea,
+      );
     };
   }, [scrollRef, syncChatBodyBottomSafeArea]);
   const chatBodyStyle = useMemo(
@@ -3972,7 +4265,7 @@ function useChatInnerView() {
 
   // remember unfinished input
   useEffect(() => {
-    if (markdownStressQaEnabled) {
+    if (markdownStressQaEnabled || composerQaScenario) {
       return;
     }
 
@@ -3980,7 +4273,7 @@ function useChatInnerView() {
     return () => {
       localStorage.setItem(unfinishedInputKey, dom?.value ?? "");
     };
-  }, [markdownStressQaEnabled, unfinishedInputKey]);
+  }, [composerQaScenario, markdownStressQaEnabled, unfinishedInputKey]);
 
   const appendAttachments = useCallback(
     (fileInfos: FileInfo[], imageUrls: string[]) => {
@@ -4744,9 +5037,6 @@ function useChatInnerView() {
     getImagePreviewDialogLabel(),
   );
   const imagePreviewTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const chatInputMenuButtonRef = useRef<HTMLButtonElement>(null);
-  const chatInputActionMenuRef = useRef<HTMLDivElement>(null);
-
   const openPromptLibrary = () => {
     setPromptHints([]);
     setChatActionMenuView("prompt-library");
@@ -5304,7 +5594,6 @@ function useChatInnerView() {
                   isReasoningSectionExpanded || isImageOptionsExpanded,
               },
             )}
-            style={composerModelMenuStyle}
             onKeyDown={handleModelMenuKeyDown}
             tabIndex={-1}
             role="dialog"
@@ -5528,6 +5817,13 @@ function useChatInnerView() {
           </div>
         </>
       ) : null}
+
+      <span
+        ref={composerViewportSegmentRef}
+        className={styles["chat-composer-viewport-segment-probe"]}
+        data-qa-posture={composerQaScenario?.posture}
+        aria-hidden="true"
+      />
 
       <div className={styles["chat-main"]}>
         <div className={styles["chat-body-container"]}>
@@ -5972,6 +6268,10 @@ function useChatInnerView() {
               [styles["chat-input-panel-empty"]]: showEmptyComposer,
               [styles["chat-input-panel-model-open"]]: showMobileModelSelector,
             })}
+            data-composer-panel="true"
+            data-qa-state={composerQaScenario?.state}
+            data-qa-posture={composerQaScenario?.posture}
+            data-qa-theme={composerQaScenario?.theme}
             data-drag-active={isDropzonePreviewActive ? "true" : undefined}
           >
             {!showEmptyState &&
@@ -6074,6 +6374,8 @@ function useChatInnerView() {
                   : "compact"
               }
               data-composer-scroll={isTextareaScrolling ? "true" : "false"}
+              data-composer-submit-state={displayedComposerSubmitState}
+              data-composer-uploading={uploading ? "true" : "false"}
             >
               <button
                 type="button"
@@ -6187,12 +6489,6 @@ function useChatInnerView() {
                       return;
                     }
                     setExpandedMobileModelSection(currentModelMenuSection);
-                    setComposerModelMenuStyle(
-                      getComposerModelMenuStyle(
-                        event.currentTarget,
-                        showEmptyComposer,
-                      ),
-                    );
                     setShowMobileModelSelector(true);
                   }}
                   aria-controls="chat-model-menu"
@@ -6524,7 +6820,7 @@ function useChatInnerView() {
 
                 <IconButton
                   icon={
-                    composerSubmitState === "stop" ? (
+                    displayedComposerSubmitState === "stop" ? (
                       <ComposerStopIcon />
                     ) : (
                       <SendWhiteIcon />
@@ -6532,17 +6828,17 @@ function useChatInnerView() {
                   }
                   className={clsx(styles["chat-input-send"], {
                     [styles["chat-input-send-stop"]]:
-                      composerSubmitState === "stop",
+                      displayedComposerSubmitState === "stop",
                   })}
                   type="primary"
-                  disabled={composerSubmitState === "disabled"}
+                  disabled={displayedComposerSubmitState === "disabled"}
                   aria={
-                    composerSubmitState === "stop"
+                    displayedComposerSubmitState === "stop"
                       ? Locale.Chat.InputActions.Stop
                       : Locale.Chat.Send
                   }
                   onClick={
-                    composerSubmitState === "stop"
+                    displayedComposerSubmitState === "stop"
                       ? stopComposerResponse
                       : () => doSubmit(userInput)
                   }

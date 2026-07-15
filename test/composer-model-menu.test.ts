@@ -66,6 +66,6 @@ describe("Composer 2.2 model control integration", () => {
     expect(source).toContain(".filter((message) => message.streaming)");
     expect(source).toContain("streamingMessageIds.forEach(onUserStop)");
     expect(source).toContain("ChatControllerPool.stop(session.id, messageId)");
-    expect(source).toContain('composerSubmitState === "stop"');
+    expect(source).toContain('displayedComposerSubmitState === "stop"');
   });
 });

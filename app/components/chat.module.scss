@@ -4830,26 +4830,33 @@
 .chat-input-panel {
   --chat-scroll-bottom-composer-gap: 12px;
   --chat-input-max-height: min(174px, 24dvh);
-  --chat-input-panel-border-color: color-mix(in srgb, var(--black-50) 14%, transparent);
-  --chat-input-panel-background: var(--surface);
-  --chat-input-panel-shadow-color: color-mix(in srgb, var(--black-50) 8%, transparent);
-  --chat-input-panel-elevated-border-color: color-mix(in srgb, var(--black-50) 14%, transparent);
-  --chat-input-panel-elevated-background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
-  --chat-input-panel-elevated-shadow-color: color-mix(in srgb, var(--black-50) 10%, transparent);
-  --chat-input-focus-border-color: color-mix(in srgb, var(--primary) 38%, transparent);
+  --chat-input-panel-border-color: var(--composer-border);
+  --chat-input-panel-background: var(--composer-surface);
+  --chat-input-panel-shadow-color: color-mix(in srgb, var(--composer-muted) 8%, transparent);
+  --chat-input-panel-elevated-border-color: var(--composer-border);
+  --chat-input-panel-elevated-background: var(--composer-surface-elevated);
+  --chat-input-panel-elevated-shadow-color: color-mix(in srgb, var(--composer-muted) 10%, transparent);
+  --chat-input-focus-border-color: var(--composer-border-focus);
   --chat-input-focus-ring-color: color-mix(in srgb, var(--primary) 12%, transparent);
-  --chat-input-menu-focus-border-color: color-mix(in srgb, var(--primary) 28%, transparent);
-  --chat-input-menu-focus-ring-color: color-mix(in srgb, var(--primary) 8%, transparent);
-  --chat-input-mode-chip-border-color: color-mix(in srgb, var(--primary) 28%, transparent);
-  --chat-input-mode-chip-background: color-mix(in srgb, var(--primary) 12%, transparent);
-  --chat-input-mode-chip-color: color-mix(in srgb, var(--primary) 92%, var(--black));
-  --chat-input-send-foreground-color: var(--surface);
+  --chat-input-menu-focus-border-color: var(--composer-border-focus);
+  --chat-input-menu-focus-ring-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  --chat-input-mode-chip-border-color: var(--composer-selected-border);
+  --chat-input-mode-chip-background: var(--composer-selected-surface);
+  --chat-input-mode-chip-color: var(--composer-text);
+  --chat-input-send-foreground-color: var(--composer-on-accent);
   --chat-input-send-shadow-color: color-mix(in srgb, var(--primary) 28%, transparent);
-  --chat-input-send-disabled-background: color-mix(in srgb, var(--black) 12%, transparent);
-  --chat-input-send-disabled-icon-color: color-mix(in srgb, var(--black-50) 72%, transparent);
-  --chat-input-drag-border-color: color-mix(in srgb, var(--primary) 34%, transparent);
+  --chat-input-send-disabled-background: var(--composer-control-disabled);
+  --chat-input-send-disabled-icon-color: var(--composer-muted);
+  --chat-input-drag-border-color: var(--composer-border-focus);
   --chat-input-drag-ring-color: color-mix(in srgb, var(--primary) 14%, transparent);
-  --chat-input-drag-background: color-mix(in srgb, var(--surface-elevated) 94%, var(--primary) 2%);
+  --chat-input-drag-background: color-mix(in srgb, var(--composer-surface-elevated) 94%, var(--primary) 2%);
+  --chat-composer-safe-area-top: env(safe-area-inset-top, 0px);
+  --chat-composer-safe-area-right: env(safe-area-inset-right, 0px);
+  --chat-composer-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --chat-composer-safe-area-left: env(safe-area-inset-left, 0px);
+  --chat-composer-viewport-top: 0px;
+  --chat-composer-viewport-height: 100dvh;
+  --chat-composer-viewport-bottom-inset: 0px;
 
   position: absolute;
   left: 50%;
@@ -4864,6 +4871,8 @@
   box-shadow: none;
   z-index: 50;
   isolation: isolate;
+  container-name: chat-composer;
+  container-type: inline-size;
 
   .chat-input-actions {
     gap: 4px;
@@ -4881,54 +4890,6 @@
   .chat-input-menu-button,
   .chat-input-model-button {
     pointer-events: auto;
-  }
-}
-
-:global(.dark) .chat-input-panel {
-  --chat-input-panel-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-  --chat-input-panel-background: color-mix(in srgb, var(--surface-elevated) 82%, var(--surface));
-  --chat-input-panel-shadow-color: color-mix(in srgb, var(--surface) 28%, transparent);
-  --chat-input-panel-elevated-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-  --chat-input-panel-elevated-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--surface));
-  --chat-input-panel-elevated-shadow-color: color-mix(in srgb, var(--surface) 30%, transparent);
-  --chat-input-focus-border-color: color-mix(in srgb, var(--primary) 46%, var(--black));
-  --chat-input-focus-ring-color: color-mix(in srgb, var(--primary) 16%, transparent);
-  --chat-input-menu-focus-border-color: color-mix(in srgb, var(--primary) 34%, transparent);
-  --chat-input-menu-focus-ring-color: color-mix(in srgb, var(--primary) 12%, transparent);
-  --chat-input-mode-chip-border-color: color-mix(in srgb, var(--primary) 38%, transparent);
-  --chat-input-mode-chip-background: color-mix(in srgb, var(--primary) 20%, var(--surface));
-  --chat-input-mode-chip-color: color-mix(in srgb, var(--primary) 54%, var(--black));
-  --chat-input-send-foreground-color: var(--black);
-  --chat-input-send-shadow-color: color-mix(in srgb, var(--primary) 20%, transparent);
-  --chat-input-send-disabled-background: color-mix(in srgb, var(--black) 16%, transparent);
-  --chat-input-send-disabled-icon-color: color-mix(in srgb, var(--black) 78%, transparent);
-  --chat-input-drag-border-color: color-mix(in srgb, var(--primary) 42%, transparent);
-  --chat-input-drag-ring-color: color-mix(in srgb, var(--primary) 18%, transparent);
-  --chat-input-drag-background: color-mix(in srgb, var(--surface-elevated) 88%, var(--primary) 4%);
-}
-
-@media (prefers-color-scheme: dark) {
-  :global(body:not(.light)) .chat-input-panel {
-    --chat-input-panel-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-    --chat-input-panel-background: color-mix(in srgb, var(--surface-elevated) 82%, var(--surface));
-    --chat-input-panel-shadow-color: color-mix(in srgb, var(--surface) 28%, transparent);
-    --chat-input-panel-elevated-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-    --chat-input-panel-elevated-background: color-mix(in srgb, var(--surface-elevated) 86%, var(--surface));
-    --chat-input-panel-elevated-shadow-color: color-mix(in srgb, var(--surface) 30%, transparent);
-    --chat-input-focus-border-color: color-mix(in srgb, var(--primary) 46%, var(--black));
-    --chat-input-focus-ring-color: color-mix(in srgb, var(--primary) 16%, transparent);
-    --chat-input-menu-focus-border-color: color-mix(in srgb, var(--primary) 34%, transparent);
-    --chat-input-menu-focus-ring-color: color-mix(in srgb, var(--primary) 12%, transparent);
-    --chat-input-mode-chip-border-color: color-mix(in srgb, var(--primary) 38%, transparent);
-    --chat-input-mode-chip-background: color-mix(in srgb, var(--primary) 20%, var(--surface));
-    --chat-input-mode-chip-color: color-mix(in srgb, var(--primary) 54%, var(--black));
-    --chat-input-send-foreground-color: var(--black);
-    --chat-input-send-shadow-color: color-mix(in srgb, var(--primary) 20%, transparent);
-    --chat-input-send-disabled-background: color-mix(in srgb, var(--black) 16%, transparent);
-    --chat-input-send-disabled-icon-color: color-mix(in srgb, var(--black) 78%, transparent);
-    --chat-input-drag-border-color: color-mix(in srgb, var(--primary) 42%, transparent);
-    --chat-input-drag-ring-color: color-mix(in srgb, var(--primary) 18%, transparent);
-    --chat-input-drag-background: color-mix(in srgb, var(--surface-elevated) 88%, var(--primary) 4%);
   }
 }
 
@@ -5752,25 +5713,23 @@
 
 .chat-input-row {
   position: relative;
-  container-name: chat-composer;
-  container-type: inline-size;
   display: grid;
 }
 
 .chat-input-menu-button {
-  --chat-input-menu-button-border-color: color-mix(in srgb, var(--black) 10%, transparent);
-  --chat-input-menu-button-background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
-  --chat-input-menu-button-color: color-mix(in srgb, var(--black) 82%, transparent);
-  --chat-input-menu-button-shadow-color: color-mix(in srgb, var(--black-50) 12%, transparent);
-  --chat-input-menu-button-hover-background: color-mix(in srgb, var(--primary) 7%, var(--surface-elevated));
-  --chat-input-menu-button-hover-border-color: color-mix(in srgb, var(--primary) 18%, var(--black) 8%);
-  --chat-input-menu-button-focus-shadow-color: color-mix(in srgb, var(--primary) 24%, transparent);
-  --chat-input-menu-button-press-background: color-mix(in srgb, var(--primary) 10%, var(--surface-elevated));
-  --chat-input-menu-button-active-background: color-mix(in srgb, var(--primary) 12%, var(--surface-elevated));
-  --chat-input-menu-button-active-border-color: color-mix(in srgb, var(--primary) 24%, transparent);
+  --chat-input-menu-button-border-color: var(--composer-border);
+  --chat-input-menu-button-background: var(--composer-control-surface);
+  --chat-input-menu-button-color: var(--composer-text);
+  --chat-input-menu-button-shadow-color: color-mix(in srgb, var(--composer-muted) 12%, transparent);
+  --chat-input-menu-button-hover-background: var(--composer-control-hover);
+  --chat-input-menu-button-hover-border-color: var(--composer-border-focus);
+  --chat-input-menu-button-focus-shadow-color: var(--composer-selected-border);
+  --chat-input-menu-button-press-background: var(--composer-control-active);
+  --chat-input-menu-button-active-background: var(--composer-control-active);
+  --chat-input-menu-button-active-border-color: var(--composer-selected-border);
   --chat-input-menu-button-active-color: var(--primary);
-  --chat-input-menu-button-active-shadow-color: color-mix(in srgb, var(--primary) 18%, transparent);
-  --chat-input-menu-button-mobile-background: color-mix(in srgb, var(--primary) 5%, transparent);
+  --chat-input-menu-button-active-shadow-color: var(--composer-selected-border);
+  --chat-input-menu-button-mobile-background: var(--composer-control-surface);
 
   appearance: none;
   box-sizing: border-box;
@@ -5880,40 +5839,6 @@
   transform: rotate(45deg) scale(0.97);
 }
 
-:global(.dark) .chat-input-menu-button {
-  --chat-input-menu-button-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-  --chat-input-menu-button-background: color-mix(in srgb, var(--surface-elevated) 76%, var(--surface));
-  --chat-input-menu-button-color: color-mix(in srgb, var(--black) 90%, transparent);
-  --chat-input-menu-button-shadow-color: color-mix(in srgb, var(--surface) 24%, transparent);
-  --chat-input-menu-button-hover-background: color-mix(in srgb, var(--primary) 14%, var(--surface));
-  --chat-input-menu-button-hover-border-color: color-mix(in srgb, var(--primary) 24%, transparent);
-  --chat-input-menu-button-focus-shadow-color: color-mix(in srgb, var(--primary) 28%, transparent);
-  --chat-input-menu-button-press-background: color-mix(in srgb, var(--primary) 18%, var(--surface));
-  --chat-input-menu-button-active-background: color-mix(in srgb, var(--primary) 18%, var(--surface));
-  --chat-input-menu-button-active-border-color: color-mix(in srgb, var(--primary) 30%, transparent);
-  --chat-input-menu-button-active-color: color-mix(in srgb, var(--primary) 78%, var(--black));
-  --chat-input-menu-button-active-shadow-color: color-mix(in srgb, var(--primary) 22%, var(--surface));
-  --chat-input-menu-button-mobile-background: color-mix(in srgb, var(--primary) 12%, transparent);
-}
-
-@media (prefers-color-scheme: dark) {
-  :global(body:not(.light)) .chat-input-menu-button {
-    --chat-input-menu-button-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-    --chat-input-menu-button-background: color-mix(in srgb, var(--surface-elevated) 76%, var(--surface));
-    --chat-input-menu-button-color: color-mix(in srgb, var(--black) 90%, transparent);
-    --chat-input-menu-button-shadow-color: color-mix(in srgb, var(--surface) 24%, transparent);
-    --chat-input-menu-button-hover-background: color-mix(in srgb, var(--primary) 14%, var(--surface));
-    --chat-input-menu-button-hover-border-color: color-mix(in srgb, var(--primary) 24%, transparent);
-    --chat-input-menu-button-focus-shadow-color: color-mix(in srgb, var(--primary) 28%, transparent);
-    --chat-input-menu-button-press-background: color-mix(in srgb, var(--primary) 18%, var(--surface));
-    --chat-input-menu-button-active-background: color-mix(in srgb, var(--primary) 18%, var(--surface));
-    --chat-input-menu-button-active-border-color: color-mix(in srgb, var(--primary) 30%, transparent);
-    --chat-input-menu-button-active-color: color-mix(in srgb, var(--primary) 78%, var(--black));
-    --chat-input-menu-button-active-shadow-color: color-mix(in srgb, var(--primary) 22%, var(--surface));
-    --chat-input-menu-button-mobile-background: color-mix(in srgb, var(--primary) 12%, transparent);
-  }
-}
-
 .chat-input-action-menu-backdrop {
   --chat-input-action-menu-backdrop-background: color-mix(in srgb, var(--surface) 12%, transparent);
 
@@ -5942,40 +5867,32 @@
 }
 
 .chat-input-action-menu {
-  --chat-multimodal-section-title-color: color-mix(in srgb, var(--black) 92%, transparent);
-  --chat-multimodal-section-subtitle-color: color-mix(in srgb, var(--black-50) 92%, transparent);
-  --chat-multimodal-section-divider-color: color-mix(in srgb, var(--black-50) 12%, transparent);
-  --chat-multimodal-section-primary-background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--primary) 11%, var(--surface-elevated)) 0%,
-    color-mix(in srgb, var(--surface-elevated) 92%, var(--surface-soft)) 100%
-  );
-  --chat-multimodal-section-primary-border-color: color-mix(in srgb, var(--primary) 18%, transparent);
-  --chat-multimodal-section-meta-background: color-mix(in srgb, var(--surface-elevated) 82%, transparent);
-  --chat-multimodal-section-meta-color: color-mix(in srgb, var(--black-50) 92%, transparent);
-  --chat-multimodal-section-meta-warning-background: color-mix(in srgb, rgb(234, 179, 8) 12%, var(--surface-elevated));
-  --chat-multimodal-section-meta-warning-color: color-mix(in srgb, rgb(133, 77, 14) 82%, var(--black));
-  --chat-input-action-active-background: color-mix(in srgb, var(--primary) 10%, transparent);
+  --chat-multimodal-section-title-color: var(--composer-text);
+  --chat-multimodal-section-subtitle-color: var(--composer-muted);
+  --chat-multimodal-section-divider-color: var(--composer-border);
+  --chat-multimodal-section-primary-background: var(--composer-surface-soft);
+  --chat-multimodal-section-primary-border-color: var(--composer-selected-border);
+  --chat-multimodal-section-meta-background: var(--composer-surface-soft);
+  --chat-multimodal-section-meta-color: var(--composer-muted);
+  --chat-multimodal-section-meta-warning-background: color-mix(in srgb, rgb(234, 179, 8) 12%, var(--composer-panel-surface));
+  --chat-multimodal-section-meta-warning-color: color-mix(in srgb, rgb(133, 77, 14) 72%, var(--composer-text));
+  --chat-input-action-active-background: var(--composer-control-active);
   --chat-input-action-active-color: var(--primary);
-  --chat-input-action-background: color-mix(in srgb, var(--surface-elevated) 68%, transparent);
-  --chat-input-action-border-color: color-mix(in srgb, var(--black-50) 10%, transparent);
-  --chat-input-action-hover-background: color-mix(in srgb, var(--primary) 8%, var(--surface-elevated));
-  --chat-input-action-hover-color: color-mix(in srgb, var(--black) 86%, transparent);
-  --chat-input-action-hover-shadow-color: color-mix(in srgb, var(--primary) 8%, transparent);
-  --chat-input-action-disabled-background: color-mix(in srgb, var(--surface-soft) 46%, transparent);
-  --chat-input-action-disabled-color: color-mix(in srgb, var(--black-50) 74%, transparent);
-  --chat-input-action-disabled-ring-color: color-mix(in srgb, var(--black-50) 10%, transparent);
+  --chat-input-action-background: var(--composer-control-surface);
+  --chat-input-action-border-color: var(--composer-border);
+  --chat-input-action-hover-background: var(--composer-control-hover);
+  --chat-input-action-hover-color: var(--composer-text);
+  --chat-input-action-hover-shadow-color: var(--composer-selected-border);
+  --chat-input-action-disabled-background: var(--composer-control-disabled);
+  --chat-input-action-disabled-color: var(--composer-muted);
+  --chat-input-action-disabled-ring-color: var(--composer-border);
   --chat-input-action-menu-radius: 16px;
   --chat-input-action-menu-padding: 8px;
   --chat-input-action-menu-section-padding: 8px;
-  --chat-input-action-menu-border-color: color-mix(in srgb, var(--primary) 14%, var(--black-50));
-  --chat-input-action-menu-background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--surface-elevated) 98%, var(--surface-soft)) 0%,
-    color-mix(in srgb, var(--surface-elevated) 92%, var(--surface)) 100%
-  );
-  --chat-input-action-menu-shadow-color: color-mix(in srgb, var(--black-50) 24%, transparent);
-  --chat-input-action-menu-accent-shadow-color: color-mix(in srgb, var(--primary) 12%, transparent);
+  --chat-input-action-menu-border-color: var(--composer-panel-border);
+  --chat-input-action-menu-background: var(--composer-panel-surface);
+  --chat-input-action-menu-shadow-color: var(--composer-panel-shadow);
+  --chat-input-action-menu-accent-shadow-color: var(--composer-selected-border);
 
   position: absolute;
   left: 0;
@@ -5991,7 +5908,7 @@
   border-radius: var(--chat-input-action-menu-radius);
   background: var(--chat-input-action-menu-background);
   box-shadow:
-    0 24px 68px var(--chat-input-action-menu-shadow-color),
+    var(--chat-input-action-menu-shadow-color),
     0 0 0 1px var(--chat-input-action-menu-accent-shadow-color);
   z-index: 30;
 
@@ -6308,82 +6225,6 @@
   display: block;
   opacity: 1;
   transform: translateY(0) scale(1);
-}
-
-:global(.dark) .chat-input-action-menu .chat-multimodal-section {
-  --chat-multimodal-section-title-color: color-mix(in srgb, var(--black) 94%, transparent);
-  --chat-multimodal-section-subtitle-color: color-mix(in srgb, var(--black-50) 88%, transparent);
-  --chat-multimodal-section-divider-color: color-mix(in srgb, var(--black) 9%, transparent);
-  --chat-multimodal-section-primary-background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--primary) 18%, var(--surface)) 0%,
-    color-mix(in srgb, var(--surface-elevated) 86%, var(--surface)) 100%
-  );
-  --chat-multimodal-section-primary-border-color: color-mix(in srgb, var(--primary) 20%, transparent);
-  --chat-multimodal-section-meta-background: color-mix(in srgb, var(--black) 8%, transparent);
-  --chat-multimodal-section-meta-color: color-mix(in srgb, var(--black-50) 88%, transparent);
-  --chat-multimodal-section-meta-warning-background: color-mix(in srgb, rgb(251, 191, 36) 15%, var(--surface));
-  --chat-multimodal-section-meta-warning-color: color-mix(in srgb, rgb(253, 230, 138) 74%, var(--black));
-}
-
-:global(.dark) .chat-input-action-menu {
-  --chat-input-action-active-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
-  --chat-input-action-active-color: color-mix(in srgb, var(--primary) 78%, var(--black));
-  --chat-input-action-background: color-mix(in srgb, var(--black) 7%, transparent);
-  --chat-input-action-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-  --chat-input-action-hover-background: color-mix(in srgb, var(--primary) 12%, var(--surface));
-  --chat-input-action-hover-color: color-mix(in srgb, var(--black) 90%, transparent);
-  --chat-input-action-hover-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
-  --chat-input-action-disabled-background: color-mix(in srgb, var(--black) 7%, transparent);
-  --chat-input-action-disabled-color: color-mix(in srgb, var(--black-50) 88%, transparent);
-  --chat-input-action-disabled-ring-color: color-mix(in srgb, var(--black) 8%, transparent);
-  --chat-input-action-menu-border-color: color-mix(in srgb, var(--primary) 16%, var(--black));
-  --chat-input-action-menu-background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--surface-elevated) 94%, var(--surface-soft)) 0%,
-    color-mix(in srgb, var(--surface-elevated) 86%, var(--surface)) 100%
-  );
-  --chat-input-action-menu-shadow-color: color-mix(in srgb, var(--surface) 38%, transparent);
-  --chat-input-action-menu-accent-shadow-color: color-mix(in srgb, var(--primary) 11%, var(--surface));
-}
-
-@media (prefers-color-scheme: dark) {
-  :global(body:not(.light)) .chat-input-action-menu .chat-multimodal-section {
-    --chat-multimodal-section-title-color: color-mix(in srgb, var(--black) 94%, transparent);
-    --chat-multimodal-section-subtitle-color: color-mix(in srgb, var(--black-50) 88%, transparent);
-    --chat-multimodal-section-divider-color: color-mix(in srgb, var(--black) 9%, transparent);
-    --chat-multimodal-section-primary-background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--primary) 18%, var(--surface)) 0%,
-      color-mix(in srgb, var(--surface-elevated) 86%, var(--surface)) 100%
-    );
-    --chat-multimodal-section-primary-border-color: color-mix(in srgb, var(--primary) 20%, transparent);
-    --chat-multimodal-section-meta-background: color-mix(in srgb, var(--black) 8%, transparent);
-    --chat-multimodal-section-meta-color: color-mix(in srgb, var(--black-50) 88%, transparent);
-    --chat-multimodal-section-meta-warning-background: color-mix(in srgb, rgb(251, 191, 36) 15%, var(--surface));
-    --chat-multimodal-section-meta-warning-color: color-mix(in srgb, rgb(253, 230, 138) 74%, var(--black));
-  }
-
-  :global(body:not(.light)) .chat-input-action-menu {
-    --chat-input-action-active-background: color-mix(in srgb, var(--primary) 16%, var(--surface));
-    --chat-input-action-active-color: color-mix(in srgb, var(--primary) 78%, var(--black));
-    --chat-input-action-background: color-mix(in srgb, var(--black) 7%, transparent);
-    --chat-input-action-border-color: color-mix(in srgb, var(--black) 8%, transparent);
-    --chat-input-action-hover-background: color-mix(in srgb, var(--primary) 12%, var(--surface));
-    --chat-input-action-hover-color: color-mix(in srgb, var(--black) 90%, transparent);
-    --chat-input-action-hover-shadow-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
-    --chat-input-action-disabled-background: color-mix(in srgb, var(--black) 7%, transparent);
-    --chat-input-action-disabled-color: color-mix(in srgb, var(--black-50) 88%, transparent);
-    --chat-input-action-disabled-ring-color: color-mix(in srgb, var(--black) 8%, transparent);
-    --chat-input-action-menu-border-color: color-mix(in srgb, var(--primary) 16%, var(--black));
-    --chat-input-action-menu-background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-elevated) 94%, var(--surface-soft)) 0%,
-      color-mix(in srgb, var(--surface-elevated) 86%, var(--surface)) 100%
-    );
-    --chat-input-action-menu-shadow-color: color-mix(in srgb, var(--surface) 38%, transparent);
-    --chat-input-action-menu-accent-shadow-color: color-mix(in srgb, var(--primary) 11%, var(--surface));
-  }
 }
 
 .chat-input-action-menu .chat-input-action-active {
@@ -8581,7 +8422,431 @@
 
 @media only screen and (min-width: 901px) {
   .chat-input-panel.chat-input-panel-empty:not(.chat-input-panel-collapsed) {
-    width: min(760px, calc(100% - 112px));
-    max-width: min(760px, calc(100% - 112px));
+    width: min(880px, calc(100% - 112px));
+    max-width: min(880px, calc(100% - 112px));
+  }
+}
+
+// Composer 2.2 canonical visual, viewport, and container-query layer.
+.chat-input-panel:not(.chat-input-panel-empty) {
+  bottom: var(--chat-composer-viewport-bottom-inset);
+}
+
+.chat-input-panel.chat-input-panel-empty {
+  top: clamp(
+    calc(var(--chat-composer-viewport-top) + 64px),
+    calc(26% + 185px),
+    calc(
+      var(--chat-composer-viewport-top) +
+        var(--chat-composer-viewport-height) - 64px
+    )
+  );
+}
+
+.chat-input-panel[data-composer-segment="true"] {
+  left: calc(
+    var(--chat-composer-segment-left) +
+      var(--chat-composer-segment-width) / 2
+  );
+  width: min(820px, calc(var(--chat-composer-segment-width) - 32px));
+  max-width: min(820px, calc(var(--chat-composer-segment-width) - 32px));
+}
+
+.chat-input-panel.chat-input-panel-empty[data-composer-segment="true"] {
+  width: min(880px, calc(var(--chat-composer-segment-width) - 32px));
+  max-width: min(880px, calc(var(--chat-composer-segment-width) - 32px));
+}
+
+.chat-input-panel:is(
+    [data-composer-segment-axis="vertical"],
+    [data-composer-segment-axis="both"]
+  ) {
+  top: auto;
+  bottom: calc(
+    var(--chat-composer-segment-bottom-inset) + 20px +
+      env(safe-area-inset-bottom)
+  );
+}
+
+.chat-composer-viewport-segment-probe {
+  --chat-composer-segment-active: 0;
+
+  position: fixed;
+  inset: 0;
+  width: auto;
+  height: auto;
+  visibility: hidden;
+  contain: strict;
+  pointer-events: none;
+}
+
+.chat-composer-viewport-segment-probe[data-qa-posture="fold-outer"] {
+  --chat-composer-segment-active: 1;
+
+  inset: auto;
+  left: max(0px, calc(50% - 195px));
+  top: 0;
+  width: min(390px, 100%);
+  height: 100%;
+}
+
+.chat-composer-viewport-segment-probe[data-qa-posture="fold-inner"] {
+  --chat-composer-segment-active: 1;
+
+  inset: auto;
+  left: max(0px, calc(50% - 384px));
+  top: 0;
+  width: min(768px, 100%);
+  height: 100%;
+}
+
+.chat-composer-viewport-segment-probe[data-qa-posture="book"] {
+  --chat-composer-segment-active: 1;
+
+  inset: auto;
+  left: calc(50% + 12px);
+  top: 0;
+  width: calc(50% - 12px);
+  height: 100%;
+}
+
+.chat-composer-viewport-segment-probe[data-qa-posture="tabletop"] {
+  --chat-composer-segment-active: 1;
+
+  inset: auto;
+  left: 0;
+  top: calc(50% + 12px);
+  width: 100%;
+  height: calc(50% - 12px);
+}
+
+.chat-composer-viewport-segment-probe[data-qa-posture="split"] {
+  --chat-composer-segment-active: 1;
+
+  inset: auto;
+  left: 44%;
+  top: 0;
+  width: 56%;
+  height: 100%;
+}
+
+@media (horizontal-viewport-segments: 2) {
+  .chat-composer-viewport-segment-probe {
+    --chat-composer-segment-active: 1;
+
+    inset: auto;
+    left: env(viewport-segment-left 1 0);
+    top: env(viewport-segment-top 1 0);
+    width: env(viewport-segment-width 1 0);
+    height: env(viewport-segment-height 1 0);
+  }
+}
+
+@media (vertical-viewport-segments: 2) {
+  .chat-composer-viewport-segment-probe {
+    --chat-composer-segment-active: 1;
+
+    inset: auto;
+    left: env(viewport-segment-left 0 1);
+    top: env(viewport-segment-top 0 1);
+    width: env(viewport-segment-width 0 1);
+    height: env(viewport-segment-height 0 1);
+  }
+}
+
+.chat-input-row::after {
+  content: "";
+  position: absolute;
+  inset: -42px -54px;
+  z-index: -1;
+  border-radius: 56px;
+  background:
+    radial-gradient(
+      circle at 22% 54%,
+      var(--composer-aura-blue),
+      transparent 58%
+    ),
+    radial-gradient(
+      circle at 78% 58%,
+      var(--composer-aura-cyan),
+      transparent 56%
+    ),
+    radial-gradient(
+      circle at 52% 14%,
+      var(--composer-aura-violet),
+      transparent 52%
+    );
+  opacity: 0.24;
+  filter: blur(18px);
+  transform: translate3d(0, 2px, 0) scale(0.98);
+  transform-origin: center;
+  pointer-events: none;
+  transition:
+    opacity 0.2s cubic-bezier(0.2, 0, 0, 1),
+    transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.chat-input-row-focused::after {
+  opacity: 0.58;
+  transform: translate3d(0, 0, 0) scale(1.02);
+}
+
+.chat-input-row[data-composer-submit-state="send"]::after {
+  opacity: 0.48;
+}
+
+.chat-input-row[data-composer-uploading="true"]::after {
+  opacity: 0.34;
+}
+
+.chat-input-row[data-composer-submit-state="stop"]::after {
+  animation: composer-aura-pulse 0.3s cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+@keyframes composer-aura-pulse {
+  0% {
+    opacity: 0.44;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  55% {
+    opacity: 0.7;
+    transform: translate3d(0, 0, 0) scale(1.045);
+  }
+  100% {
+    opacity: 0.48;
+    transform: translate3d(0, 0, 0) scale(1.01);
+  }
+}
+
+.chat-input-row::before,
+.chat-input-panel
+  .chat-input-row:is(
+    [data-composer-state="expanded"],
+    [data-composer-state="scrolling"]
+  ) {
+  border-color: var(--composer-border);
+  background: var(--composer-surface);
+  box-shadow: var(--composer-shadow);
+}
+
+.chat-input-row-focused[data-composer-state="compact"]::before,
+.chat-input-panel
+  .chat-input-row-focused:is(
+    [data-composer-state="expanded"],
+    [data-composer-state="scrolling"]
+  ) {
+  border-color: var(--composer-border-focus);
+  box-shadow: var(--composer-shadow-focus);
+}
+
+.chat-input-model-button {
+  background: var(--composer-chip-surface);
+  color: var(--composer-text);
+}
+
+.chat-input-model-button[aria-expanded="true"] {
+  background: var(--composer-chip-open-surface);
+}
+
+.chat-input-action-menu {
+  left: var(--chat-composer-popover-left, 0);
+  top: var(--chat-composer-popover-top, auto);
+  bottom: var(--chat-composer-popover-bottom, 70px);
+  width: min(var(--chat-composer-popover-width, 268px), 100%);
+  max-height: var(--chat-composer-popover-max-height, 380px);
+  border-color: var(--composer-panel-border);
+  background: var(--composer-panel-surface);
+  box-shadow: var(--composer-panel-shadow);
+  transform: translateY(var(--chat-composer-popover-shift, 8px)) scale(0.97);
+  transform-origin: var(--chat-composer-popover-origin, bottom left);
+}
+
+.chat-input-action-menu.chat-input-action-menu-open {
+  transform: translateY(0) scale(1);
+}
+
+.chat-mobile-model-menu,
+.chat-desktop-model-menu {
+  --chat-model-menu-background: var(--composer-panel-surface);
+  --chat-model-menu-border-color: var(--composer-panel-border);
+  --chat-model-menu-shadow: var(--composer-panel-shadow);
+  --chat-model-option-hover-background: var(--composer-control-hover);
+  --chat-model-option-selected-background: var(--composer-selected-surface);
+  --chat-model-option-selected-border-color: var(--composer-selected-border);
+  --chat-model-option-text-color: var(--composer-text);
+  --chat-model-option-muted-color: var(--composer-muted);
+
+  color: var(--composer-text);
+}
+
+.chat-desktop-model-menu-composer {
+  top: var(--chat-composer-popover-top, 50vh);
+  bottom: var(--chat-composer-popover-bottom, auto);
+  left: var(--chat-composer-popover-left, 50vw);
+  width: min(var(--chat-composer-popover-width, 500px), calc(100vw - 24px));
+  max-height: var(--chat-composer-popover-max-height, 420px);
+  transform: translateY(var(--chat-composer-popover-shift, 8px)) scale(0.97);
+  transform-origin: var(--chat-composer-popover-origin, top right);
+}
+
+.chat-desktop-model-menu-composer.chat-model-menu-visible {
+  transform: translateY(0) scale(1);
+}
+
+@container chat-composer (max-width: 599px) {
+  .chat-input-row,
+  .chat-input-panel .chat-input-row {
+    column-gap: 4px;
+  }
+
+  .chat-input-row .chat-input-model-button,
+  .chat-input-panel.chat-input-panel-empty
+    .chat-input-row
+    .chat-input-model-button {
+    width: clamp(92px, 30cqw, 108px);
+    max-width: 108px;
+    padding-inline: 6px;
+  }
+
+  .chat-input-row .chat-input-model-button-open,
+  .chat-input-panel.chat-input-panel-empty
+    .chat-input-row
+    .chat-input-model-button-open {
+    width: clamp(112px, 46cqw, 208px);
+    max-width: 208px;
+  }
+
+  .chat-input-panel
+    .chat-input-row:is(
+      [data-composer-state="expanded"],
+      [data-composer-state="scrolling"]
+    ) {
+    border-radius: 25px;
+    padding: 14px 8px 10px;
+  }
+}
+
+@container chat-composer (min-width: 600px) and (max-width: 839px) {
+  .chat-input-row .chat-input-model-button {
+    width: clamp(108px, 18cqw, 124px);
+    max-width: 124px;
+  }
+
+  .chat-input-row .chat-input-model-button-open {
+    width: clamp(188px, 31cqw, 220px);
+    max-width: 220px;
+  }
+}
+
+@container chat-composer (min-width: 840px) {
+  .chat-input-row .chat-input-model-button {
+    width: 132px;
+    max-width: 132px;
+  }
+
+  .chat-input-row .chat-input-model-button-open {
+    width: 240px;
+    max-width: 240px;
+  }
+}
+
+@media only screen and (max-width: 600px) {
+  .chat-input-panel.chat-input-panel-empty {
+    top: auto;
+    bottom: calc(
+      var(--chat-composer-viewport-bottom-inset) + 12px +
+        env(safe-area-inset-bottom)
+    );
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .chat-input-row::after {
+    display: none;
+  }
+
+  .chat-input-action-menu,
+  .chat-mobile-model-menu,
+  .chat-desktop-model-menu,
+  .chat-input-action-menu-backdrop-open,
+  .chat-mobile-model-menu-backdrop {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .chat-input-action-menu,
+  .chat-mobile-model-menu,
+  .chat-desktop-model-menu {
+    background: var(--composer-panel-surface);
+  }
+}
+
+@media (prefers-contrast: more) {
+  .chat-input-row::before,
+  .chat-input-panel
+    .chat-input-row:is(
+      [data-composer-state="expanded"],
+      [data-composer-state="scrolling"]
+    ),
+  .chat-input-action-menu,
+  .chat-mobile-model-menu,
+  .chat-desktop-model-menu {
+    border-color: currentColor;
+  }
+
+  .chat-input,
+  .chat-input-model-button,
+  .chat-input-menu-button {
+    color: var(--composer-text);
+  }
+}
+
+@media (forced-colors: active) {
+  .chat-input-row::after {
+    display: none;
+  }
+
+  .chat-input-row::before,
+  .chat-input-panel
+    .chat-input-row:is(
+      [data-composer-state="expanded"],
+      [data-composer-state="scrolling"]
+    ),
+  .chat-input-action-menu,
+  .chat-mobile-model-menu,
+  .chat-desktop-model-menu,
+  .chat-input-model-button,
+  .chat-input-menu-button,
+  .chat-input-send {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText !important;
+    box-shadow: none;
+    forced-color-adjust: auto;
+  }
+
+  .chat-input-row-focused::before,
+  .chat-input-model-button:focus-visible,
+  .chat-input-menu-button:focus-visible,
+  .chat-input-send:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-input-row::after {
+    animation: none !important;
+    transform: none !important;
+    transition-duration: 0.08s !important;
+  }
+
+  .chat-input-model-button,
+  .chat-input-model-name,
+  .chat-input-action-menu,
+  .chat-mobile-model-menu,
+  .chat-desktop-model-menu {
+    animation: none !important;
+    transition-duration: 0.08s !important;
   }
 }

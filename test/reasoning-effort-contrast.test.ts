@@ -26,7 +26,16 @@ describe("reasoning rail contrast", () => {
       ),
       "utf8",
     );
-    expect(styles).toContain(":global(.dark) .highest .value");
-    expect(contrast("#a77df7", "#1f2225")).toBeGreaterThanOrEqual(4.5);
+    const globals = fs.readFileSync(
+      path.join(process.cwd(), "app/styles/globals.scss"),
+      "utf8",
+    );
+    expect(styles).toMatch(
+      /\.highest\s*\{[\s\S]*\.value\s*\{[\s\S]*color:\s*var\(--composer-rail-accent-text\);/,
+    );
+    expect(globals).toMatch(
+      /@mixin dark[\s\S]*--composer-rail-accent-text:\s*rgb\(178, 143, 249\);/,
+    );
+    expect(contrast("#b28ff9", "#1e2124")).toBeGreaterThanOrEqual(4.5);
   });
 });

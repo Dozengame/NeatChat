@@ -108,9 +108,10 @@ describe("composer responsive layout", () => {
     expect(styles).not.toMatch(
       /padding-right:\s*(?:136|154|176|184|202|204|206|218|300|366)px/,
     );
+    const modelOpenStart = styles.indexOf(".chat-input-panel-model-open");
     const modelOpenStyles = styles.slice(
-      styles.indexOf(".chat-input-panel-model-open"),
-      styles.indexOf(":global(.dark) .chat-input-panel"),
+      modelOpenStart,
+      styles.indexOf("\n}", modelOpenStart) + 2,
     );
     expect(modelOpenStyles).not.toContain("filter: blur");
   });
