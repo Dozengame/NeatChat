@@ -60,10 +60,52 @@ describe("Composer 2.2 tools menu", () => {
     expect(source).toContain("uploadImages: () => void");
     expect(source).toContain("uploadFiles: () => void");
     expect(source).toContain('data-chat-action="prompt-library"');
+    expect(source).toContain('id="chat-composer-prompt-library"');
+    expect(source).not.toMatch(
+      /text=\{Locale\.Chat\.ChatToolMenu\.PromptLibrary\}[\s\S]{0,260}ariaHasPopup=/,
+    );
     expect(source).toContain('data-chat-action-menu-control="true"');
     expect(source).toContain("setShowMobileModelSelector(false)");
     expect(source).toContain('setChatActionMenuView("main")');
     expect(source).toContain("onPromptSelect(prompt)");
+  });
+
+  test("announces attachment and model changes from one stable live region", () => {
+    const source = read("app/components/chat.tsx");
+
+    expect(source).toContain('styles["chat-composer-live-status"]');
+    expect(source).toContain('role="status"');
+    expect(source).toContain('aria-live="polite"');
+    expect(source).toContain("announceComposerStatus(");
+    expect(source).toContain("Locale.Chat.Attachments.RemovedImage");
+    expect(source).toContain("Locale.Chat.Attachments.RemovedFile");
+    expect(source).toContain("Locale.Chat.ModelMenu.ModelSelected");
+    expect(source).toContain("Locale.Chat.HomeMode.Changed");
+  });
+
+  test("opening the tools menu cannot mutate attachments or model config", () => {
+    const source = read("app/components/chat.tsx");
+    const actionsStart = source.indexOf("function useChatActionsView(");
+    const actionsEnd = source.indexOf("function ChatActions(", actionsStart);
+    const actionsView = source.slice(actionsStart, actionsEnd);
+
+    expect(actionsView).not.toContain("setAttachImages([])");
+    expect(actionsView).not.toContain("setUploading(false)");
+    expect(actionsView).not.toContain('source: "admin_forced"');
+    expect(source).toContain("canSwitchToModelWithImageAttachments(");
+    expect(source).toContain("Locale.Chat.ModelMenu.ImageAttachmentsBlocked");
+  });
+
+  test("keeps file type and size visible and prompt filters touch sized", () => {
+    const source = read("app/components/chat.tsx");
+    const styles = read("app/components/chat.module.scss");
+
+    expect(source).toContain("getAttachmentFileTypeLabel(file)");
+    expect(source).toContain("{fileTypeLabel} · {fileSizeLabel}");
+    expect(source).toContain("Locale.Chat.Attachments.FileMetadata.Type");
+    expect(styles).toMatch(
+      /\.chat-prompt-library-filter\s*\{[\s\S]*min-height:\s*44px;/,
+    );
   });
 
   test("keeps all Composer tool copy localized in Chinese and English", () => {

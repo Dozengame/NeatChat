@@ -84,6 +84,7 @@ export type ComposerQaSeed = {
     | "image-options"
     | "models";
   submitState?: "disabled" | "send" | "stop";
+  modelCapability?: "reasoning" | "image-options";
 };
 const COMPOSER_QA_STATES: ComposerQaState[] = [
   "empty",
@@ -587,9 +588,13 @@ export function getComposerQaSeed(state: ComposerQaState): ComposerQaSeed {
     case "prompt-library":
       return { ...seed, menu: "prompt-library" };
     case "reasoning":
-      return { ...seed, menu: "reasoning" };
+      return { ...seed, menu: "reasoning", modelCapability: "reasoning" };
     case "image-options":
-      return { ...seed, menu: "image-options" };
+      return {
+        ...seed,
+        menu: "image-options",
+        modelCapability: "image-options",
+      };
     case "model-list":
       return { ...seed, menu: "models" };
     case "uploading":

@@ -1511,7 +1511,7 @@ describe("Gemini visual migration shell", () => {
     );
     expect(chat).toContain("title={editingImageTitle}");
     expect(chat).toContain('styles["attach-file"]');
-    expect(chat).toContain("aria-label={fileEditContextLabel}");
+    expect(chat).toContain("aria-label={fileAccessibleLabel}");
     expect(chat).toMatch(
       /const fileEditContextLabel =\s*Locale\.Chat\.Attachments\.EditFile\(\s*index \+ 1,\s*file\.name,?\s*\);/,
     );
@@ -2145,13 +2145,13 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("const syncChatBodyBottomSafeArea = useCallback");
     expect(chat).toContain("currentSafeArea === nextSafeArea");
     expect(chat).toContain('typeof ResizeObserver !== "undefined"');
-    expect(chat).toContain("new ResizeObserver(syncChatBodyBottomSafeArea)");
+    expect(chat).toContain("new ResizeObserver(scheduleChatBodyBottomSafeArea)");
     expect(chat).toContain(
-      'window.addEventListener("resize", syncChatBodyBottomSafeArea);',
+      'window.addEventListener("resize", scheduleChatBodyBottomSafeArea);',
     );
     expect(chat).toContain("resizeObserver?.disconnect();");
     expect(chat).toContain(
-      'window.removeEventListener("resize", syncChatBodyBottomSafeArea);',
+      'window.removeEventListener("resize", scheduleChatBodyBottomSafeArea);',
     );
     expect(chat).toContain(
       '"--chat-body-bottom-safe-area": `${chatBodyBottomSafeArea}px`,',

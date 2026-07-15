@@ -88,6 +88,7 @@ const cn = {
       Label: "新聊天模式",
       Chat: "聊天",
       Image: "生图",
+      Changed: (mode: string) => `已切换到${mode}模式`,
     },
     Input: (submitKey: string) => {
       var inputHints = `${submitKey} 发送`;
@@ -184,11 +185,13 @@ const cn = {
       FullShort: "已满",
       EditImage: (index: number) => `编辑第 ${index} 张图片附件`,
       DeleteImage: (index: number) => `删除第 ${index} 张图片附件`,
+      RemovedImage: (index: number) => `已删除第 ${index} 张图片附件`,
       EditFile: (index: number, name: string) =>
         `编辑第 ${index} 个文件附件：${name}`,
       EditFileContent: (name: string) => `编辑文件内容: ${name}`,
       DeleteFile: (index: number, name: string) =>
         `删除第 ${index} 个文件附件：${name}`,
+      RemovedFile: (name: string) => `已删除文件附件：${name}`,
       Reader: {
         UnknownError: "未知错误",
         UnsupportedFileType: "不支持的文件类型",
@@ -344,6 +347,8 @@ const cn = {
       Empty: "暂无可用模型",
       ChatModelUnavailable: "暂无可用的 GPT-5.x 聊天模型",
       ImageModelUnavailable: "暂无可用的生图模型",
+      ImageAttachmentsBlocked: "请先移除图片附件，再切换到不支持图片的模型",
+      ModelSelected: (model: string) => `已选择模型：${model}`,
       ReasoningEffort: "思考等级",
       ReasoningOptions: "思考等级选项",
       ImageSize: "图片尺寸",

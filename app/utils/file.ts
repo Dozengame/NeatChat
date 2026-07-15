@@ -96,6 +96,22 @@ export interface FileInfo {
   originalFile: File;
 }
 
+export function getAttachmentFileTypeLabel(
+  file: Pick<FileInfo, "name" | "type">,
+) {
+  const normalizedName = file.name.trim();
+  const extensionMatch = normalizedName.match(/\.([^.]+)$/);
+  if (extensionMatch?.[1]) {
+    return extensionMatch[1].toUpperCase();
+  }
+
+  if (normalizedName.toLowerCase() === "dockerfile") {
+    return "DOCKERFILE";
+  }
+
+  return file.type.trim() || "—";
+}
+
 const MAX_ATTACHMENT_TEXT_LENGTH = 100000;
 
 const SAFE_ATTACHMENT_EXTENSIONS = new Set([

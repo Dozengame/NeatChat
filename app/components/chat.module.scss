@@ -5304,7 +5304,7 @@
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: color-mix(in srgb, var(--black) 78%, transparent);
+  color: var(--composer-text);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -5324,8 +5324,8 @@
     transform 0.1s ease-out;
 
   &:hover {
-    background: color-mix(in srgb, var(--black-50) 8%, transparent);
-    color: color-mix(in srgb, var(--black) 88%, transparent);
+    background: var(--composer-control-hover);
+    color: var(--composer-text);
   }
   &:active {
     transform: scale(0.98);
@@ -5363,22 +5363,27 @@
 
 .chat-input-model-separator,
 .chat-input-model-detail {
-  flex: 0 0 auto;
+  min-width: 0;
   white-space: nowrap;
 }
 
 .chat-input-model-separator {
-  color: color-mix(in srgb, var(--black-50) 76%, transparent);
+  flex: 0 0 auto;
+  color: var(--composer-muted);
 }
 
 .chat-input-model-detail {
-  color: color-mix(in srgb, var(--black) 72%, transparent);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--composer-text);
   font-weight: 600;
+  text-overflow: ellipsis;
 }
 
 .chat-input-model-arrow {
   flex: 0 0 auto;
-  color: color-mix(in srgb, var(--black-50) 86%, transparent);
+  color: var(--composer-muted);
   font-size: 12px;
   line-height: 1;
   transform: translateY(1px);
@@ -5444,6 +5449,19 @@
 }
 
 .chat-model-menu-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.chat-composer-live-status {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -6116,7 +6134,7 @@
   appearance: none;
   flex: 1 1 0;
   min-width: 0;
-  min-height: 28px;
+  min-height: 44px;
   padding: 0 7px;
   border: 1px solid transparent;
   border-radius: 999px;
@@ -8218,15 +8236,20 @@
 
 .chat-input-row::before {
   content: "";
-  grid-column: 2 / -1;
-  grid-row: 1;
-  align-self: stretch;
+  position: absolute;
+  inset: 0 0 0 50px;
   z-index: 0;
   border: 1px solid var(--chat-input-panel-border-color);
   border-radius: 32px;
   background: var(--chat-input-panel-background);
   box-shadow: 0 8px 24px var(--chat-input-panel-shadow-color);
   pointer-events: none;
+  transition:
+    inset 0.22s cubic-bezier(0.2, 0, 0, 1),
+    border-color 0.2s ease,
+    border-radius 0.22s cubic-bezier(0.2, 0, 0, 1),
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .chat-input-row .chat-input-panel-inner {
@@ -8279,8 +8302,9 @@
   width: clamp(92px, 18cqw, 132px);
   min-width: 0;
   max-width: 132px;
-  height: 40px;
+  height: 44px;
   padding-inline: 8px;
+  overflow: hidden;
 }
 
 .chat-input-row .chat-input-model-button-open,
@@ -8341,10 +8365,10 @@
   column-gap: 8px;
   row-gap: 8px;
   padding: 14px 10px 10px;
-  border: 1px solid var(--chat-input-panel-border-color);
-  border-radius: 28px;
-  background: var(--chat-input-panel-background);
-  box-shadow: 0 8px 24px var(--chat-input-panel-shadow-color);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .chat-input-panel
@@ -8361,8 +8385,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .chat-input-model-name,
+  .chat-input-row::before,
   .chat-input-send-stop {
     animation: none !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
@@ -8370,7 +8396,8 @@
     [data-composer-state="expanded"],
     [data-composer-state="scrolling"]
   )::before {
-  content: none;
+  inset: 0;
+  border-radius: 28px;
 }
 
 .chat-input-panel
@@ -8389,30 +8416,14 @@
   padding: 0 6px;
 }
 
-.chat-input-row-focused[data-composer-state="compact"]::before {
+.chat-input-row-focused::before {
   border-color: var(--chat-input-focus-border-color);
   box-shadow:
     0 8px 24px var(--chat-input-panel-shadow-color),
     0 0 0 4px var(--chat-input-focus-ring-color);
 }
 
-.chat-input-panel
-  .chat-input-row-focused:is(
-    [data-composer-state="expanded"],
-    [data-composer-state="scrolling"]
-  ) {
-  border-color: var(--chat-input-focus-border-color);
-  box-shadow:
-    0 8px 24px var(--chat-input-panel-shadow-color),
-    0 0 0 4px var(--chat-input-focus-ring-color);
-}
-
-.chat-input-panel[data-drag-active="true"] .chat-input-row::before,
-.chat-input-panel[data-drag-active="true"]
-  .chat-input-row:is(
-    [data-composer-state="expanded"],
-    [data-composer-state="scrolling"]
-  ) {
+.chat-input-panel[data-drag-active="true"] .chat-input-row::before {
   border-color: var(--chat-input-drag-border-color);
   background: var(--chat-input-drag-background);
   box-shadow:
@@ -8618,23 +8629,13 @@
   }
 }
 
-.chat-input-row::before,
-.chat-input-panel
-  .chat-input-row:is(
-    [data-composer-state="expanded"],
-    [data-composer-state="scrolling"]
-  ) {
+.chat-input-row::before {
   border-color: var(--composer-border);
   background: var(--composer-surface);
   box-shadow: var(--composer-shadow);
 }
 
-.chat-input-row-focused[data-composer-state="compact"]::before,
-.chat-input-panel
-  .chat-input-row-focused:is(
-    [data-composer-state="expanded"],
-    [data-composer-state="scrolling"]
-  ) {
+.chat-input-row-focused::before {
   border-color: var(--composer-border-focus);
   box-shadow: var(--composer-shadow-focus);
 }
@@ -8721,8 +8722,14 @@
       [data-composer-state="expanded"],
       [data-composer-state="scrolling"]
     ) {
-    border-radius: 25px;
     padding: 14px 8px 10px;
+  }
+
+  .chat-input-row:is(
+      [data-composer-state="expanded"],
+      [data-composer-state="scrolling"]
+    )::before {
+    border-radius: 25px;
   }
 }
 
@@ -8783,11 +8790,6 @@
 
 @media (prefers-contrast: more) {
   .chat-input-row::before,
-  .chat-input-panel
-    .chat-input-row:is(
-      [data-composer-state="expanded"],
-      [data-composer-state="scrolling"]
-    ),
   .chat-input-action-menu,
   .chat-mobile-model-menu,
   .chat-desktop-model-menu {
@@ -8807,11 +8809,6 @@
   }
 
   .chat-input-row::before,
-  .chat-input-panel
-    .chat-input-row:is(
-      [data-composer-state="expanded"],
-      [data-composer-state="scrolling"]
-    ),
   .chat-input-action-menu,
   .chat-mobile-model-menu,
   .chat-desktop-model-menu,
@@ -8843,6 +8840,7 @@
 
   .chat-input-model-button,
   .chat-input-model-name,
+  .chat-input-row::before,
   .chat-input-action-menu,
   .chat-mobile-model-menu,
   .chat-desktop-model-menu {

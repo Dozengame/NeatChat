@@ -90,6 +90,7 @@ const en: LocaleType = {
       Label: "New chat mode",
       Chat: "Chat",
       Image: "Image",
+      Changed: (mode: string) => `Switched to ${mode} mode`,
     },
     Input: (submitKey: string) => {
       var inputHints = `${submitKey} to send`;
@@ -191,11 +192,13 @@ const en: LocaleType = {
       FullShort: "Full",
       EditImage: (index: number) => `Edit image attachment ${index}`,
       DeleteImage: (index: number) => `Delete image attachment ${index}`,
+      RemovedImage: (index: number) => `Removed image attachment ${index}`,
       EditFile: (index: number, name: string) =>
         `Edit file attachment ${index}: ${name}`,
       EditFileContent: (name: string) => `Edit file content: ${name}`,
       DeleteFile: (index: number, name: string) =>
         `Delete file attachment ${index}: ${name}`,
+      RemovedFile: (name: string) => `Removed file attachment: ${name}`,
       Reader: {
         UnknownError: "Unknown error",
         UnsupportedFileType: "Unsupported file type",
@@ -360,6 +363,9 @@ const en: LocaleType = {
       Empty: "No models available",
       ChatModelUnavailable: "No GPT-5.x chat model is available",
       ImageModelUnavailable: "No image model is available",
+      ImageAttachmentsBlocked:
+        "Remove image attachments before switching to a model without image support",
+      ModelSelected: (model: string) => `Selected model: ${model}`,
       ReasoningEffort: "Reasoning effort",
       ReasoningOptions: "Reasoning effort options",
       ImageSize: "Image size",

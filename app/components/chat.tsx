@@ -78,6 +78,7 @@ import {
   getMessageImages,
   hasMessageContent,
   isVisionModel,
+  canSwitchToModelWithImageAttachments,
   showPlugins,
   safeLocalStorage,
 } from "../utils";
@@ -172,6 +173,7 @@ import {
   getAttachmentRenderKey,
   getClipboardAttachmentPayload,
   getDraggedAttachmentSummary,
+  getAttachmentFileTypeLabel,
   getFileIconClass,
   isAttachmentImage,
   processAttachmentFiles,
@@ -904,7 +906,9 @@ function ComposerPromptLibrary(props: {
 
   return (
     <div
+      id="chat-composer-prompt-library"
       className={styles["chat-prompt-library"]}
+      role="region"
       aria-label={Locale.Chat.ChatToolMenu.PromptLibraryTitle}
     >
       <div className={styles["chat-prompt-library-header"]}>
@@ -977,8 +981,6 @@ function ComposerPromptLibrary(props: {
 type ChatActionsProps = {
   uploadImages: () => void;
   uploadFiles: () => void;
-  setAttachImages: (images: string[]) => void;
-  setUploading: (uploading: boolean) => void;
   showPromptModal: () => void;
   scrollToBottom: () => void;
   showPromptHints: () => void;
@@ -997,7 +999,6 @@ type ChatActionsProps = {
 };
 
 function useChatActionsView(props: ChatActionsProps) {
-  const { setAttachImages, setUploading } = props;
   const config = useAppConfig();
   const accessStore = useAccessStore();
   const chatStore = useChatStore();
@@ -1063,64 +1064,6 @@ function useChatActionsView(props: ChatActionsProps) {
   const currentStyle = session.mask.modelConfig?.style ?? "vivid";
 
   const isCompactScreen = useCompactScreen();
-
-  useEffect(() => {
-    if (!isVisionModel(currentModel)) {
-      setAttachImages([]);
-      setUploading(false);
-    }
-
-    // if current model is not available
-    // switch to first available model
-    const isUnavailableModel = !models.some(
-      (m) =>
-        m.name === currentModel &&
-        m?.provider?.providerName === currentProviderName,
-    );
-    if (isUnavailableModel && models.length > 0) {
-      // show next model to default model if exist
-      let nextModel = models.find((model) => model.isDefault) || models[0];
-      chatStore.updateTargetSession(session, (session) => {
-        session.mask.modelConfig.model = nextModel.name;
-        session.mask.modelConfig.providerName = nextModel?.provider
-          ?.providerName as ServiceProvider;
-        applyConfiguredOpenAIResponsesReasoningEffortDefault({
-          config: session.mask.modelConfig,
-          configMeta: session.mask.modelConfigMeta,
-          defaults: config.serverConfigSnapshot?.reasoningEffortDefaults,
-        });
-        applyOpenAIResponsesModelConstraints(session.mask.modelConfig);
-        applyOpenAIImageGenerationDefaults(session.mask.modelConfig);
-        session.mask.modelConfigMeta = {
-          ...(session.mask.modelConfigMeta ?? {}),
-          model: createConfigFieldMeta({
-            source: "admin_forced",
-            publicConfig: config.serverConfigSnapshot,
-            locked: true,
-          }),
-          providerName: createConfigFieldMeta({
-            source: "admin_forced",
-            publicConfig: config.serverConfigSnapshot,
-            locked: true,
-          }),
-        };
-      });
-      showToast(
-        nextModel?.provider?.providerName == "ByteDance"
-          ? nextModel.displayName
-          : nextModel.name,
-      );
-    }
-  }, [
-    chatStore,
-    config.serverConfigSnapshot,
-    currentModel,
-    currentProviderName,
-    models,
-    session,
-    setAttachImages,
-    setUploading,
-  ]);
 
   const showModelSearchOption = config.enableModelSearch ?? false;
   const availablePlugins = pluginStore
@@ -1266,8 +1209,6 @@ function useChatActionsView(props: ChatActionsProps) {
             text={Locale.Chat.ChatToolMenu.PromptLibrary}
             description={Locale.Chat.ChatToolMenu.PromptLibraryDescription}
             icon={<PromptIcon />}
-            ariaHasPopup="dialog"
-            ariaExpanded={false}
             dataChatAction="prompt-library"
           />
         </div>
@@ -2060,6 +2001,16 @@ function useChatInnerView() {
   const [attachImages, setAttachImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<FileInfo[]>([]);
+  const [composerLiveStatus, setComposerLiveStatus] = useState({
+    id: 0,
+    message: "",
+  });
+  const announceComposerStatus = useCallback((message: string) => {
+    setComposerLiveStatus((current) => ({
+      id: current.id + 1,
+      message,
+    }));
+  }, []);
   const attachmentsContainerRef = useRef<HTMLDivElement>(null);
   const attachmentSwipeStartRef = useRef<AttachmentSwipeStart | null>(null);
   const activeAttachmentDeleteKeyRef = useRef<string | null>(null);
@@ -2949,47 +2900,6 @@ function useChatInnerView() {
     showMobileModelSelector,
     expandedMobileModelSection,
   );
-  useEffect(() => {
-    if (!composerQaSeed || !chatQaFixture) return;
-
-    setUserInput(composerQaSeed.input);
-    setUploading(composerQaSeed.uploading);
-    setShowChatActionMenu(
-      composerQaSeed.menu === "tools" ||
-        composerQaSeed.menu === "prompt-library",
-    );
-    setChatActionMenuView(
-      composerQaSeed.menu === "prompt-library" ? "prompt-library" : "main",
-    );
-    const modelMenuOpen =
-      composerQaSeed.menu === "reasoning" ||
-      composerQaSeed.menu === "image-options" ||
-      composerQaSeed.menu === "models";
-    setShowMobileModelSelector(modelMenuOpen);
-    setExpandedMobileModelSection(
-      composerQaSeed.menu === "reasoning"
-        ? "reasoning"
-        : composerQaSeed.menu === "image-options"
-        ? "image-options"
-        : null,
-    );
-
-    const attachments = composerQaSeed.attachments
-      ? chatQaFixture.createComposerQaAttachments(composerQaSeed.attachments)
-      : { images: [], files: [] };
-    setAttachImages(attachments.images);
-    setAttachedFiles(attachments.files);
-
-    const focusFrame = requestAnimationFrame(() => {
-      if (composerQaSeed.focus) {
-        inputRef.current?.focus({ preventScroll: true });
-      } else {
-        inputRef.current?.blur();
-        setIsChatInputFocused(false);
-      }
-    });
-    return () => cancelAnimationFrame(focusFrame);
-  }, [chatQaFixture, composerQaSeed]);
   const stepBackOrCloseModelMenu = useCallback(() => {
     const nextLayer = getComposerModelMenuEscapeLayer(
       currentModelMenuLayer,
@@ -3060,6 +2970,17 @@ function useChatInnerView() {
         return false;
       }
       const [model, providerName] = getModelProvider(selected);
+      if (
+        !canSwitchToModelWithImageAttachments(
+          model,
+          attachImagesRef.current.length,
+        )
+      ) {
+        const message = Locale.Chat.ModelMenu.ImageAttachmentsBlocked;
+        announceComposerStatus(message);
+        showToast(message);
+        return false;
+      }
       const source = options.source ?? "conversation_override";
       chatStore.updateTargetSession(session, (session) => {
         session.mask.modelConfig.model = model as ModelType;
@@ -3090,10 +3011,12 @@ function useChatInnerView() {
       if (options.closeMenu !== false) closeMobileModelSelector();
       if (options.restoreFocus !== false) restoreModelSelectorFocus();
       if (options.announce !== false) showToast(model);
+      announceComposerStatus(Locale.Chat.ModelMenu.ModelSelected(model));
       return true;
     },
     [
       chatStore,
+      announceComposerStatus,
       closeMobileModelSelector,
       config.serverConfigSnapshot,
       headerModelLocked,
@@ -3101,6 +3024,93 @@ function useChatInnerView() {
       session,
     ],
   );
+  useEffect(() => {
+    if (!composerQaSeed || !chatQaFixture) return;
+
+    const capabilityModel = composerQaSeed.modelCapability
+      ? headerAvailableModels.find(
+          (model) =>
+            getComposerModelMenuSection(
+              model.name,
+              model.provider?.providerName,
+            ) === composerQaSeed.modelCapability && isVisionModel(model.name),
+        ) ??
+        headerAvailableModels.find(
+          (model) =>
+            getComposerModelMenuSection(
+              model.name,
+              model.provider?.providerName,
+            ) === composerQaSeed.modelCapability,
+        )
+      : undefined;
+    const capabilityModelRef = capabilityModel
+      ? `${capabilityModel.name}@${capabilityModel.provider?.providerName}`
+      : undefined;
+    const currentCapabilityReady = composerQaSeed.modelCapability
+      ? getComposerModelMenuSection(
+          headerCurrentModel,
+          headerCurrentProviderName,
+        ) === composerQaSeed.modelCapability
+      : true;
+    let capabilityReady = currentCapabilityReady;
+    if (!currentCapabilityReady && capabilityModelRef) {
+      capabilityReady = selectHeaderModel(capabilityModelRef, {
+        closeMenu: false,
+        restoreFocus: false,
+        announce: false,
+      });
+    }
+    if (composerQaSeed.modelCapability && !capabilityReady) {
+      const message =
+        composerQaSeed.modelCapability === "reasoning"
+          ? Locale.Chat.ModelMenu.ChatModelUnavailable
+          : Locale.Chat.ModelMenu.ImageModelUnavailable;
+      announceComposerStatus(message);
+      showToast(message);
+    }
+
+    setUserInput(composerQaSeed.input);
+    setUploading(composerQaSeed.uploading);
+    setShowChatActionMenu(
+      composerQaSeed.menu === "tools" ||
+        composerQaSeed.menu === "prompt-library",
+    );
+    setChatActionMenuView(
+      composerQaSeed.menu === "prompt-library" ? "prompt-library" : "main",
+    );
+    const modelMenuOpen =
+      composerQaSeed.menu === "reasoning" ||
+      composerQaSeed.menu === "image-options" ||
+      composerQaSeed.menu === "models";
+    setShowMobileModelSelector(modelMenuOpen && capabilityReady);
+    setExpandedMobileModelSection(
+      capabilityReady ? composerQaSeed.modelCapability ?? null : null,
+    );
+
+    const attachments = composerQaSeed.attachments
+      ? chatQaFixture.createComposerQaAttachments(composerQaSeed.attachments)
+      : { images: [], files: [] };
+    setAttachImages(attachments.images);
+    setAttachedFiles(attachments.files);
+
+    const focusFrame = requestAnimationFrame(() => {
+      if (composerQaSeed.focus) {
+        inputRef.current?.focus({ preventScroll: true });
+      } else {
+        inputRef.current?.blur();
+        setIsChatInputFocused(false);
+      }
+    });
+    return () => cancelAnimationFrame(focusFrame);
+  }, [
+    announceComposerStatus,
+    chatQaFixture,
+    composerQaSeed,
+    headerAvailableModels,
+    headerCurrentModel,
+    headerCurrentProviderName,
+    selectHeaderModel,
+  ]);
   const selectComposerModel = (model: ChatHomeModel, selected: boolean) => {
     const providerName = model.provider?.providerName;
     const nextSection = getComposerModelMenuSection(model.name, providerName);
@@ -3145,6 +3155,9 @@ function useChatInnerView() {
       session.mask.syncGlobalConfig = false;
     });
     showToast(reasoningLabels[reasoningEffort]);
+    announceComposerStatus(
+      Locale.Chat.ModelMenu.SelectedReasoning(reasoningLabels[reasoningEffort]),
+    );
   };
   const selectHeaderImageSize = (size: OpenAIImageSize) => {
     if (headerImageSizeLocked) {
@@ -3163,6 +3176,9 @@ function useChatInnerView() {
       session.mask.syncGlobalConfig = false;
     });
     showToast(size);
+    announceComposerStatus(
+      Locale.Chat.ModelMenu.SelectedImageOptions(getImageSizeLabel(size)),
+    );
   };
   const selectHeaderImageQuality = (quality: OpenAIImageQuality) => {
     if (headerImageQualityLocked) {
@@ -3181,6 +3197,9 @@ function useChatInnerView() {
       session.mask.syncGlobalConfig = false;
     });
     showToast(getImageQualityLabel(quality));
+    announceComposerStatus(
+      Locale.Chat.ModelMenu.SelectedImageOptions(getImageQualityLabel(quality)),
+    );
   };
   const [speechStatus, setSpeechStatus] = useState(false);
   async function openaiSpeech(text: string) {
@@ -3749,6 +3768,13 @@ function useChatInnerView() {
       { closeMenu: false, restoreFocus: false, announce: false },
     );
     if (changed) {
+      announceComposerStatus(
+        Locale.Chat.HomeMode.Changed(
+          mode === "chat"
+            ? Locale.Chat.HomeMode.Chat
+            : Locale.Chat.HomeMode.Image,
+        ),
+      );
       if (showMobileModelSelector) {
         setExpandedMobileModelSection(
           getComposerModelMenuSection(
@@ -4008,37 +4034,46 @@ function useChatInnerView() {
     );
   }, [getChatBodyBottomSafeArea]);
   useLayoutEffect(() => {
-    syncChatBodyBottomSafeArea();
+    let safeAreaFrame = 0;
+    const scheduleChatBodyBottomSafeArea = () => {
+      if (safeAreaFrame) return;
+      safeAreaFrame = requestAnimationFrame(() => {
+        safeAreaFrame = 0;
+        syncChatBodyBottomSafeArea();
+      });
+    };
+    scheduleChatBodyBottomSafeArea();
 
     const inputPanel = chatInputPanelRef.current;
     const scrollDom = scrollRef.current;
     const resizeObserver =
       typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(syncChatBodyBottomSafeArea)
+        ? new ResizeObserver(scheduleChatBodyBottomSafeArea)
         : null;
 
     if (inputPanel) resizeObserver?.observe(inputPanel);
     if (scrollDom) resizeObserver?.observe(scrollDom);
-    window.addEventListener("resize", syncChatBodyBottomSafeArea);
+    window.addEventListener("resize", scheduleChatBodyBottomSafeArea);
     window.visualViewport?.addEventListener(
       "resize",
-      syncChatBodyBottomSafeArea,
+      scheduleChatBodyBottomSafeArea,
     );
     window.visualViewport?.addEventListener(
       "scroll",
-      syncChatBodyBottomSafeArea,
+      scheduleChatBodyBottomSafeArea,
     );
 
     return () => {
       resizeObserver?.disconnect();
-      window.removeEventListener("resize", syncChatBodyBottomSafeArea);
+      if (safeAreaFrame) cancelAnimationFrame(safeAreaFrame);
+      window.removeEventListener("resize", scheduleChatBodyBottomSafeArea);
       window.visualViewport?.removeEventListener(
         "resize",
-        syncChatBodyBottomSafeArea,
+        scheduleChatBodyBottomSafeArea,
       );
       window.visualViewport?.removeEventListener(
         "scroll",
-        syncChatBodyBottomSafeArea,
+        scheduleChatBodyBottomSafeArea,
       );
     };
   }, [scrollRef, syncChatBodyBottomSafeArea]);
@@ -4313,12 +4348,13 @@ function useChatInnerView() {
       }
 
       if (messages.length > 0) {
-        showToast(Locale.Chat.Attachments.JoinMessages(messages));
+        const message = Locale.Chat.Attachments.JoinMessages(messages);
+        announceComposerStatus(message);
+        showToast(message);
       }
     },
-    // All state reads go through refs; setAttachedFiles/setAttachImages are stable
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    // Attachment state reads go through refs; the live announcer is the only dependency.
+    [announceComposerStatus],
   );
 
   useEffect(() => {
@@ -4396,7 +4432,9 @@ function useChatInnerView() {
         const MAX_SIZE = 15 * 1024 * 1024;
         const validSizeFiles = files.filter((file) => {
           if (file.size > MAX_SIZE) {
-            showToast(Locale.Chat.Attachments.FileTooLarge(file.name));
+            const message = Locale.Chat.Attachments.FileTooLarge(file.name);
+            announceComposerStatus(message);
+            showToast(message);
             return false;
           }
           return true;
@@ -4419,9 +4457,11 @@ function useChatInnerView() {
         );
 
         if (images.length > remainingImageSlots) {
+          announceComposerStatus(Locale.Chat.Attachments.MaxImages);
           showToast(Locale.Chat.Attachments.MaxImages);
         }
         if (documents.length > remainingFileSlots) {
+          announceComposerStatus(Locale.Chat.Attachments.MaxFiles);
           showToast(Locale.Chat.Attachments.MaxFiles);
         }
 
@@ -4443,6 +4483,7 @@ function useChatInnerView() {
         } catch (error) {
           if (!isMounted.current) return;
           console.error("读取拖拽附件失败:", error);
+          announceComposerStatus(Locale.Chat.Attachments.DragReadFailed);
           showToast(Locale.Chat.Attachments.DragReadFailed);
         } finally {
           if (isMounted.current) {
@@ -4463,7 +4504,7 @@ function useChatInnerView() {
       window.removeEventListener("dragleave", handleDragLeave);
       window.removeEventListener("drop", handleDrop);
     };
-  }, [appendAttachments]);
+  }, [announceComposerStatus, appendAttachments]);
 
   const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const clipboardData = e.clipboardData;
@@ -4479,6 +4520,7 @@ function useChatInnerView() {
         appendAttachments(fileInfos, [...imageUrls, ...pastedImageUrls]);
       } catch (error) {
         console.error("读取粘贴附件失败:", error);
+        announceComposerStatus(Locale.Chat.Attachments.PasteReadFailed);
         showToast(Locale.Chat.Attachments.PasteReadFailed);
       } finally {
         setUploading(false);
@@ -4493,6 +4535,7 @@ function useChatInnerView() {
 
         // 检查文件数量限制
         if (attachedFiles.length >= 5) {
+          announceComposerStatus(Locale.Chat.Attachments.FileSlotsFull);
           showToast(Locale.Chat.Attachments.FileSlotsFull);
           return;
         }
@@ -4523,6 +4566,7 @@ function useChatInnerView() {
           },
         ]);
 
+        announceComposerStatus(Locale.Chat.Attachments.LongTextConverted);
         showToast(Locale.Chat.Attachments.LongTextConverted);
       }
     }
@@ -4537,13 +4581,14 @@ function useChatInnerView() {
         ? fileSlotsFull
         : attachmentSlotsFull;
     if (requestedSlotsFull) {
-      showToast(
+      const message =
         kind === "image"
           ? Locale.Chat.Attachments.ImageSlotsFull
           : kind === "file"
           ? Locale.Chat.Attachments.FileSlotsFull
-          : Locale.Chat.Attachments.Full,
-      );
+          : Locale.Chat.Attachments.Full;
+      announceComposerStatus(message);
+      showToast(message);
       return;
     }
 
@@ -4559,6 +4604,7 @@ function useChatInnerView() {
       },
       // 上传失败
       (error) => {
+        announceComposerStatus(Locale.Chat.Attachments.FileReadFailed);
         showToast(Locale.Chat.Attachments.FileReadFailed);
       },
       // 完成上传
@@ -5011,9 +5057,15 @@ function useChatInnerView() {
 
   // 添加删除单个文件函数
   function deleteAttachedFile(index: number) {
+    const removedFileName = attachedFiles[index]?.name;
     setAttachedFiles((currentFiles) =>
       removeAttachmentAtIndex(currentFiles, index),
     );
+    if (removedFileName) {
+      announceComposerStatus(
+        Locale.Chat.Attachments.RemovedFile(removedFileName),
+      );
+    }
     clearActiveAttachmentDelete();
     focusComposerAttachmentAfterRemoval(attachImages.length + index);
   }
@@ -6321,8 +6373,6 @@ function useChatInnerView() {
                 <ChatActions
                   uploadImages={() => handleUploadAttachments("image")}
                   uploadFiles={() => handleUploadAttachments("file")}
-                  setAttachImages={setAttachImages}
-                  setUploading={setUploading}
                   imageSlotsFull={imageSlotsFull}
                   fileSlotsFull={fileSlotsFull}
                   menuView={chatActionMenuView}
@@ -6426,6 +6476,16 @@ function useChatInnerView() {
                     showEmptyState && emptyComposerMode === "chat",
                 })}
               >
+                <span
+                  className={styles["chat-composer-live-status"]}
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  <span key={composerLiveStatus.id}>
+                    {composerLiveStatus.message}
+                  </span>
+                </span>
                 <textarea
                   id="chat-input"
                   ref={inputRef}
@@ -6632,6 +6692,11 @@ function useChatInnerView() {
                                 setAttachImages((currentImages) =>
                                   removeAttachmentAtIndex(currentImages, index),
                                 );
+                                announceComposerStatus(
+                                  Locale.Chat.Attachments.RemovedImage(
+                                    index + 1,
+                                  ),
+                                );
                                 clearActiveAttachmentDelete();
                                 focusComposerAttachmentAfterRemoval(index);
                               }}
@@ -6642,11 +6707,21 @@ function useChatInnerView() {
 
                       {/* 文件附件 */}
                       {attachedFiles.map((file, index) => {
+                        const fileTypeLabel = getAttachmentFileTypeLabel(file);
+                        const fileSizeLabel = `${(file.size / 1024).toFixed(
+                          2,
+                        )} KB`;
                         const fileEditContextLabel =
                           Locale.Chat.Attachments.EditFile(
                             index + 1,
                             file.name,
                           );
+                        const fileAccessibleLabel =
+                          Locale.Chat.Accessibility.CombinedLabels([
+                            fileEditContextLabel,
+                            `${Locale.Chat.Attachments.FileMetadata.Type}: ${fileTypeLabel}`,
+                            `${Locale.Chat.Attachments.FileMetadata.Size}: ${fileSizeLabel}`,
+                          ]);
 
                         return (
                           <div
@@ -6684,7 +6759,7 @@ function useChatInnerView() {
                             <button
                               type="button"
                               className={styles["attach-file"]}
-                              aria-label={fileEditContextLabel}
+                              aria-label={fileAccessibleLabel}
                               onClick={async () => {
                                 // 使用与消息编辑相同的showPrompt函数
                                 const newContent = await showPrompt(
@@ -6744,7 +6819,7 @@ function useChatInnerView() {
                                     {file.name}
                                   </div>
                                   <div className={styles["attach-file-size"]}>
-                                    {(file.size / 1024).toFixed(2)} KB
+                                    {fileTypeLabel} · {fileSizeLabel}
                                   </div>
                                 </div>
                               </div>

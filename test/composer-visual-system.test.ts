@@ -100,6 +100,46 @@ describe("composer visual system", () => {
     );
   });
 
+  test("coalesces safe-area layout reads into one cancellable animation frame", () => {
+    const source = read("app/components/chat.tsx");
+
+    expect(source).toContain("const scheduleChatBodyBottomSafeArea = () =>");
+    expect(source).toContain("if (safeAreaFrame) return");
+    expect(source).toContain("safeAreaFrame = requestAnimationFrame(() =>");
+    expect(source).toContain(
+      "new ResizeObserver(scheduleChatBodyBottomSafeArea)",
+    );
+    expect(source).toContain(
+      'window.addEventListener("resize", scheduleChatBodyBottomSafeArea)',
+    );
+    expect(source).toContain("cancelAnimationFrame(safeAreaFrame)");
+  });
+
+  test("keeps one animated shell surface and accessible chip geometry", () => {
+    const styles = read("app/components/chat.module.scss");
+    const shellStart = styles.indexOf(
+      "// Composer 2.2 uses one grid shell for compact, expanded, and scrolling states.",
+    );
+    const shellEnd = styles.indexOf(
+      "// Composer 2.2 canonical visual, viewport, and container-query layer.",
+      shellStart,
+    );
+    const shell = styles.slice(shellStart, shellEnd);
+
+    expect(shell).toMatch(
+      /\.chat-input-row::before\s*\{[\s\S]*position:\s*absolute;[\s\S]*inset:\s*0 0 0 50px;[\s\S]*transition:[\s\S]*border-radius/,
+    );
+    expect(shell).toMatch(
+      /\.chat-input-row:is\([\s\S]*\)::before\s*\{[\s\S]*inset:\s*0;[\s\S]*border-radius:\s*28px;/,
+    );
+    expect(shell).toMatch(
+      /\.chat-input-row \.chat-input-model-button,[\s\S]*height:\s*44px;[\s\S]*overflow:\s*hidden;/,
+    );
+    expect(styles).toMatch(
+      /\.chat-input-model-detail\s*\{[\s\S]*min-width:\s*0;[\s\S]*overflow:\s*hidden;[\s\S]*text-overflow:\s*ellipsis;/,
+    );
+  });
+
   test("feeds shell states without duplicating business state", () => {
     const source = read("app/components/chat.tsx");
 
@@ -128,6 +168,19 @@ describe("composer visual system", () => {
     expect(tools).toContain("var(--composer-panel-surface)");
     expect(tools).toContain("var(--composer-control-hover)");
     expect(tools).not.toContain(":global(.dark)");
+  });
+
+  test("keeps model chip copy on semantic Composer tokens", () => {
+    const styles = read("app/components/chat.module.scss");
+    const modeChipStart = styles.indexOf(".chat-input-mode-chip {");
+    const start = styles.indexOf(".chat-input-model-button {", modeChipStart);
+    const end = styles.indexOf(".chat-model-menu-header {", start);
+    const chip = styles.slice(start, end);
+
+    expect(chip).toContain("var(--composer-text)");
+    expect(chip).toContain("var(--composer-muted)");
+    expect(chip).not.toContain("var(--black)");
+    expect(chip).not.toContain("var(--black-50)");
   });
 
   test("routes the reasoning panel through composer tokens", () => {
