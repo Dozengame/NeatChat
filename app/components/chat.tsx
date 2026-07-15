@@ -13,6 +13,10 @@ import React, {
 } from "react";
 
 import SendWhiteIcon from "../icons/send-white.svg";
+import ComposerStopIcon from "../icons/composer-stop.svg";
+import ComposerCheckIcon from "../icons/composer-check.svg";
+import ComposerChevronDownIcon from "../icons/composer-chevron-down.svg";
+import ComposerChevronRightIcon from "../icons/composer-chevron-right.svg";
 import BrainIcon from "../icons/brain.svg";
 import RenameIcon from "../icons/rename.svg";
 import ExportIcon from "../icons/share.svg";
@@ -206,6 +210,8 @@ import {
   ChatHomeMode,
   ChatHomeModel,
   ComposerModelMenuSection,
+  getComposerModelMenuEscapeLayer,
+  getComposerModelMenuLayer,
   getComposerModelMenuSection,
   getChatHomeModeForModel,
   getChatHomeModeModels,
@@ -213,6 +219,7 @@ import {
   isChatHomeModeDisabled,
   resolvePreferredChatHomeModel,
 } from "./chat-home-mode";
+import { getComposerSubmitState } from "../utils/composer-submit";
 
 const localStorage = safeLocalStorage();
 
@@ -1652,7 +1659,12 @@ function ChatInputReasoningAction() {
       >
         <BrainIcon />
         <span>{reasoningLabels[currentReasoningEffort]}</span>
-        <span className={styles["chat-input-reasoning-arrow"]}>⌄</span>
+        <span
+          className={styles["chat-input-reasoning-arrow"]}
+          aria-hidden="true"
+        >
+          <ComposerChevronDownIcon />
+        </span>
       </button>
       {showReasoningSelectorModal && (
         <Selector
@@ -2130,15 +2142,26 @@ function useChatInnerView() {
 
   const hasComposerAttachments =
     attachImages.length > 0 || attachedFiles.length > 0;
+  const isComposerReadOnly =
+    markdownStressQaEnabled && !markdownStressQaInteractiveInputEnabled;
+  const streamingMessageIds = session.messages
+    .filter((message) => message.streaming)
+    .map((message) => message.id);
   const hasActiveInputContent =
     userInput.trim().length > 0 ||
     hasComposerAttachments ||
     promptHints.length > 0;
-  const canSubmitComposer =
-    !markdownStressQaEnabled &&
-    (userInput.trim().length > 0 ||
-      attachImages.length > 0 ||
-      attachedFiles.length > 0);
+  const hasSubmittableComposerContent =
+    userInput.trim().length > 0 || hasComposerAttachments;
+  const composerSubmitState = getComposerSubmitState({
+    hasContent: hasSubmittableComposerContent,
+    uploading,
+    readOnly: isComposerReadOnly,
+    loading: isLoading,
+    streamingMessageIds,
+  });
+  const showComposerVoice =
+    ENABLE_REALTIME_CHAT && config.realtimeConfig.enable;
   const canAddMoreAttachments =
     attachImages.length < 3 || attachedFiles.length < 5;
   const imageSlotsFull = attachImages.length >= 3;
@@ -2243,7 +2266,17 @@ function useChatInnerView() {
   };
 
   const doSubmit = (userInput: string) => {
-    if (markdownStressQaEnabled) {
+    const submitState = getComposerSubmitState({
+      hasContent:
+        userInput.trim().length > 0 ||
+        attachImages.length > 0 ||
+        attachedFiles.length > 0,
+      uploading,
+      readOnly: isComposerReadOnly,
+      loading: isLoading,
+      streamingMessageIds,
+    });
+    if (submitState !== "send") {
       return;
     }
 
@@ -2337,6 +2370,9 @@ function useChatInnerView() {
   // stop response
   const onUserStop = (messageId: string) => {
     ChatControllerPool.stop(session.id, messageId);
+  };
+  const stopComposerResponse = () => {
+    streamingMessageIds.forEach(onUserStop);
   };
 
   useEffect(() => {
@@ -2509,6 +2545,7 @@ function useChatInnerView() {
     showChatActionMenu || showMobileModelSelector;
   const modelSelectorButtonRef = useRef<HTMLButtonElement>(null);
   const modelMenuRef = useRef<HTMLDivElement>(null);
+  const homeModeTabsRef = useRef<HTMLDivElement>(null);
   const lastHomeChatModelRef = useRef<string>();
   const lastHomeImageModelRef = useRef<string>();
   const homeModeInitializedRef = useRef(false);
@@ -2639,6 +2676,7 @@ function useChatInnerView() {
   }, [measureComposerTextarea]);
   const closeMobileModelSelector = useCallback(() => {
     setShowMobileModelSelector(false);
+    setExpandedMobileModelSection(null);
   }, []);
   const restoreModelSelectorFocus = useCallback(() => {
     setTimeout(() => {
@@ -2646,12 +2684,19 @@ function useChatInnerView() {
     }, 0);
   }, []);
   const getModelMenuControls = useCallback(() => {
-    return Array.from(
+    const selectedHomeModeTab =
+      homeModeTabsRef.current?.querySelector<HTMLElement>(
+        '[role="tab"][aria-selected="true"]',
+      );
+    const menuControls = Array.from(
       modelMenuRef.current?.querySelectorAll<HTMLElement>(
         '[role="option"], [role="slider"], button[aria-controls], [data-model-menu-control="true"]',
       ) ?? [],
-    ).filter(
-      (control) =>
+    );
+
+    return [selectedHomeModeTab, ...menuControls].filter(
+      (control): control is HTMLElement =>
+        control != null &&
         (!(control instanceof HTMLButtonElement) || !control.disabled) &&
         control.offsetParent !== null,
     );
@@ -2703,7 +2748,9 @@ function useChatInnerView() {
     }
 
     const selectedControl = controls.find(
-      (control) => control.getAttribute("aria-selected") === "true",
+      (control) =>
+        control.getAttribute("role") === "option" &&
+        control.getAttribute("aria-selected") === "true",
     );
     const sliderControl = controls.find(
       (control) => control.getAttribute("role") === "slider",
@@ -2774,34 +2821,18 @@ function useChatInnerView() {
     focusInitialModelMenuControl,
     showMobileModelSelector,
   ]);
-  useEffect(() => {
-    if (!showMobileModelSelector) return;
-
-    const closeModelSelectorOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeMobileModelSelector();
-        restoreModelSelectorFocus();
-      }
-    };
-
-    window.addEventListener("keydown", closeModelSelectorOnEscape);
-    return () =>
-      window.removeEventListener("keydown", closeModelSelectorOnEscape);
-  }, [
-    closeMobileModelSelector,
-    restoreModelSelectorFocus,
-    showMobileModelSelector,
-  ]);
   const returnToModelList = () => {
     setExpandedMobileModelSection(null);
   };
   const headerCurrentModel = session.mask.modelConfig.model;
   const headerCurrentProviderName =
     session.mask.modelConfig?.providerName || ServiceProvider.OpenAI;
-  const headerModelLocked =
+  const headerModelLocked = !!(
     accessStore.lockedFields?.includes("model") ||
-    accessStore.lockedFields?.includes("providerName");
+    accessStore.lockedFields?.includes("providerName") ||
+    session.mask.modelConfigMeta?.model?.locked ||
+    session.mask.modelConfigMeta?.providerName?.locked
+  );
   const allHeaderModels = useAllModels();
   const headerAvailableModels = useMemo(
     () => allHeaderModels.filter((model) => model.available),
@@ -2910,6 +2941,40 @@ function useChatInnerView() {
     headerCurrentModel,
     headerCurrentProviderName,
   );
+  const currentModelMenuLayer = getComposerModelMenuLayer(
+    showMobileModelSelector,
+    expandedMobileModelSection,
+  );
+  const stepBackOrCloseModelMenu = useCallback(() => {
+    const nextLayer = getComposerModelMenuEscapeLayer(
+      currentModelMenuLayer,
+      currentModelMenuSection,
+    );
+    if (nextLayer === "closed") {
+      closeMobileModelSelector();
+      restoreModelSelectorFocus();
+      return;
+    }
+    setExpandedMobileModelSection(nextLayer);
+  }, [
+    closeMobileModelSelector,
+    currentModelMenuLayer,
+    currentModelMenuSection,
+    restoreModelSelectorFocus,
+  ]);
+  useEffect(() => {
+    if (!showMobileModelSelector) return;
+
+    const handleModelSelectorEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      stepBackOrCloseModelMenu();
+    };
+
+    window.addEventListener("keydown", handleModelSelectorEscape);
+    return () =>
+      window.removeEventListener("keydown", handleModelSelectorEscape);
+  }, [showMobileModelSelector, stepBackOrCloseModelMenu]);
   const imageComposerSummary = getImageComposerSummary(
     headerCurrentSize,
     headerImageQualitys.length > 0 ? headerCurrentQuality : undefined,
@@ -2921,7 +2986,11 @@ function useChatInnerView() {
     ? imageComposerSummary
     : showHeaderReasoningControl
     ? reasoningLabels[headerCurrentReasoningEffort]
-    : headerCurrentProviderName;
+    : Locale.Chat.ModelMenu.DefaultParameters;
+  const modelChipAccessibleLabel = Locale.Chat.ModelMenu.SelectModel(
+    headerCurrentModelName,
+    `${headerCurrentProviderName} · ${currentModelDetail}`,
+  );
   const getHeaderReasoningMaxOutputTokens = (
     effort: OpenAIChatReasoningEffort,
   ) =>
@@ -3402,8 +3471,16 @@ function useChatInnerView() {
       { closeMenu: false, restoreFocus: false, announce: false },
     );
     if (changed) {
-      closeMobileModelSelector();
-      setExpandedMobileModelSection(null);
+      if (showMobileModelSelector) {
+        setExpandedMobileModelSection(
+          getComposerModelMenuSection(
+            targetModel.name,
+            targetModel.provider?.providerName,
+          ),
+        );
+      } else {
+        closeMobileModelSelector();
+      }
     }
   };
   useEffect(() => {
@@ -3484,6 +3561,14 @@ function useChatInnerView() {
     requestAnimationFrame(() => {
       document.getElementById(`chat-home-mode-${nextMode}`)?.focus();
     });
+  };
+  const handleHomeModeTabKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+  ) => {
+    handleEmptyComposerModeKeyDown(event);
+    if (showMobileModelSelector && event.key === "Tab") {
+      trapModelMenuTab(event);
+    }
   };
   const onChatBodyScroll = (e: HTMLElement) => {
     const pendingQuickJumpTarget = pendingQuickJumpTargetRef.current;
@@ -5223,7 +5308,7 @@ function useChatInnerView() {
             onKeyDown={handleModelMenuKeyDown}
             tabIndex={-1}
             role="dialog"
-            aria-modal={true}
+            aria-modal={!showEmptyState}
             aria-label={
               isImageOptionsExpanded
                 ? Locale.Chat.ModelMenu.ImageOptions
@@ -5232,17 +5317,30 @@ function useChatInnerView() {
                 : Locale.Chat.ModelMenu.SelectModelAndParams
             }
           >
+            {headerModelLocked && (
+              <span
+                id="chat-model-lock-status"
+                className={styles["chat-model-menu-status"]}
+              >
+                {Locale.Settings.GPT56Capabilities.ConfigSource.Locked}
+              </span>
+            )}
             {(isReasoningSectionExpanded || isImageOptionsExpanded) && (
               <div className={styles["chat-model-menu-header"]}>
                 <div className={styles["chat-model-menu-current-model"]}>
-                  {headerCurrentModelName}
+                  <strong>{headerCurrentModelName}</strong>
+                  <small>{headerCurrentProviderName}</small>
                 </div>
                 <button
                   type="button"
                   className={styles["chat-model-menu-switch-model"]}
                   aria-label={Locale.Chat.ModelMenu.SwitchModel}
+                  aria-describedby={
+                    headerModelLocked ? "chat-model-lock-status" : undefined
+                  }
                   title={Locale.Chat.ModelMenu.SwitchModel}
                   data-model-menu-control="true"
+                  disabled={!!headerModelLocked}
                   onClick={returnToModelList}
                 >
                   <ResetIcon />
@@ -5341,10 +5439,16 @@ function useChatInnerView() {
                           })}
                           role="option"
                           aria-selected={selected}
+                          aria-describedby={
+                            headerModelLocked
+                              ? "chat-model-lock-status"
+                              : undefined
+                          }
+                          disabled={!!headerModelLocked}
                           onClick={() => selectComposerModel(model, selected)}
                         >
                           <span className={styles["chat-mobile-menu-check"]}>
-                            {selected ? "✓" : ""}
+                            {selected && <ComposerCheckIcon />}
                           </span>
                           <span className={styles["chat-mobile-model-copy"]}>
                             <span className={styles["chat-mobile-model-name"]}>
@@ -5364,10 +5468,10 @@ function useChatInnerView() {
                   )}
                 </div>
 
-                {(showHeaderReasoningControl || showHeaderImageControls) && (
+                {currentModelMenuSection && (
                   <>
                     <div className={styles["chat-mobile-model-divider"]} />
-                    {showHeaderReasoningControl && (
+                    {currentModelMenuSection === "reasoning" && (
                       <div className={styles["chat-mobile-model-section"]}>
                         <button
                           type="button"
@@ -5388,12 +5492,12 @@ function useChatInnerView() {
                           <span
                             className={styles["chat-mobile-reasoning-caret"]}
                           >
-                            ›
+                            <ComposerChevronRightIcon />
                           </span>
                         </button>
                       </div>
                     )}
-                    {showHeaderImageControls && (
+                    {currentModelMenuSection === "image-options" && (
                       <div className={styles["chat-mobile-model-section"]}>
                         <button
                           type="button"
@@ -5412,7 +5516,7 @@ function useChatInnerView() {
                           <span
                             className={styles["chat-mobile-reasoning-caret"]}
                           >
-                            ›
+                            <ComposerChevronRightIcon />
                           </span>
                         </button>
                       </div>
@@ -5445,7 +5549,11 @@ function useChatInnerView() {
           >
             {showEmptyState && (
               <div
-                className={styles["chat-home-mode-tabs"]}
+                ref={homeModeTabsRef}
+                className={clsx(styles["chat-home-mode-tabs"], {
+                  [styles["chat-home-mode-tabs-model-open"]]:
+                    showMobileModelSelector,
+                })}
                 role="tablist"
                 aria-label={Locale.Chat.HomeMode.Label}
                 data-active-mode={emptyComposerMode}
@@ -5480,7 +5588,7 @@ function useChatInnerView() {
                       disabled={disabled}
                       tabIndex={selected ? 0 : -1}
                       onClick={() => selectEmptyComposerMode(mode)}
-                      onKeyDown={handleEmptyComposerModeKeyDown}
+                      onKeyDown={handleHomeModeTabKeyDown}
                     >
                       {mode === "chat"
                         ? Locale.Chat.HomeMode.Chat
@@ -5955,6 +6063,7 @@ function useChatInnerView() {
               ref={chatComposerShellRef}
               className={clsx(styles["chat-input-row"], {
                 [styles["chat-input-row-focused"]]: isChatInputFocused,
+                [styles["chat-input-row-with-voice"]]: showComposerVoice,
               })}
               data-composer-shell="true"
               data-composer-state={
@@ -5979,8 +6088,7 @@ function useChatInnerView() {
                     setChatActionMenuView("main");
                     return;
                   }
-                  setShowMobileModelSelector(false);
-                  setExpandedMobileModelSection(null);
+                  closeMobileModelSelector();
                   setPromptHints([]);
                   setChatActionMenuView("main");
                   setShowChatActionMenu(true);
@@ -6033,20 +6141,12 @@ function useChatInnerView() {
                   aria-controls={
                     promptHints.length > 0 ? "chat-prompt-hints" : undefined
                   }
-                  aria-readonly={
-                    markdownStressQaEnabled &&
-                    !markdownStressQaInteractiveInputEnabled
-                      ? true
-                      : undefined
-                  }
+                  aria-readonly={isComposerReadOnly ? true : undefined}
                   aria-haspopup="listbox"
                   onChange={(e) => onInput(e.currentTarget.value)}
                   value={userInput}
                   onKeyDown={onInputKeyDown}
-                  readOnly={
-                    markdownStressQaEnabled &&
-                    !markdownStressQaInteractiveInputEnabled
-                  }
+                  readOnly={isComposerReadOnly}
                   onFocus={() => {
                     setIsChatInputFocused(true);
                   }}
@@ -6073,26 +6173,27 @@ function useChatInnerView() {
                     [styles["chat-input-model-button-home-image"]]:
                       showEmptyState && emptyComposerMode === "image",
                   })}
-                  aria-label={Locale.Chat.ModelMenu.SelectModel(
-                    headerCurrentModelName,
-                    currentModelDetail,
-                  )}
+                  aria-label={modelChipAccessibleLabel}
+                  title={modelChipAccessibleLabel}
+                  data-model-menu-layer={currentModelMenuLayer}
                   onKeyDown={handleModelMenuKeyDown}
                   onClick={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
                     setShowChatActionMenu(false);
                     setChatActionMenuView("main");
-                    setExpandedMobileModelSection(
-                      showMobileModelSelector ? null : currentModelMenuSection,
-                    );
+                    if (showMobileModelSelector) {
+                      closeMobileModelSelector();
+                      return;
+                    }
+                    setExpandedMobileModelSection(currentModelMenuSection);
                     setComposerModelMenuStyle(
                       getComposerModelMenuStyle(
                         event.currentTarget,
                         showEmptyComposer,
                       ),
                     );
-                    setShowMobileModelSelector((open) => !open);
+                    setShowMobileModelSelector(true);
                   }}
                   aria-controls="chat-model-menu"
                   aria-haspopup="dialog"
@@ -6115,7 +6216,12 @@ function useChatInnerView() {
                       ? imageComposerSummary
                       : currentModelDetail}
                   </span>
-                  <span className={styles["chat-input-model-arrow"]}>⌄</span>
+                  <span
+                    className={styles["chat-input-model-arrow"]}
+                    aria-hidden="true"
+                  >
+                    <ComposerChevronDownIcon />
+                  </span>
                 </button>
 
                 {showInputStatusRow && (
@@ -6406,14 +6512,40 @@ function useChatInnerView() {
                   </div>
                 )}
 
+                {showComposerVoice && (
+                  <IconButton
+                    icon={<HeadphoneIcon />}
+                    className={styles["chat-input-voice"]}
+                    aria={Locale.Settings.Realtime.Start}
+                    ariaExpanded={showChatSidePanel}
+                    onClick={() => setShowChatSidePanel(true)}
+                  />
+                )}
+
                 <IconButton
-                  icon={<SendWhiteIcon />}
-                  text={isCompactScreen ? undefined : Locale.Chat.Send}
-                  className={styles["chat-input-send"]}
+                  icon={
+                    composerSubmitState === "stop" ? (
+                      <ComposerStopIcon />
+                    ) : (
+                      <SendWhiteIcon />
+                    )
+                  }
+                  className={clsx(styles["chat-input-send"], {
+                    [styles["chat-input-send-stop"]]:
+                      composerSubmitState === "stop",
+                  })}
                   type="primary"
-                  disabled={!canSubmitComposer}
-                  aria={Locale.Chat.Send}
-                  onClick={() => doSubmit(userInput)}
+                  disabled={composerSubmitState === "disabled"}
+                  aria={
+                    composerSubmitState === "stop"
+                      ? Locale.Chat.InputActions.Stop
+                      : Locale.Chat.Send
+                  }
+                  onClick={
+                    composerSubmitState === "stop"
+                      ? stopComposerResponse
+                      : () => doSubmit(userInput)
+                  }
                 />
               </div>
             </div>

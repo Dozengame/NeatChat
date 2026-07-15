@@ -1549,7 +1549,7 @@ describe("Gemini visual migration shell", () => {
       /<IconButton[\s\S]*icon=\{<ExportIcon \/>\}[\s\S]*title=\{Locale\.Chat\.Actions\.Export\}[\s\S]*aria=\{Locale\.Chat\.Actions\.Export\}/,
     );
     expect(chat).toMatch(
-      /\{showMobileModelSelector \? \(\s*<>[\s\S]*styles\["chat-model-menu-visible"\][\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.Close\}[\s\S]*role="dialog"[\s\S]*aria-modal=\{true\}[\s\S]*<\/>\s*\) : null\}/,
+      /\{showMobileModelSelector \? \(\s*<>[\s\S]*styles\["chat-model-menu-visible"\][\s\S]*aria-label=\{Locale\.Chat\.ModelMenu\.Close\}[\s\S]*role="dialog"[\s\S]*aria-modal=\{!showEmptyState\}[\s\S]*<\/>\s*\) : null\}/,
     );
     expect(chat).not.toContain(
       '[styles["chat-model-menu-visible"]]: showMobileModelSelector',
@@ -1676,10 +1676,10 @@ describe("Gemini visual migration shell", () => {
       /const headerModelsForMenu =\s*showEmptyState\s*\? emptyComposerMode === "image"\s*\? headerImageModels\s*:\s*headerChatModels\s*:\s*headerAvailableModels;/,
     );
     expect(chat).toMatch(
-      /aria-label=\{Locale\.Chat\.ModelMenu\.SelectModel\(\s*headerCurrentModelName,\s*currentModelDetail,\s*\)\}/,
+      /const modelChipAccessibleLabel = Locale\.Chat\.ModelMenu\.SelectModel\(\s*headerCurrentModelName,\s*`\$\{headerCurrentProviderName\} · \$\{currentModelDetail\}`,[\s\S]*\);/,
     );
-    expect(chat).not.toMatch(
-      /ref=\{modelSelectorButtonRef\}[\s\S]*?title=\{[\s\S]*?headerCurrentModelName/,
+    expect(chat).toMatch(
+      /ref=\{modelSelectorButtonRef\}[\s\S]*aria-label=\{modelChipAccessibleLabel\}[\s\S]*title=\{modelChipAccessibleLabel\}/,
     );
     expect(chat).toContain('role="tablist"');
     expect(chat).toContain("data-active-mode={emptyComposerMode}");
@@ -1737,21 +1737,22 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain('id="chat-model-menu"');
     expect(chat).toContain('role="dialog"');
     expect(chat).toMatch(
-      /id="chat-model-menu"[\s\S]*role="dialog"[\s\S]*aria-modal=\{true\}[\s\S]*isImageOptionsExpanded[\s\S]*Locale\.Chat\.ModelMenu\.ImageOptions[\s\S]*isReasoningSectionExpanded[\s\S]*Locale\.Chat\.ModelMenu\.ReasoningOptions[\s\S]*Locale\.Chat\.ModelMenu\.SelectModelAndParams/,
+      /id="chat-model-menu"[\s\S]*role="dialog"[\s\S]*aria-modal=\{!showEmptyState\}[\s\S]*isImageOptionsExpanded[\s\S]*Locale\.Chat\.ModelMenu\.ImageOptions[\s\S]*isReasoningSectionExpanded[\s\S]*Locale\.Chat\.ModelMenu\.ReasoningOptions[\s\S]*Locale\.Chat\.ModelMenu\.SelectModelAndParams/,
     );
     expect(chat).toMatch(
-      /id="chat-model-menu"[\s\S]*ref=\{modelMenuRef\}[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*tabIndex=\{-1\}[\s\S]*role="dialog"[\s\S]*aria-modal=\{true\}/,
+      /id="chat-model-menu"[\s\S]*ref=\{modelMenuRef\}[\s\S]*onKeyDown=\{handleModelMenuKeyDown\}[\s\S]*tabIndex=\{-1\}[\s\S]*role="dialog"[\s\S]*aria-modal=\{!showEmptyState\}/,
     );
     expect(chat).toContain(
-      "const closeModelSelectorOnEscape = (event: KeyboardEvent) =>",
+      "const handleModelSelectorEscape = (event: KeyboardEvent) =>",
     );
     expect(chat).toContain('if (event.key === "Escape")');
     expect(chat).toContain(
-      'window.addEventListener("keydown", closeModelSelectorOnEscape);',
+      'window.addEventListener("keydown", handleModelSelectorEscape);',
     );
     expect(chat).toContain(
-      'window.removeEventListener("keydown", closeModelSelectorOnEscape)',
+      'window.removeEventListener("keydown", handleModelSelectorEscape)',
     );
+    expect(chat).toContain("stepBackOrCloseModelMenu();");
     expect(chat).toMatch(
       /aria-label=\{Locale\.Chat\.ModelMenu\.Close\}[\s\S]*onClick=\{\(\) => \{[\s\S]*closeMobileModelSelector\(\);[\s\S]*restoreModelSelectorFocus\(\);[\s\S]*\}\}/,
     );
@@ -2111,10 +2112,10 @@ describe("Gemini visual migration shell", () => {
       /className=\{styles\["chat-input"\]\}[\s\S]*aria-label=\{\s*isCompactScreen\s*\?\s*Locale\.Chat\.MobileInput\s*:\s*Locale\.Chat\.Input\(submitKey\)\s*\}/,
     );
     expect(chat).toMatch(
-      /const canSubmitComposer =\s*!markdownStressQaEnabled &&\s*\(\s*userInput\.trim\(\)\.length > 0 \|\|\s*attachImages\.length > 0 \|\|\s*attachedFiles\.length > 0\s*\);/,
+      /const composerSubmitState = getComposerSubmitState\(\{[\s\S]*hasContent:\s*hasSubmittableComposerContent,[\s\S]*streamingMessageIds,[\s\S]*\}\);/,
     );
     expect(chat).toMatch(
-      /className=\{styles\["chat-input-send"\]\}[\s\S]*disabled=\{!canSubmitComposer\}[\s\S]*aria=\{Locale\.Chat\.Send\}/,
+      /className=\{clsx\(styles\["chat-input-send"\][\s\S]*disabled=\{composerSubmitState === "disabled"\}[\s\S]*composerSubmitState === "stop"[\s\S]*Locale\.Chat\.Send/,
     );
     expect(inputStatusBlock).toContain(".chat-input");
     expect(inputStatusBlock).toContain("width: 100%");
@@ -5221,9 +5222,7 @@ describe("Gemini visual migration shell", () => {
       /className=\{clsx\(styles\["chat-input-menu-button"\][\s\S]*?onClick=\{\(\) => \{([\s\S]*?)\}\}[\s\S]*?aria-label=/,
     )?.[1];
     expect(menuButtonClickHandler).toContain("if (showChatActionMenu)");
-    expect(menuButtonClickHandler).toContain(
-      "setShowMobileModelSelector(false);",
-    );
+    expect(menuButtonClickHandler).toContain("closeMobileModelSelector();");
     expect(menuButtonClickHandler).toContain('setChatActionMenuView("main");');
     expect(menuButtonClickHandler).toContain("setShowChatActionMenu(true);");
     expect(menuButtonClickHandler).not.toContain("expandInput()");
@@ -16814,9 +16813,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toMatch(
       /const currentModelDetail = showHeaderImageControls[\s\S]*: showHeaderReasoningControl[\s\S]*\? reasoningLabels\[headerCurrentReasoningEffort\]/,
     );
-    expect(chat).toMatch(
-      /aria-label=\{Locale\.Chat\.ModelMenu\.SelectModel\(\s*headerCurrentModelName,\s*currentModelDetail,\s*\)\}/,
-    );
+    expect(chat).toMatch(/aria-label=\{modelChipAccessibleLabel\}/);
     expect(chat).toContain('styles["chat-input-model-button"]');
     expect(chat).not.toContain('styles["chat-mobile-model-title"]');
     expect(chat).not.toContain('styles["chat-desktop-model-title"]');
@@ -16830,7 +16827,9 @@ describe("Gemini visual migration shell", () => {
     );
     expect(composerModelButtonBlock).toMatch(/bottom:\s*13px;/);
     expect(chat).toContain('styles["chat-input-model-detail"]');
-    expect(chat).toContain("currentModelDetail,");
+    expect(chat).toContain(
+      "`${headerCurrentProviderName} · ${currentModelDetail}`",
+    );
     expect(chat).toContain("<ReasoningEffortRail");
     expect(chat).toContain("efforts={visibleHeaderReasoningEfforts}");
     expect(chat).toContain("allowedEfforts={headerReasoningEfforts}");
@@ -17007,17 +17006,15 @@ describe("Gemini visual migration shell", () => {
       /chatQaFixture\.getMarkdownStressQaMessages\(location\.search\)/,
     );
     expect(chat).toMatch(
-      /const canSubmitComposer =\s*!markdownStressQaEnabled &&\s*\(/,
+      /const isComposerReadOnly =\s*markdownStressQaEnabled && !markdownStressQaInteractiveInputEnabled;/,
     );
     expect(chat).toMatch(
-      /const doSubmit = \(userInput: string\) => \{\s*if \(markdownStressQaEnabled\) \{\s*return;\s*\}/,
+      /const doSubmit = \(userInput: string\) => \{\s*const submitState = getComposerSubmitState\(\{[\s\S]*readOnly:\s*isComposerReadOnly,[\s\S]*streamingMessageIds,[\s\S]*\}\);\s*if \(submitState !== "send"\) \{\s*return;\s*\}/,
     );
     expect(chat).toMatch(
-      /aria-readonly=\{\s*markdownStressQaEnabled &&\s*!markdownStressQaInteractiveInputEnabled\s*\? true\s*: undefined\s*\}/,
+      /aria-readonly=\{\s*isComposerReadOnly\s*\? true\s*: undefined\s*\}/,
     );
-    expect(chat).toMatch(
-      /readOnly=\{\s*markdownStressQaEnabled &&\s*!markdownStressQaInteractiveInputEnabled\s*\}/,
-    );
+    expect(chat).toMatch(/readOnly=\{isComposerReadOnly\}/);
     expect(chat).toContain(
       "onPaste={markdownStressQaEnabled ? undefined : handlePaste}",
     );

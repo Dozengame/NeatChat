@@ -38,8 +38,9 @@ export function getComposerModelMenuPlacement(input: {
   const viewportBottom = viewport.top + viewport.height;
   const viewportPadding = input.compact ? 12 : 16;
   const gap = input.compact ? 10 : 12;
+  const targetWidth = input.compact ? Math.min(360, composerRect.width) : 500;
   const width = Math.min(
-    input.compact ? 360 : 380,
+    targetWidth,
     Math.max(1, viewport.width - viewportPadding * 2),
   );
   const anchorCenter = input.compact

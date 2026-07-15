@@ -17,7 +17,7 @@
   min-width: 0;
   padding: 16px 16px 18px;
   border: 1px solid var(--reasoning-rail-border);
-  border-radius: 16px;
+  border-radius: 20px;
   background: var(--reasoning-rail-card);
   color: var(--reasoning-rail-text);
   box-shadow: 0 8px 22px color-mix(in srgb, var(--black-50) 10%, transparent);
@@ -79,7 +79,7 @@
 
   strong {
     overflow: hidden;
-    font-size: 16px;
+    font-size: 17px;
     line-height: 1.25;
     text-overflow: ellipsis;
     white-space: nowrap;

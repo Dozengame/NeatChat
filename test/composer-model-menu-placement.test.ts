@@ -38,6 +38,7 @@ describe("composer model menu placement", () => {
       openBelow: false,
       bottom: 88,
       gap: 12,
+      width: 500,
     });
     expect(placement).not.toHaveProperty("top");
     for (const menuHeight of [217, 350, 420]) {
@@ -77,8 +78,8 @@ describe("composer model menu placement", () => {
       openBelow: false,
       bottom: 78,
       gap: 10,
-      left: 18,
-      width: 360,
+      left: 63,
+      width: 308,
     });
     expect(placement).not.toHaveProperty("top");
     for (const menuHeight of [225, 386]) {
@@ -118,6 +119,7 @@ describe("composer model menu placement", () => {
       openBelow: true,
       top: 497,
       gap: 12,
+      width: 500,
     });
     expect(placement).not.toHaveProperty("bottom");
     expect(placement.top! - composerRect.bottom).toBe(12);

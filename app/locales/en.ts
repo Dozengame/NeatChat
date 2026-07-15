@@ -352,6 +352,7 @@ const en: LocaleType = {
         `Select model: ${model}, ${detail}`,
       SelectModelAndParams: "Select model and parameters",
       SwitchModel: "Switch model",
+      DefaultParameters: "Default parameters",
       Close: "Close model selector",
       ModelAndReasoning: "Model and reasoning effort",
       ImageOptions: "Image options",

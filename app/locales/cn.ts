@@ -336,6 +336,7 @@ const cn = {
         `选择模型：${model}，${detail}`,
       SelectModelAndParams: "选择模型和参数",
       SwitchModel: "切换模型",
+      DefaultParameters: "默认参数",
       Close: "关闭模型选择",
       ModelAndReasoning: "模型和思考等级",
       ImageOptions: "图片选项",

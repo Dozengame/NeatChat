@@ -1,6 +1,7 @@
 import { LLMModel } from "../client/types";
 import { ServiceProvider } from "../constant";
 import {
+  getOpenAIImageGenerationOptions,
   isOpenAIImageGenerationModel,
   isOpenAIImageGenerationModelConfig,
 } from "../utils/openai-image";
@@ -11,6 +12,10 @@ import {
 
 export type ChatHomeMode = "chat" | "image";
 export type ComposerModelMenuSection = "reasoning" | "image-options";
+export type ComposerModelMenuLayer =
+  | "closed"
+  | "models"
+  | ComposerModelMenuSection;
 export type ChatHomeModel = Omit<LLMModel, "provider"> & {
   provider?: LLMModel["provider"];
 };
@@ -29,12 +34,31 @@ export function getComposerModelMenuSection(
   providerName?: string,
 ): ComposerModelMenuSection | null {
   if (isOpenAIImageGenerationModelConfig({ model, providerName })) {
-    return "image-options";
+    const options = getOpenAIImageGenerationOptions(model);
+    return options.sizes.length > 1 || options.qualities.length > 1
+      ? "image-options"
+      : null;
   }
 
   return isOpenAIResponsesReasoningModelConfig({ model, providerName })
     ? "reasoning"
     : null;
+}
+
+export function getComposerModelMenuLayer(
+  open: boolean,
+  section: ComposerModelMenuSection | null,
+): ComposerModelMenuLayer {
+  if (!open) return "closed";
+  return section ?? "models";
+}
+
+export function getComposerModelMenuEscapeLayer(
+  layer: ComposerModelMenuLayer,
+  currentSection: ComposerModelMenuSection | null,
+): ComposerModelMenuSection | "closed" {
+  if (layer === "models") return currentSection ?? "closed";
+  return "closed";
 }
 
 export function getImageComposerSummary(
