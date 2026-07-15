@@ -183,8 +183,21 @@ const IMAGE_ATTACHMENT_EXTENSIONS = new Set([
   "heif",
 ]);
 
-const ATTACHMENT_ACCEPT =
-  "image/png,image/jpeg,image/webp,image/heic,image/heif,.png,.jpg,.jpeg,.webp,.heic,.heif,.txt,.md,.js,.mjs,.cjs,.lua,.luau,.as,.py,.html,.css,.json,.csv,.xml,.log,.docx,.doc,.pptx,.ppt,.pdf,.sh,.bash,.zsh,.sql,.ini,.conf,.yaml,.yml,.toml,.tex,.c,.cpp,.h,.hpp,.java,.cs,.go,.rs,.php,.rb,.pl,.swift,.kt,.ts,.jsx,.tsx,.vue,.scss,.less,.laya,.ls,.lh,.lmat,.ltc,.atlas,.ani,.sk,.part,.prefab,.scene,.fire,.cocos,.cc,.meta,.plist,.fnt,.r,.m,.ipynb,.zip,.xlsx,.xls,.svg,Dockerfile";
+const IMAGE_ATTACHMENT_ACCEPT =
+  "image/png,image/jpeg,image/webp,image/heic,image/heif,.png,.jpg,.jpeg,.webp,.heic,.heif";
+
+const FILE_ATTACHMENT_ACCEPT =
+  ".txt,.md,.js,.mjs,.cjs,.lua,.luau,.as,.py,.html,.css,.json,.csv,.xml,.log,.docx,.doc,.pptx,.ppt,.pdf,.sh,.bash,.zsh,.sql,.ini,.conf,.yaml,.yml,.toml,.tex,.c,.cpp,.h,.hpp,.java,.cs,.go,.rs,.php,.rb,.pl,.swift,.kt,.ts,.jsx,.tsx,.vue,.scss,.less,.laya,.ls,.lh,.lmat,.ltc,.atlas,.ani,.sk,.part,.prefab,.scene,.fire,.cocos,.cc,.meta,.plist,.fnt,.r,.m,.ipynb,.zip,.xlsx,.xls,.svg,Dockerfile";
+
+const ATTACHMENT_ACCEPT = `${IMAGE_ATTACHMENT_ACCEPT},${FILE_ATTACHMENT_ACCEPT}`;
+
+export type AttachmentUploadKind = "all" | "image" | "file";
+
+export function getAttachmentUploadAccept(kind: AttachmentUploadKind) {
+  if (kind === "image") return IMAGE_ATTACHMENT_ACCEPT;
+  if (kind === "file") return FILE_ATTACHMENT_ACCEPT;
+  return ATTACHMENT_ACCEPT;
+}
 
 const TEXT_ATTACHMENT_ACCEPT =
   ".txt,.md,.js,.mjs,.cjs,.lua,.luau,.as,.py,.html,.css,.json,.csv,.xml,.log,.sh,.bash,.zsh,.sql,.ini,.conf,.yaml,.yml,.toml,.tex,.c,.cpp,.h,.hpp,.java,.cs,.go,.rs,.php,.rb,.pl,.swift,.kt,.ts,.jsx,.tsx,.vue,.scss,.less,.laya,.ls,.lh,.lmat,.ltc,.atlas,.ani,.sk,.part,.prefab,.scene,.fire,.cocos,.cc,.meta,.plist,.fnt,.r,.m,.ipynb,.svg,Dockerfile";
@@ -1508,10 +1521,11 @@ export function uploadAttachments(
   onSuccess: (fileInfos: FileInfo[], imageUrls: string[]) => void,
   onError: (error: any) => void,
   onFinish: () => void,
+  kind: AttachmentUploadKind = "all",
 ): void {
   const fileInput = document.createElement("input");
   fileInput.type = "file";
-  fileInput.accept = ATTACHMENT_ACCEPT;
+  fileInput.accept = getAttachmentUploadAccept(kind);
   fileInput.multiple = true;
 
   fileInput.onchange = async (event: any) => {
@@ -1521,11 +1535,23 @@ export function uploadAttachments(
       return;
     }
 
+    const selectedFiles = Array.from(files as FileList);
+    const matchingFiles = selectedFiles.filter((file) => {
+      if (kind === "image") return isAttachmentImage(file);
+      if (kind === "file") return !isAttachmentImage(file);
+      return true;
+    });
+
+    if (matchingFiles.length === 0) {
+      onError(new Error(AttachmentReader.NoFilesRead));
+      onFinish();
+      return;
+    }
+
     onStart();
     try {
-      const { fileInfos, imageUrls } = await processAttachmentFiles(
-        Array.from(files),
-      );
+      const { fileInfos, imageUrls } =
+        await processAttachmentFiles(matchingFiles);
 
       if (fileInfos.length > 0 || imageUrls.length > 0) {
         onSuccess(fileInfos, imageUrls);

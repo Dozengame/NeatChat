@@ -33,7 +33,10 @@ import EditIcon from "../icons/rename.svg";
 import ConfirmIcon from "../icons/confirm.svg";
 import CancelIcon from "../icons/cancel.svg";
 import FileIcon from "../icons/file.svg";
+import ImageIcon from "../icons/image.svg";
 import AttachmentIcon from "../icons/attachment.svg";
+import PromptIcon from "../icons/prompt.svg";
+import LeftIcon from "../icons/left.svg";
 import DownloadIcon from "../icons/download.svg";
 import AddIcon from "../icons/add.svg";
 import NeatIcon from "../icons/neat.svg";
@@ -159,6 +162,7 @@ import { getModelProvider } from "../utils/model";
 import clsx from "clsx";
 import { shallow } from "zustand/shallow";
 import {
+  type AttachmentUploadKind,
   type DraggedAttachmentSummary,
   FileInfo,
   getAttachmentRenderKey,
@@ -172,6 +176,10 @@ import {
   uploadAttachments,
 } from "../utils/file";
 import { formatAttachmentForPrompt } from "../utils/attachment-wire";
+import {
+  type ComposerPromptFilter,
+  filterComposerPrompts,
+} from "../utils/composer-prompt-library";
 import {
   type ConfigSource,
   createConfigFieldMeta,
@@ -725,6 +733,7 @@ const ClearContextDivider = React.forwardRef<HTMLButtonElement>(
 
 export function ChatAction(props: {
   text: string;
+  description?: string;
   icon: JSX.Element;
   onClick: (event: React.MouseEvent<HTMLButtonElement>) => void | Promise<void>;
   active?: boolean;
@@ -738,6 +747,7 @@ export function ChatAction(props: {
   ariaBusy?: boolean;
   ariaDescribedBy?: string;
   role?: React.AriaRole;
+  dataChatAction?: string;
 }) {
   const iconRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -767,6 +777,7 @@ export function ChatAction(props: {
       aria-label={props.ariaLabel ?? props.text}
       aria-describedby={props.ariaDescribedBy}
       title={props.title}
+      data-chat-action={props.dataChatAction}
       data-copy-state={props.dataCopyState}
       aria-haspopup={props.ariaHasPopup}
       aria-expanded={props.ariaExpanded}
@@ -791,8 +802,18 @@ export function ChatAction(props: {
       <div ref={iconRef} className={styles["icon"]}>
         {props.icon}
       </div>
-      <div className={styles["text"]} ref={textRef}>
-        {props.text}
+      <div
+        className={clsx(styles["text"], {
+          [styles["chat-input-action-copy"]]: props.description,
+        })}
+        ref={textRef}
+      >
+        <span>{props.text}</span>
+        {props.description && (
+          <small className={styles["chat-input-action-description"]}>
+            {props.description}
+          </small>
+        )}
       </div>
     </button>
   );
@@ -849,8 +870,103 @@ function useScrollToBottom(
   };
 }
 
+type ChatActionMenuView = "main" | "prompt-library";
+
+function ComposerPromptLibrary(props: {
+  onBack: () => void;
+  onPromptSelect: (prompt: Prompt) => void;
+}) {
+  const promptStore = usePromptStore();
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<ComposerPromptFilter>("all");
+  const prompts = filterComposerPrompts(promptStore.search(query), filter);
+  const filters: Array<{
+    value: ComposerPromptFilter;
+    label: string;
+  }> = [
+    { value: "all", label: Locale.Chat.ChatToolMenu.PromptLibraryAll },
+    { value: "user", label: Locale.Chat.ChatToolMenu.PromptLibraryUser },
+    {
+      value: "builtin",
+      label: Locale.Chat.ChatToolMenu.PromptLibraryBuiltin,
+    },
+  ];
+
+  return (
+    <div
+      className={styles["chat-prompt-library"]}
+      aria-label={Locale.Chat.ChatToolMenu.PromptLibraryTitle}
+    >
+      <div className={styles["chat-prompt-library-header"]}>
+        <button
+          type="button"
+          className={styles["chat-prompt-library-back"]}
+          data-chat-action-menu-control="true"
+          aria-label={Locale.Chat.ChatToolMenu.PromptLibraryBack}
+          onClick={props.onBack}
+        >
+          <LeftIcon />
+        </button>
+        <strong>{Locale.Chat.ChatToolMenu.PromptLibraryTitle}</strong>
+      </div>
+      <input
+        type="search"
+        className={styles["chat-prompt-library-search"]}
+        data-chat-action-menu-control="true"
+        data-prompt-library-search="true"
+        aria-label={Locale.Chat.ChatToolMenu.PromptLibrarySearch}
+        placeholder={Locale.Chat.ChatToolMenu.PromptLibrarySearch}
+        value={query}
+        onChange={(event) => setQuery(event.currentTarget.value)}
+      />
+      <div
+        className={styles["chat-prompt-library-filters"]}
+        role="group"
+        aria-label={Locale.Chat.ChatToolMenu.PromptLibraryTitle}
+      >
+        {filters.map((item) => (
+          <button
+            type="button"
+            key={item.value}
+            className={clsx(styles["chat-prompt-library-filter"], {
+              [styles["chat-prompt-library-filter-active"]]:
+                filter === item.value,
+            })}
+            data-chat-action-menu-control="true"
+            aria-pressed={filter === item.value}
+            onClick={() => setFilter(item.value)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <div className={styles["chat-prompt-library-list"]} role="list">
+        {prompts.length === 0 && (
+          <p className={styles["chat-prompt-library-empty"]} role="status">
+            {Locale.Chat.ChatToolMenu.PromptLibraryEmpty}
+          </p>
+        )}
+        {prompts.map((prompt) => (
+          <div key={prompt.id} role="listitem">
+            <button
+              type="button"
+              className={styles["chat-prompt-library-item"]}
+              data-chat-action-menu-control="true"
+              onClick={() => props.onPromptSelect(prompt)}
+            >
+              <strong>{prompt.title}</strong>
+              <small>{prompt.content}</small>
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 type ChatActionsProps = {
-  uploadAttachments: () => void;
+  uploadImages: () => void;
+  uploadFiles: () => void;
   setAttachImages: (images: string[]) => void;
   setUploading: (uploading: boolean) => void;
   showPromptModal: () => void;
@@ -858,7 +974,12 @@ type ChatActionsProps = {
   showPromptHints: () => void;
   hitBottom: boolean;
   uploading: boolean;
-  attachmentSlotsFull: boolean;
+  imageSlotsFull: boolean;
+  fileSlotsFull: boolean;
+  menuView: ChatActionMenuView;
+  openPromptLibrary: () => void;
+  closePromptLibrary: () => void;
+  onPromptSelect: (prompt: Prompt) => void;
   openShortcutKeyModal: () => void;
   setUserInput: (input: string) => void;
   setShowChatSidePanel: React.Dispatch<React.SetStateAction<boolean>>;
@@ -1025,6 +1146,28 @@ function useChatActionsView(props: ChatActionsProps) {
     !props.hitBottom ||
     (config.enableClearContext && hasClearableContext);
 
+  if (props.menuView === "prompt-library") {
+    return (
+      <ComposerPromptLibrary
+        onBack={props.closePromptLibrary}
+        onPromptSelect={props.onPromptSelect}
+      />
+    );
+  }
+
+  const imageUploadUnavailable = !isVisionModel(currentModel);
+  const imageUploadDisabled =
+    props.uploading || props.imageSlotsFull || imageUploadUnavailable;
+  const fileUploadDisabled = props.uploading || props.fileSlotsFull;
+  const imageUploadStatus = imageUploadUnavailable
+    ? Locale.Chat.ChatToolMenu.ImageUploadUnavailable
+    : props.imageSlotsFull
+    ? Locale.Chat.Attachments.ImageSlotsFull
+    : Locale.Chat.ChatToolMenu.Capacity;
+  const fileUploadStatus = props.fileSlotsFull
+    ? Locale.Chat.Attachments.FileSlotsFull
+    : Locale.Chat.ChatToolMenu.Capacity;
+
   return (
     <div className={styles["chat-input-actions"]}>
       <div className={styles["chat-multimodal-tray"]}>
@@ -1047,31 +1190,75 @@ function useChatActionsView(props: ChatActionsProps) {
               id="chat-multimodal-upload-state"
               className={clsx(
                 styles["chat-multimodal-section-meta"],
-                props.attachmentSlotsFull &&
+                props.imageSlotsFull &&
+                  props.fileSlotsFull &&
                   styles["chat-multimodal-section-meta-warning"],
               )}
               aria-live="polite"
             >
-              {props.attachmentSlotsFull
+              {props.imageSlotsFull && props.fileSlotsFull
                 ? Locale.Chat.ChatToolMenu.Full
                 : Locale.Chat.ChatToolMenu.Capacity}
             </span>
           </div>
+          <span
+            id="chat-image-upload-state"
+            className={styles["chat-input-action-status"]}
+          >
+            {imageUploadStatus}
+          </span>
+          <span
+            id="chat-file-upload-state"
+            className={styles["chat-input-action-status"]}
+          >
+            {fileUploadStatus}
+          </span>
           <ChatAction
             onClick={() => {
-              if (props.attachmentSlotsFull) return;
-              props.uploadAttachments();
+              if (imageUploadDisabled) return;
+              props.uploadImages();
               completeMobileAction();
             }}
-            text={Locale.Chat.ChatToolMenu.UploadAttachment}
-            icon={props.uploading ? <LoadingButtonIcon /> : <AttachmentIcon />}
-            ariaDescribedBy="chat-multimodal-upload-state"
-            disabled={props.attachmentSlotsFull}
+            text={Locale.Chat.ChatToolMenu.UploadImage}
+            description={Locale.Chat.ChatToolMenu.UploadImageDescription}
+            icon={props.uploading ? <LoadingButtonIcon /> : <ImageIcon />}
+            ariaDescribedBy="chat-image-upload-state"
+            ariaBusy={props.uploading}
+            disabled={imageUploadDisabled}
             title={
-              props.attachmentSlotsFull
-                ? Locale.Chat.ChatToolMenu.AttachmentFull
+              imageUploadUnavailable
+                ? Locale.Chat.ChatToolMenu.ImageUploadUnavailable
+                : props.imageSlotsFull
+                ? Locale.Chat.Attachments.ImageSlotsFull
                 : undefined
             }
+          />
+          <ChatAction
+            onClick={() => {
+              if (fileUploadDisabled) return;
+              props.uploadFiles();
+              completeMobileAction();
+            }}
+            text={Locale.Chat.ChatToolMenu.UploadFile}
+            description={Locale.Chat.ChatToolMenu.UploadFileDescription}
+            icon={props.uploading ? <LoadingButtonIcon /> : <FileIcon />}
+            ariaDescribedBy="chat-file-upload-state"
+            ariaBusy={props.uploading}
+            disabled={fileUploadDisabled}
+            title={
+              props.fileSlotsFull
+                ? Locale.Chat.Attachments.FileSlotsFull
+                : undefined
+            }
+          />
+          <ChatAction
+            onClick={() => props.openPromptLibrary()}
+            text={Locale.Chat.ChatToolMenu.PromptLibrary}
+            description={Locale.Chat.ChatToolMenu.PromptLibraryDescription}
+            icon={<PromptIcon />}
+            ariaHasPopup="dialog"
+            ariaExpanded={false}
+            dataChatAction="prompt-library"
           />
         </div>
 
@@ -1812,7 +1999,6 @@ function useChatInnerView() {
   );
   const [attachImages, setAttachImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [uploadingFile, setUploadingFile] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<FileInfo[]>([]);
   const attachmentsContainerRef = useRef<HTMLDivElement>(null);
   const attachmentSwipeStartRef = useRef<AttachmentSwipeStart | null>(null);
@@ -1920,8 +2106,16 @@ function useChatInnerView() {
   const [isTextareaExpanded, setIsTextareaExpanded] = useState(false);
   const [isTextareaScrolling, setIsTextareaScrolling] = useState(false);
   const [showChatActionMenu, setShowChatActionMenu] = useState(false);
+  const [chatActionMenuView, setChatActionMenuView] =
+    useState<ChatActionMenuView>("main");
   const composerTextareaExpandedRef = useRef(false);
   const composerMeasurementFrozenRef = useRef(false);
+
+  useEffect(() => {
+    if (!showChatActionMenu) {
+      setChatActionMenuView("main");
+    }
+  }, [showChatActionMenu]);
 
   useEffect(() => {
     if (!markdownStressQaAttachmentStripPreview || !chatQaFixture) return;
@@ -1947,8 +2141,9 @@ function useChatInnerView() {
       attachedFiles.length > 0);
   const canAddMoreAttachments =
     attachImages.length < 3 || attachedFiles.length < 5;
-  const attachmentSlotsFull =
-    attachImages.length >= 3 && attachedFiles.length >= 5;
+  const imageSlotsFull = attachImages.length >= 3;
+  const fileSlotsFull = attachedFiles.length >= 5;
+  const attachmentSlotsFull = imageSlotsFull && fileSlotsFull;
   const shouldExpandChatInput = hasComposerAttachments || isTextareaExpanded;
   const closePromptHints = useCallback((options?: PromptHintsCloseOptions) => {
     setPromptHints([]);
@@ -3956,9 +4151,21 @@ function useChatInnerView() {
   };
 
   // 修改上传附件的处理函数
-  async function handleUploadAttachments() {
-    if (attachmentSlotsFull) {
-      showToast(Locale.Chat.Attachments.Full);
+  async function handleUploadAttachments(kind: AttachmentUploadKind = "all") {
+    const requestedSlotsFull =
+      kind === "image"
+        ? imageSlotsFull
+        : kind === "file"
+        ? fileSlotsFull
+        : attachmentSlotsFull;
+    if (requestedSlotsFull) {
+      showToast(
+        kind === "image"
+          ? Locale.Chat.Attachments.ImageSlotsFull
+          : kind === "file"
+          ? Locale.Chat.Attachments.FileSlotsFull
+          : Locale.Chat.Attachments.Full,
+      );
       return;
     }
 
@@ -3980,6 +4187,7 @@ function useChatInnerView() {
       () => {
         setUploading(false);
       },
+      kind,
     );
   }
 
@@ -4454,6 +4662,24 @@ function useChatInnerView() {
   const chatInputMenuButtonRef = useRef<HTMLButtonElement>(null);
   const chatInputActionMenuRef = useRef<HTMLDivElement>(null);
 
+  const openPromptLibrary = () => {
+    setPromptHints([]);
+    setChatActionMenuView("prompt-library");
+  };
+  const closePromptLibrary = () => {
+    setChatActionMenuView("main");
+    requestAnimationFrame(() => {
+      chatInputActionMenuRef.current
+        ?.querySelector<HTMLElement>('[data-chat-action="prompt-library"]')
+        ?.focus({ preventScroll: true });
+    });
+  };
+  const selectPromptFromLibrary = (prompt: Prompt) => {
+    setShowChatActionMenu(false);
+    setChatActionMenuView("main");
+    onPromptSelect(prompt);
+  };
+
   // 在_Chat组件中添加状态，记录当前编辑图片所属的消息ID
   const editingImageMessageIdRef = useRef<string | null>(null);
 
@@ -4536,12 +4762,16 @@ function useChatInnerView() {
 
   const getChatActionMenuControls = useCallback(() => {
     return Array.from(
-      chatInputActionMenuRef.current?.querySelectorAll<HTMLButtonElement>(
-        `button.${styles["chat-input-action"]}`,
+      chatInputActionMenuRef.current?.querySelectorAll<HTMLElement>(
+        `button.${styles["chat-input-action"]}, [data-chat-action-menu-control="true"]`,
       ) ?? [],
     ).filter(
       (control) =>
-        !control.disabled &&
+        (!(
+          control instanceof HTMLButtonElement ||
+          control instanceof HTMLInputElement
+        ) ||
+          !control.disabled) &&
         control.offsetParent !== null &&
         !control.closest('[role="listbox"]'),
     );
@@ -4616,9 +4846,22 @@ function useChatInnerView() {
 
     const focusFirstChatActionMenuControl = () => {
       const activeElement = document.activeElement;
+      if (chatActionMenuView === "prompt-library") {
+        if (
+          activeElement instanceof HTMLElement &&
+          activeElement.closest(`.${styles["chat-prompt-library"]}`)
+        ) {
+          return;
+        }
+        chatInputActionMenuRef.current
+          ?.querySelector<HTMLInputElement>(
+            '[data-prompt-library-search="true"]',
+          )
+          ?.focus({ preventScroll: true });
+        return;
+      }
       if (
-        activeElement instanceof HTMLButtonElement &&
-        activeElement.classList.contains(styles["chat-input-action"]) &&
+        activeElement instanceof HTMLElement &&
         chatInputActionMenuRef.current?.contains(activeElement)
       ) {
         return;
@@ -4635,7 +4878,7 @@ function useChatInnerView() {
       cancelAnimationFrame(focusFrame);
       window.clearTimeout(settleFocusTimer);
     };
-  }, [focusChatActionMenuControl, showChatActionMenu]);
+  }, [chatActionMenuView, focusChatActionMenuControl, showChatActionMenu]);
   const handleChatActionMenuKeyDown = (
     event: React.KeyboardEvent<HTMLElement>,
   ) => {
@@ -4647,6 +4890,7 @@ function useChatInnerView() {
       trapChatActionMenuTab(event);
       return;
     }
+    if (event.target instanceof HTMLInputElement) return;
     if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) {
       return;
     }
@@ -4693,7 +4937,12 @@ function useChatInnerView() {
     const closeChatActionMenuOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
+        if (chatActionMenuView === "prompt-library") {
+          closePromptLibrary();
+          return;
+        }
         setShowChatActionMenu(false);
+        setChatActionMenuView("main");
         requestAnimationFrame(() => chatInputMenuButtonRef.current?.focus());
       }
     };
@@ -4701,7 +4950,7 @@ function useChatInnerView() {
     window.addEventListener("keydown", closeChatActionMenuOnEscape);
     return () =>
       window.removeEventListener("keydown", closeChatActionMenuOnEscape);
-  }, [showChatActionMenu]);
+  }, [chatActionMenuView, showChatActionMenu]);
 
   useEffect(() => {
     if (!previewImage) return;
@@ -4792,6 +5041,7 @@ function useChatInnerView() {
         aria-label={Locale.Chat.ChatToolMenu.Close}
         onClick={() => {
           setShowChatActionMenu(false);
+          setChatActionMenuView("main");
           requestAnimationFrame(() => chatInputMenuButtonRef.current?.focus());
         }}
       />
@@ -5612,8 +5862,7 @@ function useChatInnerView() {
             className={clsx(styles["chat-input-panel"], {
               [styles["chat-input-panel-collapsed"]]: !shouldExpandChatInput,
               [styles["chat-input-panel-empty"]]: showEmptyComposer,
-              [styles["chat-input-panel-model-open"]]:
-                isCompactScreen && showMobileModelSelector,
+              [styles["chat-input-panel-model-open"]]: showMobileModelSelector,
             })}
             data-drag-active={isDropzonePreviewActive ? "true" : undefined}
           >
@@ -5662,10 +5911,16 @@ function useChatInnerView() {
             >
               {showChatActionMenu && (
                 <ChatActions
-                  uploadAttachments={handleUploadAttachments}
+                  uploadImages={() => handleUploadAttachments("image")}
+                  uploadFiles={() => handleUploadAttachments("file")}
                   setAttachImages={setAttachImages}
                   setUploading={setUploading}
-                  attachmentSlotsFull={attachmentSlotsFull}
+                  imageSlotsFull={imageSlotsFull}
+                  fileSlotsFull={fileSlotsFull}
+                  menuView={chatActionMenuView}
+                  openPromptLibrary={openPromptLibrary}
+                  closePromptLibrary={closePromptLibrary}
+                  onPromptSelect={selectPromptFromLibrary}
                   showPromptModal={() =>
                     openPromptModal(chatInputMenuButtonRef.current)
                   }
@@ -5688,7 +5943,10 @@ function useChatInnerView() {
                   }
                   setUserInput={setUserInput}
                   setShowChatSidePanel={setShowChatSidePanel}
-                  onActionComplete={() => setShowChatActionMenu(false)}
+                  onActionComplete={() => {
+                    setShowChatActionMenu(false);
+                    setChatActionMenuView("main");
+                  }}
                 />
               )}
             </div>
@@ -5716,7 +5974,16 @@ function useChatInnerView() {
                 })}
                 onKeyDown={handleChatActionMenuKeyDown}
                 onClick={() => {
-                  setShowChatActionMenu((open) => !open);
+                  if (showChatActionMenu) {
+                    setShowChatActionMenu(false);
+                    setChatActionMenuView("main");
+                    return;
+                  }
+                  setShowMobileModelSelector(false);
+                  setExpandedMobileModelSection(null);
+                  setPromptHints([]);
+                  setChatActionMenuView("main");
+                  setShowChatActionMenu(true);
                 }}
                 aria-label={
                   showChatActionMenu
@@ -5815,6 +6082,7 @@ function useChatInnerView() {
                     event.preventDefault();
                     event.stopPropagation();
                     setShowChatActionMenu(false);
+                    setChatActionMenuView("main");
                     setExpandedMobileModelSection(
                       showMobileModelSelector ? null : currentModelMenuSection,
                     );
@@ -6108,7 +6376,7 @@ function useChatInnerView() {
                             aria-label={Locale.Chat.Attachments.AddMore}
                             title={Locale.Chat.Attachments.AddMore}
                             disabled={uploading}
-                            onClick={handleUploadAttachments}
+                            onClick={() => handleUploadAttachments("all")}
                           >
                             <AddIcon />
                           </button>
