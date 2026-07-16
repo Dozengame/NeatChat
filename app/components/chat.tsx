@@ -82,7 +82,10 @@ import {
   showPlugins,
   safeLocalStorage,
 } from "../utils";
-import { getComposerTextareaLayout } from "../utils/composer-textarea-layout";
+import {
+  getComposerTextareaLayout,
+  getComposerTextareaProbeWidths,
+} from "../utils/composer-textarea-layout";
 import {
   getImageActionLabels,
   getImagePreviewDialogLabel,
@@ -2562,22 +2565,85 @@ function useChatInnerView() {
   const homeModeInitializedRef = useRef(false);
   const measureComposerTextarea = useCallback(() => {
     const textarea = inputRef.current;
-    if (!textarea || composerMeasurementFrozenRef.current) return;
+    const composerShell = chatComposerShellRef.current;
+    if (!textarea || !composerShell || composerMeasurementFrozenRef.current) {
+      return;
+    }
 
     const computedStyle = window.getComputedStyle(textarea);
+    const composerStyle = window.getComputedStyle(composerShell);
     const parsedLineHeight = Number.parseFloat(computedStyle.lineHeight);
     const parsedMaxHeight = Number.parseFloat(computedStyle.maxHeight);
     const lineHeight = Number.isFinite(parsedLineHeight)
       ? parsedLineHeight
       : 24;
     const maxHeight = Number.isFinite(parsedMaxHeight) ? parsedMaxHeight : 174;
+    const readComposerLength = (property: string, fallback: number) => {
+      const parsed = Number.parseFloat(
+        composerStyle.getPropertyValue(property),
+      );
+      return Number.isFinite(parsed) ? parsed : fallback;
+    };
+    const controlWidths = [
+      chatInputMenuButtonRef.current,
+      modelSelectorButtonRef.current,
+      composerShell.querySelector<HTMLElement>(
+        `.${styles["chat-input-voice"]}`,
+      ),
+      composerShell.querySelector<HTMLElement>(`.${styles["chat-input-send"]}`),
+    ]
+      .filter((control): control is HTMLElement => control != null)
+      .map((control) => control.offsetWidth);
+    const probeWidths = getComposerTextareaProbeWidths({
+      shellWidth: composerShell.clientWidth,
+      compactInlinePadding: readComposerLength(
+        "--composer-compact-inline-padding",
+        8,
+      ),
+      compactColumnGap: readComposerLength("--composer-compact-column-gap", 6),
+      expandedInlinePadding: readComposerLength(
+        "--composer-expanded-inline-padding",
+        10,
+      ),
+      controlWidths,
+    });
+    const previousInlineWidth = textarea.style.width;
+    const previousInlineHeight = textarea.style.height;
+    const previousInlineOverflowY = textarea.style.overflowY;
+    const previousInlineScrollbarGutter =
+      textarea.style.getPropertyValue("scrollbar-gutter");
+    let expansionScrollHeight = lineHeight;
+    let displayScrollHeight = lineHeight;
 
-    textarea.style.height = `${lineHeight}px`;
-    const scrollHeight =
-      textarea.value.length === 0 ? lineHeight : inputRef.current.scrollHeight;
+    try {
+      textarea.style.height = `${lineHeight}px`;
+      textarea.style.overflowY = "hidden";
+      textarea.style.setProperty("scrollbar-gutter", "auto");
+
+      if (textarea.value.length > 0) {
+        textarea.style.width = `${probeWidths.compact}px`;
+        expansionScrollHeight = textarea.scrollHeight;
+        textarea.style.width = `${probeWidths.expanded}px`;
+        displayScrollHeight = textarea.scrollHeight;
+      }
+    } finally {
+      textarea.style.width = previousInlineWidth;
+      textarea.style.height = previousInlineHeight;
+      textarea.style.overflowY = previousInlineOverflowY;
+      if (previousInlineScrollbarGutter) {
+        textarea.style.setProperty(
+          "scrollbar-gutter",
+          previousInlineScrollbarGutter,
+        );
+      } else {
+        textarea.style.removeProperty("scrollbar-gutter");
+      }
+    }
+
     const layout = getComposerTextareaLayout({
       value: textarea.value,
-      scrollHeight,
+      expansionScrollHeight,
+      displayScrollHeight,
       lineHeight,
       maxHeight,
       previousExpanded: composerTextareaExpandedRef.current,
@@ -2605,6 +2671,7 @@ function useChatInnerView() {
     measureComposerTextarea,
     showChatActionMenu,
     showMobileModelSelector,
+    showComposerVoice,
     userInput,
   ]);
 
@@ -6590,6 +6657,14 @@ function useChatInnerView() {
                     }
                     setExpandedMobileModelSection(currentModelMenuSection);
                     setShowMobileModelSelector(true);
+                  }}
+                  onTransitionEnd={(event) => {
+                    if (
+                      event.target === event.currentTarget &&
+                      event.propertyName === "width"
+                    ) {
+                      requestAnimationFrame(measureComposerTextarea);
+                    }
                   }}
                   aria-controls="chat-model-menu"
                   aria-haspopup="dialog"

@@ -1339,9 +1339,7 @@ describe("Gemini visual migration shell", () => {
     expect(chat).not.toContain("EmptySuggestion");
     expect(chat).not.toContain('styles["chat-empty-suggestion');
     expect(chat).toContain("const showEmptyComposer = showEmptyState;");
-    expect(chat).toContain(
-      "const showEmptyHero = showEmptyState;",
-    );
+    expect(chat).toContain("const showEmptyHero = showEmptyState;");
     expect(chatStyles).toMatch(
       /\.chat-input-row::before\s*\{[\s\S]*inset:\s*0;[\s\S]*border-radius:\s*32px;[\s\S]*background:\s*var\(--composer-surface\);/,
     );
@@ -2041,7 +2039,9 @@ describe("Gemini visual migration shell", () => {
     expect(chat).toContain("rows={1}");
     expect(chat).not.toContain("onPointerDown={expandInput}");
     expect(chat).not.toContain("onClick={expandInput}");
-    expect(chat).toContain("inputRef.current.scrollHeight");
+    expect(chat).toContain("expansionScrollHeight = textarea.scrollHeight");
+    expect(chat).toContain("displayScrollHeight = textarea.scrollHeight");
+    expect(chat).toContain("getComposerTextareaProbeWidths({");
     expect(chat).toContain("new ResizeObserver");
     expect(chat).toMatch(
       /onFocus=\{\(\) => \{\s*setIsChatInputFocused\(true\);\s*\}\}/,
@@ -3504,7 +3504,7 @@ describe("Gemini visual migration shell", () => {
       /\.chat-model-menu-current-model\s*\{[\s\S]*flex:\s*1 1 auto;[\s\S]*min-width:\s*0;[\s\S]*text-align:\s*left;[\s\S]*white-space:\s*normal;[\s\S]*overflow-wrap:\s*anywhere;[\s\S]*word-break:\s*break-word;/,
     );
     expect(chatStyles).toMatch(
-      /\.chat-input-model-button-open\s*\{[\s\S]*justify-content:\s*center;[\s\S]*\.chat-input-model-name\s*\{[\s\S]*flex:\s*1 1 auto;/,
+      /\.chat-input-model-button-open\s*\{[\s\S]*justify-content:\s*center;[\s\S]*\.chat-input-model-name\s*\{[\s\S]*flex:\s*0 1 auto;/,
     );
     expect(chatStyles).toMatch(
       /\.chat-model-menu-switch-model\s*\{[\s\S]*display:\s*inline-flex;[\s\S]*min-height:\s*44px;[\s\S]*white-space:\s*nowrap;[\s\S]*&:focus-visible\s*\{[\s\S]*outline:\s*var\(--focus-ring\);/,

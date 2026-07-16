@@ -166,7 +166,7 @@ describe("composer visual system", () => {
     expect(shell).toContain('grid-template-areas: "leading input model send"');
     expect(shell).toContain('"leading status model send"');
     expect(shell).toMatch(
-      /height:\s*64px;[\s\S]*column-gap:\s*6px;[\s\S]*padding:\s*0 8px;/,
+      /height:\s*64px;[\s\S]*column-gap:\s*var\(--composer-compact-column-gap\);[\s\S]*padding:\s*0 var\(--composer-compact-inline-padding\);/,
     );
     expect(model).toContain("grid-area: model");
     expect(model).toContain("height: 44px");
@@ -201,10 +201,17 @@ describe("composer visual system", () => {
       detailStart,
       styles.indexOf("\n}", detailStart),
     );
+    const openStart = styles.indexOf(".chat-input-model-button-open {");
+    const open = styles.slice(
+      openStart,
+      styles.indexOf(".chat-input-model-button-home-chat", openStart),
+    );
 
     expect(name).toContain("flex: 1 1 auto");
     expect(name).toContain("text-overflow: ellipsis");
     expect(name).toContain("color: var(--composer-accent-text)");
+    expect(open).toContain("flex: 0 1 auto");
+    expect(open).not.toContain("flex: 1 1 auto");
     expect(detail).toContain("flex: 0 0 auto");
     expect(detail).toContain("color: var(--composer-text)");
     expect(detail).not.toMatch(/overflow:\s*hidden|text-overflow:\s*ellipsis/);
@@ -228,6 +235,10 @@ describe("composer visual system", () => {
     expect(source).toContain("setIsTextareaScrolling(false)");
     expect(source).toContain('inputRef.current.style.height = ""');
     expect(source).toContain('inputRef.current.style.overflowY = "hidden"');
+    expect(source).toContain("getComposerTextareaProbeWidths({");
+    expect(source).toContain("expansionScrollHeight");
+    expect(source).toContain("displayScrollHeight");
+    expect(source).toContain('event.propertyName === "width"');
   });
 
   test("routes leading and tool controls through semantic composer tokens", () => {
@@ -253,6 +264,91 @@ describe("composer visual system", () => {
     );
     expect(tools).not.toMatch(/box-shadow:\s*0 6px 18px/);
     expect(tools).not.toContain(":global(.dark)");
+  });
+
+  test("keeps Composer-owned SVG icons on their semantic foreground", () => {
+    const styles = read("app/components/chat.module.scss");
+    const source = read("app/components/chat.tsx");
+    const composerIconActions = [
+      ["AddIcon", "app/icons/add.svg", "stroke"],
+      ["AttachmentIcon", "app/icons/attachment.svg", "stroke"],
+      ["ImageIcon", "app/icons/image.svg", "fill"],
+      ["FileIcon", "app/icons/file.svg", "fill"],
+      ["LoadingButtonIcon", "app/icons/loading.svg", "fill"],
+      ["PromptIcon", "app/icons/prompt.svg", "stroke"],
+      ["StopIcon", "app/icons/pause.svg", "stroke"],
+      ["BottomIcon", "app/icons/bottom.svg", "stroke"],
+      ["BreakIcon", "app/icons/break.svg", "fill"],
+      ["HeadphoneIcon", "app/icons/headphone.svg", "stroke"],
+      ["LeftIcon", "app/icons/left.svg", "stroke"],
+      ["DeleteIcon", "app/icons/clear.svg", "stroke"],
+    ] as const;
+    const iconStart = styles.indexOf(
+      "// Composer-owned icon surfaces opt out of the legacy page-wide Dark SVG",
+    );
+    const iconScope = styles.slice(
+      iconStart,
+      styles.indexOf(":global(.dark) .attachment-full-indicator", iconStart),
+    );
+
+    expect(iconStart).toBeGreaterThan(-1);
+    expect(iconScope).toContain(
+      ".chat-input-action-menu .chat-input-action .icon",
+    );
+    expect(iconScope).toContain(
+      ".chat-input-action-menu .chat-prompt-library-back",
+    );
+    expect(iconScope).toContain(".attach-file-icon");
+    expect(iconScope).toContain(".delete-image");
+    expect(iconScope).toContain("filter: none !important");
+    expect(iconScope).toContain("color: currentColor");
+    expect(iconScope).toContain('svg [style*="stroke:" i]');
+    expect(iconScope).toContain('svg [style*="fill:" i]');
+    expect(iconScope).not.toContain(":global(.dark)");
+
+    const strokeOverride = iconScope.indexOf('svg [style*="stroke:" i]');
+    const fillOverride = iconScope.indexOf('svg [style*="fill:" i]');
+    const fillNoneGuard = iconScope.indexOf('svg [fill="none"]');
+    const strokeNoneGuard = iconScope.indexOf('svg [stroke="none"]');
+    expect(fillNoneGuard).toBeGreaterThan(fillOverride);
+    expect(strokeNoneGuard).toBeGreaterThan(strokeOverride);
+
+    for (const [componentName, iconPath, paintChannel] of composerIconActions) {
+      expect(source).toContain(`<${componentName}`);
+      const icon = read(iconPath);
+      expect(icon).toMatch(new RegExp(`${paintChannel}(?::|=)`));
+    }
+
+    // These shared assets intentionally remain legacy-colored for SD. The
+    // Composer scope above, not an asset-wide rewrite, owns their Dark mode.
+    expect(read("app/icons/prompt.svg")).toContain("stroke:#333");
+    expect(read("app/icons/clear.svg")).toContain("stroke:#333");
+
+    const fullIndicatorStart = styles.indexOf(".attachment-full-indicator {");
+    const fullIndicator = styles.slice(
+      fullIndicatorStart,
+      styles.indexOf(
+        ":global(.dark) .attachment-full-indicator",
+        fullIndicatorStart,
+      ),
+    );
+    const dropzoneIconStart = styles.indexOf(".chat-dropzone-icon {");
+    const dropzoneIcon = styles.slice(
+      dropzoneIconStart,
+      styles.indexOf(
+        ".chat-dropzone.chat-dropzone-active .chat-dropzone-icon",
+        dropzoneIconStart,
+      ),
+    );
+    expect(fullIndicator).toContain(
+      "color: var(--attachment-full-indicator-color)",
+    );
+    expect(dropzoneIcon).toContain("color: currentColor");
+    for (const surface of [fullIndicator, dropzoneIcon]) {
+      expect(surface).toContain("fill: none");
+      expect(surface).toContain("stroke: currentColor");
+      expect(surface).toContain("filter: none !important");
+    }
   });
 
   test("keeps the parameter header flat and the outer panel elevated", () => {

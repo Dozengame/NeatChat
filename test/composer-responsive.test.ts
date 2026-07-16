@@ -58,7 +58,10 @@ describe("composer responsive layout", () => {
     expect(styles).toContain("min-height: 64px");
     expect(styles).toContain("height: 64px");
     expect(styles).toMatch(
-      /\.chat-input-panel \.chat-input-row\s*\{[\s\S]*?column-gap:\s*6px;[\s\S]*?padding:\s*0 8px;/,
+      /\.chat-input-panel \.chat-input-row\s*\{[\s\S]*?--composer-compact-inline-padding:\s*8px;[\s\S]*?--composer-compact-column-gap:\s*6px;[\s\S]*?--composer-expanded-inline-padding:\s*10px;[\s\S]*?column-gap:\s*var\(--composer-compact-column-gap\);[\s\S]*?padding:\s*0 var\(--composer-compact-inline-padding\);/,
+    );
+    expect(styles).toMatch(
+      /@container chat-composer \(max-width: 599px\)[\s\S]*?--composer-compact-column-gap:\s*4px;[\s\S]*?--composer-expanded-inline-padding:\s*8px;/,
     );
   });
 
@@ -146,7 +149,9 @@ describe("composer responsive layout", () => {
     expect(composerStart).toBeGreaterThan(-1);
     expect(composerSource).not.toContain("<label");
     expect(source).not.toContain("autoGrowTextArea(inputRef.current)");
-    expect(source).toContain("inputRef.current.scrollHeight");
+    expect(source).toContain("expansionScrollHeight = textarea.scrollHeight");
+    expect(source).toContain("displayScrollHeight = textarea.scrollHeight");
+    expect(source).toContain("getComposerTextareaProbeWidths({");
     expect(source).toContain("new ResizeObserver");
     expect(source).not.toContain("onPointerDown={expandInput}");
     expect(source).not.toContain("onClick={expandInput}");

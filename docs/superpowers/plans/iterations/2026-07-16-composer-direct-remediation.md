@@ -81,3 +81,31 @@ Each of the 19 reference images has an exact-viewport local side-by-side compari
 ## Residual Boundaries
 
 No safely fixable visual deviation remains. Physical fold hardware, a real mobile soft keyboard, Safari/Firefox/Edge, actual 200% browser zoom, screen-reader speech, touch/pen, Voice/microphone, real file chooser, Provider calls, credentials, push, PR, deploy, dependency changes, and destructive Git were not executed or inferred as PASS. They remain external verification boundaries rather than blockers to this repository-level visual sign-off.
+
+## Regression Follow-up: Dark Icons, Model Chip, Mobile Draft Stability
+
+The initial follow-up verification was incomplete: source and automated contracts passed, but the supplied Dark screenshot later proved that runtime SVGR paint had been serialized from `#333` to `rgb(51, 51, 51)`, so source-literal CSS selectors did not match. A complete real-Chrome icon audit also found that Prompt Library Back sat outside the original action-icon scope, while Attachment Full and drag-drop icons still inherited the legacy page-wide Dark SVG filter.
+
+The accepted correction keeps shared SVG assets unchanged and scopes semantic paint normalization to Composer-owned surfaces only:
+
+- Tools actions and Prompt Library Back normalize inline stroke/fill channels to `currentColor`, preserve explicit `none`, and opt out of the legacy filter.
+- Attachment delete, file, full-limit, accepted-drop, and blocked-drop states use visible semantic paint with no inherited SVG filter.
+- The open Model Chip name lane uses intrinsic flex sizing instead of consuming all free width.
+- Textarea state selection probes stable Compact and Expanded widths derived from the actual Composer shell and controls. Compact height decides whether to expand; Expanded height decides display height and internal scrolling. This removes the previous feedback loop where a character changed the current width and the current width changed the next state.
+
+Real Chrome verification covered the actual Dark chat route and hidden fixture states:
+
+- Main Tools, Prompt Library Back, attachment delete/file/loading/full, and accepted/blocked drag-drop icons all computed `filter: none`; no inspected legacy shape retained `rgb(51, 51, 51)` paint.
+- The open Model Chip measured `4px` from model name to separator and `4px` from separator to parameter, with `clientWidth === scrollWidth`.
+- At `390x844`, character-by-character input transitioned once from Compact to Expanded at character 17. At `320x740`, it transitioned once at character 8. Neither run alternated states or introduced document horizontal overflow.
+- The final page produced no new Console warning/error. Two MCP availability errors in the retained log predated the restarted final page and belong to the existing disabled local MCP boundary.
+
+Final deterministic verification after the last product change:
+
+- Complete Jest: `87/87` suites and `869/869` tests PASS.
+- ESLint: PASS with zero warning/error.
+- TypeScript: PASS.
+- `git diff --check`: PASS.
+- Production build: PASS; `/` is 108 kB and First Load JS is 194 kB.
+
+This follow-up does not change shared SVG assets, SD, API/provider behavior, model or reasoning semantics, attachments or Prompt Store data, persistence, dependencies, build/deploy configuration, or remote state.

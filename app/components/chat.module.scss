@@ -663,6 +663,72 @@
   }
 }
 
+// Composer-owned icon surfaces opt out of the legacy page-wide Dark SVG
+// filter. Legacy SVGR assets serialize inline #333 paint as rgb(...), so match
+// the paint channel instead of a source color literal.
+.chat-input-action-menu .chat-input-action .icon,
+.chat-input-action-menu .chat-prompt-library-back,
+.delete-image {
+  svg {
+    color: currentColor;
+    filter: none !important;
+  }
+
+  svg [style*="stroke:" i],
+  svg[style*="stroke:" i],
+  svg [stroke="#000"],
+  svg [stroke="#000000"],
+  svg [stroke="#333"],
+  svg [stroke="black"],
+  svg[stroke="#000"],
+  svg[stroke="#000000"],
+  svg[stroke="#333"],
+  svg[stroke="black"] {
+    stroke: currentColor !important;
+  }
+
+  svg [style*="fill:" i],
+  svg[style*="fill:" i],
+  svg [fill="#000"],
+  svg [fill="#000000"],
+  svg [fill="#333"],
+  svg [fill="black"],
+  svg[fill="#000"],
+  svg[fill="#000000"],
+  svg[fill="#333"],
+  svg[fill="black"] {
+    fill: currentColor !important;
+  }
+
+  // Preserve transparent paint after the broad inline-style normalization.
+  svg [fill="none"],
+  svg[fill="none"],
+  svg [style*="fill:none" i],
+  svg [style*="fill: none" i],
+  svg[style*="fill:none" i],
+  svg[style*="fill: none" i] {
+    fill: none !important;
+  }
+
+  svg [stroke="none"],
+  svg[stroke="none"],
+  svg [style*="stroke:none" i],
+  svg [style*="stroke: none" i],
+  svg[style*="stroke:none" i],
+  svg[style*="stroke: none" i] {
+    stroke: none !important;
+  }
+}
+
+.attach-file-icon {
+  color: currentColor;
+
+  svg {
+    color: currentColor;
+    filter: none !important;
+  }
+}
+
 .attachment-full-indicator {
   --attachment-full-indicator-border-color: color-mix(in srgb, var(--black-50) 12%, transparent);
   --attachment-full-indicator-background: color-mix(in srgb, var(--surface-elevated) 74%, transparent);
@@ -695,6 +761,9 @@
   svg {
     width: 18px;
     height: 18px;
+    fill: none;
+    stroke: currentColor;
+    filter: none !important;
     opacity: 0.72;
   }
 
@@ -6416,7 +6485,7 @@
   justify-content: center;
 
   .chat-input-model-name {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
   }
 }
 
@@ -8417,7 +8486,10 @@
   svg {
     width: 20px;
     height: 20px;
-    fill: currentColor;
+    color: currentColor;
+    fill: none;
+    stroke: currentColor;
+    filter: none !important;
   }
 }
 
@@ -8888,6 +8960,10 @@
 
 // Composer shell geometry shared by compact, expanded, and scrolling states.
 .chat-input-panel .chat-input-row {
+  --composer-compact-inline-padding: 8px;
+  --composer-compact-column-gap: 6px;
+  --composer-expanded-inline-padding: 10px;
+
   position: relative;
   display: grid;
   box-sizing: border-box;
@@ -8898,9 +8974,9 @@
   grid-template-columns: 44px minmax(0, 1fr) auto 44px;
   grid-template-areas: "leading input model send";
   align-items: center;
-  column-gap: 6px;
+  column-gap: var(--composer-compact-column-gap);
   row-gap: 0;
-  padding: 0 8px;
+  padding: 0 var(--composer-compact-inline-padding);
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -8997,7 +9073,7 @@
   align-items: end;
   column-gap: 8px;
   row-gap: 6px;
-  padding: 12px 10px 8px;
+  padding: 12px var(--composer-expanded-inline-padding) 8px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -9323,7 +9399,8 @@
 
 @container chat-composer (max-width: 599px) {
   .chat-input-panel .chat-input-row {
-    column-gap: 4px;
+    --composer-compact-column-gap: 4px;
+    --composer-expanded-inline-padding: 8px;
   }
 
   .chat-input-row .chat-input-model-button,
@@ -9349,7 +9426,7 @@
       [data-composer-state="expanded"],
       [data-composer-state="scrolling"]
       ) {
-      padding: 12px 8px 8px;
+      padding: 12px var(--composer-expanded-inline-padding) 8px;
     }
 
   .chat-input-row:is(
