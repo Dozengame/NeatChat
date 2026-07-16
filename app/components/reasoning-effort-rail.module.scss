@@ -15,8 +15,9 @@
   );
   --reasoning-rail-text: var(--composer-text);
   --reasoning-rail-muted: var(--composer-muted);
-  --reasoning-rail-card: transparent;
-  --reasoning-rail-border: transparent;
+  --reasoning-rail-card: var(--composer-rail-surface);
+  --reasoning-rail-border: var(--composer-rail-border);
+  --reasoning-rail-shadow: var(--composer-rail-shadow);
 
   min-width: 0;
   padding: 16px 16px 18px;
@@ -24,7 +25,7 @@
   border-radius: 18px;
   background: var(--reasoning-rail-card);
   color: var(--reasoning-rail-text);
-  box-shadow: none;
+  box-shadow: var(--reasoning-rail-shadow);
 }
 
 .heading {

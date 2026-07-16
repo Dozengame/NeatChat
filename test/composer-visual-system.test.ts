@@ -21,15 +21,21 @@ describe("composer visual system", () => {
     "--composer-control-disabled",
     "--composer-chip-surface",
     "--composer-chip-open-surface",
+    "--composer-accent-text",
     "--composer-panel-surface",
     "--composer-panel-border",
     "--composer-panel-shadow",
+    "--composer-rail-surface",
+    "--composer-rail-border",
+    "--composer-rail-shadow",
     "--composer-selected-surface",
     "--composer-selected-border",
     "--composer-aura-blue",
     "--composer-aura-cyan",
     "--composer-aura-violet",
-    "--composer-hero-cyan",
+    "--composer-hero-start",
+    "--composer-hero-mid",
+    "--composer-hero-end",
     "--composer-aura-idle-opacity",
     "--composer-aura-focus-opacity",
     "--composer-aura-ready-opacity",
@@ -159,9 +165,16 @@ describe("composer visual system", () => {
     expect(shell).toContain("min-height: 170px");
     expect(shell).toContain('grid-template-areas: "leading input model send"');
     expect(shell).toContain('"leading status model send"');
+    expect(shell).toMatch(
+      /height:\s*64px;[\s\S]*column-gap:\s*6px;[\s\S]*padding:\s*0 8px;/,
+    );
     expect(model).toContain("grid-area: model");
     expect(model).toContain("height: 44px");
     expect(model).toContain("overflow: hidden");
+    expect(model).toContain("background: transparent");
+    expect(model).toMatch(
+      /&::before\s*\{[\s\S]*inset:\s*2px 0;[\s\S]*background:\s*var\(--composer-chip-surface\);/,
+    );
     for (const [selector, from] of [
       [".chat-input-menu-button", styles.indexOf(".chat-input-send {")],
       [".chat-input-voice", styles.indexOf(".chat-input-send {")],
@@ -191,7 +204,9 @@ describe("composer visual system", () => {
 
     expect(name).toContain("flex: 1 1 auto");
     expect(name).toContain("text-overflow: ellipsis");
+    expect(name).toContain("color: var(--composer-accent-text)");
     expect(detail).toContain("flex: 0 0 auto");
+    expect(detail).toContain("color: var(--composer-text)");
     expect(detail).not.toMatch(/overflow:\s*hidden|text-overflow:\s*ellipsis/);
     expect(styles).not.toMatch(
       /\.chat-input-model-button-open\s*\{[\s\S]{0,500}\.chat-input-model-detail\s*\{[\s\S]{0,100}display:\s*none/,
@@ -285,7 +300,13 @@ describe("composer visual system", () => {
     const styles = read("app/components/chat.module.scss");
     const heroStart = styles.indexOf(".chat-empty-title {");
     const hero = styles.slice(heroStart, styles.indexOf("\n}", heroStart));
+    const logoStart = styles.indexOf(".chat-empty-logo {");
+    const logo = styles.slice(logoStart, styles.indexOf("\n}", logoStart));
 
+    expect(logo).toContain("display: flex");
+    expect(logo).toContain("width: 48px");
+    expect(logo).toContain("height: 48px");
+    expect(hero).toContain("max-width: min(860px, calc(100vw - 64px))");
     expect(hero).toContain(
       'font-family: -apple-system, BlinkMacSystemFont, "Segoe UI"',
     );
@@ -298,6 +319,37 @@ describe("composer visual system", () => {
     expect(styles).not.toContain('font-family: "Outfit"');
   });
 
+  test("locks the accepted empty-layout and mobile tab geometry", () => {
+    const styles = read("app/components/chat.module.scss");
+    const narrowStart = styles.indexOf(
+      "@media only screen and (max-width: 358px)",
+    );
+    const narrow = styles.slice(
+      narrowStart,
+      styles.indexOf("@media only screen and (min-width: 901px)", narrowStart),
+    );
+
+    expect(styles).toMatch(
+      /@media only screen and \(min-width: 901px\)\s*\{[\s\S]*?\.chat\s*\{[\s\S]*?--chat-empty-hero-anchor:\s*35%;[\s\S]*?--chat-empty-composer-offset:\s*203px;/,
+    );
+    expect(styles).toMatch(
+      /@media only screen and \(min-width: 901px\)\s*\{[\s\S]*?\.chat-input-panel\.chat-input-panel-empty\s*\{[\s\S]*?width:\s*min\(820px,/,
+    );
+    expect(styles).toMatch(
+      /\.chat-mobile-header\s*\{[\s\S]*?flex:\s*0 0 calc\(72px \+ env\(safe-area-inset-top\)\);/,
+    );
+    expect(styles).toMatch(
+      /@media only screen and \(max-width: 600px\)\s*\{[\s\S]*?\.chat-home-mode-tabs\s*\{[\s\S]*?top:\s*22px;[\s\S]*?width:\s*min\(226px, calc\(100% - 32px\)\);[\s\S]*?height:\s*46px;/,
+    );
+    expect(styles).toMatch(
+      /\.chat-home-mode-tab\s*\{[\s\S]*?font-size:\s*14px;[\s\S]*?font-weight:\s*650;/,
+    );
+    expect(styles).toMatch(
+      /\.chat-home-mode-tab-selected\s*\{[\s\S]*?font-weight:\s*650;/,
+    );
+    expect(narrow).not.toContain(".chat-home-mode-tabs");
+  });
+
   test("keeps core Composer geometry selectors authoritative", () => {
     const styles = read("app/components/chat.module.scss");
     const modelStart = styles.indexOf("\n.chat-input-model-button {") + 1;
@@ -307,6 +359,12 @@ describe("composer visual system", () => {
 
     expect(styles.match(/^\.chat-input-row::before\s*\{/gm)).toHaveLength(1);
     expect(styles.match(/^\.chat-input-panel-inner\s*\{/gm)).toHaveLength(1);
+    expect(
+      styles.match(/^\.chat-input-panel\.chat-input-panel-empty\s*\{/gm),
+    ).toHaveLength(1);
+    expect(
+      styles.match(/^  \.chat-input-panel\.chat-input-panel-empty\s*\{/gm),
+    ).toHaveLength(2);
     expect(styles.match(/^\.chat-input-model-button\s*\{/gm)).toHaveLength(1);
     expect(styles.match(/^\.chat-input-send\s*\{/gm)).toHaveLength(1);
     expect(
@@ -326,6 +384,15 @@ describe("composer visual system", () => {
       /:global\(body:not\(\.light\)\) \.chat-(?:mobile|desktop)-model-menu\s*\{/,
     );
     expect(styles).not.toMatch(/padding:\s*[^;]*(?:148|204|210)px/);
+    expect(styles).not.toContain(
+      ".chat-input-panel.chat-input-panel-empty:not(.chat-input-panel-collapsed)",
+    );
+    expect(styles).not.toContain(
+      '.chat-input-panel.chat-input-panel-empty[data-composer-segment="true"]',
+    );
+    expect(styles).toMatch(
+      /^\.chat-input-panel\.chat-input-panel-empty\s*\{[\s\S]*?top:\s*clamp\([\s\S]*?--chat-composer-viewport-top[\s\S]*?--chat-empty-hero-anchor[\s\S]*?--chat-composer-viewport-height/m,
+    );
   });
 
   test("keeps model chip copy on semantic Composer tokens", () => {
@@ -343,11 +410,20 @@ describe("composer visual system", () => {
 
   test("routes the reasoning panel through composer tokens", () => {
     const styles = read("app/components/reasoning-effort-rail.module.scss");
+    const panelStart = styles.indexOf(".panel {");
+    const panel = styles.slice(panelStart, styles.indexOf("\n}", panelStart));
 
-    expect(styles).toContain("--reasoning-rail-card: transparent");
-    expect(styles).toContain("--reasoning-rail-border: transparent");
-    expect(styles).toContain("border-radius: 18px");
-    expect(styles).toContain("box-shadow: none");
+    expect(panel).toContain(
+      "--reasoning-rail-card: var(--composer-rail-surface)",
+    );
+    expect(panel).toContain(
+      "--reasoning-rail-border: var(--composer-rail-border)",
+    );
+    expect(panel).toContain(
+      "--reasoning-rail-shadow: var(--composer-rail-shadow)",
+    );
+    expect(panel).toContain("border-radius: 18px");
+    expect(panel).toContain("box-shadow: var(--reasoning-rail-shadow)");
     expect(styles).toContain("background: var(--composer-rail-thumb-surface)");
     expect(styles).not.toContain("background: #fff");
   });

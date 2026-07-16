@@ -225,13 +225,18 @@ export function getComposerPopoverPlacement(input: {
   const width = Math.min(targetWidth, availableWidth);
   const idealLeft =
     input.kind === "tools"
-      ? input.triggerRect.left
+      ? input.composerRect.left
       : getRectRight(input.composerRect) - width;
   const left = Math.max(bounds.left, Math.min(idealLeft, bounds.right - width));
   const belowTop = input.composerRect.bottom + gap;
   const belowSpace = Math.max(0, bounds.bottom - belowTop);
   const aboveSpace = Math.max(0, input.composerRect.top - gap - bounds.top);
-  const maximumHeight = input.kind === "tools" ? 380 : 500;
+  const maximumHeight =
+    input.kind === "tools"
+      ? 380
+      : useMobileModelWidth
+      ? Math.min(500, input.viewport.height * 0.56)
+      : 500;
   const measuredHeight = Math.max(
     1,
     input.panelHeight ?? (input.kind === "tools" ? 228 : 250),

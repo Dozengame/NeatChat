@@ -57,6 +57,9 @@ describe("composer responsive layout", () => {
     expect(styles).toContain('"leading status model send"');
     expect(styles).toContain("min-height: 64px");
     expect(styles).toContain("height: 64px");
+    expect(styles).toMatch(
+      /\.chat-input-panel \.chat-input-row\s*\{[\s\S]*?column-gap:\s*6px;[\s\S]*?padding:\s*0 8px;/,
+    );
   });
 
   test("keeps long-draft textarea height consistent across composer states", () => {
@@ -68,6 +71,20 @@ describe("composer responsive layout", () => {
     expect(styles).toContain('data-composer-scroll="true"');
     expect(styles).not.toContain("max-height: 120px;");
     expect(styles).not.toContain("max-height: 30vh;");
+  });
+
+  test("bottom-anchors the empty composer after a short landscape resize", () => {
+    const styles = read("app/components/chat.module.scss");
+
+    expect(styles).toMatch(
+      /@media only screen and \(max-width: 600px\)[\s\S]*?\.chat-input-panel\.chat-input-panel-empty\s*\{[\s\S]*?top:\s*auto;[\s\S]*?bottom:\s*calc\([\s\S]*?--chat-composer-viewport-bottom-inset/,
+    );
+    expect(styles).toMatch(
+      /@media only screen and \(min-width: 601px\) and \(max-height: 560px\)\s*\{[\s\S]*?\.chat-input-panel\.chat-input-panel-empty:not\(\s*\[data-composer-segment-axis="vertical"\]\s*\):not\(\[data-composer-segment-axis="both"\]\)\s*\{[\s\S]*?top:\s*auto;[\s\S]*?bottom:\s*calc\([\s\S]*?--chat-composer-viewport-bottom-inset[\s\S]*?transform:\s*translateX\(-50%\);/,
+    );
+    expect(
+      styles.match(/--chat-composer-viewport-bottom-inset\) \+ 12px/g),
+    ).toHaveLength(2);
   });
 
   test("resolves textarea line height from the configured font size", () => {
@@ -100,10 +117,14 @@ describe("composer responsive layout", () => {
 
   test("keeps textarea and controls in normal grid flow", () => {
     const styles = read("app/components/chat.module.scss");
-
-    expect(styles).toMatch(
-      /\.chat-input-model-button\s*\{[\s\S]*?position:\s*static;/,
+    const modelStart = styles.indexOf("\n.chat-input-model-button {") + 1;
+    const modelStyles = styles.slice(
+      modelStart,
+      styles.indexOf("\n}", modelStart),
     );
+
+    expect(modelStyles).toContain("position: relative");
+    expect(modelStyles).not.toMatch(/\b(?:right|bottom):/);
     expect(styles).toMatch(/\.chat-input-send\s*\{[\s\S]*?position:\s*static;/);
     expect(styles).not.toMatch(
       /padding-right:\s*(?:136|154|176|184|202|204|206|218|300|366)px/,

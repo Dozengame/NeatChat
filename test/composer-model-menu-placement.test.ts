@@ -85,6 +85,7 @@ describe("composer model menu placement", () => {
       left: 63,
       width: 308,
     });
+    expect(placement.maxHeight).toBeCloseTo(844 * 0.56, 5);
     expect(placement).not.toHaveProperty("top");
     for (const menuHeight of [225, 386]) {
       const menuBottom = 844 - placement.bottom!;
@@ -125,10 +126,73 @@ describe("composer model menu placement", () => {
       width: 370,
       gap: 12,
     });
+    expect(placement.maxHeight).toBeCloseTo(844 * 0.56, 5);
     expect(placement.left + placement.width).toBe(
       composerRect.left + composerRect.width,
     );
     expect(placement.collisionBounds).toMatchObject({ left: 10, right: 380 });
+  });
+
+  test("caps a narrow phone model panel at fifty-six percent of the visual viewport", () => {
+    const placement = getComposerModelMenuPlacement({
+      buttonRect: rect({
+        left: 170,
+        top: 632,
+        bottom: 676,
+        width: 124,
+      }),
+      composerRect: rect({
+        left: 10,
+        top: 624,
+        bottom: 688,
+        width: 300,
+      }),
+      compact: true,
+      preferBelowOnDesktop: false,
+      viewport: {
+        left: 0,
+        top: 0,
+        width: 320,
+        height: 700,
+        layoutHeight: 700,
+      },
+    });
+
+    expect(placement).toMatchObject({
+      openBelow: false,
+      left: 10,
+      width: 300,
+    });
+    expect(placement.maxHeight).toBeCloseTo(392, 5);
+  });
+
+  test("recomputes the mobile cap from the soft-keyboard visual viewport", () => {
+    const placement = getComposerModelMenuPlacement({
+      buttonRect: rect({
+        left: 204,
+        top: 352,
+        bottom: 396,
+        width: 126,
+      }),
+      composerRect: rect({
+        left: 10,
+        top: 344,
+        bottom: 408,
+        width: 370,
+      }),
+      compact: true,
+      preferBelowOnDesktop: false,
+      viewport: {
+        left: 0,
+        top: 0,
+        width: 390,
+        height: 420,
+        layoutHeight: 844,
+      },
+    });
+
+    expect(placement.openBelow).toBe(false);
+    expect(placement.maxHeight).toBeCloseTo(235.2, 5);
   });
 
   test("keeps the full composer width on a wide phone viewport", () => {
@@ -290,7 +354,7 @@ describe("composer model menu placement", () => {
       width: 760,
     });
     const triggerRect = rect({
-      left: 220,
+      left: 228,
       top: 440,
       bottom: 484,
       width: 44,
