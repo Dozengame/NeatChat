@@ -1,4 +1,8 @@
-import { getComposerModelMenuPlacement } from "../app/utils/composer-model-menu-placement";
+import {
+  getComposerModelMenuPlacement,
+  getComposerPopoverPlacement,
+  toComposerPopoverCssVariables,
+} from "../app/utils/composer-model-menu-placement";
 
 const rect = (values: {
   left: number;
@@ -38,6 +42,7 @@ describe("composer model menu placement", () => {
       openBelow: false,
       bottom: 88,
       gap: 12,
+      width: 460,
     });
     expect(placement).not.toHaveProperty("top");
     for (const menuHeight of [217, 350, 420]) {
@@ -47,7 +52,7 @@ describe("composer model menu placement", () => {
     }
   });
 
-  test("keeps compact reasoning and image panels ten pixels above", () => {
+  test("keeps compact reasoning and image panels twelve pixels above", () => {
     const composerRect = rect({
       left: 63,
       top: 776,
@@ -75,17 +80,199 @@ describe("composer model menu placement", () => {
 
     expect(placement).toMatchObject({
       openBelow: false,
-      bottom: 78,
-      gap: 10,
-      left: 18,
-      width: 360,
+      bottom: 80,
+      gap: 12,
+      left: 63,
+      width: 308,
     });
+    expect(placement.maxHeight).toBeCloseTo(844 * 0.56, 5);
     expect(placement).not.toHaveProperty("top");
     for (const menuHeight of [225, 386]) {
       const menuBottom = 844 - placement.bottom!;
-      expect(composerRect.top - menuBottom).toBe(10);
+      expect(composerRect.top - menuBottom).toBe(12);
       expect(menuBottom - menuHeight).toBeGreaterThanOrEqual(12);
     }
+  });
+
+  test("right-aligns a phone model panel and uses the full composer width", () => {
+    const composerRect = rect({
+      left: 10,
+      top: 768,
+      bottom: 832,
+      width: 370,
+    });
+    const placement = getComposerModelMenuPlacement({
+      buttonRect: rect({
+        left: 204,
+        top: 778,
+        bottom: 822,
+        width: 126,
+      }),
+      composerRect,
+      compact: true,
+      preferBelowOnDesktop: false,
+      viewport: {
+        left: 0,
+        top: 0,
+        width: 390,
+        height: 844,
+        layoutHeight: 844,
+      },
+    });
+
+    expect(placement).toMatchObject({
+      openBelow: false,
+      left: 10,
+      width: 370,
+      gap: 12,
+    });
+    expect(placement.maxHeight).toBeCloseTo(844 * 0.56, 5);
+    expect(placement.left + placement.width).toBe(
+      composerRect.left + composerRect.width,
+    );
+    expect(placement.collisionBounds).toMatchObject({ left: 10, right: 380 });
+  });
+
+  test("caps a narrow phone model panel at fifty-six percent of the visual viewport", () => {
+    const placement = getComposerModelMenuPlacement({
+      buttonRect: rect({
+        left: 170,
+        top: 632,
+        bottom: 676,
+        width: 124,
+      }),
+      composerRect: rect({
+        left: 10,
+        top: 624,
+        bottom: 688,
+        width: 300,
+      }),
+      compact: true,
+      preferBelowOnDesktop: false,
+      viewport: {
+        left: 0,
+        top: 0,
+        width: 320,
+        height: 700,
+        layoutHeight: 700,
+      },
+    });
+
+    expect(placement).toMatchObject({
+      openBelow: false,
+      left: 10,
+      width: 300,
+    });
+    expect(placement.maxHeight).toBeCloseTo(392, 5);
+  });
+
+  test("recomputes the mobile cap from the soft-keyboard visual viewport", () => {
+    const placement = getComposerModelMenuPlacement({
+      buttonRect: rect({
+        left: 204,
+        top: 352,
+        bottom: 396,
+        width: 126,
+      }),
+      composerRect: rect({
+        left: 10,
+        top: 344,
+        bottom: 408,
+        width: 370,
+      }),
+      compact: true,
+      preferBelowOnDesktop: false,
+      viewport: {
+        left: 0,
+        top: 0,
+        width: 390,
+        height: 420,
+        layoutHeight: 844,
+      },
+    });
+
+    expect(placement.openBelow).toBe(false);
+    expect(placement.maxHeight).toBeCloseTo(235.2, 5);
+  });
+
+  test("keeps the full composer width on a wide phone viewport", () => {
+    const composerRect = rect({
+      left: 10,
+      top: 904,
+      bottom: 968,
+      width: 500,
+    });
+    const placement = getComposerModelMenuPlacement({
+      buttonRect: rect({
+        left: 336,
+        top: 914,
+        bottom: 958,
+        width: 126,
+      }),
+      composerRect,
+      compact: true,
+      preferBelowOnDesktop: false,
+      viewport: {
+        left: 0,
+        top: 0,
+        width: 520,
+        height: 980,
+        layoutHeight: 980,
+      },
+    });
+
+    expect(placement).toMatchObject({
+      openBelow: false,
+      left: 10,
+      width: 500,
+      gap: 12,
+    });
+    expect(placement.left + placement.width).toBe(
+      composerRect.left + composerRect.width,
+    );
+  });
+
+  test("right-aligns a desktop-width panel inside a compact book segment", () => {
+    const composerRect = rect({
+      left: 628,
+      top: 774,
+      bottom: 838,
+      width: 556,
+    });
+    const placement = getComposerModelMenuPlacement({
+      buttonRect: rect({
+        left: 1008,
+        top: 784,
+        bottom: 828,
+        width: 126,
+      }),
+      composerRect,
+      compact: true,
+      preferBelowOnDesktop: false,
+      viewport: {
+        left: 0,
+        top: 0,
+        width: 1200,
+        height: 850,
+        layoutHeight: 850,
+        segments: [
+          { left: 0, top: 0, width: 588, height: 850 },
+          { left: 612, top: 0, width: 588, height: 850 },
+        ],
+      },
+    });
+
+    expect(placement).toMatchObject({
+      openBelow: false,
+      left: 724,
+      width: 460,
+      gap: 12,
+      segmentIndex: 1,
+    });
+    expect(placement.left + placement.width).toBe(
+      composerRect.left + composerRect.width,
+    );
+    expect(placement.collisionBounds).toMatchObject({ left: 622, right: 1190 });
   });
 
   test("opens an empty desktop composer below with a twelve-pixel gap", () => {
@@ -118,6 +305,7 @@ describe("composer model menu placement", () => {
       openBelow: true,
       top: 497,
       gap: 12,
+      width: 460,
     });
     expect(placement).not.toHaveProperty("bottom");
     expect(placement.top! - composerRect.bottom).toBe(12);
@@ -156,5 +344,174 @@ describe("composer model menu placement", () => {
     });
     expect(placement).not.toHaveProperty("top");
     expect(composerRect.top - (900 - placement.bottom!)).toBe(12);
+  });
+
+  test("keeps tools and prompt library on the same collision path", () => {
+    const composerRect = rect({
+      left: 220,
+      top: 430,
+      bottom: 494,
+      width: 760,
+    });
+    const triggerRect = rect({
+      left: 228,
+      top: 440,
+      bottom: 484,
+      width: 44,
+    });
+    const viewport = {
+      left: 0,
+      top: 0,
+      width: 1200,
+      height: 800,
+      layoutHeight: 800,
+    };
+
+    const tools = getComposerPopoverPlacement({
+      kind: "tools",
+      triggerRect,
+      composerRect,
+      panelHeight: 228,
+      compact: false,
+      preferBelowOnDesktop: true,
+      viewport,
+    });
+    expect(tools).toMatchObject({
+      openBelow: true,
+      left: 220,
+      top: 506,
+      width: 268,
+      gap: 12,
+    });
+
+    const promptLibrary = getComposerPopoverPlacement({
+      kind: "tools",
+      triggerRect,
+      composerRect,
+      panelHeight: 500,
+      compact: false,
+      preferBelowOnDesktop: true,
+      viewport,
+    });
+    expect(promptLibrary).toMatchObject({
+      openBelow: false,
+      bottom: 382,
+      left: 220,
+      width: 268,
+      maxHeight: 380,
+    });
+  });
+
+  test("intersects safe area and the segment containing the composer", () => {
+    const placement = getComposerPopoverPlacement({
+      kind: "model",
+      triggerRect: rect({
+        left: 980,
+        top: 710,
+        bottom: 754,
+        width: 132,
+      }),
+      composerRect: rect({
+        left: 650,
+        top: 700,
+        bottom: 764,
+        width: 500,
+      }),
+      panelHeight: 420,
+      compact: false,
+      preferBelowOnDesktop: false,
+      viewport: {
+        left: 0,
+        top: 0,
+        width: 1200,
+        height: 800,
+        layoutHeight: 800,
+        safeArea: { top: 0, right: 20, bottom: 0, left: 20 },
+        segments: [
+          { left: 0, top: 0, width: 580, height: 800 },
+          { left: 620, top: 0, width: 580, height: 800 },
+        ],
+      },
+    });
+
+    expect(placement).toMatchObject({
+      openBelow: false,
+      left: 690,
+      width: 460,
+      bottom: 112,
+      segmentIndex: 1,
+    });
+    expect(placement.collisionBounds.left).toBe(636);
+    expect(placement.collisionBounds.right).toBe(1164);
+  });
+
+  test("uses the lower tabletop segment and visual viewport together", () => {
+    const placement = getComposerPopoverPlacement({
+      kind: "model",
+      triggerRect: rect({
+        left: 650,
+        top: 910,
+        bottom: 954,
+        width: 132,
+      }),
+      composerRect: rect({
+        left: 120,
+        top: 900,
+        bottom: 964,
+        width: 660,
+      }),
+      panelHeight: 420,
+      compact: false,
+      preferBelowOnDesktop: false,
+      viewport: {
+        left: 0,
+        top: 600,
+        width: 900,
+        height: 400,
+        layoutHeight: 1200,
+        safeArea: { top: 0, right: 0, bottom: 20, left: 0 },
+        segments: [
+          { left: 0, top: 0, width: 900, height: 580 },
+          { left: 0, top: 600, width: 900, height: 600 },
+        ],
+      },
+    });
+
+    expect(placement).toMatchObject({
+      openBelow: false,
+      bottom: 312,
+      maxHeight: 272,
+      segmentIndex: 1,
+    });
+    expect(placement.collisionBounds).toMatchObject({ top: 616, bottom: 964 });
+  });
+
+  test("converts viewport coordinates for the nested tools containing block", () => {
+    const placement = getComposerPopoverPlacement({
+      kind: "tools",
+      triggerRect: rect({ left: 100, top: 610, bottom: 654, width: 44 }),
+      composerRect: rect({ left: 100, top: 600, bottom: 664, width: 700 }),
+      panelHeight: 228,
+      compact: false,
+      preferBelowOnDesktop: false,
+      viewport: {
+        left: 0,
+        top: 0,
+        width: 1000,
+        height: 800,
+        layoutHeight: 800,
+      },
+    });
+    const fixed = toComposerPopoverCssVariables(placement);
+    const local = toComposerPopoverCssVariables(placement, {
+      left: 80,
+      top: 560,
+      bottom: 800,
+      width: 740,
+    });
+
+    expect(fixed["--chat-composer-popover-left"]).toBe("100px");
+    expect(local["--chat-composer-popover-left"]).toBe("20px");
+    expect(local["--chat-composer-popover-bottom"]).toBe("212px");
   });
 });

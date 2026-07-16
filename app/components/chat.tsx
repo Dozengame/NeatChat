@@ -13,6 +13,10 @@ import React, {
 } from "react";
 
 import SendWhiteIcon from "../icons/send-white.svg";
+import ComposerStopIcon from "../icons/composer-stop.svg";
+import ComposerCheckIcon from "../icons/composer-check.svg";
+import ComposerChevronDownIcon from "../icons/composer-chevron-down.svg";
+import ComposerChevronRightIcon from "../icons/composer-chevron-right.svg";
 import BrainIcon from "../icons/brain.svg";
 import RenameIcon from "../icons/rename.svg";
 import ExportIcon from "../icons/share.svg";
@@ -33,7 +37,10 @@ import EditIcon from "../icons/rename.svg";
 import ConfirmIcon from "../icons/confirm.svg";
 import CancelIcon from "../icons/cancel.svg";
 import FileIcon from "../icons/file.svg";
+import ImageIcon from "../icons/image.svg";
 import AttachmentIcon from "../icons/attachment.svg";
+import PromptIcon from "../icons/prompt.svg";
+import LeftIcon from "../icons/left.svg";
 import DownloadIcon from "../icons/download.svg";
 import AddIcon from "../icons/add.svg";
 import NeatIcon from "../icons/neat.svg";
@@ -65,16 +72,20 @@ import { usePluginStore } from "../store/plugin";
 import {
   copyToClipboard,
   selectOrCopy,
-  autoGrowTextArea,
   useCompactScreen,
   useMobileScreen,
   getMessageTextContent,
   getMessageImages,
   hasMessageContent,
   isVisionModel,
+  canSwitchToModelWithImageAttachments,
   showPlugins,
   safeLocalStorage,
 } from "../utils";
+import {
+  getComposerTextareaLayout,
+  getComposerTextareaProbeWidths,
+} from "../utils/composer-textarea-layout";
 import {
   getImageActionLabels,
   getImagePreviewDialogLabel,
@@ -159,11 +170,13 @@ import { getModelProvider } from "../utils/model";
 import clsx from "clsx";
 import { shallow } from "zustand/shallow";
 import {
+  type AttachmentUploadKind,
   type DraggedAttachmentSummary,
   FileInfo,
   getAttachmentRenderKey,
   getClipboardAttachmentPayload,
   getDraggedAttachmentSummary,
+  getAttachmentFileTypeLabel,
   getFileIconClass,
   isAttachmentImage,
   processAttachmentFiles,
@@ -172,6 +185,10 @@ import {
   uploadAttachments,
 } from "../utils/file";
 import { formatAttachmentForPrompt } from "../utils/attachment-wire";
+import {
+  type ComposerPromptFilter,
+  filterComposerPrompts,
+} from "../utils/composer-prompt-library";
 import {
   type ConfigSource,
   createConfigFieldMeta,
@@ -184,7 +201,10 @@ import {
   RenderMessage,
   shouldRenderLoadingPreview,
 } from "./chat-render";
-import { getComposerModelMenuPlacement } from "../utils/composer-model-menu-placement";
+import {
+  getComposerPopoverPlacement,
+  toComposerPopoverCssVariables,
+} from "../utils/composer-model-menu-placement";
 
 import {
   DiscreteOptionRail,
@@ -198,6 +218,8 @@ import {
   ChatHomeMode,
   ChatHomeModel,
   ComposerModelMenuSection,
+  getComposerModelMenuEscapeLayer,
+  getComposerModelMenuLayer,
   getComposerModelMenuSection,
   getChatHomeModeForModel,
   getChatHomeModeModels,
@@ -205,6 +227,7 @@ import {
   isChatHomeModeDisabled,
   resolvePreferredChatHomeModel,
 } from "./chat-home-mode";
+import { getComposerSubmitState } from "../utils/composer-submit";
 
 const localStorage = safeLocalStorage();
 
@@ -725,6 +748,7 @@ const ClearContextDivider = React.forwardRef<HTMLButtonElement>(
 
 export function ChatAction(props: {
   text: string;
+  description?: string;
   icon: JSX.Element;
   onClick: (event: React.MouseEvent<HTMLButtonElement>) => void | Promise<void>;
   active?: boolean;
@@ -738,6 +762,7 @@ export function ChatAction(props: {
   ariaBusy?: boolean;
   ariaDescribedBy?: string;
   role?: React.AriaRole;
+  dataChatAction?: string;
 }) {
   const iconRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -767,6 +792,7 @@ export function ChatAction(props: {
       aria-label={props.ariaLabel ?? props.text}
       aria-describedby={props.ariaDescribedBy}
       title={props.title}
+      data-chat-action={props.dataChatAction}
       data-copy-state={props.dataCopyState}
       aria-haspopup={props.ariaHasPopup}
       aria-expanded={props.ariaExpanded}
@@ -791,8 +817,18 @@ export function ChatAction(props: {
       <div ref={iconRef} className={styles["icon"]}>
         {props.icon}
       </div>
-      <div className={styles["text"]} ref={textRef}>
-        {props.text}
+      <div
+        className={clsx(styles["text"], {
+          [styles["chat-input-action-copy"]]: props.description,
+        })}
+        ref={textRef}
+      >
+        <span>{props.text}</span>
+        {props.description && (
+          <small className={styles["chat-input-action-description"]}>
+            {props.description}
+          </small>
+        )}
       </div>
     </button>
   );
@@ -849,16 +885,116 @@ function useScrollToBottom(
   };
 }
 
+type ChatActionMenuView = "main" | "prompt-library";
+
+function ComposerPromptLibrary(props: {
+  onBack: () => void;
+  onPromptSelect: (prompt: Prompt) => void;
+}) {
+  const promptStore = usePromptStore();
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<ComposerPromptFilter>("all");
+  const prompts = filterComposerPrompts(promptStore.search(query), filter);
+  const filters: Array<{
+    value: ComposerPromptFilter;
+    label: string;
+  }> = [
+    { value: "all", label: Locale.Chat.ChatToolMenu.PromptLibraryAll },
+    { value: "user", label: Locale.Chat.ChatToolMenu.PromptLibraryUser },
+    {
+      value: "builtin",
+      label: Locale.Chat.ChatToolMenu.PromptLibraryBuiltin,
+    },
+  ];
+
+  return (
+    <div
+      id="chat-composer-prompt-library"
+      className={styles["chat-prompt-library"]}
+      role="region"
+      aria-label={Locale.Chat.ChatToolMenu.PromptLibraryTitle}
+    >
+      <div className={styles["chat-prompt-library-header"]}>
+        <button
+          type="button"
+          className={styles["chat-prompt-library-back"]}
+          data-chat-action-menu-control="true"
+          aria-label={Locale.Chat.ChatToolMenu.PromptLibraryBack}
+          onClick={props.onBack}
+        >
+          <LeftIcon />
+        </button>
+        <strong>{Locale.Chat.ChatToolMenu.PromptLibraryTitle}</strong>
+      </div>
+      <input
+        type="search"
+        className={styles["chat-prompt-library-search"]}
+        data-chat-action-menu-control="true"
+        data-prompt-library-search="true"
+        aria-label={Locale.Chat.ChatToolMenu.PromptLibrarySearch}
+        placeholder={Locale.Chat.ChatToolMenu.PromptLibrarySearch}
+        value={query}
+        onChange={(event) => setQuery(event.currentTarget.value)}
+      />
+      <div
+        className={styles["chat-prompt-library-filters"]}
+        role="group"
+        aria-label={Locale.Chat.ChatToolMenu.PromptLibraryTitle}
+      >
+        {filters.map((item) => (
+          <button
+            type="button"
+            key={item.value}
+            className={clsx(styles["chat-prompt-library-filter"], {
+              [styles["chat-prompt-library-filter-active"]]:
+                filter === item.value,
+            })}
+            data-chat-action-menu-control="true"
+            aria-pressed={filter === item.value}
+            onClick={() => setFilter(item.value)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <div className={styles["chat-prompt-library-list"]} role="list">
+        {prompts.length === 0 && (
+          <p className={styles["chat-prompt-library-empty"]} role="status">
+            {Locale.Chat.ChatToolMenu.PromptLibraryEmpty}
+          </p>
+        )}
+        {prompts.map((prompt) => (
+          <div key={prompt.id} role="listitem">
+            <button
+              type="button"
+              className={styles["chat-prompt-library-item"]}
+              data-chat-action-menu-control="true"
+              onClick={() => props.onPromptSelect(prompt)}
+            >
+              <strong>{prompt.title}</strong>
+              <small>{prompt.content}</small>
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 type ChatActionsProps = {
-  uploadAttachments: () => void;
-  setAttachImages: (images: string[]) => void;
-  setUploading: (uploading: boolean) => void;
+  uploadImages: () => void;
+  uploadFiles: () => void;
   showPromptModal: () => void;
   scrollToBottom: () => void;
   showPromptHints: () => void;
   hitBottom: boolean;
   uploading: boolean;
-  attachmentSlotsFull: boolean;
+  imageSlotsFull: boolean;
+  fileSlotsFull: boolean;
+  menuView: ChatActionMenuView;
+  openPromptLibrary: () => void;
+  closePromptLibrary: () => void;
+  onPromptSelect: (prompt: Prompt) => void;
   openShortcutKeyModal: () => void;
   setUserInput: (input: string) => void;
   setShowChatSidePanel: React.Dispatch<React.SetStateAction<boolean>>;
@@ -866,7 +1002,6 @@ type ChatActionsProps = {
 };
 
 function useChatActionsView(props: ChatActionsProps) {
-  const { setAttachImages, setUploading } = props;
   const config = useAppConfig();
   const accessStore = useAccessStore();
   const chatStore = useChatStore();
@@ -933,64 +1068,6 @@ function useChatActionsView(props: ChatActionsProps) {
 
   const isCompactScreen = useCompactScreen();
 
-  useEffect(() => {
-    if (!isVisionModel(currentModel)) {
-      setAttachImages([]);
-      setUploading(false);
-    }
-
-    // if current model is not available
-    // switch to first available model
-    const isUnavailableModel = !models.some(
-      (m) =>
-        m.name === currentModel &&
-        m?.provider?.providerName === currentProviderName,
-    );
-    if (isUnavailableModel && models.length > 0) {
-      // show next model to default model if exist
-      let nextModel = models.find((model) => model.isDefault) || models[0];
-      chatStore.updateTargetSession(session, (session) => {
-        session.mask.modelConfig.model = nextModel.name;
-        session.mask.modelConfig.providerName = nextModel?.provider
-          ?.providerName as ServiceProvider;
-        applyConfiguredOpenAIResponsesReasoningEffortDefault({
-          config: session.mask.modelConfig,
-          configMeta: session.mask.modelConfigMeta,
-          defaults: config.serverConfigSnapshot?.reasoningEffortDefaults,
-        });
-        applyOpenAIResponsesModelConstraints(session.mask.modelConfig);
-        applyOpenAIImageGenerationDefaults(session.mask.modelConfig);
-        session.mask.modelConfigMeta = {
-          ...(session.mask.modelConfigMeta ?? {}),
-          model: createConfigFieldMeta({
-            source: "admin_forced",
-            publicConfig: config.serverConfigSnapshot,
-            locked: true,
-          }),
-          providerName: createConfigFieldMeta({
-            source: "admin_forced",
-            publicConfig: config.serverConfigSnapshot,
-            locked: true,
-          }),
-        };
-      });
-      showToast(
-        nextModel?.provider?.providerName == "ByteDance"
-          ? nextModel.displayName
-          : nextModel.name,
-      );
-    }
-  }, [
-    chatStore,
-    config.serverConfigSnapshot,
-    currentModel,
-    currentProviderName,
-    models,
-    session,
-    setAttachImages,
-    setUploading,
-  ]);
-
   const showModelSearchOption = config.enableModelSearch ?? false;
   const availablePlugins = pluginStore
     .getAll()
@@ -1025,6 +1102,28 @@ function useChatActionsView(props: ChatActionsProps) {
     !props.hitBottom ||
     (config.enableClearContext && hasClearableContext);
 
+  if (props.menuView === "prompt-library") {
+    return (
+      <ComposerPromptLibrary
+        onBack={props.closePromptLibrary}
+        onPromptSelect={props.onPromptSelect}
+      />
+    );
+  }
+
+  const imageUploadUnavailable = !isVisionModel(currentModel);
+  const imageUploadDisabled =
+    props.uploading || props.imageSlotsFull || imageUploadUnavailable;
+  const fileUploadDisabled = props.uploading || props.fileSlotsFull;
+  const imageUploadStatus = imageUploadUnavailable
+    ? Locale.Chat.ChatToolMenu.ImageUploadUnavailable
+    : props.imageSlotsFull
+    ? Locale.Chat.Attachments.ImageSlotsFull
+    : Locale.Chat.ChatToolMenu.Capacity;
+  const fileUploadStatus = props.fileSlotsFull
+    ? Locale.Chat.Attachments.FileSlotsFull
+    : Locale.Chat.ChatToolMenu.Capacity;
+
   return (
     <div className={styles["chat-input-actions"]}>
       <div className={styles["chat-multimodal-tray"]}>
@@ -1047,31 +1146,73 @@ function useChatActionsView(props: ChatActionsProps) {
               id="chat-multimodal-upload-state"
               className={clsx(
                 styles["chat-multimodal-section-meta"],
-                props.attachmentSlotsFull &&
+                props.imageSlotsFull &&
+                  props.fileSlotsFull &&
                   styles["chat-multimodal-section-meta-warning"],
               )}
               aria-live="polite"
             >
-              {props.attachmentSlotsFull
+              {props.imageSlotsFull && props.fileSlotsFull
                 ? Locale.Chat.ChatToolMenu.Full
                 : Locale.Chat.ChatToolMenu.Capacity}
             </span>
           </div>
+          <span
+            id="chat-image-upload-state"
+            className={styles["chat-input-action-status"]}
+          >
+            {imageUploadStatus}
+          </span>
+          <span
+            id="chat-file-upload-state"
+            className={styles["chat-input-action-status"]}
+          >
+            {fileUploadStatus}
+          </span>
           <ChatAction
             onClick={() => {
-              if (props.attachmentSlotsFull) return;
-              props.uploadAttachments();
+              if (imageUploadDisabled) return;
+              props.uploadImages();
               completeMobileAction();
             }}
-            text={Locale.Chat.ChatToolMenu.UploadAttachment}
-            icon={props.uploading ? <LoadingButtonIcon /> : <AttachmentIcon />}
-            ariaDescribedBy="chat-multimodal-upload-state"
-            disabled={props.attachmentSlotsFull}
+            text={Locale.Chat.ChatToolMenu.UploadImage}
+            description={Locale.Chat.ChatToolMenu.UploadImageDescription}
+            icon={props.uploading ? <LoadingButtonIcon /> : <ImageIcon />}
+            ariaDescribedBy="chat-image-upload-state"
+            ariaBusy={props.uploading}
+            disabled={imageUploadDisabled}
             title={
-              props.attachmentSlotsFull
-                ? Locale.Chat.ChatToolMenu.AttachmentFull
+              imageUploadUnavailable
+                ? Locale.Chat.ChatToolMenu.ImageUploadUnavailable
+                : props.imageSlotsFull
+                ? Locale.Chat.Attachments.ImageSlotsFull
                 : undefined
             }
+          />
+          <ChatAction
+            onClick={() => {
+              if (fileUploadDisabled) return;
+              props.uploadFiles();
+              completeMobileAction();
+            }}
+            text={Locale.Chat.ChatToolMenu.UploadFile}
+            description={Locale.Chat.ChatToolMenu.UploadFileDescription}
+            icon={props.uploading ? <LoadingButtonIcon /> : <FileIcon />}
+            ariaDescribedBy="chat-file-upload-state"
+            ariaBusy={props.uploading}
+            disabled={fileUploadDisabled}
+            title={
+              props.fileSlotsFull
+                ? Locale.Chat.Attachments.FileSlotsFull
+                : undefined
+            }
+          />
+          <ChatAction
+            onClick={() => props.openPromptLibrary()}
+            text={Locale.Chat.ChatToolMenu.PromptLibrary}
+            description={Locale.Chat.ChatToolMenu.PromptLibraryDescription}
+            icon={<PromptIcon />}
+            dataChatAction="prompt-library"
           />
         </div>
 
@@ -1465,7 +1606,12 @@ function ChatInputReasoningAction() {
       >
         <BrainIcon />
         <span>{reasoningLabels[currentReasoningEffort]}</span>
-        <span className={styles["chat-input-reasoning-arrow"]}>⌄</span>
+        <span
+          className={styles["chat-input-reasoning-arrow"]}
+          aria-hidden="true"
+        >
+          <ComposerChevronDownIcon />
+        </span>
       </button>
       {showReasoningSelectorModal && (
         <Selector
@@ -1695,6 +1841,11 @@ function useChatInnerView() {
   const [showExport, setShowExport] = useState(false);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const chatComposerShellRef = useRef<HTMLDivElement>(null);
+  const chatInputPanelRef = useRef<HTMLDivElement>(null);
+  const chatInputMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const chatInputActionMenuRef = useRef<HTMLDivElement>(null);
+  const composerViewportSegmentRef = useRef<HTMLSpanElement>(null);
   const unfinishedInputKey = UNFINISHED_INPUT(session.id);
   const [userInput, setUserInput] = useState(
     () => localStorage.getItem(unfinishedInputKey) ?? "",
@@ -1791,6 +1942,57 @@ function useChatInnerView() {
     () => chatQaFixture?.isImageGalleryQaEnabled(location.search) ?? false,
     [chatQaFixture, location.search],
   );
+  const composerQaScenario = useMemo(
+    () => chatQaFixture?.getComposerQaScenario(location.search),
+    [chatQaFixture, location.search],
+  );
+  const composerQaSeed = useMemo(
+    () =>
+      composerQaScenario
+        ? chatQaFixture?.getComposerQaSeed(composerQaScenario.state)
+        : undefined,
+    [chatQaFixture, composerQaScenario],
+  );
+  useEffect(() => {
+    const theme = composerQaScenario?.theme;
+    if (!theme) return;
+
+    const body = document.body;
+    const previousLight = body.classList.contains("light");
+    const previousDark = body.classList.contains("dark");
+    const applyTheme = () => {
+      const resolvedTheme =
+        theme === "system"
+          ? window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light"
+          : theme;
+      body.classList.remove("light", "dark");
+      body.classList.add(resolvedTheme);
+    };
+    const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
+    const classObserver = new MutationObserver(() => {
+      const resolvedTheme =
+        theme === "system" ? (colorScheme.matches ? "dark" : "light") : theme;
+      if (!body.classList.contains(resolvedTheme)) applyTheme();
+    });
+    applyTheme();
+    classObserver.observe(body, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    if (theme === "system") colorScheme.addEventListener("change", applyTheme);
+
+    return () => {
+      classObserver.disconnect();
+      if (theme === "system") {
+        colorScheme.removeEventListener("change", applyTheme);
+      }
+      body.classList.remove("light", "dark");
+      if (previousLight) body.classList.add("light");
+      if (previousDark) body.classList.add("dark");
+    };
+  }, [composerQaScenario?.theme]);
   const markdownStressQaDropzonePreview = useMemo(
     () =>
       markdownStressQaEnabled
@@ -1811,8 +2013,17 @@ function useChatInnerView() {
   );
   const [attachImages, setAttachImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [uploadingFile, setUploadingFile] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<FileInfo[]>([]);
+  const [composerLiveStatus, setComposerLiveStatus] = useState({
+    id: 0,
+    message: "",
+  });
+  const announceComposerStatus = useCallback((message: string) => {
+    setComposerLiveStatus((current) => ({
+      id: current.id + 1,
+      message,
+    }));
+  }, []);
   const attachmentsContainerRef = useRef<HTMLDivElement>(null);
   const attachmentSwipeStartRef = useRef<AttachmentSwipeStart | null>(null);
   const activeAttachmentDeleteKeyRef = useRef<string | null>(null);
@@ -1827,11 +2038,14 @@ function useChatInnerView() {
   const [dragPayloadSummary, setDragPayloadSummary] =
     useState<DraggedAttachmentSummary | null>(null);
   const dragCounter = useRef(0);
+  const composerQaDropzoneSummary = composerQaScenario
+    ? chatQaFixture?.getComposerQaDropzoneSummary(composerQaScenario.state)
+    : undefined;
   const dropzonePreviewSummary = markdownStressQaDropzonePreview
     ? chatQaFixture?.MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_SUMMARIES[
         markdownStressQaDropzonePreview
       ]
-    : null;
+    : composerQaDropzoneSummary;
   const dropzonePayloadSummary = dropzonePreviewSummary ?? dragPayloadSummary;
   const isDropzonePreviewActive = dragActive || dropzonePreviewSummary != null;
 
@@ -1916,9 +2130,19 @@ function useChatInnerView() {
   // prompt hints
   const promptStore = usePromptStore();
   const [promptHints, setPromptHints] = useState<RenderPrompt[]>([]);
-  const [isInputExpanded, setIsInputExpanded] = useState(false);
+  const [isTextareaExpanded, setIsTextareaExpanded] = useState(false);
+  const [isTextareaScrolling, setIsTextareaScrolling] = useState(false);
   const [showChatActionMenu, setShowChatActionMenu] = useState(false);
-  const ignoreInputCollapseUntil = useRef(0);
+  const [chatActionMenuView, setChatActionMenuView] =
+    useState<ChatActionMenuView>("main");
+  const composerTextareaExpandedRef = useRef(false);
+  const composerMeasurementFrozenRef = useRef(false);
+
+  useEffect(() => {
+    if (!showChatActionMenu) {
+      setChatActionMenuView("main");
+    }
+  }, [showChatActionMenu]);
 
   useEffect(() => {
     if (!markdownStressQaAttachmentStripPreview || !chatQaFixture) return;
@@ -1929,28 +2153,38 @@ function useChatInnerView() {
       );
     setAttachImages(seededAttachments.images);
     setAttachedFiles(seededAttachments.files);
-    setIsInputExpanded(true);
   }, [chatQaFixture, markdownStressQaAttachmentStripPreview]);
 
+  const hasComposerAttachments =
+    attachImages.length > 0 || attachedFiles.length > 0;
+  const isComposerReadOnly =
+    markdownStressQaEnabled && !markdownStressQaInteractiveInputEnabled;
+  const streamingMessageIds = session.messages
+    .filter((message) => message.streaming)
+    .map((message) => message.id);
   const hasActiveInputContent =
     userInput.trim().length > 0 ||
-    attachImages.length > 0 ||
-    attachedFiles.length > 0 ||
+    hasComposerAttachments ||
     promptHints.length > 0;
-  const canSubmitComposer =
-    !markdownStressQaEnabled &&
-    (userInput.trim().length > 0 ||
-      attachImages.length > 0 ||
-      attachedFiles.length > 0);
+  const hasSubmittableComposerContent =
+    userInput.trim().length > 0 || hasComposerAttachments;
+  const composerSubmitState = getComposerSubmitState({
+    hasContent: hasSubmittableComposerContent,
+    uploading,
+    readOnly: isComposerReadOnly,
+    loading: isLoading,
+    streamingMessageIds,
+  });
+  const displayedComposerSubmitState =
+    composerQaSeed?.submitState ?? composerSubmitState;
+  const showComposerVoice =
+    ENABLE_REALTIME_CHAT && config.realtimeConfig.enable;
   const canAddMoreAttachments =
     attachImages.length < 3 || attachedFiles.length < 5;
-  const attachmentSlotsFull =
-    attachImages.length >= 3 && attachedFiles.length >= 5;
-  const shouldExpandChatInput = isInputExpanded || hasActiveInputContent;
-  const expandInput = useCallback(() => {
-    ignoreInputCollapseUntil.current = Date.now() + 350;
-    setIsInputExpanded(true);
-  }, []);
+  const imageSlotsFull = attachImages.length >= 3;
+  const fileSlotsFull = attachedFiles.length >= 5;
+  const attachmentSlotsFull = imageSlotsFull && fileSlotsFull;
+  const shouldExpandChatInput = hasComposerAttachments || isTextareaExpanded;
   const closePromptHints = useCallback((options?: PromptHintsCloseOptions) => {
     setPromptHints([]);
     if (options?.restoreFocus) {
@@ -1966,26 +2200,6 @@ function useChatInnerView() {
     100,
     { leading: true, trailing: true },
   );
-
-  // auto grow input
-  const [inputRows, setInputRows] = useState(2);
-  const measure = useDebouncedCallback(
-    () => {
-      const rows = inputRef.current ? autoGrowTextArea(inputRef.current) : 1;
-      const inputRows = Math.min(
-        20,
-        Math.max(2 + Number(!isCompactScreen), rows),
-      );
-      setInputRows(inputRows);
-    },
-    100,
-    {
-      leading: true,
-      trailing: true,
-    },
-  );
-
-  useEffect(measure, [measure, userInput]);
 
   // chat commands shortcuts
   const chatCommands = useChatCommand({
@@ -2069,7 +2283,17 @@ function useChatInnerView() {
   };
 
   const doSubmit = (userInput: string) => {
-    if (markdownStressQaEnabled) {
+    const submitState = getComposerSubmitState({
+      hasContent:
+        userInput.trim().length > 0 ||
+        attachImages.length > 0 ||
+        attachedFiles.length > 0,
+      uploading,
+      readOnly: isComposerReadOnly,
+      loading: isLoading,
+      streamingMessageIds,
+    });
+    if (submitState !== "send") {
       return;
     }
 
@@ -2136,9 +2360,7 @@ function useChatInnerView() {
     chatStore.setLastInput(finalUserInput);
     setUserInput("");
     setPromptHints([]);
-    if (isCompactScreen) {
-      setIsInputExpanded(false);
-    } else {
+    if (!isCompactScreen) {
       inputRef.current?.focus();
     }
     setAutoScroll(true);
@@ -2165,6 +2387,9 @@ function useChatInnerView() {
   // stop response
   const onUserStop = (messageId: string) => {
     ChatControllerPool.stop(session.id, messageId);
+  };
+  const stopComposerResponse = () => {
+    streamingMessageIds.forEach(onUserStop);
   };
 
   useEffect(() => {
@@ -2330,60 +2555,160 @@ function useChatInnerView() {
   const [showMobileModelSelector, setShowMobileModelSelector] = useState(false);
   const [expandedMobileModelSection, setExpandedMobileModelSection] =
     useState<ComposerModelMenuSection | null>(null);
-  const [composerModelMenuStyle, setComposerModelMenuStyle] = useState<
-    React.CSSProperties | undefined
-  >(undefined);
+  composerMeasurementFrozenRef.current =
+    showChatActionMenu || showMobileModelSelector;
   const modelSelectorButtonRef = useRef<HTMLButtonElement>(null);
   const modelMenuRef = useRef<HTMLDivElement>(null);
+  const homeModeTabsRef = useRef<HTMLDivElement>(null);
   const lastHomeChatModelRef = useRef<string>();
   const lastHomeImageModelRef = useRef<string>();
   const homeModeInitializedRef = useRef(false);
-  const getComposerModelMenuStyle = useCallback(
-    (button: HTMLButtonElement, preferBelowOnDesktop: boolean) => {
-      const visualViewport = window.visualViewport;
-      const viewportLeft = visualViewport?.offsetLeft ?? 0;
-      const viewportTop = visualViewport?.offsetTop ?? 0;
-      const viewportWidth = visualViewport?.width ?? window.innerWidth;
-      const viewportHeight = visualViewport?.height ?? window.innerHeight;
-      const buttonRect = button.getBoundingClientRect();
-      const composerRect =
-        button.closest("label")?.getBoundingClientRect() ?? buttonRect;
-      const placement = getComposerModelMenuPlacement({
-        buttonRect,
-        composerRect,
-        compact: isCompactScreen,
-        preferBelowOnDesktop,
-        viewport: {
-          left: viewportLeft,
-          top: viewportTop,
-          width: viewportWidth,
-          height: viewportHeight,
-          layoutHeight: window.innerHeight,
-        },
-      });
+  const measureComposerTextarea = useCallback(() => {
+    const textarea = inputRef.current;
+    const composerShell = chatComposerShellRef.current;
+    if (!textarea || !composerShell || composerMeasurementFrozenRef.current) {
+      return;
+    }
 
-      return {
-        "--chat-model-menu-composer-left": `${placement.left}px`,
-        "--chat-model-menu-composer-top": placement.openBelow
-          ? `${placement.top}px`
-          : "auto",
-        "--chat-model-menu-composer-bottom": placement.openBelow
-          ? "auto"
-          : `${placement.bottom}px`,
-        "--chat-model-menu-composer-width": `${placement.width}px`,
-        "--chat-model-menu-composer-max-height": `${placement.maxHeight}px`,
-        "--chat-model-menu-composer-origin": placement.openBelow
-          ? "top center"
-          : "bottom center",
-        "--chat-model-menu-composer-shift": placement.openBelow
-          ? "8px"
-          : "-8px",
-      } as React.CSSProperties;
-    },
-    [isCompactScreen],
-  );
+    const computedStyle = window.getComputedStyle(textarea);
+    const composerStyle = window.getComputedStyle(composerShell);
+    const parsedLineHeight = Number.parseFloat(computedStyle.lineHeight);
+    const parsedMaxHeight = Number.parseFloat(computedStyle.maxHeight);
+    const lineHeight = Number.isFinite(parsedLineHeight)
+      ? parsedLineHeight
+      : 24;
+    const maxHeight = Number.isFinite(parsedMaxHeight) ? parsedMaxHeight : 174;
+    const readComposerLength = (property: string, fallback: number) => {
+      const parsed = Number.parseFloat(
+        composerStyle.getPropertyValue(property),
+      );
+      return Number.isFinite(parsed) ? parsed : fallback;
+    };
+    const controlWidths = [
+      chatInputMenuButtonRef.current,
+      modelSelectorButtonRef.current,
+      composerShell.querySelector<HTMLElement>(
+        `.${styles["chat-input-voice"]}`,
+      ),
+      composerShell.querySelector<HTMLElement>(`.${styles["chat-input-send"]}`),
+    ]
+      .filter((control): control is HTMLElement => control != null)
+      .map((control) => control.offsetWidth);
+    const probeWidths = getComposerTextareaProbeWidths({
+      shellWidth: composerShell.clientWidth,
+      compactInlinePadding: readComposerLength(
+        "--composer-compact-inline-padding",
+        8,
+      ),
+      compactColumnGap: readComposerLength("--composer-compact-column-gap", 6),
+      expandedInlinePadding: readComposerLength(
+        "--composer-expanded-inline-padding",
+        10,
+      ),
+      controlWidths,
+    });
+    const previousInlineWidth = textarea.style.width;
+    const previousInlineHeight = textarea.style.height;
+    const previousInlineOverflowY = textarea.style.overflowY;
+    const previousInlineScrollbarGutter =
+      textarea.style.getPropertyValue("scrollbar-gutter");
+    let expansionScrollHeight = lineHeight;
+    let displayScrollHeight = lineHeight;
+
+    try {
+      textarea.style.height = `${lineHeight}px`;
+      textarea.style.overflowY = "hidden";
+      textarea.style.setProperty("scrollbar-gutter", "auto");
+
+      if (textarea.value.length > 0) {
+        textarea.style.width = `${probeWidths.compact}px`;
+        expansionScrollHeight = textarea.scrollHeight;
+        textarea.style.width = `${probeWidths.expanded}px`;
+        displayScrollHeight = textarea.scrollHeight;
+      }
+    } finally {
+      textarea.style.width = previousInlineWidth;
+      textarea.style.height = previousInlineHeight;
+      textarea.style.overflowY = previousInlineOverflowY;
+      if (previousInlineScrollbarGutter) {
+        textarea.style.setProperty(
+          "scrollbar-gutter",
+          previousInlineScrollbarGutter,
+        );
+      } else {
+        textarea.style.removeProperty("scrollbar-gutter");
+      }
+    }
+
+    const layout = getComposerTextareaLayout({
+      value: textarea.value,
+      expansionScrollHeight,
+      displayScrollHeight,
+      lineHeight,
+      maxHeight,
+      previousExpanded: composerTextareaExpandedRef.current,
+    });
+
+    composerTextareaExpandedRef.current = layout.expanded;
+    textarea.style.height = `${layout.height}px`;
+    textarea.style.overflowY = layout.scrolling ? "auto" : "hidden";
+    setIsTextareaExpanded((current) =>
+      current === layout.expanded ? current : layout.expanded,
+    );
+    setIsTextareaScrolling((current) =>
+      current === layout.scrolling ? current : layout.scrolling,
+    );
+  }, []);
+
+  useLayoutEffect(() => {
+    const measureFrame = requestAnimationFrame(measureComposerTextarea);
+    return () => cancelAnimationFrame(measureFrame);
+  }, [
+    attachImages.length,
+    attachedFiles.length,
+    fontFamily,
+    fontSize,
+    measureComposerTextarea,
+    showChatActionMenu,
+    showMobileModelSelector,
+    showComposerVoice,
+    userInput,
+  ]);
+
+  useLayoutEffect(() => {
+    const composerShell = chatComposerShellRef.current;
+    if (!composerShell) return;
+
+    let measureFrame = 0;
+    let observedWidth = composerShell.getBoundingClientRect().width;
+    const scheduleMeasure = () => {
+      cancelAnimationFrame(measureFrame);
+      measureFrame = requestAnimationFrame(measureComposerTextarea);
+    };
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver((entries) => {
+            const nextWidth = entries[0]?.contentRect.width ?? observedWidth;
+            if (Math.abs(nextWidth - observedWidth) < 0.5) return;
+            observedWidth = nextWidth;
+            scheduleMeasure();
+          });
+
+    resizeObserver?.observe(composerShell);
+    window.addEventListener("resize", scheduleMeasure);
+    window.visualViewport?.addEventListener("resize", scheduleMeasure);
+
+    return () => {
+      cancelAnimationFrame(measureFrame);
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", scheduleMeasure);
+      window.visualViewport?.removeEventListener("resize", scheduleMeasure);
+    };
+  }, [measureComposerTextarea]);
   const closeMobileModelSelector = useCallback(() => {
     setShowMobileModelSelector(false);
+    setExpandedMobileModelSection(null);
   }, []);
   const restoreModelSelectorFocus = useCallback(() => {
     setTimeout(() => {
@@ -2391,12 +2716,19 @@ function useChatInnerView() {
     }, 0);
   }, []);
   const getModelMenuControls = useCallback(() => {
-    return Array.from(
+    const selectedHomeModeTab =
+      homeModeTabsRef.current?.querySelector<HTMLElement>(
+        '[role="tab"][aria-selected="true"]',
+      );
+    const menuControls = Array.from(
       modelMenuRef.current?.querySelectorAll<HTMLElement>(
         '[role="option"], [role="slider"], button[aria-controls], [data-model-menu-control="true"]',
       ) ?? [],
-    ).filter(
-      (control) =>
+    );
+
+    return [selectedHomeModeTab, ...menuControls].filter(
+      (control): control is HTMLElement =>
+        control != null &&
         (!(control instanceof HTMLButtonElement) || !control.disabled) &&
         control.offsetParent !== null,
     );
@@ -2448,7 +2780,9 @@ function useChatInnerView() {
     }
 
     const selectedControl = controls.find(
-      (control) => control.getAttribute("aria-selected") === "true",
+      (control) =>
+        control.getAttribute("role") === "option" &&
+        control.getAttribute("aria-selected") === "true",
     );
     const sliderControl = controls.find(
       (control) => control.getAttribute("role") === "slider",
@@ -2519,34 +2853,18 @@ function useChatInnerView() {
     focusInitialModelMenuControl,
     showMobileModelSelector,
   ]);
-  useEffect(() => {
-    if (!showMobileModelSelector) return;
-
-    const closeModelSelectorOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeMobileModelSelector();
-        restoreModelSelectorFocus();
-      }
-    };
-
-    window.addEventListener("keydown", closeModelSelectorOnEscape);
-    return () =>
-      window.removeEventListener("keydown", closeModelSelectorOnEscape);
-  }, [
-    closeMobileModelSelector,
-    restoreModelSelectorFocus,
-    showMobileModelSelector,
-  ]);
   const returnToModelList = () => {
     setExpandedMobileModelSection(null);
   };
   const headerCurrentModel = session.mask.modelConfig.model;
   const headerCurrentProviderName =
     session.mask.modelConfig?.providerName || ServiceProvider.OpenAI;
-  const headerModelLocked =
+  const headerModelLocked = !!(
     accessStore.lockedFields?.includes("model") ||
-    accessStore.lockedFields?.includes("providerName");
+    accessStore.lockedFields?.includes("providerName") ||
+    session.mask.modelConfigMeta?.model?.locked ||
+    session.mask.modelConfigMeta?.providerName?.locked
+  );
   const allHeaderModels = useAllModels();
   const headerAvailableModels = useMemo(
     () => allHeaderModels.filter((model) => model.available),
@@ -2655,6 +2973,40 @@ function useChatInnerView() {
     headerCurrentModel,
     headerCurrentProviderName,
   );
+  const currentModelMenuLayer = getComposerModelMenuLayer(
+    showMobileModelSelector,
+    expandedMobileModelSection,
+  );
+  const stepBackOrCloseModelMenu = useCallback(() => {
+    const nextLayer = getComposerModelMenuEscapeLayer(
+      currentModelMenuLayer,
+      currentModelMenuSection,
+    );
+    if (nextLayer === "closed") {
+      closeMobileModelSelector();
+      restoreModelSelectorFocus();
+      return;
+    }
+    setExpandedMobileModelSection(nextLayer);
+  }, [
+    closeMobileModelSelector,
+    currentModelMenuLayer,
+    currentModelMenuSection,
+    restoreModelSelectorFocus,
+  ]);
+  useEffect(() => {
+    if (!showMobileModelSelector) return;
+
+    const handleModelSelectorEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      stepBackOrCloseModelMenu();
+    };
+
+    window.addEventListener("keydown", handleModelSelectorEscape);
+    return () =>
+      window.removeEventListener("keydown", handleModelSelectorEscape);
+  }, [showMobileModelSelector, stepBackOrCloseModelMenu]);
   const imageComposerSummary = getImageComposerSummary(
     headerCurrentSize,
     headerImageQualitys.length > 0 ? headerCurrentQuality : undefined,
@@ -2666,7 +3018,11 @@ function useChatInnerView() {
     ? imageComposerSummary
     : showHeaderReasoningControl
     ? reasoningLabels[headerCurrentReasoningEffort]
-    : headerCurrentProviderName;
+    : Locale.Chat.ModelMenu.DefaultParameters;
+  const modelChipAccessibleLabel = Locale.Chat.ModelMenu.SelectModel(
+    headerCurrentModelName,
+    `${headerCurrentProviderName} · ${currentModelDetail}`,
+  );
   const getHeaderReasoningMaxOutputTokens = (
     effort: OpenAIChatReasoningEffort,
   ) =>
@@ -2691,6 +3047,17 @@ function useChatInnerView() {
         return false;
       }
       const [model, providerName] = getModelProvider(selected);
+      if (
+        !canSwitchToModelWithImageAttachments(
+          model,
+          attachImagesRef.current.length,
+        )
+      ) {
+        const message = Locale.Chat.ModelMenu.ImageAttachmentsBlocked;
+        announceComposerStatus(message);
+        showToast(message);
+        return false;
+      }
       const source = options.source ?? "conversation_override";
       chatStore.updateTargetSession(session, (session) => {
         session.mask.modelConfig.model = model as ModelType;
@@ -2721,10 +3088,12 @@ function useChatInnerView() {
       if (options.closeMenu !== false) closeMobileModelSelector();
       if (options.restoreFocus !== false) restoreModelSelectorFocus();
       if (options.announce !== false) showToast(model);
+      announceComposerStatus(Locale.Chat.ModelMenu.ModelSelected(model));
       return true;
     },
     [
       chatStore,
+      announceComposerStatus,
       closeMobileModelSelector,
       config.serverConfigSnapshot,
       headerModelLocked,
@@ -2732,6 +3101,100 @@ function useChatInnerView() {
       session,
     ],
   );
+  useEffect(() => {
+    if (!composerQaSeed || !chatQaFixture) return;
+
+    const capabilityModel = composerQaSeed.modelCapability
+      ? headerAvailableModels.find(
+          (model) =>
+            getComposerModelMenuSection(
+              model.name,
+              model.provider?.providerName,
+            ) === composerQaSeed.modelCapability && isVisionModel(model.name),
+        ) ??
+        headerAvailableModels.find(
+          (model) =>
+            getComposerModelMenuSection(
+              model.name,
+              model.provider?.providerName,
+            ) === composerQaSeed.modelCapability,
+        )
+      : undefined;
+    const capabilityModelRef = capabilityModel
+      ? `${capabilityModel.name}@${capabilityModel.provider?.providerName}`
+      : undefined;
+    const currentCapabilityReady = composerQaSeed.modelCapability
+      ? getComposerModelMenuSection(
+          headerCurrentModel,
+          headerCurrentProviderName,
+        ) === composerQaSeed.modelCapability
+      : true;
+    let capabilityReady = currentCapabilityReady;
+    if (!currentCapabilityReady && capabilityModelRef) {
+      capabilityReady = selectHeaderModel(capabilityModelRef, {
+        closeMenu: false,
+        restoreFocus: false,
+        announce: false,
+      });
+    }
+    if (composerQaSeed.modelCapability && !capabilityReady) {
+      const message =
+        composerQaSeed.modelCapability === "reasoning"
+          ? Locale.Chat.ModelMenu.ChatModelUnavailable
+          : Locale.Chat.ModelMenu.ImageModelUnavailable;
+      announceComposerStatus(message);
+      showToast(message);
+    }
+
+    setUserInput(composerQaSeed.input);
+    composerTextareaExpandedRef.current = false;
+    setIsTextareaExpanded(false);
+    setIsTextareaScrolling(false);
+    if (inputRef.current) {
+      inputRef.current.style.height = "";
+      inputRef.current.style.overflowY = "hidden";
+    }
+    setUploading(composerQaSeed.uploading);
+    setShowChatActionMenu(
+      composerQaSeed.menu === "tools" ||
+        composerQaSeed.menu === "prompt-library",
+    );
+    setChatActionMenuView(
+      composerQaSeed.menu === "prompt-library" ? "prompt-library" : "main",
+    );
+    const modelMenuOpen =
+      composerQaSeed.menu === "reasoning" ||
+      composerQaSeed.menu === "image-options" ||
+      composerQaSeed.menu === "models";
+    setShowMobileModelSelector(modelMenuOpen && capabilityReady);
+    setExpandedMobileModelSection(
+      capabilityReady ? composerQaSeed.modelCapability ?? null : null,
+    );
+
+    const attachments = composerQaSeed.attachments
+      ? chatQaFixture.createComposerQaAttachments(composerQaSeed.attachments)
+      : { images: [], files: [] };
+    setAttachImages(attachments.images);
+    setAttachedFiles(attachments.files);
+
+    const focusFrame = requestAnimationFrame(() => {
+      if (composerQaSeed.focus) {
+        inputRef.current?.focus({ preventScroll: true });
+      } else {
+        inputRef.current?.blur();
+        setIsChatInputFocused(false);
+      }
+    });
+    return () => cancelAnimationFrame(focusFrame);
+  }, [
+    announceComposerStatus,
+    chatQaFixture,
+    composerQaSeed,
+    headerAvailableModels,
+    headerCurrentModel,
+    headerCurrentProviderName,
+    selectHeaderModel,
+  ]);
   const selectComposerModel = (model: ChatHomeModel, selected: boolean) => {
     const providerName = model.provider?.providerName;
     const nextSection = getComposerModelMenuSection(model.name, providerName);
@@ -2776,6 +3239,9 @@ function useChatInnerView() {
       session.mask.syncGlobalConfig = false;
     });
     showToast(reasoningLabels[reasoningEffort]);
+    announceComposerStatus(
+      Locale.Chat.ModelMenu.SelectedReasoning(reasoningLabels[reasoningEffort]),
+    );
   };
   const selectHeaderImageSize = (size: OpenAIImageSize) => {
     if (headerImageSizeLocked) {
@@ -2794,6 +3260,9 @@ function useChatInnerView() {
       session.mask.syncGlobalConfig = false;
     });
     showToast(size);
+    announceComposerStatus(
+      Locale.Chat.ModelMenu.SelectedImageOptions(getImageSizeLabel(size)),
+    );
   };
   const selectHeaderImageQuality = (quality: OpenAIImageQuality) => {
     if (headerImageQualityLocked) {
@@ -2812,6 +3281,9 @@ function useChatInnerView() {
       session.mask.syncGlobalConfig = false;
     });
     showToast(getImageQualityLabel(quality));
+    announceComposerStatus(
+      Locale.Chat.ModelMenu.SelectedImageOptions(getImageQualityLabel(quality)),
+    );
   };
   const [speechStatus, setSpeechStatus] = useState(false);
   async function openaiSpeech(text: string) {
@@ -2888,6 +3360,15 @@ function useChatInnerView() {
       return chatQaFixture.getImageGalleryQaMessages();
     }
 
+    if (
+      composerQaScenario &&
+      composerQaScenario.state !== "empty" &&
+      composerQaScenario.surface !== "empty" &&
+      chatQaFixture
+    ) {
+      return chatQaFixture.getComposerQaMessages();
+    }
+
     const visibleSessionMessages = projectVisibleChatMessages(
       session.messages as RenderMessage[],
       chatStore.messageProjectionRevision,
@@ -2927,6 +3408,7 @@ function useChatInnerView() {
       );
   }, [
     chatQaFixture,
+    composerQaScenario,
     context,
     isLoading,
     imageGalleryQaEnabled,
@@ -2960,6 +3442,8 @@ function useChatInnerView() {
     ? `markdown:${location.search}`
     : imageGalleryQaEnabled
     ? `gallery:${location.search}`
+    : composerQaScenario
+    ? `composer:${location.search}`
     : undefined;
   const previousQaMessageWindowKeyRef = useRef<string>();
   useLayoutEffect(() => {
@@ -3030,49 +3514,273 @@ function useChatInnerView() {
     scrollDirectionAccumulatorRef.current = 0;
     scrollDom.scrollTop = nextScrollTop;
   }, [messageRenderStartIndex, messages, scrollRef]);
-  const showEmptyState =
-    !markdownStressQaEnabled &&
-    !imageGalleryQaEnabled &&
-    session.messages.length === 0 &&
-    context.length === 1 &&
-    getMessageTextContent(context[0]) === BOT_HELLO.content &&
-    !isLoading;
+  const showEmptyState = composerQaScenario
+    ? composerQaScenario.state === "empty" ||
+      composerQaScenario.surface === "empty"
+    : !markdownStressQaEnabled &&
+      !imageGalleryQaEnabled &&
+      session.messages.length === 0 &&
+      context.length === 1 &&
+      getMessageTextContent(context[0]) === BOT_HELLO.content &&
+      !isLoading;
   const showEmptyComposer = showEmptyState;
-  const showEmptyHero = showEmptyState && !showChatActionMenu;
+  const showEmptyHero = showEmptyState;
   const showDesktopChatHeader = !isCompactScreen && !showEmptyState;
-  useEffect(() => {
-    if (!showMobileModelSelector) return;
+  useLayoutEffect(() => {
+    const inputPanel = chatInputPanelRef.current;
+    const segmentProbe = composerViewportSegmentRef.current;
+    const containingBlock = inputPanel?.parentElement;
+    if (!inputPanel || !segmentProbe || !containingBlock) return;
 
     let updateFrame = 0;
-    const updateModelMenuPlacement = () => {
+    const updateViewportFrame = () => {
       cancelAnimationFrame(updateFrame);
       updateFrame = requestAnimationFrame(() => {
-        const trigger = modelSelectorButtonRef.current;
-        if (!trigger) return;
-        setComposerModelMenuStyle(
-          getComposerModelMenuStyle(trigger, showEmptyComposer),
+        const visualViewport = window.visualViewport;
+        const viewportTop = visualViewport?.offsetTop ?? 0;
+        const viewportHeight = visualViewport?.height ?? window.innerHeight;
+        const viewportBottom = viewportTop + viewportHeight;
+        const viewportBottomInset = Math.max(
+          0,
+          window.innerHeight - viewportBottom,
         );
+        inputPanel.style.setProperty(
+          "--chat-composer-viewport-top",
+          `${viewportTop}px`,
+        );
+        inputPanel.style.setProperty(
+          "--chat-composer-viewport-height",
+          `${viewportHeight}px`,
+        );
+        inputPanel.style.setProperty(
+          "--chat-composer-viewport-bottom-inset",
+          `${viewportBottomInset}px`,
+        );
+
+        const segmentProbeStyle = window.getComputedStyle(segmentProbe);
+        const simulatedSegmentActive =
+          segmentProbeStyle
+            .getPropertyValue("--chat-composer-segment-active")
+            .trim() === "1";
+        const segmentProvider = window as Window & {
+          getWindowSegments?: () => DOMRect[];
+        };
+        const segments = simulatedSegmentActive
+          ? [segmentProbe.getBoundingClientRect()]
+          : segmentProvider.getWindowSegments?.() ?? [];
+        const containingRect = containingBlock.getBoundingClientRect();
+        const selectedSegment = segments
+          .map((segment) => {
+            const left = Math.max(containingRect.left, segment.left);
+            const top = Math.max(containingRect.top, segment.top);
+            const right = Math.min(containingRect.right, segment.right);
+            const bottom = Math.min(containingRect.bottom, segment.bottom);
+            return {
+              segment,
+              overlap: Math.max(0, right - left) * Math.max(0, bottom - top),
+            };
+          })
+          .sort((first, second) => second.overlap - first.overlap)[0];
+
+        if (selectedSegment && selectedSegment.overlap > 0) {
+          const segment = selectedSegment.segment;
+          const segmentLeft = Math.max(segment.left, containingRect.left);
+          const segmentRight = Math.min(segment.right, containingRect.right);
+          const segmentTop = Math.max(segment.top, containingRect.top);
+          const segmentBottom = Math.min(segment.bottom, containingRect.bottom);
+          const isHorizontalSplit =
+            segmentRight - segmentLeft < containingRect.width - 1;
+          const isVerticalSplit =
+            segmentBottom - segmentTop < containingRect.height - 1;
+          inputPanel.dataset.composerSegment = "true";
+          inputPanel.dataset.composerSegmentAxis =
+            isHorizontalSplit && isVerticalSplit
+              ? "both"
+              : isVerticalSplit
+              ? "vertical"
+              : "horizontal";
+          inputPanel.style.setProperty(
+            "--chat-composer-segment-left",
+            `${segmentLeft - containingRect.left}px`,
+          );
+          inputPanel.style.setProperty(
+            "--chat-composer-segment-width",
+            `${Math.max(1, segmentRight - segmentLeft)}px`,
+          );
+          inputPanel.style.setProperty(
+            "--chat-composer-segment-top",
+            `${segmentTop - containingRect.top}px`,
+          );
+          inputPanel.style.setProperty(
+            "--chat-composer-segment-height",
+            `${Math.max(1, segmentBottom - segmentTop)}px`,
+          );
+          inputPanel.style.setProperty(
+            "--chat-composer-segment-bottom-inset",
+            `${Math.max(0, containingRect.bottom - segmentBottom)}px`,
+          );
+        } else {
+          delete inputPanel.dataset.composerSegment;
+          delete inputPanel.dataset.composerSegmentAxis;
+          inputPanel.style.removeProperty("--chat-composer-segment-left");
+          inputPanel.style.removeProperty("--chat-composer-segment-width");
+          inputPanel.style.removeProperty("--chat-composer-segment-top");
+          inputPanel.style.removeProperty("--chat-composer-segment-height");
+          inputPanel.style.removeProperty(
+            "--chat-composer-segment-bottom-inset",
+          );
+        }
       });
     };
 
-    updateModelMenuPlacement();
-    window.addEventListener("resize", updateModelMenuPlacement);
-    window.visualViewport?.addEventListener("resize", updateModelMenuPlacement);
-    window.visualViewport?.addEventListener("scroll", updateModelMenuPlacement);
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(updateViewportFrame);
+    resizeObserver?.observe(containingBlock);
+    resizeObserver?.observe(segmentProbe);
+    updateViewportFrame();
+    window.addEventListener("resize", updateViewportFrame);
+    window.addEventListener("orientationchange", updateViewportFrame);
+    window.visualViewport?.addEventListener("resize", updateViewportFrame);
+    window.visualViewport?.addEventListener("scroll", updateViewportFrame);
 
     return () => {
       cancelAnimationFrame(updateFrame);
-      window.removeEventListener("resize", updateModelMenuPlacement);
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", updateViewportFrame);
+      window.removeEventListener("orientationchange", updateViewportFrame);
+      window.visualViewport?.removeEventListener("resize", updateViewportFrame);
+      window.visualViewport?.removeEventListener("scroll", updateViewportFrame);
+    };
+  }, []);
+  useLayoutEffect(() => {
+    if (!showChatActionMenu && !showMobileModelSelector) return;
+
+    let updateFrame = 0;
+    const applyPopoverPlacement = () => {
+      const kind = showMobileModelSelector ? "model" : "tools";
+      const trigger = showMobileModelSelector
+        ? modelSelectorButtonRef.current
+        : chatInputMenuButtonRef.current;
+      const menu = showMobileModelSelector
+        ? modelMenuRef.current
+        : chatInputActionMenuRef.current;
+      const composerShell = chatComposerShellRef.current;
+      const inputPanel = chatInputPanelRef.current;
+      if (!trigger || !menu || !composerShell || !inputPanel) return;
+
+      const visualViewport = window.visualViewport;
+      const inputPanelStyle = window.getComputedStyle(inputPanel);
+      const parseInset = (property: string) => {
+        const value = Number.parseFloat(
+          inputPanelStyle.getPropertyValue(property),
+        );
+        return Number.isFinite(value) ? value : 0;
+      };
+      const segmentProbe = composerViewportSegmentRef.current;
+      const probeStyle = segmentProbe
+        ? window.getComputedStyle(segmentProbe)
+        : null;
+      const probeSegmentActive =
+        probeStyle
+          ?.getPropertyValue("--chat-composer-segment-active")
+          .trim() === "1";
+      const segmentProvider = window as Window & {
+        getWindowSegments?: () => DOMRect[];
+      };
+      const rawSegments =
+        probeSegmentActive && segmentProbe
+          ? [segmentProbe.getBoundingClientRect()]
+          : segmentProvider.getWindowSegments?.() ?? [];
+      const composerRect = composerShell.getBoundingClientRect();
+      const placement = getComposerPopoverPlacement({
+        kind,
+        triggerRect: trigger.getBoundingClientRect(),
+        composerRect,
+        panelHeight: Math.max(
+          menu.getBoundingClientRect().height,
+          menu.scrollHeight,
+        ),
+        compact: composerRect.width < 600,
+        preferBelowOnDesktop: false,
+        viewport: {
+          left: visualViewport?.offsetLeft ?? 0,
+          top: visualViewport?.offsetTop ?? 0,
+          width: visualViewport?.width ?? window.innerWidth,
+          height: visualViewport?.height ?? window.innerHeight,
+          layoutHeight: window.innerHeight,
+          safeArea: {
+            top: parseInset("--chat-composer-safe-area-top"),
+            right: parseInset("--chat-composer-safe-area-right"),
+            bottom: parseInset("--chat-composer-safe-area-bottom"),
+            left: parseInset("--chat-composer-safe-area-left"),
+          },
+          segments: rawSegments.map((segment) => ({
+            left: segment.left,
+            top: segment.top,
+            width: segment.width,
+            height: segment.height,
+          })),
+        },
+      });
+      const cssVariables = toComposerPopoverCssVariables(
+        placement,
+        kind === "tools" ? inputPanel.getBoundingClientRect() : undefined,
+      );
+      for (const [property, value] of Object.entries(cssVariables)) {
+        if (menu.style.getPropertyValue(property) !== value) {
+          menu.style.setProperty(property, value);
+        }
+      }
+      menu.dataset.popoverSide = placement.openBelow ? "below" : "above";
+    };
+    const updatePopoverPlacement = () => {
+      cancelAnimationFrame(updateFrame);
+      updateFrame = requestAnimationFrame(applyPopoverPlacement);
+    };
+
+    const menu = showMobileModelSelector
+      ? modelMenuRef.current
+      : chatInputActionMenuRef.current;
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(updatePopoverPlacement);
+    if (menu) resizeObserver?.observe(menu);
+    if (chatComposerShellRef.current) {
+      resizeObserver?.observe(chatComposerShellRef.current);
+    }
+    if (chatInputPanelRef.current) {
+      resizeObserver?.observe(chatInputPanelRef.current);
+    }
+    applyPopoverPlacement();
+    window.addEventListener("resize", updatePopoverPlacement);
+    window.addEventListener("orientationchange", updatePopoverPlacement);
+    window.visualViewport?.addEventListener("resize", updatePopoverPlacement);
+    window.visualViewport?.addEventListener("scroll", updatePopoverPlacement);
+
+    return () => {
+      cancelAnimationFrame(updateFrame);
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", updatePopoverPlacement);
+      window.removeEventListener("orientationchange", updatePopoverPlacement);
       window.visualViewport?.removeEventListener(
         "resize",
-        updateModelMenuPlacement,
+        updatePopoverPlacement,
       );
       window.visualViewport?.removeEventListener(
         "scroll",
-        updateModelMenuPlacement,
+        updatePopoverPlacement,
       );
     };
-  }, [getComposerModelMenuStyle, showEmptyComposer, showMobileModelSelector]);
+  }, [
+    chatActionMenuView,
+    currentModelMenuLayer,
+    showChatActionMenu,
+    showEmptyComposer,
+    showMobileModelSelector,
+  ]);
   const configuredChatHomeDefault = useMemo(
     () =>
       config.serverConfigSnapshot
@@ -3147,8 +3855,23 @@ function useChatInnerView() {
       { closeMenu: false, restoreFocus: false, announce: false },
     );
     if (changed) {
-      closeMobileModelSelector();
-      setExpandedMobileModelSection(null);
+      announceComposerStatus(
+        Locale.Chat.HomeMode.Changed(
+          mode === "chat"
+            ? Locale.Chat.HomeMode.Chat
+            : Locale.Chat.HomeMode.Image,
+        ),
+      );
+      if (showMobileModelSelector) {
+        setExpandedMobileModelSection(
+          getComposerModelMenuSection(
+            targetModel.name,
+            targetModel.provider?.providerName,
+          ),
+        );
+      } else {
+        closeMobileModelSelector();
+      }
     }
   };
   useEffect(() => {
@@ -3229,6 +3952,14 @@ function useChatInnerView() {
     requestAnimationFrame(() => {
       document.getElementById(`chat-home-mode-${nextMode}`)?.focus();
     });
+  };
+  const handleHomeModeTabKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+  ) => {
+    handleEmptyComposerModeKeyDown(event);
+    if (showMobileModelSelector && event.key === "Tab") {
+      trapModelMenuTab(event);
+    }
   };
   const onChatBodyScroll = (e: HTMLElement) => {
     const pendingQuickJumpTarget = pendingQuickJumpTargetRef.current;
@@ -3328,13 +4059,8 @@ function useChatInnerView() {
       pendingQuickJumpTargetRef.current = null;
     }
 
-    if (
-      isCompactScreen &&
-      !hasActiveInputContent &&
-      Date.now() > ignoreInputCollapseUntil.current
-    ) {
+    if (isCompactScreen && !hasActiveInputContent) {
       inputRef.current?.blur();
-      setIsInputExpanded(false);
     }
   };
   const scrollToTop = useCallback(() => {
@@ -3365,7 +4091,6 @@ function useChatInnerView() {
     scrollDomToBottom();
   }, [renderMessages.length, scrollDomToBottom, scrollRef, setMsgRenderIndex]);
   const clearContextDividerRef = useRef<HTMLButtonElement>(null);
-  const chatInputPanelRef = useRef<HTMLDivElement>(null);
   const [chatBodyBottomSafeArea, setChatBodyBottomSafeArea] = useState<
     number | null
   >(null);
@@ -3396,22 +4121,47 @@ function useChatInnerView() {
     );
   }, [getChatBodyBottomSafeArea]);
   useLayoutEffect(() => {
-    syncChatBodyBottomSafeArea();
+    let safeAreaFrame = 0;
+    const scheduleChatBodyBottomSafeArea = () => {
+      if (safeAreaFrame) return;
+      safeAreaFrame = requestAnimationFrame(() => {
+        safeAreaFrame = 0;
+        syncChatBodyBottomSafeArea();
+      });
+    };
+    scheduleChatBodyBottomSafeArea();
 
     const inputPanel = chatInputPanelRef.current;
     const scrollDom = scrollRef.current;
     const resizeObserver =
       typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(syncChatBodyBottomSafeArea)
+        ? new ResizeObserver(scheduleChatBodyBottomSafeArea)
         : null;
 
     if (inputPanel) resizeObserver?.observe(inputPanel);
     if (scrollDom) resizeObserver?.observe(scrollDom);
-    window.addEventListener("resize", syncChatBodyBottomSafeArea);
+    window.addEventListener("resize", scheduleChatBodyBottomSafeArea);
+    window.visualViewport?.addEventListener(
+      "resize",
+      scheduleChatBodyBottomSafeArea,
+    );
+    window.visualViewport?.addEventListener(
+      "scroll",
+      scheduleChatBodyBottomSafeArea,
+    );
 
     return () => {
       resizeObserver?.disconnect();
-      window.removeEventListener("resize", syncChatBodyBottomSafeArea);
+      if (safeAreaFrame) cancelAnimationFrame(safeAreaFrame);
+      window.removeEventListener("resize", scheduleChatBodyBottomSafeArea);
+      window.visualViewport?.removeEventListener(
+        "resize",
+        scheduleChatBodyBottomSafeArea,
+      );
+      window.visualViewport?.removeEventListener(
+        "scroll",
+        scheduleChatBodyBottomSafeArea,
+      );
     };
   }, [scrollRef, syncChatBodyBottomSafeArea]);
   const chatBodyStyle = useMemo(
@@ -3637,7 +4387,7 @@ function useChatInnerView() {
 
   // remember unfinished input
   useEffect(() => {
-    if (markdownStressQaEnabled) {
+    if (markdownStressQaEnabled || composerQaScenario) {
       return;
     }
 
@@ -3645,7 +4395,7 @@ function useChatInnerView() {
     return () => {
       localStorage.setItem(unfinishedInputKey, dom?.value ?? "");
     };
-  }, [markdownStressQaEnabled, unfinishedInputKey]);
+  }, [composerQaScenario, markdownStressQaEnabled, unfinishedInputKey]);
 
   const appendAttachments = useCallback(
     (fileInfos: FileInfo[], imageUrls: string[]) => {
@@ -3685,12 +4435,13 @@ function useChatInnerView() {
       }
 
       if (messages.length > 0) {
-        showToast(Locale.Chat.Attachments.JoinMessages(messages));
+        const message = Locale.Chat.Attachments.JoinMessages(messages);
+        announceComposerStatus(message);
+        showToast(message);
       }
     },
-    // All state reads go through refs; setAttachedFiles/setAttachImages are stable
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    // Attachment state reads go through refs; the live announcer is the only dependency.
+    [announceComposerStatus],
   );
 
   useEffect(() => {
@@ -3768,7 +4519,9 @@ function useChatInnerView() {
         const MAX_SIZE = 15 * 1024 * 1024;
         const validSizeFiles = files.filter((file) => {
           if (file.size > MAX_SIZE) {
-            showToast(Locale.Chat.Attachments.FileTooLarge(file.name));
+            const message = Locale.Chat.Attachments.FileTooLarge(file.name);
+            announceComposerStatus(message);
+            showToast(message);
             return false;
           }
           return true;
@@ -3791,9 +4544,11 @@ function useChatInnerView() {
         );
 
         if (images.length > remainingImageSlots) {
+          announceComposerStatus(Locale.Chat.Attachments.MaxImages);
           showToast(Locale.Chat.Attachments.MaxImages);
         }
         if (documents.length > remainingFileSlots) {
+          announceComposerStatus(Locale.Chat.Attachments.MaxFiles);
           showToast(Locale.Chat.Attachments.MaxFiles);
         }
 
@@ -3815,6 +4570,7 @@ function useChatInnerView() {
         } catch (error) {
           if (!isMounted.current) return;
           console.error("读取拖拽附件失败:", error);
+          announceComposerStatus(Locale.Chat.Attachments.DragReadFailed);
           showToast(Locale.Chat.Attachments.DragReadFailed);
         } finally {
           if (isMounted.current) {
@@ -3835,7 +4591,7 @@ function useChatInnerView() {
       window.removeEventListener("dragleave", handleDragLeave);
       window.removeEventListener("drop", handleDrop);
     };
-  }, [appendAttachments]);
+  }, [announceComposerStatus, appendAttachments]);
 
   const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const clipboardData = e.clipboardData;
@@ -3851,6 +4607,7 @@ function useChatInnerView() {
         appendAttachments(fileInfos, [...imageUrls, ...pastedImageUrls]);
       } catch (error) {
         console.error("读取粘贴附件失败:", error);
+        announceComposerStatus(Locale.Chat.Attachments.PasteReadFailed);
         showToast(Locale.Chat.Attachments.PasteReadFailed);
       } finally {
         setUploading(false);
@@ -3865,6 +4622,7 @@ function useChatInnerView() {
 
         // 检查文件数量限制
         if (attachedFiles.length >= 5) {
+          announceComposerStatus(Locale.Chat.Attachments.FileSlotsFull);
           showToast(Locale.Chat.Attachments.FileSlotsFull);
           return;
         }
@@ -3895,15 +4653,29 @@ function useChatInnerView() {
           },
         ]);
 
+        announceComposerStatus(Locale.Chat.Attachments.LongTextConverted);
         showToast(Locale.Chat.Attachments.LongTextConverted);
       }
     }
   };
 
   // 修改上传附件的处理函数
-  async function handleUploadAttachments() {
-    if (attachmentSlotsFull) {
-      showToast(Locale.Chat.Attachments.Full);
+  async function handleUploadAttachments(kind: AttachmentUploadKind = "all") {
+    const requestedSlotsFull =
+      kind === "image"
+        ? imageSlotsFull
+        : kind === "file"
+        ? fileSlotsFull
+        : attachmentSlotsFull;
+    if (requestedSlotsFull) {
+      const message =
+        kind === "image"
+          ? Locale.Chat.Attachments.ImageSlotsFull
+          : kind === "file"
+          ? Locale.Chat.Attachments.FileSlotsFull
+          : Locale.Chat.Attachments.Full;
+      announceComposerStatus(message);
+      showToast(message);
       return;
     }
 
@@ -3919,12 +4691,14 @@ function useChatInnerView() {
       },
       // 上传失败
       (error) => {
+        announceComposerStatus(Locale.Chat.Attachments.FileReadFailed);
         showToast(Locale.Chat.Attachments.FileReadFailed);
       },
       // 完成上传
       () => {
         setUploading(false);
       },
+      kind,
     );
   }
 
@@ -4370,9 +5144,15 @@ function useChatInnerView() {
 
   // 添加删除单个文件函数
   function deleteAttachedFile(index: number) {
+    const removedFileName = attachedFiles[index]?.name;
     setAttachedFiles((currentFiles) =>
       removeAttachmentAtIndex(currentFiles, index),
     );
+    if (removedFileName) {
+      announceComposerStatus(
+        Locale.Chat.Attachments.RemovedFile(removedFileName),
+      );
+    }
     clearActiveAttachmentDelete();
     focusComposerAttachmentAfterRemoval(attachImages.length + index);
   }
@@ -4396,8 +5176,23 @@ function useChatInnerView() {
     getImagePreviewDialogLabel(),
   );
   const imagePreviewTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const chatInputMenuButtonRef = useRef<HTMLButtonElement>(null);
-  const chatInputActionMenuRef = useRef<HTMLDivElement>(null);
+  const openPromptLibrary = () => {
+    setPromptHints([]);
+    setChatActionMenuView("prompt-library");
+  };
+  const closePromptLibrary = () => {
+    setChatActionMenuView("main");
+    requestAnimationFrame(() => {
+      chatInputActionMenuRef.current
+        ?.querySelector<HTMLElement>('[data-chat-action="prompt-library"]')
+        ?.focus({ preventScroll: true });
+    });
+  };
+  const selectPromptFromLibrary = (prompt: Prompt) => {
+    setShowChatActionMenu(false);
+    setChatActionMenuView("main");
+    onPromptSelect(prompt);
+  };
 
   // 在_Chat组件中添加状态，记录当前编辑图片所属的消息ID
   const editingImageMessageIdRef = useRef<string | null>(null);
@@ -4481,12 +5276,16 @@ function useChatInnerView() {
 
   const getChatActionMenuControls = useCallback(() => {
     return Array.from(
-      chatInputActionMenuRef.current?.querySelectorAll<HTMLButtonElement>(
-        `button.${styles["chat-input-action"]}`,
+      chatInputActionMenuRef.current?.querySelectorAll<HTMLElement>(
+        `button.${styles["chat-input-action"]}, [data-chat-action-menu-control="true"]`,
       ) ?? [],
     ).filter(
       (control) =>
-        !control.disabled &&
+        (!(
+          control instanceof HTMLButtonElement ||
+          control instanceof HTMLInputElement
+        ) ||
+          !control.disabled) &&
         control.offsetParent !== null &&
         !control.closest('[role="listbox"]'),
     );
@@ -4561,9 +5360,22 @@ function useChatInnerView() {
 
     const focusFirstChatActionMenuControl = () => {
       const activeElement = document.activeElement;
+      if (chatActionMenuView === "prompt-library") {
+        if (
+          activeElement instanceof HTMLElement &&
+          activeElement.closest(`.${styles["chat-prompt-library"]}`)
+        ) {
+          return;
+        }
+        chatInputActionMenuRef.current
+          ?.querySelector<HTMLInputElement>(
+            '[data-prompt-library-search="true"]',
+          )
+          ?.focus({ preventScroll: true });
+        return;
+      }
       if (
-        activeElement instanceof HTMLButtonElement &&
-        activeElement.classList.contains(styles["chat-input-action"]) &&
+        activeElement instanceof HTMLElement &&
         chatInputActionMenuRef.current?.contains(activeElement)
       ) {
         return;
@@ -4580,7 +5392,7 @@ function useChatInnerView() {
       cancelAnimationFrame(focusFrame);
       window.clearTimeout(settleFocusTimer);
     };
-  }, [focusChatActionMenuControl, showChatActionMenu]);
+  }, [chatActionMenuView, focusChatActionMenuControl, showChatActionMenu]);
   const handleChatActionMenuKeyDown = (
     event: React.KeyboardEvent<HTMLElement>,
   ) => {
@@ -4592,6 +5404,7 @@ function useChatInnerView() {
       trapChatActionMenuTab(event);
       return;
     }
+    if (event.target instanceof HTMLInputElement) return;
     if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) {
       return;
     }
@@ -4638,7 +5451,12 @@ function useChatInnerView() {
     const closeChatActionMenuOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
+        if (chatActionMenuView === "prompt-library") {
+          closePromptLibrary();
+          return;
+        }
         setShowChatActionMenu(false);
+        setChatActionMenuView("main");
         requestAnimationFrame(() => chatInputMenuButtonRef.current?.focus());
       }
     };
@@ -4646,7 +5464,7 @@ function useChatInnerView() {
     window.addEventListener("keydown", closeChatActionMenuOnEscape);
     return () =>
       window.removeEventListener("keydown", closeChatActionMenuOnEscape);
-  }, [showChatActionMenu]);
+  }, [chatActionMenuView, showChatActionMenu]);
 
   useEffect(() => {
     if (!previewImage) return;
@@ -4737,6 +5555,7 @@ function useChatInnerView() {
         aria-label={Locale.Chat.ChatToolMenu.Close}
         onClick={() => {
           setShowChatActionMenu(false);
+          setChatActionMenuView("main");
           requestAnimationFrame(() => chatInputMenuButtonRef.current?.focus());
         }}
       />
@@ -4914,11 +5733,10 @@ function useChatInnerView() {
                   isReasoningSectionExpanded || isImageOptionsExpanded,
               },
             )}
-            style={composerModelMenuStyle}
             onKeyDown={handleModelMenuKeyDown}
             tabIndex={-1}
             role="dialog"
-            aria-modal={true}
+            aria-modal={!showEmptyState}
             aria-label={
               isImageOptionsExpanded
                 ? Locale.Chat.ModelMenu.ImageOptions
@@ -4927,183 +5745,224 @@ function useChatInnerView() {
                 : Locale.Chat.ModelMenu.SelectModelAndParams
             }
           >
-        {(isReasoningSectionExpanded || isImageOptionsExpanded) && (
-          <div className={styles["chat-model-menu-header"]}>
-            <div className={styles["chat-model-menu-current-model"]}>
-              {headerCurrentModelName}
-            </div>
-            <button
-              type="button"
-              className={styles["chat-model-menu-switch-model"]}
-              aria-label={Locale.Chat.ModelMenu.SwitchModel}
-              title={Locale.Chat.ModelMenu.SwitchModel}
-              data-model-menu-control="true"
-              onClick={returnToModelList}
-            >
-              <ResetIcon />
-              <span>{Locale.Chat.ModelMenu.SwitchModel}</span>
-            </button>
-          </div>
-        )}
-        {isReasoningSectionExpanded ? (
-          <ReasoningEffortRail
-            id="chat-mobile-reasoning-options"
-            ariaLabel={Locale.Chat.ModelMenu.ReasoningOptions}
-            title={Locale.Chat.ModelMenu.ReasoningEffort}
-            efforts={visibleHeaderReasoningEfforts}
-            allowedEfforts={headerReasoningEfforts}
-            value={headerCurrentReasoningEffort}
-            locked={!!headerReasoningLocked}
-            lockedLabel={Locale.Settings.GPT56Capabilities.ConfigSource.Locked}
-            labels={reasoningLabels}
-            descriptions={reasoningDescriptions}
-            onChange={selectHeaderReasoningEffort}
-            onLockedAttempt={() =>
-              selectHeaderReasoningEffort(headerCurrentReasoningEffort)
-            }
-          />
-        ) : isImageOptionsExpanded ? (
-          <div className={styles["chat-image-option-rails"]}>
-            <DiscreteOptionRail<OpenAIImageSize>
-              id="chat-image-size-options"
-              ariaLabel={Locale.Chat.ModelMenu.ImageSizeOptions}
-              title={Locale.Chat.ModelMenu.ImageSize}
-              options={headerImageSizes}
-              allowedOptions={headerImageSizes}
-              value={headerCurrentSize}
-              locked={!!headerImageSizeLocked}
-              lockedLabel={
-                Locale.Settings.GPT56Capabilities.ConfigSource.Locked
-              }
-              labels={headerImageSizeLabels}
-              descriptions={headerImageSizeDescriptions}
-              emphasizeHighest={false}
-              onChange={selectHeaderImageSize}
-              onLockedAttempt={() => selectHeaderImageSize(headerCurrentSize)}
-            />
-            {headerImageQualitys.length > 0 && (
-              <DiscreteOptionRail<OpenAIImageQuality>
-                id="chat-image-quality-options"
-                ariaLabel={Locale.Chat.ModelMenu.ImageQualityOptions}
-                title={Locale.Chat.ModelMenu.ImageQuality}
-                options={headerImageQualitys}
-                allowedOptions={headerImageQualitys}
-                value={headerCurrentQuality}
-                locked={!!headerImageQualityLocked}
+            {headerModelLocked && (
+              <span
+                id="chat-model-lock-status"
+                className={styles["chat-model-menu-status"]}
+              >
+                {Locale.Settings.GPT56Capabilities.ConfigSource.Locked}
+              </span>
+            )}
+            {(isReasoningSectionExpanded || isImageOptionsExpanded) && (
+              <div className={styles["chat-model-menu-header"]}>
+                <div className={styles["chat-model-menu-current-model"]}>
+                  <strong>{headerCurrentModelName}</strong>
+                  <small>{headerCurrentProviderName}</small>
+                </div>
+                <button
+                  type="button"
+                  className={styles["chat-model-menu-switch-model"]}
+                  aria-label={Locale.Chat.ModelMenu.SwitchModel}
+                  aria-describedby={
+                    headerModelLocked ? "chat-model-lock-status" : undefined
+                  }
+                  title={Locale.Chat.ModelMenu.SwitchModel}
+                  data-model-menu-control="true"
+                  disabled={!!headerModelLocked}
+                  onClick={returnToModelList}
+                >
+                  <ResetIcon />
+                  <span>{Locale.Chat.ModelMenu.SwitchModel}</span>
+                </button>
+              </div>
+            )}
+            {isReasoningSectionExpanded ? (
+              <ReasoningEffortRail
+                id="chat-mobile-reasoning-options"
+                ariaLabel={Locale.Chat.ModelMenu.ReasoningOptions}
+                title={Locale.Chat.ModelMenu.ReasoningEffort}
+                efforts={visibleHeaderReasoningEfforts}
+                allowedEfforts={headerReasoningEfforts}
+                value={headerCurrentReasoningEffort}
+                locked={!!headerReasoningLocked}
                 lockedLabel={
                   Locale.Settings.GPT56Capabilities.ConfigSource.Locked
                 }
-                labels={headerImageQualityLabels}
-                descriptions={headerImageQualityDescriptions}
-                emphasizeHighest={false}
-                onChange={selectHeaderImageQuality}
+                labels={reasoningLabels}
+                descriptions={reasoningDescriptions}
+                onChange={selectHeaderReasoningEffort}
                 onLockedAttempt={() =>
-                  selectHeaderImageQuality(headerCurrentQuality)
+                  selectHeaderReasoningEffort(headerCurrentReasoningEffort)
                 }
               />
-            )}
-          </div>
-        ) : (
-          <>
-            <div
-              className={styles["chat-mobile-model-list"]}
-              role="listbox"
-              aria-label={Locale.Chat.ModelMenu.AvailableModels}
-            >
-              {headerModelsForMenu.length === 0 ? (
-                <div className={styles["chat-mobile-model-empty"]}>
-                  {showEmptyState && emptyComposerMode === "image"
-                    ? Locale.Chat.ModelMenu.ImageModelUnavailable
-                    : Locale.Chat.ModelMenu.Empty}
-                </div>
-              ) : (
-                headerModelsForMenu.map((model) => {
-                  const providerName = model?.provider?.providerName;
-                  const selected =
-                    model.name === headerCurrentModel &&
-                    providerName === headerCurrentProviderName;
-                  return (
-                    <button
-                      type="button"
-                      key={`${model.name}@${providerName}`}
-                      className={clsx(styles["chat-mobile-model-option"], {
-                        [styles["chat-mobile-model-option-selected"]]: selected,
-                      })}
-                      role="option"
-                      aria-selected={selected}
-                      onClick={() => selectComposerModel(model, selected)}
-                    >
-                      <span className={styles["chat-mobile-menu-check"]}>
-                        {selected ? "✓" : ""}
-                      </span>
-                      <span className={styles["chat-mobile-model-copy"]}>
-                        <span className={styles["chat-mobile-model-name"]}>
-                          {model.displayName || model.name}
-                        </span>
-                        {providerName && (
-                          <span
-                            className={styles["chat-mobile-model-provider"]}
-                          >
-                            {providerName}
-                          </span>
-                        )}
-                      </span>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-
-            {(showHeaderReasoningControl || showHeaderImageControls) && (
-              <>
-                <div className={styles["chat-mobile-model-divider"]} />
-                {showHeaderReasoningControl && (
-                  <div className={styles["chat-mobile-model-section"]}>
-                    <button
-                      type="button"
-                      className={styles["chat-mobile-reasoning-head"]}
-                      aria-controls="chat-mobile-reasoning-options"
-                      onClick={() => setExpandedMobileModelSection("reasoning")}
-                    >
-                      <span>
-                        <strong>{Locale.Chat.ModelMenu.ReasoningEffort}</strong>
-                        <small>
-                          {reasoningLabels[headerCurrentReasoningEffort]}
-                        </small>
-                      </span>
-                      <span className={styles["chat-mobile-reasoning-caret"]}>
-                        ›
-                      </span>
-                    </button>
-                  </div>
+            ) : isImageOptionsExpanded ? (
+              <div className={styles["chat-image-option-rails"]}>
+                <DiscreteOptionRail<OpenAIImageSize>
+                  id="chat-image-size-options"
+                  ariaLabel={Locale.Chat.ModelMenu.ImageSizeOptions}
+                  title={Locale.Chat.ModelMenu.ImageSize}
+                  options={headerImageSizes}
+                  allowedOptions={headerImageSizes}
+                  value={headerCurrentSize}
+                  locked={!!headerImageSizeLocked}
+                  lockedLabel={
+                    Locale.Settings.GPT56Capabilities.ConfigSource.Locked
+                  }
+                  labels={headerImageSizeLabels}
+                  descriptions={headerImageSizeDescriptions}
+                  emphasizeHighest={false}
+                  onChange={selectHeaderImageSize}
+                  onLockedAttempt={() =>
+                    selectHeaderImageSize(headerCurrentSize)
+                  }
+                />
+                {headerImageQualitys.length > 0 && (
+                  <DiscreteOptionRail<OpenAIImageQuality>
+                    id="chat-image-quality-options"
+                    ariaLabel={Locale.Chat.ModelMenu.ImageQualityOptions}
+                    title={Locale.Chat.ModelMenu.ImageQuality}
+                    options={headerImageQualitys}
+                    allowedOptions={headerImageQualitys}
+                    value={headerCurrentQuality}
+                    locked={!!headerImageQualityLocked}
+                    lockedLabel={
+                      Locale.Settings.GPT56Capabilities.ConfigSource.Locked
+                    }
+                    labels={headerImageQualityLabels}
+                    descriptions={headerImageQualityDescriptions}
+                    emphasizeHighest={false}
+                    onChange={selectHeaderImageQuality}
+                    onLockedAttempt={() =>
+                      selectHeaderImageQuality(headerCurrentQuality)
+                    }
+                  />
                 )}
-                {showHeaderImageControls && (
-                  <div className={styles["chat-mobile-model-section"]}>
-                    <button
-                      type="button"
-                      className={styles["chat-mobile-reasoning-head"]}
-                      aria-controls="chat-image-size-options"
-                      onClick={() =>
-                        setExpandedMobileModelSection("image-options")
-                      }
-                    >
-                      <span>
-                        <strong>{Locale.Chat.ModelMenu.ImageOptions}</strong>
-                        <small>{imageComposerSummary}</small>
-                      </span>
-                      <span className={styles["chat-mobile-reasoning-caret"]}>
-                        ›
-                      </span>
-                    </button>
-                  </div>
+              </div>
+            ) : (
+              <>
+                <div
+                  className={styles["chat-mobile-model-list"]}
+                  role="listbox"
+                  aria-label={Locale.Chat.ModelMenu.AvailableModels}
+                >
+                  {headerModelsForMenu.length === 0 ? (
+                    <div className={styles["chat-mobile-model-empty"]}>
+                      {showEmptyState && emptyComposerMode === "image"
+                        ? Locale.Chat.ModelMenu.ImageModelUnavailable
+                        : Locale.Chat.ModelMenu.Empty}
+                    </div>
+                  ) : (
+                    headerModelsForMenu.map((model) => {
+                      const providerName = model?.provider?.providerName;
+                      const selected =
+                        model.name === headerCurrentModel &&
+                        providerName === headerCurrentProviderName;
+                      return (
+                        <button
+                          type="button"
+                          key={`${model.name}@${providerName}`}
+                          className={clsx(styles["chat-mobile-model-option"], {
+                            [styles["chat-mobile-model-option-selected"]]:
+                              selected,
+                          })}
+                          role="option"
+                          aria-selected={selected}
+                          aria-describedby={
+                            headerModelLocked
+                              ? "chat-model-lock-status"
+                              : undefined
+                          }
+                          disabled={!!headerModelLocked}
+                          onClick={() => selectComposerModel(model, selected)}
+                        >
+                          <span className={styles["chat-mobile-menu-check"]}>
+                            {selected && <ComposerCheckIcon />}
+                          </span>
+                          <span className={styles["chat-mobile-model-copy"]}>
+                            <span className={styles["chat-mobile-model-name"]}>
+                              {model.displayName || model.name}
+                            </span>
+                            {providerName && (
+                              <span
+                                className={styles["chat-mobile-model-provider"]}
+                              >
+                                {providerName}
+                              </span>
+                            )}
+                          </span>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+
+                {currentModelMenuSection && (
+                  <>
+                    <div className={styles["chat-mobile-model-divider"]} />
+                    {currentModelMenuSection === "reasoning" && (
+                      <div className={styles["chat-mobile-model-section"]}>
+                        <button
+                          type="button"
+                          className={styles["chat-mobile-reasoning-head"]}
+                          aria-controls="chat-mobile-reasoning-options"
+                          onClick={() =>
+                            setExpandedMobileModelSection("reasoning")
+                          }
+                        >
+                          <span>
+                            <strong>
+                              {Locale.Chat.ModelMenu.ReasoningEffort}
+                            </strong>
+                            <small>
+                              {reasoningLabels[headerCurrentReasoningEffort]}
+                            </small>
+                          </span>
+                          <span
+                            className={styles["chat-mobile-reasoning-caret"]}
+                          >
+                            <ComposerChevronRightIcon />
+                          </span>
+                        </button>
+                      </div>
+                    )}
+                    {currentModelMenuSection === "image-options" && (
+                      <div className={styles["chat-mobile-model-section"]}>
+                        <button
+                          type="button"
+                          className={styles["chat-mobile-reasoning-head"]}
+                          aria-controls="chat-image-size-options"
+                          onClick={() =>
+                            setExpandedMobileModelSection("image-options")
+                          }
+                        >
+                          <span>
+                            <strong>
+                              {Locale.Chat.ModelMenu.ImageOptions}
+                            </strong>
+                            <small>{imageComposerSummary}</small>
+                          </span>
+                          <span
+                            className={styles["chat-mobile-reasoning-caret"]}
+                          >
+                            <ComposerChevronRightIcon />
+                          </span>
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </>
             )}
-          </>
-        )}
           </div>
         </>
       ) : null}
+
+      <span
+        ref={composerViewportSegmentRef}
+        className={styles["chat-composer-viewport-segment-probe"]}
+        data-qa-posture={composerQaScenario?.posture}
+        aria-hidden="true"
+      />
 
       <div className={styles["chat-main"]}>
         <div className={styles["chat-body-container"]}>
@@ -5125,7 +5984,11 @@ function useChatInnerView() {
           >
             {showEmptyState && (
               <div
-                className={styles["chat-home-mode-tabs"]}
+                ref={homeModeTabsRef}
+                className={clsx(styles["chat-home-mode-tabs"], {
+                  [styles["chat-home-mode-tabs-model-open"]]:
+                    showMobileModelSelector,
+                })}
                 role="tablist"
                 aria-label={Locale.Chat.HomeMode.Label}
                 data-active-mode={emptyComposerMode}
@@ -5160,7 +6023,7 @@ function useChatInnerView() {
                       disabled={disabled}
                       tabIndex={selected ? 0 : -1}
                       onClick={() => selectEmptyComposerMode(mode)}
-                      onKeyDown={handleEmptyComposerModeKeyDown}
+                      onKeyDown={handleHomeModeTabKeyDown}
                     >
                       {mode === "chat"
                         ? Locale.Chat.HomeMode.Chat
@@ -5542,9 +6405,12 @@ function useChatInnerView() {
             className={clsx(styles["chat-input-panel"], {
               [styles["chat-input-panel-collapsed"]]: !shouldExpandChatInput,
               [styles["chat-input-panel-empty"]]: showEmptyComposer,
-              [styles["chat-input-panel-model-open"]]:
-                isCompactScreen && showMobileModelSelector,
+              [styles["chat-input-panel-model-open"]]: showMobileModelSelector,
             })}
+            data-composer-panel="true"
+            data-qa-state={composerQaScenario?.state}
+            data-qa-posture={composerQaScenario?.posture}
+            data-qa-theme={composerQaScenario?.theme}
             data-drag-active={isDropzonePreviewActive ? "true" : undefined}
           >
             {!showEmptyState &&
@@ -5592,10 +6458,14 @@ function useChatInnerView() {
             >
               {showChatActionMenu && (
                 <ChatActions
-                  uploadAttachments={handleUploadAttachments}
-                  setAttachImages={setAttachImages}
-                  setUploading={setUploading}
-                  attachmentSlotsFull={attachmentSlotsFull}
+                  uploadImages={() => handleUploadAttachments("image")}
+                  uploadFiles={() => handleUploadAttachments("file")}
+                  imageSlotsFull={imageSlotsFull}
+                  fileSlotsFull={fileSlotsFull}
+                  menuView={chatActionMenuView}
+                  openPromptLibrary={openPromptLibrary}
+                  closePromptLibrary={closePromptLibrary}
+                  onPromptSelect={selectPromptFromLibrary}
                   showPromptModal={() =>
                     openPromptModal(chatInputMenuButtonRef.current)
                   }
@@ -5603,7 +6473,6 @@ function useChatInnerView() {
                   hitBottom={hitBottom}
                   uploading={uploading}
                   showPromptHints={() => {
-                    expandInput();
                     // Click again to close
                     if (promptHints.length > 0) {
                       setPromptHints([]);
@@ -5619,16 +6488,52 @@ function useChatInnerView() {
                   }
                   setUserInput={setUserInput}
                   setShowChatSidePanel={setShowChatSidePanel}
-                  onActionComplete={() => setShowChatActionMenu(false)}
+                  onActionComplete={() => {
+                    setShowChatActionMenu(false);
+                    setChatActionMenuView("main");
+                  }}
                 />
               )}
             </div>
 
             <div
+              ref={chatComposerShellRef}
               className={clsx(styles["chat-input-row"], {
                 [styles["chat-input-row-focused"]]: isChatInputFocused,
+                [styles["chat-input-row-with-voice"]]: showComposerVoice,
               })}
+              data-composer-shell="true"
+              data-composer-state={
+                isTextareaScrolling
+                  ? "scrolling"
+                  : shouldExpandChatInput
+                  ? "expanded"
+                  : "compact"
+              }
+              data-composer-scroll={isTextareaScrolling ? "true" : "false"}
+              data-composer-submit-state={displayedComposerSubmitState}
+              data-composer-uploading={uploading ? "true" : "false"}
             >
+              <div className={styles["chat-composer-aura"]} aria-hidden="true">
+                <span
+                  className={clsx(
+                    styles["chat-composer-aura-blob"],
+                    styles["chat-composer-aura-blob-blue"],
+                  )}
+                />
+                <span
+                  className={clsx(
+                    styles["chat-composer-aura-blob"],
+                    styles["chat-composer-aura-blob-cyan"],
+                  )}
+                />
+                <span
+                  className={clsx(
+                    styles["chat-composer-aura-blob"],
+                    styles["chat-composer-aura-blob-violet"],
+                  )}
+                />
+              </div>
               <button
                 type="button"
                 ref={chatInputMenuButtonRef}
@@ -5637,7 +6542,15 @@ function useChatInnerView() {
                 })}
                 onKeyDown={handleChatActionMenuKeyDown}
                 onClick={() => {
-                  setShowChatActionMenu((open) => !open);
+                  if (showChatActionMenu) {
+                    setShowChatActionMenu(false);
+                    setChatActionMenuView("main");
+                    return;
+                  }
+                  closeMobileModelSelector();
+                  setPromptHints([]);
+                  setChatActionMenuView("main");
+                  setShowChatActionMenu(true);
                 }}
                 aria-label={
                   showChatActionMenu
@@ -5650,7 +6563,7 @@ function useChatInnerView() {
               >
                 <AddIcon />
               </button>
-              <label
+              <div
                 className={clsx(styles["chat-input-panel-inner"], {
                   [styles["chat-input-panel-inner-with-model"]]: true,
                   [styles["chat-input-panel-inner-focused"]]:
@@ -5669,8 +6582,17 @@ function useChatInnerView() {
                   [styles["chat-input-panel-inner-home-chat"]]:
                     showEmptyState && emptyComposerMode === "chat",
                 })}
-                htmlFor="chat-input"
               >
+                <span
+                  className={styles["chat-composer-live-status"]}
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  <span key={composerLiveStatus.id}>
+                    {composerLiveStatus.message}
+                  </span>
+                </span>
                 <textarea
                   id="chat-input"
                   ref={inputRef}
@@ -5688,28 +6610,18 @@ function useChatInnerView() {
                   aria-controls={
                     promptHints.length > 0 ? "chat-prompt-hints" : undefined
                   }
-                  aria-readonly={
-                    markdownStressQaEnabled &&
-                    !markdownStressQaInteractiveInputEnabled
-                      ? true
-                      : undefined
-                  }
+                  aria-readonly={isComposerReadOnly ? true : undefined}
                   aria-haspopup="listbox"
                   onChange={(e) => onInput(e.currentTarget.value)}
                   value={userInput}
                   onKeyDown={onInputKeyDown}
-                  readOnly={
-                    markdownStressQaEnabled &&
-                    !markdownStressQaInteractiveInputEnabled
-                  }
+                  readOnly={isComposerReadOnly}
                   onFocus={() => {
                     setIsChatInputFocused(true);
                   }}
                   onBlur={() => setIsChatInputFocused(false)}
-                  onPointerDown={expandInput}
-                  onClick={expandInput}
                   onPaste={markdownStressQaEnabled ? undefined : handlePaste}
-                  rows={shouldExpandChatInput ? inputRows : 1}
+                  rows={1}
                   autoFocus={autoFocus}
                   style={
                     {
@@ -5730,25 +6642,29 @@ function useChatInnerView() {
                     [styles["chat-input-model-button-home-image"]]:
                       showEmptyState && emptyComposerMode === "image",
                   })}
-                  aria-label={Locale.Chat.ModelMenu.SelectModel(
-                    headerCurrentModelName,
-                    currentModelDetail,
-                  )}
+                  aria-label={modelChipAccessibleLabel}
+                  title={modelChipAccessibleLabel}
+                  data-model-menu-layer={currentModelMenuLayer}
                   onKeyDown={handleModelMenuKeyDown}
                   onClick={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
                     setShowChatActionMenu(false);
-                    setExpandedMobileModelSection(
-                      showMobileModelSelector ? null : currentModelMenuSection,
-                    );
-                    setComposerModelMenuStyle(
-                      getComposerModelMenuStyle(
-                        event.currentTarget,
-                        showEmptyComposer,
-                      ),
-                    );
-                    setShowMobileModelSelector((open) => !open);
+                    setChatActionMenuView("main");
+                    if (showMobileModelSelector) {
+                      closeMobileModelSelector();
+                      return;
+                    }
+                    setExpandedMobileModelSection(currentModelMenuSection);
+                    setShowMobileModelSelector(true);
+                  }}
+                  onTransitionEnd={(event) => {
+                    if (
+                      event.target === event.currentTarget &&
+                      event.propertyName === "width"
+                    ) {
+                      requestAnimationFrame(measureComposerTextarea);
+                    }
                   }}
                   aria-controls="chat-model-menu"
                   aria-haspopup="dialog"
@@ -5771,7 +6687,12 @@ function useChatInnerView() {
                       ? imageComposerSummary
                       : currentModelDetail}
                   </span>
-                  <span className={styles["chat-input-model-arrow"]}>⌄</span>
+                  <span
+                    className={styles["chat-input-model-arrow"]}
+                    aria-hidden="true"
+                  >
+                    <ComposerChevronDownIcon />
+                  </span>
                 </button>
 
                 {showInputStatusRow && (
@@ -5886,6 +6807,11 @@ function useChatInnerView() {
                                 setAttachImages((currentImages) =>
                                   removeAttachmentAtIndex(currentImages, index),
                                 );
+                                announceComposerStatus(
+                                  Locale.Chat.Attachments.RemovedImage(
+                                    index + 1,
+                                  ),
+                                );
                                 clearActiveAttachmentDelete();
                                 focusComposerAttachmentAfterRemoval(index);
                               }}
@@ -5896,11 +6822,21 @@ function useChatInnerView() {
 
                       {/* 文件附件 */}
                       {attachedFiles.map((file, index) => {
+                        const fileTypeLabel = getAttachmentFileTypeLabel(file);
+                        const fileSizeLabel = `${(file.size / 1024).toFixed(
+                          2,
+                        )} KB`;
                         const fileEditContextLabel =
                           Locale.Chat.Attachments.EditFile(
                             index + 1,
                             file.name,
                           );
+                        const fileAccessibleLabel =
+                          Locale.Chat.Accessibility.CombinedLabels([
+                            fileEditContextLabel,
+                            `${Locale.Chat.Attachments.FileMetadata.Type}: ${fileTypeLabel}`,
+                            `${Locale.Chat.Attachments.FileMetadata.Size}: ${fileSizeLabel}`,
+                          ]);
 
                         return (
                           <div
@@ -5938,7 +6874,7 @@ function useChatInnerView() {
                             <button
                               type="button"
                               className={styles["attach-file"]}
-                              aria-label={fileEditContextLabel}
+                              aria-label={fileAccessibleLabel}
                               onClick={async () => {
                                 // 使用与消息编辑相同的showPrompt函数
                                 const newContent = await showPrompt(
@@ -5998,7 +6934,7 @@ function useChatInnerView() {
                                     {file.name}
                                   </div>
                                   <div className={styles["attach-file-size"]}>
-                                    {(file.size / 1024).toFixed(2)} KB
+                                    {fileTypeLabel} · {fileSizeLabel}
                                   </div>
                                 </div>
                               </div>
@@ -6032,7 +6968,7 @@ function useChatInnerView() {
                             aria-label={Locale.Chat.Attachments.AddMore}
                             title={Locale.Chat.Attachments.AddMore}
                             disabled={uploading}
-                            onClick={handleUploadAttachments}
+                            onClick={() => handleUploadAttachments("all")}
                           >
                             <AddIcon />
                           </button>
@@ -6062,16 +6998,42 @@ function useChatInnerView() {
                   </div>
                 )}
 
+                {showComposerVoice && (
+                  <IconButton
+                    icon={<HeadphoneIcon />}
+                    className={styles["chat-input-voice"]}
+                    aria={Locale.Settings.Realtime.Start}
+                    ariaExpanded={showChatSidePanel}
+                    onClick={() => setShowChatSidePanel(true)}
+                  />
+                )}
+
                 <IconButton
-                  icon={<SendWhiteIcon />}
-                  text={isCompactScreen ? undefined : Locale.Chat.Send}
-                  className={styles["chat-input-send"]}
+                  icon={
+                    displayedComposerSubmitState === "stop" ? (
+                      <ComposerStopIcon />
+                    ) : (
+                      <SendWhiteIcon />
+                    )
+                  }
+                  className={clsx(styles["chat-input-send"], {
+                    [styles["chat-input-send-stop"]]:
+                      displayedComposerSubmitState === "stop",
+                  })}
                   type="primary"
-                  disabled={!canSubmitComposer}
-                  aria={Locale.Chat.Send}
-                  onClick={() => doSubmit(userInput)}
+                  disabled={displayedComposerSubmitState === "disabled"}
+                  aria={
+                    displayedComposerSubmitState === "stop"
+                      ? Locale.Chat.InputActions.Stop
+                      : Locale.Chat.Send
+                  }
+                  onClick={
+                    displayedComposerSubmitState === "stop"
+                      ? stopComposerResponse
+                      : () => doSubmit(userInput)
+                  }
                 />
-              </label>
+              </div>
             </div>
           </div>
         </div>

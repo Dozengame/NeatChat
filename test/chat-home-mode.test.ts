@@ -1,6 +1,8 @@
 import { LLMModel } from "../app/client/types";
 import { ServiceProvider } from "../app/constant";
 import {
+  getComposerModelMenuEscapeLayer,
+  getComposerModelMenuLayer,
   getComposerModelMenuSection,
   getChatHomeModeForModel,
   getChatHomeModeModels,
@@ -149,6 +151,29 @@ describe("new chat home modes", () => {
     ).toBeNull();
     expect(getComposerModelMenuSection("o3", ServiceProvider.OpenAI)).toBe(
       "reasoning",
+    );
+    expect(
+      getComposerModelMenuSection("dall-e-2", ServiceProvider.OpenAI),
+    ).toBeNull();
+  });
+
+  test("steps through the four model menu layers without invalid overlap", () => {
+    expect(getComposerModelMenuLayer(false, "reasoning")).toBe("closed");
+    expect(getComposerModelMenuLayer(true, null)).toBe("models");
+    expect(getComposerModelMenuLayer(true, "reasoning")).toBe("reasoning");
+    expect(getComposerModelMenuLayer(true, "image-options")).toBe(
+      "image-options",
+    );
+
+    expect(getComposerModelMenuEscapeLayer("models", "reasoning")).toBe(
+      "reasoning",
+    );
+    expect(getComposerModelMenuEscapeLayer("models", "image-options")).toBe(
+      "image-options",
+    );
+    expect(getComposerModelMenuEscapeLayer("models", null)).toBe("closed");
+    expect(getComposerModelMenuEscapeLayer("reasoning", "reasoning")).toBe(
+      "closed",
     );
   });
 

@@ -90,6 +90,7 @@ const en: LocaleType = {
       Label: "New chat mode",
       Chat: "Chat",
       Image: "Image",
+      Changed: (mode: string) => `Switched to ${mode} mode`,
     },
     Input: (submitKey: string) => {
       var inputHints = `${submitKey} to send`;
@@ -129,6 +130,21 @@ const en: LocaleType = {
       Capacity: "3 img · 5 files",
       Full: "Full",
       UploadAttachment: "Upload attachment",
+      UploadImage: "Upload image",
+      UploadImageDescription: "Add a visual reference",
+      UploadFile: "Upload file",
+      UploadFileDescription: "PDF, document, code or data",
+      ImageUploadUnavailable:
+        "The current model does not support image attachments",
+      PromptLibrary: "Prompt library",
+      PromptLibraryDescription: "Insert a reusable prompt",
+      PromptLibraryTitle: "Prompt library",
+      PromptLibrarySearch: "Search prompts",
+      PromptLibraryBack: "Back to tools",
+      PromptLibraryEmpty: "No prompts found",
+      PromptLibraryAll: "All",
+      PromptLibraryUser: "My prompts",
+      PromptLibraryBuiltin: "Official",
       AttachmentFull: "Attachments full: up to 3 images and 5 files",
       SessionTools: "Conversation tools",
       Session: "Conversation",
@@ -176,11 +192,13 @@ const en: LocaleType = {
       FullShort: "Full",
       EditImage: (index: number) => `Edit image attachment ${index}`,
       DeleteImage: (index: number) => `Delete image attachment ${index}`,
+      RemovedImage: (index: number) => `Removed image attachment ${index}`,
       EditFile: (index: number, name: string) =>
         `Edit file attachment ${index}: ${name}`,
       EditFileContent: (name: string) => `Edit file content: ${name}`,
       DeleteFile: (index: number, name: string) =>
         `Delete file attachment ${index}: ${name}`,
+      RemovedFile: (name: string) => `Removed file attachment: ${name}`,
       Reader: {
         UnknownError: "Unknown error",
         UnsupportedFileType: "Unsupported file type",
@@ -337,6 +355,7 @@ const en: LocaleType = {
         `Select model: ${model}, ${detail}`,
       SelectModelAndParams: "Select model and parameters",
       SwitchModel: "Switch model",
+      DefaultParameters: "Default parameters",
       Close: "Close model selector",
       ModelAndReasoning: "Model and reasoning effort",
       ImageOptions: "Image options",
@@ -344,6 +363,9 @@ const en: LocaleType = {
       Empty: "No models available",
       ChatModelUnavailable: "No GPT-5.x chat model is available",
       ImageModelUnavailable: "No image model is available",
+      ImageAttachmentsBlocked:
+        "Remove image attachments before switching to a model without image support",
+      ModelSelected: (model: string) => `Selected model: ${model}`,
       ReasoningEffort: "Reasoning effort",
       ReasoningOptions: "Reasoning effort options",
       ImageSize: "Image size",

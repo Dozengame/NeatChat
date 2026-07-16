@@ -4,11 +4,13 @@ import {
   getClipboardAttachmentPayload,
   getDraggedAttachmentSummary,
   getFileTypeByExtension,
+  getAttachmentFileTypeLabel,
   isAttachmentImage,
   isSupportedAttachmentFile,
   removeAttachmentAtIndex,
   replaceAttachmentImageAtIndex,
 } from "../app/utils/file";
+import { canSwitchToModelWithImageAttachments } from "../app/utils";
 import { isVisionModel } from "../app/utils";
 import { OPENAI_GPT_56_MODELS } from "../app/constant";
 import Locale from "../app/locales";
@@ -58,6 +60,32 @@ function clipboardTransfer({
 }
 
 describe("attachment file type support", () => {
+  test("renders a compact real file type without losing MIME fallbacks", () => {
+    expect(
+      getAttachmentFileTypeLabel({
+        name: "requirements.md",
+        type: "text/markdown",
+      }),
+    ).toBe("MD");
+    expect(
+      getAttachmentFileTypeLabel({
+        name: "Dockerfile",
+        type: "text/x-dockerfile",
+      }),
+    ).toBe("DOCKERFILE");
+    expect(
+      getAttachmentFileTypeLabel({ name: "LICENSE", type: "text/plain" }),
+    ).toBe("text/plain");
+  });
+
+  test("blocks only non-vision model switches while image attachments exist", () => {
+    expect(canSwitchToModelWithImageAttachments("gpt-5.6-terra", 2)).toBe(true);
+    expect(canSwitchToModelWithImageAttachments("deepseek-chat", 2)).toBe(
+      false,
+    );
+    expect(canSwitchToModelWithImageAttachments("deepseek-chat", 0)).toBe(true);
+  });
+
   test("supports laya, cocos, and lua code attachments", () => {
     expect(getFileTypeByExtension("main.lua")).toBe("text/x-lua");
     expect(getFileTypeByExtension("game.laya")).toBe("text/x-laya");

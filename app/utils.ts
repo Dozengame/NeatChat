@@ -293,6 +293,13 @@ export function isVisionModel(model: string) {
   );
 }
 
+export function canSwitchToModelWithImageAttachments(
+  model: string,
+  imageAttachmentCount: number,
+) {
+  return imageAttachmentCount === 0 || isVisionModel(model);
+}
+
 export function showPlugins(providerName?: string, model?: string) {
   // 始终允许gemini-2.0-flash-exp使用插件（联网功能）
   if (model === "gemini-2.0-flash-exp") {

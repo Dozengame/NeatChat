@@ -5,6 +5,11 @@ import type { RenderMessage } from "./chat-render";
 
 const MARKDOWN_STRESS_QA_PARAM = "markdown-stress";
 const IMAGE_GALLERY_QA_PARAM = "image-gallery";
+const COMPOSER_QA_PARAM = "composer";
+const COMPOSER_QA_STATE_PARAM = "composer_state";
+const COMPOSER_QA_POSTURE_PARAM = "composer_posture";
+const COMPOSER_QA_THEME_PARAM = "composer_theme";
+const COMPOSER_QA_SURFACE_PARAM = "composer_surface";
 const MARKDOWN_STRESS_QA_BOUNDARY_PARAM = "streaming_boundary";
 const MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_PARAM = "dropzone_preview";
 const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_PARAM =
@@ -33,6 +38,106 @@ type MarkdownStressAttachmentStripPreviewVariant =
   | "populated"
   | "full"
   | "overflow";
+export type ComposerQaState =
+  | "empty"
+  | "idle"
+  | "focus"
+  | "ready"
+  | "multiline"
+  | "scrolling"
+  | "image"
+  | "file"
+  | "mixed"
+  | "overflow"
+  | "full-attachments"
+  | "drag-accepted"
+  | "drag-blocked"
+  | "tool-menu"
+  | "prompt-library"
+  | "reasoning"
+  | "image-options"
+  | "model-list"
+  | "disabled"
+  | "uploading"
+  | "streaming";
+export type ComposerQaPosture =
+  | "fold-outer"
+  | "fold-inner"
+  | "book"
+  | "tabletop"
+  | "split";
+export type ComposerQaTheme = "light" | "dark" | "system";
+export type ComposerQaSurface = "empty" | "conversation";
+export type ComposerQaScenario = {
+  state: ComposerQaState;
+  posture?: ComposerQaPosture;
+  theme?: ComposerQaTheme;
+  surface?: ComposerQaSurface;
+};
+export type ComposerQaSeed = {
+  input: string;
+  focus: boolean;
+  uploading: boolean;
+  attachments?: "image" | "file" | "mixed" | "overflow" | "full";
+  drag?: MarkdownStressDropzonePreviewVariant;
+  menu:
+    | "closed"
+    | "tools"
+    | "prompt-library"
+    | "reasoning"
+    | "image-options"
+    | "models";
+  submitState?: "disabled" | "send" | "stop";
+  modelCapability?: "reasoning" | "image-options";
+};
+const COMPOSER_QA_STATES: ComposerQaState[] = [
+  "empty",
+  "idle",
+  "focus",
+  "ready",
+  "multiline",
+  "scrolling",
+  "image",
+  "file",
+  "mixed",
+  "overflow",
+  "full-attachments",
+  "drag-accepted",
+  "drag-blocked",
+  "tool-menu",
+  "prompt-library",
+  "reasoning",
+  "image-options",
+  "model-list",
+  "disabled",
+  "uploading",
+  "streaming",
+];
+const COMPOSER_QA_POSTURES: ComposerQaPosture[] = [
+  "fold-outer",
+  "fold-inner",
+  "book",
+  "tabletop",
+  "split",
+];
+const COMPOSER_QA_THEMES: ComposerQaTheme[] = ["light", "dark", "system"];
+const COMPOSER_QA_SURFACES: ComposerQaSurface[] = ["empty", "conversation"];
+const COMPOSER_QA_MESSAGES: RenderMessage[] = [
+  {
+    id: "codex-qa-composer-user",
+    date: "2026/7/15 00:00:00",
+    role: "user",
+    content: "Summarize the Composer 2.2 implementation status.",
+  },
+  {
+    id: "codex-qa-composer-assistant",
+    date: "2026/7/15 00:00:01",
+    role: "assistant",
+    model: "gpt-5.6-luna" as ModelType,
+    content:
+      "The current slice keeps one Composer DOM and preserves the existing request path.",
+  },
+];
 const MARKDOWN_STRESS_QA_BOUNDARY_VARIANTS: MarkdownStressBoundaryVariant[] = [
   "details",
   "table",
@@ -424,6 +529,141 @@ const MARKDOWN_STRESS_QA_ATTACHMENT_STRIP_PREVIEW_FILE_FIXTURES: Record<
 export function isMarkdownStressQaEnabled(locationSearch: string) {
   const params = new URLSearchParams(locationSearch);
   return params.get("codex_qa") === MARKDOWN_STRESS_QA_PARAM;
+}
+
+export function getComposerQaScenario(
+  locationSearch: string,
+): ComposerQaScenario | undefined {
+  const params = new URLSearchParams(locationSearch);
+  if (params.get("codex_qa") !== COMPOSER_QA_PARAM) return;
+
+  const requestedState = params.get(COMPOSER_QA_STATE_PARAM);
+  const requestedPosture = params.get(COMPOSER_QA_POSTURE_PARAM);
+  const requestedTheme = params.get(COMPOSER_QA_THEME_PARAM);
+  const requestedSurface = params.get(COMPOSER_QA_SURFACE_PARAM);
+
+  return {
+    state: COMPOSER_QA_STATES.includes(requestedState as ComposerQaState)
+      ? (requestedState as ComposerQaState)
+      : "idle",
+    posture: COMPOSER_QA_POSTURES.includes(
+      requestedPosture as ComposerQaPosture,
+    )
+      ? (requestedPosture as ComposerQaPosture)
+      : undefined,
+    theme: COMPOSER_QA_THEMES.includes(requestedTheme as ComposerQaTheme)
+      ? (requestedTheme as ComposerQaTheme)
+      : undefined,
+    surface: COMPOSER_QA_SURFACES.includes(
+      requestedSurface as ComposerQaSurface,
+    )
+      ? (requestedSurface as ComposerQaSurface)
+      : undefined,
+  };
+}
+
+export function getComposerQaSeed(state: ComposerQaState): ComposerQaSeed {
+  const seed: ComposerQaSeed = {
+    input: "",
+    focus: false,
+    uploading: false,
+    menu: "closed",
+  };
+
+  switch (state) {
+    case "focus":
+      return { ...seed, focus: true };
+    case "ready":
+      return { ...seed, input: "Review the Composer 2.2 implementation." };
+    case "multiline":
+      return {
+        ...seed,
+        input:
+          "Review the Composer 2.2 implementation.\nConfirm the responsive layout.\nCheck the menu collision boundary.\nPreserve the current provider request path.",
+      };
+    case "scrolling":
+      return {
+        ...seed,
+        input: Array.from(
+          { length: 14 },
+          (_, index) => `Composer scrolling QA line ${index + 1}.`,
+        ).join("\n"),
+      };
+    case "image":
+      return { ...seed, attachments: "image" };
+    case "file":
+      return { ...seed, attachments: "file" };
+    case "mixed":
+      return {
+        ...seed,
+        input:
+          "Review the selected Composer references.\nKeep the response concise and actionable.",
+        attachments: "mixed",
+      };
+    case "overflow":
+      return { ...seed, attachments: "overflow" };
+    case "full-attachments":
+      return { ...seed, attachments: "full" };
+    case "drag-accepted":
+      return { ...seed, drag: "accepted" };
+    case "drag-blocked":
+      return { ...seed, attachments: "full", drag: "blocked" };
+    case "tool-menu":
+      return { ...seed, menu: "tools" };
+    case "prompt-library":
+      return { ...seed, menu: "prompt-library" };
+    case "reasoning":
+      return { ...seed, menu: "reasoning", modelCapability: "reasoning" };
+    case "image-options":
+      return {
+        ...seed,
+        menu: "image-options",
+        modelCapability: "image-options",
+      };
+    case "model-list":
+      return { ...seed, menu: "models" };
+    case "uploading":
+      return {
+        ...seed,
+        input: "Uploading Composer QA attachments…",
+        uploading: true,
+        submitState: "disabled",
+      };
+    case "streaming":
+      return { ...seed, submitState: "stop" };
+    case "disabled":
+      return { ...seed, submitState: "disabled" };
+    default:
+      return seed;
+  }
+}
+
+export function getComposerQaMessages() {
+  return COMPOSER_QA_MESSAGES;
+}
+
+export function getComposerQaDropzoneSummary(state: ComposerQaState) {
+  const drag = getComposerQaSeed(state).drag;
+  return drag ? MARKDOWN_STRESS_QA_DROPZONE_PREVIEW_SUMMARIES[drag] : undefined;
+}
+
+export function createComposerQaAttachments(
+  variant: NonNullable<ComposerQaSeed["attachments"]>,
+): { images: string[]; files: FileInfo[] } {
+  if (variant === "image") {
+    return { images: [QA_PNG_IMAGE], files: [] };
+  }
+
+  const sourceVariant =
+    variant === "full"
+      ? "full"
+      : variant === "overflow"
+      ? "overflow"
+      : "populated";
+  const preview = createMarkdownStressQaAttachmentStripPreview(sourceVariant);
+  if (variant === "file")
+    return { images: [], files: preview.files.slice(0, 1) };
+  return preview;
 }
 
 export function isMarkdownStressQaInteractiveInputEnabled(

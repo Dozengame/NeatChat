@@ -3,24 +3,29 @@
   --reasoning-rail-thumb-radius: 17px;
   --reasoning-rail-track-height: 28px;
   --reasoning-rail-fill: linear-gradient(90deg, #10baf1 0%, #0879ef 100%);
-  --reasoning-rail-track: color-mix(in srgb, var(--black-50) 18%, transparent);
-  --reasoning-rail-stop: color-mix(in srgb, var(--black-50) 30%, transparent);
-  --reasoning-rail-text: var(--black);
-  --reasoning-rail-muted: var(--black-50);
-  --reasoning-rail-card: color-mix(
+  --reasoning-rail-track: color-mix(
     in srgb,
-    var(--surface-elevated) 94%,
+    var(--composer-muted) 18%,
     transparent
   );
-  --reasoning-rail-border: color-mix(in srgb, var(--black-50) 16%, transparent);
+  --reasoning-rail-stop: color-mix(
+    in srgb,
+    var(--composer-muted) 30%,
+    transparent
+  );
+  --reasoning-rail-text: var(--composer-text);
+  --reasoning-rail-muted: var(--composer-muted);
+  --reasoning-rail-card: var(--composer-rail-surface);
+  --reasoning-rail-border: var(--composer-rail-border);
+  --reasoning-rail-shadow: var(--composer-rail-shadow);
 
   min-width: 0;
   padding: 16px 16px 18px;
   border: 1px solid var(--reasoning-rail-border);
-  border-radius: 16px;
+  border-radius: 18px;
   background: var(--reasoning-rail-card);
   color: var(--reasoning-rail-text);
-  box-shadow: 0 8px 22px color-mix(in srgb, var(--black-50) 10%, transparent);
+  box-shadow: var(--reasoning-rail-shadow);
 }
 
 .heading {
@@ -79,7 +84,7 @@
 
   strong {
     overflow: hidden;
-    font-size: 16px;
+    font-size: 17px;
     line-height: 1.25;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -89,7 +94,7 @@
     min-height: 32px;
     margin-top: 5px;
     color: var(--reasoning-rail-muted);
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.25;
   }
 }
@@ -222,9 +227,9 @@
   width: var(--reasoning-rail-thumb-size);
   height: var(--reasoning-rail-thumb-size);
   box-sizing: border-box;
-  border: 1px solid color-mix(in srgb, var(--black-50) 22%, transparent);
+  border: 1px solid var(--composer-panel-border);
   border-radius: 50%;
-  background: #fff;
+  background: var(--composer-rail-thumb-surface);
   box-shadow:
     0 4px 12px color-mix(in srgb, var(--black-50) 24%, transparent),
     0 1px 3px color-mix(in srgb, var(--black-50) 20%, transparent);
@@ -266,7 +271,7 @@
   );
 
   .value {
-    color: #8950ed;
+    color: var(--composer-rail-accent-text);
   }
 
   .sparkles {
@@ -288,49 +293,6 @@
   .track,
   .thumb {
     opacity: 0.78;
-  }
-}
-
-:global(.dark) .panel {
-  --reasoning-rail-track: color-mix(in srgb, var(--black) 13%, transparent);
-  --reasoning-rail-stop: color-mix(in srgb, var(--black-50) 34%, transparent);
-  --reasoning-rail-text: var(--black);
-  --reasoning-rail-muted: color-mix(in srgb, var(--black-50) 82%, transparent);
-  --reasoning-rail-card: color-mix(
-    in srgb,
-    var(--surface-soft) 72%,
-    var(--surface)
-  );
-  --reasoning-rail-border: color-mix(in srgb, var(--black) 11%, transparent);
-
-  box-shadow: 0 16px 38px color-mix(in srgb, var(--surface) 44%, transparent);
-}
-
-:global(.dark) .highest .value {
-  color: #a77df7;
-}
-
-@media (prefers-color-scheme: dark) {
-  :global(body:not(.light)) .panel {
-    --reasoning-rail-track: color-mix(in srgb, var(--black) 13%, transparent);
-    --reasoning-rail-stop: color-mix(in srgb, var(--black-50) 34%, transparent);
-    --reasoning-rail-text: var(--black);
-    --reasoning-rail-muted: color-mix(
-      in srgb,
-      var(--black-50) 82%,
-      transparent
-    );
-    --reasoning-rail-card: color-mix(
-      in srgb,
-      var(--surface-soft) 72%,
-      var(--surface)
-    );
-    --reasoning-rail-border: color-mix(in srgb, var(--black) 11%, transparent);
-  }
-
-
-  :global(body:not(.light)) .highest .value {
-    color: #a77df7;
   }
 }
 
@@ -366,9 +328,9 @@
   .panel {
     --reasoning-rail-track: var(--black-50);
     --reasoning-rail-stop: var(--black);
-    --reasoning-rail-muted: var(--black);
-    --reasoning-rail-card: var(--surface-elevated);
-    --reasoning-rail-border: var(--black);
+    --reasoning-rail-muted: var(--composer-text);
+    --reasoning-rail-card: transparent;
+    --reasoning-rail-border: var(--composer-text);
     box-shadow: none;
   }
 }

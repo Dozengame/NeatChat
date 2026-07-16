@@ -121,9 +121,20 @@ describe("frontend performance and compatibility contracts", () => {
     expect(homeStyles).toContain(
       "@media (prefers-reduced-transparency: reduce)",
     );
+    expect(chatStyles).toContain("container-type: inline-size;");
     expect(chatStyles).toMatch(
-      /@media only screen and \(max-width: 358px\)[\s\S]*\.chat-input-model-button\s*\{[\s\S]*min-width:\s*64px;[\s\S]*max-width:\s*64px;[\s\S]*\.chat-input-panel-inner-with-model\s*\{[\s\S]*padding-right:\s*136px;/,
+      /\.chat-input-model-button\s*\{[\s\S]*?position:\s*static;[\s\S]*?width:\s*clamp\(92px, 18cqw, 132px\);[\s\S]*?min-width:\s*0;/,
     );
+    expect(chatStyles).toMatch(
+      /@container chat-composer \(max-width: 599px\)[\s\S]*?\.chat-input-row \.chat-input-model-button,[\s\S]*?width:\s*clamp\(116px, 34cqw, 124px\);/,
+    );
+    expect(chatStyles).toMatch(
+      /@container chat-composer \(min-width: 600px\) and \(max-width: 839px\)[\s\S]*?\.chat-input-row \.chat-input-model-button\s*\{[\s\S]*?width:\s*clamp\(108px, 18cqw, 124px\);/,
+    );
+    expect(chatStyles).toMatch(
+      /@container chat-composer \(min-width: 840px\)[\s\S]*?\.chat-input-row \.chat-input-model-button\s*\{[\s\S]*?width:\s*132px;/,
+    );
+    expect(chatStyles).not.toContain("padding-right: 136px;");
   });
 
   test("keeps compact controls touch-safe and Safari glass compatible", () => {
@@ -131,9 +142,7 @@ describe("frontend performance and compatibility contracts", () => {
     const chatStyles = readSource("app/components/chat.module.scss");
     const markdownStyles = readSource("app/styles/markdown.scss");
 
-    expect(chat).toContain(
-      '"--chat-input-font-size": `${config.fontSize}px`',
-    );
+    expect(chat).toContain('"--chat-input-font-size": `${config.fontSize}px`');
     expect(chat).not.toContain("fontSize: config.fontSize");
     expect(chatStyles).toContain(
       "font-size: max(16px, var(--chat-input-font-size, 16px))",

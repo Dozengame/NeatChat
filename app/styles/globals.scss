@@ -53,6 +53,44 @@
   --hover-color: rgba(60, 64, 67, 0.08);
   --bar-color: rgba(0, 0, 0, 0.1);
   --theme-color: var(--gray);
+  --composer-surface: rgba(255, 255, 255, 0.96);
+  --composer-surface-elevated: rgba(255, 255, 255, 0.98);
+  --composer-surface-soft: rgb(241, 243, 244);
+  --composer-text: rgb(31, 31, 31);
+  --composer-muted: rgb(95, 99, 104);
+  --composer-border: rgba(60, 64, 67, 0.12);
+  --composer-border-focus: rgba(49, 94, 248, 0.42);
+  --composer-shadow: 0 2px 14px rgba(60, 64, 67, 0.12);
+  --composer-shadow-focus: 0 8px 24px rgba(38, 55, 100, 0.15),
+    0 0 0 3px rgba(49, 94, 248, 0.12);
+  --composer-control-surface: rgba(255, 255, 255, 0.92);
+  --composer-control-hover: rgba(60, 64, 67, 0.08);
+  --composer-control-active: rgba(49, 94, 248, 0.12);
+  --composer-control-disabled: rgba(31, 31, 31, 0.12);
+  --composer-chip-surface: transparent;
+  --composer-chip-open-surface: rgba(49, 94, 248, 0.1);
+  --composer-accent-text: rgb(49, 94, 248);
+  --composer-panel-surface: rgba(255, 255, 255, 0.98);
+  --composer-panel-border: rgba(60, 64, 67, 0.14);
+  --composer-panel-shadow: 0 24px 64px rgba(38, 55, 100, 0.18),
+    0 6px 18px rgba(38, 55, 100, 0.08);
+  --composer-rail-surface: rgba(255, 255, 255, 0.78);
+  --composer-rail-border: rgba(60, 64, 67, 0.13);
+  --composer-rail-shadow: 0 8px 18px rgba(38, 55, 100, 0.07);
+  --composer-selected-surface: rgba(49, 94, 248, 0.1);
+  --composer-selected-border: rgba(49, 94, 248, 0.22);
+  --composer-aura-blue: rgba(49, 94, 248, 0.24);
+  --composer-aura-cyan: rgba(69, 191, 226, 0.18);
+  --composer-aura-violet: rgba(113, 88, 255, 0.16);
+  --composer-hero-start: rgb(38, 62, 130);
+  --composer-hero-mid: rgb(42, 74, 137);
+  --composer-hero-end: rgb(45, 104, 121);
+  --composer-aura-idle-opacity: 0.48;
+  --composer-aura-focus-opacity: 0.74;
+  --composer-aura-ready-opacity: 0.68;
+  --composer-on-accent: white;
+  --composer-rail-thumb-surface: white;
+  --composer-rail-accent-text: rgb(112, 65, 205);
   --scrollbar-thumb-color: rgba(60, 64, 67, 0.22);
   --copy-success-border-color: color-mix(in srgb, rgb(52, 168, 83) 24%, transparent);
   --copy-success-background: color-mix(in srgb, rgb(52, 168, 83) 12%, transparent);
@@ -74,7 +112,6 @@
   /* shadow */
   --shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
   --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-  --composer-shadow: 0 2px 14px rgba(60, 64, 67, 0.12);
   --focus-ring: 2px solid rgba(49, 94, 248, 0.82);
   --focus-ring-shadow: 0 0 0 4px rgba(49, 94, 248, 0.2);
 
@@ -103,6 +140,44 @@
   --border-in-light: 1px solid rgba(255, 255, 255, 0.1);
 
   --theme-color: var(--gray);
+  --composer-surface: rgba(24, 26, 29, 0.96);
+  --composer-surface-elevated: rgba(30, 33, 36, 0.98);
+  --composer-surface-soft: rgb(36, 39, 43);
+  --composer-text: rgb(232, 234, 237);
+  --composer-muted: rgb(174, 180, 188);
+  --composer-border: rgba(255, 255, 255, 0.1);
+  --composer-border-focus: rgba(138, 180, 248, 0.52);
+  --composer-shadow: 0 2px 14px rgba(0, 0, 0, 0.28);
+  --composer-shadow-focus: 0 18px 48px rgba(0, 0, 0, 0.4),
+    0 0 0 3px rgba(138, 180, 248, 0.16);
+  --composer-control-surface: rgba(36, 39, 43, 0.86);
+  --composer-control-hover: rgba(232, 234, 237, 0.08);
+  --composer-control-active: rgba(85, 120, 255, 0.18);
+  --composer-control-disabled: rgba(232, 234, 237, 0.14);
+  --composer-chip-surface: transparent;
+  --composer-chip-open-surface: rgba(85, 120, 255, 0.18);
+  --composer-accent-text: rgb(138, 180, 248);
+  --composer-panel-surface: rgba(30, 33, 36, 0.98);
+  --composer-panel-border: rgba(255, 255, 255, 0.1);
+  --composer-panel-shadow: 0 26px 72px rgba(0, 0, 0, 0.52),
+    0 4px 14px rgba(0, 0, 0, 0.26);
+  --composer-rail-surface: rgba(42, 45, 50, 0.76);
+  --composer-rail-border: rgba(255, 255, 255, 0.11);
+  --composer-rail-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  --composer-selected-surface: rgba(85, 120, 255, 0.16);
+  --composer-selected-border: rgba(113, 144, 255, 0.3);
+  --composer-aura-blue: rgba(77, 115, 255, 0.14);
+  --composer-aura-cyan: rgba(69, 191, 226, 0.1);
+  --composer-aura-violet: rgba(130, 101, 255, 0.09);
+  --composer-hero-start: rgb(169, 187, 255);
+  --composer-hero-mid: rgb(132, 180, 235);
+  --composer-hero-end: rgb(104, 199, 202);
+  --composer-aura-idle-opacity: 0.3;
+  --composer-aura-focus-opacity: 0.52;
+  --composer-aura-ready-opacity: 0.46;
+  --composer-on-accent: white;
+  --composer-rail-thumb-surface: white;
+  --composer-rail-accent-text: rgb(178, 143, 249);
   --scrollbar-thumb-color: rgba(255, 255, 255, 0.18);
   --copy-success-border-color: color-mix(in srgb, rgb(129, 201, 149) 24%, transparent);
   --copy-success-background: color-mix(in srgb, rgb(129, 201, 149) 14%, transparent);
@@ -120,7 +195,6 @@
   --markdown-code-copy-success-color: var(--copy-success-color);
   --markdown-code-copy-success-shadow-color: var(--copy-success-shadow-color);
   --markdown-code-copy-success-accent-shadow-color: var(--copy-success-accent-shadow-color);
-  --composer-shadow: 0 2px 14px rgba(0, 0, 0, 0.28);
   --focus-ring: 2px solid rgba(138, 180, 248, 0.82);
   --focus-ring-shadow: 0 0 0 4px rgba(138, 180, 248, 0.22);
 
