@@ -35,6 +35,17 @@
   }
 }
 
+/* 通用淡入：路由加载态、面板出现 */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
 /* 加载态 logo 光晕呼吸 */
 @keyframes loading-aura-pulse {
   0%,

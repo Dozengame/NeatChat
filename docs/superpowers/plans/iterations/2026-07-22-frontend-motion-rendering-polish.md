@@ -17,6 +17,7 @@
 ### Loading
 
 - `app/components/loading.tsx` + `home.module.scss`: logo with breathing `--primary` radial aura, three-dot staggered wave, shimmer progress bar; `noLogo` route variant keeps dots + bar. All new animations are disabled under reduced motion in the single trailing reduced-motion block in `home.module.scss` (same first-block extraction constraint as globals).
+- Follow-up (route unification): new `RouteLoading` export wraps the route fallback with a 160 ms anti-flash delay (fast chunk loads show nothing instead of a loading blink); `.loading-content` now has a `fade-in 0.24s ease-out` entrance, also reduced-motion-gated. All 9 dynamic route fallbacks in `home.tsx` (Settings, Chat, NewChat, Mask, Plugin, SearchChat, Sd, McpMarket, Artifacts) use `RouteLoading`; the boot hydration gate keeps the immediate full `Loading`. New global `fade-in` keyframe in `animation.scss`. Verified live: throttled-network navigation to `#/plugins` showed dots with `loading-dot-wave` + 0.15s stagger, `loading-bar-shimmer`, and the `fade-in` container; unthrottled fast navigation shows no loader flash.
 
 ### Button liveliness and message motion
 
@@ -40,5 +41,5 @@
 
 - Physical Safari/Firefox/Edge and real touch hardware not exercised; View Transition degrades to instant switching where unsupported.
 - `contain-intrinsic-size` estimate (140px) can transiently under/over-estimate scrollHeight for never-rendered tall rows until first render; self-corrects via `auto` memory, observed stable in the 240-message pass.
-- Loading screen visual verified via CSSOM keyframes + markup (hydration window too short to screenshot reliably); reduced-motion path covered by the same block.
+- Loading screen visual verified via CSSOM keyframes + markup for the boot path; the route-level `RouteLoading` was verified live under throttled network (dots wave, shimmer bar, fade-in container) plus fast-path no-flash behavior.
 - Next candidates from prior review remain: per-session lazy hydration, `first_char_delay_*` localStorage eviction, incremental Markdown parsing.

@@ -34,47 +34,47 @@ import { getClientConfig } from "../config/client";
 import { useAccessStore } from "../store/access";
 import clsx from "clsx";
 import { UpdateAnnouncement } from "./update-announcement";
-import { Loading } from "./loading";
+import { Loading, RouteLoading } from "./loading";
 
 const Artifacts = dynamic(async () => (await import("./artifacts")).Artifacts, {
-  loading: () => <Loading noLogo />,
+  loading: () => <RouteLoading />,
 });
 
 const Settings = dynamic(async () => (await import("./settings")).Settings, {
-  loading: () => <Loading noLogo />,
+  loading: () => <RouteLoading />,
 });
 
 const Chat = dynamic(async () => (await import("./chat")).Chat, {
-  loading: () => <Loading noLogo />,
+  loading: () => <RouteLoading />,
 });
 
 const NewChat = dynamic(async () => (await import("./new-chat")).NewChat, {
-  loading: () => <Loading noLogo />,
+  loading: () => <RouteLoading />,
 });
 
 const MaskPage = dynamic(async () => (await import("./mask")).MaskPage, {
-  loading: () => <Loading noLogo />,
+  loading: () => <RouteLoading />,
 });
 
 const PluginPage = dynamic(async () => (await import("./plugin")).PluginPage, {
-  loading: () => <Loading noLogo />,
+  loading: () => <RouteLoading />,
 });
 
 const SearchChat = dynamic(
   async () => (await import("./search-chat")).SearchChatPage,
   {
-    loading: () => <Loading noLogo />,
+    loading: () => <RouteLoading />,
   },
 );
 
 const Sd = dynamic(async () => (await import("./sd")).Sd, {
-  loading: () => <Loading noLogo />,
+  loading: () => <RouteLoading />,
 });
 
 const McpMarketPage = dynamic(
   async () => (await import("./mcp-market")).McpMarketPage,
   {
-    loading: () => <Loading noLogo />,
+    loading: () => <RouteLoading />,
   },
 );
 

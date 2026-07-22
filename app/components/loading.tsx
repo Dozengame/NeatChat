@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { useEffect, useState } from "react";
 import styles from "./home.module.scss";
 import NeatIcon from "../icons/neat.svg";
 
@@ -21,4 +22,23 @@ export function Loading(props: { noLogo?: boolean }) {
       </div>
     </div>
   );
+}
+
+// 路由级加载：延迟出现避免 chunk 秒开时的加载态闪烁，
+// 出现时由 .loading-content 的 fade-in 平滑入场
+const ROUTE_LOADING_DELAY_MS = 160;
+
+export function RouteLoading() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => setVisible(true),
+      ROUTE_LOADING_DELAY_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  if (!visible) return null;
+  return <Loading noLogo />;
 }

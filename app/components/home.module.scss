@@ -1573,6 +1573,7 @@
   height: 100%;
   width: 100%;
   gap: 16px;
+  animation: fade-in 0.24s ease-out;
 }
 
 .loading-logo {
@@ -1682,6 +1683,10 @@
   .loading-logo-aura,
   .loading-dots span,
   .loading-bar-shimmer {
+    animation: none !important;
+  }
+
+  .loading-content {
     animation: none !important;
   }
 
