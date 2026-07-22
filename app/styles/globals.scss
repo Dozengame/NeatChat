@@ -777,6 +777,7 @@ div.math {
   justify-content: center;
   overflow: auto;
   overscroll-behavior: contain;
+  animation: fade-in 0.18s ease-out;
 }
 
 @media (prefers-reduced-transparency: reduce) {
@@ -1467,6 +1468,13 @@ pre {
   .modal-mask,
   .error,
   .error-action-button {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* 上面整条选择器在 Chrome 中因 ::-ms-thumb / ::-moz-range-thumb 失效，遮罩单独兜底 */
+  .modal-mask {
+    animation: none !important;
     transition-duration: 0.01ms !important;
   }
 

@@ -30,12 +30,26 @@
 
 - `.chat-message-row`: `content-visibility: auto` + `contain-intrinsic-size: auto 140px`. Offscreen rows skip paint/layout while `auto` remembers last rendered size, keeping scrollHeight stable for the anchor paging math (rect-based `isRetainedVisibleMessageAnchor`/`getAnchoredScrollTop` verified compatible). Find-in-page and a11y tree are preserved by `content-visibility: auto`.
 
+### Overlay entrance unification
+
+- `app/styles/animation.scss`: new shared overlay keyframes `overlay-panel-in` (fade + 12px rise + 0.97 scale) and `overlay-sheet-in` (fade + 18px bottom rise); the existing `fade-in` doubles as the backdrop fade, so overlays now speak the same motion language as `message-enter` (settle curve `cubic-bezier(0.22,1,0.36,1)`).
+- `app/components/update-announcement.module.scss`: local `updateAnnouncementMaskIn/PanelIn/SheetIn` keyframes deleted; mask uses `fade-in 0.18s ease-out both`, desktop panel `overlay-panel-in 0.24s`, mobile sheet `overlay-sheet-in 0.28s`. Per-surface durations preserved; only curve/geometry unified.
+- `app/components/ui-lib.module.scss`: `.modal-container` moves from linear `slide-in ease 0.3s` to `overlay-panel-in 0.3s` settle curve; under the existing ≤600px media query (where `.modal-mask` is `align-items: flex-end` and the container is a bottom sheet) it overrides to `overlay-sheet-in 0.3s`. One class change covers every `showConfirm`/`showPrompt`/`showModal`/`showImageModal` and all Modal consumers because they all render `.modal-mask > .modal-container`. `slide-in` itself stays for popovers/lists/toasts.
+- `app/styles/globals.scss`: `.modal-mask` gains `animation: fade-in 0.18s ease-out` (was an instant hard cut).
+- Pre-existing Chrome bug found and bounded: the reduced-motion rule whose selector list contains `input[type=range]::-webkit-slider-thumb, ::-moz-range-thumb, ::-ms-thumb` is dropped entirely in Chrome — unknown pseudo-elements invalidate the whole selector list, so that rule never applied to anything (confirmed via CSSOM walk: rule absent; probe element still animated). Added a dedicated valid `.modal-mask { animation: none !important; transition-duration: 0.01ms !important; }` rule inside the same media block (contract's first-block extraction and selector-sequence regex both preserved). Reviving the dead rule for form controls is out of scope and recorded here.
+- Visual contract updated intentionally: update-announcement keyframe assertions repointed from the three local names to shared `fade-in`/`overlay-panel-in`/`overlay-sheet-in` in `animation.scss`, panel geometry assertion updated to 12px/0.97, and an added `not.toContain("@keyframes updateAnnouncement")` guard.
+
 ## Verification
 
 - `yarn lint` zero warnings; `npx tsc --noEmit` clean; `git diff --check` clean; `yarn build` passed (`/` 108 kB, First Load JS 195 kB, +1 kB from the home.tsx transition wiring).
 - Full Jest `87/87` suites, `869/869` tests, including the updated Gemini visual contract (`85/85`) and chat scroll/performance suites.
 - Browser QA (Chrome via WebBridge, dev server run with access-control env cleared for a credential-free local QA instance; production gate untouched): 240-message stress conversation rendered 15 -> 30 -> 45 rows on edge paging, capped at 45, anchored scroll restoration intact with `content-visibility: auto` computed on rows; zero horizontal overflow at desktop and `390x844`; light and dark screenshots of long chat and mobile views clean; interaction pass (paging, theme toggling, nav hover/press) logged zero console errors; real Settings theme switch drove `startViewTransition` (spy counted calls) and applied `dark`/`light` body classes correctly.
 - Hidden-tab caveat: programmatic scroll events are deferred while the QA tab is not frontmost; an early "paging not firing" reading was a harness artifact, resolved with `Page.bringToFront` — not a product regression.
+
+### Overlay slice verification (third commit)
+
+- `yarn lint` zero warnings; `npx tsc --noEmit` clean; `git diff --check` clean; `yarn build` passed; full Jest `87/87` suites, `869/869` tests, updated visual contract `85/85`.
+- Browser QA (WebBridge, credential-free local dev instance): fresh-load update announcement in light + dark — computed mask `fade-in 0.18s ease-out`, panel `overlay-panel-in 0.24s cubic-bezier(0.22,1,0.36,1) both` (screenshots `/tmp/neatchat-qa/overlay-announce-{light,dark}.png`); Settings 立即清除 `showConfirm` in dark + light — mask `fade-in`, container `overlay-panel-in 0.3s` (`overlay-confirm-{dark,light}.png`); CDP `390x844` emulation — bottom-sheet layout (`align-items: flex-end`) with container `overlay-sheet-in 0.3s` (`overlay-confirm-mobile.png`); `prefers-reduced-motion: reduce` emulation — mask and container both compute `animation: none` after the dead-selector fallback (probe element confirmed the original rule was Chrome-dropped); emulation cleared and normal path re-verified (`fade-in` + `overlay-panel-in`). All dialogs closed via 取消, never 确认; no data mutated.
 
 ## Residual risks and next candidates
 

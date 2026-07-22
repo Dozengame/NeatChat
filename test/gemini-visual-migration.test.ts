@@ -16171,17 +16171,18 @@ describe("Gemini visual migration shell", () => {
       updateAnnouncementStyles,
       "@media (prefers-reduced-motion: reduce)",
     );
+    const animationStyles = read("app/styles/animation.scss");
     const maskKeyframesBlock = readCssBlock(
-      updateAnnouncementStyles,
-      "@keyframes updateAnnouncementMaskIn",
+      animationStyles,
+      "@keyframes fade-in",
     );
     const panelKeyframesBlock = readCssBlock(
-      updateAnnouncementStyles,
-      "@keyframes updateAnnouncementPanelIn",
+      animationStyles,
+      "@keyframes overlay-panel-in",
     );
     const sheetKeyframesBlock = readCssBlock(
-      updateAnnouncementStyles,
-      "@keyframes updateAnnouncementSheetIn",
+      animationStyles,
+      "@keyframes overlay-sheet-in",
     );
     const updateAnnouncementTokenNames = [
       "--update-announcement-confirm-shadow-color",
@@ -16223,14 +16224,11 @@ describe("Gemini visual migration shell", () => {
       "text={Locale.UpdateAnnouncement.Acknowledge}",
     );
     expect(updateAnnouncement).toContain("onClick={onConfirm}");
-    expect(updateAnnouncementStyles).toContain(
-      "@keyframes updateAnnouncementMaskIn",
-    );
-    expect(updateAnnouncementStyles).toContain(
-      "@keyframes updateAnnouncementPanelIn",
-    );
-    expect(updateAnnouncementStyles).toContain(
-      "@keyframes updateAnnouncementSheetIn",
+    expect(animationStyles).toContain("@keyframes fade-in");
+    expect(animationStyles).toContain("@keyframes overlay-panel-in");
+    expect(animationStyles).toContain("@keyframes overlay-sheet-in");
+    expect(updateAnnouncementStyles).not.toContain(
+      "@keyframes updateAnnouncement",
     );
     expect(updateAnnouncementStyles).not.toContain("rgba(49, 94, 248");
     expect(updateAnnouncementStyles).not.toContain("rgba(0, 0, 0, 0.36)");
@@ -16290,7 +16288,7 @@ describe("Gemini visual migration shell", () => {
       /--update-announcement-confirm-active-shadow-color:\s*color-mix\(in srgb,\s*var\(--primary\) 18%,\s*transparent\);/,
     );
     expect(maskRootBlock).toMatch(
-      /animation:\s*updateAnnouncementMaskIn 0\.18s ease-out both;/,
+      /animation:\s*fade-in 0\.18s ease-out both;/,
     );
     expect(maskRootBlock).toMatch(/--update-announcement-panel-radius:\s*8px;/);
     expect(maskRootBlock).toMatch(
@@ -16315,7 +16313,7 @@ describe("Gemini visual migration shell", () => {
       /0 1px 2px var\(--update-announcement-panel-hairline-shadow-color\);/,
     );
     expect(panelBlock).toMatch(
-      /animation:\s*updateAnnouncementPanelIn 0\.24s cubic-bezier\(0\.2,\s*0,\s*0,\s*1\) both;/,
+      /animation:\s*overlay-panel-in 0\.24s cubic-bezier\(0\.22,\s*1,\s*0\.36,\s*1\) both;/,
     );
     expect(headerBlock).toMatch(
       /border-bottom:\s*1px solid var\(--update-announcement-divider-color\);/,
@@ -16441,7 +16439,7 @@ describe("Gemini visual migration shell", () => {
       /border-radius:\s*var\(--update-announcement-mobile-panel-radius\);/,
     );
     expect(mobilePanelRootBlock).toMatch(
-      /animation:\s*updateAnnouncementSheetIn 0\.28s cubic-bezier\(0\.2,\s*0,\s*0,\s*1\) both;/,
+      /animation:\s*overlay-sheet-in 0\.28s cubic-bezier\(0\.22,\s*1,\s*0\.36,\s*1\) both;/,
     );
     expect(readCssBlock(mobileBlock, ".footer")).toMatch(
       /justify-content:\s*center;/,
@@ -16454,7 +16452,7 @@ describe("Gemini visual migration shell", () => {
       /from\s*\{[\s\S]*opacity:\s*0;[\s\S]*\}[\s\S]*to\s*\{[\s\S]*opacity:\s*1;/,
     );
     expect(panelKeyframesBlock).toMatch(
-      /from\s*\{[\s\S]*opacity:\s*0;[\s\S]*transform:\s*translateY\(14px\) scale\(0\.98\);[\s\S]*\}[\s\S]*to\s*\{[\s\S]*opacity:\s*1;[\s\S]*transform:\s*translateY\(0\) scale\(1\);/,
+      /from\s*\{[\s\S]*opacity:\s*0;[\s\S]*transform:\s*translateY\(12px\) scale\(0\.97\);[\s\S]*\}[\s\S]*to\s*\{[\s\S]*opacity:\s*1;[\s\S]*transform:\s*translateY\(0\) scale\(1\);/,
     );
     expect(sheetKeyframesBlock).toMatch(
       /from\s*\{[\s\S]*opacity:\s*0;[\s\S]*transform:\s*translateY\(18px\);[\s\S]*\}[\s\S]*to\s*\{[\s\S]*opacity:\s*1;[\s\S]*transform:\s*translateY\(0\);/,

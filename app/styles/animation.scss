@@ -35,7 +35,7 @@
   }
 }
 
-/* 通用淡入：路由加载态、面板出现 */
+/* 通用淡入：路由加载态、面板出现、弹层遮罩 */
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -43,6 +43,32 @@
 
   to {
     opacity: 1;
+  }
+}
+
+/* 弹层面板：浮起 + 微缩放沉降，与 message-enter 同一沉降曲线 */
+@keyframes overlay-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 移动端底部弹层：从底缘升起 */
+@keyframes overlay-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
