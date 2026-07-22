@@ -14,6 +14,7 @@ Do not read all iteration files by default. Use `rg` first, then open the smalle
 
 ## Routing
 
+- 2026-07-22 前端动效与渲染打磨：View Transition 主题切换、Loading 光晕/波浪/微光、IconButton 与导航微交互、消息进入动效精修、消息行 `content-visibility` 长文本渲染优化、双主题 `::selection` 与滚动条悬停：`iterations/2026-07-22-frontend-motion-rendering-polish.md`。
 - 2026-07-16 Composer direct remediation：以外部 requirements 与 19 张 reference images 为唯一视觉事实，收敛单一 Grid Shell、Primary-soft Add、Hero/Aura、Tools/Prompt、Model/parameter panels、Light/Dark semantic tokens、posture/collision/keyboard 行为，并完成规定 Browser matrix、逐图 Fidelity Ledger 与短横屏 follow-up：`iterations/2026-07-16-composer-direct-remediation.md`。
 - 2026-07-15 Composer 2.2 continuity 全量改造：统一 Grid Shell、真实 textarea 测量、Tools/Prompt Library、四态 Model Chip、离散参数 Rail、统一菜单定位、Safe Area/Container Query 与完整 Browser QA：`iterations/2026-07-15-composer-2-2.md`。
 - 2026-07-15 composer 长草稿回归：统一空白页与已有会话的高度上限，恢复展开态正文全宽，把 controls 下沉到独立底栏，并在移动/平板断点只保留一层对称输入表面：`iterations/2026-07-15-composer-long-draft-layout.md`。

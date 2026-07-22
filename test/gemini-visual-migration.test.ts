@@ -18935,7 +18935,9 @@ describe("Gemini visual migration shell", () => {
     expect(messageActionsBlock).toMatch(/opacity:\s*0;/);
     expect(messageActionsBlock).toMatch(/pointer-events:\s*none;/);
     expect(messageActionsBlock).toMatch(/transform:\s*translateY\(4px\);/);
-    expect(messageActionsBlock).toMatch(/transition:\s*opacity 0\.2s ease;/);
+    expect(messageActionsBlock).toMatch(
+      /transition:\s*opacity 0\.2s ease,\s*transform 0\.2s ease;/,
+    );
     expect(messageActionsBlock).not.toMatch(
       /pointer-events:\s*auto\s*!important;/,
     );

@@ -92,6 +92,7 @@
   --composer-rail-thumb-surface: white;
   --composer-rail-accent-text: rgb(112, 65, 205);
   --scrollbar-thumb-color: rgba(60, 64, 67, 0.22);
+  --scrollbar-thumb-hover-color: rgba(60, 64, 67, 0.38);
   --copy-success-border-color: color-mix(in srgb, rgb(52, 168, 83) 24%, transparent);
   --copy-success-background: color-mix(in srgb, rgb(52, 168, 83) 12%, transparent);
   --copy-success-color: color-mix(in srgb, rgb(24, 128, 56) 94%, transparent);
@@ -179,6 +180,7 @@
   --composer-rail-thumb-surface: white;
   --composer-rail-accent-text: rgb(178, 143, 249);
   --scrollbar-thumb-color: rgba(255, 255, 255, 0.18);
+  --scrollbar-thumb-hover-color: rgba(255, 255, 255, 0.32);
   --copy-success-border-color: color-mix(in srgb, rgb(129, 201, 149) 24%, transparent);
   --copy-success-background: color-mix(in srgb, rgb(129, 201, 149) 14%, transparent);
   --copy-success-color: color-mix(in srgb, rgb(129, 201, 149) 96%, transparent);
@@ -304,6 +306,43 @@ body {
   border-radius: 3px;
   background-clip: content-box;
   border: none;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover-color);
+}
+
+::selection {
+  background-color: color-mix(in srgb, var(--primary) 26%, transparent);
+  color: inherit;
+}
+
+/* 主题切换根视图过渡：由 useSwitchTheme 在支持时触发 startViewTransition，
+   不支持的浏览器自然回退为瞬时切换 */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.36s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  animation-name: none;
+}
+
+::view-transition-new(root) {
+  animation-name: view-transition-root-fade-in;
+}
+
+@keyframes view-transition-root-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 select {
@@ -1429,6 +1468,11 @@ pre {
   .error,
   .error-action-button {
     transition-duration: 0.01ms !important;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.01ms;
   }
 }
 
