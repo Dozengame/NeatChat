@@ -8,13 +8,15 @@ export function useSwitchTheme() {
   const didApplyInitialTheme = useRef(false);
 
   useEffect(() => {
-    const applyThemeClass = () => {
+    const applyTheme = () => {
+      const theme = useAppConfig.getState().theme;
+
       document.body.classList.remove("light");
       document.body.classList.remove("dark");
 
-      if (config.theme === "dark") {
+      if (theme === "dark") {
         document.body.classList.add("dark");
-      } else if (config.theme === "light") {
+      } else if (theme === "light") {
         document.body.classList.add("light");
       }
 
@@ -25,7 +27,7 @@ export function useSwitchTheme() {
         'meta[name="theme-color"][media*="light"]',
       );
 
-      if (config.theme === "auto") {
+      if (theme === "auto") {
         metaDescriptionDark?.setAttribute("content", "#151515");
         metaDescriptionLight?.setAttribute("content", "#fafafa");
       } else {
@@ -46,9 +48,9 @@ export function useSwitchTheme() {
     ).startViewTransition;
 
     if (didApplyInitialTheme.current && !reduceMotion && startViewTransition) {
-      startViewTransition.call(document, applyThemeClass);
+      startViewTransition.call(document, applyTheme);
     } else {
-      applyThemeClass();
+      applyTheme();
     }
     didApplyInitialTheme.current = true;
   }, [config.theme]);

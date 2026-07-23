@@ -80,4 +80,45 @@ describe("Home theme transition", () => {
     expect(lightMeta).toHaveAttribute("content", "#151515");
     unmount();
   });
+
+  test("keeps the latest theme when View Transition callbacks finish out of order", () => {
+    const pendingUpdates: Array<() => void> = [];
+    const startViewTransition = jest.fn((update: () => void) => {
+      pendingUpdates.push(update);
+      return {};
+    });
+    (document as ViewTransitionDocument).startViewTransition =
+      startViewTransition;
+    useAppConfig.setState({ theme: Theme.Light });
+
+    const { unmount } = renderHook(() => useSwitchTheme());
+    const darkMeta = document.querySelector<HTMLMetaElement>(
+      'meta[name="theme-color"][media*="dark"]',
+    );
+    const lightMeta = document.querySelector<HTMLMetaElement>(
+      'meta[name="theme-color"][media*="light"]',
+    );
+
+    act(() => {
+      useAppConfig.setState({ theme: Theme.Dark });
+    });
+    act(() => {
+      useAppConfig.setState({ theme: Theme.Light });
+    });
+
+    expect(startViewTransition).toHaveBeenCalledTimes(2);
+    expect(pendingUpdates).toHaveLength(2);
+
+    act(() => {
+      pendingUpdates[1]?.();
+      pendingUpdates[0]?.();
+    });
+
+    expect(useAppConfig.getState().theme).toBe(Theme.Light);
+    expect(document.body).toHaveClass("light");
+    expect(document.body).not.toHaveClass("dark");
+    expect(darkMeta).toHaveAttribute("content", "#fafafa");
+    expect(lightMeta).toHaveAttribute("content", "#fafafa");
+    unmount();
+  });
 });
