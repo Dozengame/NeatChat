@@ -12,7 +12,7 @@ import {
 } from "react";
 import styles from "./home.module.scss";
 
-import { getCSSVar, useCompactScreen } from "../utils";
+import { useCompactScreen } from "../utils";
 
 import dynamic from "next/dynamic";
 import { Path, SlotID } from "../constant";
@@ -35,6 +35,7 @@ import { useAccessStore } from "../store/access";
 import clsx from "clsx";
 import { UpdateAnnouncement } from "./update-announcement";
 import { Loading, RouteLoading } from "./loading";
+import { useSwitchTheme } from "./use-switch-theme";
 
 const Artifacts = dynamic(async () => (await import("./artifacts")).Artifacts, {
   loading: () => <RouteLoading />,
@@ -77,57 +78,6 @@ const McpMarketPage = dynamic(
     loading: () => <RouteLoading />,
   },
 );
-
-function useSwitchTheme() {
-  const config = useAppConfig();
-  const didApplyInitialTheme = useRef(false);
-
-  useEffect(() => {
-    const applyThemeClass = () => {
-      document.body.classList.remove("light");
-      document.body.classList.remove("dark");
-
-      if (config.theme === "dark") {
-        document.body.classList.add("dark");
-      } else if (config.theme === "light") {
-        document.body.classList.add("light");
-      }
-    };
-
-    // 支持 View Transitions 的浏览器做一次根视图淡入过渡，其余瞬时切换
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    const startViewTransition = (
-      document as Document & {
-        startViewTransition?: (update: () => void) => unknown;
-      }
-    ).startViewTransition;
-
-    if (didApplyInitialTheme.current && !reduceMotion && startViewTransition) {
-      startViewTransition.call(document, applyThemeClass);
-    } else {
-      applyThemeClass();
-    }
-    didApplyInitialTheme.current = true;
-
-    const metaDescriptionDark = document.querySelector(
-      'meta[name="theme-color"][media*="dark"]',
-    );
-    const metaDescriptionLight = document.querySelector(
-      'meta[name="theme-color"][media*="light"]',
-    );
-
-    if (config.theme === "auto") {
-      metaDescriptionDark?.setAttribute("content", "#151515");
-      metaDescriptionLight?.setAttribute("content", "#fafafa");
-    } else {
-      const themeColor = getCSSVar("--theme-color");
-      metaDescriptionDark?.setAttribute("content", themeColor);
-      metaDescriptionLight?.setAttribute("content", themeColor);
-    }
-  }, [config.theme]);
-}
 
 function useHtmlLang() {
   useEffect(() => {
