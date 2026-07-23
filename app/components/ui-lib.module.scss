@@ -225,7 +225,7 @@
   min-width: min(300px, calc(100vw - 24px));
   max-height: calc(100dvh - 24px);
   overflow: hidden;
-  animation: slide-in ease 0.3s;
+  animation: overlay-panel-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 
   --modal-padding: 20px;
 
@@ -347,6 +347,7 @@
     min-width: 0;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
+    animation: overlay-sheet-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 
     .modal-content {
       max-height: 50vh;

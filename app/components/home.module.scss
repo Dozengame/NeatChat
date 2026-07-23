@@ -877,7 +877,22 @@
   transition:
     background-color 0.16s ease,
     color 0.16s ease,
-    box-shadow 0.16s ease;
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+
+  span {
+    transition: transform 0.18s ease;
+  }
+
+  @media (hover: hover) {
+    &:hover span {
+      transform: translateX(2px);
+    }
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
 
   &:hover {
     background-color: var(--hover-color);
@@ -1557,6 +1572,79 @@
   align-items: center;
   height: 100%;
   width: 100%;
+  gap: 16px;
+  animation: fade-in 0.24s ease-out;
+}
+
+.loading-logo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+}
+
+.loading-logo-aura {
+  position: absolute;
+  inset: -16px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--primary) 32%, transparent) 0%,
+    color-mix(in srgb, var(--primary) 10%, transparent) 46%,
+    transparent 72%
+  );
+  animation: loading-aura-pulse 2.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.loading-dots {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 8px;
+
+  span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--primary);
+    animation: loading-dot-wave 1.2s ease-in-out infinite;
+
+    &:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+  }
+}
+
+.loading-bar {
+  position: relative;
+  width: 96px;
+  height: 2px;
+  border-radius: 999px;
+  overflow: hidden;
+  background-color: var(--hover-color);
+}
+
+.loading-bar-shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 34%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--primary) 72%, transparent),
+    transparent
+  );
+  animation: loading-bar-shimmer 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .rtl-screen {
@@ -1584,5 +1672,25 @@
   .narrow-sidebar .chat-item-narrow {
     transition: none !important;
     transform: none !important;
+  }
+
+  .sidebar-nav-item,
+  .sidebar-nav-item span {
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .loading-logo-aura,
+  .loading-dots span,
+  .loading-bar-shimmer {
+    animation: none !important;
+  }
+
+  .loading-content {
+    animation: none !important;
+  }
+
+  .loading-dots span {
+    opacity: 0.8;
   }
 }

@@ -3962,13 +3962,16 @@
 }
 
 .chat-message-tail {
-  animation: slide-in ease 0.3s;
+  animation: message-enter 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .chat-message-row {
   width: 100%;
   max-width: 100%;
   margin: 0;
+  /* 视口外消息行跳过绘制，auto 记住上次渲染尺寸保持滚动高度稳定 */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 140px;
 }
 
 .chat-message-row-assistant {
@@ -4042,7 +4045,9 @@
   opacity: 0;
   transform: translateY(4px);
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .chat-message-row-assistant .chat-message-actions {
@@ -8913,6 +8918,10 @@
 
   .chat-message-action-rail .chat-input-action,
   .chat-message-action-rail .chat-input-action[data-copy-state="copied"] {
+    transition-duration: 0.01ms !important;
+  }
+
+  .chat-message-actions {
     transition-duration: 0.01ms !important;
   }
 

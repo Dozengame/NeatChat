@@ -33,7 +33,7 @@
   box-sizing: border-box;
   background: var(--update-announcement-mask-background);
   backdrop-filter: blur(8px);
-  animation: updateAnnouncementMaskIn 0.18s ease-out both;
+  animation: fade-in 0.18s ease-out both;
 }
 
 .panel {
@@ -49,7 +49,7 @@
   box-shadow:
     0 22px 70px var(--update-announcement-panel-shadow-color),
     0 1px 2px var(--update-announcement-panel-hairline-shadow-color);
-  animation: updateAnnouncementPanelIn 0.24s cubic-bezier(0.2, 0, 0, 1) both;
+  animation: overlay-panel-in 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .header {
@@ -244,7 +244,7 @@
     margin: 0;
     border: 1px solid var(--update-announcement-panel-border-color);
     border-radius: var(--update-announcement-mobile-panel-radius);
-    animation: updateAnnouncementSheetIn 0.28s cubic-bezier(0.2, 0, 0, 1) both;
+    animation: overlay-sheet-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   .header {
@@ -272,39 +272,5 @@
     animation: none !important;
     transition-duration: 0.01ms !important;
     transform: none !important;
-  }
-}
-
-@keyframes updateAnnouncementMaskIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes updateAnnouncementPanelIn {
-  from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.98);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes updateAnnouncementSheetIn {
-  from {
-    opacity: 0;
-    transform: translateY(18px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }

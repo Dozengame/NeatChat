@@ -21,3 +21,93 @@
     transform: translateY(0px);
   }
 }
+
+/* 消息进入：轻浮起 + 轻微回弹沉降，替代生硬的直线滑入 */
+@keyframes message-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 通用淡入：路由加载态、面板出现、弹层遮罩 */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* 弹层面板：浮起 + 微缩放沉降，与 message-enter 同一沉降曲线 */
+@keyframes overlay-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 移动端底部弹层：从底缘升起 */
+@keyframes overlay-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 加载态 logo 光晕呼吸 */
+@keyframes loading-aura-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+/* 加载态三点波浪 */
+@keyframes loading-dot-wave {
+  0%,
+  60%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0) scale(1);
+  }
+
+  30% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1.12);
+  }
+}
+
+/* 加载态进度条微光扫过 */
+@keyframes loading-bar-shimmer {
+  from {
+    transform: translateX(-110%);
+  }
+
+  to {
+    transform: translateX(320%);
+  }
+}
