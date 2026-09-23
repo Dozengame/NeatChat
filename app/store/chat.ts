@@ -62,7 +62,10 @@ import {
   formatMcpToolResultForChat,
 } from "../mcp/display";
 import { registerChatStore } from "./chat-state-link";
-import { isOpenAIGpt56ModelConfig } from "../utils/openai-responses";
+import {
+  canReuseOpenAIResponsesHistory,
+  isOpenAIResponsesAdvancedModelConfig,
+} from "../utils/openai-responses";
 import { selectOpenAIAllTurnsHistory } from "../utils/openai-history";
 import { createTrailingThrottledJSONStorage } from "../utils/chat-persist-storage";
 import {
@@ -239,9 +242,15 @@ function countMessages(msgs: ChatMessage[]) {
   );
 }
 
-function fillTemplateWith(input: string, modelConfig: ModelConfig) {
+function fillTemplateWith(
+  input: string,
+  modelConfig: ModelConfig,
+  stableSystemDate = false,
+) {
   const cutoff =
-    KnowledgeCutOffDate[modelConfig.model] ?? KnowledgeCutOffDate.default;
+    KnowledgeCutOffDate[modelConfig.model] ??
+    KnowledgeCutOffDate[modelConfig.model.replace(/-\d{4}-\d{2}-\d{2}$/, "")] ??
+    KnowledgeCutOffDate.default;
   // Find the model in the DEFAULT_MODELS array that matches the modelConfig.model
   const modelInfo = DEFAULT_MODELS.find((m) => m.name === modelConfig.model);
 
@@ -253,11 +262,19 @@ function fillTemplateWith(input: string, modelConfig: ModelConfig) {
     serviceProvider = modelInfo.provider.providerName;
   }
 
+  const now = new Date();
   const vars = {
     ServiceProvider: serviceProvider,
     cutoff,
     model: modelConfig.model,
-    time: new Date().toString(),
+    time: stableSystemDate
+      ? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
+          2,
+          "0",
+        )}-${String(now.getDate()).padStart(2, "0")} (${
+          Intl.DateTimeFormat().resolvedOptions().timeZone
+        })`
+      : now.toString(),
     lang: getLang(),
     input: input,
   };
@@ -709,9 +726,21 @@ export const useChatStore = createPersistStore(
           options?.targetSession ?? get().ensureCurrentSessionSaved();
         const modelConfig = { ...session.mask.modelConfig };
         const requestPluginIds = [...(session.mask.plugin ?? [])];
-        const openaiResponsesRecoveryPending = session.messages.some(
-          (message) => message.openaiResponsesRecoveryPending === true,
+        const pendingRecoveryMessageIds = new Set(
+          session.messages
+            .slice(session.clearContextIndex ?? 0)
+            .filter(
+              (message) =>
+                message.openaiResponsesRecoveryPending === true &&
+                canReuseOpenAIResponsesHistory(
+                  message.model,
+                  modelConfig.model,
+                ),
+            )
+            .map((message) => message.id),
         );
+        const openaiResponsesRecoveryPending =
+          pendingRecoveryMessageIds.size > 0;
         const isOpenAIImageGeneration = isOpenAIImageGenerationModelConfig({
           model: modelConfig.model,
           providerName: modelConfig.providerName,
@@ -910,6 +939,11 @@ export const useChatStore = createPersistStore(
         }
         if (requestSettled || preflightController.signal.aborted) return;
         const sendMessages = recentMessages.concat(userMessage);
+        const recoveryMessageIds = new Set(
+          recentMessages
+            .filter((message) => pendingRecoveryMessageIds.has(message.id))
+            .map((message) => message.id),
+        );
 
         try {
           const { getClientApi } = await import("../client/api");
@@ -966,11 +1000,14 @@ export const useChatStore = createPersistStore(
                 if (
                   !isRecoveryPending &&
                   Array.isArray(metadata?.openaiResponsesOutput) &&
-                  isOpenAIGpt56ModelConfig(modelConfig)
+                  isOpenAIResponsesAdvancedModelConfig(modelConfig)
                 ) {
                   get().updateTargetSession(session, (session) => {
                     session.messages.forEach((message) => {
-                      if (message.openaiResponsesRecoveryPending) {
+                      if (
+                        message.openaiResponsesRecoveryPending &&
+                        recoveryMessageIds.has(message.id)
+                      ) {
                         message.openaiResponsesRecoveryPending = false;
                       }
                     });
@@ -1104,12 +1141,13 @@ export const useChatStore = createPersistStore(
 
         const session = options?.session ?? get().currentSession();
         const modelConfig = session.mask.modelConfig;
-        const isOpenAIGpt56 = isOpenAIGpt56ModelConfig({
+        const supportsAdvancedResponses = isOpenAIResponsesAdvancedModelConfig({
           model: modelConfig.model,
           providerName: modelConfig.providerName,
         });
         const preserveAllReasoningTurns =
-          isOpenAIGpt56 && modelConfig.reasoningContext === "all_turns";
+          supportsAdvancedResponses &&
+          modelConfig.reasoningContext === "all_turns";
         const clearContextIndex = session.clearContextIndex ?? 0;
         const messages = session.messages.slice();
         const totalMessageCount = session.messages.length;
@@ -1144,10 +1182,11 @@ export const useChatStore = createPersistStore(
 
         // 修改这部分逻辑，确保不会发送空的系统提示词
         if (shouldInjectSystemPrompts) {
-          const defaultSystemPrompt = fillTemplateWith("", {
-            ...modelConfig,
-            template: DEFAULT_SYSTEM_TEMPLATE,
-          });
+          const defaultSystemPrompt = fillTemplateWith(
+            "",
+            { ...modelConfig, template: DEFAULT_SYSTEM_TEMPLATE },
+            true,
+          );
 
           // 只有当有默认系统提示词或MCP系统提示词时才添加系统消息
           if (defaultSystemPrompt || composedMcpSystemPrompt) {
@@ -1219,7 +1258,7 @@ export const useChatStore = createPersistStore(
         const requiredReplayMessageIndexes = new Set<number>();
         for (
           let i = totalMessageCount - 1;
-          isOpenAIGpt56 && i >= clearContextIndex;
+          supportsAdvancedResponses && i >= clearContextIndex;
           i -= 1
         ) {
           const message = messages[i];

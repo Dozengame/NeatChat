@@ -16,6 +16,7 @@ import type {
 
 export const VERCEL_HOBBY_MAX_DURATION_SECONDS = 300;
 const GPT_IMAGE_2_MODEL = "gpt-image-2";
+export const OPENAI_IMAGE_DEFAULT_MODEL = "gpt-image-2.5-flare";
 const DALLE_MODEL_PREFIX = "dall-e";
 const GPT_IMAGE_MODEL_PREFIX = "gpt-image";
 
@@ -51,6 +52,11 @@ export const GPT_IMAGE_2_SIZES = [
 ] as const;
 
 export const GPT_IMAGE_QUALITIES = ["auto", "low", "medium", "high"] as const;
+export const GPT_IMAGE_FLARE_QUALITIES = [
+  ...GPT_IMAGE_QUALITIES,
+  "xhigh",
+  "max",
+] as const;
 
 const GPT_IMAGE_2_DEFAULTS = {
   size: "auto" as GptImageSize,
@@ -95,6 +101,10 @@ export interface GptImage2RequestPayload {
 export type OpenAIImageGenerationRequestPayload =
   | DalleRequestPayload
   | GptImage2RequestPayload;
+
+export type OpenAIImageRequestParameters =
+  | Omit<DalleRequestPayload, "model" | "prompt">
+  | Omit<GptImage2RequestPayload, "model" | "prompt">;
 
 export type OpenAIImageGenerationProgressCopy = {
   Model: (model: string) => string;
@@ -141,9 +151,9 @@ export function isGptImageGenerationModel(model?: string) {
 function isModelOrDatedSnapshot(model: string, baseModel: string) {
   return (
     model === baseModel ||
-    new RegExp(`^${baseModel.replace(".", "\\.")}-\\d{4}-\\d{2}-\\d{2}$`).test(
-      model,
-    )
+    new RegExp(
+      `^${baseModel.replace(/\./g, "\\.")}-\\d{4}-\\d{2}-\\d{2}$`,
+    ).test(model)
   );
 }
 
@@ -151,11 +161,23 @@ export function isGptImage2(model?: string) {
   return isModelOrDatedSnapshot(normalizeModel(model), GPT_IMAGE_2_MODEL);
 }
 
+export function isGptImageFlare(model?: string) {
+  return isModelOrDatedSnapshot(
+    normalizeModel(model),
+    OPENAI_IMAGE_DEFAULT_MODEL,
+  );
+}
+
 export function getOpenAIImageGenerationOptions(model?: string) {
   if (isGptImageGenerationModel(model)) {
     return {
-      sizes: isGptImage2(model) ? GPT_IMAGE_2_SIZES : LEGACY_GPT_IMAGE_SIZES,
-      qualities: GPT_IMAGE_QUALITIES,
+      sizes:
+        isGptImage2(model) || isGptImageFlare(model)
+          ? GPT_IMAGE_2_SIZES
+          : LEGACY_GPT_IMAGE_SIZES,
+      qualities: isGptImageFlare(model)
+        ? GPT_IMAGE_FLARE_QUALITIES
+        : GPT_IMAGE_QUALITIES,
       styles: [] as readonly DalleStyle[],
     };
   }
@@ -383,37 +405,39 @@ export function applyOpenAIImageGenerationDefaults<
   return config;
 }
 
-export function buildOpenAIImageGenerationPayload(params: {
+// Shared by generation, editing, and the server boundary so all request paths
+// apply the same per-model capabilities and discard unsupported image fields.
+export function normalizeOpenAIImageRequestParameters(params: {
   model: string;
-  prompt: string;
   config?: OpenAIImageGenerationConfig;
-}): OpenAIImageGenerationRequestPayload {
+}): OpenAIImageRequestParameters {
   if (isGptImageGenerationModel(params.model)) {
     const size = normalizeOpenAIImageSize(params.model, params.config?.size);
     const quality = normalizeOpenAIImageQuality(
       params.model,
       params.config?.quality,
     );
-    const background =
-      params.config?.background === "opaque" ||
-      params.config?.background === "auto"
-        ? params.config.background
-        : GPT_IMAGE_2_DEFAULTS.background;
     const outputFormat =
       params.config?.output_format === "png" ||
       params.config?.output_format === "jpeg" ||
       params.config?.output_format === "webp"
         ? params.config.output_format
         : GPT_IMAGE_2_DEFAULTS.output_format;
+    const background =
+      params.config?.background === "opaque" ||
+      params.config?.background === "auto" ||
+      (isGptImageFlare(params.model) &&
+        params.config?.background === "transparent" &&
+        (outputFormat === "png" || outputFormat === "webp"))
+        ? params.config.background
+        : GPT_IMAGE_2_DEFAULTS.background;
     const moderation =
       params.config?.moderation === "low" ||
       params.config?.moderation === "auto"
         ? params.config.moderation
         : GPT_IMAGE_2_DEFAULTS.moderation;
 
-    const payload: GptImage2RequestPayload = {
-      model: params.model,
-      prompt: params.prompt,
+    const payload: Omit<GptImage2RequestPayload, "model" | "prompt"> = {
       n: 1,
       size: size ?? "auto",
       quality: quality ?? "auto",
@@ -424,6 +448,7 @@ export function buildOpenAIImageGenerationPayload(params: {
 
     if (
       typeof params.config?.output_compression === "number" &&
+      Number.isFinite(params.config.output_compression) &&
       (payload.output_format === "jpeg" || payload.output_format === "webp")
     ) {
       payload.output_compression = Math.floor(
@@ -440,9 +465,7 @@ export function buildOpenAIImageGenerationPayload(params: {
   const size = dalleSizeOptions.includes(params.config?.size as any)
     ? params.config?.size
     : DALLE3_DEFAULTS.size;
-  const payload: DalleRequestPayload = {
-    model: params.model,
-    prompt: params.prompt,
+  const payload: Omit<DalleRequestPayload, "model" | "prompt"> = {
     response_format: "b64_json",
     n: 1,
     size: size ?? "1024x1024",
@@ -464,61 +487,31 @@ export function buildOpenAIImageGenerationPayload(params: {
   return payload;
 }
 
+export function buildOpenAIImageGenerationPayload(params: {
+  model: string;
+  prompt: string;
+  config?: OpenAIImageGenerationConfig;
+}): OpenAIImageGenerationRequestPayload {
+  return {
+    model: params.model,
+    prompt: params.prompt,
+    ...normalizeOpenAIImageRequestParameters(params),
+  };
+}
+
 export function buildOpenAIImageEditFormData(params: {
   model: string;
   prompt: string;
   config?: OpenAIImageGenerationConfig;
   images: OpenAIImageInputFile[];
 }) {
-  const outputFormat =
-    params.config?.output_format === "png" ||
-    params.config?.output_format === "jpeg" ||
-    params.config?.output_format === "webp"
-      ? params.config.output_format
-      : GPT_IMAGE_2_DEFAULTS.output_format;
   const formData = new FormData();
   formData.append("model", params.model);
   formData.append("prompt", params.prompt);
-  formData.append("n", "1");
-  formData.append(
-    "size",
-    normalizeOpenAIImageSize(params.model, params.config?.size),
-  );
-  formData.append(
-    "quality",
-    normalizeOpenAIImageQuality(params.model, params.config?.quality) ??
-      GPT_IMAGE_2_DEFAULTS.quality,
-  );
-  formData.append(
-    "background",
-    params.config?.background === "opaque" ||
-      params.config?.background === "auto"
-      ? params.config.background
-      : GPT_IMAGE_2_DEFAULTS.background,
-  );
-  formData.append("output_format", outputFormat);
-
-  if (
-    typeof params.config?.output_compression === "number" &&
-    (outputFormat === "jpeg" || outputFormat === "webp")
-  ) {
-    formData.append(
-      "output_compression",
-      String(
-        Math.floor(
-          Math.min(100, Math.max(0, params.config.output_compression)),
-        ),
-      ),
-    );
-  }
-
-  if (
-    params.config?.moderation === "low" ||
-    params.config?.moderation === "auto"
-  ) {
-    formData.append("moderation", params.config.moderation);
-  } else {
-    formData.append("moderation", GPT_IMAGE_2_DEFAULTS.moderation);
+  for (const [key, value] of Object.entries(
+    normalizeOpenAIImageRequestParameters(params),
+  )) {
+    formData.append(key, String(value));
   }
 
   params.images.forEach((image, index) => {

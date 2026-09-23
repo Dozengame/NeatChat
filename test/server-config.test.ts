@@ -643,7 +643,7 @@ describe("OpenAI Responses config", () => {
     expect(parseOpenAICompressMessageLengthThreshold("9999")).toBe(4000);
   });
 
-  test("uses GPT-5.6 Terra Responses defaults", () => {
+  test("uses GPT-6 Luna Responses defaults", () => {
     process.env.DEFAULT_MODEL = "";
     process.env.OPENAI_TEMPERATURE = "";
     process.env.OPENAI_REASONING_EFFORT = "";
@@ -658,7 +658,7 @@ describe("OpenAI Responses config", () => {
 
     const config = getServerSideConfig();
 
-    expect(config.defaultModel).toBe("gpt-5.6-terra");
+    expect(config.defaultModel).toBe("gpt-6-luna");
     expect(config.defaultTemperature).toBe(1);
     expect(config.openaiReasoningEffort).toBe("low");
     expect(config.openaiMaxOutputTokens).toBeUndefined();

@@ -222,4 +222,68 @@ describe("OpenAI Responses proxy preprocessing", () => {
     expect(response.status).toBe(400);
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
+  test("normalizes Flare generation through the configured image gateway", async () => {
+    mockServerConfig.baseUrl = "http://chatapi.dozengame.com";
+    mockServerConfig.openaiImagesUrl = "http://chatapi.dozengame.com";
+    mockServerConfig.customModels =
+      "-all,gpt-6-luna@openai,gpt-image-2.5-flare@openai";
+    const req = makeRequest({
+      model: "gpt-image-2.5-flare",
+      prompt: "test",
+      size: "3840x2160",
+      quality: "max",
+      n: 8,
+      output_format: "png",
+      output_compression: 50,
+      background: "transparent",
+      style: "vivid",
+      response_format: "url",
+      input_fidelity: "high",
+    });
+    req.nextUrl = new URL(
+      "https://neatchat.test/api/openai/v1/images/generations",
+    );
+    await requestOpenai(req);
+    const [url, options] = (globalThis.fetch as jest.Mock).mock.calls[0];
+    expect(url).toBe("http://chatapi.dozengame.com/v1/images/generations");
+    expect(JSON.parse(options.body)).toEqual({
+      model: "gpt-image-2.5-flare",
+      prompt: "test",
+      size: "3840x2160",
+      quality: "max",
+      n: 1,
+      output_format: "png",
+      background: "transparent",
+      moderation: "auto",
+    });
+  });
+
+  test("normalizes Flare multipart without changing the image bytes", async () => {
+    mockServerConfig.baseUrl = "http://chatapi.dozengame.com";
+    mockServerConfig.customModels = "-all,gpt-image-2.5-flare@openai";
+    const form = new FormData();
+    form.set("model", "gpt-image-2.5-flare");
+    form.set("prompt", "edit");
+    form.set("quality", "xhigh");
+    form.set("output_format", "webp");
+    form.set("output_compression", "70");
+    form.set(
+      "image[]",
+      new Blob(["unchanged-image"], { type: "image/png" }),
+      "input.png",
+    );
+    const originalImage = form.get("image[]");
+    const req = makeRequest({});
+    req.nextUrl = new URL("https://neatchat.test/api/openai/v1/images/edits");
+    req.headers.set("content-type", "multipart/form-data; boundary=original");
+    req.formData = async () => form;
+    await requestOpenai(req);
+    const [url, options] = (globalThis.fetch as jest.Mock).mock.calls[0];
+    expect(url).toBe("http://chatapi.dozengame.com/v1/images/edits");
+    expect(options.headers["Content-Type"]).toBeUndefined();
+    expect(options.body.get("image[]")).toBe(originalImage);
+    expect(options.body.get("quality")).toBe("xhigh");
+    expect(options.body.get("output_compression")).toBe("70");
+    expect(options.body.get("n")).toBe("1");
+  });
 });

@@ -4,14 +4,14 @@ import path from "path";
 const read = (file: string) =>
   fs.readFileSync(path.join(process.cwd(), file), "utf8");
 
-describe("GPT-5.6 Settings contract", () => {
-  test("keeps advanced capability controls inside the GPT-5.6 ModelConfig gate", () => {
+describe("Responses advanced Settings contract", () => {
+  test("keeps advanced capability controls inside the supported Responses ModelConfig gate", () => {
     const modelConfig = read("app/components/model-config.tsx");
     const chat = read("app/components/chat.tsx");
     const publicConfig = read("app/utils/public-app-config.ts");
 
-    expect(modelConfig).toContain("isOpenAIGpt56ModelConfig");
-    expect(modelConfig).toContain("{isOpenAIGpt56 && (");
+    expect(modelConfig).toContain("isOpenAIResponsesAdvancedModelConfig");
+    expect(modelConfig).toContain("{supportsAdvancedResponses && (");
     for (const field of [
       "reasoningMode",
       "reasoningContext",
@@ -118,7 +118,7 @@ describe("GPT-5.6 Settings contract", () => {
     expect(chat).toContain("locked={!!headerReasoningLocked}");
     expect(publicConfig).toContain("reasoningEffortAllowlist?");
     expect(envTemplate).toContain("WEBUI_ALLOWED_REASONING_EFFORTS=");
-    expect(envTemplate).toContain("gpt-5.6-sol=");
+    expect(envTemplate).toContain("gpt-6-sol=");
     expect(envTemplate).toContain("不支持产品级 Ultra");
   });
 });

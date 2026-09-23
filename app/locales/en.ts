@@ -969,6 +969,8 @@ const en: LocaleType = {
           low: "Low",
           medium: "Medium",
           high: "High",
+          xhigh: "Extra high",
+          max: "Maximum",
           standard: "Standard",
           hd: "HD",
         })[quality] ?? quality,
@@ -1040,7 +1042,7 @@ const en: LocaleType = {
       InputImageDetail: {
         Title: "Input Image Detail",
         SubTitle:
-          "Defaults to High so GPT-5.6 Auto does not increase cost and latency with Original",
+          "Defaults to High; Original supports finer image detail but may increase cost and latency",
         Low: "Low",
         High: "High",
         Original: "Original",
@@ -1049,7 +1051,7 @@ const en: LocaleType = {
       PromptCacheMode: {
         Title: "Prompt Cache Mode",
         SubTitle:
-          "Disabled uses Explicit with no breakpoint to avoid cache writes; Implicit caches automatically; Explicit marks the latest input breakpoint",
+          "Disabled uses Explicit with no breakpoint to avoid cache writes; Implicit caches automatically; Explicit preserves reusable input breakpoints across turns",
         Disabled: "Disabled",
         Implicit: "Implicit",
         Explicit: "Explicit",

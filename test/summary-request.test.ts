@@ -72,6 +72,75 @@ function targetModelConfig(
 }
 
 describe("resolveSummaryRequestConfig", () => {
+  test.each(["gpt-image-2.5-flare", "gpt-image-2", "dall-e-3"])(
+    "ignores a saved %s summary override and follows the Luna default",
+    (imageModel) => {
+      const target = targetModelConfig({
+        compressModel: imageModel,
+        compressProviderName: ServiceProvider.OpenAI,
+      });
+      const result = resolveSummaryRequestConfig({
+        targetModelConfig: target,
+        fallbackModelConfig: targetModelConfig({ model: imageModel as any }),
+        publicConfig: publicConfig({
+          defaults: { model: "gpt-6-luna" },
+          forced: { model: "gpt-6-luna" },
+          allowedModels: [`${imageModel}@OpenAI`, "gpt-6-luna@OpenAI"],
+          reasoningEffortDefaults: {
+            default: "medium",
+            models: { "gpt-6-luna": "xhigh" },
+          },
+        }),
+        availableModelRefs: [`${imageModel}@OpenAI`, "gpt-6-luna@OpenAI"],
+      });
+
+      expect(result).toMatchObject({
+        model: "gpt-6-luna",
+        providerName: ServiceProvider.OpenAI,
+        reasoningEffort: "xhigh",
+        source: "server_default",
+        followsDefault: true,
+        defaultModelRef: "gpt-6-luna@OpenAI",
+      });
+      expect(target.compressModel).toBe(imageModel);
+    },
+  );
+
+  test("skips image defaults and fallbacks even when images lead the allowlist", () => {
+    const result = resolveSummaryRequestConfig({
+      targetModelConfig: targetModelConfig(),
+      fallbackModelConfig: targetModelConfig({ model: "gpt-image-2" as any }),
+      publicConfig: publicConfig({
+        defaults: { model: "gpt-image-2.5-flare" },
+        forced: { model: "gpt-image-2.5-flare" },
+        allowedModels: ["gpt-image-2.5-flare@OpenAI", "gpt-6-luna@OpenAI"],
+      }),
+    });
+
+    expect(result).toMatchObject({
+      model: "gpt-6-luna",
+      defaultModelRef: "gpt-6-luna@OpenAI",
+      followsDefault: true,
+    });
+  });
+
+  test("uses the code chat default when an unrestricted fallback is an image model", () => {
+    const result = resolveSummaryRequestConfig({
+      targetModelConfig: targetModelConfig({
+        compressModel: "gpt-image-2.5-flare",
+        compressProviderName: ServiceProvider.OpenAI,
+      }),
+      fallbackModelConfig: targetModelConfig({ model: "gpt-image-2" as any }),
+    });
+
+    expect(result).toMatchObject({
+      model: "gpt-6-luna",
+      defaultModelRef: "gpt-6-luna@OpenAI",
+      followsDefault: true,
+      source: "fallback",
+    });
+  });
+
   test("binds the empty sentinel to the effective DEFAULT_MODEL and its effort", () => {
     const result = resolveSummaryRequestConfig({
       targetModelConfig: targetModelConfig({

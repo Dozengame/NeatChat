@@ -4,6 +4,7 @@ import {
   getOpenAIImageGenerationOptions,
   isOpenAIImageGenerationModel,
   isOpenAIImageGenerationModelConfig,
+  OPENAI_IMAGE_DEFAULT_MODEL,
 } from "../utils/openai-image";
 import {
   isOpenAIResponsesReasoningModelConfig,
@@ -129,7 +130,9 @@ export function resolvePreferredChatHomeModel(
       )
     : undefined;
   const preferredName =
-    mode === "image" ? "gpt-image-2" : OPENAI_RESPONSES_DEFAULT_MODEL;
+    mode === "image"
+      ? OPENAI_IMAGE_DEFAULT_MODEL
+      : OPENAI_RESPONSES_DEFAULT_MODEL;
 
   return (
     configuredModel ??

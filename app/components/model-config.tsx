@@ -22,7 +22,7 @@ import {
   getMaxOutputTokensForReasoningEffort,
   getOpenAIResponsesMaxOutputTokensLimit,
   includeCurrentOpenAIResponsesReasoningEffort,
-  isOpenAIGpt56ModelConfig,
+  isOpenAIResponsesAdvancedModelConfig,
   isOpenAIGpt5OrNewerModelConfig,
   isOpenAIResponsesReasoningModelConfig,
   isOpenAIResponsesTextVerbosityModelConfig,
@@ -179,6 +179,10 @@ function useModelConfigListView(props: {
   const persistedSummaryModelSelectable =
     !!persistedCompressModelValue &&
     !!persistedSummaryModel?.available &&
+    !isOpenAIImageGenerationModelConfig({
+      model: props.modelConfig.compressModel,
+      providerName: props.modelConfig.compressProviderName,
+    }) &&
     (allowedModels.size === 0 ||
       allowedModels.has(persistedCompressModelValue));
   const showUnavailableSummaryOverride =
@@ -219,7 +223,7 @@ function useModelConfigListView(props: {
     model: props.modelConfig.model,
     providerName: props.modelConfig?.providerName,
   });
-  const isOpenAIGpt56 = isOpenAIGpt56ModelConfig({
+  const supportsAdvancedResponses = isOpenAIResponsesAdvancedModelConfig({
     model: props.modelConfig.model,
     providerName: props.modelConfig?.providerName,
   });
@@ -232,7 +236,10 @@ function useModelConfigListView(props: {
     normalizedProviderName === "chatgpt";
   const supportsSamplingControls =
     !isOpenAIProvider ||
-    supportsOpenAIResponsesSampling(props.modelConfig.model);
+    supportsOpenAIResponsesSampling(
+      props.modelConfig.model,
+      props.modelConfig.reasoningEffort,
+    );
   const isOpenAIImageGeneration = isOpenAIImageGenerationModelConfig({
     model: props.modelConfig.model,
     providerName: props.modelConfig?.providerName,
@@ -402,7 +409,9 @@ function useModelConfigListView(props: {
             </ListItem>
           )}
         </>
-      ) : supportsReasoning || supportsTextVerbosity || isOpenAIGpt56 ? (
+      ) : supportsReasoning ||
+        supportsTextVerbosity ||
+        supportsAdvancedResponses ? (
         <>
           {supportsReasoning && visibleReasoningEffortOptions.length > 0 && (
             <ListItem
@@ -475,7 +484,7 @@ function useModelConfigListView(props: {
               </Select>
             </ListItem>
           )}
-          {isOpenAIGpt56 && (
+          {supportsAdvancedResponses && (
             <>
               <ListItem
                 title={Locale.Settings.GPT56Capabilities.ReasoningMode.Title}
@@ -633,7 +642,9 @@ function useModelConfigListView(props: {
             </>
           )}
         </>
-      ) : supportsSamplingControls ? (
+      ) : null}
+
+      {!isOpenAIImageGeneration && supportsSamplingControls ? (
         <>
           <ListItem
             title={Locale.Settings.Temperature.Title}
@@ -920,6 +931,10 @@ function useModelConfigListView(props: {
               )}
               {allModels.flatMap((v) =>
                 v.available &&
+                !isOpenAIImageGenerationModelConfig({
+                  model: v.name,
+                  providerName: v.provider?.providerName,
+                }) &&
                 (allowedModels.size === 0 ||
                   allowedModels.has(`${v.name}@${v.provider?.providerName}`))
                   ? [

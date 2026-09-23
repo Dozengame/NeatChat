@@ -194,7 +194,7 @@ describe("OpenAI Responses administrator policy", () => {
     );
   });
 
-  test("normalizes explicit mode to the latest user content breakpoint", () => {
+  test("preserves the previous and latest user content cache boundaries", () => {
     const result = enforceLockedOpenAIResponsesPolicy(
       {
         model: "gpt-5.6-sol",
@@ -234,7 +234,9 @@ describe("OpenAI Responses administrator policy", () => {
       ttl: "30m",
     });
     const input = result.input as any[];
-    expect(input[0].content[0].prompt_cache_breakpoint).toBeUndefined();
+    expect(input[0].content[0].prompt_cache_breakpoint).toEqual({
+      mode: "explicit",
+    });
     expect(input[2].content[0].prompt_cache_breakpoint).toBeUndefined();
     expect(input[2].content[1].prompt_cache_breakpoint).toEqual({
       mode: "explicit",

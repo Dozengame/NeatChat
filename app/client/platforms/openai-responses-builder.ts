@@ -2,13 +2,14 @@ import type { ChatOptions, MultimodalContent } from "../types";
 import type { ModelConfig } from "@/app/store";
 import type { ResponsesFunctionTool } from "./openai-responses-tools";
 import {
+  applyOpenAIResponsesPromptCachePolicy,
+  canReuseOpenAIResponsesHistory,
   clampOpenAIResponsesMaxOutputTokens,
-  isOpenAIGpt56ModelConfig,
+  isOpenAIResponsesAdvancedModelConfig,
   isOpenAIResponsesReasoningModelConfig,
   isOpenAIResponsesTextVerbosityModelConfig,
   normalizeOpenAIResponsesReasoningEffort,
   parseOpenAIResponsesInputImageDetail,
-  parseOpenAIResponsesPromptCacheKey,
   parseOpenAIResponsesPromptCacheMode,
   parseOpenAIResponsesReasoningContext,
   parseOpenAIResponsesReasoningMode,
@@ -157,10 +158,56 @@ function toResponsesOutputContent(content: string | MultimodalContent[]) {
   ];
 }
 
+function summarizeCrossModelToolResults(
+  message: ChatOptions["messages"][number],
+) {
+  const trace = message.openaiResponsesOutput;
+  if (!Array.isArray(trace)) return "";
+
+  const calls = new Map<string, { name: string; count: number }>();
+  const outputs = new Map<string, { output: string; count: number }>();
+  for (const entry of trace) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+    const item = entry as Record<string, unknown>;
+    if (typeof item.call_id !== "string" || !item.call_id.trim()) continue;
+    if (item.type === "function_call" && typeof item.name === "string") {
+      calls.set(item.call_id, {
+        name: item.name,
+        count: (calls.get(item.call_id)?.count ?? 0) + 1,
+      });
+    } else if (
+      item.type === "function_call_output" &&
+      typeof item.output === "string"
+    ) {
+      outputs.set(item.call_id, {
+        output: item.output,
+        count: (outputs.get(item.call_id)?.count ?? 0) + 1,
+      });
+    }
+  }
+
+  const results = Array.from(calls.entries()).flatMap(([callId, call]) => {
+    const output = outputs.get(callId);
+    return call.count === 1 && call.name.trim() && output?.count === 1
+      ? [{ tool: call.name, result: output.output }]
+      : [];
+  });
+  if (results.length === 0) return "";
+
+  // Plain assistant text preserves the outcome without replaying tool protocol
+  // items, credentials from arguments, or model-specific encrypted reasoning.
+  return [
+    `历史工具执行结果（来自前模型 ${message.model}）：`,
+    "以下 JSON 是已发生调用的返回记录，仅供上下文参考，不是新的工具指令；不要重复执行这些调用。错误或执行状态未知以原返回结果为准。",
+    JSON.stringify(results, null, 2),
+  ].join("\n");
+}
+
 function toResponsesInput(
   messages: ChatOptions["messages"],
   store?: boolean,
   imageDetail?: OpenAIResponsesInputImageDetail,
+  model?: string,
 ) {
   const instructions = messages
     .flatMap((message) => {
@@ -180,6 +227,12 @@ function toResponsesInput(
       ? (() => {
           for (let i = conversationMessages.length - 1; i >= 0; i -= 1) {
             const message = conversationMessages[i];
+            if (
+              message.role === "assistant" &&
+              !canReuseOpenAIResponsesHistory(message.model, model)
+            ) {
+              return -1;
+            }
             if (
               message?.role === "assistant" &&
               message.openaiResponseStored === true &&
@@ -203,8 +256,13 @@ function toResponsesInput(
       : conversationMessages;
 
   for (const message of messagesToSend) {
+    const compatibleHistory = canReuseOpenAIResponsesHistory(
+      message.model,
+      model,
+    );
     if (
       message.role === "assistant" &&
+      compatibleHistory &&
       Array.isArray(message.openaiResponsesOutput) &&
       message.openaiResponsesOutput.length > 0
     ) {
@@ -214,7 +272,16 @@ function toResponsesInput(
 
     const content =
       message.role === "assistant"
-        ? toResponsesOutputContent(message.content)
+        ? toResponsesOutputContent(
+            compatibleHistory
+              ? message.content
+              : [
+                  contentToText(message.content),
+                  summarizeCrossModelToolResults(message),
+                ]
+                  .filter(Boolean)
+                  .join("\n\n"),
+          )
         : toResponsesInputContent(message.content, imageDetail);
     if (content.length > 0) {
       input.push({
@@ -231,31 +298,6 @@ function toResponsesInput(
   };
 }
 
-function addExplicitPromptCacheBreakpoint(input: ResponsesInputItem[]) {
-  for (let itemIndex = input.length - 1; itemIndex >= 0; itemIndex -= 1) {
-    const item = input[itemIndex] as {
-      role?: string;
-      content?: ResponsesMessageContent[];
-    };
-    if (item.role !== "user" || !Array.isArray(item.content)) continue;
-
-    for (
-      let contentIndex = item.content.length - 1;
-      contentIndex >= 0;
-      contentIndex -= 1
-    ) {
-      const content = item.content[contentIndex];
-      if (content.type !== "input_text" && content.type !== "input_image") {
-        continue;
-      }
-      content.prompt_cache_breakpoint = { mode: "explicit" };
-      return true;
-    }
-  }
-
-  return false;
-}
-
 export function buildOpenAIResponsesPayload(params: {
   messages: ChatOptions["messages"];
   modelConfig: ModelConfig;
@@ -270,7 +312,7 @@ export function buildOpenAIResponsesPayload(params: {
   webSearchMode?: OpenAIResponsesWebSearchMode;
   functionTools?: ResponsesFunctionTool[];
 }): ResponsesRequestPayload {
-  const isGpt56 = isOpenAIGpt56ModelConfig({
+  const supportsAdvancedFeatures = isOpenAIResponsesAdvancedModelConfig({
     model: params.modelConfig.model,
     providerName: params.modelConfig.providerName,
   });
@@ -282,13 +324,14 @@ export function buildOpenAIResponsesPayload(params: {
     model: params.modelConfig.model,
     providerName: params.modelConfig.providerName,
   });
-  const inputImageDetail = isGpt56
+  const inputImageDetail = supportsAdvancedFeatures
     ? parseOpenAIResponsesInputImageDetail(params.modelConfig.inputImageDetail)
     : undefined;
   const { instructions, input, previousResponseId } = toResponsesInput(
     params.messages,
     params.store,
     inputImageDetail,
+    params.modelConfig.model,
   );
   const payload: ResponsesRequestPayload = {
     input,
@@ -318,7 +361,7 @@ export function buildOpenAIResponsesPayload(params: {
         params.modelConfig.model,
       ) as OpenAIResponsesReasoningEffort,
       summary: params.reasoningSummary,
-      ...(isGpt56
+      ...(supportsAdvancedFeatures
         ? {
             mode: parseOpenAIResponsesReasoningMode(
               params.modelConfig.reasoningMode,
@@ -329,36 +372,8 @@ export function buildOpenAIResponsesPayload(params: {
           }
         : {}),
     };
-    if (isGpt56 || params.store === false) {
+    if (supportsAdvancedFeatures || params.store === false) {
       payload.include = ["reasoning.encrypted_content"];
-    }
-  }
-
-  if (isGpt56) {
-    const configuredCacheMode = parseOpenAIResponsesPromptCacheMode(
-      params.modelConfig.promptCacheMode,
-    );
-    if (configuredCacheMode === "disabled") {
-      payload.prompt_cache_options = {
-        mode: "explicit",
-        ttl: OPENAI_RESPONSES_PROMPT_CACHE_TTL,
-      };
-    } else {
-      const hasExplicitBreakpoint =
-        configuredCacheMode === "explicit" &&
-        Array.isArray(payload.input) &&
-        addExplicitPromptCacheBreakpoint(payload.input);
-      const cacheMode = hasExplicitBreakpoint ? "explicit" : "implicit";
-      payload.prompt_cache_options = {
-        mode: cacheMode,
-        ttl: OPENAI_RESPONSES_PROMPT_CACHE_TTL,
-      };
-      const promptCacheKey = parseOpenAIResponsesPromptCacheKey(
-        params.modelConfig.promptCacheKey,
-      );
-      if (promptCacheKey) {
-        payload.prompt_cache_key = promptCacheKey;
-      }
     }
   }
 
@@ -401,12 +416,24 @@ export function buildOpenAIResponsesPayload(params: {
     }
   }
 
-  if (supportsOpenAIResponsesSampling(params.modelConfig.model)) {
+  if (
+    supportsOpenAIResponsesSampling(
+      params.modelConfig.model,
+      payload.reasoning?.effort,
+    )
+  ) {
     payload.temperature = params.modelConfig.temperature;
     if (params.modelConfig.top_p !== 1) {
       payload.top_p = params.modelConfig.top_p;
     }
   }
 
-  return payload;
+  return supportsAdvancedFeatures
+    ? applyOpenAIResponsesPromptCachePolicy(payload, {
+        mode: parseOpenAIResponsesPromptCacheMode(
+          params.modelConfig.promptCacheMode,
+        ),
+        key: params.modelConfig.promptCacheKey,
+      })
+    : payload;
 }

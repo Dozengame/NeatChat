@@ -146,4 +146,29 @@ describe("OpenAI non-stream response validation", () => {
     expect(onFinish).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledTimes(1);
   });
+  test.each([{}, { data: [] }, { data: [{}] }])(
+    "rejects Flare responses without a generated image: %j",
+    async (payload) => {
+      (streamUtils.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => JSON.stringify(payload),
+      });
+      const onFinish = jest.fn();
+      const onError = jest.fn();
+      await new ChatGPTApi().chat({
+        messages: [{ role: "user", content: "Draw a square" }],
+        config: {
+          ...DEFAULT_CONFIG.modelConfig,
+          model: "gpt-image-2.5-flare",
+          providerName: ServiceProvider.OpenAI,
+        },
+        onFinish,
+        onError,
+      });
+      expect(onFinish).not.toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledTimes(1);
+    },
+  );
 });

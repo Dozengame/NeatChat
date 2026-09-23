@@ -9,12 +9,46 @@ import {
 } from "./openai-safety";
 import { enforceLockedOpenAIResponsesPolicy } from "./openai-responses-policy";
 import { resolveLockedFields } from "../utils/public-app-config";
+import {
+  isGptImageFlare,
+  normalizeOpenAIImageRequestParameters,
+  type OpenAIImageGenerationConfig,
+} from "../utils/openai-image";
 
 const serverConfig = getServerSideConfig();
 const OPENAI_PROXY_REQUEST_TIMEOUT_MS = 10 * 60 * 1000;
 
 function isOpenAIImagePath(path: string) {
   return path === OpenaiPath.ImagePath || path === OpenaiPath.ImageEditPath;
+}
+
+const IMAGE_PARAMETER_FIELDS = [
+  "n",
+  "size",
+  "quality",
+  "background",
+  "output_format",
+  "output_compression",
+  "moderation",
+  "style",
+  "response_format",
+  "input_fidelity",
+] as const;
+
+function normalizeFlareParameters(
+  model: string,
+  values: Record<string, unknown>,
+) {
+  return normalizeOpenAIImageRequestParameters({
+    model,
+    config: {
+      ...values,
+      output_compression:
+        values.output_compression === undefined
+          ? undefined
+          : Number(values.output_compression),
+    } as OpenAIImageGenerationConfig,
+  });
 }
 
 export async function requestOpenai(req: NextRequest) {
@@ -141,13 +175,27 @@ export async function requestOpenai(req: NextRequest) {
 
   const shouldInspectRequestBody =
     !!req.body &&
-    (!!serverConfig.customModels || path === OpenaiPath.ResponsesPath);
+    (!!serverConfig.customModels ||
+      path === OpenaiPath.ResponsesPath ||
+      isOpenAIImagePath(path));
   if (shouldInspectRequestBody) {
     try {
       let requestModel = "";
       if (isMultipartRequest) {
         const formData = await req.formData();
         requestModel = String(formData.get("model") ?? "");
+        if (isOpenAIImagePath(path) && isGptImageFlare(requestModel)) {
+          const values = Object.fromEntries(
+            IMAGE_PARAMETER_FIELDS.flatMap((field) =>
+              formData.has(field) ? [[field, formData.get(field)]] : [],
+            ),
+          );
+          const normalized = normalizeFlareParameters(requestModel, values);
+          IMAGE_PARAMETER_FIELDS.forEach((field) => formData.delete(field));
+          Object.entries(normalized).forEach(([field, value]) => {
+            if (value !== undefined) formData.set(field, String(value));
+          });
+        }
         fetchOptions.body = formData;
         delete fetchHeaders["Content-Type"];
       } else {
@@ -155,6 +203,18 @@ export async function requestOpenai(req: NextRequest) {
         fetchOptions.body = clonedBody;
 
         let jsonBody = JSON.parse(clonedBody) as Record<string, unknown>;
+        if (
+          isOpenAIImagePath(path) &&
+          isGptImageFlare(String(jsonBody?.model ?? ""))
+        ) {
+          const normalized = normalizeFlareParameters(
+            String(jsonBody.model),
+            jsonBody,
+          );
+          IMAGE_PARAMETER_FIELDS.forEach((field) => delete jsonBody[field]);
+          jsonBody = { ...jsonBody, ...normalized };
+          fetchOptions.body = JSON.stringify(jsonBody);
+        }
         if (path === OpenaiPath.ResponsesPath) {
           if (
             !jsonBody ||
