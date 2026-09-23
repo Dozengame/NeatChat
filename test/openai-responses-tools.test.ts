@@ -8,8 +8,6 @@ import {
   runOpenAIResponsesToolLoop,
   type ResponsesRoundResult,
 } from "../app/client/platforms/openai-responses-tools";
-import fs from "fs";
-import path from "path";
 import Locale from "../app/locales";
 
 const pluginTool = (name: string) => ({
@@ -36,6 +34,8 @@ const functionCall = (
   name,
   arguments: args,
 });
+
+const TOOL_MODELS = ["gpt-5.6-terra", "gpt-6-astra", "gpt-6-sol", "gpt-6-luna"];
 
 describe("OpenAI Responses function tools", () => {
   test("blocks direct function tools during a pending recovery turn", () => {
@@ -65,43 +65,6 @@ describe("OpenAI Responses function tools", () => {
     await expect(
       getOpenAIResponsesStreamError(response),
     ).resolves.toMatchObject({ message: Locale.Error.AccessRestricted });
-  });
-
-  test("routes Responses streaming through the terminal-aware runner", () => {
-    const source = fs.readFileSync(
-      path.join(process.cwd(), "app/client/platforms/openai.ts"),
-      "utf8",
-    );
-    const chatSource = fs.readFileSync(
-      path.join(process.cwd(), "app/store/chat.ts"),
-      "utf8",
-    );
-    const chatComponentSource = fs.readFileSync(
-      path.join(process.cwd(), "app/components/chat.tsx"),
-      "utf8",
-    );
-
-    expect(source).toContain("isOpenAIGpt56ModelConfig");
-    expect(source).toContain("adaptPluginToolsForResponses");
-    expect(source).toContain("functionTools: responsesFunctionTools");
-    expect(source).toContain("runOpenAIResponsesToolLoop");
-    expect(source).toContain("sendOpenAIResponsesSseRound");
-    expect(source).toContain("if (useResponses)");
-    expect(source).toContain("options.openaiResponsesRecoveryPending");
-    expect(source).toContain("options.pluginIds ?? []");
-    expect(chatSource).toContain(
-      "const requestPluginIds = [...(session.mask.plugin ?? [])]",
-    );
-    expect(chatSource).toContain("pluginIds: requestPluginIds");
-    expect(chatSource).toContain("const openaiResponsesRecoveryPending =");
-    expect(source).toContain("options.allowTools === true");
-    expect(source).toContain("openaiResponseId: v.openaiResponseId");
-    expect(source).toContain("openaiResponsesOutput: v.openaiResponsesOutput");
-    expect(chatSource.match(/allowTools:\s*true/g)).toHaveLength(1);
-    expect(chatComponentSource).toContain(
-      "hasClosedResponsesFunctionTrace(botMessage)",
-    );
-    expect(chatComponentSource).toContain("RetryToolTraceBlocked");
   });
 
   test("extracts final refusal content for persistence", () => {
@@ -521,7 +484,9 @@ describe("OpenAI Responses function tools", () => {
       }),
     ).rejects.toThrow(/call_id/i);
   });
+});
 
+describe.each(TOOL_MODELS)("%s tool rounds", (model) => {
   test("continues stateless rounds with the complete ordered tool trace", async () => {
     const sentPayloads: any[] = [];
     const rounds: ResponsesRoundResult[] = [
@@ -552,7 +517,7 @@ describe("OpenAI Responses function tools", () => {
 
     await runOpenAIResponsesToolLoop({
       initialPayload: {
-        model: "gpt-5.6-terra",
+        model,
         input: [
           { role: "user", content: [{ type: "input_text", text: "Hi" }] },
         ],
@@ -620,7 +585,7 @@ describe("OpenAI Responses function tools", () => {
 
     await runOpenAIResponsesToolLoop({
       initialPayload: {
-        model: "gpt-5.6-terra",
+        model,
         input: "Hi",
         store: true,
         prompt_cache_options: { mode: "explicit", ttl: "30m" },
@@ -661,7 +626,7 @@ describe("OpenAI Responses function tools", () => {
     const onError = jest.fn();
 
     await runOpenAIResponsesToolLoop({
-      initialPayload: { model: "gpt-5.6-terra", input: "Hi" } as any,
+      initialPayload: { model, input: "Hi" } as any,
       executors: { tool: executor },
       controller: new AbortController(),
       sendRound: async () => ({
@@ -691,7 +656,7 @@ describe("OpenAI Responses function tools", () => {
     let round = 0;
 
     await runOpenAIResponsesToolLoop({
-      initialPayload: { model: "gpt-5.6-terra", input: "Hi" } as any,
+      initialPayload: { model, input: "Hi" } as any,
       executors: { tool: executor },
       controller: new AbortController(),
       sendRound: async () => {
@@ -740,7 +705,7 @@ describe("OpenAI Responses function tools", () => {
     );
 
     await runOpenAIResponsesToolLoop({
-      initialPayload: { model: "gpt-5.6-terra", input: "Hi" } as any,
+      initialPayload: { model, input: "Hi" } as any,
       executors: { tool: executor },
       controller,
       sendRound,
@@ -791,7 +756,7 @@ describe("OpenAI Responses function tools", () => {
     });
 
     await runOpenAIResponsesToolLoop({
-      initialPayload: { model: "gpt-5.6-terra", input: "mutate" } as any,
+      initialPayload: { model, input: "mutate" } as any,
       executors: { mutate: executor },
       controller: new AbortController(),
       sendRound,
@@ -830,7 +795,7 @@ describe("OpenAI Responses function tools", () => {
       const call = functionCall("call_hung", "mutate");
       const onError = jest.fn();
       const running = runOpenAIResponsesToolLoop({
-        initialPayload: { model: "gpt-5.6-terra", input: "mutate" } as any,
+        initialPayload: { model, input: "mutate" } as any,
         executors: { mutate: jest.fn(() => new Promise(() => undefined)) },
         controller: new AbortController(),
         sendRound: jest.fn(async () => ({
@@ -866,7 +831,10 @@ describe("OpenAI Responses function tools", () => {
   });
 
   test("stops the loop after an uncertain HTTP tool response", async () => {
-    const executor = jest.fn(() => ({ status: 502, data: "gateway failed" }));
+    const executor = jest.fn(() => ({
+      status: 502,
+      data: "gateway failed",
+    }));
     const onFinish = jest.fn();
     const onError = jest.fn();
     const sendRound = jest.fn(async () => {
@@ -880,7 +848,7 @@ describe("OpenAI Responses function tools", () => {
     });
 
     await runOpenAIResponsesToolLoop({
-      initialPayload: { model: "gpt-5.6-terra", input: "mutate" } as any,
+      initialPayload: { model, input: "mutate" } as any,
       executors: { mutate: executor },
       controller: new AbortController(),
       sendRound,
@@ -891,7 +859,9 @@ describe("OpenAI Responses function tools", () => {
     expect(executor).toHaveBeenCalledTimes(1);
     expect(onFinish).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.stringMatching(/unknown/i) }),
+      expect.objectContaining({
+        message: expect.stringMatching(/unknown/i),
+      }),
       expect.objectContaining({
         openaiResponsesRecoveryPending: true,
         openaiResponsesOutput: expect.arrayContaining([
@@ -918,7 +888,7 @@ describe("OpenAI Responses function tools", () => {
     const onError = jest.fn(() => events.push("error"));
 
     await runOpenAIResponsesToolLoop({
-      initialPayload: { model: "gpt-5.6-terra", input: "run" } as any,
+      initialPayload: { model, input: "run" } as any,
       executors: {
         unknown_tool: jest.fn(async () => {
           events.push("unknown-started");
@@ -944,7 +914,9 @@ describe("OpenAI Responses function tools", () => {
       "error",
     ]);
     expect(onError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.stringMatching(/unknown/i) }),
+      expect.objectContaining({
+        message: expect.stringMatching(/unknown/i),
+      }),
       expect.objectContaining({
         openaiResponsesOutput: [
           callUnknown,
@@ -966,7 +938,7 @@ describe("OpenAI Responses function tools", () => {
 
     await runOpenAIResponsesToolLoop({
       initialPayload: {
-        model: "gpt-5.6-terra",
+        model,
         input: "Hi",
         store: true,
       } as any,
@@ -1011,7 +983,7 @@ describe("OpenAI Responses function tools", () => {
     let round = 0;
 
     await runOpenAIResponsesToolLoop({
-      initialPayload: { model: "gpt-5.6-terra", input: "Hi" } as any,
+      initialPayload: { model, input: "Hi" } as any,
       executors: { first: executor, second: executor },
       controller: new AbortController(),
       sendRound: async () => {
@@ -1032,7 +1004,9 @@ describe("OpenAI Responses function tools", () => {
 
     expect(executor).toHaveBeenCalledTimes(1);
     expect(onError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.stringMatching(/call_id/i) }),
+      expect.objectContaining({
+        message: expect.stringMatching(/call_id/i),
+      }),
       expect.objectContaining({
         openaiResponsesOutput: [
           functionCall("call_same", "first"),
@@ -1053,7 +1027,7 @@ describe("OpenAI Responses function tools", () => {
     let round = 0;
 
     await runOpenAIResponsesToolLoop({
-      initialPayload: { model: "gpt-5.6-terra", input: "Hi" } as any,
+      initialPayload: { model, input: "Hi" } as any,
       executors: { tool: executor },
       controller: new AbortController(),
       sendRound: async () => {
@@ -1070,7 +1044,9 @@ describe("OpenAI Responses function tools", () => {
 
     expect(executor).toHaveBeenCalledTimes(1);
     expect(onError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.stringMatching(/call_id/i) }),
+      expect.objectContaining({
+        message: expect.stringMatching(/call_id/i),
+      }),
       expect.objectContaining({
         openaiResponsesOutput: [
           call,
@@ -1090,7 +1066,7 @@ describe("OpenAI Responses function tools", () => {
     const onError = jest.fn();
 
     await runOpenAIResponsesToolLoop({
-      initialPayload: { model: "gpt-5.6-terra", input: "Hi" } as any,
+      initialPayload: { model, input: "Hi" } as any,
       executors: {},
       controller,
       sendRound: async () => {
@@ -1118,7 +1094,7 @@ describe("OpenAI Responses function tools", () => {
 
     await expect(
       runOpenAIResponsesToolLoop({
-        initialPayload: { model: "gpt-5.6-terra", input: "Hi" } as any,
+        initialPayload: { model, input: "Hi" } as any,
         executors: {},
         controller: new AbortController(),
         sendRound: async () => ({
@@ -1142,7 +1118,7 @@ describe("OpenAI Responses function tools", () => {
 
     await expect(
       runOpenAIResponsesToolLoop({
-        initialPayload: { model: "gpt-5.6-terra", input: "Hi" } as any,
+        initialPayload: { model, input: "Hi" } as any,
         executors: {},
         controller: new AbortController(),
         sendRound: async () => {

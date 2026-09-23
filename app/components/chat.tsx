@@ -255,6 +255,8 @@ const imageQualityLabels: Record<OpenAIImageQuality, string> = {
   low: Locale.Settings.ImageGeneration.Low,
   medium: Locale.Settings.ImageGeneration.Medium,
   high: Locale.Settings.ImageGeneration.High,
+  xhigh: Locale.Settings.ImageGeneration.QualityOption("xhigh"),
+  max: Locale.Settings.ImageGeneration.QualityOption("max"),
   standard: Locale.Settings.ImageGeneration.Standard,
   hd: Locale.Settings.ImageGeneration.HD,
 };

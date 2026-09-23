@@ -24,7 +24,7 @@ import { useChatStore } from "../app/store/chat";
 import { ChatControllerPool } from "../app/client/controller";
 import Locale from "../app/locales";
 
-const PREVIOUS_DEFAULT_CUSTOM_INSTRUCTIONS = `回答前先在内部理清问题，不展示完整推理过程、内部标签或逐步思考。
+const LEGACY_DEFAULT_CUSTOM_INSTRUCTIONS = `回答前先在内部理清问题，不展示完整推理过程、内部标签或逐步思考。
 默认用自然、像真人的中文表达：少官腔、少模板，直白克制，不油腻、不居高临下。先给结论/建议，再给 2–4 条关键理由；必要时补步骤、风险和注意事项。除非我要求“展开”，否则优先短而有用。
 在不影响准确性和简洁性的前提下，尽量用第一性原理点出本质：目标、关键变量、主要约束，然后再给建议和行动；不要机械套用模板。
 尽量具体，能给路径、按钮、步骤、数字、时间点、示例，就不要只讲抽象原则。信息不足时，先按常见前提给可用方案，再问 1–2 个关键问题。
@@ -35,6 +35,14 @@ const PREVIOUS_DEFAULT_CUSTOM_INSTRUCTIONS = `回答前先在内部理清问题�
 - “聊天模式 / 更口语 / 随便聊聊”：更放松，更像真人对话，事实仍谨慎。
 - “展开”：补充细节、例子、备选方案和权衡。
 需要联网检索时，优先英文或非中文来源；如必须用中文来源，标注“中文来源，需谨慎核对”。`;
+
+const PREVIOUS_DEFAULT_CUSTOM_INSTRUCTIONS = `你是资深全栈开发工程师，游戏设计师，提示词优化专家。擅长后端开发、H5前端开发和互联网行业的所有专业知识与技巧。回答问题时，优先提供可执行、可靠、贴近实际场景的建议。
+
+先理解用户的目标、上下文和约束；信息不完整时，先基于常见前提给出可用答案，再补充 1–2 个关键澄清问题。不要为了追求完整而过度追问。
+
+面向用户时，必须使用中文回复，专有名词保留 English。表达清楚、直接、简洁，像对一个聪明但没看代码的人说明问题。优先输出：结论、原因、建议方案、必要风险或注意事项。需要时再补充步骤、示例、代码或配置。
+
+如果存在多个方案，简要说明优缺点，并明确推荐方案和原因，不回避成本、限制和风险。避免空话、过程汇报腔、无关术语和不必要的实现细节。`;
 
 describe("custom instructions", () => {
   const chatMock = jest.fn<Promise<void>, [any]>(() => Promise.resolve());
@@ -481,39 +489,99 @@ describe("custom instructions", () => {
 });
 
 describe("custom instructions defaults", () => {
-  test("upgrades the old blank default to the enabled preset", () => {
-    const state = applyCustomInstructionsDefaults({
-      enableCustomInstructions: false,
-      customInstructions: "",
+  test("enables the new preset for a new user", () => {
+    expect(DEFAULT_CONFIG).toMatchObject({
+      enableCustomInstructions: true,
+      customInstructions: DEFAULT_CUSTOM_INSTRUCTIONS,
     });
-
-    expect(state).toMatchObject({
+    expect(applyCustomInstructionsDefaults({})).toMatchObject({
       enableCustomInstructions: true,
       customInstructions: DEFAULT_CUSTOM_INSTRUCTIONS,
     });
   });
 
-  test("replaces the previous default preset for existing users", () => {
-    const state = applyCustomInstructionsDefaults({
-      enableCustomInstructions: false,
-      customInstructions: PREVIOUS_DEFAULT_CUSTOM_INSTRUCTIONS,
-    });
+  test.each([
+    ["missing", undefined],
+    ["blank", ""],
+    ["whitespace-only", " \n\t"],
+    ["legacy", LEGACY_DEFAULT_CUSTOM_INSTRUCTIONS],
+    ["previous", PREVIOUS_DEFAULT_CUSTOM_INSTRUCTIONS],
+  ])("upgrades the %s preset while preserving its switch", (_, text) => {
+    for (const enabled of [false, true, undefined]) {
+      const state = applyCustomInstructionsDefaults({
+        enableCustomInstructions: enabled,
+        customInstructions: text,
+      });
 
-    expect(state).toMatchObject({
-      enableCustomInstructions: true,
-      customInstructions: DEFAULT_CUSTOM_INSTRUCTIONS,
-    });
+      expect(state).toMatchObject({
+        enableCustomInstructions: enabled ?? true,
+        customInstructions: DEFAULT_CUSTOM_INSTRUCTIONS,
+      });
+    }
   });
 
-  test("keeps user-provided instructions and their disabled state", () => {
-    const state = applyCustomInstructionsDefaults({
-      enableCustomInstructions: false,
-      customInstructions: "Use a terse tone.",
-    });
+  test.each([
+    "Use a terse tone.",
+    DEFAULT_CUSTOM_INSTRUCTIONS,
+    `${PREVIOUS_DEFAULT_CUSTOM_INSTRUCTIONS}\n请附示例。`,
+    ` ${LEGACY_DEFAULT_CUSTOM_INSTRUCTIONS} `,
+  ])("preserves a user-provided preset and its switch", (text) => {
+    for (const enabled of [false, true, undefined]) {
+      const state = applyCustomInstructionsDefaults({
+        enableCustomInstructions: enabled,
+        customInstructions: text,
+      });
 
-    expect(state).toMatchObject({
-      enableCustomInstructions: false,
-      customInstructions: "Use a terse tone.",
-    });
+      expect(state).toMatchObject({
+        enableCustomInstructions: enabled ?? true,
+        customInstructions: text,
+      });
+    }
   });
+
+  test.each([4.5, 4.6])(
+    "rehydrates persisted version %s without enabling disabled instructions",
+    async (version) => {
+      const persist = (useAppConfig as any).persist;
+      const previousOptions = persist.getOptions();
+      const previousState = useAppConfig.getState();
+      const setItem = jest.fn();
+      const storedState = {
+        ...DEFAULT_CONFIG,
+        modelConfig: { ...DEFAULT_CONFIG.modelConfig },
+        models: [],
+        customInstructions: PREVIOUS_DEFAULT_CUSTOM_INSTRUCTIONS,
+        enableCustomInstructions: false,
+      };
+
+      try {
+        persist.setOptions({
+          storage: {
+            getItem: jest.fn(async () => ({ state: storedState, version })),
+            setItem,
+            removeItem: jest.fn(),
+          },
+        });
+        await persist.rehydrate();
+
+        expect(useAppConfig.getState()).toMatchObject({
+          customInstructions: DEFAULT_CUSTOM_INSTRUCTIONS,
+          enableCustomInstructions: false,
+        });
+        expect(setItem).toHaveBeenCalledWith(
+          previousOptions.name,
+          expect.objectContaining({
+            version: 4.7,
+            state: expect.objectContaining({
+              customInstructions: DEFAULT_CUSTOM_INSTRUCTIONS,
+              enableCustomInstructions: false,
+            }),
+          }),
+        );
+      } finally {
+        persist.setOptions(previousOptions);
+        useAppConfig.setState(previousState, true);
+      }
+    },
+  );
 });

@@ -263,6 +263,9 @@ Latex block: $$e=mc^2$$
 
 export const KnowledgeCutOffDate: Record<string, string> = {
   default: "2021-09",
+  "gpt-6-astra": "2026-04-30",
+  "gpt-6-sol": "2026-04-20",
+  "gpt-6-luna": "2026-05-18",
   "gpt-5.6": "2026-02-16",
   "gpt-5.6-sol": "2026-02-16",
   "gpt-5.6-terra": "2026-02-16",
@@ -305,6 +308,12 @@ export const DEFAULT_TTS_VOICES = [
   "shimmer",
 ];
 
+export const OPENAI_GPT_6_MODELS = [
+  "gpt-6-luna",
+  "gpt-6-sol",
+  "gpt-6-astra",
+] as const;
+
 export const OPENAI_GPT_56_MODELS = [
   "gpt-5.6",
   "gpt-5.6-sol",
@@ -342,7 +351,7 @@ const sharedOpenAIAzureModels = [
   "o1-preview",
 ];
 
-const openaiImageModels = ["gpt-image-2"];
+const openaiImageModels = ["gpt-image-2.5-flare", "gpt-image-2"];
 
 const googleModels = [
   "gemini-1.0-pro",
@@ -439,7 +448,7 @@ const chatglmModels = [
 
 let seq = 1000; // 内置的模型序号生成器从1000开始
 export const DEFAULT_MODELS = [
-  ...OPENAI_GPT_56_MODELS.map((name) => ({
+  ...[...OPENAI_GPT_6_MODELS, ...OPENAI_GPT_56_MODELS].map((name) => ({
     name,
     available: true,
     sorted: seq++,

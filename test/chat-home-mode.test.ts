@@ -32,8 +32,10 @@ describe("new chat home modes", () => {
   const models = [
     model("gpt-5.6-luna", ServiceProvider.OpenAI),
     model("gpt-5.6-terra", ServiceProvider.OpenAI),
+    model("gpt-6-luna", ServiceProvider.OpenAI),
     model("gpt-image-3-preview", ServiceProvider.OpenAI),
     model("gpt-image-2", ServiceProvider.OpenAI),
+    model("gpt-image-2.5-flare", ServiceProvider.OpenAI),
     model("gpt-image-2", ServiceProvider.Azure),
     model("dall-e-3", ServiceProvider.OpenAI),
     model("dall-e-3", ServiceProvider.Azure),
@@ -61,7 +63,13 @@ describe("new chat home modes", () => {
   test("keeps supported image models separate from every chat model family", () => {
     expect(
       getChatHomeModeModels(models, "chat").map((item) => item.name),
-    ).toEqual(["gpt-5.6-luna", "gpt-5.6-terra", "gpt-4.1", "claude-4"]);
+    ).toEqual([
+      "gpt-5.6-luna",
+      "gpt-5.6-terra",
+      "gpt-6-luna",
+      "gpt-4.1",
+      "claude-4",
+    ]);
     expect(
       getChatHomeModeModels(models, "image").map(
         (item) => `${item.name}@${item.provider?.providerName}`,
@@ -69,6 +77,7 @@ describe("new chat home modes", () => {
     ).toEqual([
       "gpt-image-3-preview@OpenAI",
       "gpt-image-2@OpenAI",
+      "gpt-image-2.5-flare@OpenAI",
       "dall-e-3@OpenAI",
       "dall-e-3@Azure",
     ]);
@@ -76,10 +85,10 @@ describe("new chat home modes", () => {
 
   test("prefers the product defaults and falls back only within the family", () => {
     expect(resolvePreferredChatHomeModel("chat", models)?.name).toBe(
-      "gpt-5.6-terra",
+      "gpt-6-luna",
     );
     expect(resolvePreferredChatHomeModel("image", models)?.name).toBe(
-      "gpt-image-2",
+      "gpt-image-2.5-flare",
     );
     expect(
       resolvePreferredChatHomeModel("chat", models, {

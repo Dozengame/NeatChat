@@ -21,10 +21,16 @@ export type GptImageSize =
 export type OpenAIImageSize = DalleSize | GptImageSize;
 
 export type DalleQuality = "standard" | "hd";
-export type GptImageQuality = "auto" | "low" | "medium" | "high";
+export type GptImageQuality =
+  | "auto"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh"
+  | "max";
 export type OpenAIImageQuality = DalleQuality | GptImageQuality;
 
 export type DalleStyle = "vivid" | "natural";
-export type OpenAIImageBackground = "auto" | "opaque";
+export type OpenAIImageBackground = "auto" | "opaque" | "transparent";
 export type OpenAIImageOutputFormat = "png" | "jpeg" | "webp";
 export type OpenAIImageModeration = "auto" | "low";

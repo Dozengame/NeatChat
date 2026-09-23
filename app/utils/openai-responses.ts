@@ -1,6 +1,6 @@
 import { ATTACHMENT_WIRE_HEADER_PATTERN } from "./attachment-wire";
 
-export const OPENAI_RESPONSES_DEFAULT_MODEL = "gpt-5.6-terra";
+export const OPENAI_RESPONSES_DEFAULT_MODEL = "gpt-6-luna";
 export const OPENAI_RESPONSES_DEFAULT_TEMPERATURE = 1;
 export const OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT = "low";
 export const OPENAI_RESPONSES_DEFAULT_TEXT_VERBOSITY = "medium";
@@ -120,6 +120,11 @@ const OPENAI_GPT_56_MODEL_FAMILIES = new Set([
   "gpt-5.6-terra",
   "gpt-5.6-luna",
 ]);
+const OPENAI_GPT_6_MODEL_FAMILIES = new Set([
+  "gpt-6-astra",
+  "gpt-6-sol",
+  "gpt-6-luna",
+]);
 const OPENAI_GPT_5_STANDARD_MODEL_FAMILIES = new Set([
   "gpt-5",
   "gpt-5.1",
@@ -165,12 +170,50 @@ function isKnownOpenAIGpt5Model(model?: string) {
   return (
     OPENAI_GPT_5_STANDARD_MODEL_FAMILIES.has(family) ||
     OPENAI_GPT_5_PRO_MODEL_FAMILIES.has(family) ||
-    OPENAI_GPT_5_CHAT_MODEL_FAMILIES.has(family)
+    OPENAI_GPT_5_CHAT_MODEL_FAMILIES.has(family) ||
+    OPENAI_GPT_6_MODEL_FAMILIES.has(family)
   );
 }
 
 export function isGpt56Model(model?: string) {
   return OPENAI_GPT_56_MODEL_FAMILIES.has(getOpenAIModelFamily(model));
+}
+
+export function isGpt6Model(model?: string) {
+  return OPENAI_GPT_6_MODEL_FAMILIES.has(getOpenAIModelFamily(model));
+}
+
+export function supportsOpenAIResponsesAdvancedFeatures(model?: string) {
+  return isGpt56Model(model) || isGpt6Model(model);
+}
+
+export function isOpenAIResponsesAdvancedModelConfig(params: {
+  model?: string;
+  providerName?: string;
+}) {
+  const providerName = params.providerName?.trim().toLowerCase();
+  return (
+    (!providerName || OPENAI_PROVIDER_NAMES.has(providerName)) &&
+    supportsOpenAIResponsesAdvancedFeatures(params.model)
+  );
+}
+
+export function supportsOpenAIResponsesFunctionTools(params: {
+  model?: string;
+  providerName?: string;
+}) {
+  return isOpenAIResponsesAdvancedModelConfig(params);
+}
+
+export function canReuseOpenAIResponsesHistory(
+  previousModel: string | undefined,
+  model: string | undefined,
+) {
+  // Legacy messages did not persist their originating model with the trace.
+  return (
+    !previousModel ||
+    getOpenAIModelFamily(previousModel) === getOpenAIModelFamily(model)
+  );
 }
 
 export function getOpenAIResponsesMaxOutputTokensLimit(model?: string) {
@@ -197,7 +240,8 @@ export function getOpenAIResponsesMaxOutputTokensLimit(model?: string) {
   }
   if (
     OPENAI_GPT_5_STANDARD_MODEL_FAMILIES.has(family) ||
-    OPENAI_GPT_5_PRO_MODEL_FAMILIES.has(family)
+    OPENAI_GPT_5_PRO_MODEL_FAMILIES.has(family) ||
+    OPENAI_GPT_6_MODEL_FAMILIES.has(family)
   ) {
     return OPENAI_GPT_56_MAX_OUTPUT_TOKENS;
   }
@@ -243,6 +287,12 @@ export function isOpenAIResponsesReasoningEffort(
 
 export function getOpenAIResponsesReasoningEfforts(model?: string) {
   const family = getOpenAIModelFamily(model);
+  if (OPENAI_GPT_6_MODEL_FAMILIES.has(family)) {
+    return OPENAI_RESPONSES_REASONING_EFFORTS.filter(
+      (effort) =>
+        effort !== "minimal" && (family !== "gpt-6-astra" || effort !== "none"),
+    );
+  }
   if (OPENAI_GPT_56_MODEL_FAMILIES.has(family)) {
     return OPENAI_RESPONSES_REASONING_EFFORTS.filter(
       (effort) => effort !== "minimal",
@@ -301,6 +351,7 @@ function parseOpenAIResponsesReasoningEffortList(value: string) {
 
 export function normalizeReasoningEffortModelKey(model?: string) {
   const normalized = model?.trim().toLowerCase().split("@")[0];
+  if (isGpt6Model(normalized)) return getOpenAIModelFamily(normalized);
   return normalized === "gpt-5.6" ? "gpt-5.6-sol" : normalized;
 }
 
@@ -398,6 +449,15 @@ export function getConfiguredOpenAIResponsesReasoningEffort(
     Object.prototype.hasOwnProperty.call(defaults.models, modelKey)
       ? defaults?.models[modelKey]
       : undefined;
+  if (
+    isGpt6Model(model) &&
+    isOpenAIResponsesReasoningEffort(configuredModelEffort)
+  ) {
+    return normalizeOpenAIResponsesReasoningEffort(
+      configuredModelEffort,
+      model,
+    );
+  }
   if (isOpenAIResponsesReasoningEffortForModel(configuredModelEffort, model)) {
     return configuredModelEffort;
   }
@@ -584,6 +644,7 @@ export function normalizeOpenAIResponsesReasoningEffort(
   value: string | undefined,
   model?: string,
 ) {
+  if (isGpt6Model(model) && value === "minimal") return "low";
   return isOpenAIResponsesReasoningEffortForModel(value, model)
     ? value
     : getOpenAIResponsesReasoningEffortFallback(model);
@@ -647,6 +708,113 @@ export function parseOpenAIResponsesPromptCacheKey(value?: string) {
   return normalized || undefined;
 }
 
+type OpenAIResponsesInputPart = Record<string, unknown>;
+
+function isOpenAIResponsesInputPart(
+  value: unknown,
+): value is OpenAIResponsesInputPart {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+export function cloneOpenAIResponsesInput(input: unknown): unknown {
+  if (!Array.isArray(input)) return input;
+  return input.map((item) => {
+    if (!isOpenAIResponsesInputPart(item)) return item;
+    return {
+      ...item,
+      ...(Array.isArray(item.content)
+        ? {
+            content: item.content.map((part) =>
+              isOpenAIResponsesInputPart(part) ? { ...part } : part,
+            ),
+          }
+        : {}),
+    };
+  });
+}
+
+export function visitOpenAIResponsesInputParts(
+  input: unknown,
+  callback: (part: OpenAIResponsesInputPart) => void,
+) {
+  if (!Array.isArray(input)) return;
+  for (const item of input) {
+    if (!isOpenAIResponsesInputPart(item)) continue;
+    callback(item);
+    if (!Array.isArray(item.content)) continue;
+    for (const part of item.content) {
+      if (isOpenAIResponsesInputPart(part)) callback(part);
+    }
+  }
+}
+
+/** Rebuild cache boundaries on a copy, retaining the two latest user turns. */
+export function applyOpenAIResponsesPromptCachePolicy<
+  T extends {
+    input?: unknown;
+    previous_response_id?: unknown;
+    prompt_cache_options?: unknown;
+    prompt_cache_key?: unknown;
+  },
+>(
+  payload: T,
+  options: { mode: OpenAIResponsesPromptCacheMode; key?: string },
+): T {
+  const result: Record<string, unknown> = { ...payload };
+  result.input = cloneOpenAIResponsesInput(payload.input);
+  visitOpenAIResponsesInputParts(result.input, (part) => {
+    delete part.prompt_cache_breakpoint;
+  });
+
+  let breakpointCount = 0;
+  if (options.mode === "explicit" && Array.isArray(result.input)) {
+    for (
+      let index = result.input.length - 1;
+      index >= 0 && breakpointCount < 2;
+      index -= 1
+    ) {
+      const item = result.input[index];
+      if (
+        !isOpenAIResponsesInputPart(item) ||
+        item.role !== "user" ||
+        !Array.isArray(item.content)
+      )
+        continue;
+      for (
+        let partIndex = item.content.length - 1;
+        partIndex >= 0;
+        partIndex -= 1
+      ) {
+        const part = item.content[partIndex];
+        if (
+          !isOpenAIResponsesInputPart(part) ||
+          (part.type !== "input_text" && part.type !== "input_image")
+        )
+          continue;
+        part.prompt_cache_breakpoint = { mode: "explicit" };
+        breakpointCount += 1;
+        break;
+      }
+    }
+  }
+  const storedContinuation =
+    typeof result.previous_response_id === "string" &&
+    !!result.previous_response_id.trim();
+  result.prompt_cache_options = {
+    mode:
+      options.mode === "disabled" ||
+      (options.mode === "explicit" &&
+        (breakpointCount > 0 || storedContinuation))
+        ? "explicit"
+        : "implicit",
+    ttl: OPENAI_RESPONSES_PROMPT_CACHE_TTL,
+  };
+  const key = parseOpenAIResponsesPromptCacheKey(options.key);
+  if (options.mode !== "disabled" && key) result.prompt_cache_key = key;
+  else delete result.prompt_cache_key;
+  return result as T;
+}
+
 export function parseOpenAICompressMessageLengthThreshold(value?: string) {
   const normalized = value?.trim().toLowerCase();
   if (!normalized) {
@@ -699,7 +867,8 @@ export function supportsOpenAIResponsesReasoning(model?: string) {
   return (
     OPENAI_GPT_5_STANDARD_MODEL_FAMILIES.has(family) ||
     OPENAI_GPT_5_PRO_MODEL_FAMILIES.has(family) ||
-    OPENAI_O_SERIES_REASONING_MODEL_FAMILIES.has(family)
+    OPENAI_O_SERIES_REASONING_MODEL_FAMILIES.has(family) ||
+    OPENAI_GPT_6_MODEL_FAMILIES.has(family)
   );
 }
 
@@ -707,7 +876,8 @@ export function supportsOpenAIResponsesTextVerbosity(model?: string) {
   const family = getOpenAIModelFamily(model);
   return (
     OPENAI_GPT_5_STANDARD_MODEL_FAMILIES.has(family) ||
-    OPENAI_GPT_5_PRO_MODEL_FAMILIES.has(family)
+    OPENAI_GPT_5_PRO_MODEL_FAMILIES.has(family) ||
+    OPENAI_GPT_6_MODEL_FAMILIES.has(family)
   );
 }
 
@@ -774,7 +944,7 @@ export function applyOpenAIResponsesModelConstraints(config: {
     );
   }
 
-  if (isOpenAIGpt56ModelConfig(config)) {
+  if (isOpenAIResponsesAdvancedModelConfig(config)) {
     config.reasoningMode = parseOpenAIResponsesReasoningMode(
       config.reasoningMode,
     );
@@ -801,9 +971,19 @@ export function shouldUseOpenAIResponses(params: {
   return params.providerName !== "Azure";
 }
 
-export function supportsOpenAIResponsesSampling(model?: string) {
+export function supportsOpenAIResponsesSampling(
+  model?: string,
+  reasoningEffort?: string,
+) {
   const normalized = normalizeOpenAIModelName(model);
   const family = getOpenAIModelFamily(normalized);
+
+  if (OPENAI_GPT_6_MODEL_FAMILIES.has(family)) {
+    return (
+      family !== "gpt-6-astra" &&
+      normalizeOpenAIResponsesReasoningEffort(reasoningEffort, model) === "none"
+    );
+  }
 
   if (OPENAI_O_SERIES_REASONING_MODEL_FAMILIES.has(family)) {
     return false;
@@ -839,6 +1019,7 @@ export function supportsOpenAIResponsesWebSearch(params: {
     family === "gpt-5.5" ||
     family === "gpt-5.5-pro" ||
     OPENAI_GPT_56_MODEL_FAMILIES.has(family) ||
+    OPENAI_GPT_6_MODEL_FAMILIES.has(family) ||
     family === "gpt-4.1" ||
     family === "gpt-4.1-mini" ||
     family === "gpt-4.1-nano";

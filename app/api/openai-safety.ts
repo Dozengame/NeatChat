@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 
-import { isGpt56Model } from "@/app/utils/openai-responses";
+import { supportsOpenAIResponsesAdvancedFeatures } from "@/app/utils/openai-responses";
 import { getVerifiedAccessDeviceId } from "./abuse-control";
 
 export function sanitizeOpenAIResponsesSafetyIdentifier<
@@ -12,7 +12,7 @@ export function sanitizeOpenAIResponsesSafetyIdentifier<
   const model =
     typeof sanitizedBody.model === "string" ? sanitizedBody.model : undefined;
   if (
-    isGpt56Model(model) &&
+    supportsOpenAIResponsesAdvancedFeatures(model) &&
     verifiedDeviceId &&
     verifiedDeviceId.length <= 64
   ) {

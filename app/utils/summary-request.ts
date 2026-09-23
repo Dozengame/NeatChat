@@ -1,5 +1,6 @@
 import { ServiceProvider } from "../constant";
 import type { ModelConfig } from "../store/config";
+import { isOpenAIImageGenerationModelConfig } from "./openai-image";
 import {
   clampOpenAIResponsesMaxOutputTokens,
   getMaxOutputTokensForReasoningEffort,
@@ -36,7 +37,17 @@ type SummaryResolverModelConfig = Pick<
 >;
 
 function modelRef(model?: string, providerName?: string) {
-  return normalizeModelRef(providerName ? `${model}@${providerName}` : model);
+  if (!model?.trim()) return undefined;
+  const ref = normalizeModelRef(
+    providerName ? `${model}@${providerName}` : model,
+  );
+  const [resolvedModel, resolvedProviderName] = splitModelRef(ref);
+  return isOpenAIImageGenerationModelConfig({
+    model: resolvedModel,
+    providerName: resolvedProviderName,
+  })
+    ? undefined
+    : ref;
 }
 
 export function resolveSummaryRequestConfig(params: {
@@ -51,7 +62,9 @@ export function resolveSummaryRequestConfig(params: {
     publicConfig,
     availableModelRefs,
   } = params;
-  const allowedModels = publicConfig?.allowedModels ?? [];
+  const allowedModels = (publicConfig?.allowedModels ?? []).filter(
+    (ref) => modelRef(ref) !== undefined,
+  );
   const availableModels =
     availableModelRefs === undefined
       ? undefined
@@ -60,16 +73,19 @@ export function resolveSummaryRequestConfig(params: {
       : new Set(availableModelRefs);
   const fallbackRef =
     resolveAllowedModelRef({
-      model: fallbackModelConfig.model,
-      providerName: fallbackModelConfig.providerName,
+      model: modelRef(
+        fallbackModelConfig.model,
+        fallbackModelConfig.providerName,
+      ),
       allowedModels,
     }) ??
     modelRef(fallbackModelConfig.model, fallbackModelConfig.providerName) ??
     `${OPENAI_RESPONSES_DEFAULT_MODEL}@OpenAI`;
   const configuredDefaultRef = resolveAllowedModelRef({
-    model: publicConfig?.forced.model ?? publicConfig?.defaults.model,
-    providerName:
+    model: modelRef(
+      publicConfig?.forced.model ?? publicConfig?.defaults.model,
       publicConfig?.forced.providerName ?? publicConfig?.defaults.providerName,
+    ),
     allowedModels,
     fallbackModelRef: fallbackRef,
   });
@@ -100,7 +116,7 @@ export function resolveSummaryRequestConfig(params: {
       fallbackModelRef: defaultModelRef,
     }) ?? defaultModelRef;
   const [resolvedModel, resolvedProviderName] = splitModelRef(effectiveRef);
-  const model = resolvedModel ?? fallbackModelConfig.model;
+  const model = resolvedModel ?? OPENAI_RESPONSES_DEFAULT_MODEL;
   const providerName =
     resolvedProviderName ??
     fallbackModelConfig.providerName ??

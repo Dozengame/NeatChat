@@ -619,7 +619,7 @@ describe("buildOpenAIResponsesPayload", () => {
     expect(payload.prompt_cache_key).toBe("project-neatchat");
     expect(
       JSON.stringify(payload.input).match(/prompt_cache_breakpoint/g),
-    ).toHaveLength(1);
+    ).toHaveLength(2);
   });
 
   test("disables GPT-5.6 cache writes with explicit mode and no breakpoints", () => {

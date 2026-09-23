@@ -5,6 +5,7 @@ import { RequestMessage } from "./client/types";
 import { fetch as tauriStreamFetch } from "./utils/stream";
 import { ServiceProvider } from "./constant";
 import { isOpenAIImageGenerationModel } from "./utils/openai-image";
+import { isGpt6Model } from "./utils/openai-responses";
 export { safeLocalStorage } from "./utils/storage";
 export {
   useCompactScreen,
@@ -264,6 +265,7 @@ export function hasMessageContent(message: RequestMessage) {
 }
 
 export function isVisionModel(model: string) {
+  if (isGpt6Model(model)) return true;
   const modelLower = model.toLowerCase();
   const excludeKeywords = ["claude-3-5-haiku-20241022"];
   const visionKeywords = [

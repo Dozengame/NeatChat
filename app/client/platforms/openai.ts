@@ -29,7 +29,7 @@ import {
   shouldUseOpenAIResponses,
   shouldRequireOpenAIResponsesWebSearch,
   shouldEnableOpenAIResponsesWebSearch,
-  isOpenAIGpt56ModelConfig,
+  supportsOpenAIResponsesFunctionTools,
   supportsOpenAIResponsesStreaming,
   supportsOpenAIResponsesWebSearch,
 } from "@/app/utils/openai-responses";
@@ -233,6 +233,9 @@ export class ChatGPTApi implements LLMApi {
     if (res.data) {
       let url = res.data?.at(0)?.url ?? "";
       const b64_json = res.data?.at(0)?.b64_json ?? "";
+      if (!url && !b64_json) {
+        throw new Error(Locale.Error.RequestFailed());
+      }
       if (!url && b64_json) {
         // uploadImage
         url = await uploadImage(
@@ -316,7 +319,7 @@ export class ChatGPTApi implements LLMApi {
       useResponses &&
       effectiveStream &&
       options.allowTools === true &&
-      isOpenAIGpt56ModelConfig({
+      supportsOpenAIResponsesFunctionTools({
         model: modelConfig.model,
         providerName: modelConfig.providerName,
       })
@@ -384,6 +387,7 @@ export class ChatGPTApi implements LLMApi {
               : getMessageTextContent(v); // 否则调用 getMessageTextContent
           return {
             role: v.role,
+            model: v.model,
             content,
             ...(useResponses
               ? {
@@ -720,6 +724,13 @@ export class ChatGPTApi implements LLMApi {
               accessRestrictedMessage: Locale.Error.AccessRestricted,
             }),
           );
+        }
+        if (
+          isImageGeneration &&
+          (!Array.isArray(resJson?.data) ||
+            (!resJson.data[0]?.url && !resJson.data[0]?.b64_json))
+        ) {
+          throw new Error(Locale.Error.RequestFailed());
         }
         if (
           !isImageGeneration &&

@@ -27,6 +27,7 @@ export interface MultimodalContent {
 
 export interface RequestMessage {
   role: MessageRole;
+  model?: string;
   content: string | MultimodalContent[];
   openaiResponseId?: string;
   openaiResponseStored?: boolean;

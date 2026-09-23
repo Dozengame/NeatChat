@@ -72,10 +72,10 @@ declare global {
       OPENAI_RESPONSES_URL?: string; // custom responses endpoint
       OPENAI_STORE_RESPONSES?: string; // store responses for OpenAI dashboard/API logs
       OPENAI_REASONING_EFFORT?: string; // scalar or per-model responses api reasoning effort defaults
-      OPENAI_REASONING_MODE?: string; // GPT-5.6 responses reasoning mode
-      OPENAI_REASONING_CONTEXT?: string; // GPT-5.6 responses reasoning context
-      OPENAI_INPUT_IMAGE_DETAIL?: string; // GPT-5.6 responses input image detail
-      OPENAI_PROMPT_CACHE_MODE?: string; // GPT-5.6 responses prompt cache mode
+      OPENAI_REASONING_MODE?: string; // GPT-5.6 / GPT-6 responses reasoning mode
+      OPENAI_REASONING_CONTEXT?: string; // GPT-5.6 / GPT-6 responses reasoning context
+      OPENAI_INPUT_IMAGE_DETAIL?: string; // GPT-5.6 / GPT-6 responses input image detail
+      OPENAI_PROMPT_CACHE_MODE?: string; // GPT-5.6 / GPT-6 responses prompt cache mode
       OPENAI_PROMPT_CACHE_KEY?: string; // non-sensitive prompt cache routing key
       OPENAI_MAX_OUTPUT_TOKENS?: string; // responses api max_output_tokens
       OPENAI_TEXT_VERBOSITY?: string; // responses api text verbosity

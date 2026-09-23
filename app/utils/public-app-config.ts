@@ -2,6 +2,7 @@ import md5 from "spark-md5";
 
 import { DEFAULT_MODELS, ServiceProvider } from "../constant";
 import { collectModels, getModelProvider } from "./model";
+import { isGptImage2, OPENAI_IMAGE_DEFAULT_MODEL } from "./openai-image";
 import type {
   OpenAIResponsesInputImageDetail,
   OpenAIResponsesPromptCacheMode,
@@ -229,6 +230,16 @@ export function resolveAllowedModelRef(params: {
 
   if (requested && allowedModels.includes(requested)) {
     return requested;
+  }
+
+  const [requestedModel, requestedProvider] = splitModelRef(requested);
+  const imageFallback = `${OPENAI_IMAGE_DEFAULT_MODEL}@${ServiceProvider.OpenAI}`;
+  if (
+    requestedProvider === ServiceProvider.OpenAI &&
+    isGptImage2(requestedModel) &&
+    allowedModels.includes(imageFallback)
+  ) {
+    return imageFallback;
   }
 
   const fallback = normalizeModelRef(params.fallbackModelRef);

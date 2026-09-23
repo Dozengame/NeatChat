@@ -49,6 +49,7 @@ import {
   applyChatStateUpdate,
   getRegisteredChatStore,
 } from "./chat-state-link";
+import { isGptImage2, OPENAI_IMAGE_DEFAULT_MODEL } from "../utils/openai-image";
 
 let isFetchingConfig = false;
 let hasFetchedConfig = false;
@@ -282,7 +283,12 @@ function setFieldMeta(
   meta: ModelConfigMeta | undefined,
   field: string,
   publicConfig: PublicAppConfig,
-  source: "server_default" | "admin_forced" | "conversation_override",
+  source:
+    | "server_default"
+    | "user_override"
+    | "admin_forced"
+    | "conversation_override"
+    | "fallback",
   locked = false,
 ) {
   return {
@@ -399,6 +405,19 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
         fallbackModelRef: fullModelRef(serverModelConfig),
       });
       const [model, providerName] = splitModelRef(modelRef);
+      const [previousModel, previousProvider] = splitModelRef(
+        fullModelRef(modelConfig),
+      );
+      // A replacement image model preserves the user's image-mode selection;
+      // treating it as a default would switch it to chat on the next reload.
+      const migratedSource =
+        fieldHasUserOverride(modelConfigMeta, "model") &&
+        previousProvider === ServiceProvider.OpenAI &&
+        isGptImage2(previousModel) &&
+        providerName === ServiceProvider.OpenAI &&
+        model === OPENAI_IMAGE_DEFAULT_MODEL
+          ? "user_override"
+          : "fallback";
       modelConfig = {
         ...modelConfig,
         model: model as ModelConfig["model"],
@@ -409,13 +428,17 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
           modelConfigMeta,
           "model",
           publicConfig,
-          "admin_forced",
-          true,
+          isPublicConfigFieldLocked(publicConfig, "model")
+            ? "admin_forced"
+            : migratedSource,
+          isPublicConfigFieldLocked(publicConfig, "model"),
         ),
         "providerName",
         publicConfig,
-        "admin_forced",
-        true,
+        isPublicConfigFieldLocked(publicConfig, "providerName")
+          ? "admin_forced"
+          : migratedSource,
+        isPublicConfigFieldLocked(publicConfig, "providerName"),
       );
     }
 
@@ -564,13 +587,17 @@ export function applyPublicAppConfig(publicConfig: PublicAppConfig) {
             modelConfigMeta,
             "model",
             publicConfig,
-            "admin_forced",
-            true,
+            isPublicConfigFieldLocked(publicConfig, "model")
+              ? "admin_forced"
+              : "fallback",
+            isPublicConfigFieldLocked(publicConfig, "model"),
           ),
           "providerName",
           publicConfig,
-          "admin_forced",
-          true,
+          isPublicConfigFieldLocked(publicConfig, "providerName")
+            ? "admin_forced"
+            : "fallback",
+          isPublicConfigFieldLocked(publicConfig, "providerName"),
         );
       }
 

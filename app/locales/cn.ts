@@ -367,7 +367,15 @@ const cn = {
           : quality === "standard"
           ? "使用标准渲染质量"
           : `使用${
-              quality === "high" ? "高" : quality === "medium" ? "中" : "低"
+              quality === "max"
+                ? "最高"
+                : quality === "xhigh"
+                ? "极高"
+                : quality === "high"
+                ? "高"
+                : quality === "medium"
+                ? "中"
+                : "低"
             }清晰度`,
       CurrentInputMode: "当前输入模式",
       SelectedReasoning: (label: string) => `思考等级：${label}`,
@@ -953,6 +961,8 @@ const cn = {
           low: "低",
           medium: "中",
           high: "高",
+          xhigh: "极高",
+          max: "最高",
           standard: "标准",
           hd: "高清",
         })[quality] ?? quality,
@@ -1022,7 +1032,7 @@ const cn = {
       },
       InputImageDetail: {
         Title: "图片理解精度",
-        SubTitle: "默认 High，避免 GPT-5.6 Auto 使用 Original 增加成本与延迟",
+        SubTitle: "默认 High；Original 适合精细图片理解，但可能增加成本与延迟",
         Low: "Low",
         High: "High",
         Original: "Original",
@@ -1031,7 +1041,7 @@ const cn = {
       PromptCacheMode: {
         Title: "Prompt Cache 模式",
         SubTitle:
-          "关闭使用无断点的 Explicit 策略以避免缓存写入；Implicit 自动缓存；Explicit 在最新输入处设置缓存断点",
+          "关闭使用无断点的 Explicit 策略以避免缓存写入；Implicit 自动缓存；Explicit 保留跨轮可复用的输入缓存断点",
         Disabled: "关闭",
         Implicit: "Implicit",
         Explicit: "Explicit",

@@ -3,6 +3,7 @@ jest.mock("../app/mcp/actions", () => ({
   executeMcpAction: jest.fn(),
   getAllTools: jest.fn(() => Promise.resolve([])),
   getClientsStatus: jest.fn(() => Promise.resolve({})),
+  getMcpChatServerStates: jest.fn(() => Promise.resolve({})),
   initializeMcpSystem: jest.fn(() => Promise.resolve()),
   isMcpEnabled: jest.fn(() => Promise.resolve(false)),
 }));
@@ -17,6 +18,12 @@ import { getClientApi } from "../app/client/api";
 import { ServiceProvider } from "../app/constant";
 import { useChatStore } from "../app/store/chat";
 import { DEFAULT_CONFIG, useAppConfig } from "../app/store/config";
+import {
+  executeMcpAction,
+  getAllTools,
+  getMcpChatServerStates,
+  isMcpEnabled,
+} from "../app/mcp/actions";
 
 const message = (index: number, role: "user" | "assistant") => ({
   id: `m_${index}`,
@@ -72,15 +79,22 @@ function asciiTextWithEstimatedTokens(tokenCount: number, character = "x") {
   return character.repeat(Math.ceil(tokenCount * 4));
 }
 
-describe("GPT-5.6 all_turns history", () => {
-  beforeEach(() => {
+const TOOL_MODELS = ["gpt-5.6-terra", "gpt-6-astra", "gpt-6-sol", "gpt-6-luna"];
+
+describe.each(TOOL_MODELS)("%s all_turns history", (model) => {
+  beforeEach(async () => {
     jest.clearAllMocks();
+    (isMcpEnabled as jest.Mock).mockResolvedValue(false);
+    (getAllTools as jest.Mock).mockResolvedValue([]);
+    (getMcpChatServerStates as jest.Mock).mockResolvedValue({});
+    await useChatStore.getState().resetMcpCache();
     useAppConfig.setState({
       ...DEFAULT_CONFIG,
       enableCustomInstructions: false,
+      enableAutoGenerateTitle: false,
       modelConfig: {
         ...DEFAULT_CONFIG.modelConfig,
-        model: "gpt-5.6-terra" as any,
+        model: model as any,
         providerName: ServiceProvider.OpenAI,
         reasoningContext: "all_turns",
         historyMessageCount: 1,
@@ -94,6 +108,78 @@ describe("GPT-5.6 all_turns history", () => {
       currentSessionIndex: -1,
       lastInput: "",
     } as any);
+  });
+
+  test("includes scoped MCP capabilities and continues the mocked result once", async () => {
+    (isMcpEnabled as jest.Mock).mockResolvedValue(true);
+    (getAllTools as jest.Mock).mockResolvedValue([
+      {
+        clientId: "notes",
+        tools: {
+          tools: [
+            {
+              name: "save_note",
+              description: "Save a note",
+              inputSchema: {
+                type: "object",
+                properties: { text: { type: "string" } },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+    (getMcpChatServerStates as jest.Mock).mockResolvedValue({
+      notes: { status: "active", chatDefaultEnabled: true },
+    });
+    (executeMcpAction as jest.Mock).mockResolvedValue({
+      content: [{ type: "text", text: "saved-once" }],
+    });
+    await useChatStore.getState().resetMcpCache();
+    const request = {
+      method: "tools/call",
+      params: { name: "save_note", arguments: { text: "hello" } },
+    };
+    const chat = jest
+      .fn()
+      .mockImplementationOnce(async (options) => {
+        options.onFinish(
+          ["```json:mcp:notes", JSON.stringify(request), "```"].join("\n"),
+        );
+      })
+      .mockImplementationOnce(async (options) => options.onFinish("Saved"));
+    (getClientApi as jest.Mock).mockReturnValue({ llm: { chat } });
+    const consoleLogSpy = jest
+      .spyOn(console, "log")
+      .mockImplementation(() => {});
+    try {
+      await useChatStore.getState().onUserInput("Save hello", [], false, {
+        mcpClientIds: ["notes"],
+      });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(chat).toHaveBeenCalledTimes(2);
+      const firstRequest = chat.mock.calls[0][0];
+      expect(firstRequest.config.model).toBe(model);
+      expect(firstRequest.allowTools).toBe(true);
+      expect(firstRequest.messages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            role: "system",
+            content: expect.stringContaining('"name": "save_note"'),
+          }),
+        ]),
+      );
+      expect(executeMcpAction).toHaveBeenCalledTimes(1);
+      expect(executeMcpAction).toHaveBeenCalledWith("notes", request);
+      expect(chat.mock.calls[1][0].messages.at(-1)).toMatchObject({
+        role: "user",
+        isMcpResponse: true,
+        content: expect.stringContaining("saved-once"),
+      });
+    } finally {
+      consoleLogSpy.mockRestore();
+    }
   });
 
   test("keeps every raw turn after clear-context when it fits the input budget", async () => {
@@ -141,9 +227,7 @@ describe("GPT-5.6 all_turns history", () => {
           {
             id: "old-reasoning",
             type: "reasoning",
-            encrypted_content: "A".repeat(
-              GPT_56_MAX_HISTORY_TOKENS + 10_000,
-            ),
+            encrypted_content: "A".repeat(GPT_56_MAX_HISTORY_TOKENS + 10_000),
             summary: [],
           },
         ],
@@ -405,7 +489,7 @@ describe("GPT-5.6 all_turns history", () => {
     },
   );
 
-  test("unpins a recovery trace after a successful GPT-5.6 response", async () => {
+  test("unpins a recovery trace after a successful Responses reply", async () => {
     useAppConfig.setState({
       modelConfig: {
         ...useAppConfig.getState().modelConfig,
@@ -575,5 +659,184 @@ describe("GPT-5.6 all_turns history", () => {
 
     consoleErrorSpy.mockRestore();
     consoleLogSpy.mockRestore();
+  });
+});
+
+describe("Responses family recovery and stable default instructions", () => {
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    (isMcpEnabled as jest.Mock).mockResolvedValue(false);
+    (getAllTools as jest.Mock).mockResolvedValue([]);
+    (getMcpChatServerStates as jest.Mock).mockResolvedValue({});
+    await useChatStore.getState().resetMcpCache();
+    useAppConfig.setState({
+      ...DEFAULT_CONFIG,
+      enableCustomInstructions: false,
+      enableAutoGenerateTitle: false,
+      modelConfig: {
+        ...DEFAULT_CONFIG.modelConfig,
+        model: "gpt-6-luna" as any,
+        providerName: ServiceProvider.OpenAI,
+        reasoningContext: "auto",
+        historyMessageCount: 0,
+        max_output_tokens: 1000,
+        enableInjectSystemPrompts: false,
+        sendMemory: false,
+      },
+    });
+    useChatStore.setState({
+      sessions: [],
+      temporarySession: undefined,
+      currentSessionIndex: -1,
+      lastInput: "",
+    } as any);
+  });
+
+  test.each([
+    ["gpt-5.6-terra", false],
+    ["gpt-6-luna", true],
+    ["gpt-6-luna-2026-09-22", true],
+  ] as const)(
+    "isolates %s pending recovery while allowing only compatible traces to block tools",
+    async (previousModel, compatible) => {
+      const session = useChatStore.getState().ensureCurrentSessionSaved();
+      const trace = recoveryTrace("previous_family");
+      session.messages = [
+        {
+          ...message(0, "user"),
+          content: "previous tool action",
+          isError: true,
+        },
+        {
+          ...message(1, "assistant"),
+          model: previousModel,
+          content: "continuation interrupted",
+          isError: true,
+          openaiResponseStored: false,
+          openaiResponsesOutput: trace,
+          openaiResponsesRecoveryPending: true,
+        },
+      ] as any;
+      session.mask.plugin = ["notes-plugin"];
+      const chat = jest.fn(async (options) => {
+        options.onFinish("Done", undefined, {
+          openaiResponseStored: false,
+          openaiResponsesOutput: [
+            {
+              type: "message",
+              role: "assistant",
+              content: [{ type: "output_text", text: "Done" }],
+            },
+          ],
+        });
+      });
+      (getClientApi as jest.Mock).mockReturnValue({ llm: { chat } });
+      const consoleLogSpy = jest
+        .spyOn(console, "log")
+        .mockImplementation(() => {});
+      try {
+        await useChatStore.getState().onUserInput("continue with Luna");
+
+        expect(chat).toHaveBeenCalledTimes(1);
+        const request = chat.mock.calls[0][0];
+        expect(request.allowTools).toBe(true);
+        expect(request.pluginIds).toEqual(["notes-plugin"]);
+        expect(request.openaiResponsesRecoveryPending).toBe(compatible);
+        expect(request.messages.map((item: any) => item.content)).toEqual([
+          "previous tool action",
+          "continuation interrupted",
+          "continue with Luna",
+        ]);
+        expect(session.messages[1].openaiResponsesRecoveryPending).toBe(
+          !compatible,
+        );
+
+        const payload = buildOpenAIResponsesPayload({
+          messages: request.messages,
+          modelConfig: session.mask.modelConfig,
+          store: false,
+        }) as any;
+        if (compatible) {
+          expect(payload.input).toEqual(expect.arrayContaining(trace));
+        } else {
+          expect(
+            payload.input.some((item: any) =>
+              ["function_call", "function_call_output", "reasoning"].includes(
+                item.type,
+              ),
+            ),
+          ).toBe(false);
+          expect(JSON.stringify(payload.input)).toContain(
+            "completed_previous_family",
+          );
+        }
+      } finally {
+        consoleLogSpy.mockRestore();
+      }
+    },
+  );
+
+  test("keeps default instructions stable within a local day and changes them the next day", async () => {
+    const session = useChatStore.getState().currentSession();
+    session.mask.modelConfig.enableInjectSystemPrompts = true;
+    const instructionsAt = async (date: Date) => {
+      jest.setSystemTime(date);
+      const messages = await useChatStore
+        .getState()
+        .getMessagesWithMemory({ session });
+      return buildOpenAIResponsesPayload({
+        messages,
+        modelConfig: session.mask.modelConfig,
+        store: false,
+      }).instructions;
+    };
+    jest.useFakeTimers();
+    try {
+      const first = await instructionsAt(new Date(2026, 8, 23, 10, 0, 1));
+      const later = await instructionsAt(new Date(2026, 8, 23, 10, 0, 59));
+      const nextDay = await instructionsAt(new Date(2026, 8, 24, 10, 0, 1));
+      expect(first).toBeTruthy();
+      expect(later).toBe(first);
+      expect(nextDay).not.toBe(first);
+      expect(first).toContain("2026-09-23");
+      expect(nextDay).toContain("2026-09-24");
+      expect(first).toMatch(
+        /(?:UTC|GMT)[+-]\d{2}:?\d{2}|[A-Za-z_]+\/[A-Za-z_]+|\bUTC\b/,
+      );
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test("preserves the full changing time in a user-supplied input template", async () => {
+    useAppConfig.setState({
+      modelConfig: {
+        ...useAppConfig.getState().modelConfig,
+        template: "{{time}} | {{input}}",
+      },
+    });
+    const chat = jest.fn(async (options) => options.onFinish("Done"));
+    (getClientApi as jest.Mock).mockReturnValue({ llm: { chat } });
+    const consoleLogSpy = jest
+      .spyOn(console, "log")
+      .mockImplementation(() => {});
+    const first = new Date(2026, 8, 23, 10, 0, 1);
+    const later = new Date(2026, 8, 23, 10, 0, 59);
+    jest.useFakeTimers();
+    try {
+      jest.setSystemTime(first);
+      await useChatStore.getState().onUserInput("first");
+      jest.setSystemTime(later);
+      await useChatStore.getState().onUserInput("later");
+      expect(chat.mock.calls[0][0].messages.at(-1).content).toBe(
+        `${first.toString()} | first`,
+      );
+      expect(chat.mock.calls[1][0].messages.at(-1).content).toBe(
+        `${later.toString()} | later`,
+      );
+    } finally {
+      jest.useRealTimers();
+      consoleLogSpy.mockRestore();
+    }
   });
 });
