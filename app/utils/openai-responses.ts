@@ -114,6 +114,31 @@ const INPUT_IMAGE_DETAILS = new Set(["low", "high", "original", "auto"]);
 const PROMPT_CACHE_MODES = new Set(["disabled", "implicit", "explicit"]);
 
 const OPENAI_PROVIDER_NAMES = new Set(["openai", "chatgpt"]);
+// Explicit profiles keep newly supported models out of unknown-model fallbacks.
+export const OPENAI_GPT_61_MODEL_CAPABILITIES = {
+  "gpt-6.1-sol": {
+    reasoningEfforts: ["low", "medium", "high", "xhigh", "max"],
+    reasoningContexts: ["auto", "current_turn", "all_turns"],
+    contextWindowTokens: 1_050_000,
+    maxInputTokens: 922_000,
+    maxOutputTokens: 128_000,
+    knowledgeCutoff: "2026-04-30",
+  },
+  "gpt-6.1-terra": {
+    reasoningEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
+    // Only auto is enabled until explicit persisted-context modes are verified.
+    reasoningContexts: ["auto"],
+    contextWindowTokens: 1_050_000,
+    maxInputTokens: 922_000,
+    maxOutputTokens: 128_000,
+    knowledgeCutoff: "2026-06-01",
+  },
+} as const;
+
+export const OPENAI_GPT_61_MODELS = Object.keys(
+  OPENAI_GPT_61_MODEL_CAPABILITIES,
+) as Array<keyof typeof OPENAI_GPT_61_MODEL_CAPABILITIES>;
+
 const OPENAI_GPT_56_MODEL_FAMILIES = new Set([
   "gpt-5.6",
   "gpt-5.6-sol",
@@ -124,6 +149,7 @@ const OPENAI_GPT_6_MODEL_FAMILIES = new Set([
   "gpt-6-astra",
   "gpt-6-sol",
   "gpt-6-luna",
+  ...OPENAI_GPT_61_MODELS,
 ]);
 const OPENAI_GPT_5_STANDARD_MODEL_FAMILIES = new Set([
   "gpt-5",
@@ -163,6 +189,67 @@ function normalizeOpenAIModelName(model?: string) {
 
 function getOpenAIModelFamily(model?: string) {
   return normalizeOpenAIModelName(model).replace(/-\d{4}-\d{2}-\d{2}$/, "");
+}
+
+export function getOpenAIResponsesModelCapabilities(model?: string) {
+  const family = getOpenAIModelFamily(model);
+  return Object.prototype.hasOwnProperty.call(
+    OPENAI_GPT_61_MODEL_CAPABILITIES,
+    family,
+  )
+    ? OPENAI_GPT_61_MODEL_CAPABILITIES[
+        family as keyof typeof OPENAI_GPT_61_MODEL_CAPABILITIES
+      ]
+    : undefined;
+}
+
+export function getOpenAIResponsesReasoningContexts(
+  model?: string,
+): readonly OpenAIResponsesReasoningContext[] {
+  return (
+    getOpenAIResponsesModelCapabilities(model)?.reasoningContexts ?? [
+      "auto",
+      "current_turn",
+      "all_turns",
+    ]
+  );
+}
+
+export function isOpenAIResponsesReasoningContextSupported(
+  model: string | undefined,
+  context: string | undefined,
+) {
+  return getOpenAIResponsesReasoningContexts(model).some(
+    (value) => value === (context ?? "auto"),
+  );
+}
+
+export class OpenAIResponsesUnsupportedContextError extends Error {
+  constructor() {
+    super(
+      "This model's reasoning context has not been verified in this version. Select auto.",
+    );
+    this.name = "OpenAIResponsesUnsupportedContextError";
+  }
+}
+
+export function getOpenAIResponsesReasoningContextError(
+  model: string | undefined,
+  context: string | undefined,
+) {
+  return getOpenAIResponsesModelCapabilities(model) &&
+    !isOpenAIResponsesReasoningContextSupported(model, context)
+    ? new OpenAIResponsesUnsupportedContextError().message
+    : undefined;
+}
+
+export function assertOpenAIResponsesReasoningContext(
+  model: string | undefined,
+  context: string | undefined,
+) {
+  if (getOpenAIResponsesReasoningContextError(model, context)) {
+    throw new OpenAIResponsesUnsupportedContextError();
+  }
 }
 
 function isKnownOpenAIGpt5Model(model?: string) {
@@ -217,6 +304,8 @@ export function canReuseOpenAIResponsesHistory(
 }
 
 export function getOpenAIResponsesMaxOutputTokensLimit(model?: string) {
+  const capabilities = getOpenAIResponsesModelCapabilities(model);
+  if (capabilities) return capabilities.maxOutputTokens;
   const normalized = normalizeOpenAIModelName(model);
   const family = getOpenAIModelFamily(normalized);
   if (/^o1-preview(?:-\d{4}-\d{2}-\d{2})?$/.test(normalized)) {
@@ -286,6 +375,8 @@ export function isOpenAIResponsesReasoningEffort(
 }
 
 export function getOpenAIResponsesReasoningEfforts(model?: string) {
+  const capabilities = getOpenAIResponsesModelCapabilities(model);
+  if (capabilities) return capabilities.reasoningEfforts;
   const family = getOpenAIModelFamily(model);
   if (OPENAI_GPT_6_MODEL_FAMILIES.has(family)) {
     return OPENAI_RESPONSES_REASONING_EFFORTS.filter(
@@ -526,6 +617,17 @@ export function applyConfiguredOpenAIResponsesReasoningEffortDefault(params: {
       currentEffortIsSupported)
   ) {
     return { reasoningEffortChanged: false, maxOutputTokensChanged: false };
+  }
+
+  // These known legacy choices have a fixed migration, not a server-default
+  // replacement. Preserve the user's budget and provenance when correcting it.
+  if (
+    getOpenAIResponsesModelCapabilities(params.config.model) &&
+    !currentEffortIsSupported &&
+    (currentReasoningEffort === "none" || currentReasoningEffort === "minimal")
+  ) {
+    params.config.reasoningEffort = "low";
+    return { reasoningEffortChanged: true, maxOutputTokensChanged: false };
   }
 
   const reasoningEffort =
@@ -948,9 +1050,14 @@ export function applyOpenAIResponsesModelConstraints(config: {
     config.reasoningMode = parseOpenAIResponsesReasoningMode(
       config.reasoningMode,
     );
-    config.reasoningContext = parseOpenAIResponsesReasoningContext(
-      config.reasoningContext,
-    );
+    // Keep an unsupported explicit context visible so the user can correct it.
+    if (!getOpenAIResponsesModelCapabilities(config.model)) {
+      config.reasoningContext = parseOpenAIResponsesReasoningContext(
+        config.reasoningContext,
+      );
+    } else {
+      config.reasoningContext ??= OPENAI_RESPONSES_DEFAULT_REASONING_CONTEXT;
+    }
     config.inputImageDetail = parseOpenAIResponsesInputImageDetail(
       config.inputImageDetail,
     );
@@ -975,6 +1082,13 @@ export function supportsOpenAIResponsesSampling(
   model?: string,
   reasoningEffort?: string,
 ) {
+  const capabilities = getOpenAIResponsesModelCapabilities(model);
+  if (capabilities) {
+    return (
+      capabilities.reasoningEfforts.some((effort) => effort === "none") &&
+      normalizeOpenAIResponsesReasoningEffort(reasoningEffort, model) === "none"
+    );
+  }
   const normalized = normalizeOpenAIModelName(model);
   const family = getOpenAIModelFamily(normalized);
 

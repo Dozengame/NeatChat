@@ -1,5 +1,7 @@
 import {
   applyOpenAIResponsesPromptCachePolicy,
+  assertOpenAIResponsesReasoningContext,
+  getOpenAIResponsesReasoningContexts,
   clampOpenAIResponsesMaxOutputTokens,
   cloneOpenAIResponsesInput,
   isGpt6Model,
@@ -40,6 +42,13 @@ export function enforceLockedOpenAIResponsesPolicy<T extends JsonRecord>(
   if (!supportsOpenAIResponsesAdvancedFeatures(model)) return body;
 
   const lockedFields = new Set(policy.lockedFields);
+  // Reject explicit unverified settings even when the administrator locks auto.
+  if (isRecord(body.reasoning)) {
+    assertOpenAIResponsesReasoningContext(
+      model,
+      body.reasoning.context as string | undefined,
+    );
+  }
   let result: JsonRecord = { ...body };
   if (isGpt6Model(model)) {
     const reasoning = isRecord(body.reasoning) ? { ...body.reasoning } : {};
@@ -158,6 +167,27 @@ export function enforceLockedOpenAIResponsesPolicy<T extends JsonRecord>(
     } else {
       delete result.prompt_cache_key;
     }
+  }
+
+  if (isRecord(result.reasoning)) {
+    assertOpenAIResponsesReasoningContext(
+      model,
+      result.reasoning.context as string | undefined,
+    );
+    if (getOpenAIResponsesReasoningContexts(model).length === 1) {
+      delete result.reasoning.context;
+    }
+  }
+  if (
+    (isGpt6Model(model) || lockedFields.has("max_output_tokens")) &&
+    typeof result.max_output_tokens === "number" &&
+    Number.isFinite(result.max_output_tokens)
+  ) {
+    result.max_output_tokens = clampOpenAIResponsesMaxOutputTokens(
+      result.max_output_tokens,
+      model,
+    );
+    if (result.max_output_tokens === 0) delete result.max_output_tokens;
   }
 
   return result;

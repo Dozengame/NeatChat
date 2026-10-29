@@ -9,6 +9,7 @@ import {
 } from "./openai-safety";
 import { enforceLockedOpenAIResponsesPolicy } from "./openai-responses-policy";
 import { resolveLockedFields } from "../utils/public-app-config";
+import { OpenAIResponsesUnsupportedContextError } from "../utils/openai-responses";
 import {
   isGptImageFlare,
   normalizeOpenAIImageRequestParameters,
@@ -275,7 +276,13 @@ export async function requestOpenai(req: NextRequest) {
       console.error("[OpenAI] request body preprocessing failed", e);
       clearTimeout(timeoutId);
       return NextResponse.json(
-        { error: true, message: "Invalid request body" },
+        {
+          error: true,
+          message:
+            e instanceof OpenAIResponsesUnsupportedContextError
+              ? e.message
+              : "Invalid request body",
+        },
         { status: 400 },
       );
     }

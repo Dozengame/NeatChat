@@ -289,6 +289,54 @@ describe("GPT-6 and Flare public configuration migration", () => {
     },
   );
 
+  test.each(["none", "minimal"] as const)(
+    "preserves sources and budgets when correcting legacy Sol %s",
+    (effort) => {
+      const next = publicConfig();
+      next.allowedModels.push("gpt-6.1-sol@OpenAI");
+      next.reasoningEffortDefaults!.models["gpt-6.1-sol"] = "medium";
+      const meta = overrideMeta("user_override");
+      meta.reasoningEffort = { source: "user_override", updatedAt: 123 };
+      useAppConfig.setState({
+        modelConfig: {
+          ...modelConfig("gpt-6.1-sol"),
+          reasoningEffort: effort,
+          max_output_tokens: 10000,
+        },
+        modelConfigMeta: meta,
+      });
+      const ordinary = session("legacy-sol", "gpt-6.1-sol");
+      ordinary.mask.modelConfig.reasoningEffort = effort;
+      ordinary.mask.modelConfig.max_output_tokens = 64000;
+      ordinary.mask.modelConfigMeta.reasoningEffort = {
+        source: "conversation_override",
+        updatedAt: 123,
+      };
+      useChatStore.setState({
+        sessions: [ordinary],
+        currentSessionIndex: 0,
+      } as any);
+      for (let load = 0; load < 3; load++) {
+        applyPublicAppConfig(next);
+        expect(useAppConfig.getState().modelConfig).toMatchObject({
+          reasoningEffort: "low",
+          max_output_tokens: 10000,
+        });
+        expect(
+          useAppConfig.getState().modelConfigMeta?.reasoningEffort?.source,
+        ).toBe("user_override");
+        const current = useChatStore.getState().sessions[0].mask;
+        expect(current.modelConfig).toMatchObject({
+          reasoningEffort: "low",
+          max_output_tokens: 64000,
+        });
+        expect(current.modelConfigMeta?.reasoningEffort?.source).toBe(
+          "conversation_override",
+        );
+      }
+    },
+  );
+
   test("keeps ordinary chat fallback following later server defaults", () => {
     applyPublicAppConfig(publicConfig());
     const next = publicConfig();
@@ -297,4 +345,102 @@ describe("GPT-6 and Flare public configuration migration", () => {
     applyPublicAppConfig(next);
     expect(useAppConfig.getState().modelConfig.model).toBe("gpt-6-sol");
   });
+
+  test.each(
+    ["gpt-6.1-sol", "gpt-6.1-terra"].flatMap((model) =>
+      [1, 2, 3].map((loads) => [model, loads] as const),
+    ),
+  )(
+    "preserves %s overrides after %s configuration loads and JSON restoration",
+    (model, loads) => {
+      const next = publicConfig();
+      next.allowedModels.push("gpt-6.1-sol@OpenAI", "gpt-6.1-terra@OpenAI");
+      next.reasoningEffortDefaults!.models[model] = "medium";
+      next.legacy.customModels += ",gpt-6.1-sol@openai,gpt-6.1-terra@openai";
+      useAppConfig.setState({
+        modelConfig: { ...modelConfig(model), reasoningEffort: "max" },
+        modelConfigMeta: {
+          ...overrideMeta("user_override"),
+          reasoningEffort: {
+            source: "user_override",
+            updatedAt: Date.parse("2026-09-23T00:00:00Z"),
+          },
+        },
+        customInstructions: "Preserved global instructions",
+        enableCustomInstructions: false,
+      });
+      const ordinary = session("gpt61-ordinary", model);
+      ordinary.mask.modelConfig.reasoningEffort = "xhigh";
+      ordinary.mask.modelConfig.max_output_tokens = 64000;
+      ordinary.mask.modelConfigMeta.reasoningEffort = {
+        source: "conversation_override",
+        updatedAt: Date.parse("2026-09-23T00:00:00Z"),
+      };
+      const previousLuna = session("previous-luna", "gpt-6-luna");
+      useChatStore.setState({
+        sessions: [ordinary, previousLuna],
+        currentSessionIndex: 0,
+      } as any);
+
+      const verifyPreserved = () => {
+        const app = useAppConfig.getState();
+        const chat = useChatStore.getState();
+        expect(app.modelConfig).toMatchObject({
+          model,
+          providerName: ServiceProvider.OpenAI,
+          reasoningEffort: "max",
+          max_output_tokens: 75000,
+        });
+        for (const field of [
+          "model",
+          "providerName",
+          "reasoningEffort",
+          "max_output_tokens",
+        ] as const) {
+          expect(app.modelConfigMeta?.[field]).toMatchObject({
+            source: "user_override",
+          });
+          expect(chat.sessions[0].mask.modelConfigMeta?.[field]).toMatchObject({
+            source: "conversation_override",
+          });
+        }
+        expect(chat.sessions[0].mask.modelConfig).toMatchObject({
+          model,
+          reasoningEffort: "xhigh",
+          max_output_tokens: 64000,
+        });
+        expect(chat.sessions[0].messages).toEqual(ordinary.messages);
+        expect(chat.sessions[0].customInstructions).toBe(
+          "preserved conversation instructions",
+        );
+        expect(chat.sessions[1].mask.modelConfig.model).toBe("gpt-6-luna");
+        expect(app.customInstructions).toBe("Preserved global instructions");
+        expect(app.enableCustomInstructions).toBe(false);
+        expect(useAccessStore.getState().defaultModel).toBe("gpt-6-luna");
+        expect(DEFAULT_CONFIG.modelConfig.model).toBe("gpt-6-luna");
+      };
+
+      for (let load = 0; load < loads; load += 1) {
+        applyPublicAppConfig(next);
+        verifyPreserved();
+      }
+
+      const savedApp = JSON.parse(JSON.stringify(useAppConfig.getState()));
+      const savedChat = JSON.parse(JSON.stringify(useChatStore.getState()));
+      useAppConfig.setState({
+        modelConfig: savedApp.modelConfig,
+        modelConfigMeta: savedApp.modelConfigMeta,
+        serverConfigSnapshot: savedApp.serverConfigSnapshot,
+        customInstructions: savedApp.customInstructions,
+        enableCustomInstructions: savedApp.enableCustomInstructions,
+      });
+      useChatStore.setState({ sessions: savedChat.sessions });
+      applyPublicAppConfig({
+        ...next,
+        configVersion: "gpt61-restored",
+        configHash: "gpt61-restored-hash",
+      });
+      verifyPreserved();
+    },
+  );
 });

@@ -1,6 +1,7 @@
 import { estimateTokenLength } from "./token";
 import {
   clampOpenAIResponsesMaxOutputTokens,
+  getOpenAIResponsesModelCapabilities,
   OPENAI_GPT_56_MAX_OUTPUT_TOKENS,
 } from "./openai-responses";
 
@@ -79,9 +80,12 @@ export function getOpenAIAllTurnsHistoryTokenBudget(params: {
     (total, message) => total + estimateOpenAIResponsesInputTokens(message),
     0,
   );
+  const capabilities = getOpenAIResponsesModelCapabilities(params.model);
+  const contextBudget =
+    (capabilities?.contextWindowTokens ?? OPENAI_GPT_56_CONTEXT_WINDOW_TOKENS) -
+    getReservedOutputTokens(params.model, params.maxOutputTokens);
   const remainingBudget =
-    OPENAI_GPT_56_CONTEXT_WINDOW_TOKENS -
-    getReservedOutputTokens(params.model, params.maxOutputTokens) -
+    Math.min(capabilities?.maxInputTokens ?? Infinity, contextBudget) -
     OPENAI_GPT_56_INPUT_SAFETY_MARGIN_TOKENS -
     fixedInputTokens;
   if (remainingBudget < 0) {

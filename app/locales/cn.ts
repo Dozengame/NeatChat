@@ -12,6 +12,7 @@ const cn = {
     AccessRestricted: "当前访问暂时受限，请稍后再试。",
     RequestFailed: (status?: number) =>
       status ? `请求失败（${status}）。` : "请求失败。",
+    NonStreamingTools: "原生工具调用需要开启流式模式，请开启后重试。",
   },
   Auth: {
     Return: "返回",
@@ -1026,6 +1027,7 @@ const cn = {
       ReasoningContext: {
         Title: "推理上下文",
         SubTitle: "控制模型在当前轮或跨轮保留推理上下文",
+        Unverified: "本版本尚未验证该模型的此项设置，请选择自动。",
         Auto: "自动",
         CurrentTurn: "仅当前轮",
         AllTurns: "全部轮次",

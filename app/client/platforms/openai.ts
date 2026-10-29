@@ -32,6 +32,8 @@ import {
   supportsOpenAIResponsesFunctionTools,
   supportsOpenAIResponsesStreaming,
   supportsOpenAIResponsesWebSearch,
+  getOpenAIResponsesReasoningContextError,
+  isOpenAIResponsesAdvancedModelConfig,
 } from "@/app/utils/openai-responses";
 import {
   buildOpenAIResponsesPayload,
@@ -313,17 +315,38 @@ export class ChatGPTApi implements LLMApi {
       modelConfig.store ??
       accessStore.serverConfigSnapshot?.defaults.store ??
       false;
-    let responsesFunctionTools: ResponsesFunctionTool[] = [];
-    let responsesFunctionExecutors: Record<string, PluginFunctionExecutor> = {};
     if (
       useResponses &&
-      effectiveStream &&
-      options.allowTools === true &&
+      isOpenAIResponsesAdvancedModelConfig(modelConfig) &&
+      getOpenAIResponsesReasoningContextError(
+        modelConfig.model,
+        modelConfig.reasoningContext,
+      )
+    ) {
+      options.onError?.(
+        new Error(
+          Locale.Settings.GPT56Capabilities.ReasoningContext.Unverified,
+        ),
+      );
+      return;
+    }
+    let responsesFunctionTools: ResponsesFunctionTool[] = [];
+    let responsesFunctionExecutors: Record<string, PluginFunctionExecutor> = {};
+    const supportsFunctionTools =
+      useResponses &&
       supportsOpenAIResponsesFunctionTools({
         model: modelConfig.model,
         providerName: modelConfig.providerName,
-      })
+      });
+    if (
+      supportsFunctionTools &&
+      !effectiveStream &&
+      options.openaiResponsesRecoveryPending
     ) {
+      options.onError?.(new Error(Locale.Error.NonStreamingTools));
+      return;
+    }
+    if (supportsFunctionTools && options.allowTools === true) {
       try {
         if (!options.openaiResponsesRecoveryPending) {
           const [pluginTools, pluginExecutors] = usePluginStore
@@ -337,6 +360,9 @@ export class ChatGPTApi implements LLMApi {
             responsesFunctionTools = adapted.tools;
             responsesFunctionExecutors = adapted.executors;
           }
+        }
+        if (!effectiveStream && responsesFunctionTools.length > 0) {
+          throw new Error(Locale.Error.NonStreamingTools);
         }
       } catch (error) {
         options.onError?.(

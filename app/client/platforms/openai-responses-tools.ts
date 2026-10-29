@@ -18,6 +18,7 @@ export type ResponsesFunctionTool = {
   name: string;
   description?: string;
   parameters: Record<string, unknown>;
+  strict?: boolean;
 };
 
 export type ResponsesFunctionCall = {
@@ -123,6 +124,7 @@ export function adaptPluginToolsForResponses(
         ? { description: tool.function.description }
         : {}),
       parameters: cloneSchema(tool.function.parameters),
+      strict: false,
     });
     executors[name] = executor;
   }

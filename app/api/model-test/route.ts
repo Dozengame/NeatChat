@@ -7,7 +7,10 @@ import {
   OpenaiPath,
 } from "@/app/constant";
 import { ModelTestResult } from "@/app/utils/model-test";
-import { buildOpenAIModelTestRequest } from "@/app/utils/openai-model-test";
+import {
+  buildOpenAIModelTestRequest,
+  getOpenAIModelTestResult,
+} from "@/app/utils/openai-model-test";
 import {
   checkCurrentRequestAccessUsage,
   getVerifiedAccessDeviceId,
@@ -17,7 +20,11 @@ import {
 import { auth, authErrorResponse } from "@/app/api/auth";
 import { sanitizeOpenAIResponsesSafetyIdentifier } from "@/app/api/openai-safety";
 import { withAbortTimeout } from "@/app/utils/request-timeout";
-import { getPublicUpstreamErrorMessage } from "@/app/utils/public-error";
+import { getOpenAIResponsesMaxOutputTokensLimit } from "@/app/utils/openai-responses";
+import {
+  getPublicUpstreamErrorMessage,
+  readResponsePayload,
+} from "@/app/utils/public-error";
 
 const MODEL_TEST_MAX_MODELS = 1;
 
@@ -57,7 +64,7 @@ async function testModel(
       : `${baseUrl}/${OpenaiPath.ResponsesPath}`;
 
     // 发送请求
-    const { response, errorData } = await withAbortTimeout({
+    const { response, payload, isJson } = await withAbortTimeout({
       controller,
       timeoutMs: timeoutSeconds * 1000,
       operation: async () => {
@@ -72,45 +79,23 @@ async function testModel(
           cache: "no-store",
         });
         const response = await withUsageAccounting(req, upstreamResponse);
-        let errorData: unknown;
-        if (!response.ok) {
-          try {
-            errorData = await response.json();
-          } catch {
-            // 非 JSON 上游响应不应透传给公开的模型探针结果。
-            errorData = undefined;
-          }
-        }
-        return { response, errorData };
+        const { payload, isJson } = await readResponsePayload(response);
+        return { response, payload, isJson };
       },
     });
 
     const responseTime = Date.now() - startTime;
 
-    // 检查响应
-    if (!response.ok) {
-      return {
-        success: false,
-        message: getPublicUpstreamErrorMessage({
-          fallback: `测试失败 (${response.status})`,
-          payload: errorData,
-          headers: response.headers,
-        }),
-        responseTime,
-        error: { status: response.status },
-        timeout: false,
-      };
-    }
-
-    return {
-      success: true,
-      message: `测试成功! 响应时间: ${(responseTime / 1000).toFixed(2)}s`,
+    return getOpenAIModelTestResult({
+      response,
+      payload,
+      isJson,
       responseTime,
-      timeout: false,
-    };
+    });
   } catch (error: any) {
     const responseTime = Date.now() - startTime;
-    const isTimeout = error.name === "AbortError";
+    const isTimeout =
+      error?.name === "AbortError" || error?.name === "TimeoutError";
 
     return {
       success: false,
@@ -171,8 +156,13 @@ export async function POST(req: NextRequest) {
     );
     const usageCheck = await checkCurrentRequestAccessUsage(req, {
       estimatedTokens:
-        Math.max(...modelRequests.map((request) => request.max_output_tokens)) +
-        2,
+        Math.max(
+          ...modelRequests.map(
+            (request) =>
+              request.max_output_tokens ??
+              getOpenAIResponsesMaxOutputTokensLimit(request.model),
+          ),
+        ) + 2,
     });
     if (!usageCheck.allowed) {
       return usageErrorResponse(usageCheck);

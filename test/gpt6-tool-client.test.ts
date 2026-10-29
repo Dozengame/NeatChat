@@ -37,8 +37,13 @@ import { ChatGPTApi } from "../app/client/platforms/openai";
 import { sendOpenAIResponsesSseRound } from "../app/client/platforms/openai-responses-tools";
 import { ServiceProvider } from "../app/constant";
 import { useAccessStore } from "../app/store/access";
-import { DEFAULT_CONFIG, useAppConfig } from "../app/store/config";
+import {
+  DEFAULT_CONFIG,
+  type ModelConfig,
+  useAppConfig,
+} from "../app/store/config";
 import { fetch as transportFetch } from "../app/utils/stream";
+import Locale from "../app/locales";
 
 const mockGetAsTools = jest.fn();
 const sendRound = sendOpenAIResponsesSseRound as jest.Mock;
@@ -62,8 +67,15 @@ const completedOutput = {
   content: [{ type: "output_text", text: "Saved" }],
 };
 
-describe.each(["gpt-5.6-terra", "gpt-6-astra", "gpt-6-sol", "gpt-6-luna"])(
-  "%s client function tools",
+describe.each([
+  "gpt-5.6-terra",
+  "gpt-6-astra",
+  "gpt-6-sol",
+  "gpt-6-luna",
+  "gpt-6.1-sol",
+  "gpt-6.1-terra",
+])(
+  "%s client function tools, recovery, and non-streaming request boundaries",
   (model) => {
     const executor = jest.fn();
     const modelConfig = () => ({
@@ -72,13 +84,15 @@ describe.each(["gpt-5.6-terra", "gpt-6-astra", "gpt-6-sol", "gpt-6-luna"])(
       providerName: ServiceProvider.OpenAI,
       stream: true,
       reasoningEffort: "medium" as const,
-      reasoningContext: "all_turns" as const,
+      reasoningContext:
+        model === "gpt-6.1-terra" ? ("auto" as const) : ("all_turns" as const),
       promptCacheMode: "disabled" as const,
     });
 
     beforeEach(() => {
       jest.clearAllMocks();
       sendRound.mockReset();
+      (transportFetch as jest.Mock).mockReset();
       executor
         .mockReset()
         .mockResolvedValue({ status: 200, data: "saved-once" });
@@ -145,7 +159,11 @@ describe.each(["gpt-5.6-terra", "gpt-6-astra", "gpt-6-sol", "gpt-6-luna"])(
           store,
           stream: true,
           tools: [
-            expect.objectContaining({ type: "function", name: "save_note" }),
+            expect.objectContaining({
+              type: "function",
+              name: "save_note",
+              strict: false,
+            }),
           ],
         });
         const output = {
@@ -171,6 +189,7 @@ describe.each(["gpt-5.6-terra", "gpt-6-astra", "gpt-6-sol", "gpt-6-luna"])(
           { text: "hello" },
           expect.objectContaining({ signal: expect.any(AbortSignal) }),
         );
+
         expect(onError).not.toHaveBeenCalled();
         expect(onFinish).toHaveBeenCalledWith(
           "Saved",
@@ -189,6 +208,97 @@ describe.each(["gpt-5.6-terra", "gpt-6-astra", "gpt-6-sol", "gpt-6-luna"])(
         expect(transportFetch).not.toHaveBeenCalled();
       },
     );
+
+    test("rejects non-streaming selected tools before the model or executor runs", async () => {
+      const onError = jest.fn();
+      const onFinish = jest.fn();
+
+      await new ChatGPTApi().chat({
+        config: { ...modelConfig(), stream: false },
+        messages: [{ role: "user", content: "Save the note hello" }],
+        allowTools: true,
+        pluginIds: ["notes-plugin"],
+        onError,
+        onFinish,
+      });
+
+      expect(mockGetAsTools).toHaveBeenCalledWith(["notes-plugin"]);
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError.mock.calls[0][0].message).toBe(
+        Locale.Error.NonStreamingTools,
+      );
+      expect(onFinish).not.toHaveBeenCalled();
+      expect(sendRound).not.toHaveBeenCalled();
+      expect(transportFetch).not.toHaveBeenCalled();
+      expect(executor).not.toHaveBeenCalled();
+    });
+
+    test("rejects non-streaming native recovery without re-enabling side effects", async () => {
+      const onError = jest.fn();
+      const onFinish = jest.fn();
+
+      await new ChatGPTApi().chat({
+        config: { ...modelConfig(), stream: false },
+        messages: [{ role: "user", content: "Continue from the saved result" }],
+        openaiResponsesRecoveryPending: true,
+        onError,
+        onFinish,
+      });
+
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError.mock.calls[0][0].message).toBe(
+        Locale.Error.NonStreamingTools,
+      );
+      expect(onFinish).not.toHaveBeenCalled();
+      expect(mockGetAsTools).not.toHaveBeenCalled();
+      expect(sendRound).not.toHaveBeenCalled();
+      expect(transportFetch).not.toHaveBeenCalled();
+      expect(executor).not.toHaveBeenCalled();
+    });
+
+    test.each([
+      { allowTools: undefined, pluginIds: ["notes-plugin"] },
+      { allowTools: false, pluginIds: ["notes-plugin"] },
+      { allowTools: true, pluginIds: [] },
+      { allowTools: true, pluginIds: ["retired-plugin"] },
+    ])("allows plain non-streaming requests with %j", async (toolOptions) => {
+      mockGetAsTools.mockReturnValue([[], {}]);
+      const response = {
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () =>
+          JSON.stringify({
+            id: "resp_text",
+            status: "completed",
+            output: [completedOutput],
+          }),
+      } as Response;
+      (transportFetch as jest.Mock).mockResolvedValueOnce(response);
+      const onError = jest.fn();
+      const onFinish = jest.fn();
+
+      await new ChatGPTApi().chat({
+        config: { ...modelConfig(), stream: false },
+        messages: [{ role: "user", content: "Hello" }],
+        ...toolOptions,
+        onError,
+        onFinish,
+      });
+
+      expect(onError).not.toHaveBeenCalled();
+      expect(onFinish).toHaveBeenCalledWith(
+        "Saved",
+        response,
+        expect.objectContaining({ openaiResponseId: "resp_text" }),
+      );
+      expect(transportFetch).toHaveBeenCalledTimes(1);
+      expect(sendRound).not.toHaveBeenCalled();
+      expect(executor).not.toHaveBeenCalled();
+      expect(mockGetAsTools).toHaveBeenCalledTimes(
+        toolOptions.allowTools === true ? 1 : 0,
+      );
+    });
 
     test.each([false, true])(
       "replays a failed continuation with store=%s and does not re-enable side effects",
@@ -280,3 +390,33 @@ describe.each(["gpt-5.6-terra", "gpt-6-astra", "gpt-6-sol", "gpt-6-luna"])(
     );
   },
 );
+
+test("reports unverified Terra context through onError before sending a request", async () => {
+  jest.clearAllMocks();
+  const onError = jest.fn();
+  const onFinish = jest.fn();
+  const modelConfig: ModelConfig = {
+    ...DEFAULT_CONFIG.modelConfig,
+    model: "gpt-6.1-terra",
+    providerName: ServiceProvider.OpenAI,
+    reasoningContext: "all_turns",
+  };
+
+  await new ChatGPTApi().chat({
+    config: { ...modelConfig, stream: true },
+    messages: [{ role: "user", content: "Hello" }],
+    allowTools: true,
+    pluginIds: ["notes-plugin"],
+    onError,
+    onFinish,
+  });
+
+  expect(onError).toHaveBeenCalledTimes(1);
+  expect(onError.mock.calls[0][0].message).toBe(
+    Locale.Settings.GPT56Capabilities.ReasoningContext.Unverified,
+  );
+  expect(onFinish).not.toHaveBeenCalled();
+  expect(mockGetAsTools).not.toHaveBeenCalled();
+  expect(sendRound).not.toHaveBeenCalled();
+  expect(transportFetch).not.toHaveBeenCalled();
+});

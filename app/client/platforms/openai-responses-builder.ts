@@ -3,6 +3,8 @@ import type { ModelConfig } from "@/app/store";
 import type { ResponsesFunctionTool } from "./openai-responses-tools";
 import {
   applyOpenAIResponsesPromptCachePolicy,
+  assertOpenAIResponsesReasoningContext,
+  getOpenAIResponsesReasoningContexts,
   canReuseOpenAIResponsesHistory,
   clampOpenAIResponsesMaxOutputTokens,
   isOpenAIResponsesAdvancedModelConfig,
@@ -354,6 +356,12 @@ export function buildOpenAIResponsesPayload(params: {
   }
 
   if (supportsReasoning) {
+    if (supportsAdvancedFeatures) {
+      assertOpenAIResponsesReasoningContext(
+        params.modelConfig.model,
+        params.modelConfig.reasoningContext,
+      );
+    }
     payload.reasoning = {
       effort: normalizeOpenAIResponsesReasoningEffort(
         params.modelConfig.reasoningEffort ||
@@ -366,9 +374,14 @@ export function buildOpenAIResponsesPayload(params: {
             mode: parseOpenAIResponsesReasoningMode(
               params.modelConfig.reasoningMode,
             ),
-            context: parseOpenAIResponsesReasoningContext(
-              params.modelConfig.reasoningContext,
-            ),
+            ...(getOpenAIResponsesReasoningContexts(params.modelConfig.model)
+              .length > 1
+              ? {
+                  context: parseOpenAIResponsesReasoningContext(
+                    params.modelConfig.reasoningContext,
+                  ),
+                }
+              : {}),
           }
         : {}),
     };
