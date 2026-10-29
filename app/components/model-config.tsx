@@ -21,10 +21,12 @@ import {
   filterOpenAIResponsesReasoningEfforts,
   getMaxOutputTokensForReasoningEffort,
   getOpenAIResponsesMaxOutputTokensLimit,
+  getOpenAIResponsesReasoningContexts,
   includeCurrentOpenAIResponsesReasoningEffort,
   isOpenAIResponsesAdvancedModelConfig,
   isOpenAIGpt5OrNewerModelConfig,
   isOpenAIResponsesReasoningModelConfig,
+  isOpenAIResponsesReasoningContextSupported,
   isOpenAIResponsesTextVerbosityModelConfig,
   OPENAI_RESPONSES_DEFAULT_REASONING_EFFORT,
   normalizeOpenAIResponsesReasoningEffort,
@@ -286,9 +288,15 @@ function useModelConfigListView(props: {
   const reasoningMode = ModalConfigValidator.reasoningMode(
     props.modelConfig.reasoningMode ?? "",
   );
-  const reasoningContext = ModalConfigValidator.reasoningContext(
-    props.modelConfig.reasoningContext ?? "",
+  const reasoningContext = props.modelConfig.reasoningContext ?? "auto";
+  const reasoningContextOptions = getOpenAIResponsesReasoningContexts(
+    props.modelConfig.model,
   );
+  const unsupportedReasoningContext =
+    !isOpenAIResponsesReasoningContextSupported(
+      props.modelConfig.model,
+      reasoningContext,
+    );
   const inputImageDetail = ModalConfigValidator.inputImageDetail(
     props.modelConfig.inputImageDetail ?? "",
   );
@@ -518,11 +526,28 @@ function useModelConfigListView(props: {
               </ListItem>
               <ListItem
                 title={Locale.Settings.GPT56Capabilities.ReasoningContext.Title}
-                subTitle={`${
-                  Locale.Settings.GPT56Capabilities.ReasoningContext.SubTitle
-                }${
-                  Locale.Settings.GPT56Capabilities.ConfigSource.Separator
-                }${sourceText("reasoningContext")}`}
+                subTitle={
+                  <>
+                    {
+                      Locale.Settings.GPT56Capabilities.ReasoningContext
+                        .SubTitle
+                    }
+                    {Locale.Settings.GPT56Capabilities.ConfigSource.Separator}
+                    {sourceText("reasoningContext")}
+                    {unsupportedReasoningContext && (
+                      <span role="alert">
+                        {
+                          Locale.Settings.GPT56Capabilities.ConfigSource
+                            .Separator
+                        }
+                        {
+                          Locale.Settings.GPT56Capabilities.ReasoningContext
+                            .Unverified
+                        }
+                      </span>
+                    )}
+                  </>
+                }
               >
                 <Select
                   className={styles["gpt56-capability-select"]}
@@ -530,6 +555,7 @@ function useModelConfigListView(props: {
                     Locale.Settings.GPT56Capabilities.ReasoningContext.Title
                   }
                   value={reasoningContext}
+                  aria-invalid={unsupportedReasoningContext || undefined}
                   disabled={isLocked("reasoningContext")}
                   onChange={(e) => {
                     updateUnlocked(["reasoningContext"], (config) => {
@@ -540,13 +566,23 @@ function useModelConfigListView(props: {
                     });
                   }}
                 >
-                  {(["auto", "current_turn", "all_turns"] as const).map(
-                    (context) => (
-                      <option value={context} key={context}>
-                        {REASONING_CONTEXT_LABELS[context]}
-                      </option>
-                    ),
+                  {unsupportedReasoningContext && (
+                    <option value={reasoningContext} disabled hidden>
+                      {Object.prototype.hasOwnProperty.call(
+                        REASONING_CONTEXT_LABELS,
+                        reasoningContext,
+                      )
+                        ? REASONING_CONTEXT_LABELS[reasoningContext]
+                        : reasoningContext ||
+                          Locale.Settings.GPT56Capabilities.ReasoningContext
+                            .Unverified}
+                    </option>
                   )}
+                  {reasoningContextOptions.map((context) => (
+                    <option value={context} key={context}>
+                      {REASONING_CONTEXT_LABELS[context]}
+                    </option>
+                  ))}
                 </Select>
               </ListItem>
               <ListItem

@@ -486,6 +486,96 @@ describe("custom instructions", () => {
       ]),
     );
   });
+
+  test.each([
+    ["gpt-6.1-sol", "2026-04-30"],
+    ["gpt-6.1-terra", "2026-06-01"],
+    ["GPT-6.1-SOL", "2026-04-30"],
+    ["GPT-6.1-TERRA-2026-10-29", "2026-06-01"],
+  ])(
+    "injects %s metadata while preserving disabled instructions",
+    async (model, cutoff) => {
+      useAppConfig.setState({
+        enableCustomInstructions: false,
+        customInstructions: "Do not inject this saved preference.",
+        modelConfig: {
+          ...DEFAULT_CONFIG.modelConfig,
+          model: model as any,
+          providerName: "OpenAI" as any,
+          enableInjectSystemPrompts: true,
+        },
+      });
+
+      await useChatStore.getState().onUserInput("Hello");
+
+      const messages = getSentMessages();
+      expect(messages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            role: "system",
+            content: expect.stringContaining(`Knowledge cutoff: ${cutoff}`),
+          }),
+          expect.objectContaining({
+            role: "system",
+            content: expect.stringContaining(`Current model: ${model}`),
+          }),
+        ]),
+      );
+      expect(
+        messages.some(
+          (message) =>
+            message.content === "Do not inject this saved preference.",
+        ),
+      ).toBe(false);
+      expect(useAppConfig.getState().enableCustomInstructions).toBe(false);
+    },
+  );
+
+  test.each(["gpt-6.1-sol", "gpt-6.1-terra"])(
+    "%s keeps the existing conversation instruction snapshot",
+    async (model) => {
+      useAppConfig.setState({
+        customInstructions: "Original conversation instructions.",
+        modelConfig: {
+          ...DEFAULT_CONFIG.modelConfig,
+          model: model as any,
+          providerName: "OpenAI" as any,
+          enableInjectSystemPrompts: false,
+        },
+      });
+      await useChatStore.getState().onUserInput("First message");
+      const existing = useChatStore.getState().currentSession();
+      const savedSession = JSON.parse(JSON.stringify(existing));
+      useChatStore.setState({
+        sessions: [savedSession],
+        currentSessionIndex: 0,
+      });
+      useAppConfig.setState({
+        customInstructions: "Updated global instructions.",
+      });
+      chatMock.mockClear();
+
+      await useChatStore.getState().onUserInput("Follow up");
+
+      const messages = getSentMessages();
+      expect(messages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            role: "system",
+            content: "Original conversation instructions.",
+          }),
+        ]),
+      );
+      expect(
+        messages.some(
+          (message) => message.content === "Updated global instructions.",
+        ),
+      ).toBe(false);
+      expect(useChatStore.getState().currentSession().customInstructions).toBe(
+        "Original conversation instructions.",
+      );
+    },
+  );
 });
 
 describe("custom instructions defaults", () => {

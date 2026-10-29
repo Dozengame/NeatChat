@@ -1,6 +1,15 @@
 // 模型测试服务
 
 import { showToast } from "../components/ui-lib-actions";
+import {
+  buildOpenAIModelTestRequest,
+  getOpenAIModelTestResult,
+} from "./openai-model-test";
+import {
+  getPublicUpstreamErrorMessage,
+  readResponsePayload,
+} from "./public-error";
+import { withAbortTimeout } from "./request-timeout";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -25,24 +34,12 @@ async function testModel(
   signal?: AbortSignal,
 ): Promise<ModelTestResult> {
   const startTime = Date.now();
+  const controller = new AbortController();
+  const handleAbort = () => controller.abort(signal?.reason);
 
   try {
-    // 创建AbortController用于超时控制
-    const controller = new AbortController();
-
-    // 合并外部信号和超时信号
-    const timeoutId = setTimeout(
-      () => controller.abort(),
-      timeoutSeconds * 1000,
-    );
-
-    // 如果外部信号被触发，也要中止请求
-    if (signal) {
-      signal.addEventListener("abort", () => {
-        controller.abort();
-        clearTimeout(timeoutId);
-      });
-    }
+    signal?.addEventListener("abort", handleAbort, { once: true });
+    if (signal?.aborted) handleAbort();
 
     // 构建请求URL
     const normalizedBaseUrl = baseUrl.endsWith("/")
@@ -53,52 +50,39 @@ async function testModel(
       : `${normalizedBaseUrl}/v1/responses`;
 
     // 构建请求体
-    const requestBody = {
-      model: model,
-      input: "Hello!",
-      max_output_tokens: 16,
-      stream: false,
-    };
+    const requestBody = buildOpenAIModelTestRequest(model, {});
 
     // 发送请求
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+    const { response, payload, isJson } = await withAbortTimeout({
+      controller,
+      timeoutMs: timeoutSeconds * 1000,
+      operation: async () => {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        });
+        const { payload, isJson } = await readResponsePayload(response);
+        return { response, payload, isJson };
       },
-      body: JSON.stringify(requestBody),
-      signal: controller.signal,
     });
 
-    // 清除超时计时器
-    clearTimeout(timeoutId);
-
     const responseTime = Date.now() - startTime;
 
-    // 检查响应
-    if (!response.ok) {
-      const errorData = await response.json();
-      return {
-        success: false,
-        message: `测试失败: ${errorData.error?.message || response.statusText}`,
-        responseTime,
-        error: errorData,
-        timeout: false,
-      };
-    }
-
-    const data = await response.json();
-
-    return {
-      success: true,
-      message: `测试成功! 响应时间: ${(responseTime / 1000).toFixed(2)}s`,
+    return getOpenAIModelTestResult({
+      response,
+      payload,
+      isJson,
       responseTime,
-      timeout: false,
-    };
+    });
   } catch (error: any) {
     const responseTime = Date.now() - startTime;
-    const isTimeout = error.name === "AbortError";
+    const isTimeout =
+      error?.name === "AbortError" || error?.name === "TimeoutError";
 
     // 如果是外部中止，则返回特殊标记
     if (signal?.aborted) {
@@ -106,7 +90,7 @@ async function testModel(
         success: false,
         message: "测试已取消",
         responseTime,
-        error,
+        error: { type: "cancelled" },
         timeout: false,
         cancelled: true,
       };
@@ -114,11 +98,18 @@ async function testModel(
 
     return {
       success: false,
-      message: isTimeout ? "请求超时" : `测试出错: ${error.message}`,
+      message: isTimeout
+        ? "请求超时"
+        : getPublicUpstreamErrorMessage({
+            fallback: "测试出错",
+            detail: error?.message,
+          }),
       responseTime,
-      error,
+      error: { type: isTimeout ? "timeout" : "request_error" },
       timeout: isTimeout,
     };
+  } finally {
+    signal?.removeEventListener("abort", handleAbort);
   }
 }
 
@@ -167,9 +158,9 @@ async function testModels(
       if (!signal?.aborted) {
         if (result.success) {
           showToast(
-            `${model}: 测试成功 (${((result.responseTime || 0) / 1000).toFixed(
-              2,
-            )}s)`,
+            `${model}: 文本生成通过 (${(
+              (result.responseTime || 0) / 1000
+            ).toFixed(2)}s)`,
           );
         } else if (result.timeout) {
           showToast(`${model}: 超时`);

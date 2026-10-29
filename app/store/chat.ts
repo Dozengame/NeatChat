@@ -64,6 +64,7 @@ import {
 import { registerChatStore } from "./chat-state-link";
 import {
   canReuseOpenAIResponsesHistory,
+  getOpenAIResponsesModelCapabilities,
   isOpenAIResponsesAdvancedModelConfig,
 } from "../utils/openai-responses";
 import { selectOpenAIAllTurnsHistory } from "../utils/openai-history";
@@ -248,6 +249,7 @@ function fillTemplateWith(
   stableSystemDate = false,
 ) {
   const cutoff =
+    getOpenAIResponsesModelCapabilities(modelConfig.model)?.knowledgeCutoff ??
     KnowledgeCutOffDate[modelConfig.model] ??
     KnowledgeCutOffDate[modelConfig.model.replace(/-\d{4}-\d{2}-\d{2}$/, "")] ??
     KnowledgeCutOffDate.default;
@@ -1158,7 +1160,9 @@ export const useChatStore = createPersistStore(
         // system prompts, to get close to OpenAI Web ChatGPT
         const shouldInjectSystemPrompts =
           modelConfig.enableInjectSystemPrompts &&
-          (session.mask.modelConfig.model.startsWith("gpt-") ||
+          (getOpenAIResponsesModelCapabilities(modelConfig.model) !==
+            undefined ||
+            session.mask.modelConfig.model.startsWith("gpt-") ||
             session.mask.modelConfig.model.startsWith("chatgpt-"));
 
         let mcpSystemPrompt = "";

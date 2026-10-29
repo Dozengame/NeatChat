@@ -1,5 +1,7 @@
 # 2026-07-10 Full-Stack Agent Guide
 
+> 历史记录：本页描述 2026-07-10 的规则与验证，包含已过时的 plans 忽略策略。现行执行以根 AGENTS.md 和 [workflow.md](../workflow.md) 为准。
+
 ## Goal
 
 Rewrite the local NeatChat agent entry so recent Gemini UI work is treated as temporary context rather than the project's permanent identity, and future backend/API, provider, MCP, auth, persistence, deployment, and Tauri work receives correct routing and verification.

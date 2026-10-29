@@ -79,7 +79,13 @@ function asciiTextWithEstimatedTokens(tokenCount: number, character = "x") {
   return character.repeat(Math.ceil(tokenCount * 4));
 }
 
-const TOOL_MODELS = ["gpt-5.6-terra", "gpt-6-astra", "gpt-6-sol", "gpt-6-luna"];
+const TOOL_MODELS = [
+  "gpt-5.6-terra",
+  "gpt-6-astra",
+  "gpt-6-sol",
+  "gpt-6-luna",
+  "gpt-6.1-sol",
+];
 
 describe.each(TOOL_MODELS)("%s all_turns history", (model) => {
   beforeEach(async () => {

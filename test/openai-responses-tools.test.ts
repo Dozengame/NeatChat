@@ -35,7 +35,14 @@ const functionCall = (
   arguments: args,
 });
 
-const TOOL_MODELS = ["gpt-5.6-terra", "gpt-6-astra", "gpt-6-sol", "gpt-6-luna"];
+const TOOL_MODELS = [
+  "gpt-5.6-terra",
+  "gpt-6-astra",
+  "gpt-6-sol",
+  "gpt-6-luna",
+  "gpt-6.1-sol",
+  "gpt-6.1-terra",
+];
 
 describe("OpenAI Responses function tools", () => {
   test("blocks direct function tools during a pending recovery turn", () => {
@@ -94,10 +101,41 @@ describe("OpenAI Responses function tools", () => {
           name: "get_weather",
           description: "get_weather description",
           parameters: source.function.parameters,
+          strict: false,
         },
       ],
       executors: { get_weather: executor },
     });
+    expect(JSON.stringify(source)).toBe(snapshot);
+  });
+
+  test("preserves optional fields and additionalProperties in non-strict schemas", () => {
+    const source = {
+      ...pluginTool("search"),
+      function: {
+        name: "search",
+        parameters: {
+          type: "object",
+          properties: {
+            query: { type: "string" },
+            limit: { type: "integer", minimum: 1 },
+          },
+          required: ["query"],
+          additionalProperties: true,
+        },
+      },
+    };
+    const snapshot = JSON.stringify(source);
+
+    const { tools } = adaptPluginToolsForResponses([source], {
+      search: jest.fn(),
+    });
+
+    expect(tools[0]).toMatchObject({
+      strict: false,
+      parameters: source.function.parameters,
+    });
+    expect(tools[0].parameters).not.toBe(source.function.parameters);
     expect(JSON.stringify(source)).toBe(snapshot);
   });
 

@@ -13,6 +13,8 @@ const en: LocaleType = {
     AccessRestricted: "Access is temporarily limited. Please try again later.",
     RequestFailed: (status?: number) =>
       status ? `Request failed (${status}).` : "Request failed.",
+    NonStreamingTools:
+      "Native tool calls require streaming. Enable streaming and try again.",
   },
   Auth: {
     Return: "Return",
@@ -1035,6 +1037,8 @@ const en: LocaleType = {
       ReasoningContext: {
         Title: "Reasoning Context",
         SubTitle: "Controls current-turn or cross-turn reasoning context",
+        Unverified:
+          "This setting has not been verified for this model in this release. Select Auto.",
         Auto: "Auto",
         CurrentTurn: "Current turn",
         AllTurns: "All turns",

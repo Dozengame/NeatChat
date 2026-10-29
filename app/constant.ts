@@ -1,3 +1,8 @@
+import {
+  OPENAI_GPT_61_MODEL_CAPABILITIES,
+  OPENAI_GPT_61_MODELS,
+} from "./utils/openai-responses";
+
 const OWNER = "tianzhentech";
 const REPO = "NeatChat";
 export const REPO_URL = `https://github.com/${OWNER}/${REPO}`;
@@ -262,6 +267,12 @@ Latex block: $$e=mc^2$$
 `;
 
 export const KnowledgeCutOffDate: Record<string, string> = {
+  ...Object.fromEntries(
+    OPENAI_GPT_61_MODELS.map((model) => [
+      model,
+      OPENAI_GPT_61_MODEL_CAPABILITIES[model].knowledgeCutoff,
+    ]),
+  ),
   default: "2021-09",
   "gpt-6-astra": "2026-04-30",
   "gpt-6-sol": "2026-04-20",
@@ -448,7 +459,11 @@ const chatglmModels = [
 
 let seq = 1000; // 内置的模型序号生成器从1000开始
 export const DEFAULT_MODELS = [
-  ...[...OPENAI_GPT_6_MODELS, ...OPENAI_GPT_56_MODELS].map((name) => ({
+  ...[
+    ...OPENAI_GPT_6_MODELS,
+    ...OPENAI_GPT_61_MODELS,
+    ...OPENAI_GPT_56_MODELS,
+  ].map((name) => ({
     name,
     available: true,
     sorted: seq++,

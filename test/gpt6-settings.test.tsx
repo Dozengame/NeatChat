@@ -29,18 +29,23 @@ jest.mock("../app/icons/down.svg", () => ({
 }));
 jest.mock("../app/utils/hooks", () => ({
   useAllModels: () =>
-    ["gpt-6-astra", "gpt-6-sol", "gpt-6-luna", "gpt-image-2.5-flare"].map(
-      (name) => ({
-        name,
-        displayName: name,
-        available: true,
-        provider: {
-          id: "openai",
-          providerName: "OpenAI",
-          providerType: "openai",
-        },
-      }),
-    ),
+    [
+      "gpt-6-astra",
+      "gpt-6-sol",
+      "gpt-6-luna",
+      "gpt-6.1-sol",
+      "gpt-6.1-terra",
+      "gpt-image-2.5-flare",
+    ].map((name) => ({
+      name,
+      displayName: name,
+      available: true,
+      provider: {
+        id: "openai",
+        providerName: "OpenAI",
+        providerType: "openai",
+      },
+    })),
 }));
 
 const allowedModels = ["gpt-6-luna@OpenAI", "gpt-image-2.5-flare@OpenAI"];
@@ -92,7 +97,13 @@ function publicConfig(): PublicAppConfig {
   };
 }
 
-function Harness({ initialConfig }: { initialConfig?: Partial<ModelConfig> }) {
+function Harness({
+  initialConfig,
+  onUpdate,
+}: {
+  initialConfig?: Partial<ModelConfig>;
+  onUpdate?: (config: ModelConfig) => void;
+}) {
   const [modelConfig, setModelConfig] = useState<ModelConfig>({
     ...DEFAULT_CONFIG.modelConfig,
     model: "gpt-6-luna" as any,
@@ -107,6 +118,7 @@ function Harness({ initialConfig }: { initialConfig?: Partial<ModelConfig> }) {
         // Zustand's production update applies the callback during the event.
         const next = { ...modelConfig };
         updater(next);
+        onUpdate?.(next);
         setModelConfig(next);
       }}
     />
@@ -172,38 +184,41 @@ describe("GPT-6 settings", () => {
     ).toHaveValue("max");
   });
 
-  test("never offers none for Astra, even without an environment allowlist", () => {
-    useAccessStore.setState({
-      allowedModels: ["gpt-6-astra@OpenAI"],
-      serverConfigSnapshot: {
-        ...publicConfig(),
-        reasoningEffortAllowlist: undefined,
-      },
-    });
-    render(
-      <Harness
-        initialConfig={{ model: "gpt-6-astra" as any, reasoningEffort: "none" }}
-      />,
-    );
-    expect(options(Locale.Settings.ReasoningEffort.Title)).toEqual([
-      "low",
-      "medium",
-      "high",
-      "xhigh",
-      "max",
-    ]);
-    expect(
-      screen.getByLabelText(Locale.Settings.ReasoningEffort.Title),
-    ).toHaveValue("low");
-    expect(
-      screen.queryByLabelText(Locale.Settings.Temperature.Title),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByLabelText(Locale.Settings.TopP.Title),
-    ).not.toBeInTheDocument();
-  });
+  test.each(["gpt-6-astra", "gpt-6.1-sol"])(
+    "%s never offers none, even without an environment allowlist",
+    (model) => {
+      useAccessStore.setState({
+        allowedModels: [`${model}@OpenAI`],
+        serverConfigSnapshot: {
+          ...publicConfig(),
+          reasoningEffortAllowlist: undefined,
+        },
+      });
+      render(
+        <Harness
+          initialConfig={{ model: model as any, reasoningEffort: "none" }}
+        />,
+      );
+      expect(options(Locale.Settings.ReasoningEffort.Title)).toEqual([
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+      ]);
+      expect(
+        screen.getByLabelText(Locale.Settings.ReasoningEffort.Title),
+      ).toHaveValue("low");
+      expect(
+        screen.queryByLabelText(Locale.Settings.Temperature.Title),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByLabelText(Locale.Settings.TopP.Title),
+      ).not.toBeInTheDocument();
+    },
+  );
 
-  test.each(["gpt-6-sol", "gpt-6-luna"])(
+  test.each(["gpt-6-sol", "gpt-6-luna", "gpt-6.1-terra"])(
     "%s shows sampling controls only while none is selected",
     (model) => {
       useAccessStore.setState({
@@ -249,6 +264,140 @@ describe("GPT-6 settings", () => {
       expect(
         screen.getByLabelText(Locale.Settings.TopP.Title),
       ).toBeInTheDocument();
+    },
+  );
+
+  test("switching Terra none to Sol corrects to low without changing the budget", () => {
+    useAccessStore.setState({
+      allowedModels: ["gpt-6.1-sol@OpenAI", "gpt-6.1-terra@OpenAI"],
+      lockedFields: [],
+      serverConfigSnapshot: {
+        ...publicConfig(),
+        reasoningEffortAllowlist: undefined,
+        reasoningEffortDefaults: {
+          default: "medium",
+          models: { "gpt-6.1-sol": "medium" },
+        },
+      },
+    });
+    const onUpdate = jest.fn();
+    render(
+      <Harness
+        initialConfig={{
+          model: "gpt-6.1-terra",
+          reasoningEffort: "none",
+          max_output_tokens: 64000,
+        }}
+        onUpdate={onUpdate}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(Locale.Settings.Model), {
+      target: { value: "gpt-6.1-sol@OpenAI" },
+    });
+    expect(
+      screen.getByLabelText(Locale.Settings.ReasoningEffort.Title),
+    ).toHaveValue("low");
+    expect(onUpdate).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        model: "gpt-6.1-sol",
+        reasoningEffort: "low",
+        max_output_tokens: 64000,
+      }),
+    );
+  });
+
+  test("Sol retains all context choices and its locked high effort", () => {
+    const onUpdate = jest.fn();
+    useAccessStore.setState({
+      allowedModels: ["gpt-6.1-sol@OpenAI"],
+      lockedFields: ["reasoningEffort", "reasoningContext"],
+      serverConfigSnapshot: {
+        ...publicConfig(),
+        reasoningEffortAllowlist: undefined,
+      },
+    });
+    render(
+      <Harness
+        initialConfig={{
+          model: "gpt-6.1-sol" as any,
+          reasoningEffort: "high",
+          reasoningContext: "all_turns",
+        }}
+        onUpdate={onUpdate}
+      />,
+    );
+    expect(
+      options(Locale.Settings.GPT56Capabilities.ReasoningContext.Title),
+    ).toEqual(["auto", "current_turn", "all_turns"]);
+    expect(
+      screen.getByLabelText(Locale.Settings.ReasoningEffort.Title),
+    ).toHaveValue("high");
+    expect(
+      screen.getByLabelText(Locale.Settings.ReasoningEffort.Title),
+    ).toBeDisabled();
+    expect(
+      screen.getByLabelText(
+        Locale.Settings.GPT56Capabilities.ReasoningContext.Title,
+      ),
+    ).toBeDisabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(onUpdate).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    "current_turn",
+    "all_turns",
+    "future_context",
+    "__proto__",
+    "constructor",
+    "",
+  ] as const)(
+    "Terra preserves unverified %s until the user selects auto",
+    (context) => {
+      const onUpdate = jest.fn();
+      useAccessStore.setState({
+        allowedModels: ["gpt-6.1-terra@OpenAI"],
+        lockedFields: [],
+        serverConfigSnapshot: {
+          ...publicConfig(),
+          reasoningEffortAllowlist: undefined,
+        },
+      });
+      render(
+        <Harness
+          initialConfig={{
+            model: "gpt-6.1-terra" as any,
+            reasoningEffort: "max",
+            reasoningContext: context as any,
+          }}
+          onUpdate={onUpdate}
+        />,
+      );
+      const select = screen.getByLabelText(
+        Locale.Settings.GPT56Capabilities.ReasoningContext.Title,
+      ) as HTMLSelectElement;
+      expect(select).toHaveValue(context);
+      expect(select).toHaveAttribute("aria-invalid", "true");
+      expect(
+        Array.from(select.options)
+          .filter((option) => !option.hidden)
+          .map((option) => option.value),
+      ).toEqual(["auto"]);
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        Locale.Settings.GPT56Capabilities.ReasoningContext.Unverified,
+      );
+      expect(onUpdate).not.toHaveBeenCalled();
+
+      fireEvent.change(select, { target: { value: "auto" } });
+      expect(select).toHaveValue("auto");
+      expect(select).not.toHaveAttribute("aria-invalid");
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(onUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          reasoningContext: "auto",
+          reasoningEffort: "max",
+        }),
+      );
     },
   );
 

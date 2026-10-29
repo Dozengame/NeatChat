@@ -1,97 +1,60 @@
-# Agent Workflow Loop
+# NeatChat 验证与交接
 
-This repo uses one full-stack loop:
+按当前任务选用本页；执行与授权遵循仓库根 `AGENTS.md` 和本次请求。先确定要证明的行为，再选检查。以下是命令入口，不是每次执行的清单；命令以 `package.json`、测试文件和相关 CI 为准。
 
-```text
-plan -> inspect -> act -> verify -> review -> deliver -> record handoff
-```
+## 选择验证范围
 
-## 1. Plan
+| 改动                     | 最小有效证据                                                                 | 扩展条件                                                                                         |
+| ------------------------ | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| 文档、AGENTS、skill      | 内容、引用路径、格式、敏感信息与 Git 范围；skill 另查 frontmatter 和触发边界 | 指令改变执行决策时，用代表性请求复核路由；无需应用 Jest/build                                    |
+| UI 行为                  | 相关 Jest 回归、真实页面关键交互                                             | 响应式、主题、键盘或共享组件受影响时扩展 Browser QA                                              |
+| 纯样式                   | 相关 visual contract、Browser QA                                             | 不机械新增仅匹配实现文字的测试                                                                   |
+| API、provider、streaming | 相关 Jest、状态码/headers/payload 或日志                                     | 共享类型、请求链、打包边界变化时扩展 TypeScript、关联测试或 build；无 UI surface 不做 Browser QA |
+| auth、MCP、持久化、同步  | 边界与失败路径回归                                                           | 按风险覆盖隔离、授权、重试、取消、恢复、导入导出；真实服务需要相应授权                           |
+| 构建、部署、桌面端       | 目标配置或打包检查                                                           | 只验证受影响的平台，区分本地准备与实际发布                                                       |
 
-- State the completion standard before making changes.
-- Classify the task as frontend, backend/API, provider/streaming, MCP/integration, auth/security, state/persistence, configuration/deployment, desktop, or cross-layer.
-- Define the target behavior, files and chain, non-goals, preserved semantics, required evidence, and external-state boundaries.
-- Use sub-agents only when responsibilities are independent and parallel or review value is clear; avoid concurrent edits to the same files.
-
-## 2. Inspect
-
-- Read the plan index, current state, one routed iteration, and the smallest direct source/test/config/log scope.
-- Verify user diagnoses and historical conclusions against live code or runtime evidence.
-- For cross-layer failures, trace UI -> store/client -> API -> provider/MCP -> external response rather than stopping at one layer.
-
-## 3. Act
-
-- Implement the smallest change that fixes the verified root cause while preserving out-of-scope product semantics.
-- Reuse existing components, helpers, clients, stores, API routes, fixtures, and test patterns.
-- Keep user changes intact and keep internal plans, screenshots, temp files, env files, `.agents/`, `.codex/`, `.next/`, and `test-results/` out of product commits.
-- Update both `app/locales/cn.ts` and `app/locales/en.ts` when user-facing copy changes and both locales apply.
-
-## 4. Verify
-
-Run the narrowest relevant checks first. Expand according to the changed layer and risk.
-
-Common product baseline:
+先搜索并选现有 suite。`yarn test` 会进入 watch；单次任务使用：
 
 ```bash
-yarn lint
-npx tsc --noEmit --pretty false
-git diff --check
-yarn build
+yarn jest test/openai-responses-builder.test.ts --runInBand --runTestsByPath
 ```
 
-Frontend/UI examples:
+将示例文件替换为受影响的 suite，可传多个路径。常用入口：
 
-```bash
-yarn jest test/gemini-visual-migration.test.ts --runInBand --runTestsByPath
-yarn jest test/chat-render.test.ts test/message-content.test.ts --runInBand
-```
+| 范围              | `test/` 下的候选文件                                                                      |
+| ----------------- | ----------------------------------------------------------------------------------------- |
+| UI、消息          | `gemini-visual-migration.test.ts`、`chat-render.test.ts`、`message-content.test.ts`       |
+| 配置、provider    | `server-config.test.ts`、`config-merge.test.ts`、`model-provider.test.ts`                 |
+| Responses、stream | `openai-responses-builder.test.ts`、`chat-stream-payload.test.ts`、`stream-fetch.test.ts` |
+| auth              | `access-code-validation.test.ts`、`access-control.test.ts`                                |
+| MCP               | `mcp-config.test.ts`、`mcp-display.test.ts`、`mcp-initialize.test.ts`                     |
+| 存储、指令        | `startup-cache.test.ts`、`custom-instructions.test.ts`                                    |
 
-Backend/provider/streaming examples:
+按影响补充 `yarn lint`（可用 `--file` 限定源文件）、`yarn tsc --noEmit --pretty false`、`git diff --check`。影响扩散到多个模块且窄检查无法覆盖时用 `yarn test:ci --runInBand`；构建图、依赖、Next.js 配置或产物行为受影响时用 `yarn build`，请求全面发布验证时也需覆盖相应构建。已有通过证据可复用，相关输入或运行环境变化后才失效。
 
-```bash
-yarn jest test/server-config.test.ts test/config-merge.test.ts test/model-provider.test.ts --runInBand
-yarn jest test/openai-responses-builder.test.ts test/chat-stream-payload.test.ts test/stream-fetch.test.ts --runInBand
-```
+| 平台                      | 按需命令与边界                                            |
+| ------------------------- | --------------------------------------------------------- |
+| Docker 配置               | `docker compose config --quiet`，避免默认展开并输出环境值 |
+| export/PWA                | `yarn export`；只证明静态产物能力                         |
+| Rust/Tauri                | `cargo check --manifest-path src-tauri/Cargo.toml`        |
+| 桌面打包或 Web/Tauri 集成 | `yarn app:build`                                          |
 
-Auth/MCP/persistence examples:
+CI 的触发器、平台、检查以 `.github/workflows/` 为准；本地精简验证不修改或替代 CI 要求。运行现有命令前理解其影响：build/export/app:build 会生成 masks 或构建产物，结束后检查 Git 范围。
 
-```bash
-yarn jest test/access-code-validation.test.ts test/access-control.test.ts --runInBand
-yarn jest test/mcp-config.test.ts test/mcp-display.test.ts test/mcp-initialize.test.ts --runInBand
-yarn jest test/startup-cache.test.ts test/custom-instructions.test.ts --runInBand
-```
+## Browser 与外部证据
 
-Configuration, packaging, and desktop checks are selected by target:
+- UI 按风险选择 desktop `1440x1024`、constrained `1056x834`、mobile `390x844`、narrow `320x740`，覆盖溢出、重叠、关键控件、键盘/焦点、相关主题及 console；不为无关改动遍历全矩阵。
+- 先确认访问的是本次 checkout 的目标页面和构建。需要鉴权时使用已获授权的正常访问路径；不得绕过 gate。阻塞时继续可独立完成的组件、fixture 或服务端验证，将真实页面验证标为未完成，不能以鉴权页或 fixture 替代通过。
+- 对真实 provider、MCP 或付费服务仅执行会话已授权的调用；未知结果的写操作先查状态或幂等保障，再决定是否重试。mock、静态检查和本地 build 各自说明证据范围。
+- 本次引入的失败应修复后复验；既有失败或环境限制需区分并说明。必要证据仍缺失时标记部分验证，不以扩大无关测试掩盖缺口。
 
-```bash
-docker compose config
-yarn export
-cargo check --manifest-path src-tauri/Cargo.toml
-yarn app:build
-```
+## 交接与 Git 范围
 
-Do not run these four mechanically: use Docker validation only for Docker changes, export for export/PWA changes, `cargo check` for Rust/Tauri changes, and `app:build` for desktop packaging or Web/Tauri integration.
+- 只有形成后续任务需要的事实、复杂任务需续接，或用户要求记录时，更新 `current.md` 和相关 iteration。只读答疑、简单修复和文档排版不自动生成交接报告。
+- `current.md` 保留短摘要、待解决项及相关记录链接；旧事实留在 `iterations/`，不重复堆积长日志。记录日期、适用的代码状态、验证边界和必要后续项；候选项不构成新任务授权。
+- `docs/superpowers/plans/` 是可跟踪的项目文档。提交在范围内时，相关交接与产品切片一起提交；根 `AGENTS.md`、`.agents/`、`.codex/` 及临时产物保持 local-only。不要因旧 ignore 说明漏掉新 iteration，也不要为记录而自动 commit。
+- `README.md` 仅作索引，`prompt.md` 仅作续接入口。历史 iteration 中的旧 workflow、模型能力和 Git 规则只作记录，不覆盖当前约定；不重建 `design-qa.md` 或平行文档体系。
 
-User-visible UI changes require risk-based Browser QA. Default viewports are desktop `1440x1024`, constrained `1056x834`, mobile `390x844`, and narrow `320x740`; use only the viewports relevant to the change. Check overflow, overlap, key controls, keyboard/focus states, theme risk, and current console warn/error entries.
+## 官方依据
 
-Server-side work without a UI surface does not require Browser QA. Use targeted Jest, logs, status/headers/payload evidence, `lint`, `tsc`, and build instead. Documentation-only changes use formatting, content, sensitive-information, tracking, and relevant compatibility checks rather than a full application build.
-
-## 5. Review
-
-- Re-read the user request and completion standard line by line.
-- Inspect the actual changed files; do not trust a sub-agent report or passing test as proof of scope compliance by itself.
-- For broad or risky work, run an independent read-only spec and risk review, then fix Important or Critical findings and re-review.
-
-## 6. Deliver
-
-- Only claim completion after fresh verification evidence passes.
-- Keep one product slice in one clear commit when a commit is in scope; never include local agent documents.
-- Do not push, deploy, create a PR, rewrite history, or modify external state unless explicitly requested.
-- Report the outcome, actual changes, verification, remaining risks, and only the next action that materially helps.
-
-## 7. Record Handoff
-
-- Update `current.md` with rechecked branch/head, result, verification boundary, risks, and scoped candidates.
-- Update one routed dated iteration, or create a new one and add it to the README routing table when the topic diverges.
-- Record durable facts only: commit, files, behavior, preserved semantics, verification, Browser/runtime boundary, risks, and next candidate.
-- Keep root `AGENTS.md` durable and generic; volatile branch state and recent failures belong in `current.md` or an iteration file.
+2026-09-06 核对：[GPT-6 Astra prompting](https://developers.openai.com/api/docs/guides/latest-model?model=gpt-6-astra#prompting-best-practices)、[AGENTS.md 加载规则](https://learn.chatgpt.com/docs/agent-configuration/agents-md)、[Skills 按需加载与编写](https://learn.chatgpt.com/docs/build-skills)。本仓库将这些指导落实为授权内持续执行、按需上下文、独立工作包并行与风险匹配验证；实际速度和质量需要任务样本验证，不能从规则长度推断。

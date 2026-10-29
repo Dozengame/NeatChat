@@ -1543,11 +1543,18 @@ export function uploadAttachments(
   fileInput.type = "file";
   fileInput.accept = getAttachmentUploadAccept(kind);
   fileInput.multiple = true;
+  fileInput.hidden = true;
+
+  const finish = () => {
+    fileInput.remove();
+    onFinish();
+  };
+  fileInput.addEventListener("cancel", finish, { once: true });
 
   fileInput.onchange = async (event: any) => {
     const files = event.target.files;
     if (!files || files.length === 0) {
-      onFinish();
+      finish();
       return;
     }
 
@@ -1560,7 +1567,7 @@ export function uploadAttachments(
 
     if (matchingFiles.length === 0) {
       onError(new Error(AttachmentReader.NoFilesRead));
-      onFinish();
+      finish();
       return;
     }
 
@@ -1578,10 +1585,13 @@ export function uploadAttachments(
       console.error("处理文件失败:", error);
       onError(error);
     } finally {
-      onFinish();
+      finish();
     }
   };
 
+  // Keep the chooser target attached until selection/cancel so browser adapters
+  // can resolve its backend node when supplying the selected files.
+  document.body.appendChild(fileInput);
   fileInput.click();
 }
 
